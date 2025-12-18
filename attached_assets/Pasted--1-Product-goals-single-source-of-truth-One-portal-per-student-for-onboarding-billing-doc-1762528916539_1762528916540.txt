@@ -1,0 +1,206 @@
+# 1) Product goals (single source of truth)
+
+* One portal per student for onboarding, billing, documents, and degree progress.
+* Phase 1: plan and track ~90 transfer/ACE credits mapped to program distribution requirements.
+* Phase 2: enforce ≥30-credit residency at the target university (e.g., UMPI) + upper-level totals + minor rules.
+* Evidence-driven: uploads (PDF/screenshot) + OCR + human verify → roadmap auto-updates.
+* Coach & Admin console for approvals, recalcs, and catalog/mapping versioning.
+
+# 2) Personas & roles
+
+* Student: views roadmap, uploads proofs, pays invoices, sees next steps.
+* Coach: monitors students, adds notes/tasks, approves parsed credits, nudges.
+* Admin: edits mappings, catalogs, pricing, sees audit logs, exports reports.
+
+# 3) High-level architecture (Replit-friendly)
+
+Frontend: React (Next.js if not using pure React) + Tailwind.
+Backend: Node + Express (or Next.js API routes).
+DB/Auth/File storage: Supabase (Postgres + RLS + Storage). (Alt: SQLite for demo.)
+Billing: Stripe (Checkout + Customer Portal).
+OCR/Parsing: Tesseract.js (client) or server worker + regex heuristics (admin verifies).
+Notifications: PostHog events; email via Resend/SendGrid (optional).
+
+# 4) Pages / flows (MVP → v1)
+
+* /login → magic link; complete profile wizard.
+* /dashboard → Phase 1/Phase 2 progress, rings, next 3 actions.
+* /roadmap → two tabs: Phase 1 (ACE sources) / Phase 2 (Residency). Status toggles: todo → in‑progress → done.
+* /equivalencies → read-only map list for student; editable for admin.
+* /documents → upload PDF/PNG/JPG; parse; pending items appear in Review queue.
+* /billing → invoices, receipts, update payment method, Stripe portal deep‑link.
+* /coach → caseload table, stuck flags, time‑to‑goal, last activity.
+* /admin → approvals queue, mapping editor, catalog years, recalc engine, audit log.
+
+# 5) Data model (Postgres)
+
+## Core tables
+
+* users(id, email, name, role, created_at)
+* profiles(user_id FK, timezone, phone, status)
+* programs(id, title, catalog_year, residency_required, ul_required, total_required, jsonb rules)
+* requirements(id, program_id FK, code, title, area, min_credits, max_credits, is_upper_level, sequence, meta jsonb)
+* providers(id, key, name)  // e.g., UMPI, ProviderA, ProviderB
+* courses_catalog(id, provider_id FK, code, title, credits, level, active, effective_from, effective_to, meta jsonb)
+* articulations(id, from_course_id FK, to_requirement_id FK, priority, effective_from, effective_to, notes)
+* plans(id, user_id FK, program_id FK, catalog_year, created_at, locked_at)
+* plan_requirements(id, plan_id FK, requirement_id FK, status, satisfied_credits, detail jsonb)
+* enrollments(id, user_id FK, provider_id FK, course_id FK, title, credits, status, started_at, completed_at, proof_uri)
+* documents(id, user_id FK, type, uri, parsed_json jsonb, status, uploaded_at)
+* metrics(id, user_id FK, plan_id FK, credits_total, credits_phase1, credits_residency, credits_ul, pct_complete, updated_at)
+* payments(id, user_id FK, stripe_customer_id, invoice_id, amount, currency, status, created_at)
+* tasks(id, user_id FK, assigned_by, title, due_at, status, meta jsonb)
+* audit_log(id, actor_id, action, entity, entity_id, before jsonb, after jsonb, at)
+
+## RLS hints
+
+* students: SELECT/INSERT/UPDATE on own rows only.
+* coach: SELECT on assigned students; UPDATE limited to notes/tasks.
+* admin: full.
+
+# 6) Requirement engine (rules & algorithm)
+
+Rules (jsonb in programs/requirements):
+
+* totals: total_required, residency_required (e.g., ≥30 at home university), ul_required (e.g., ≥24 UL), minor rules.
+* distribution buckets: GEC writing, quantitative, lab science, civic/social, humanities, etc.
+* allowed sources for Phase 1 vs Phase 2.
+  Algorithm (per plan):
+
+1. Ingest finished courses → map to requirement candidates via articulations.
+2. Greedy fill by priority, honoring caps and UL constraints.
+3. Recalculate residuals: remaining credits by area, residency gap, UL gap.
+4. Recommend next courses: rank by fastest, availability, dependency, and utility toward gaps.
+   Versioning: keep catalog_year, effective ranges; backfill legacy students without breaking.
+
+# 7) APIs (Express or Next API routes)
+
+* Auth handled by Supabase (JWT).
+* GET /api/me → profile, plan summary, metrics.
+* GET /api/plan → expanded plan_requirements + suggestions.
+* POST /api/enrollments → add/update status; attach proof.
+* POST /api/documents → upload; start parse job.
+* POST /api/parse/:docId → parse & extract courses (admin/worker only).
+* POST /api/admin/recalc/:planId → run engine; return new metrics.
+* GET /api/admin/equiv → list articulations; POST/PUT to edit.
+* GET /api/billing/portal → return Stripe portal URL.
+
+# 8) Background jobs
+
+* parse-doc: OCR + regex → candidate course rows → admin review.
+* nightly-recalc: recompute metrics for active students.
+* dunning-webhooks: Stripe events → email reminders.
+
+# 9) Security & compliance
+
+* Supabase Row‑Level Security everywhere.
+* Signed URLs for document access; virus scan on upload.
+* PII minimization; Stripe handles card data.
+* Audit log for admin edits and status changes.
+
+# 10) Telemetry & reporting
+
+* PostHog events: upload_succeeded, parse_ok, parse_flagged, plan_recalc, payment_succeeded.
+* Coach dashboard: time‑to‑milestone, stuck >14 days, proof outstanding.
+
+# 11) UI components
+
+* Progress rings (overall, Phase 1, Phase 2).
+* Requirement table (status chips: todo / in‑progress / done).
+* “What to take next” recommendation cards.
+* Document list with badges and parse status.
+* Billing table with invoice status chips.
+* Admin: approvals queue; mapping editor grid; catalog year switcher.
+
+# 12) Directory layout (Next.js variant)
+
+* /app
+
+  * /dashboard/page.tsx
+  * /roadmap/page.tsx
+  * /documents/page.tsx
+  * /billing/page.tsx
+  * /coach/page.tsx
+  * /admin/page.tsx
+  * /api/* (route handlers)
+* /lib (db, auth, rules-engine, ocr)
+* /components (ui primitives + features)
+* /db (drizzle or prisma schema)
+
+# 13) Minimal schema (Drizzle/Prisma sketch)
+
+* Provide enum Role { student, coach, admin }
+* Set composite indexes on (user_id,status) for enrollments, documents, tasks.
+* FK cascades; soft delete via deleted_at if needed.
+
+# 14) MVP scope (2–3 weeks)
+
+* Auth (magic link), profile wizard.
+* Dashboard with real metrics from seed data.
+* Roadmap v1 (toggle statuses; apply mappings).
+* Documents upload + parse stub + admin approve.
+* Stripe: one‑time checkout + customer portal link.
+* Admin: recalc button, simple mapping editor.
+
+# 15) V1 scope (next)
+
+* Email parser ingestion (completion emails → enrollments draft).
+* OCR pipeline tuned for ACE/degree audits.
+* Coach console with caseload filters and nudges.
+* Export plan PDF for advisor.
+
+# 16) Nice‑to‑have
+
+* SSO to partner platforms (if allowed); otherwise deep‑links.
+* Meilisearch for document search.
+* Mobile PWA install.
+
+# 17) Test plan
+
+* Unit: rules engine (caps, UL, residency).
+* Integration: upload → parse → approve → recalc.
+* E2E: student completes Phase 1 course → metric change → new recommendation.
+
+# 18) Deployment on Replit (works in any UI)
+
+Option A (static + CDN): index.html + script.jsx (React/Tailwind via CDN).
+Option B (recommended for new Apps): Node + Express serves static files. Start script: `node server.js`.
+Env vars (if using Supabase/Stripe): SUPABASE_URL, SUPABASE_ANON_KEY, STRIPE_SECRET, STRIPE_WEBHOOK_SECRET.
+
+# 19) Seed program example (BLS sketch)
+
+* total_required: 120
+* residency_required: 30 (home university)
+* ul_required: 24 (upper‑level)
+* distribution areas: Writing(6), Quantitative(3), Science+Lab(7), Civic/Social(3), Humanities(6), etc.  // values adjustable per catalog
+
+# 20) Example recommendation logic
+
+* Sort candidate courses by: fills largest gap → fastest → past success rate → availability.
+* Avoid overfilling capped areas; prefer courses that also contribute to UL/residency if in Phase 2.
+
+# 21) Admin mapping UX
+
+* Spreadsheet-like grid: Provider Course → Requirement (select), credits, level, effective dates.
+* Bulk import CSV; diff + preview before publish. Version bump on publish.
+
+# 22) Risks & mitigations
+
+* Partner embed restrictions → use deep‑links, not iframes.
+* Parsing variance → human review queue + confidence scoring.
+* Catalog drift → versioned mappings, catalog_year snapshots per student.
+
+# 23) Success metrics
+
+* Time to “first clear roadmap” < 24h after intake.
+* % of uploads auto‑parsed with < 1 correction by admin.
+* Phase 1 completion median time ↓ month-over-month.
+* Dunning recovery rate for failed payments.
+
+# 24) Next actions
+
+* Generate DB schema (SQL) + RLS policies for Supabase.
+* Scaffold Next.js project with the pages above.
+* Port the React mock components into /components.
+* Seed mappings for ~30 high-yield transfer courses + 1 program catalog.
+* Wire Stripe Checkout + Customer Portal link.

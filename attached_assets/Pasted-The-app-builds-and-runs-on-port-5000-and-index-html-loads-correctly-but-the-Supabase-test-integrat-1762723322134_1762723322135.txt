@@ -1,0 +1,52 @@
+The app builds and runs on port 5000, and index.html loads correctly, but the Supabase test integration that was working before broke.
+
+It should show:
+1. A button at the bottom-right labeled “Test Supabase”.
+2. A white box at the bottom-left labeled “Programs”.
+3. When I click the button, it should connect to Supabase (the `programs` table) using env.js variables, show an alert “Supabase OK. Programs rows: 1”, and fill the box with the title, catalog_year, and total_required fields.
+
+The problem: the white Programs box appears but stays empty. The Test Supabase button does nothing.
+
+Please check and automatically fix index.html and index.js so that:
+- The Supabase client loads correctly from env.js.
+- The button triggers `testSupabase()` as described.
+- The results populate the Programs box visually.
+- Do NOT touch other parts of the app or the layout.
+
+Here’s the reference for the correct logic that was working before:
+
+```html
+<script src="/env.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  const supabase = window.supabase.createClient(
+    window.ENV.SUPABASE_URL,
+    window.ENV.SUPABASE_ANON,
+  );
+
+  async function testSupabase() {
+    const { data, error } = await supabase.from("programs").select("*");
+    if (error) {
+      alert("Supabase error: " + error.message);
+      console.error(error);
+      return;
+    }
+    alert("Supabase OK. Programs rows: " + data.length);
+    const listDiv = document.getElementById("programsList");
+    listDiv.innerHTML = "";
+    data.forEach((r) => {
+      const item = document.createElement("div");
+      item.textContent = `${r.title} (${r.catalog_year}) - ${r.total_required} credits`;
+      listDiv.appendChild(item);
+    });
+  }
+</script>
+
+<button onclick="testSupabase()" style="position: fixed; bottom: 16px; right: 16px; padding: 10px 14px; z-index: 9999;">Test Supabase</button>
+
+<div id="programsBox" style="position: fixed; left: 16px; bottom: 16px; padding: 10px 14px; border: 1px solid #ccc; border-radius: 8px; background: #fff; z-index: 9999;">
+  <strong>Programs</strong>
+  <div id="programsList" style="margin-top: 8px; font-family: system-ui, sans-serif; font-size: 14px;">
+    (empty)
+  </div>
+</div>

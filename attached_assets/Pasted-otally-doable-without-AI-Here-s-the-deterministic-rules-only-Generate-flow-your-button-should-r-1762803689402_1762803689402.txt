@@ -1,0 +1,230 @@
+otally doable without AI. Here’s the deterministic (rules-only) “Generate” flow your button should run, end-to-end.
+Generate Roadmap (No-AI Mode)
+Inputs
+
+
+Student (user_id)
+
+
+Target degree (template_id) – defaults to the seeded demo
+
+
+Prior courses (optional now; can be empty)
+
+
+Button behavior
+When user clicks Generate:
+
+
+Load framework
+
+
+Fetch degree_templates, degree_requirements, requirement_mappings, provider_catalog.
+
+
+
+
+Ingest prior courses (skip if none)
+
+
+User can paste rows or upload CSV ⇒ app inserts into prior_courses (you already have a place for this in your plan; if not, keep them in memory for now).
+
+
+
+
+Classify prior credits (rules only)
+
+
+Try course_code_pattern (regex) match first.
+
+
+If no code match, try title_keywords contains-any.
+
+
+Apply credits to the tightest matching bucket:
+
+
+GEN-ENG/GEN-MATH/… before GEN-OPEN
+
+
+MAJOR-CORE before ELECTIVES
+
+
+
+
+Track level if known (lower/upper) for policy checks.
+
+
+
+
+Compute gaps
+
+
+For each degree_requirements area:
+
+
+remaining = required_credits – sum(applied_from_prior)
+
+
+
+
+Policies:
+
+
+Ensure total upper-level ≥ 30 (POLICY-UL)
+
+
+Ensure residency ≥ 30 “University” provider (POLICY-RES)
+
+
+
+
+
+
+Fill gaps with provider catalog
+
+
+For each area with remaining > 0:
+
+
+Pick courses from provider_catalog whose area_tags or title hit that area.
+
+
+Prefer lowest estimated time (est_hours) then price_est.
+
+
+Add until the area’s remaining credits reach 0 (don’t overshoot unless last course).
+
+
+
+
+After areas filled:
+
+
+If UL shortfall remains, choose upper-level items (or mark for University session).
+
+
+If Residency shortfall remains, add University items (e.g., capstone + sessions) until ≥ 30 residency credits.
+
+
+
+
+Always include capstone (CAP-499) in MAJOR-CAP.
+
+
+
+
+Build plan + steps
+
+
+Create (or update) a roadmap_plans row:
+
+
+total_remaining_credits = credits still unfixed (should be 0 after fill for demo)
+
+
+est_cost = sum of price_est
+
+
+est_months = ceil( Σ(est_hours) / (student_pace_hours_per_week * 4) ), default pace = 10–15 hrs/wk
+
+
+
+
+Insert ordered roadmap_steps:
+
+
+step_index 1…N
+
+
+item_type = provider_course / university_session
+
+
+ref_code, title, credits, est_cost, est_weeks
+
+
+
+
+
+
+Show results
+
+
+Dashboard tiles: Completed / Remaining, Est. Cost, Est. Months
+
+
+Step list with provider badges and links (use url from provider_catalog)
+
+
+Buttons: Download PDF (optional now), Regenerate (if user changes pace/degree)
+
+
+
+
+Minimal API surface (suggested)
+
+
+POST /generate-plan
+
+
+body: { "user_id": "...", "template_id": "...", "pace_hours_per_week": 12 }
+
+
+effect: runs steps 1–6, returns plan_id
+
+
+
+
+GET /plans/:plan_id
+
+
+returns summary + steps for rendering
+
+
+
+
+(Optional) POST /prior-courses/import
+
+
+load pasted rows/CSV into prior_courses
+
+
+
+
+Deterministic selection rules
+
+
+Match order: code regex → title keywords → fallback to ELECTIVES.
+
+
+Area priority: specific area > GEN-OPEN > ELECTIVES.
+
+
+Optimization: minimize total est_hours, tie-break by price_est.
+
+
+Policy fixups: enforce UL and Residency after area fills.
+
+
+UI copy (what the button says)
+
+
+“Generate Your Plan (no AI)”
+
+
+Tooltip: “Uses Lumiere’s rules to compute your path now. You can add AI later for transcript reading and smarter picks.”
+
+
+Acceptance checks
+
+
+With zero prior credits: plan reaches 120 credits exactly (demo), includes capstone, satisfies UL ≥ 30 and Residency ≥ 30.
+
+
+With some prior courses: required areas decrease correctly; policies still satisfied.
+
+
+Regenerate with a different pace updates est_months only (plan contents stable).
+
+
+That’s it. Build this and you’ve got a fully working, investor-safe generator today—no AI needed. Add the AI later to automate transcript parsing and produce nicer explanations.

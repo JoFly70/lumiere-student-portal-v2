@@ -1,0 +1,58 @@
+Here’s the **master Replit prompt** you can copy-paste directly.
+It tells Replit to build the whole thing automatically—database link, imports, search, UI, everything—and leaves the model freedom to do it *the best possible way.*
+
+---
+
+**REPLIT PROMPT (copy everything below)**
+
+You are a full-stack Replit engineer.
+Your task: build a complete working app that stores, searches, and displays **college-credit courses** from *Sophia.org* and *Study.com* using data I’ll upload as two JSON files.
+
+**General goals (you decide best implementation):**
+
+* Backend: use **Supabase** (already created) for database, auth, and search.
+* Frontend: any clean React (Vite) or Next.js layout that is fast and easy to navigate.
+* Let the user **search, filter, and view courses** by:
+
+  * Provider (Sophia, Study.com)
+  * Level (Lower, Upper)
+  * Subject (Business, Math, etc.)
+* Display columns: *Provider | Subject | Title (clickable link) | Level | Credits*.
+* Include a **search box** (real-time filter).
+* Add a **“Roadmap” builder**: the user can click courses to add them to a personal plan shown in order (1,2,3,…).
+  Save these in Supabase (table `roadmaps` and `roadmap_courses`).
+* You’ll receive two files I’ll upload:
+
+  * `sophia_courses.json`
+  * `study_courses.json`
+    Parse and import them into Supabase automatically using the **service role key** (environment variable).
+* Use the following environment variables:
+
+  * `SUPABASE_URL`
+  * `SUPABASE_ANON_KEY`
+  * `SUPABASE_SERVICE_ROLE_KEY`
+
+**Implementation guidelines (do it in the best way you think):**
+
+1. **Schema:** if not present, auto-create tables (`providers`, `subjects`, `courses`, `roadmaps`, `roadmap_courses`) and indexes for search.
+   Detect “lower” vs “upper” by course code (100–200 → lower, 300+ → upper).
+2. **Import script:** auto-detect the uploaded JSON files and populate `courses`, creating subjects and providers automatically.
+3. **Search logic:** simplest possible—either Supabase FTS or client-side filtering depending on performance.
+4. **UI layout:**
+
+   * Top bar with search box + filters for Provider / Level / Subject.
+   * Main table listing courses with links to the official site.
+   * Sidebar or modal to show and edit the roadmap.
+   * Button “Add to Roadmap” on each row.
+5. **Design:** clean minimal dashboard style, responsive, easy to read (Tailwind or default CSS OK).
+6. **When I upload the two JSON files**, detect and import them automatically.
+7. **When running the app**, I should be able to:
+
+   * Open in browser
+   * Filter by provider + level
+   * Search “psychology” and see matching courses
+   * Click to open the real course link
+   * Add courses to a roadmap and see them ordered.
+
+Build this whole system end-to-end in the most efficient, stable, and modern way possible inside Replit.
+Do not ask questions—just create the complete working code, scripts, and connections following these instructions automatically.

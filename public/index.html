@@ -1,0 +1,691 @@
+<!-- =============================================
+File: public/index.html  (drop into your Replit project)
+Purpose: Spiffy landing page with built‑in Student Login
+Notes:
+- Uses Tailwind via CDN (no build step)
+- Works with Express static hosting
+- Login posts to /auth/login (adjust if your endpoint differs)
+- Replace LOGO_SVG and images with your assets as needed
+============================================= -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Lumiere Student Portal</title>
+    <meta
+      name="description"
+      content="Fast, clean, AI‑assisted student portal for planning, tracking, and finishing your degree."
+    />
+    <meta property="og:title" content="Lumiere Student Portal" />
+    <meta
+      property="og:description"
+      content="Fast, clean, AI‑assisted student portal for planning, tracking, and finishing your degree."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="/" />
+    <link rel="icon" href="/favicon.ico" />
+    <script defer src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: { sans: ["Inter", "ui-sans-serif", "system-ui"] },
+            backdropBlur: { xs: "2px" },
+          },
+        },
+      };
+    </script>
+    <style>
+      @keyframes float {
+        0% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-6px);
+        }
+        100% {
+          transform: translateY(0);
+        }
+      }
+    </style>
+  </head>
+  <body
+    class="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-800 text-slate-50"
+  >
+    <!-- NAV -->
+    <header
+      class="sticky top-0 z-50 backdrop-blur bg-slate-950/50 border-b border-white/10"
+    >
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="h-16 flex items-center justify-between">
+          <a href="#" class="flex items-center gap-3 group">
+            <div class="p-2 rounded-xl bg-white/10 ring-1 ring-white/20">
+              <!-- LOGO_SVG -->
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                class="animate-[float_5s_ease-in-out_infinite]"
+              >
+                <path
+                  d="M12 3l8 5v8l-8 5-8-5V8l8-5z"
+                  class="fill-indigo-400/90"
+                ></path>
+                <circle cx="12" cy="12" r="3" class="fill-white"></circle>
+              </svg>
+            </div>
+            <span class="text-lg font-semibold tracking-tight"
+              >Lumiere Student</span
+            >
+          </a>
+          <nav class="hidden md:flex items-center gap-6 text-sm">
+            <a href="#features" class="hover:text-indigo-300">Features</a>
+            <a href="#how" class="hover:text-indigo-300">How it works</a>
+            <a href="#faq" class="hover:text-indigo-300">FAQ</a>
+            <a href="#contact" class="hover:text-indigo-300">Contact</a>
+          </nav>
+          <div class="flex items-center gap-3">
+            <button
+              id="btnLogin"
+              class="rounded-xl px-4 py-2 text-sm font-medium bg-white/10 hover:bg-white/20 ring-1 ring-white/20"
+            >
+              Student login
+            </button>
+            <a
+              href="#get-started"
+              class="hidden sm:inline-block rounded-xl px-4 py-2 text-sm font-semibold bg-indigo-500 hover:bg-indigo-400"
+              >Get started</a
+            >
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- HERO -->
+    <section class="relative overflow-hidden">
+      <div aria-hidden class="absolute inset-0 -z-10">
+        <div
+          class="absolute -top-40 left-1/2 h-[40rem] w-[40rem] -translate-x-1/2 rounded-full bg-indigo-500/20 blur-[120px]"
+        ></div>
+        <div
+          class="absolute top-20 right-10 h-48 w-48 rounded-full bg-cyan-400/20 blur-[60px]"
+        ></div>
+      </div>
+      <div
+        class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-20 lg:py-28 grid lg:grid-cols-2 gap-10 items-center"
+      >
+        <div>
+          <h1
+            class="text-4xl md:text-5xl font-extrabold tracking-tight leading-tight"
+          >
+            Finish your degree, faster.
+            <span class="block text-indigo-300"
+              >Plan, track, and complete with clarity.</span
+            >
+          </h1>
+          <p class="mt-4 text-slate-300 max-w-xl">
+            The Lumiere Student Portal centralizes your roadmap, sessions,
+            tasks, and documents in one clean dashboard, with AI nudges that
+            keep you moving.
+          </p>
+          <div class="mt-6 flex flex-wrap items-center gap-3">
+            <a
+              href="#get-started"
+              class="rounded-2xl px-5 py-3 font-semibold bg-indigo-500 hover:bg-indigo-400 shadow-lg shadow-indigo-900/30 ring-1 ring-white/10"
+              >Create account</a
+            >
+            <button
+              id="btnLogin2"
+              class="rounded-2xl px-5 py-3 font-semibold bg-white/10 hover:bg-white/20 ring-1 ring-white/20"
+            >
+              Student login
+            </button>
+          </div>
+          <div class="mt-6 flex items-center gap-3 text-xs text-slate-400">
+            <div class="flex -space-x-2">
+              <img
+                src="https://i.pravatar.cc/32?img=1"
+                alt=""
+                class="w-8 h-8 rounded-full ring-2 ring-slate-900"
+              />
+              <img
+                src="https://i.pravatar.cc/32?img=2"
+                alt=""
+                class="w-8 h-8 rounded-full ring-2 ring-slate-900"
+              />
+              <img
+                src="https://i.pravatar.cc/32?img=3"
+                alt=""
+                class="w-8 h-8 rounded-full ring-2 ring-slate-900"
+              />
+            </div>
+            <span>Trusted by driven students worldwide</span>
+          </div>
+        </div>
+        <div class="relative">
+          <div
+            class="absolute -inset-4 rounded-3xl bg-gradient-to-tr from-indigo-500/20 via-cyan-400/10 to-emerald-400/10 blur-xl"
+          ></div>
+          <div
+            class="relative rounded-3xl border border-white/10 bg-white/5 backdrop-blur p-4 shadow-2xl"
+          >
+            <img
+              src="https://images.unsplash.com/photo-1553877522-43269d4ea984?q=80&w=1600&auto=format&fit=crop"
+              class="rounded-2xl ring-1 ring-white/10"
+              alt="App preview"
+            />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- BADGES -->
+    <section class="py-10">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div
+          class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 opacity-80"
+        >
+          <div class="text-center text-xs">Secure by design</div>
+          <div class="text-center text-xs">Fast onboarding</div>
+          <div class="text-center text-xs">AI assistance</div>
+          <div class="text-center text-xs">Mobile‑ready</div>
+          <div class="text-center text-xs">FERPA‑aware</div>
+          <div class="text-center text-xs">24/7 access</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FEATURES -->
+    <section id="features" class="py-16 border-t border-white/10">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="max-w-2xl">
+          <h2 class="text-2xl font-bold tracking-tight">What you get</h2>
+          <p class="mt-2 text-slate-300">
+            Everything you need to plan, execute, and complete without fluff.
+          </p>
+        </div>
+        <div class="mt-10 grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <!-- Card -->
+          <div class="rounded-2xl border border-white/10 bg-white/5 p-6">
+            <div
+              class="h-10 w-10 rounded-lg bg-indigo-500/20 grid place-items-center ring-1 ring-white/10 mb-4"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                class="w-5 h-5 text-indigo-300"
+              >
+                <path
+                  d="M5 3a2 2 0 0 0-2 2v2h18V5a2 2 0 0 0-2-2H5ZM3 9h18v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9Zm5 2v6h2v-6H8Zm4 0v6h2v-6h-2Z"
+                />
+              </svg>
+            </div>
+            <h3 class="font-semibold">Roadmap builder</h3>
+            <p class="mt-2 text-sm text-slate-300">
+              Generate a personalized plan by target date, then auto‑sequence
+              sessions and credits.
+            </p>
+          </div>
+          <div class="rounded-2xl border border-white/10 bg-white/5 p-6">
+            <div
+              class="h-10 w-10 rounded-lg bg-indigo-500/20 grid place-items-center ring-1 ring-white/10 mb-4"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                class="w-5 h-5 text-indigo-300"
+              >
+                <path
+                  d="M5 4a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h12l4 3V7a3 3 0 0 0-3-3H5Z"
+                />
+              </svg>
+            </div>
+            <h3 class="font-semibold">Session tracker</h3>
+            <p class="mt-2 text-sm text-slate-300">
+              One glance shows progress, payments, and what unlocks next. Focus
+              on what matters.
+            </p>
+          </div>
+          <div class="rounded-2xl border border-white/10 bg-white/5 p-6">
+            <div
+              class="h-10 w-10 rounded-lg bg-indigo-500/20 grid place-items-center ring-1 ring-white/10 mb-4"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                class="w-5 h-5 text-indigo-300"
+              >
+                <path d="M12 2a5 5 0 0 0-5 5v3H5l7 7 7-7h-2V7a5 5 0 0 0-5-5Z" />
+              </svg>
+            </div>
+            <h3 class="font-semibold">Smart nudges</h3>
+            <p class="mt-2 text-sm text-slate-300">
+              AI reminders that keep you honest and on pace, without being
+              annoying.
+            </p>
+          </div>
+          <div class="rounded-2xl border border-white/10 bg-white/5 p-6">
+            <div
+              class="h-10 w-10 rounded-lg bg-indigo-500/20 grid place-items-center ring-1 ring-white/10 mb-4"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                class="w-5 h-5 text-indigo-300"
+              >
+                <path
+                  d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10ZM4 20a8 8 0 1 1 16 0v1H4v-1Z"
+                />
+              </svg>
+            </div>
+            <h3 class="font-semibold">Advisor chat</h3>
+            <p class="mt-2 text-sm text-slate-300">
+              Built‑in messaging with your advisor so blockers get cleared same
+              day.
+            </p>
+          </div>
+          <div class="rounded-2xl border border-white/10 bg-white/5 p-6">
+            <div
+              class="h-10 w-10 rounded-lg bg-indigo-500/20 grid place-items-center ring-1 ring-white/10 mb-4"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                class="w-5 h-5 text-indigo-300"
+              >
+                <path d="M3 4h18v2H3V4Zm0 6h18v2H3v-2Zm0 6h12v2H3v-2Z" />
+              </svg>
+            </div>
+            <h3 class="font-semibold">Document vault</h3>
+            <p class="mt-2 text-sm text-slate-300">
+              Keep transcripts, plans, and receipts organized with drag‑and‑drop
+              uploads.
+            </p>
+          </div>
+          <div class="rounded-2xl border border-white/10 bg-white/5 p-6">
+            <div
+              class="h-10 w-10 rounded-lg bg-indigo-500/20 grid place-items-center ring-1 ring-white/10 mb-4"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                class="w-5 h-5 text-indigo-300"
+              >
+                <path d="M12 3 1 9l11 6 9-4.909V17h2V9L12 3Z" />
+              </svg>
+            </div>
+            <h3 class="font-semibold">One dashboard</h3>
+            <p class="mt-2 text-sm text-slate-300">
+              Clean, distraction‑free, fast. Everything lives where you expect
+              it to.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- HOW IT WORKS -->
+    <section id="how" class="py-16 border-t border-white/10">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="max-w-2xl">
+          <h2 class="text-2xl font-bold tracking-tight">How it works</h2>
+          <p class="mt-2 text-slate-300">Three steps and you are in motion.</p>
+        </div>
+        <ol class="mt-8 grid md:grid-cols-3 gap-6">
+          <li class="rounded-2xl border border-white/10 bg-white/5 p-6">
+            <span class="text-xs uppercase tracking-wider text-slate-400"
+              >Step 1</span
+            >
+            <h3 class="mt-1 font-semibold">Create your account</h3>
+            <p class="mt-2 text-sm text-slate-300">
+              Use your email to sign up. We will verify it and set up your
+              secure profile.
+            </p>
+          </li>
+          <li class="rounded-2xl border border-white/10 bg-white/5 p-6">
+            <span class="text-xs uppercase tracking-wider text-slate-400"
+              >Step 2</span
+            >
+            <h3 class="mt-1 font-semibold">Build your roadmap</h3>
+            <p class="mt-2 text-sm text-slate-300">
+              Tell us your target date. We generate a session plan and required
+              credits.
+            </p>
+          </li>
+          <li class="rounded-2xl border border-white/10 bg-white/5 p-6">
+            <span class="text-xs uppercase tracking-wider text-slate-400"
+              >Step 3</span
+            >
+            <h3 class="mt-1 font-semibold">Execute with clarity</h3>
+            <p class="mt-2 text-sm text-slate-300">
+              Track, upload, and check off tasks. Your advisor is one click
+              away.
+            </p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- CTA + LOGIN FORM INLINE -->
+    <section id="get-started" class="py-16 border-t border-white/10">
+      <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+        <div
+          class="rounded-3xl border border-white/10 bg-gradient-to-tr from-white/10 to-white/5 p-8"
+        >
+          <div class="grid md:grid-cols-2 gap-8 items-center">
+            <div>
+              <h3 class="text-xl font-semibold">Ready to move?</h3>
+              <p class="mt-2 text-slate-300">
+                Create your account or log in to continue your plan. It takes 60
+                seconds.
+              </p>
+              <ul
+                class="mt-4 space-y-2 text-sm text-slate-300 list-disc list-inside"
+              >
+                <li>No spam, no fluff</li>
+                <li>Secure by default</li>
+                <li>Works on any device</li>
+              </ul>
+            </div>
+            <form
+              id="loginForm"
+              class="bg-white/5 rounded-2xl p-6 border border-white/10"
+            >
+              <div class="grid gap-4">
+                <div>
+                  <label class="text-sm text-slate-300">Email</label>
+                  <input
+                    type="email"
+                    name="email"
+                    required
+                    class="mt-1 w-full rounded-xl bg-slate-900/60 border border-white/10 px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-400"
+                    placeholder="you@example.com"
+                  />
+                </div>
+                <div>
+                  <label class="text-sm text-slate-300">Password</label>
+                  <input
+                    type="password"
+                    name="password"
+                    required
+                    minlength="6"
+                    class="mt-1 w-full rounded-xl bg-slate-900/60 border border-white/10 px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-400"
+                    placeholder="••••••••"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  class="rounded-xl px-4 py-2 font-semibold bg-indigo-500 hover:bg-indigo-400"
+                >
+                  Log in
+                </button>
+                <p id="loginMsg" class="text-sm text-slate-300"></p>
+                <p class="text-xs text-slate-400">
+                  No account?
+                  <a href="/signup" class="underline hover:text-indigo-300"
+                    >Create one</a
+                  >.
+                </p>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section id="faq" class="py-16 border-t border-white/10">
+      <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+        <h2 class="text-2xl font-bold tracking-tight">FAQ</h2>
+        <div class="mt-8 divide-y divide-white/10">
+          <details class="group py-4">
+            <summary
+              class="cursor-pointer list-none font-medium flex items-center justify-between"
+            >
+              Is my data private?
+              <span class="transition-transform group-open:rotate-180">▾</span>
+            </summary>
+            <p class="mt-2 text-slate-300">
+              We store the minimum needed and encrypt sensitive data in transit
+              and at rest.
+            </p>
+          </details>
+          <details class="group py-4">
+            <summary
+              class="cursor-pointer list-none font-medium flex items-center justify-between"
+            >
+              Can I access on mobile?
+              <span class="transition-transform group-open:rotate-180">▾</span>
+            </summary>
+            <p class="mt-2 text-slate-300">
+              Yes, the portal is fully responsive and tested on modern mobile
+              browsers.
+            </p>
+          </details>
+          <details class="group py-4">
+            <summary
+              class="cursor-pointer list-none font-medium flex items-center justify-between"
+            >
+              How fast can I finish?
+              <span class="transition-transform group-open:rotate-180">▾</span>
+            </summary>
+            <p class="mt-2 text-slate-300">
+              Completion speed varies by pace and transfer credits. The roadmap
+              shows realistic timelines.
+            </p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer id="contact" class="py-10 border-t border-white/10">
+      <div
+        class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4"
+      >
+        <p class="text-sm text-slate-400">
+          © <span id="year"></span> Lumiere College Accelerator
+        </p>
+        <div class="flex items-center gap-4 text-sm">
+          <a href="mailto:hello@lumiere.college" class="hover:text-indigo-300"
+            >hello@lumiere.college</a
+          >
+          <a href="/terms" class="hover:text-indigo-300">Terms</a>
+          <a href="/privacy" class="hover:text-indigo-300">Privacy</a>
+        </div>
+      </div>
+    </footer>
+
+    <!-- LOGIN MODAL -->
+    <div id="loginModal" class="fixed inset-0 z-[60] hidden">
+      <div class="absolute inset-0 bg-black/70"></div>
+      <div class="relative mx-auto mt-24 w-[90%] max-w-md">
+        <div class="rounded-2xl border border-white/10 bg-slate-900 p-6">
+          <div class="flex items-center justify-between">
+            <h3 class="font-semibold">Student login</h3>
+            <button id="closeModal" class="text-slate-300">✕</button>
+          </div>
+          <form id="loginFormModal" class="mt-4 grid gap-4">
+            <div>
+              <label class="text-sm text-slate-300">Email</label>
+              <input
+                type="email"
+                name="email"
+                required
+                class="mt-1 w-full rounded-xl bg-slate-800 border border-white/10 px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-400"
+                placeholder="you@example.com"
+              />
+            </div>
+            <div>
+              <label class="text-sm text-slate-300">Password</label>
+              <input
+                type="password"
+                name="password"
+                required
+                minlength="6"
+                class="mt-1 w-full rounded-xl bg-slate-800 border border-white/10 px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-400"
+                placeholder="••••••••"
+              />
+            </div>
+            <button
+              type="submit"
+              class="rounded-xl px-4 py-2 font-semibold bg-indigo-500 hover:bg-indigo-400"
+            >
+              Log in
+            </button>
+            <p id="loginMsgModal" class="text-sm text-slate-300"></p>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // year
+      document.getElementById("year").textContent = new Date().getFullYear();
+
+      // modal toggles
+      const loginModal = document.getElementById("loginModal");
+      const openers = [
+        document.getElementById("btnLogin"),
+        document.getElementById("btnLogin2"),
+      ].filter(Boolean);
+      const closer = document.getElementById("closeModal");
+      openers.forEach((btn) =>
+        btn.addEventListener("click", () =>
+          loginModal.classList.remove("hidden"),
+        ),
+      );
+      closer.addEventListener("click", () =>
+        loginModal.classList.add("hidden"),
+      );
+
+      // helper: POST login
+      async function submitLogin(form, msgEl) {
+        msgEl.textContent = "";
+        const data = Object.fromEntries(new FormData(form));
+        try {
+          const res = await fetch("/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data),
+            credentials: "include",
+          });
+          if (res.ok) {
+            msgEl.textContent = "Success. Redirecting…";
+            window.location.href = "/dashboard";
+          } else {
+            const t = await res.text();
+            msgEl.textContent =
+              t || "Login failed. Check your email and password.";
+          }
+        } catch (e) {
+          msgEl.textContent = "Network error. Try again.";
+        }
+      }
+
+      // wire forms
+      const loginForm = document.getElementById("loginForm");
+      const loginMsg = document.getElementById("loginMsg");
+      loginForm?.addEventListener("submit", (e) => {
+        e.preventDefault();
+        submitLogin(loginForm, loginMsg);
+      });
+
+      const loginFormModal = document.getElementById("loginFormModal");
+      const loginMsgModal = document.getElementById("loginMsgModal");
+      loginFormModal?.addEventListener("submit", (e) => {
+        e.preventDefault();
+        submitLogin(loginFormModal, loginMsgModal);
+      });
+    </script>
+  </body>
+</html>
+
+<!-- =============================================
+Server wiring (Express): app.js or index.js
+Add the following (or adapt if already present)
+============================================= -->
+<!--
+import express from 'express';
+import path from 'path';
+import bodyParser from 'body-parser';
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.use(bodyParser.json());
+app.use(express.static('public'));
+
+// Dummy login endpoint for now (replace with real auth)
+app.post('/auth/login', (req, res) => {
+  const { email, password } = req.body || {};
+  if (email && password) return res.status(200).send('ok');
+  res.status(400).send('Missing credentials');
+});
+
+app.get('/dashboard', (req, res) => {
+  res.send('<h1 style="font-family: sans-serif">Dashboard</h1><p>Protected area. Replace with your real dashboard view.</p>');
+});
+
+app.listen(PORT, () => console.log(`Server listening on ${PORT}`));
+-->
+<script src="/env.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+  // Init Supabase from server-exposed env
+  const supabase = window.supabase.createClient(
+    window.ENV.SUPABASE_URL,
+    window.ENV.SUPABASE_ANON
+  );
+
+  // Test + render Programs
+  async function testSupabase() {
+    const { data, error } = await supabase.from("programs").select("*");
+
+    if (error) {
+      alert("Supabase error: " + error.message);
+      console.error(error);
+      return;
+    }
+
+    alert("Supabase OK. Programs rows: " + data.length);
+
+    const listDiv = document.getElementById("programsList");
+    listDiv.textContent = ""; // clear "(empty)"
+
+    (data || []).forEach((r) => {
+      const row = document.createElement("div");
+      row.textContent = `${r.title} (${r.catalog_year}) - ${r.total_required} credits`;
+      listDiv.appendChild(row);
+    });
+    }
+    </script>
+
+    <button
+      onclick="testSupabase()"
+      style="position: fixed; bottom: 16px; right: 16px; padding: 10px 14px; z-index: 9999;"
+    >
+      Test Supabase
+    </button>
+
+    <div
+      id="programsBox"
+      style="position: fixed; left: 16px; bottom: 16px; padding: 10px 14px; border: 1px solid #ccc; border-radius: 8px; background: #fff; z-index: 9999;"
+    >
+      <strong>Programs</strong>
+      <div id="programsList" style="margin-top: 8px; font-family: system-ui, sans-serif; font-size: 14px;">
+        (empty)
+      </div>
+    </div>
+
+    </body>
+    </html>

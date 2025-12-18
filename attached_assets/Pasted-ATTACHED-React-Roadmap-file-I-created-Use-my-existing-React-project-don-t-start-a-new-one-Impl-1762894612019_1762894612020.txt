@@ -1,0 +1,42 @@
+ATTACHED: React Roadmap file I created.
+Use my existing React project (don’t start a new one). Implement inside the empty “Course Roadmap” tab and route it at /course-map. Keep Flight Deck (/flight-deck) read-only (no course list).
+Goal
+•	Course Roadmap = where courses are added/assigned/updated (feeds data).
+•	Flight Deck = cockpit visuals (reads data: credits, pace, ETA, cost).
+Build now (Course Roadmap):
+1.	Manual Add block (top-right): fields = provider, title, code, credits, URL, status (planned/in_progress/completed), source (Self-Added | Assigned by Advisor), assigned_by, assigned_at, start/completion, notes, proof_url → Save writes to enrollments.
+2.	Advisor Assign: button “Assign Courses” → modal picks template (UMPI/Purdue/TESU) → checklist of 8–12 courses → creates multiple enrollments with source=advisor, assigned_by, assigned_at.
+3.	List + actions: grouped by GE / AOS / Electives; columns: Provider | Title | Code | Cr | Link | Status | Source/Assigned by | Dates | Notes | Actions (Start, Complete, Upload Proof, Open Link).
+4.	Study hours (lightweight): “Hours this week” input → writes to metrics.
+Data (Supabase tables):
+•	enrollments(id, user_id, provider, course_code, title, credits, status, start_date, completion_date, course_url, proof_url, source(self|advisor), assigned_by, assigned_at, notes)
+•	metrics(id, user_id, week_of, hours_studied, notes)
+•	pricing_rules(id, provider, school, model(subscription|per_session|hybrid), monthly_price, per_session, courses_per_month, fee, starts_on)
+•	snapshots_weekly(id, user_id, week_of, projected_total, eta_months, pace_hours)
+Logic (single source of truth):
+•	Credits = unique course codes from enrollments (completed/in_progress/remaining; target 120).
+•	Pace = rolling 2–4 week avg from metrics.hours_studied.
+•	ETA = remaining ÷ ((hours/week ÷ 15) × 4.3). If >12 months, show red alert and assume +1 UMPI session in cost tooltip.
+•	Cost reads pricing_rules (overrides template defaults):
+o	UMPI: sessions × per_session
+o	Sophia/Study.com: months = ceil(courses_needed ÷ courses_per_month) then months × monthly_price
+o	Round only at display.
+•	Trend = compare projected_total vs last week from snapshots_weekly.
+Roles & RLS:
+•	Student: own rows only; no assign UI.
+•	Advisor/Admin: can assign to any student; shows “Assigned by {name}.”
+•	Hide advisor controls for students.
+Flight Deck linkage:
+•	No course list.
+•	Reads enrollments/metrics/pricing_rules only (no demo for signed-in users).
+•	CTA: “View Full Course Map → /course-map.”
+Deliver order:
+1.	/course-map manual add + list/actions.
+2.	Advisor “Assign Courses” modal (multi-create).
+3.	Flight Deck wired to DB, demo removed.
+4.	Weekly snapshot write/read for trends.
+Acceptance:
+•	I can paste a Study/Sophia link, save, see it grouped and labeled Self-Added or Assigned by Advisor.
+•	Completing a course updates Flight Deck credits/ETA/cost immediately.
+•	Changing pricing_rules (e.g., Sophia $120/mo, 2 courses/mo; UMPI $1900/session) recalculates everywhere.
+•	RLS enforced; no advisor UI for students.

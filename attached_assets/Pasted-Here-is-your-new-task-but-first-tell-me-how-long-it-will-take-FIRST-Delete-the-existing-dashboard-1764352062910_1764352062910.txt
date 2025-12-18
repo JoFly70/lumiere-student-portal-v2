@@ -1,0 +1,36 @@
+Here is your new task but first tell me how long it will take 
+FIRST: Delete the existing dashboard, then update the Document Management and Billing tabs
+Use the existing empty "Document" tab (rename to "Document Management" or "Documents & Records") and the existing empty "Billing" tab. Build clean, professional frontend modules:
+1. Document Management System (rename existing Document tab)
+•	Dashboard view showing: 
+o	Document categories (Academic Records, Financial Documents, ID Verification, Foreign Credential Validation, Existing Credits/Transfer Records)
+o	Upload area with drag-and-drop functionality with temporary file storage in browser cache/localStorage
+o	Document list with columns: Name, Type, Upload Date, Status, Actions
+o	Filter/search bar
+o	Status indicators (Pending Review, Approved, Needs Attention)
+•	File upload functionality: Store uploaded files temporarily in browser memory/cache (no backend needed) - files can be viewed/downloaded from temp storage
+•	Color scheme: Professional blues/grays matching educational sector
+•	Icons for different document types
+•	Progress indicators for multi-step processes
+•	Mobile-responsive layout
+2. Billing System (use existing empty Billing tab)
+•	Clean billing dashboard showing: 
+o	Current balance/amount due
+o	Payment history table
+o	Upcoming payment schedule
+o	Payment method selection (placeholder buttons for credit card, ACH, payment plan)
+o	Invoice generation button
+o	Simple payment breakdown (tuition, fees, credits applied)
+•	Status badges for paid/pending/overdue
+•	Clean receipt/invoice preview mockup
+Design Requirements:
+•	Modern, minimal interface (think Stripe or modern SaaS)
+•	Consistent typography and spacing
+•	Clear call-to-action buttons
+•	Logical navigation between modules
+•	Professional color palette suitable for higher education
+•	Use Tailwind CSS or similar for clean, maintainable styling
+•	Include placeholder data to show how populated views look
+Note: Files uploaded will persist in browser cache during the session for demo purposes.
+Focus on user experience and visual hierarchy. Make it look production-ready with functional file upload/preview.
+

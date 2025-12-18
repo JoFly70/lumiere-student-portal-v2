@@ -1,0 +1,112 @@
+[
+  {
+    "provider": "Study.com",
+    "subject": "History",
+    "title": "History 105: US History from Settlement to Present",
+    "url": "https://study.com/academy/course/history-105-us-history-from-settlement-to-present.html",
+    "level": "lower",
+    "credit_value": 3,
+    "credit_type": "ACE",
+    "has_lab": false,
+    "description": null
+  },
+  {
+    "provider": "Study.com",
+    "subject": "Business",
+    "title": "Business 112: Intro to Project Management",
+    "url": "https://study.com/academy/course/business-112-intro-to-project-management.html",
+    "level": "lower",
+    "credit_value": 3,
+    "credit_type": "ACE",
+    "has_lab": false,
+    "description": null
+  },
+  {
+    "provider": "Study.com",
+    "subject": "Business",
+    "title": "Business 212: Business Statistics",
+    "url": "https://study.com/academy/course/business-212-business-statistics.html",
+    "level": "lower",
+    "credit_value": 3,
+    "credit_type": "ACE",
+    "has_lab": false,
+    "description": null
+  },
+  {
+    "provider": "Study.com",
+    "subject": "Computer Science",
+    "title": "Computer Science 104: Intro to Web Development",
+    "url": "https://study.com/academy/course/computer-science-104-intro-to-web-development.html",
+    "level": "lower",
+    "credit_value": 3,
+    "credit_type": "ACE",
+    "has_lab": false,
+    "description": null
+  },
+  {
+    "provider": "Study.com",
+    "subject": "Computer Science",
+    "title": "Computer Science 335: Mobile Forensics",
+    "url": "https://study.com/academy/course/computer-science-335-mobile-forensics.html",
+    "level": "upper",
+    "credit_value": 3,
+    "credit_type": "ACE",
+    "has_lab": false,
+    "description": null
+  },
+  {
+    "provider": "Study.com",
+    "subject": "Business",
+    "title": "Customer Service",
+    "url": "https://study.com/academy/course/business-201-customer-service.html",
+    "level": "lower",
+    "credit_value": 3,
+    "credit_type": "ACE",
+    "has_lab": false,
+    "description": null
+  },
+  {
+    "provider": "Study.com",
+    "subject": "Business",
+    "title": "Strategic Management",
+    "url": "https://study.com/academy/course/strategic-management.html",
+    "level": "unknown",
+    "credit_value": 3,
+    "credit_type": "ACE",
+    "has_lab": false,
+    "description": null
+  },
+  {
+    "provider": "Study.com",
+    "subject": "Computer Science",
+    "title": "Intro to PowerPoint: Essential Training & Tutorials",
+    "url": "https://study.com/academy/course/powerpoint-tutorials.html",
+    "level": "unknown",
+    "credit_value": 3,
+    "credit_type": "ACE",
+    "has_lab": false,
+    "description": null
+  },
+  {
+    "provider": "Study.com",
+    "subject": "History",
+    "title": "Survey of World History",
+    "url": "https://study.com/academy/course/survey-of-world-history.html",
+    "level": "unknown",
+    "credit_value": 3,
+    "credit_type": "ACE",
+    "has_lab": false,
+    "description": null
+  },
+  {
+    "provider": "Study.com",
+    "subject": "Geography",
+    "title": "Survey of Physical Geography",
+    "url": "https://study.com/academy/course/survey-of-physical-geography.html",
+    "level": "unknown",
+    "credit_value": 3,
+    "credit_type": "ACE",
+    "has_lab": false,
+    "description": null
+  }
+]

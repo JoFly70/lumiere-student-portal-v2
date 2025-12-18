@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+    <title>Lumiere Student Portal - Track Your UMPI Degree Progress</title>
+    <meta name="description" content="Manage your registration, billing, and academic progress across all study phases. Track transfer credits from Sophia, Study.com, and ACE mapped to UMPI distribution requirements." />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- Lumiere AI Advisor - Chatbase Widget -->
+    <script>
+      window.embeddedChatbotConfig = {
+        chatbotId: "Sqxlw0lVgwaQXKqndp9v8",
+        domain: "www.chatbase.co"
+      }
+    </script>
+    <script
+      src="https://www.chatbase.co/embed.min.js"
+      chatbotId="Sqxlw0lVgwaQXKqndp9v8"
+      domain="www.chatbase.co"
+      defer>
+    </script>
+    <style>
+      /* Style the Chatbase iframe when open */
+      iframe[title="Chatbase"],
+      iframe[src*="chatbase.co"] {
+        z-index: 99999 !important;
+        border-radius: 16px !important;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+      }
+    </style>
+  </body>
+</html>

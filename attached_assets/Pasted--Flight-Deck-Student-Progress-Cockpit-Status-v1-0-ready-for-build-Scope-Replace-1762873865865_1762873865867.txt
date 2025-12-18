@@ -1,0 +1,257 @@
+# Flight Deck — Student Progress (Cockpit)
+
+**Status:** v1.0 (ready for build)
+**Scope:** Replace current “Dashboard” with a cockpit‑style **Flight Deck**. Summarizes progress, pace, time, and cost at a glance. Roadmap remains a separate page (**Course Map**).
+
+---
+
+## 0) Design Principles
+
+* **At‑a‑glance:** No scrolling needed to grasp status (credits, time left, cost trajectory).
+* **Visual first:** Gauges and charts lead; numbers confirm.
+* **Deterministic math:** Single source of truth for totals. No divergent calculations in cards vs tables.
+* **One‑year rule:** Timeline > 12 months triggers a visible warning and cost impact note.
+* **Model‑aware costs:** If UMPI model is chosen, highlight $1,800/session as the primary driver of overage.
+* **Role‑safe:** Student view only; no admin artifacts visible.
+
+---
+
+## 1) Page Identity & Navigation
+
+* **Route:** `/flight-deck`
+* **Sidebar Label:** Flight Deck
+* **Header Title:** *Flight Deck — Your Degree at a Glance*
+* **Subheader:** *Track credits, pace, time, and costs in real time.*
+* **Primary CTA (top-right):** **View Full Course Map →** (links to `/course-map`)
+
+---
+
+## 2) Layout (Figma-ready)
+
+* **Grid:** 12‑column responsive grid, 24px gutter, 24px outer padding.
+* **Above-the-fold height target:** ~720–840px (no scroll on most laptops).
+
+### 2.1 Top Bar — Flight Summary (full width, fixed height ~72px)
+
+* **Content (left to right):**
+
+  * **Status line (bold):** `📘 {completed}/{TARGET_120} credits  |  ⏱ {eta_months} months left  |  💰 {cost_state}`
+  * **Cost state pill:** On Track (green) / Caution (yellow) / Over Budget (red).
+  * **Right actions:** `View Full Course Map →`
+* **Behavior:** Re-computes on data change with subtle fade/slide animation.
+
+### 2.2 Two-Panel Body (equal columns)
+
+**Left Panel — Progress** (6 columns)
+
+* **Card A: Credit Completion Donut** (height ~260)
+
+  * Center label: **`{completed} / 120`**
+  * Segments: Completed (green), In-progress (blue), Remaining (neutral gray)
+  * Micro‑animates on update (ease‑out fill)
+* **Card B: Pace Gauge (Speedometer)** (height ~220)
+
+  * Needle shows *hours/week vs target* (e.g., 10/12)
+  * Zones: green (>= target), yellow (within 20%), red (<80% of target)
+  * Caption: *“Study pace this week”*
+* **Card C: Timeline Strip (One‑Year Bar)** (height ~120)
+
+  * 12 segments = 12 months; filled to `eta_months`.
+  * If `eta_months > 12`, the overflow segment turns **red** with tooltip: “Exceeds 12 months — added UMPI session likely (+$1,800).”
+  * Secondary caption: *“Ideal completion ≤ 12 months”*
+
+**Right Panel — Financial** (6 columns)
+
+* **Card D: Cost Composition (Stacked Bar)** (height ~260)
+
+  * Stacks: Lumiere fee, Provider courses, UMPI sessions
+  * Tooltip shows absolute + % of total
+  * Footer mini‑legend with amounts
+* **Card E: Total & Trend** (height ~120)
+
+  * Big number: **Projected Total: ${projected_total}**
+  * Trend chevron: Up (red), flat (gray), down (green) based on latest pace deltas
+  * Subtext: *“Change since last week: ${delta_total}”*
+* **Card F: Payments Sparkline** (height ~220)
+
+  * Cumulative payments over time (monthly points)
+  * Footer text: *“Paid to date: ${paid_to_date} • Remaining: ${remaining_balance}”*
+
+### 2.3 Bottom Strip — Insights & Alerts (full width, height ~120)
+
+* **Dynamic Insight Sentence (left):**
+
+  * *“At this pace, you’ll finish in **{eta_months} months** and pay **${projected_total}**.”*
+* **Smart Tip (center):**
+
+  * *“Add {delta_hours} hrs/week to avoid one extra UMPI session (~$1,800).”*
+* **Alert Icons (right):**
+
+  * Red: >12 months; Yellow: pace below target; Green: on track
+  * Each icon has a tooltip explaining the state
+
+---
+
+## 3) Data & Logic (Deterministic Model)
+
+> Centralize all computations so every widget reads the same source.
+
+### 3.1 Credits
+
+* **TARGET_CREDITS = 120.**
+* **completedCredits** = sum of *unique* completed course credits.
+* **inProgressCredits** = sum of unique in‑progress course credits.
+* **remainingCredits = max(0, 120 - completedCredits - inProgressCredits).*
+* **Donut segments:** completed / inProgress / remaining.
+* **Warning:** If `completedCredits + inProgressCredits > 120`, show a tiny chip: “Over target by {over} — review plan.”
+
+### 3.2 Pace
+
+* **paceHours** = tracked/entered weekly study hours (rolling average, last 2–4 weeks).
+* **targetHours** = program default (e.g., 12 hrs/week) but editable per student.
+* **Pace State:**
+
+  * Green: paceHours ≥ targetHours
+  * Yellow: paceHours ≥ 0.8 * targetHours
+  * Red: paceHours < 0.8 * targetHours
+
+### 3.3 Time to Completion (ETA)
+
+* **etaMonths** (deterministic): derived from remaining credits and pace:
+
+  * **effectiveMonthlyThroughput** = (paceHours / hoursPerCredit)
+  * **hoursPerCredit default** = 15 (adjustable per provider if needed)
+  * **etaMonths = ceil( remainingCredits / (effectiveMonthlyThroughput * 4.3 weeks) )**
+* **One‑Year Rule:** If `etaMonths > 12`, set Alert.Red and pass a cost hint to financial model (see 3.5).
+
+### 3.4 Cost Composition
+
+* **Inputs:**
+
+  * `lumiereFeeUpfront` (secured upfront)
+  * `providerCostMonthly` (range or chosen plan)
+  * `providerMonths` (derived from ETA or fixed cap)
+  * `umpiSessionCost = 1800`
+  * `projectedUmpiSessions` (see below)
+* **Projected UMPI Sessions:**
+
+  * Base: 2 sessions if remaining UL/major credits ≤ 30
+  * +1 session if ETA spills over into additional term windows or UL shortfall
+  * **If one‑year rule is violated**, tentatively increment sessions by +1 (show as assumption in tooltip)
+* **Projected Total:**
+
+  * `projectedTotal = lumiereFeeUpfront + (providerCostMonthly * providerMonths) + (umpiSessionCost * projectedUmpiSessions)`
+* **Deterministic rounding:** Only round at display time; keep internal floats for math.
+
+### 3.5 Trend & Deltas
+
+* Compare current projection vs last week’s snapshot.
+* **deltaTotal = currentProjectedTotal - lastWeekProjectedTotal**
+* Trend chevron direction from sign of delta; magnitude used in subtext.
+
+### 3.6 Payments Sparkline
+
+* Source: payment ledger (date, amount). Compute `paidToDate` and `remainingBalance = projectedTotal - paidToDate`.
+* If ledger absent, hide sparkline and show placeholder text.
+
+### 3.7 Alerts
+
+* **Red:** etaMonths > 12 OR projectedUmpiSessions increased from baseline
+* **Yellow:** pace below target within 20%
+* **Green:** on track (none of the above)
+
+---
+
+## 4) Corrections vs Current Screenshots (Must Fix)
+
+1. **Unify cost math** — ensure Est. Cost, Projected Total, and schedule roll‑up all read from the *same function* and match exactly.
+2. **Credit count** — fix “121 credits, 0 remaining.” Show `{completed}/{120}` + remaining calculation; warn if over target.
+3. **Deduplicate courses** — no duplicate codes in any totals.
+4. **Avatar presence** — not core to this page, but keep sidebar/profile working. Auth screens will render avatar preview (handled elsewhere).
+5. **Role leakage** — no Admin routes or labels in student view.
+6. **Finance disclaimer** — small muted line below financial cards: *“Totals vary by pace, exam options, provider mix, and university sessions; numbers are estimates.”*
+
+---
+
+## 5) States & Interactions
+
+* **Load state:** skeleton placeholders for each card (no layout shift).
+* **Empty state:** if no payments yet, sparkline shows dashed baseline + “No payments recorded yet.”
+* **Update animations:** 200–300ms ease on gauge/Donut fill and number tick.
+* **Tooltips:** concise explanations on alerts and cost assumptions (e.g., extra UMPI session).
+* **Accessibility:**
+
+  * All charts have numeric equivalents (aria‑labels with exact numbers and states).
+  * Keyboard focus outlines on CTA and alert icons.
+
+---
+
+## 6) Acceptance Criteria (QA)
+
+* **Above-the-fold** shows: credits donut, pace gauge, timeline strip, stacked cost bar, projected total card, payments sparkline, insights & alerts, CTA to Course Map.
+* **One‑year rule** triggers a red alert and adjusts projected sessions by +1 in the cost model (visible in tooltip).
+* **All totals match** across cards and insights; rounding is consistent.
+* **Trend arrow** reflects week‑over‑week change with correct delta text.
+* **Performance:** first render <1s on average data; no jank on updates.
+* **Print view:** hides interactive hover states; retains key numbers and disclaimer.
+
+---
+
+## 7) Data Contract (what this page needs)
+
+```
+studentProfile: {
+  name, avatar_url, targetHours (default 12), model: "UMPI" | "Other"
+}
+progress: {
+  completedCredits, inProgressCredits, uniqueCodes: string[]
+}
+pace: {
+  weeklyHoursAvg, hoursPerCredit (default 15)
+}
+financials: {
+  lumiereFeeUpfront, providerCostMonthly, paymentLedger: Array<{date, amount}>
+}
+planHints: {
+  remainingULCredits, baselineUmpiSessions
+}
+priorSnapshots: {
+  lastWeekProjectedTotal
+}
+```
+
+---
+
+## 8) Content & Copy (final text)
+
+* Header: **Flight Deck — Your Degree at a Glance**
+* Subheader: *Track credits, pace, time, and costs in real time.*
+* Cost disclaimer (muted, 12–13px): *Totals vary by pace, exam options, provider mix, and university sessions; numbers are estimates.*
+* Tooltip (one‑year overflow): *“Exceeds 12 months — additional UMPI session (~$1,800) likely.”*
+* Smart Tip example: *“Add 3 hrs/week to save one UMPI session (~$1,800).”*
+
+---
+
+## 9) Telemetry (optional but recommended)
+
+* Track changes in weeklyHoursAvg, targetHours edits, and clicks to Course Map.
+* Weekly snapshot job writes `projectedTotal` for trend comparisons.
+
+---
+
+## 10) Build Plan (Replit — no code here)
+
+1. **Create the page shell** at `/flight-deck`; wire the CTA to `/course-map`.
+2. **Centralize math** into a single utility used by all cards (credits, ETA, costs, trend).
+3. **Render charts** with accessible numeric fallbacks; wire to centralized data.
+4. **Hook data** from profile, progress, financials, plan hints, prior snapshot.
+5. **QA pass** against Acceptance Criteria; verify one‑year rule & UMPI cost behavior.
+6. **Polish** motion & tooltips; confirm print layout readability.
+
+---
+
+## 11) Future Enhancements (v1.1)
+
+* Pace slider (what‑if): dynamically simulate hours/week and show instant impact on ETA and sessions.
+* Benchmarks: cohort averages for pace and completion time.
+* Coach nudge: one‑click suggestion that posts a tip to student inbox.
