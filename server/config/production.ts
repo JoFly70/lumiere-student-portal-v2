@@ -4,16 +4,17 @@ import { type CorsOptions } from 'cors';
 const isProduction = process.env.NODE_ENV === 'production';
 const domain = process.env.CUSTOM_DOMAIN || 'lumiereportal.app';
 
-// Security headers configuration
-// Production CSP is strict; development CSP allows inline scripts for Vite
 const productionCSP = {
   defaultSrc: ["'self'"],
   scriptSrc: [
     "'self'",
     "'unsafe-inline'",
+    "'unsafe-eval'",
     "https://js.stripe.com",
     "https://cdn.tailwindcss.com",
     "https://www.chatbase.co",
+    "https://cdn.jsdelivr.net",
+    "https://unpkg.com",
   ],
   styleSrc: [
     "'self'",
@@ -34,6 +35,7 @@ const productionCSP = {
   ],
   connectSrc: [
     "'self'",
+    "https://*.supabase.co",
     ...(process.env.SUPABASE_URL ? [process.env.SUPABASE_URL] : []),
     "https://api.stripe.com",
     "https://www.chatbase.co",
@@ -57,6 +59,8 @@ const developmentCSP = {
     "https://js.stripe.com",
     "https://cdn.tailwindcss.com",
     "https://www.chatbase.co",
+    "https://cdn.jsdelivr.net",
+    "https://unpkg.com",
   ],
   styleSrc: [
     "'self'",
@@ -78,6 +82,7 @@ const developmentCSP = {
   connectSrc: [
     "'self'",
     "wss:",
+    "https://*.supabase.co",
     ...(process.env.SUPABASE_URL ? [process.env.SUPABASE_URL] : []),
     "https://api.stripe.com",
     "https://www.chatbase.co",
@@ -106,7 +111,6 @@ export const helmetConfig: HelmetOptions = {
   referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
 };
 
-// CORS configuration
 export const corsConfig: CorsOptions = {
   origin: isProduction
     ? [
@@ -127,7 +131,6 @@ export const corsConfig: CorsOptions = {
   maxAge: 86400,
 };
 
-// Rate limiting configuration
 export const rateLimitConfig = {
   api: {
     windowMs: 15 * 60 * 1000,
@@ -152,7 +155,6 @@ export const rateLimitConfig = {
   },
 };
 
-// Session configuration
 export const sessionConfig = {
   name: 'lumiere.sid',
   secret: process.env.SESSION_SECRET || 'dev-secret-change-in-production',
@@ -173,7 +175,6 @@ export const sessionConfig = {
 export const SESSION_TIMEOUT_MS = sessionConfig.cookie.maxAge as number;
 export const SESSION_WARNING_MS = SESSION_TIMEOUT_MS - (30 * 60 * 1000);
 
-// Compression configuration
 export const compressionConfig = {
   level: 6,
   threshold: 1024,
