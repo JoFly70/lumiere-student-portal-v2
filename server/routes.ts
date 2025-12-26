@@ -49,10 +49,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Serve static files from server/public (for landing page assets)
   // In production build, esbuild bundles to dist/index.js, so __dirname is dist/
   // In development, __dirname is server/
-  const isProduction = process.env.NODE_ENV === 'production';
-  const publicPath = isProduction 
-    ? path.join(process.cwd(), "server", "public")
-    : path.join(__dirname, "public");
+const isProduction = process.env.NODE_ENV === 'production';
+const publicPath = isProduction 
+  ? path.join(process.cwd(), "public")
+  : path.join(__dirname, "public");
   
   // Serve static files (images, etc.) but NOT index.html
   app.use((req, res, next) => {
@@ -65,7 +65,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Landing page at root - public marketing page (must be before Vite catch-all)
   app.get("/", (req, res) => {
-    res.sendFile(path.join(publicPath, "landing.html"));
+    res.sendFile(path.join(publicPath, "index.html"));
   });
 
   // Serve env.js with actual environment variables
