@@ -10,14 +10,16 @@ const productionCSP = {
   defaultSrc: ["'self'"],
   scriptSrc: [
     "'self'",
-    "'unsafe-inline'", // Required for Tailwind config in landing page
+    "'unsafe-inline'",
     "https://js.stripe.com",
     "https://cdn.tailwindcss.com",
+    "https://www.chatbase.co",
   ],
   styleSrc: [
     "'self'",
-    "'unsafe-inline'", // Required for Tailwind generated styles
+    "'unsafe-inline'",
     "https://fonts.googleapis.com",
+    "https://cdn.tailwindcss.com",
   ],
   imgSrc: [
     "'self'",
@@ -28,16 +30,19 @@ const productionCSP = {
   fontSrc: [
     "'self'",
     "https://fonts.gstatic.com",
+    "data:",
   ],
   connectSrc: [
     "'self'",
     ...(process.env.SUPABASE_URL ? [process.env.SUPABASE_URL] : []),
     "https://api.stripe.com",
+    "https://www.chatbase.co",
   ],
   frameSrc: [
     "'self'",
     "https://js.stripe.com",
     "https://hooks.stripe.com",
+    "https://www.chatbase.co",
   ],
   objectSrc: ["'none'"],
   upgradeInsecureRequests: [],
@@ -47,15 +52,17 @@ const developmentCSP = {
   defaultSrc: ["'self'"],
   scriptSrc: [
     "'self'",
-    "'unsafe-inline'", // Required for Vite HMR
-    "'unsafe-eval'",   // Required for Vite HMR
+    "'unsafe-inline'",
+    "'unsafe-eval'",
     "https://js.stripe.com",
     "https://cdn.tailwindcss.com",
+    "https://www.chatbase.co",
   ],
   styleSrc: [
     "'self'",
-    "'unsafe-inline'", // Required for style injection
+    "'unsafe-inline'",
     "https://fonts.googleapis.com",
+    "https://cdn.tailwindcss.com",
   ],
   imgSrc: [
     "'self'",
@@ -66,17 +73,20 @@ const developmentCSP = {
   fontSrc: [
     "'self'",
     "https://fonts.gstatic.com",
+    "data:",
   ],
   connectSrc: [
     "'self'",
-    "wss:", // WebSockets for HMR
+    "wss:",
     ...(process.env.SUPABASE_URL ? [process.env.SUPABASE_URL] : []),
     "https://api.stripe.com",
+    "https://www.chatbase.co",
   ],
   frameSrc: [
     "'self'",
     "https://js.stripe.com",
     "https://hooks.stripe.com",
+    "https://www.chatbase.co",
   ],
   objectSrc: ["'none'"],
 };
@@ -86,7 +96,7 @@ export const helmetConfig: HelmetOptions = {
     directives: isProduction ? productionCSP : developmentCSP,
   },
   hsts: {
-    maxAge: 31536000, // 1 year
+    maxAge: 31536000,
     includeSubDomains: true,
     preload: true,
   },
@@ -102,7 +112,8 @@ export const corsConfig: CorsOptions = {
     ? [
         `https://${domain}`,
         `https://www.${domain}`,
-        /\.lumiere\.college$/, // Allow all subdomains
+        /\.lumiere\.college$/,
+        /\.up\.railway\.app$/,
       ]
     : ['http://localhost:5000', 'http://localhost:5173'],
   credentials: true,
@@ -113,70 +124,63 @@ export const corsConfig: CorsOptions = {
     'X-Requested-With',
     'stripe-signature',
   ],
-  maxAge: 86400, // 24 hours
+  maxAge: 86400,
 };
 
 // Rate limiting configuration
 export const rateLimitConfig = {
-  // General API rate limit
   api: {
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // 100 requests per window per IP
+    windowMs: 15 * 60 * 1000,
+    max: 100,
     message: 'Too many requests from this IP, please try again later',
     standardHeaders: true,
     legacyHeaders: false,
   },
-  // Stricter limit for admin routes
   admin: {
     windowMs: 15 * 60 * 1000,
-    max: 30, // 30 requests per window
+    max: 30,
     message: 'Too many admin requests, please try again later',
   },
-  // Auth endpoints (login, signup)
   auth: {
     windowMs: 15 * 60 * 1000,
-    max: 5, // 5 attempts per 15 minutes
+    max: 5,
     message: 'Too many authentication attempts, please try again later',
   },
-  // Webhook endpoints (no rate limit - Stripe handles this)
   webhook: {
-    windowMs: 60 * 1000, // 1 minute
-    max: 1000, // Very high limit for webhooks
+    windowMs: 60 * 1000,
+    max: 1000,
   },
 };
 
-// Session configuration - HARDENED FOR PRODUCTION
+// Session configuration
 export const sessionConfig = {
   name: 'lumiere.sid',
   secret: process.env.SESSION_SECRET || 'dev-secret-change-in-production',
   resave: false,
   saveUninitialized: false,
-  rolling: true, // Reset expiration on every request (sliding session)
+  rolling: true,
   cookie: {
-    secure: isProduction, // HTTPS only in production
-    httpOnly: true, // Prevents JavaScript access to cookies (XSS protection)
-    sameSite: 'strict' as const, // CSRF protection - changed from 'lax' to 'strict'
-    maxAge: 12 * 60 * 60 * 1000, // 12 hours (reduced from 24 for better security)
+    secure: isProduction,
+    httpOnly: true,
+    sameSite: 'strict' as const,
+    maxAge: 12 * 60 * 60 * 1000,
     domain: isProduction ? `.${domain}` : undefined,
     path: '/',
   },
-  proxy: true, // Trust proxy (required for Replit/CloudFlare)
+  proxy: true,
 };
 
-// Session timeout warning (client-side should warn at 11.5 hours)
 export const SESSION_TIMEOUT_MS = sessionConfig.cookie.maxAge as number;
-export const SESSION_WARNING_MS = SESSION_TIMEOUT_MS - (30 * 60 * 1000); // 30 min before expiry
+export const SESSION_WARNING_MS = SESSION_TIMEOUT_MS - (30 * 60 * 1000);
 
 // Compression configuration
 export const compressionConfig = {
-  level: 6, // Compression level (0-9)
-  threshold: 1024, // Minimum size to compress (1KB)
+  level: 6,
+  threshold: 1024,
   filter: (req: any, res: any) => {
-    // Don't compress if client doesn't accept encoding
     if (req.headers['x-no-compression']) {
       return false;
     }
-    // Use compression filter
     return true;
   },
 };
