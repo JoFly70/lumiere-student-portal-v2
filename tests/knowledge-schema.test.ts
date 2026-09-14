@@ -216,13 +216,13 @@ describe('Knowledge Core — actor reference columns are text (not uuid)', () =>
 // ── Provenance foreign keys ──────────────────────────────────────────────────
 
 describe('Knowledge Core — provenance foreign keys to claim_versions', () => {
-  it('claimVersions.supersedesVersionId is uuid and references claimVersions.id', () => {
+  it('claimVersions.supersedesVersionId is uuid and references claimVersions.id with RESTRICT', () => {
     expect(columnType(ks.claimVersions.supersedesVersionId)).toBe('PgUUID');
     const fk = findFKByColumn(ks.claimVersions, 'supersedes_version_id');
     expect(fk).toBeDefined();
     expect(fkForeignColumnNames(fk!)).toContain('id');
     expect(fkForeignTableBaseName(fk!)).toBe('knowledge_claim_versions');
-    expect(fk!.onDelete).toBe('set null');
+    expect(fk!.onDelete).toBe('restrict');
   });
 
   it('knowledgeClaims.currentVersionId is uuid and references claimVersions.id', () => {
@@ -234,31 +234,31 @@ describe('Knowledge Core — provenance foreign keys to claim_versions', () => {
     expect(fk!.onDelete).toBe('set null');
   });
 
-  it('academicRules.claimVersionId is uuid and references claimVersions.id', () => {
+  it('academicRules.claimVersionId is uuid and references claimVersions.id with RESTRICT', () => {
     expect(columnType(ks.academicRules.claimVersionId)).toBe('PgUUID');
     const fk = findFKByColumn(ks.academicRules, 'claim_version_id');
     expect(fk).toBeDefined();
     expect(fkForeignColumnNames(fk!)).toContain('id');
     expect(fkForeignTableBaseName(fk!)).toBe('knowledge_claim_versions');
-    expect(fk!.onDelete).toBe('set null');
+    expect(fk!.onDelete).toBe('restrict');
   });
 
-  it('equivalenciesV2.claimVersionId is uuid and references claimVersions.id', () => {
+  it('equivalenciesV2.claimVersionId is uuid and references claimVersions.id with RESTRICT', () => {
     expect(columnType(ks.equivalenciesV2.claimVersionId)).toBe('PgUUID');
     const fk = findFKByColumn(ks.equivalenciesV2, 'claim_version_id');
     expect(fk).toBeDefined();
     expect(fkForeignColumnNames(fk!)).toContain('id');
     expect(fkForeignTableBaseName(fk!)).toBe('knowledge_claim_versions');
-    expect(fk!.onDelete).toBe('set null');
+    expect(fk!.onDelete).toBe('restrict');
   });
 
-  it('articulationsV2.claimVersionId is uuid and references claimVersions.id', () => {
+  it('articulationsV2.claimVersionId is uuid and references claimVersions.id with RESTRICT', () => {
     expect(columnType(ks.articulationsV2.claimVersionId)).toBe('PgUUID');
     const fk = findFKByColumn(ks.articulationsV2, 'claim_version_id');
     expect(fk).toBeDefined();
     expect(fkForeignColumnNames(fk!)).toContain('id');
     expect(fkForeignTableBaseName(fk!)).toBe('knowledge_claim_versions');
-    expect(fk!.onDelete).toBe('set null');
+    expect(fk!.onDelete).toBe('restrict');
   });
 });
 
@@ -515,15 +515,127 @@ describe('Knowledge Core — mutation policy (admin-only direct writes)', () => 
 // ── Verification events append-only ───────────────────────────────────────────
 
 describe('Knowledge Core — verification_events is append-only', () => {
-  it('verificationEvents table has no onUpdate or onDelete column helpers', () => {
-    // The Drizzle schema for verificationEvents should not define
-    // any update or delete helpers — the table is append-only by policy
+  it('verificationEvents table FK uses RESTRICT, not CASCADE', () => {
     const table = ks.verificationEvents;
     const cvFk = findFKByColumn(table, 'claim_version_id');
-    // The only FK should be claim_version_id with cascade (deleting a claim version
-    // cascades to its verification events — this is correct behavior)
     expect(cvFk).toBeDefined();
-    expect(cvFk!.onDelete).toBe('cascade');
+    expect(cvFk!.onDelete).toBe('restrict');
+  });
+});
+
+// ── History hardening: FK ON DELETE RESTRICT ──────────────────────────────────
+
+describe('Knowledge Core — history hardening: FK ON DELETE RESTRICT', () => {
+  it('verificationEvents.claimVersionId uses RESTRICT, not CASCADE', () => {
+    const fk = findFKByColumn(ks.verificationEvents, 'claim_version_id');
+    expect(fk).toBeDefined();
+    expect(fk!.onDelete).toBe('restrict');
+    expect(fk!.onDelete).not.toBe('cascade');
+  });
+
+  it('claimVersions.claimId does not CASCADE delete', () => {
+    const fk = findFKByColumn(ks.claimVersions, 'claim_id');
+    expect(fk).toBeDefined();
+    expect(fk!.onDelete).toBe('restrict');
+    expect(fk!.onDelete).not.toBe('cascade');
+  });
+
+  it('evidenceExcerpts.evidenceSourceId does not CASCADE delete', () => {
+    const fk = findFKByColumn(ks.evidenceExcerpts, 'evidence_source_id');
+    expect(fk).toBeDefined();
+    expect(fk!.onDelete).toBe('restrict');
+    expect(fk!.onDelete).not.toBe('cascade');
+  });
+
+  it('claimEvidence.claimVersionId does not CASCADE delete', () => {
+    const fk = findFKByColumn(ks.claimEvidence, 'claim_version_id');
+    expect(fk).toBeDefined();
+    expect(fk!.onDelete).toBe('restrict');
+    expect(fk!.onDelete).not.toBe('cascade');
+  });
+
+  it('claimEvidence.evidenceExcerptId does not CASCADE delete', () => {
+    const fk = findFKByColumn(ks.claimEvidence, 'evidence_excerpt_id');
+    expect(fk).toBeDefined();
+    expect(fk!.onDelete).toBe('restrict');
+    expect(fk!.onDelete).not.toBe('cascade');
+  });
+
+  it('academicRules.claimVersionId does not SET NULL or CASCADE', () => {
+    const fk = findFKByColumn(ks.academicRules, 'claim_version_id');
+    expect(fk).toBeDefined();
+    expect(fk!.onDelete).toBe('restrict');
+    expect(fk!.onDelete).not.toBe('set null');
+    expect(fk!.onDelete).not.toBe('cascade');
+  });
+
+  it('equivalenciesV2.claimVersionId does not SET NULL or CASCADE', () => {
+    const fk = findFKByColumn(ks.equivalenciesV2, 'claim_version_id');
+    expect(fk).toBeDefined();
+    expect(fk!.onDelete).toBe('restrict');
+    expect(fk!.onDelete).not.toBe('set null');
+    expect(fk!.onDelete).not.toBe('cascade');
+  });
+
+  it('articulationsV2.claimVersionId does not SET NULL or CASCADE', () => {
+    const fk = findFKByColumn(ks.articulationsV2, 'claim_version_id');
+    expect(fk).toBeDefined();
+    expect(fk!.onDelete).toBe('restrict');
+    expect(fk!.onDelete).not.toBe('set null');
+    expect(fk!.onDelete).not.toBe('cascade');
+  });
+
+  it('supersedesVersionId preserves the historical predecessor (RESTRICT)', () => {
+    const fk = findFKByColumn(ks.claimVersions, 'supersedes_version_id');
+    expect(fk).toBeDefined();
+    expect(fk!.onDelete).toBe('restrict');
+    expect(fk!.onDelete).not.toBe('set null');
+    expect(fk!.onDelete).not.toBe('cascade');
+  });
+
+  it('conflicts.claimVersionAId preserves history (RESTRICT)', () => {
+    const fk = findFKByColumn(ks.knowledgeConflicts, 'claim_version_a_id');
+    expect(fk).toBeDefined();
+    expect(fk!.onDelete).toBe('restrict');
+    expect(fk!.onDelete).not.toBe('cascade');
+  });
+
+  it('conflicts.claimVersionBId preserves history (RESTRICT)', () => {
+    const fk = findFKByColumn(ks.knowledgeConflicts, 'claim_version_b_id');
+    expect(fk).toBeDefined();
+    expect(fk!.onDelete).toBe('restrict');
+    expect(fk!.onDelete).not.toBe('set null');
+    expect(fk!.onDelete).not.toBe('cascade');
+  });
+
+  it('currentVersionId may still use SET NULL', () => {
+    const fk = findFKByColumn(ks.knowledgeClaims, 'current_version_id');
+    expect(fk).toBeDefined();
+    expect(fk!.onDelete).toBe('set null');
+  });
+});
+
+// ── No authenticated DELETE policy ───────────────────────────────────────────
+
+describe('Knowledge Core — no authenticated DELETE policy', () => {
+  it('Drizzle schema source contains no knowledge_delete policy reference', () => {
+    const fs = require('fs');
+    const source = fs.readFileSync(
+      require('path').join(__dirname, '..', 'shared', 'knowledge-schema.ts'),
+      'utf8'
+    );
+    expect(source).not.toContain('knowledge_delete');
+  });
+
+  it('verification_events still has no UPDATE or DELETE policy in schema source', () => {
+    const fs = require('fs');
+    const source = fs.readFileSync(
+      require('path').join(__dirname, '..', 'shared', 'knowledge-schema.ts'),
+      'utf8'
+    );
+    // The schema should not define update/delete helpers for verification events
+    expect(source).not.toContain('verificationEventsUpdate');
+    expect(source).not.toContain('verificationEventsDelete');
   });
 });
 

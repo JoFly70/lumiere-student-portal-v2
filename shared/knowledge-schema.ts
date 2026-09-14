@@ -406,7 +406,7 @@ export const evidenceSources = pgTable("knowledge_evidence_sources", {
 
 export const evidenceExcerpts = pgTable("knowledge_evidence_excerpts", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  evidenceSourceId: uuid("evidence_source_id").notNull().references(() => evidenceSources.id, { onDelete: "cascade" }),
+  evidenceSourceId: uuid("evidence_source_id").notNull().references(() => evidenceSources.id, { onDelete: "restrict" }),
   excerptText: text("excerpt_text").notNull(),
   locator: text("locator"),
   pageNumber: integer("page_number"),
@@ -440,7 +440,7 @@ export const knowledgeClaims = pgTable("knowledge_claims", {
 
 export const claimVersions = pgTable("knowledge_claim_versions", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  claimId: uuid("claim_id").notNull().references(() => knowledgeClaims.id, { onDelete: "cascade" }),
+  claimId: uuid("claim_id").notNull().references(() => knowledgeClaims.id, { onDelete: "restrict" }),
   versionNumber: integer("version_number").notNull(),
   statement: text("statement").notNull(),
   normalizedValue: jsonb("normalized_value"),
@@ -451,7 +451,7 @@ export const claimVersions = pgTable("knowledge_claim_versions", {
   cohortApplicability: text("cohort_applicability"),
   status: versionStatusEnum("status").notNull().default("working"),
   // Provenance FK → self-reference (supersedes prior version)
-  supersedesVersionId: uuid("supersedes_version_id").references((): any => claimVersions.id, { onDelete: "set null" }),
+  supersedesVersionId: uuid("supersedes_version_id").references((): any => claimVersions.id, { onDelete: "restrict" }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   // Actor reference — text
   createdBy: text("created_by"),
@@ -462,8 +462,8 @@ export const claimVersions = pgTable("knowledge_claim_versions", {
 }));
 
 export const claimEvidence = pgTable("knowledge_claim_evidence", {
-  claimVersionId: uuid("claim_version_id").notNull().references(() => claimVersions.id, { onDelete: "cascade" }),
-  evidenceExcerptId: uuid("evidence_excerpt_id").notNull().references(() => evidenceExcerpts.id, { onDelete: "cascade" }),
+  claimVersionId: uuid("claim_version_id").notNull().references(() => claimVersions.id, { onDelete: "restrict" }),
+  evidenceExcerptId: uuid("evidence_excerpt_id").notNull().references(() => evidenceExcerpts.id, { onDelete: "restrict" }),
   relationshipType: evidenceRelationshipTypeEnum("relationship_type").notNull().default("supports"),
   notes: text("notes"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -476,7 +476,7 @@ export const claimEvidence = pgTable("knowledge_claim_evidence", {
 
 export const verificationEvents = pgTable("knowledge_verification_events", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  claimVersionId: uuid("claim_version_id").notNull().references(() => claimVersions.id, { onDelete: "cascade" }),
+  claimVersionId: uuid("claim_version_id").notNull().references(() => claimVersions.id, { onDelete: "restrict" }),
   action: verificationActionEnum("action").notNull(),
   // Actor reference — text
   reviewerId: text("reviewer_id"),
@@ -492,8 +492,8 @@ export const verificationEvents = pgTable("knowledge_verification_events", {
 
 export const knowledgeConflicts = pgTable("knowledge_conflicts", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  claimVersionAId: uuid("claim_version_a_id").notNull().references(() => claimVersions.id, { onDelete: "cascade" }),
-  claimVersionBId: uuid("claim_version_b_id").references(() => claimVersions.id, { onDelete: "set null" }),
+  claimVersionAId: uuid("claim_version_a_id").notNull().references(() => claimVersions.id, { onDelete: "restrict" }),
+  claimVersionBId: uuid("claim_version_b_id").references(() => claimVersions.id, { onDelete: "restrict" }),
   conflictType: conflictTypeEnum("conflict_type").notNull(),
   description: text("description").notNull(),
   status: conflictStatusEnum("status").notNull().default("open"),
@@ -519,7 +519,7 @@ export const academicRules = pgTable("knowledge_academic_rules", {
   title: text("title").notNull(),
   ruleValue: jsonb("rule_value").notNull().default(sql`'{}'::jsonb`),
   // Provenance FK → knowledge_claim_versions.id
-  claimVersionId: uuid("claim_version_id").references(() => claimVersions.id, { onDelete: "set null" }),
+  claimVersionId: uuid("claim_version_id").references(() => claimVersions.id, { onDelete: "restrict" }),
   effectiveFrom: timestamp("effective_from"),
   effectiveTo: timestamp("effective_to"),
   status: knowledgeStatusEnum("status").notNull().default("working"),
@@ -577,7 +577,7 @@ export const equivalenciesV2 = pgTable("knowledge_equivalencies_v2", {
   status: knowledgeStatusEnum("status").notNull().default("working"),
   confidence: integer("confidence").notNull().default(50),
   // Provenance FK → knowledge_claim_versions.id
-  claimVersionId: uuid("claim_version_id").references(() => claimVersions.id, { onDelete: "set null" }),
+  claimVersionId: uuid("claim_version_id").references(() => claimVersions.id, { onDelete: "restrict" }),
   notes: text("notes"),
   metadata: jsonb("metadata").notNull().default(sql`'{}'::jsonb`),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -603,7 +603,7 @@ export const articulationsV2 = pgTable("knowledge_articulations_v2", {
   effectiveTo: timestamp("effective_to"),
   status: knowledgeStatusEnum("status").notNull().default("working"),
   // Provenance FK → knowledge_claim_versions.id
-  claimVersionId: uuid("claim_version_id").references(() => claimVersions.id, { onDelete: "set null" }),
+  claimVersionId: uuid("claim_version_id").references(() => claimVersions.id, { onDelete: "restrict" }),
   metadata: jsonb("metadata").notNull().default(sql`'{}'::jsonb`),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
