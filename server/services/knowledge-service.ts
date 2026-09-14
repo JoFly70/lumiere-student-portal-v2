@@ -495,6 +495,9 @@ export function createKnowledgeService(
   // ── Supersession ────────────────────────────────────────────────────────────
 
   async function supersedeClaimVersion(oldVersionId: string, newVersionId: string, reviewerId?: string | null): Promise<SupersessionResult> {
+    if (oldVersionId === newVersionId) {
+      throw validationError('A claim version cannot supersede itself', { oldVersionId, newVersionId });
+    }
     return await transactionRunner(async (tx: Tx) => {
       // 1. Fetch old/new versions enough to identify the shared claim
       const oldVersionInitial = await repository.getClaimVersion(oldVersionId, tx);

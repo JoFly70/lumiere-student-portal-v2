@@ -483,6 +483,7 @@ export const verificationEvents = pgTable("knowledge_verification_events", {
   rationale: text("rationale"),
   metadata: jsonb("metadata").notNull().default(sql`'{}'::jsonb`),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  seq: integer("seq"),
 }, (table) => ({
   claimVersionIdx: index("knowledge_verif_events_cv_idx").on(table.claimVersionId),
   actionIdx: index("knowledge_verif_events_action_idx").on(table.action),

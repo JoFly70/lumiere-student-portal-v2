@@ -392,11 +392,11 @@ export async function appendVerificationEvent(input: CreateVerificationEventInpu
 }
 
 export async function listVerificationEvents(claimVersionId: string, tx: Tx = db) {
-  return await tx.select().from(verificationEvents).where(eq(verificationEvents.claimVersionId, claimVersionId)).orderBy(desc(verificationEvents.createdAt));
+  return await tx.select().from(verificationEvents).where(eq(verificationEvents.claimVersionId, claimVersionId)).orderBy(desc(verificationEvents.seq));
 }
 
 export async function getLatestVerificationEvent(claimVersionId: string, tx: Tx = db) {
-  const [row] = await tx.select().from(verificationEvents).where(eq(verificationEvents.claimVersionId, claimVersionId)).orderBy(desc(verificationEvents.createdAt)).limit(1);
+  const [row] = await tx.select().from(verificationEvents).where(eq(verificationEvents.claimVersionId, claimVersionId)).orderBy(desc(verificationEvents.seq)).limit(1);
   return row ?? null;
 }
 
