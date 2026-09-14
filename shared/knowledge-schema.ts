@@ -15,6 +15,7 @@ import {
   pgTable,
   text,
   varchar,
+  uuid,
   integer,
   timestamp,
   boolean,
@@ -24,7 +25,6 @@ import {
   uniqueIndex,
   date,
   primaryKey,
-  check,
 } from "drizzle-orm/pg-core";
 
 // ── Enums ────────────────────────────────────────────────────────────────────
@@ -210,7 +210,7 @@ export const AUTHORITY_LEVELS = [
 // ── 1. Institutions ──────────────────────────────────────────────────────────
 
 export const institutions = pgTable("knowledge_institutions", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   slug: text("slug").notNull().unique(),
   name: text("name").notNull(),
   active: boolean("active").notNull().default(true),
@@ -222,8 +222,8 @@ export const institutions = pgTable("knowledge_institutions", {
 }));
 
 export const institutionVersions = pgTable("knowledge_institution_versions", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  institutionId: varchar("institution_id").notNull().references(() => institutions.id, { onDelete: "cascade" }),
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  institutionId: uuid("institution_id").notNull().references(() => institutions.id, { onDelete: "cascade" }),
   versionLabel: text("version_label").notNull(),
   effectiveFrom: timestamp("effective_from"),
   effectiveTo: timestamp("effective_to"),
@@ -237,8 +237,8 @@ export const institutionVersions = pgTable("knowledge_institution_versions", {
 // ── 2. Programs ─────────────────────────────────────────────────────────────
 
 export const programsV2 = pgTable("knowledge_programs_v2", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  institutionId: varchar("institution_id").notNull().references(() => institutions.id, { onDelete: "cascade" }),
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  institutionId: uuid("institution_id").notNull().references(() => institutions.id, { onDelete: "cascade" }),
   code: text("code").notNull(),
   name: text("name").notNull(),
   degreeLevel: text("degree_level"),
@@ -252,8 +252,8 @@ export const programsV2 = pgTable("knowledge_programs_v2", {
 }));
 
 export const programVersions = pgTable("knowledge_program_versions", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  programId: varchar("program_id").notNull().references(() => programsV2.id, { onDelete: "cascade" }),
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  programId: uuid("program_id").notNull().references(() => programsV2.id, { onDelete: "cascade" }),
   versionLabel: text("version_label").notNull(),
   catalogYear: integer("catalog_year"),
   effectiveFrom: timestamp("effective_from"),
@@ -269,9 +269,9 @@ export const programVersions = pgTable("knowledge_program_versions", {
 // ── 3. Requirements ─────────────────────────────────────────────────────────
 
 export const requirementGroups = pgTable("knowledge_requirement_groups", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  programVersionId: varchar("program_version_id").notNull().references(() => programVersions.id, { onDelete: "cascade" }),
-  parentGroupId: varchar("parent_group_id").references((): any => requirementGroups.id, { onDelete: "set null" }),
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  programVersionId: uuid("program_version_id").notNull().references(() => programVersions.id, { onDelete: "cascade" }),
+  parentGroupId: uuid("parent_group_id").references((): any => requirementGroups.id, { onDelete: "set null" }),
   code: text("code").notNull(),
   title: text("title").notNull(),
   sequence: integer("sequence").notNull().default(0),
@@ -285,9 +285,9 @@ export const requirementGroups = pgTable("knowledge_requirement_groups", {
 }));
 
 export const requirementsV2 = pgTable("knowledge_requirements_v2", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  programVersionId: varchar("program_version_id").notNull().references(() => programVersions.id, { onDelete: "cascade" }),
-  requirementGroupId: varchar("requirement_group_id").references(() => requirementGroups.id, { onDelete: "set null" }),
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  programVersionId: uuid("program_version_id").notNull().references(() => programVersions.id, { onDelete: "cascade" }),
+  requirementGroupId: uuid("requirement_group_id").references(() => requirementGroups.id, { onDelete: "set null" }),
   code: text("code").notNull(),
   title: text("title").notNull(),
   description: text("description"),
@@ -307,8 +307,8 @@ export const requirementsV2 = pgTable("knowledge_requirements_v2", {
 // ── 4. Institution Courses ───────────────────────────────────────────────────
 
 export const institutionCourses = pgTable("knowledge_institution_courses", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  institutionId: varchar("institution_id").notNull().references(() => institutions.id, { onDelete: "cascade" }),
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  institutionId: uuid("institution_id").notNull().references(() => institutions.id, { onDelete: "cascade" }),
   courseCode: text("course_code").notNull(),
   title: text("title").notNull(),
   active: boolean("active").notNull().default(true),
@@ -321,8 +321,8 @@ export const institutionCourses = pgTable("knowledge_institution_courses", {
 }));
 
 export const institutionCourseVersions = pgTable("knowledge_institution_course_versions", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  institutionCourseId: varchar("institution_course_id").notNull().references(() => institutionCourses.id, { onDelete: "cascade" }),
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  institutionCourseId: uuid("institution_course_id").notNull().references(() => institutionCourses.id, { onDelete: "cascade" }),
   versionLabel: text("version_label").notNull(),
   credits: integer("credits").notNull(),
   level: text("level"),
@@ -337,7 +337,7 @@ export const institutionCourseVersions = pgTable("knowledge_institution_course_v
 // ── 5. Credit Providers ─────────────────────────────────────────────────────
 
 export const creditProviders = pgTable("knowledge_credit_providers", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   slug: text("slug").notNull().unique(),
   name: text("name").notNull(),
   providerType: text("provider_type"),
@@ -350,8 +350,8 @@ export const creditProviders = pgTable("knowledge_credit_providers", {
 }));
 
 export const providerCourses = pgTable("knowledge_provider_courses", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  providerId: varchar("provider_id").notNull().references(() => creditProviders.id, { onDelete: "cascade" }),
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  providerId: uuid("provider_id").notNull().references(() => creditProviders.id, { onDelete: "cascade" }),
   courseCode: text("course_code").notNull(),
   title: text("title").notNull(),
   active: boolean("active").notNull().default(true),
@@ -364,8 +364,8 @@ export const providerCourses = pgTable("knowledge_provider_courses", {
 }));
 
 export const providerCourseVersions = pgTable("knowledge_provider_course_versions", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  providerCourseId: varchar("provider_course_id").notNull().references(() => providerCourses.id, { onDelete: "cascade" }),
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  providerCourseId: uuid("provider_course_id").notNull().references(() => providerCourses.id, { onDelete: "cascade" }),
   versionLabel: text("version_label").notNull(),
   credits: integer("credits").notNull(),
   creditType: text("credit_type"),
@@ -381,10 +381,10 @@ export const providerCourseVersions = pgTable("knowledge_provider_course_version
 // ── 6. Evidence ──────────────────────────────────────────────────────────────
 
 export const evidenceSources = pgTable("knowledge_evidence_sources", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   sourceType: sourceTypeEnum("source_type").notNull(),
-  institutionId: varchar("institution_id").references(() => institutions.id, { onDelete: "set null" }),
-  providerId: varchar("provider_id").references(() => creditProviders.id, { onDelete: "set null" }),
+  institutionId: uuid("institution_id").references(() => institutions.id, { onDelete: "set null" }),
+  providerId: uuid("provider_id").references(() => creditProviders.id, { onDelete: "set null" }),
   title: text("title").notNull(),
   sourceUrl: text("source_url"),
   externalFileId: text("external_file_id"),
@@ -396,7 +396,8 @@ export const evidenceSources = pgTable("knowledge_evidence_sources", {
   effectiveTo: timestamp("effective_to"),
   metadata: jsonb("metadata").notNull().default(sql`'{}'::jsonb`),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-  createdBy: varchar("created_by"),
+  // Actor reference — text because users.id is text in the Lumière schema
+  createdBy: text("created_by"),
 }, (table) => ({
   sourceTypeIdx: index("knowledge_evidence_sources_type_idx").on(table.sourceType),
   institutionIdx: index("knowledge_evidence_sources_inst_idx").on(table.institutionId),
@@ -404,8 +405,8 @@ export const evidenceSources = pgTable("knowledge_evidence_sources", {
 }));
 
 export const evidenceExcerpts = pgTable("knowledge_evidence_excerpts", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  evidenceSourceId: varchar("evidence_source_id").notNull().references(() => evidenceSources.id, { onDelete: "cascade" }),
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  evidenceSourceId: uuid("evidence_source_id").notNull().references(() => evidenceSources.id, { onDelete: "cascade" }),
   excerptText: text("excerpt_text").notNull(),
   locator: text("locator"),
   pageNumber: integer("page_number"),
@@ -419,15 +420,18 @@ export const evidenceExcerpts = pgTable("knowledge_evidence_excerpts", {
 // ── 7. Claims ─────────────────────────────────────────────────────────────────
 
 export const knowledgeClaims = pgTable("knowledge_claims", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   claimKey: text("claim_key").notNull().unique(),
   claimType: claimTypeEnum("claim_type").notNull(),
   subjectType: subjectTypeEnum("subject_type").notNull(),
-  subjectId: varchar("subject_id"),
-  currentVersionId: varchar("current_version_id"),
+  // Polymorphic reference — stays text because it can reference different tables
+  subjectId: text("subject_id"),
+  // Provenance FK → knowledge_claim_versions.id (circular, added via ALTER in migration)
+  currentVersionId: uuid("current_version_id").references(() => claimVersions.id, { onDelete: "set null" }),
   status: claimStatusEnum("status").notNull().default("working"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-  createdBy: varchar("created_by"),
+  // Actor reference — text
+  createdBy: text("created_by"),
 }, (table) => ({
   claimKeyIdx: uniqueIndex("knowledge_claims_key_idx").on(table.claimKey),
   subjectIdx: index("knowledge_claims_subject_idx").on(table.subjectType, table.subjectId),
@@ -435,8 +439,8 @@ export const knowledgeClaims = pgTable("knowledge_claims", {
 }));
 
 export const claimVersions = pgTable("knowledge_claim_versions", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  claimId: varchar("claim_id").notNull().references(() => knowledgeClaims.id, { onDelete: "cascade" }),
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  claimId: uuid("claim_id").notNull().references(() => knowledgeClaims.id, { onDelete: "cascade" }),
   versionNumber: integer("version_number").notNull(),
   statement: text("statement").notNull(),
   normalizedValue: jsonb("normalized_value"),
@@ -446,9 +450,11 @@ export const claimVersions = pgTable("knowledge_claim_versions", {
   catalogApplicability: text("catalog_applicability"),
   cohortApplicability: text("cohort_applicability"),
   status: versionStatusEnum("status").notNull().default("working"),
-  supersedesVersionId: varchar("supersedes_version_id").references((): any => claimVersions.id, { onDelete: "set null" }),
+  // Provenance FK → self-reference (supersedes prior version)
+  supersedesVersionId: uuid("supersedes_version_id").references((): any => claimVersions.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-  createdBy: varchar("created_by"),
+  // Actor reference — text
+  createdBy: text("created_by"),
 }, (table) => ({
   claimIdx: index("knowledge_claim_versions_claim_idx").on(table.claimId),
   claimVersionUnique: uniqueIndex("knowledge_claim_versions_unique_idx").on(table.claimId, table.versionNumber),
@@ -456,8 +462,8 @@ export const claimVersions = pgTable("knowledge_claim_versions", {
 }));
 
 export const claimEvidence = pgTable("knowledge_claim_evidence", {
-  claimVersionId: varchar("claim_version_id").notNull().references(() => claimVersions.id, { onDelete: "cascade" }),
-  evidenceExcerptId: varchar("evidence_excerpt_id").notNull().references(() => evidenceExcerpts.id, { onDelete: "cascade" }),
+  claimVersionId: uuid("claim_version_id").notNull().references(() => claimVersions.id, { onDelete: "cascade" }),
+  evidenceExcerptId: uuid("evidence_excerpt_id").notNull().references(() => evidenceExcerpts.id, { onDelete: "cascade" }),
   relationshipType: evidenceRelationshipTypeEnum("relationship_type").notNull().default("supports"),
   notes: text("notes"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -469,10 +475,11 @@ export const claimEvidence = pgTable("knowledge_claim_evidence", {
 // ── 8. Verification ──────────────────────────────────────────────────────────
 
 export const verificationEvents = pgTable("knowledge_verification_events", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  claimVersionId: varchar("claim_version_id").notNull().references(() => claimVersions.id, { onDelete: "cascade" }),
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  claimVersionId: uuid("claim_version_id").notNull().references(() => claimVersions.id, { onDelete: "cascade" }),
   action: verificationActionEnum("action").notNull(),
-  reviewerId: varchar("reviewer_id"),
+  // Actor reference — text
+  reviewerId: text("reviewer_id"),
   rationale: text("rationale"),
   metadata: jsonb("metadata").notNull().default(sql`'{}'::jsonb`),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -484,14 +491,15 @@ export const verificationEvents = pgTable("knowledge_verification_events", {
 // ── 9. Conflicts ─────────────────────────────────────────────────────────────
 
 export const knowledgeConflicts = pgTable("knowledge_conflicts", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  claimVersionAId: varchar("claim_version_a_id").notNull().references(() => claimVersions.id, { onDelete: "cascade" }),
-  claimVersionBId: varchar("claim_version_b_id").references(() => claimVersions.id, { onDelete: "set null" }),
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  claimVersionAId: uuid("claim_version_a_id").notNull().references(() => claimVersions.id, { onDelete: "cascade" }),
+  claimVersionBId: uuid("claim_version_b_id").references(() => claimVersions.id, { onDelete: "set null" }),
   conflictType: conflictTypeEnum("conflict_type").notNull(),
   description: text("description").notNull(),
   status: conflictStatusEnum("status").notNull().default("open"),
   resolutionNotes: text("resolution_notes"),
-  resolvedBy: varchar("resolved_by"),
+  // Actor reference — text
+  resolvedBy: text("resolved_by"),
   resolvedAt: timestamp("resolved_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (table) => ({
@@ -503,14 +511,15 @@ export const knowledgeConflicts = pgTable("knowledge_conflicts", {
 // ── 11. Canonical Academic Rules ─────────────────────────────────────────────
 
 export const academicRules = pgTable("knowledge_academic_rules", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  institutionId: varchar("institution_id").notNull().references(() => institutions.id, { onDelete: "cascade" }),
-  programVersionId: varchar("program_version_id").references(() => programVersions.id, { onDelete: "set null" }),
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  institutionId: uuid("institution_id").notNull().references(() => institutions.id, { onDelete: "cascade" }),
+  programVersionId: uuid("program_version_id").references(() => programVersions.id, { onDelete: "set null" }),
   ruleKey: text("rule_key").notNull(),
   ruleKind: ruleKindEnum("rule_kind").notNull(),
   title: text("title").notNull(),
   ruleValue: jsonb("rule_value").notNull().default(sql`'{}'::jsonb`),
-  claimVersionId: varchar("claim_version_id").references(() => claimVersions.id, { onDelete: "set null" }),
+  // Provenance FK → knowledge_claim_versions.id
+  claimVersionId: uuid("claim_version_id").references(() => claimVersions.id, { onDelete: "set null" }),
   effectiveFrom: timestamp("effective_from"),
   effectiveTo: timestamp("effective_to"),
   status: knowledgeStatusEnum("status").notNull().default("working"),
@@ -525,8 +534,8 @@ export const academicRules = pgTable("knowledge_academic_rules", {
 }));
 
 export const transferRules = pgTable("knowledge_transfer_rules", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  academicRuleId: varchar("academic_rule_id").notNull().references(() => academicRules.id, { onDelete: "cascade" }),
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  academicRuleId: uuid("academic_rule_id").notNull().references(() => academicRules.id, { onDelete: "cascade" }),
   maxTransferCredits: integer("max_transfer_credits"),
   maxLowerLevelTransfer: integer("max_lower_level_transfer"),
   maxUpperLevelTransfer: integer("max_upper_level_transfer"),
@@ -537,8 +546,8 @@ export const transferRules = pgTable("knowledge_transfer_rules", {
 }));
 
 export const residencyRules = pgTable("knowledge_residency_rules", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  academicRuleId: varchar("academic_rule_id").notNull().references(() => academicRules.id, { onDelete: "cascade" }),
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  academicRuleId: uuid("academic_rule_id").notNull().references(() => academicRules.id, { onDelete: "cascade" }),
   minResidencyCredits: integer("min_residency_credits"),
   residencyType: text("residency_type"),
   metadata: jsonb("metadata").notNull().default(sql`'{}'::jsonb`),
@@ -547,8 +556,8 @@ export const residencyRules = pgTable("knowledge_residency_rules", {
 }));
 
 export const upperLevelRules = pgTable("knowledge_upper_level_rules", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  academicRuleId: varchar("academic_rule_id").notNull().references(() => academicRules.id, { onDelete: "cascade" }),
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  academicRuleId: uuid("academic_rule_id").notNull().references(() => academicRules.id, { onDelete: "cascade" }),
   minUpperLevelCredits: integer("min_upper_level_credits"),
   levelThreshold: text("level_threshold"),
   metadata: jsonb("metadata").notNull().default(sql`'{}'::jsonb`),
@@ -559,15 +568,16 @@ export const upperLevelRules = pgTable("knowledge_upper_level_rules", {
 // ── 12. Equivalencies ────────────────────────────────────────────────────────
 
 export const equivalenciesV2 = pgTable("knowledge_equivalencies_v2", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  sourceProviderCourseVersionId: varchar("source_provider_course_version_id").notNull().references(() => providerCourseVersions.id, { onDelete: "cascade" }),
-  targetInstitutionCourseVersionId: varchar("target_institution_course_version_id").references(() => institutionCourseVersions.id, { onDelete: "set null" }),
-  institutionId: varchar("institution_id").notNull().references(() => institutions.id, { onDelete: "cascade" }),
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  sourceProviderCourseVersionId: uuid("source_provider_course_version_id").notNull().references(() => providerCourseVersions.id, { onDelete: "cascade" }),
+  targetInstitutionCourseVersionId: uuid("target_institution_course_version_id").references(() => institutionCourseVersions.id, { onDelete: "set null" }),
+  institutionId: uuid("institution_id").notNull().references(() => institutions.id, { onDelete: "cascade" }),
   effectiveFrom: timestamp("effective_from"),
   effectiveTo: timestamp("effective_to"),
   status: knowledgeStatusEnum("status").notNull().default("working"),
   confidence: integer("confidence").notNull().default(50),
-  claimVersionId: varchar("claim_version_id").references(() => claimVersions.id, { onDelete: "set null" }),
+  // Provenance FK → knowledge_claim_versions.id
+  claimVersionId: uuid("claim_version_id").references(() => claimVersions.id, { onDelete: "set null" }),
   notes: text("notes"),
   metadata: jsonb("metadata").notNull().default(sql`'{}'::jsonb`),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -582,17 +592,18 @@ export const equivalenciesV2 = pgTable("knowledge_equivalencies_v2", {
 // ── 13. Articulations ────────────────────────────────────────────────────────
 
 export const articulationsV2 = pgTable("knowledge_articulations_v2", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  programVersionId: varchar("program_version_id").notNull().references(() => programVersions.id, { onDelete: "cascade" }),
-  requirementId: varchar("requirement_id").notNull().references(() => requirementsV2.id, { onDelete: "cascade" }),
-  institutionCourseVersionId: varchar("institution_course_version_id").references(() => institutionCourseVersions.id, { onDelete: "set null" }),
-  equivalencyId: varchar("equivalency_id").references(() => equivalenciesV2.id, { onDelete: "set null" }),
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  programVersionId: uuid("program_version_id").notNull().references(() => programVersions.id, { onDelete: "cascade" }),
+  requirementId: uuid("requirement_id").notNull().references(() => requirementsV2.id, { onDelete: "cascade" }),
+  institutionCourseVersionId: uuid("institution_course_version_id").references(() => institutionCourseVersions.id, { onDelete: "set null" }),
+  equivalencyId: uuid("equivalency_id").references(() => equivalenciesV2.id, { onDelete: "set null" }),
   creditsApplied: integer("credits_applied"),
   priority: integer("priority").notNull().default(0),
   effectiveFrom: timestamp("effective_from"),
   effectiveTo: timestamp("effective_to"),
   status: knowledgeStatusEnum("status").notNull().default("working"),
-  claimVersionId: varchar("claim_version_id").references(() => claimVersions.id, { onDelete: "set null" }),
+  // Provenance FK → knowledge_claim_versions.id
+  claimVersionId: uuid("claim_version_id").references(() => claimVersions.id, { onDelete: "set null" }),
   metadata: jsonb("metadata").notNull().default(sql`'{}'::jsonb`),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
