@@ -1,23 +1,65 @@
 /**
- * Phase 1D-A — Real Database / Schema Validation Tests
+ * Phase 1D-A — Static Schema Audit + Manual Database Validation Record
  *
- * These tests document the real PostgreSQL integration validation performed
- * against the project's Supabase database in Phase 1D-A.
+ * This file contains:
+ *   1. LEGITIMATE STATIC TESTS — assertions that inspect executable source files
+ *      (Drizzle schema, migration SQL) for regression detection.
+ *   2. MANUAL LIVE POSTGRESQL VALIDATION — results of queries executed directly
+ *      against the project's Supabase database via Supabase MCP tools. These
+ *      are documented as comments, NOT as executable tests. They do NOT count
+ *      toward the automated test pass total.
  *
- * The actual database catalog queries and FK/multi-filter tests were executed
- * directly via the Supabase MCP tools. This file records the results as
- * executable assertions so regressions can be detected.
+ * Manual validation results (executed via Supabase MCP execute_sql):
  *
- * Categories:
- *   1. Static schema audit (Drizzle ↔ SQL)
- *   2. Real PostgreSQL catalog validation (tables, types, enums, FKs, RLS)
- *   3. FK delete-protection (RESTRICT) validation
- *   4. Multi-filter AND semantics against real PostgreSQL
- *   5. current_version_id SET NULL behavior
+ *   SCHEMA/CATALOG:
+ *     - All 24 Knowledge tables exist in the database: PASS
+ *     - All UUID columns are PostgreSQL uuid type: PASS
+ *     - All 14 enums exist with exact expected values: PASS
  *
- * NOTE: The live database tests (sections 3-5) were executed manually via
- * Supabase MCP tools and the results are recorded here. The static schema
- * audit tests (sections 1-2) run against the source files.
+ *   FOREIGN KEYS / ON DELETE:
+ *     - 11 provenance FKs use RESTRICT: PASS
+ *       (verification_events.claim_version_id, claim_versions.claim_id,
+ *        evidence_excerpts.evidence_source_id, claim_evidence.claim_version_id,
+ *        claim_evidence.evidence_excerpt_id, academic_rules.claim_version_id,
+ *        equivalencies_v2.claim_version_id, articulations_v2.claim_version_id,
+ *        claim_versions.supersedes_version_id, conflicts.claim_version_a_id,
+ *        conflicts.claim_version_b_id)
+ *     - current_version_id uses SET NULL (convenience pointer): PASS
+ *
+ *   INDEXES / UNIQUE CONSTRAINTS:
+ *     - All expected indexes present (verified via pg_indexes): PASS
+ *     - Unique constraints on claim_key, (institution_id, code),
+ *       (provider_id, course_code), (claim_id, version_number): PASS
+ *
+ *   RLS:
+ *     - RLS enabled on all 24 Knowledge tables: PASS
+ *     - SELECT policy: staff+admin (knowledge_is_staff_or_admin): PASS
+ *     - INSERT/UPDATE policy: admin only (knowledge_is_admin): PASS
+ *     - Zero DELETE policies on any Knowledge table: PASS
+ *     - verification_events is append-only (no UPDATE/DELETE policies): PASS
+ *
+ *   RLS HELPER FUNCTIONS:
+ *     - knowledge_is_admin: SECURITY DEFINER, STABLE, SET search_path=public,
+ *       queries public.users.role (not JWT metadata): PASS
+ *     - knowledge_is_staff_or_admin: same hardening: PASS
+ *
+ *   FK DELETE PROTECTION (manual, disposable fixtures):
+ *     - Evidence source with excerpts: DELETE blocked by RESTRICT: PASS
+ *     - Claim with versions: DELETE blocked by RESTRICT: PASS
+ *     - Claim version with verification events: DELETE blocked by RESTRICT: PASS
+ *     - current_version_id SET NULL when version deleted (no RESTRICT deps): PASS
+ *
+ *   MULTI-FILTER AND SEMANTICS (manual SQL, disposable fixtures):
+ *     - evidence_sources: sourceType + institutionId + providerId → only all-match: PASS
+ *     - claims: status + claimType + subjectType + claimKey → only all-match: PASS
+ *     - conflicts: status + conflictType → only matching records: PASS
+ *
+ *   REPOSITORY → DRIZZLE → POSTGRESQL INTEGRATION:
+ *     BLOCKED — The Node/Drizzle application runtime cannot connect to the
+ *     database. DATABASE_URL in .env contains a placeholder password
+ *     ([YOUR_PASSWORD]). The Supabase MCP tools use a separate pre-provisioned
+ *     connection that is not available to the application's postgres-js driver.
+ *     Real repository integration tests require a working DATABASE_URL.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -46,7 +88,7 @@ const hardeningMigration = readFileSync(
   'utf-8',
 );
 
-// ── 1. Static Drizzle ↔ SQL Schema Audit ───────────────────────────────────────
+// ── Static Drizzle ↔ SQL Schema Audit ──────────────────────────────────────────
 
 describe('Phase 1D-A: Static Drizzle ↔ SQL Schema Audit', () => {
   const knowledgeTables = [
@@ -114,29 +156,12 @@ describe('Phase 1D-A: Static Drizzle ↔ SQL Schema Audit', () => {
     }
   });
 
-  it('Drizzle schema uses RESTRICT for all provenance FKs', () => {
-    const restrictChecks = [
-      { col: 'evidenceSourceId', ref: 'evidenceSources.id', del: 'restrict' },
-      { col: 'claimId', ref: 'knowledgeClaims.id', del: 'restrict' },
-      { col: 'claimVersionId', ref: 'claimVersions.id', del: 'restrict' },
-      { col: 'evidenceExcerptId', ref: 'evidenceExcerpts.id', del: 'restrict' },
-      { col: 'claimVersionId', ref: 'claimVersions.id', del: 'restrict' },
-      { col: 'claimVersionId', ref: 'claimVersions.id', del: 'restrict' },
-      { col: 'claimVersionId', ref: 'claimVersions.id', del: 'restrict' },
-      { col: 'claimVersionId', ref: 'claimVersions.id', del: 'restrict' },
-      { col: 'supersedesVersionId', ref: 'claimVersions.id', del: 'restrict' },
-    ];
-    // Verify each RESTRICT FK exists in the schema source
-    for (const { col, del } of restrictChecks) {
-      expect(schemaSource).toContain(col);
-    }
-    // Count occurrences of 'restrict' in the schema (should be at least 9 for provenance FKs)
-    const restrictCount = (schemaSource.match(/onDelete: \"restrict\"/g) || []).length;
+  it('Drizzle schema uses RESTRICT for at least 9 provenance FKs', () => {
+    const restrictCount = (schemaSource.match(/onDelete: "restrict"/g) || []).length;
     expect(restrictCount).toBeGreaterThanOrEqual(9);
   });
 
-  it('Hardening migration converts all provenance FKs to RESTRICT', () => {
-    // The hardening migration adds ON DELETE RESTRICT to 11 FKs
+  it('Hardening migration adds 13 ON DELETE RESTRICT constraints', () => {
     const restrictCount = (hardeningMigration.match(/ON DELETE RESTRICT/g) || []).length;
     expect(restrictCount).toBe(13);
   });
@@ -147,15 +172,11 @@ describe('Phase 1D-A: Static Drizzle ↔ SQL Schema Audit', () => {
 
   it('Integrity migration uses SET NULL for current_version_id', () => {
     expect(integrityMigration).toContain('ON DELETE SET NULL');
-    // The claims_current_version_fk uses SET NULL
     expect(integrityMigration).toContain('claims_current_version_fk');
   });
 
-  it('Hardening migration preserves current_version_id as SET NULL', () => {
-    // The hardening migration does NOT change current_version_id — it stays SET NULL
-    // from the integrity migration. Verify the hardening migration does NOT
-    // mention changing claims_current_version_fk to RESTRICT.
-    expect(hardeningMigration).not.toContain('claims_current_version_fk.*RESTRICT');
+  it('Hardening migration does not change current_version_id to RESTRICT', () => {
+    expect(hardeningMigration).not.toContain('claims_current_version_fk');
   });
 
   it('Hardening migration removes all DELETE RLS policies', () => {
@@ -164,11 +185,9 @@ describe('Phase 1D-A: Static Drizzle ↔ SQL Schema Audit', () => {
 
   it('Integrity migration replaces JWT-based role check with public.users.role', () => {
     expect(integrityMigration).toContain('public.users.role');
-    // The new function definitions (CREATE OR REPLACE FUNCTION ... AS $)
-    // should use public.users.role, not auth.users.raw_app_meta_data
-    const functionBodyStart = integrityMigration.indexOf('CREATE OR REPLACE FUNCTION knowledge_is_admin');
-    const functionBodyEnd = integrityMigration.indexOf('$;', functionBodyStart);
-    const adminFnBody = integrityMigration.substring(functionBodyStart, functionBodyEnd);
+    const fnStart = integrityMigration.indexOf('CREATE OR REPLACE FUNCTION knowledge_is_admin');
+    const fnEnd = integrityMigration.indexOf('$$;', fnStart);
+    const adminFnBody = integrityMigration.substring(fnStart, fnEnd);
     expect(adminFnBody).toContain('public.users.role');
     expect(adminFnBody).not.toContain('raw_app_meta_data');
   });
@@ -179,160 +198,70 @@ describe('Phase 1D-A: Static Drizzle ↔ SQL Schema Audit', () => {
     expect(integrityMigration).toContain('SET search_path = public');
   });
 
-  it('Integrity migration makes verification_events append-only (no UPDATE/DELETE)', () => {
+  it('Integrity migration makes verification_events append-only', () => {
     expect(integrityMigration).toContain('is_append_only');
     expect(integrityMigration).toContain("tbl = 'knowledge_verification_events'");
   });
-});
 
-// ── 2. Real PostgreSQL Catalog Validation Results ─────────────────────────────
-
-describe('Phase 1D-A: Real PostgreSQL Catalog Validation', () => {
-  // These results were obtained by querying the actual database via
-  // information_schema and pg_catalog. The assertions verify the
-  // expected schema was present in the real database.
-
-  it('all 24 Knowledge tables exist in the database', () => {
-    // Verified via: SELECT table_name FROM information_schema.tables WHERE table_name LIKE 'knowledge_%'
-    // Result: 24 tables returned, matching the expected list.
-    const expectedTables = [
-      'knowledge_academic_rules', 'knowledge_articulations_v2', 'knowledge_claim_evidence',
-      'knowledge_claim_versions', 'knowledge_claims', 'knowledge_conflicts',
-      'knowledge_credit_providers', 'knowledge_equivalencies_v2', 'knowledge_evidence_excerpts',
-      'knowledge_evidence_sources', 'knowledge_institution_course_versions', 'knowledge_institution_courses',
-      'knowledge_institution_versions', 'knowledge_institutions', 'knowledge_program_versions',
-      'knowledge_programs_v2', 'knowledge_provider_course_versions', 'knowledge_provider_courses',
-      'knowledge_requirement_groups', 'knowledge_requirements_v2', 'knowledge_residency_rules',
-      'knowledge_transfer_rules', 'knowledge_upper_level_rules', 'knowledge_verification_events',
-    ];
-    expect(expectedTables).toHaveLength(24);
+  it('Core migration enables RLS on all 24 Knowledge tables', () => {
+    const rlsCount = (coreMigration.match(/ENABLE ROW LEVEL SECURITY/g) || []).length;
+    expect(rlsCount).toBe(24);
   });
 
-  it('all 14 Knowledge enums exist with correct values', () => {
-    // Verified via: SELECT typname, array_agg(enumlabel) FROM pg_enum/pg_type
-    const expectedEnums = {
-      knowledge_status: ['working', 'open', 'confirmed', 'conflict', 'incorrect', 'superseded'],
-      version_status: ['working', 'open', 'confirmed', 'conflict', 'incorrect', 'superseded'],
-      claim_status: ['working', 'open', 'confirmed', 'conflict', 'incorrect', 'superseded'],
-      source_type: ['official_web', 'official_catalog', 'official_pdf', 'advisor_email', 'advisor_statement', 'institutional_document', 'provider_document', 'internal_research', 'third_party', 'community', 'other'],
-      authority_level: ['primary', 'official_advisor', 'institutional', 'provider', 'third_party', 'community', 'unknown'],
-      claim_type: ['equivalency', 'requirement', 'rule', 'course_attribute', 'program_attribute', 'institution_attribute', 'other'],
-      subject_type: ['institution', 'program', 'program_version', 'requirement', 'institution_course', 'provider_course', 'provider', 'other'],
-      verification_action: ['submitted', 'verified', 'rejected', 'needs_review', 'superseded'],
-      conflict_status: ['open', 'resolved', 'ignored'],
-      conflict_type: ['contradiction', 'temporal', 'source_conflict', 'interpretation', 'other'],
-      rule_kind: ['general', 'transfer', 'residency', 'upper_level', 'admission', 'graduation', 'course', 'other'],
-      institution_version_status: ['active', 'retired', 'draft'],
-      program_version_status: ['active', 'retired', 'draft'],
-      evidence_relationship_type: ['supports', 'contradicts', 'contextual', 'source_for'],
-    };
-    expect(Object.keys(expectedEnums)).toHaveLength(14);
+  it('Core migration seeds 3 stable institutions', () => {
+    expect(coreMigration).toContain("'tesu'");
+    expect(coreMigration).toContain("'umpi'");
+    expect(coreMigration).toContain("'excelsior'");
   });
 
-  it('RLS is enabled on all 24 Knowledge tables', () => {
-    // Verified via: SELECT tablename, rowsecurity FROM pg_tables WHERE tablename LIKE 'knowledge_%'
-    // Result: all 24 tables have rowsecurity = true
-    expect(24).toBe(24);
+  it('Hardening migration protects evidence_excerpts from cascade delete', () => {
+    expect(hardeningMigration).toContain('knowledge_evidence_excerpts_evidence_source_id_fkey');
+    expect(hardeningMigration).toContain('ON DELETE RESTRICT');
   });
 
-  it('no DELETE policies exist on any Knowledge table', () => {
-    // Verified via: SELECT tablename, policyname, cmd FROM pg_policies WHERE cmd = 'DELETE' AND tablename LIKE 'knowledge_%'
-    // Result: 0 rows returned
-    expect(0).toBe(0);
+  it('Hardening migration protects claim_evidence from cascade delete', () => {
+    expect(hardeningMigration).toContain('knowledge_claim_evidence_claim_version_id_fkey');
+    expect(hardeningMigration).toContain('knowledge_claim_evidence_evidence_excerpt_id_fkey');
   });
 
-  it('helper functions use public.users.role (not JWT metadata)', () => {
-    // Verified via: SELECT prosrc FROM pg_proc WHERE proname = 'knowledge_is_admin'
-    // Result: queries public.users.role, not auth.users.raw_app_meta_data
-    // Both functions are SECURITY DEFINER, STABLE, SET search_path = public
-    expect(true).toBe(true);
+  it('Hardening migration protects conflict history from cascade delete', () => {
+    expect(hardeningMigration).toContain('knowledge_conflicts_claim_version_a_id_fkey');
+    expect(hardeningMigration).toContain('knowledge_conflicts_claim_version_b_id_fkey');
   });
 
-  it('all provenance FKs use RESTRICT in the database', () => {
-    // Verified via: information_schema.referential_constraints
-    const restrictFks = [
-      { table: 'knowledge_verification_events', column: 'claim_version_id', rule: 'RESTRICT' },
-      { table: 'knowledge_claim_versions', column: 'claim_id', rule: 'RESTRICT' },
-      { table: 'knowledge_evidence_excerpts', column: 'evidence_source_id', rule: 'RESTRICT' },
-      { table: 'knowledge_claim_evidence', column: 'claim_version_id', rule: 'RESTRICT' },
-      { table: 'knowledge_claim_evidence', column: 'evidence_excerpt_id', rule: 'RESTRICT' },
-      { table: 'knowledge_academic_rules', column: 'claim_version_id', rule: 'RESTRICT' },
-      { table: 'knowledge_equivalencies_v2', column: 'claim_version_id', rule: 'RESTRICT' },
-      { table: 'knowledge_articulations_v2', column: 'claim_version_id', rule: 'RESTRICT' },
-      { table: 'knowledge_claim_versions', column: 'supersedes_version_id', rule: 'RESTRICT' },
-      { table: 'knowledge_conflicts', column: 'claim_version_a_id', rule: 'RESTRICT' },
-      { table: 'knowledge_conflicts', column: 'claim_version_b_id', rule: 'RESTRICT' },
-    ];
-    for (const fk of restrictFks) {
-      expect(fk.rule).toBe('RESTRICT');
-    }
+  it('Integrity migration converts 5 provenance text columns to UUID FKs', () => {
+    const alterCount = (integrityMigration.match(/ALTER COLUMN.*TYPE uuid/g) || []).length;
+    expect(alterCount).toBe(5);
   });
 
-  it('current_version_id uses SET NULL in the database', () => {
-    // Verified via: information_schema.referential_constraints
-    // knowledge_claims.current_version_id → knowledge_claim_versions.id, delete_rule = 'SET NULL'
-    const currentVersionFk = { table: 'knowledge_claims', column: 'current_version_id', rule: 'SET NULL' };
-    expect(currentVersionFk.rule).toBe('SET NULL');
-  });
-});
-
-// ── 3. Real FK Delete-Protection Validation Results ───────────────────────────
-
-describe('Phase 1D-A: Real FK Delete-Protection (PostgreSQL)', () => {
-  // These tests were executed against the real Supabase PostgreSQL database
-  // using disposable test fixtures (IDs: 11111111-..., 22222222-..., etc.)
-  // Fixtures were cleaned up after testing.
-
-  it('evidence source with excerpts cannot be deleted (RESTRICT)', () => {
-    // Created evidence source + excerpt, attempted DELETE on source
-    // Result: ERROR: foreign_key_violation — PASS
-    expect(true).toBe(true);
+  it('Repository listEvidenceSources uses and() for multi-filter conditions', () => {
+    const repoSource = readFileSync(
+      resolve(process.cwd(), 'server/repositories/knowledge-repo.ts'),
+      'utf-8',
+    );
+    expect(repoSource).toContain('conditions.push(eq(evidenceSources.sourceType');
+    expect(repoSource).toContain('conditions.push(eq(evidenceSources.institutionId');
+    expect(repoSource).toContain('conditions.push(eq(evidenceSources.providerId');
+    expect(repoSource).toContain('query.where(and(...conditions))');
   });
 
-  it('claim with versions cannot be deleted (RESTRICT)', () => {
-    // Created claim + version, attempted DELETE on claim
-    // Result: ERROR: foreign_key_violation — PASS
-    expect(true).toBe(true);
+  it('Repository listClaims uses and() for multi-filter conditions', () => {
+    const repoSource = readFileSync(
+      resolve(process.cwd(), 'server/repositories/knowledge-repo.ts'),
+      'utf-8',
+    );
+    expect(repoSource).toContain('conditions.push(eq(knowledgeClaims.status');
+    expect(repoSource).toContain('conditions.push(eq(knowledgeClaims.claimType');
+    expect(repoSource).toContain('conditions.push(eq(knowledgeClaims.subjectType');
+    expect(repoSource).toContain('conditions.push(eq(knowledgeClaims.claimKey');
   });
 
-  it('claim version with verification events cannot be deleted (RESTRICT)', () => {
-    // Created claim version + verification event, attempted DELETE on version
-    // Result: ERROR: foreign_key_violation — PASS
-    expect(true).toBe(true);
-  });
-
-  it('current_version_id is SET NULL when version is deleted', () => {
-    // Created v2, set as current_version_id, deleted v2 (no RESTRICT dependents)
-    // Result: current_version_id became NULL — PASS
-    expect(true).toBe(true);
-  });
-});
-
-// ── 4. Real Multi-Filter PostgreSQL Validation Results ────────────────────────
-
-describe('Phase 1D-A: Real Multi-Filter AND Semantics (PostgreSQL)', () => {
-  // These tests were executed against the real Supabase PostgreSQL database
-  // using disposable test fixtures with 'p1da-' prefixed keys.
-  // Distractor records matched only subsets of the filters.
-
-  it('listEvidenceSources: sourceType + institutionId + providerId returns only all-match record', () => {
-    // Created 4 sources: all-match, sourceType-only, institution-only, provider-only
-    // Query: WHERE source_type = 'official_web' AND institution_id = ? AND provider_id = ?
-    // Result: only the all-match record returned — PASS
-    expect(true).toBe(true);
-  });
-
-  it('listClaims: status + claimType + subjectType + claimKey returns only all-match record', () => {
-    // Created 3 claims: all-match, status+subjectType only, claimType+subjectType only
-    // Query: WHERE status = 'confirmed' AND claim_type = 'equivalency' AND subject_type = 'institution' AND claim_key = 'p1da-claim-all'
-    // Result: only the all-match record returned — PASS
-    expect(true).toBe(true);
-  });
-
-  it('listConflicts: status + conflictType returns only matching records', () => {
-    // Created 3 conflicts: all-match (open+contradiction), type-only (resolved+contradiction), status-only (open+temporal)
-    // Query: WHERE status = 'open' AND conflict_type = 'contradiction'
-    // Result: only open+contradiction records returned, distractors excluded — PASS
-    expect(true).toBe(true);
+  it('Repository listConflicts uses and() for multi-filter conditions', () => {
+    const repoSource = readFileSync(
+      resolve(process.cwd(), 'server/repositories/knowledge-repo.ts'),
+      'utf-8',
+    );
+    expect(repoSource).toContain('conditions.push(eq(knowledgeConflicts.status');
+    expect(repoSource).toContain('conditions.push(eq(knowledgeConflicts.conflictType');
   });
 });
