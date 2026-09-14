@@ -21,6 +21,7 @@ import Support from "@/pages/support";
 import NotFound from "@/pages/not-found";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
+import Admin from "@/pages/admin";
 
 function Router() {
   return (
@@ -30,7 +31,13 @@ function Router() {
       <Route path="/auth/verify" component={VerifyEmail} />
       <Route path="/">{() => <Redirect to="/flight-deck" />}</Route>
       <Route path="/dashboard">{() => <Redirect to="/flight-deck" />}</Route>
-      <Route path="/admin">{() => <Redirect to="/support" />}</Route>
+      <Route path="/admin">
+        {() => (
+          <ProtectedRoute requireRole="admin">
+            <Admin />
+          </ProtectedRoute>
+        )}
+      </Route>
 
       <Route path="/flight-deck">
         {() => (
@@ -79,6 +86,9 @@ function Router() {
           </ProtectedRoute>
         )}
       </Route>
+
+      {/* Coaches have no dedicated UI yet — route to support as a safe interim view */}
+      <Route path="/coach-dashboard">{() => <Redirect to="/support" />}</Route>
 
       <Route component={NotFound} />
     </Switch>

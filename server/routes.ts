@@ -691,6 +691,10 @@ window.ENV = {
   // Get all templates
   app.get("/api/templates", async (req, res) => {
     try {
+      const user = await getUserFromToken(req.headers.authorization);
+      if (!user) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
       const { getAllTemplates } = await import('./services/template-service.js');
       const templates = await getAllTemplates();
       return res.json(templates);
@@ -703,6 +707,10 @@ window.ENV = {
   // Get template by ID
   app.get("/api/templates/:id", async (req, res) => {
     try {
+      const user = await getUserFromToken(req.headers.authorization);
+      if (!user) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
       const { getTemplateById } = await import('./services/template-service.js');
       const { id } = req.params;
       
@@ -858,6 +866,11 @@ window.ENV = {
         return res.status(503).json({ error: "Database not configured" });
       }
 
+      const user = await getUserFromToken(req.headers.authorization);
+      if (!user) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
       const { data, error } = await supabaseAdmin
         .from('programs')
         .select('id, title, catalog_year');
@@ -881,6 +894,11 @@ window.ENV = {
     try {
       if (!isSupabaseConfigured) {
         return res.status(503).json({ error: "Database not configured" });
+      }
+
+      const user = await getUserFromToken(req.headers.authorization);
+      if (!user) {
+        return res.status(401).json({ error: "Authentication required" });
       }
 
       const { data, error } = await supabaseAdmin
@@ -942,18 +960,43 @@ window.ENV = {
         return res.status(503).json({ error: "Database not configured" });
       }
 
-      const { user_id, template_id, pace_hours_per_week, pace_months } = req.body;
+      // Authenticate user
+      const authUser = await getUserFromToken(req.headers.authorization);
+      if (!authUser) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
 
-      if (!user_id || !template_id) {
-        return res.status(400).json({ error: "Missing user_id or template_id" });
+      // Fetch user role from database
+      const { data: dbUser } = await supabaseAdmin
+        .from('users')
+        .select('id, role')
+        .eq('id', authUser.id)
+        .maybeSingle();
+
+      const userRole = dbUser?.role || 'student';
+      const { template_id, pace_hours_per_week, pace_months } = req.body;
+
+      if (!template_id) {
+        return res.status(400).json({ error: "Missing template_id" });
+      }
+
+      // Derive user_id from authenticated session, not from request body.
+      // Students can only generate plans for themselves.
+      // Staff/admins may generate for another student by passing user_id.
+      let targetUserId = authUser.id;
+      if (req.body.user_id && req.body.user_id !== authUser.id) {
+        if (!['admin', 'staff', 'coach'].includes(userRole)) {
+          return res.status(403).json({ error: "You can only generate plans for yourself" });
+        }
+        targetUserId = req.body.user_id;
       }
 
       const paceHours = pace_hours_per_week || 12;
       const paceMonths = pace_months || 12;
       
-      logger.info("Generating roadmap plan", { user_id, template_id, pace_hours_per_week: paceHours, pace_months: paceMonths });
+      logger.info("Generating roadmap plan", { targetUserId, template_id, pace_hours_per_week: paceHours, pace_months: paceMonths });
 
-      const result = await generateRoadmap(user_id, template_id, paceHours, paceMonths);
+      const result = await generateRoadmap(targetUserId, template_id, paceHours, paceMonths);
 
       logger.info("Roadmap plan generated successfully", { 
         planId: result.planId, 
@@ -988,6 +1031,20 @@ window.ENV = {
         return res.status(503).json({ error: "Database not configured" });
       }
 
+      // Authenticate user
+      const authUser = await getUserFromToken(req.headers.authorization);
+      if (!authUser) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      // Fetch user role from database
+      const { data: dbUser } = await supabaseAdmin
+        .from('users')
+        .select('id, role')
+        .eq('id', authUser.id)
+        .maybeSingle();
+
+      const userRole = dbUser?.role || 'student';
       const { plan_id } = req.params;
 
       // Fetch plan summary
@@ -1000,6 +1057,11 @@ window.ENV = {
       if (planError || !plan) {
         logger.warn("Plan not found", { plan_id, error: planError?.message });
         return res.status(404).json({ error: "Plan not found" });
+      }
+
+      // Ownership enforcement: students can only view their own plans
+      if (plan.user_id !== authUser.id && !['admin', 'staff', 'coach'].includes(userRole)) {
+        return res.status(403).json({ error: "Access denied" });
       }
 
       // Fetch plan steps

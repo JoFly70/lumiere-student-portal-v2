@@ -4,7 +4,7 @@ import { Redirect } from 'wouter';
 
 interface ProtectedRouteProps {
   children: ReactNode;
-  requireRole?: 'admin' | 'coach' | 'student';
+  requireRole?: 'admin' | 'coach' | 'staff' | 'student';
 }
 
 export function ProtectedRoute({ children, requireRole }: ProtectedRouteProps) {
@@ -31,7 +31,11 @@ export function ProtectedRoute({ children, requireRole }: ProtectedRouteProps) {
       return <Redirect to="/flight-deck" />;
     }
     if (user?.role === 'coach') {
-      return <Redirect to="/coach-dashboard" />;
+      // No dedicated coach UI yet — route to support as a safe interim view
+      return <Redirect to="/support" />;
+    }
+    if (user?.role === 'staff') {
+      return <Redirect to="/support" />;
     }
     if (user?.role === 'admin') {
       return <Redirect to="/admin" />;

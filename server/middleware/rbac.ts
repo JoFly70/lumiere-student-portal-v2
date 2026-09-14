@@ -167,15 +167,17 @@ export function requireCoachStudent(studentIdParam: string = 'id') {
       return next();
     }
 
-    // Coaches must be assigned to the student
+    // Coaches must be explicitly assigned to the student.
+    // Without a reliable coach-assignment table, deny by default rather than allow all.
     if (user.role === 'coach') {
-      // TODO: Check student_coaches table
-      // For now, allow all coaches (implement proper check later)
-      logger.debug('Coach access check - implementing assignment check', {
+      logger.warn('Coach cross-student access denied (no assignment table)', {
         coachId: user.id,
         studentId,
+        path: req.path,
       });
-      return next();
+      return res.status(403).json({
+        error: 'You do not have permission to access this student',
+      });
     }
 
     return res.status(403).json({

@@ -78,9 +78,10 @@ export async function requireAuth(
 ) {
   try {
     const authHeader = req.headers.authorization;
-    const allowDemoMode = process.env.ALLOW_DEMO_MODE === 'true';
+    const isProduction = process.env.NODE_ENV === 'production';
+    const allowDemoMode = process.env.ALLOW_DEMO_MODE === 'true' && !isProduction;
 
-    // Demo mode ONLY if no auth header is present
+    // Demo mode ONLY in non-production AND when explicitly enabled AND no auth header is present
     if (allowDemoMode && (!authHeader || !authHeader.startsWith('Bearer '))) {
       logger.info('Auth middleware: Using demo mode (no auth token provided)');
       req.user = {
@@ -92,6 +93,12 @@ export async function requireAuth(
         actorId: req.user.id,
       };
       return next();
+    }
+
+    // In production, reject if ALLOW_DEMO_MODE is set (fail closed)
+    if (isProduction && process.env.ALLOW_DEMO_MODE === 'true') {
+      logger.error('SECURITY: ALLOW_DEMO_MODE is enabled in production — rejecting request');
+      return res.status(500).json({ error: 'Server configuration error' });
     }
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
