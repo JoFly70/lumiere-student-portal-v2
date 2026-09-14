@@ -1137,6 +1137,11 @@ window.ENV = {
   app.use('/api/documents', documentsRouter);
   app.use('/api/2fa', twoFactorRoutes);
   app.use('/api/tickets', ticketsRouter);
+  // Knowledge API must be mounted BEFORE the generic admin router
+  // so that staff read access is not blocked by the admin-only guard.
+  const knowledgeRouter = (await import('./routes/knowledge')).default;
+  app.use('/api/admin/knowledge', knowledgeRouter);
+
   app.use('/api/admin', adminRouter);
   app.use('/api', programsRouter);
 

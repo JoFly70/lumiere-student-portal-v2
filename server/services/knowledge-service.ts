@@ -213,16 +213,39 @@ export interface SupersessionResult {
 // ── Service factory ────────────────────────────────────────────────────────────
 
 export interface KnowledgeService {
+  // Evidence
   createEvidenceSource(input: CreateEvidenceSourceInput): Promise<EvidenceSourceRow>;
   addEvidenceExcerpt(input: CreateExcerptInput): Promise<EvidenceExcerptRow>;
+  listEvidenceSources(filters?: { sourceType?: string; institutionId?: string; providerId?: string; limit?: number; offset?: number }): Promise<EvidenceSourceRow[]>;
+  getEvidenceSourceDetail(id: string): Promise<{ source: EvidenceSourceRow; excerpts: EvidenceExcerptRow[] }>;
+  // Claims
   createKnowledgeClaim(input: CreateClaimInput): Promise<ClaimRow>;
+  listClaims(filters?: { status?: string; claimType?: string; subjectType?: string; claimKey?: string; limit?: number; offset?: number }): Promise<ClaimRow[]>;
+  getClaimDetail(id: string): Promise<{ claim: ClaimRow; versions: ClaimVersionRow[] }>;
+  // Claim versions
   createClaimVersion(input: CreateClaimVersionInput): Promise<ClaimVersionRow>;
+  getClaimVersionDetail(id: string): Promise<{
+    version: ClaimVersionRow;
+    claim: ClaimRow;
+    evidenceRelationships: ClaimEvidenceRow[];
+    verificationEvents: VerificationEventRow[];
+    openConflicts: ConflictRow[];
+    canonicalRecords: { academicRules: AcademicRuleRow[]; equivalencies: EquivalencyRow[]; articulations: ArticulationRow[] };
+  }>;
+  // Evidence linking
   attachEvidenceToClaimVersion(input: AttachEvidenceInput): Promise<ClaimEvidenceRow>;
+  // Verification
   recordVerification(input: CreateVerificationEventInput): Promise<VerificationEventRow>;
+  // Confirmation
   confirmClaimVersion(claimVersionId: string): Promise<ConfirmationResult>;
+  // Supersession
   supersedeClaimVersion(oldVersionId: string, newVersionId: string, reviewerId?: string | null): Promise<SupersessionResult>;
+  // Conflicts
   createKnowledgeConflict(input: CreateConflictInput): Promise<ConflictRow>;
   resolveKnowledgeConflict(conflictId: string, resolutionNotes: string, resolvedBy: string): Promise<ConflictRow>;
+  listConflicts(filters?: { status?: string; conflictType?: string; limit?: number; offset?: number }): Promise<ConflictRow[]>;
+  getConflict(id: string): Promise<ConflictRow>;
+  // Canonical creation
   createAcademicRuleFromVerifiedClaim(input: CreateAcademicRuleInput): Promise<AcademicRuleRow>;
   createEquivalencyFromVerifiedClaim(input: CreateEquivalencyInput): Promise<EquivalencyRow>;
   createArticulationFromVerifiedClaim(input: CreateArticulationInput): Promise<ArticulationRow>;
@@ -617,17 +640,89 @@ export function createKnowledgeService(
     });
   }
 
+  // ── Read methods ────────────────────────────────────────────────────────────
+
+  async function listEvidenceSources(filters?: { sourceType?: string; institutionId?: string; providerId?: string; limit?: number; offset?: number }): Promise<EvidenceSourceRow[]> {
+    return await repository.listEvidenceSources(filters);
+  }
+
+  async function getEvidenceSourceDetail(id: string): Promise<{ source: EvidenceSourceRow; excerpts: EvidenceExcerptRow[] }> {
+    const source = await repository.getEvidenceSource(id);
+    if (!source) {
+      throw notFoundError('Evidence source not found', { evidenceSourceId: id });
+    }
+    const excerpts = await repository.listEvidenceExcerptsForSource(id);
+    return { source, excerpts };
+  }
+
+  async function listClaims(filters?: { status?: string; claimType?: string; subjectType?: string; claimKey?: string; limit?: number; offset?: number }): Promise<ClaimRow[]> {
+    return await repository.listClaims(filters);
+  }
+
+  async function getClaimDetail(id: string): Promise<{ claim: ClaimRow; versions: ClaimVersionRow[] }> {
+    const claim = await repository.getClaimById(id);
+    if (!claim) {
+      throw notFoundError('Claim not found', { claimId: id });
+    }
+    const versions = await repository.listClaimVersions(id);
+    return { claim, versions };
+  }
+
+  async function getClaimVersionDetail(id: string): Promise<{
+    version: ClaimVersionRow;
+    claim: ClaimRow;
+    evidenceRelationships: ClaimEvidenceRow[];
+    verificationEvents: VerificationEventRow[];
+    openConflicts: ConflictRow[];
+    canonicalRecords: { academicRules: AcademicRuleRow[]; equivalencies: EquivalencyRow[]; articulations: ArticulationRow[] };
+  }> {
+    const version = await repository.getClaimVersion(id);
+    if (!version) {
+      throw notFoundError('Claim version not found', { claimVersionId: id });
+    }
+    const claim = await repository.getClaimById(version.claimId);
+    if (!claim) {
+      throw notFoundError('Parent claim not found', { claimId: version.claimId });
+    }
+    const evidenceRelationships = await repository.listEvidenceForClaimVersion(id);
+    const verificationEvents = await repository.listVerificationEvents(id);
+    const openConflicts = await repository.listOpenConflictsForVersion(id);
+    const academicRules = await repository.getAcademicRulesByClaimVersion(id);
+    const equivalencies = await repository.getEquivalenciesByClaimVersion(id);
+    const articulations = await repository.getArticulationsByClaimVersion(id);
+    return { version, claim, evidenceRelationships, verificationEvents, openConflicts, canonicalRecords: { academicRules, equivalencies, articulations } };
+  }
+
+  async function listConflicts(filters?: { status?: string; conflictType?: string; limit?: number; offset?: number }): Promise<ConflictRow[]> {
+    return await repository.listConflicts(filters);
+  }
+
+  async function getConflict(id: string): Promise<ConflictRow> {
+    const conflict = await repository.getConflict(id);
+    if (!conflict) {
+      throw notFoundError('Conflict not found', { conflictId: id });
+    }
+    return conflict;
+  }
+
   return {
     createEvidenceSource,
     addEvidenceExcerpt,
+    listEvidenceSources,
+    getEvidenceSourceDetail,
     createKnowledgeClaim,
+    listClaims,
+    getClaimDetail,
     createClaimVersion,
+    getClaimVersionDetail,
     attachEvidenceToClaimVersion,
     recordVerification,
     confirmClaimVersion,
     supersedeClaimVersion,
     createKnowledgeConflict,
     resolveKnowledgeConflict,
+    listConflicts,
+    getConflict,
     createAcademicRuleFromVerifiedClaim,
     createEquivalencyFromVerifiedClaim,
     createArticulationFromVerifiedClaim,

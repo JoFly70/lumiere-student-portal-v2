@@ -152,6 +152,26 @@ export async function getEvidenceSource(id: string, tx: Tx = db) {
   return row ?? null;
 }
 
+export async function listEvidenceSources(filters?: {
+  sourceType?: string;
+  institutionId?: string;
+  providerId?: string;
+  limit?: number;
+  offset?: number;
+}, tx: Tx = db) {
+  let query = tx.select().from(evidenceSources).$dynamic();
+  if (filters?.sourceType) query = query.where(eq(evidenceSources.sourceType, filters.sourceType as any));
+  if (filters?.institutionId) query = query.where(eq(evidenceSources.institutionId, filters.institutionId));
+  if (filters?.providerId) query = query.where(eq(evidenceSources.providerId, filters.providerId));
+  const limit = filters?.limit ?? 50;
+  const offset = filters?.offset ?? 0;
+  return await query.limit(limit).offset(offset).orderBy(desc(evidenceSources.createdAt));
+}
+
+export async function listEvidenceExcerptsForSource(evidenceSourceId: string, tx: Tx = db) {
+  return await tx.select().from(evidenceExcerpts).where(eq(evidenceExcerpts.evidenceSourceId, evidenceSourceId));
+}
+
 // ── Evidence Excerpts ─────────────────────────────────────────────────────────
 
 export async function createEvidenceExcerpt(input: CreateExcerptInput, tx: Tx = db) {
@@ -193,6 +213,24 @@ export async function getClaimById(id: string, tx: Tx = db) {
 export async function getClaimByKey(claimKey: string, tx: Tx = db) {
   const [row] = await tx.select().from(knowledgeClaims).where(eq(knowledgeClaims.claimKey, claimKey)).limit(1);
   return row ?? null;
+}
+
+export async function listClaims(filters?: {
+  status?: string;
+  claimType?: string;
+  subjectType?: string;
+  claimKey?: string;
+  limit?: number;
+  offset?: number;
+}, tx: Tx = db) {
+  let query = tx.select().from(knowledgeClaims).$dynamic();
+  if (filters?.status) query = query.where(eq(knowledgeClaims.status, filters.status as any));
+  if (filters?.claimType) query = query.where(eq(knowledgeClaims.claimType, filters.claimType as any));
+  if (filters?.subjectType) query = query.where(eq(knowledgeClaims.subjectType, filters.subjectType as any));
+  if (filters?.claimKey) query = query.where(eq(knowledgeClaims.claimKey, filters.claimKey));
+  const limit = filters?.limit ?? 50;
+  const offset = filters?.offset ?? 0;
+  return await query.limit(limit).offset(offset).orderBy(desc(knowledgeClaims.createdAt));
 }
 
 export async function lockClaimForVersioning(claimId: string, tx: Tx = db): Promise<void> {
@@ -312,6 +350,20 @@ export async function createConflict(input: CreateConflictInput, tx: Tx = db) {
 export async function getConflict(id: string, tx: Tx = db) {
   const [row] = await tx.select().from(knowledgeConflicts).where(eq(knowledgeConflicts.id, id)).limit(1);
   return row ?? null;
+}
+
+export async function listConflicts(filters?: {
+  status?: string;
+  conflictType?: string;
+  limit?: number;
+  offset?: number;
+}, tx: Tx = db) {
+  let query = tx.select().from(knowledgeConflicts).$dynamic();
+  if (filters?.status) query = query.where(eq(knowledgeConflicts.status, filters.status as any));
+  if (filters?.conflictType) query = query.where(eq(knowledgeConflicts.conflictType, filters.conflictType as any));
+  const limit = filters?.limit ?? 50;
+  const offset = filters?.offset ?? 0;
+  return await query.limit(limit).offset(offset).orderBy(desc(knowledgeConflicts.createdAt));
 }
 
 export async function listOpenConflictsForVersion(claimVersionId: string, tx: Tx = db) {
