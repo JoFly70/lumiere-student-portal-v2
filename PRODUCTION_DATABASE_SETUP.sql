@@ -407,7 +407,7 @@ CREATE POLICY "Staff can view all users"
   USING (
     EXISTS (
       SELECT 1 FROM auth.users
-      WHERE users.id = (SELECT auth.uid()::text)
+      WHERE users.id::text = (SELECT auth.uid()::text)
       AND (users.raw_app_meta_data->>'role') IN ('admin', 'staff', 'coach')
     )
   );
@@ -421,7 +421,7 @@ CREATE POLICY "Students can view own profile"
     user_id = (SELECT auth.uid()::text)
     OR EXISTS (
       SELECT 1 FROM auth.users
-      WHERE users.id = (SELECT auth.uid()::text)
+      WHERE users.id::text = (SELECT auth.uid()::text)
       AND (users.raw_app_meta_data->>'role') IN ('admin', 'staff', 'coach')
     )
   );
@@ -433,7 +433,7 @@ CREATE POLICY "Staff can manage students"
   USING (
     EXISTS (
       SELECT 1 FROM auth.users
-      WHERE users.id = (SELECT auth.uid()::text)
+      WHERE users.id::text = (SELECT auth.uid()::text)
       AND (users.raw_app_meta_data->>'role') IN ('admin', 'staff', 'coach')
     )
   );
@@ -447,7 +447,7 @@ CREATE POLICY "Anyone can view active degree programs"
     is_active = true
     OR EXISTS (
       SELECT 1 FROM auth.users
-      WHERE users.id = (SELECT auth.uid()::text)
+      WHERE users.id::text = (SELECT auth.uid()::text)
       AND (users.raw_app_meta_data->>'role') IN ('admin', 'staff')
     )
   );
@@ -459,7 +459,7 @@ CREATE POLICY "Only staff can insert degree programs"
   WITH CHECK (
     EXISTS (
       SELECT 1 FROM auth.users
-      WHERE users.id = (SELECT auth.uid()::text)
+      WHERE users.id::text = (SELECT auth.uid()::text)
       AND (users.raw_app_meta_data->>'role') IN ('admin', 'staff')
     )
   );
@@ -471,14 +471,14 @@ CREATE POLICY "Only staff can update degree programs"
   USING (
     EXISTS (
       SELECT 1 FROM auth.users
-      WHERE users.id = (SELECT auth.uid()::text)
+      WHERE users.id::text = (SELECT auth.uid()::text)
       AND (users.raw_app_meta_data->>'role') IN ('admin', 'staff')
     )
   )
   WITH CHECK (
     EXISTS (
       SELECT 1 FROM auth.users
-      WHERE users.id = (SELECT auth.uid()::text)
+      WHERE users.id::text = (SELECT auth.uid()::text)
       AND (users.raw_app_meta_data->>'role') IN ('admin', 'staff')
     )
   );
@@ -490,7 +490,7 @@ CREATE POLICY "Only staff can delete degree programs"
   USING (
     EXISTS (
       SELECT 1 FROM auth.users
-      WHERE users.id = (SELECT auth.uid()::text)
+      WHERE users.id::text = (SELECT auth.uid()::text)
       AND (users.raw_app_meta_data->>'role') IN ('admin', 'staff')
     )
   );
@@ -504,7 +504,7 @@ CREATE POLICY "Anyone can view active courses"
     is_active = true
     OR EXISTS (
       SELECT 1 FROM auth.users
-      WHERE users.id = (SELECT auth.uid()::text)
+      WHERE users.id::text = (SELECT auth.uid()::text)
       AND (users.raw_app_meta_data->>'role') IN ('admin', 'staff')
     )
   );
@@ -516,7 +516,7 @@ CREATE POLICY "Only staff can insert courses"
   WITH CHECK (
     EXISTS (
       SELECT 1 FROM auth.users
-      WHERE users.id = (SELECT auth.uid()::text)
+      WHERE users.id::text = (SELECT auth.uid()::text)
       AND (users.raw_app_meta_data->>'role') IN ('admin', 'staff')
     )
   );
@@ -528,14 +528,14 @@ CREATE POLICY "Only staff can update courses"
   USING (
     EXISTS (
       SELECT 1 FROM auth.users
-      WHERE users.id = (SELECT auth.uid()::text)
+      WHERE users.id::text = (SELECT auth.uid()::text)
       AND (users.raw_app_meta_data->>'role') IN ('admin', 'staff')
     )
   )
   WITH CHECK (
     EXISTS (
       SELECT 1 FROM auth.users
-      WHERE users.id = (SELECT auth.uid()::text)
+      WHERE users.id::text = (SELECT auth.uid()::text)
       AND (users.raw_app_meta_data->>'role') IN ('admin', 'staff')
     )
   );
@@ -547,7 +547,7 @@ CREATE POLICY "Only staff can delete courses"
   USING (
     EXISTS (
       SELECT 1 FROM auth.users
-      WHERE users.id = (SELECT auth.uid()::text)
+      WHERE users.id::text = (SELECT auth.uid()::text)
       AND (users.raw_app_meta_data->>'role') IN ('admin', 'staff')
     )
   );
@@ -566,7 +566,7 @@ CREATE POLICY "Only staff can insert program courses"
   WITH CHECK (
     EXISTS (
       SELECT 1 FROM auth.users
-      WHERE users.id = (SELECT auth.uid()::text)
+      WHERE users.id::text = (SELECT auth.uid()::text)
       AND (users.raw_app_meta_data->>'role') IN ('admin', 'staff')
     )
   );
@@ -578,14 +578,14 @@ CREATE POLICY "Only staff can update program courses"
   USING (
     EXISTS (
       SELECT 1 FROM auth.users
-      WHERE users.id = (SELECT auth.uid()::text)
+      WHERE users.id::text = (SELECT auth.uid()::text)
       AND (users.raw_app_meta_data->>'role') IN ('admin', 'staff')
     )
   )
   WITH CHECK (
     EXISTS (
       SELECT 1 FROM auth.users
-      WHERE users.id = (SELECT auth.uid()::text)
+      WHERE users.id::text = (SELECT auth.uid()::text)
       AND (users.raw_app_meta_data->>'role') IN ('admin', 'staff')
     )
   );
@@ -597,7 +597,7 @@ CREATE POLICY "Only staff can delete program courses"
   USING (
     EXISTS (
       SELECT 1 FROM auth.users
-      WHERE users.id = (SELECT auth.uid()::text)
+      WHERE users.id::text = (SELECT auth.uid()::text)
       AND (users.raw_app_meta_data->>'role') IN ('admin', 'staff')
     )
   );
@@ -611,7 +611,7 @@ CREATE POLICY "Students can view own enrollments"
     student_id::text = (SELECT auth.uid()::text)
     OR EXISTS (
       SELECT 1 FROM auth.users
-      WHERE users.id = (SELECT auth.uid()::text)
+      WHERE users.id::text = (SELECT auth.uid()::text)
       AND (users.raw_app_meta_data->>'role') IN ('admin', 'staff')
     )
   );
@@ -623,7 +623,7 @@ CREATE POLICY "Only staff can insert enrollments"
   WITH CHECK (
     EXISTS (
       SELECT 1 FROM auth.users
-      WHERE users.id = (SELECT auth.uid()::text)
+      WHERE users.id::text = (SELECT auth.uid()::text)
       AND (users.raw_app_meta_data->>'role') IN ('admin', 'staff')
     )
   );
@@ -635,14 +635,14 @@ CREATE POLICY "Only staff can update enrollments"
   USING (
     EXISTS (
       SELECT 1 FROM auth.users
-      WHERE users.id = (SELECT auth.uid()::text)
+      WHERE users.id::text = (SELECT auth.uid()::text)
       AND (users.raw_app_meta_data->>'role') IN ('admin', 'staff')
     )
   )
   WITH CHECK (
     EXISTS (
       SELECT 1 FROM auth.users
-      WHERE users.id = (SELECT auth.uid()::text)
+      WHERE users.id::text = (SELECT auth.uid()::text)
       AND (users.raw_app_meta_data->>'role') IN ('admin', 'staff')
     )
   );
@@ -654,7 +654,7 @@ CREATE POLICY "Only staff can delete enrollments"
   USING (
     EXISTS (
       SELECT 1 FROM auth.users
-      WHERE users.id = (SELECT auth.uid()::text)
+      WHERE users.id::text = (SELECT auth.uid()::text)
       AND (users.raw_app_meta_data->>'role') IN ('admin', 'staff')
     )
   );
@@ -668,7 +668,7 @@ CREATE POLICY "Students can view own documents"
     student_id = (SELECT auth.uid()::text)
     OR EXISTS (
       SELECT 1 FROM auth.users
-      WHERE users.id = (SELECT auth.uid()::text)
+      WHERE users.id::text = (SELECT auth.uid()::text)
       AND (users.raw_app_meta_data->>'role') IN ('admin', 'staff', 'coach')
     )
   );
@@ -680,7 +680,7 @@ CREATE POLICY "Staff can manage documents"
   USING (
     EXISTS (
       SELECT 1 FROM auth.users
-      WHERE users.id = (SELECT auth.uid()::text)
+      WHERE users.id::text = (SELECT auth.uid()::text)
       AND (users.raw_app_meta_data->>'role') IN ('admin', 'staff', 'coach')
     )
   );
@@ -695,7 +695,7 @@ CREATE POLICY "Users can view own tickets"
     OR assigned_to = (SELECT auth.uid()::text)
     OR EXISTS (
       SELECT 1 FROM auth.users
-      WHERE users.id = (SELECT auth.uid()::text)
+      WHERE users.id::text = (SELECT auth.uid()::text)
       AND (users.raw_app_meta_data->>'role') IN ('admin', 'staff', 'coach')
     )
   );
@@ -713,7 +713,7 @@ CREATE POLICY "Staff can update tickets"
   USING (
     EXISTS (
       SELECT 1 FROM auth.users
-      WHERE users.id = (SELECT auth.uid()::text)
+      WHERE users.id::text = (SELECT auth.uid()::text)
       AND (users.raw_app_meta_data->>'role') IN ('admin', 'staff', 'coach')
     )
   );
@@ -732,7 +732,7 @@ CREATE POLICY "Users can view ticket comments"
         OR support_tickets.assigned_to = (SELECT auth.uid()::text)
         OR EXISTS (
           SELECT 1 FROM auth.users
-          WHERE users.id = (SELECT auth.uid()::text)
+          WHERE users.id::text = (SELECT auth.uid()::text)
           AND (users.raw_app_meta_data->>'role') IN ('admin', 'staff', 'coach')
         )
       )
@@ -741,7 +741,7 @@ CREATE POLICY "Users can view ticket comments"
       is_internal = false
       OR EXISTS (
         SELECT 1 FROM auth.users
-        WHERE users.id = (SELECT auth.uid()::text)
+        WHERE users.id::text = (SELECT auth.uid()::text)
         AND (users.raw_app_meta_data->>'role') IN ('admin', 'staff', 'coach')
       )
     )
@@ -760,7 +760,7 @@ CREATE POLICY "Users can create comments"
         OR support_tickets.assigned_to = (SELECT auth.uid()::text)
         OR EXISTS (
           SELECT 1 FROM auth.users
-          WHERE users.id = (SELECT auth.uid()::text)
+          WHERE users.id::text = (SELECT auth.uid()::text)
           AND (users.raw_app_meta_data->>'role') IN ('admin', 'staff', 'coach')
         )
       )
@@ -776,7 +776,7 @@ CREATE POLICY "Users can view own metrics"
     user_id = (SELECT auth.uid()::text)
     OR EXISTS (
       SELECT 1 FROM auth.users
-      WHERE users.id = (SELECT auth.uid()::text)
+      WHERE users.id::text = (SELECT auth.uid()::text)
       AND (users.raw_app_meta_data->>'role') IN ('admin', 'staff', 'coach')
     )
   );

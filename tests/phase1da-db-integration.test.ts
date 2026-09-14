@@ -10,7 +10,7 @@
  * a database during normal `npm test`.
  *
  * Safety guard: refuses to run unless DATABASE_URL is set and points to the
- * expected Supabase development database (db.ypbzdbfqoflyszdsbivn.supabase.co).
+ * expected Supabase development database (rheronevecsffaejteoj).
  *
  * Fixtures use unique 'p1da-bridge-' prefixed keys and are cleaned up after
  * each test via afterEach.
@@ -38,7 +38,7 @@ import {
 
 const RUN_TESTS = process.env.RUN_DB_INTEGRATION_TESTS === '1';
 const DB_URL = process.env.DATABASE_URL ?? '';
-const IS_SUPABASE_DEV = DB_URL.includes('ypbzdbfqoflyszdsbivn');
+const IS_SUPABASE_DEV = DB_URL.includes('rheronevecsffaejteoj');
 
 const it_db = RUN_TESTS ? it : it.skip;
 const describe_db = RUN_TESTS ? describe : describe.skip;
