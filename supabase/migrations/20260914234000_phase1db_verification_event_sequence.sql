@@ -16,6 +16,10 @@ monotonically ordered, so the "latest" event was nondeterministic.
 - No RLS policy changes.
 - No new tables.
 - Column is internal ordering only; not exposed to users.
+
+## Idempotency
+- `ADD COLUMN IF NOT EXISTS` and `CREATE INDEX IF NOT EXISTS` make this safe to re-run.
+- The migration has already been applied to rheronevecsffaejteoj; re-running is a no-op.
 */
 
 ALTER TABLE knowledge_verification_events

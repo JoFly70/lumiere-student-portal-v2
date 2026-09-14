@@ -950,30 +950,36 @@ describe_db('Phase 1D-B: Real Knowledge Service Transactions + PostgreSQL Concur
 
   // ── §13. Latest Verification Ordering Audit ──────────────────────────────────
 
-  it_db('§13: Verification timestamp tie — deterministic ordering by sequence', async () => {
+  it_db('§13: Verification timestamp tie — deterministic ordering by sequence in same transaction', async () => {
     const { claim, version } = await createFullPipeline(service, tesuId, 'tie-test');
 
-    // Insert two verification events with the SAME created_at timestamp
-    const fixedTime = new Date('2026-01-15T12:00:00Z');
+    // Insert two verification events inside the SAME db.transaction so they
+    // receive the same PostgreSQL transaction timestamp. Do NOT set createdAt
+    // explicitly — let PostgreSQL assign it via DEFAULT now().
+    const { e1, e2 } = await db.transaction(async (tx: any) => {
+      const [first] = await tx.insert(verificationEvents).values({
+        claimVersionId: version.id,
+        action: 'verified',
+        reviewerId: `${PREFIX}-reviewer`,
+      }).returning();
+      const [second] = await tx.insert(verificationEvents).values({
+        claimVersionId: version.id,
+        action: 'rejected',
+        reviewerId: `${PREFIX}-reviewer`,
+      }).returning();
+      return { e1: first, e2: second };
+    });
 
-    const [e1] = await db.insert(verificationEvents).values({
-      claimVersionId: version.id,
-      action: 'verified',
-      reviewerId: `${PREFIX}-reviewer`,
-      createdAt: fixedTime,
-    }).returning();
     createdVerificationEventIds.push(e1.id);
-
-    const [e2] = await db.insert(verificationEvents).values({
-      claimVersionId: version.id,
-      action: 'rejected',
-      reviewerId: `${PREFIX}-reviewer`,
-      createdAt: fixedTime,
-    }).returning();
     createdVerificationEventIds.push(e2.id);
 
-    // getLatestVerificationEvent should return the one with the higher sequence
-    // value (e2 was inserted after e1, so e2.seq > e1.seq)
+    // Prove both rows received the same createdAt from PostgreSQL transaction time
+    expect(e1.createdAt).toEqual(e2.createdAt);
+
+    // Prove the second insert received the higher seq
+    expect(e2.seq).toBeGreaterThan(e1.seq);
+
+    // Prove getLatestVerificationEvent returns the second event (higher seq)
     const latest = await repo.getLatestVerificationEvent(version.id);
     expect(latest).not.toBeNull();
     expect(latest!.id).toBe(e2.id);

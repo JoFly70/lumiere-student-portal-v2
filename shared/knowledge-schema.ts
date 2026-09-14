@@ -25,6 +25,7 @@ import {
   uniqueIndex,
   date,
   primaryKey,
+  bigserial,
 } from "drizzle-orm/pg-core";
 
 // ── Enums ────────────────────────────────────────────────────────────────────
@@ -483,10 +484,11 @@ export const verificationEvents = pgTable("knowledge_verification_events", {
   rationale: text("rationale"),
   metadata: jsonb("metadata").notNull().default(sql`'{}'::jsonb`),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-  seq: integer("seq"),
+  seq: bigserial("seq", { mode: "number" }).notNull(),
 }, (table) => ({
   claimVersionIdx: index("knowledge_verif_events_cv_idx").on(table.claimVersionId),
   actionIdx: index("knowledge_verif_events_action_idx").on(table.action),
+  cvSeqIdx: index("knowledge_verif_events_cv_seq_idx").on(table.claimVersionId, table.seq),
 }));
 
 // ── 9. Conflicts ─────────────────────────────────────────────────────────────
