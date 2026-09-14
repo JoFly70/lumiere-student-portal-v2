@@ -81,6 +81,9 @@ function createMockRepository() {
     async getClaimByKey(claimKey: string, _tx?: Tx) {
       return tables.claims.find((r) => r.claimKey === claimKey) ?? null;
     },
+    async lockClaimForVersioning(_claimId: string, _tx?: Tx): Promise<void> {
+      // No-op in mock; real implementation uses SELECT ... FOR UPDATE
+    },
     async updateClaimStatus(id: string, status: string, _tx?: Tx) {
       const row = tables.claims.find((r) => r.id === id);
       if (row) row.status = status;
@@ -1148,6 +1151,524 @@ describe('Phase 1B — Knowledge Service', () => {
         name.toLowerCase().includes('delete') || name.toLowerCase().includes('remove'),
       );
       expect(serviceDeleteMethods).toHaveLength(0);
+    });
+  });
+
+  // ── CANONICAL RE-CHECK (Phase 1B Correction) ───────────────────────────────────
+
+  describe('Canonical Re-check (stale trust state)', () => {
+    it('51. confirmed claim + later NEEDS_REVIEW cannot create academic rule', async () => {
+      const { version } = await createFullClaimPipeline();
+      await service.confirmClaimVersion(version.id);
+
+      // Append a later NEEDS_REVIEW event
+      await service.recordVerification({
+        claimVersionId: version.id,
+        action: 'needs_review',
+        reviewerId: 'r2',
+      });
+
+      try {
+        await service.createAcademicRuleFromVerifiedClaim({
+          institutionId: 'inst-1',
+          ruleKey: 'transfer-rule',
+          ruleKind: 'transfer',
+          title: 'Transfer Rule',
+          claimVersionId: version.id,
+        });
+        expect.fail('Should have thrown');
+      } catch (e: any) {
+        expect(e).toBeInstanceOf(KnowledgeError);
+        expect(e.code).toBe('KNOWLEDGE_VERIFICATION_REQUIRED');
+      }
+    });
+
+    it('52. confirmed claim + later REJECTED cannot create academic rule', async () => {
+      const { version } = await createFullClaimPipeline();
+      await service.confirmClaimVersion(version.id);
+
+      await service.recordVerification({
+        claimVersionId: version.id,
+        action: 'rejected',
+        reviewerId: 'r2',
+      });
+
+      try {
+        await service.createAcademicRuleFromVerifiedClaim({
+          institutionId: 'inst-1',
+          ruleKey: 'transfer-rule',
+          ruleKind: 'transfer',
+          title: 'Transfer Rule',
+          claimVersionId: version.id,
+        });
+        expect.fail('Should have thrown');
+      } catch (e: any) {
+        expect(e).toBeInstanceOf(KnowledgeError);
+        expect(e.code).toBe('KNOWLEDGE_VERIFICATION_REQUIRED');
+      }
+    });
+
+    it('53. confirmed claim + newly opened conflict cannot create academic rule', async () => {
+      const { version } = await createFullClaimPipeline();
+      await service.confirmClaimVersion(version.id);
+
+      // Create an open conflict involving this version
+      const otherClaim = await service.createKnowledgeClaim({
+        claimKey: 'conflict-claim-rc', claimType: 'equivalency', subjectType: 'institution',
+      });
+      const otherVersion = await service.createClaimVersion({
+        claimId: otherClaim.id, statement: 'other', confidence: 50,
+      });
+      await service.createKnowledgeConflict({
+        claimVersionAId: version.id,
+        claimVersionBId: otherVersion.id,
+        conflictType: 'contradiction',
+        description: 'New conflict',
+      });
+
+      try {
+        await service.createAcademicRuleFromVerifiedClaim({
+          institutionId: 'inst-1',
+          ruleKey: 'transfer-rule',
+          ruleKind: 'transfer',
+          title: 'Transfer Rule',
+          claimVersionId: version.id,
+        });
+        expect.fail('Should have thrown');
+      } catch (e: any) {
+        expect(e).toBeInstanceOf(KnowledgeError);
+        expect(e.code).toBe('KNOWLEDGE_OPEN_CONFLICT');
+      }
+    });
+
+    it('54. confirmed claim + later NEEDS_REVIEW cannot create equivalency', async () => {
+      const { version } = await createFullClaimPipeline();
+      await service.confirmClaimVersion(version.id);
+
+      await service.recordVerification({
+        claimVersionId: version.id, action: 'needs_review', reviewerId: 'r2',
+      });
+
+      try {
+        await service.createEquivalencyFromVerifiedClaim({
+          sourceProviderCourseVersionId: 'pcv-1',
+          institutionId: 'inst-1',
+          claimVersionId: version.id,
+        });
+        expect.fail('Should have thrown');
+      } catch (e: any) {
+        expect(e).toBeInstanceOf(KnowledgeError);
+        expect(e.code).toBe('KNOWLEDGE_VERIFICATION_REQUIRED');
+      }
+    });
+
+    it('55. confirmed claim + newly opened conflict cannot create articulation', async () => {
+      const { version } = await createFullClaimPipeline();
+      await service.confirmClaimVersion(version.id);
+
+      const otherClaim = await service.createKnowledgeClaim({
+        claimKey: 'conflict-claim-rc2', claimType: 'equivalency', subjectType: 'institution',
+      });
+      const otherVersion = await service.createClaimVersion({
+        claimId: otherClaim.id, statement: 'other', confidence: 50,
+      });
+      await service.createKnowledgeConflict({
+        claimVersionAId: version.id,
+        claimVersionBId: otherVersion.id,
+        conflictType: 'contradiction',
+        description: 'New conflict',
+      });
+
+      try {
+        await service.createArticulationFromVerifiedClaim({
+          programVersionId: 'pv-1',
+          requirementId: 'req-1',
+          claimVersionId: version.id,
+        });
+        expect.fail('Should have thrown');
+      } catch (e: any) {
+        expect(e).toBeInstanceOf(KnowledgeError);
+        expect(e.code).toBe('KNOWLEDGE_OPEN_CONFLICT');
+      }
+    });
+  });
+
+  // ── CONCURRENCY-SAFE VERSION NUMBERING ──────────────────────────────────────────
+
+  describe('Concurrency-safe version numbering', () => {
+    it('56. createClaimVersion uses the transaction runner', async () => {
+      let txCalled = false;
+      const trackingTx = async <T>(fn: (tx: Tx) => Promise<T>): Promise<T> => {
+        txCalled = true;
+        return await fn(trackingTx as any);
+      };
+      const svc = createKnowledgeService(mock.repo as any, trackingTx);
+
+      const claim = await svc.createKnowledgeClaim({
+        claimKey: 'concurrency-1', claimType: 'equivalency', subjectType: 'institution',
+      });
+      await svc.createClaimVersion({ claimId: claim.id, statement: 'test', confidence: 50 });
+      expect(txCalled).toBe(true);
+    });
+
+    it('57. version numbers still increment correctly', async () => {
+      const claim = await service.createKnowledgeClaim({
+        claimKey: 'concurrency-2', claimType: 'equivalency', subjectType: 'institution',
+      });
+      const v1 = await service.createClaimVersion({ claimId: claim.id, statement: 'v1', confidence: 50 });
+      const v2 = await service.createClaimVersion({ claimId: claim.id, statement: 'v2', confidence: 60 });
+      expect(v1.versionNumber).toBe(1);
+      expect(v2.versionNumber).toBe(2);
+    });
+
+    it('58. prior versions remain after new version creation', async () => {
+      const claim = await service.createKnowledgeClaim({
+        claimKey: 'concurrency-3', claimType: 'equivalency', subjectType: 'institution',
+      });
+      await service.createClaimVersion({ claimId: claim.id, statement: 'v1', confidence: 50 });
+      await service.createClaimVersion({ claimId: claim.id, statement: 'v2', confidence: 60 });
+      const versions = await mock.repo.listClaimVersions(claim.id);
+      expect(versions).toHaveLength(2);
+    });
+
+    it('59. lock/version allocation occurs before insert', async () => {
+      const callOrder: string[] = [];
+      const trackingRepo = {
+        ...mock.repo,
+        async lockClaimForVersioning(_id: string, _tx?: Tx) {
+          callOrder.push('lock');
+        },
+        async getClaimById(id: string, _tx?: Tx) {
+          callOrder.push('getClaim');
+          return mock.repo.getClaimById(id);
+        },
+        async getNextVersionNumber(id: string, _tx?: Tx) {
+          callOrder.push('nextVersion');
+          return mock.repo.getNextVersionNumber(id);
+        },
+        async createClaimVersion(input: any, num: number, _tx?: Tx) {
+          callOrder.push('insert');
+          return mock.repo.createClaimVersion(input, num);
+        },
+      };
+      const svc = createKnowledgeService(trackingRepo as any, passthroughTx);
+      const claim = await svc.createKnowledgeClaim({
+        claimKey: 'concurrency-4', claimType: 'equivalency', subjectType: 'institution',
+      });
+      await svc.createClaimVersion({ claimId: claim.id, statement: 'test', confidence: 50 });
+
+      // Lock must occur before insert
+      const lockIdx = callOrder.indexOf('lock');
+      const insertIdx = callOrder.indexOf('insert');
+      expect(lockIdx).toBeGreaterThanOrEqual(0);
+      expect(insertIdx).toBeGreaterThanOrEqual(0);
+      expect(lockIdx).toBeLessThan(insertIdx);
+    });
+  });
+
+  // ── SUPERSEDES VERSION ID VALIDATION ────────────────────────────────────────────
+
+  describe('supersedesVersionId validation', () => {
+    it('60. same-claim supersedesVersionId accepted', async () => {
+      const claim = await service.createKnowledgeClaim({
+        claimKey: 'supersede-1', claimType: 'equivalency', subjectType: 'institution',
+      });
+      const v1 = await service.createClaimVersion({ claimId: claim.id, statement: 'v1', confidence: 50 });
+      const v2 = await service.createClaimVersion({
+        claimId: claim.id, statement: 'v2', confidence: 60,
+        supersedesVersionId: v1.id,
+      });
+      expect(v2.supersedesVersionId).toBe(v1.id);
+    });
+
+    it('61. cross-claim supersedesVersionId rejected', async () => {
+      const claimA = await service.createKnowledgeClaim({
+        claimKey: 'supersede-2a', claimType: 'equivalency', subjectType: 'institution',
+      });
+      const claimB = await service.createKnowledgeClaim({
+        claimKey: 'supersede-2b', claimType: 'equivalency', subjectType: 'institution',
+      });
+      const vA = await service.createClaimVersion({ claimId: claimA.id, statement: 'vA', confidence: 50 });
+
+      try {
+        await service.createClaimVersion({
+          claimId: claimB.id, statement: 'vB', confidence: 60,
+          supersedesVersionId: vA.id,
+        });
+        expect.fail('Should have thrown');
+      } catch (e: any) {
+        expect(e).toBeInstanceOf(KnowledgeError);
+        expect(e.code).toBe('KNOWLEDGE_VALIDATION_ERROR');
+      }
+    });
+
+    it('62. nonexistent supersedesVersionId rejected', async () => {
+      const claim = await service.createKnowledgeClaim({
+        claimKey: 'supersede-3', claimType: 'equivalency', subjectType: 'institution',
+      });
+      try {
+        await service.createClaimVersion({
+          claimId: claim.id, statement: 'v1', confidence: 50,
+          supersedesVersionId: 'nonexistent-id',
+        });
+        expect.fail('Should have thrown');
+      } catch (e: any) {
+        expect(e).toBeInstanceOf(KnowledgeError);
+        expect(e.code).toBe('KNOWLEDGE_NOT_FOUND');
+      }
+    });
+  });
+
+  // ── RUNTIME INPUT VALIDATION ────────────────────────────────────────────────────
+
+  describe('Runtime input validation', () => {
+    it('63. invalid sourceType rejected with KNOWLEDGE_VALIDATION_ERROR', async () => {
+      try {
+        await service.createEvidenceSource({
+          sourceType: 'invalid_source_type' as any,
+          title: 'Test',
+        });
+        expect.fail('Should have thrown');
+      } catch (e: any) {
+        expect(e).toBeInstanceOf(KnowledgeError);
+        expect(e.code).toBe('KNOWLEDGE_VALIDATION_ERROR');
+      }
+    });
+
+    it('64. invalid claimType rejected with KNOWLEDGE_VALIDATION_ERROR', async () => {
+      try {
+        await service.createKnowledgeClaim({
+          claimKey: 'val-claim',
+          claimType: 'invalid_type' as any,
+          subjectType: 'institution',
+        });
+        expect.fail('Should have thrown');
+      } catch (e: any) {
+        expect(e).toBeInstanceOf(KnowledgeError);
+        expect(e.code).toBe('KNOWLEDGE_VALIDATION_ERROR');
+      }
+    });
+
+    it('65. invalid verification action rejected with KNOWLEDGE_VALIDATION_ERROR', async () => {
+      const { version } = await createFullClaimPipeline();
+      try {
+        await service.recordVerification({
+          claimVersionId: version.id,
+          action: 'invalid_action' as any,
+          reviewerId: 'r1',
+        });
+        expect.fail('Should have thrown');
+      } catch (e: any) {
+        expect(e).toBeInstanceOf(KnowledgeError);
+        expect(e.code).toBe('KNOWLEDGE_VALIDATION_ERROR');
+      }
+    });
+
+    it('66. invalid relationshipType rejected with KNOWLEDGE_VALIDATION_ERROR', async () => {
+      const { excerpt, version } = await createFullClaimPipeline();
+      try {
+        await service.attachEvidenceToClaimVersion({
+          claimVersionId: version.id,
+          evidenceExcerptId: excerpt.id,
+          relationshipType: 'invalid_rel' as any,
+        });
+        expect.fail('Should have thrown');
+      } catch (e: any) {
+        expect(e).toBeInstanceOf(KnowledgeError);
+        expect(e.code).toBe('KNOWLEDGE_VALIDATION_ERROR');
+      }
+    });
+
+    it('67. invalid conflictType rejected with KNOWLEDGE_VALIDATION_ERROR', async () => {
+      const { version } = await createFullClaimPipeline();
+      try {
+        await service.createKnowledgeConflict({
+          claimVersionAId: version.id,
+          conflictType: 'invalid_conflict' as any,
+          description: 'Test',
+        });
+        expect.fail('Should have thrown');
+      } catch (e: any) {
+        expect(e).toBeInstanceOf(KnowledgeError);
+        expect(e.code).toBe('KNOWLEDGE_VALIDATION_ERROR');
+      }
+    });
+
+    it('68. invalid ruleKind rejected with KNOWLEDGE_VALIDATION_ERROR', async () => {
+      const { version } = await createFullClaimPipeline();
+      await service.confirmClaimVersion(version.id);
+      try {
+        await service.createAcademicRuleFromVerifiedClaim({
+          institutionId: 'inst-1',
+          ruleKey: 'rule-1',
+          ruleKind: 'invalid_kind' as any,
+          title: 'Rule',
+          claimVersionId: version.id,
+        });
+        expect.fail('Should have thrown');
+      } catch (e: any) {
+        expect(e).toBeInstanceOf(KnowledgeError);
+        expect(e.code).toBe('KNOWLEDGE_VALIDATION_ERROR');
+      }
+    });
+
+    it('69. empty claimKey rejected with KNOWLEDGE_VALIDATION_ERROR', async () => {
+      try {
+        await service.createKnowledgeClaim({
+          claimKey: '',
+          claimType: 'equivalency',
+          subjectType: 'institution',
+        });
+        expect.fail('Should have thrown');
+      } catch (e: any) {
+        expect(e).toBeInstanceOf(KnowledgeError);
+        expect(e.code).toBe('KNOWLEDGE_VALIDATION_ERROR');
+      }
+    });
+
+    it('70. empty statement rejected with KNOWLEDGE_VALIDATION_ERROR', async () => {
+      const claim = await service.createKnowledgeClaim({
+        claimKey: 'empty-stmt', claimType: 'equivalency', subjectType: 'institution',
+      });
+      try {
+        await service.createClaimVersion({ claimId: claim.id, statement: '', confidence: 50 });
+        expect.fail('Should have thrown');
+      } catch (e: any) {
+        expect(e).toBeInstanceOf(KnowledgeError);
+        expect(e.code).toBe('KNOWLEDGE_VALIDATION_ERROR');
+      }
+    });
+
+    it('71. empty conflict description rejected with KNOWLEDGE_VALIDATION_ERROR', async () => {
+      const { version } = await createFullClaimPipeline();
+      try {
+        await service.createKnowledgeConflict({
+          claimVersionAId: version.id,
+          conflictType: 'contradiction',
+          description: '',
+        });
+        expect.fail('Should have thrown');
+      } catch (e: any) {
+        expect(e).toBeInstanceOf(KnowledgeError);
+        expect(e.code).toBe('KNOWLEDGE_VALIDATION_ERROR');
+      }
+    });
+
+    it('72. empty resolutionNotes rejected with KNOWLEDGE_VALIDATION_ERROR', async () => {
+      const { version: v1 } = await createFullClaimPipeline();
+      const otherClaim = await service.createKnowledgeClaim({
+        claimKey: 'res-test', claimType: 'equivalency', subjectType: 'institution',
+      });
+      const otherVersion = await service.createClaimVersion({
+        claimId: otherClaim.id, statement: 'other', confidence: 50,
+      });
+      const conflict = await service.createKnowledgeConflict({
+        claimVersionAId: v1.id,
+        claimVersionBId: otherVersion.id,
+        conflictType: 'contradiction',
+        description: 'Test conflict',
+      });
+      try {
+        await service.resolveKnowledgeConflict(conflict.id, '', 'admin-1');
+        expect.fail('Should have thrown');
+      } catch (e: any) {
+        expect(e).toBeInstanceOf(KnowledgeError);
+        expect(e.code).toBe('KNOWLEDGE_VALIDATION_ERROR');
+      }
+    });
+  });
+
+  // ── LATE-FAILURE TRANSACTION ROLLBACK ───────────────────────────────────────────
+
+  describe('Late-failure transaction rollback', () => {
+    it('73. failed supersession after partial writes rolls back all state', async () => {
+      // Create a rollback-capable transaction runner that snapshots mock state
+      function createRollbackTx(tables: Record<string, MockRecord[]>) {
+        return async function rollbackTx<T>(fn: (tx: Tx) => Promise<T>): Promise<T> {
+          // Deep snapshot of all tables
+          const snapshot: Record<string, MockRecord[]> = {};
+          for (const key of Object.keys(tables)) {
+            snapshot[key] = tables[key].map((r: MockRecord) => ({ ...r }));
+          }
+          try {
+            return await fn(rollbackTx as any);
+          } catch (err) {
+            // Restore snapshot on error
+            for (const key of Object.keys(tables)) {
+              tables[key] = snapshot[key];
+            }
+            throw err;
+          }
+        };
+      }
+
+      // Setup: create a confirmed claim with evidence + verification
+      const setupMock = createMockRepository();
+      const setupService = createKnowledgeService(setupMock.repo as any, passthroughTx);
+
+      const source = await setupService.createEvidenceSource({ sourceType: 'official_web', title: 'S' });
+      const excerpt = await setupService.addEvidenceExcerpt({ evidenceSourceId: source.id, excerptText: 'E' });
+      const claim = await setupService.createKnowledgeClaim({
+        claimKey: 'rollback-1', claimType: 'equivalency', subjectType: 'institution',
+      });
+      const v1 = await setupService.createClaimVersion({ claimId: claim.id, statement: 'v1', confidence: 75 });
+      await setupService.attachEvidenceToClaimVersion({
+        claimVersionId: v1.id, evidenceExcerptId: excerpt.id, relationshipType: 'supports',
+      });
+      await setupService.recordVerification({ claimVersionId: v1.id, action: 'verified', reviewerId: 'r1' });
+      await setupService.confirmClaimVersion(v1.id);
+
+      // Create v2 with evidence + verification (ready to supersede)
+      const src2 = await setupService.createEvidenceSource({ sourceType: 'official_web', title: 'S2' });
+      const exc2 = await setupService.addEvidenceExcerpt({ evidenceSourceId: src2.id, excerptText: 'E2' });
+      const v2 = await setupService.createClaimVersion({ claimId: claim.id, statement: 'v2', confidence: 80 });
+      await setupService.attachEvidenceToClaimVersion({
+        claimVersionId: v2.id, evidenceExcerptId: exc2.id, relationshipType: 'supports',
+      });
+      await setupService.recordVerification({ claimVersionId: v2.id, action: 'verified', reviewerId: 'r1' });
+
+      // Now create a service with a repository that fails AFTER the first supersession write
+      let writeCount = 0;
+      const failingRepo = {
+        ...setupMock.repo,
+        async updateClaimVersionSupersedes(id: string, supersedesVersionId: string, tx?: Tx) {
+          writeCount++;
+          return setupMock.repo.updateClaimVersionSupersedes(id, supersedesVersionId, tx);
+        },
+        async updateClaimVersionStatus(id: string, status: string, tx?: Tx) {
+          writeCount++;
+          if (writeCount >= 3) {
+            throw new Error('Simulated late failure after partial supersession writes');
+          }
+          return setupMock.repo.updateClaimVersionStatus(id, status, tx);
+        },
+      };
+
+      const rollbackRunner = createRollbackTx(setupMock.tables);
+      const failingService = createKnowledgeService(failingRepo as any, rollbackRunner);
+
+      try {
+        await failingService.supersedeClaimVersion(v1.id, v2.id, 'reviewer-1');
+        expect.fail('Should have thrown');
+      } catch (e: any) {
+        expect(e.message).toContain('Simulated late failure');
+      }
+
+      // Verify rollback: all state should be back to pre-supersession
+      const oldVersion = setupMock.tables.claimVersions.find((r) => r.id === v1.id);
+      expect(oldVersion!.status).toBe('confirmed');
+
+      const newVersion = setupMock.tables.claimVersions.find((r) => r.id === v2.id);
+      expect(newVersion!.status).toBe('working');
+
+      const updatedClaim = setupMock.tables.claims.find((r) => r.id === claim.id);
+      expect(updatedClaim!.currentVersionId).toBe(v1.id);
+
+      // No superseded verification event should remain
+      const oldEvents = setupMock.tables.verificationEvents.filter(
+        (r) => r.claimVersionId === v1.id && r.action === 'superseded',
+      );
+      expect(oldEvents).toHaveLength(0);
     });
   });
 });

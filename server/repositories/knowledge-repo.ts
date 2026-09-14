@@ -25,6 +25,9 @@ import type { PgTransaction } from 'drizzle-orm/pg-core';
 
 export type Tx = PgTransaction<any, any, any> | typeof db;
 
+export type ClaimStatus = (typeof knowledgeClaims.status.enumValues)[number];
+export type VersionStatus = (typeof claimVersions.status.enumValues)[number];
+
 export interface CreateEvidenceSourceInput {
   sourceType: (typeof evidenceSources.sourceType.enumValues)[number];
   title: string;
@@ -192,7 +195,11 @@ export async function getClaimByKey(claimKey: string, tx: Tx = db) {
   return row ?? null;
 }
 
-export async function updateClaimStatus(id: string, status: string, tx: Tx = db) {
+export async function lockClaimForVersioning(claimId: string, tx: Tx = db): Promise<void> {
+  await tx.execute(sql`SELECT id FROM knowledge_claims WHERE id = ${claimId} FOR UPDATE`);
+}
+
+export async function updateClaimStatus(id: string, status: ClaimStatus, tx: Tx = db) {
   const [row] = await tx.update(knowledgeClaims).set({ status }).where(eq(knowledgeClaims.id, id)).returning();
   return row;
 }
@@ -235,7 +242,7 @@ export async function getNextVersionNumber(claimId: string, tx: Tx = db): Promis
   return (row?.maxNum ?? 0) + 1;
 }
 
-export async function updateClaimVersionStatus(id: string, status: string, tx: Tx = db) {
+export async function updateClaimVersionStatus(id: string, status: VersionStatus, tx: Tx = db) {
   const [row] = await tx.update(claimVersions).set({ status }).where(eq(claimVersions.id, id)).returning();
   return row;
 }
