@@ -252,7 +252,7 @@ export function createKnowledgeService(
 
     const evidenceRels = await repository.listEvidenceForClaimVersion(claimVersionId, tx);
     const qualifying = evidenceRels.some(
-      (e: any) => e.relationshipType === 'supports' || e.relationshipType === 'source_for',
+      (e: ClaimEvidenceRow) => e.relationshipType === 'supports' || e.relationshipType === 'source_for',
     );
     if (!qualifying) {
       throw evidenceRequiredError('Claim version must have at least one supporting evidence relationship', { claimVersionId });
@@ -426,24 +426,39 @@ export function createKnowledgeService(
 
   async function confirmClaimVersion(claimVersionId: string): Promise<ConfirmationResult> {
     return await transactionRunner(async (tx: Tx) => {
+      // 1. Fetch the requested claim version to identify claim_id
+      const version = await repository.getClaimVersion(claimVersionId, tx);
+      if (!version) {
+        throw notFoundError('Claim version not found', { claimVersionId });
+      }
+
+      // 2. Lock the parent claim row to serialize concurrent confirmations
+      await repository.lockClaimForVersioning(version.claimId, tx);
+
+      // 3. After obtaining the lock, run canonical eligibility checks
       await assertClaimVersionCanonicalizable(claimVersionId, tx);
 
-      const version = await repository.getClaimVersion(claimVersionId, tx);
-      const claim = await repository.getClaimById(version!.claimId, tx);
+      // 4. Re-read claim state after lock to check current_version_id
+      const claim = await repository.getClaimById(version.claimId, tx);
+      if (!claim) {
+        throw notFoundError('Parent claim not found', { claimId: version.claimId });
+      }
 
-      if (claim!.currentVersionId && claim!.currentVersionId !== claimVersionId) {
+      // 5. Verify no other confirmed current version exists
+      if (claim.currentVersionId && claim.currentVersionId !== claimVersionId) {
         throw supersessionRequiredError('Another confirmed version is already current; use the supersession workflow', {
-          claimId: claim!.id,
-          currentVersionId: claim!.currentVersionId,
+          claimId: claim.id,
+          currentVersionId: claim.currentVersionId,
           attemptedVersionId: claimVersionId,
         });
       }
 
+      // 6. Perform confirmation writes atomically
       await repository.updateClaimVersionStatus(claimVersionId, 'confirmed' as VersionStatus, tx);
-      await repository.updateClaimStatus(claim!.id, 'confirmed' as ClaimStatus, tx);
-      await repository.updateClaimCurrentVersion(claim!.id, claimVersionId, tx);
+      await repository.updateClaimStatus(claim.id, 'confirmed' as ClaimStatus, tx);
+      await repository.updateClaimCurrentVersion(claim.id, claimVersionId, tx);
 
-      return { claimVersionId, claimId: claim!.id, status: 'confirmed' };
+      return { claimVersionId, claimId: claim.id, status: 'confirmed' };
     });
   }
 
@@ -451,6 +466,28 @@ export function createKnowledgeService(
 
   async function supersedeClaimVersion(oldVersionId: string, newVersionId: string, reviewerId?: string | null): Promise<SupersessionResult> {
     return await transactionRunner(async (tx: Tx) => {
+      // 1. Fetch old/new versions enough to identify the shared claim
+      const oldVersionInitial = await repository.getClaimVersion(oldVersionId, tx);
+      if (!oldVersionInitial) {
+        throw notFoundError('Old claim version not found', { oldVersionId });
+      }
+      const newVersionInitial = await repository.getClaimVersion(newVersionId, tx);
+      if (!newVersionInitial) {
+        throw notFoundError('New claim version not found', { newVersionId });
+      }
+
+      // 2. Verify they belong to the same claim
+      if (oldVersionInitial.claimId !== newVersionInitial.claimId) {
+        throw invalidStateError('Both versions must belong to the same claim', {
+          oldClaimId: oldVersionInitial.claimId,
+          newClaimId: newVersionInitial.claimId,
+        });
+      }
+
+      // 3. Lock the parent claim row to serialize concurrent supersessions
+      await repository.lockClaimForVersioning(oldVersionInitial.claimId, tx);
+
+      // 4. After the lock, re-read old version, new version, and parent claim
       const oldVersion = await repository.getClaimVersion(oldVersionId, tx);
       if (!oldVersion) {
         throw notFoundError('Old claim version not found', { oldVersionId });
@@ -459,24 +496,23 @@ export function createKnowledgeService(
       if (!newVersion) {
         throw notFoundError('New claim version not found', { newVersionId });
       }
-
-      if (oldVersion.claimId !== newVersion.claimId) {
-        throw invalidStateError('Both versions must belong to the same claim', {
-          oldClaimId: oldVersion.claimId,
-          newClaimId: newVersion.claimId,
-        });
-      }
-
       const claim = await repository.getClaimById(oldVersion.claimId, tx);
       if (!claim) {
         throw notFoundError('Parent claim not found', { claimId: oldVersion.claimId });
       }
 
+      // 5. Re-check: old version must still be current AND confirmed
       if (claim.currentVersionId !== oldVersionId) {
         throw invalidStateError('Old version is not the current confirmed version', {
           claimId: claim.id,
           currentVersionId: claim.currentVersionId,
           oldVersionId,
+        });
+      }
+      if (oldVersion.status !== 'confirmed') {
+        throw invalidStateError('Old version must be confirmed to be superseded', {
+          oldVersionId,
+          status: oldVersion.status,
         });
       }
 
@@ -487,9 +523,10 @@ export function createKnowledgeService(
         });
       }
 
+      // 6. New version must satisfy canonicalization requirements
       await assertClaimVersionCanonicalizable(newVersionId, tx);
 
-      // Atomic state transition
+      // 7. Atomic state transition
       await repository.updateClaimVersionSupersedes(newVersionId, oldVersionId, tx);
       await repository.updateClaimVersionStatus(oldVersionId, 'superseded' as VersionStatus, tx);
       await repository.updateClaimVersionStatus(newVersionId, 'confirmed' as VersionStatus, tx);

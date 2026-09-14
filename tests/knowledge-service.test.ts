@@ -1671,4 +1671,212 @@ describe('Phase 1B — Knowledge Service', () => {
       expect(oldEvents).toHaveLength(0);
     });
   });
+
+  // ── CONCURRENCY HARDENING ──────────────────────────────────────────────────────
+
+  describe('Concurrency hardening', () => {
+    it('74. confirmClaimVersion locks the parent claim before checking/updating current state', async () => {
+      const callOrder: string[] = [];
+      const trackingRepo = {
+        ...mock.repo,
+        async lockClaimForVersioning(_id: string, _tx?: Tx) {
+          callOrder.push('lock');
+        },
+        async getClaimVersion(id: string, _tx?: Tx) {
+          callOrder.push('getVersion');
+          return mock.repo.getClaimVersion(id);
+        },
+        async getClaimById(id: string, _tx?: Tx) {
+          callOrder.push('getClaim');
+          return mock.repo.getClaimById(id);
+        },
+        async listEvidenceForClaimVersion(id: string, _tx?: Tx) {
+          callOrder.push('listEvidence');
+          return mock.repo.listEvidenceForClaimVersion(id);
+        },
+        async getLatestVerificationEvent(id: string, _tx?: Tx) {
+          callOrder.push('getVerification');
+          return mock.repo.getLatestVerificationEvent(id);
+        },
+        async listOpenConflictsForVersion(id: string, _tx?: Tx) {
+          callOrder.push('listConflicts');
+          return mock.repo.listOpenConflictsForVersion(id);
+        },
+        async updateClaimVersionStatus(id: string, status: string, tx?: Tx) {
+          callOrder.push('updateVersionStatus');
+          return mock.repo.updateClaimVersionStatus(id, status, tx);
+        },
+        async updateClaimStatus(id: string, status: string, tx?: Tx) {
+          callOrder.push('updateClaimStatus');
+          return mock.repo.updateClaimStatus(id, status, tx);
+        },
+        async updateClaimCurrentVersion(id: string, versionId: string, tx?: Tx) {
+          callOrder.push('updateCurrentVersion');
+          return mock.repo.updateClaimCurrentVersion(id, versionId, tx);
+        },
+      };
+      const svc = createKnowledgeService(trackingRepo as any, passthroughTx);
+
+      const { version } = await createFullClaimPipeline();
+      await svc.confirmClaimVersion(version.id);
+
+      const lockIdx = callOrder.indexOf('lock');
+      const updateIdx = callOrder.indexOf('updateVersionStatus');
+      expect(lockIdx).toBeGreaterThanOrEqual(0);
+      expect(updateIdx).toBeGreaterThanOrEqual(0);
+      expect(lockIdx).toBeLessThan(updateIdx);
+    });
+
+    it('75. supersedeClaimVersion locks the parent claim before final current-version validation and writes', async () => {
+      const { claim, version: v1 } = await createFullClaimPipeline();
+      await service.confirmClaimVersion(v1.id);
+
+      const src2 = await service.createEvidenceSource({ sourceType: 'official_web', title: 'S2' });
+      const exc2 = await service.addEvidenceExcerpt({ evidenceSourceId: src2.id, excerptText: 'E2' });
+      const v2 = await service.createClaimVersion({ claimId: claim.id, statement: 'v2', confidence: 80 });
+      await service.attachEvidenceToClaimVersion({
+        claimVersionId: v2.id, evidenceExcerptId: exc2.id, relationshipType: 'supports',
+      });
+      await service.recordVerification({ claimVersionId: v2.id, action: 'verified', reviewerId: 'r1' });
+
+      const callOrder: string[] = [];
+      const trackingRepo = {
+        ...mock.repo,
+        async lockClaimForVersioning(_id: string, _tx?: Tx) {
+          callOrder.push('lock');
+        },
+        async getClaimVersion(id: string, _tx?: Tx) {
+          callOrder.push('getVersion');
+          return mock.repo.getClaimVersion(id);
+        },
+        async getClaimById(id: string, _tx?: Tx) {
+          callOrder.push('getClaim');
+          return mock.repo.getClaimById(id);
+        },
+        async updateClaimVersionSupersedes(id: string, svId: string, tx?: Tx) {
+          callOrder.push('write');
+          return mock.repo.updateClaimVersionSupersedes(id, svId, tx);
+        },
+      };
+      const svc = createKnowledgeService(trackingRepo as any, passthroughTx);
+
+      await svc.supersedeClaimVersion(v1.id, v2.id, 'reviewer-1');
+
+      const lockIdx = callOrder.indexOf('lock');
+      const writeIdx = callOrder.indexOf('write');
+      expect(lockIdx).toBeGreaterThanOrEqual(0);
+      expect(writeIdx).toBeGreaterThanOrEqual(0);
+      expect(lockIdx).toBeLessThan(writeIdx);
+    });
+
+    it('76. two concurrent confirmation attempts — only one wins, second gets SUPERSESSION_REQUIRED', async () => {
+      // Simulate concurrency: first confirmation commits, second sees the updated state
+      const setupMock = createMockRepository();
+      const setupService = createKnowledgeService(setupMock.repo as any, passthroughTx);
+
+      // Create two versions of the same claim, both with evidence + verification
+      const source = await setupService.createEvidenceSource({ sourceType: 'official_web', title: 'S' });
+      const excerpt = await setupService.addEvidenceExcerpt({ evidenceSourceId: source.id, excerptText: 'E' });
+      const claim = await setupService.createKnowledgeClaim({
+        claimKey: 'concurrent-conf', claimType: 'equivalency', subjectType: 'institution',
+      });
+
+      const v1 = await setupService.createClaimVersion({ claimId: claim.id, statement: 'v1', confidence: 75 });
+      await setupService.attachEvidenceToClaimVersion({
+        claimVersionId: v1.id, evidenceExcerptId: excerpt.id, relationshipType: 'supports',
+      });
+      await setupService.recordVerification({ claimVersionId: v1.id, action: 'verified', reviewerId: 'r1' });
+
+      const src2 = await setupService.createEvidenceSource({ sourceType: 'official_web', title: 'S2' });
+      const exc2 = await setupService.addEvidenceExcerpt({ evidenceSourceId: src2.id, excerptText: 'E2' });
+      const v2 = await setupService.createClaimVersion({ claimId: claim.id, statement: 'v2', confidence: 80 });
+      await setupService.attachEvidenceToClaimVersion({
+        claimVersionId: v2.id, evidenceExcerptId: exc2.id, relationshipType: 'supports',
+      });
+      await setupService.recordVerification({ claimVersionId: v2.id, action: 'verified', reviewerId: 'r1' });
+
+      // First confirmation succeeds
+      await setupService.confirmClaimVersion(v1.id);
+
+      // Second confirmation attempt — claim now has a current_version_id
+      try {
+        await setupService.confirmClaimVersion(v2.id);
+        expect.fail('Should have thrown');
+      } catch (e: any) {
+        expect(e).toBeInstanceOf(KnowledgeError);
+        expect(e.code).toBe('KNOWLEDGE_SUPERSESSION_REQUIRED');
+      }
+
+      // Only one version remains confirmed/current
+      const updatedClaim = setupMock.tables.claims.find((r) => r.id === claim.id);
+      expect(updatedClaim!.currentVersionId).toBe(v1.id);
+
+      const v1Record = setupMock.tables.claimVersions.find((r) => r.id === v1.id);
+      expect(v1Record!.status).toBe('confirmed');
+
+      const v2Record = setupMock.tables.claimVersions.find((r) => r.id === v2.id);
+      expect(v2Record!.status).toBe('working');
+    });
+
+    it('77. two concurrent supersession attempts — only one wins, second gets INVALID_STATE', async () => {
+      const setupMock = createMockRepository();
+      const setupService = createKnowledgeService(setupMock.repo as any, passthroughTx);
+
+      // Create confirmed v1
+      const source = await setupService.createEvidenceSource({ sourceType: 'official_web', title: 'S' });
+      const excerpt = await setupService.addEvidenceExcerpt({ evidenceSourceId: source.id, excerptText: 'E' });
+      const claim = await setupService.createKnowledgeClaim({
+        claimKey: 'concurrent-super', claimType: 'equivalency', subjectType: 'institution',
+      });
+      const v1 = await setupService.createClaimVersion({ claimId: claim.id, statement: 'v1', confidence: 75 });
+      await setupService.attachEvidenceToClaimVersion({
+        claimVersionId: v1.id, evidenceExcerptId: excerpt.id, relationshipType: 'supports',
+      });
+      await setupService.recordVerification({ claimVersionId: v1.id, action: 'verified', reviewerId: 'r1' });
+      await setupService.confirmClaimVersion(v1.id);
+
+      // Create two replacement versions v2 and v3, both eligible
+      const src2 = await setupService.createEvidenceSource({ sourceType: 'official_web', title: 'S2' });
+      const exc2 = await setupService.addEvidenceExcerpt({ evidenceSourceId: src2.id, excerptText: 'E2' });
+      const v2 = await setupService.createClaimVersion({ claimId: claim.id, statement: 'v2', confidence: 80 });
+      await setupService.attachEvidenceToClaimVersion({
+        claimVersionId: v2.id, evidenceExcerptId: exc2.id, relationshipType: 'supports',
+      });
+      await setupService.recordVerification({ claimVersionId: v2.id, action: 'verified', reviewerId: 'r1' });
+
+      const src3 = await setupService.createEvidenceSource({ sourceType: 'official_web', title: 'S3' });
+      const exc3 = await setupService.addEvidenceExcerpt({ evidenceSourceId: src3.id, excerptText: 'E3' });
+      const v3 = await setupService.createClaimVersion({ claimId: claim.id, statement: 'v3', confidence: 85 });
+      await setupService.attachEvidenceToClaimVersion({
+        claimVersionId: v3.id, evidenceExcerptId: exc3.id, relationshipType: 'supports',
+      });
+      await setupService.recordVerification({ claimVersionId: v3.id, action: 'verified', reviewerId: 'r1' });
+
+      // First supersession succeeds: v1 → v2
+      await setupService.supersedeClaimVersion(v1.id, v2.id, 'reviewer-1');
+
+      // Second supersession attempt: v1 is no longer current (v2 is)
+      try {
+        await setupService.supersedeClaimVersion(v1.id, v3.id, 'reviewer-2');
+        expect.fail('Should have thrown');
+      } catch (e: any) {
+        expect(e).toBeInstanceOf(KnowledgeError);
+        expect(e.code).toBe('KNOWLEDGE_INVALID_STATE');
+      }
+
+      // Only the winning replacement is current
+      const updatedClaim = setupMock.tables.claims.find((r) => r.id === claim.id);
+      expect(updatedClaim!.currentVersionId).toBe(v2.id);
+
+      const v1Record = setupMock.tables.claimVersions.find((r) => r.id === v1.id);
+      expect(v1Record!.status).toBe('superseded');
+
+      const v2Record = setupMock.tables.claimVersions.find((r) => r.id === v2.id);
+      expect(v2Record!.status).toBe('confirmed');
+
+      // Losing replacement remains working
+      const v3Record = setupMock.tables.claimVersions.find((r) => r.id === v3.id);
+      expect(v3Record!.status).toBe('working');
+    });
+  });
 });
