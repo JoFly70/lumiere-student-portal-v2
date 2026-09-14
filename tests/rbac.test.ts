@@ -41,7 +41,7 @@ describe('RBAC Middleware', () => {
   });
 
   describe('requireRole', () => {
-    it('rejects unauthenticated requests', async () => {
+    it('rejects unauthenticated requests with 401', async () => {
       const req = createMockReq(null);
       const res = createMockRes();
       const next = vi.fn();
@@ -64,7 +64,7 @@ describe('RBAC Middleware', () => {
       expect(next).toHaveBeenCalled();
     });
 
-    it('rejects student when admin is required', async () => {
+    it('rejects student when admin is required with 403', async () => {
       const req = createMockReq({ id: 'u1', role: 'student' });
       const res = createMockRes();
       const next = vi.fn();
@@ -87,7 +87,7 @@ describe('RBAC Middleware', () => {
       expect(next).toHaveBeenCalled();
     });
 
-    it('rejects coach when coach is not in allowed roles', async () => {
+    it('rejects coach when coach is not in allowed roles with 403', async () => {
       const req = createMockReq({ id: 'u1', role: 'coach' });
       const res = createMockRes();
       const next = vi.fn();
@@ -123,7 +123,7 @@ describe('RBAC Middleware', () => {
       expect(next).toHaveBeenCalled();
     });
 
-    it('denies student from accessing another student data', async () => {
+    it('denies student from accessing another student data with 403', async () => {
       const req = createMockReq({ id: 'student1', role: 'student' }, { id: 'student2' });
       const res = createMockRes();
       const next = vi.fn();
@@ -135,7 +135,7 @@ describe('RBAC Middleware', () => {
       expect(next).not.toHaveBeenCalled();
     });
 
-    it('denies coach from accessing student data (deny-by-default, no assignment table)', async () => {
+    it('denies coach from accessing student data with 403 (no assignment table)', async () => {
       const req = createMockReq({ id: 'coach1', role: 'coach' }, { id: 'student1' });
       const res = createMockRes();
       const next = vi.fn();
@@ -147,7 +147,7 @@ describe('RBAC Middleware', () => {
       expect(next).not.toHaveBeenCalled();
     });
 
-    it('denies staff from accessing student data (not admin, not owner)', async () => {
+    it('denies staff from accessing student data with 403 (not admin, not owner)', async () => {
       const req = createMockReq({ id: 'staff1', role: 'staff' }, { id: 'student1' });
       const res = createMockRes();
       const next = vi.fn();

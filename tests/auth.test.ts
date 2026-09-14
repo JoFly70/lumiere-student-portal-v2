@@ -3,10 +3,6 @@ import type { Request, Response, NextFunction } from 'express';
 
 const mockGetUser = vi.fn();
 
-// Mock Drizzle db — requireAuth uses db.select().from().where().limit()
-const mockDbSelect = vi.fn();
-const mockDbFrom = vi.fn();
-const mockDbWhere = vi.fn();
 const mockDbLimit = vi.fn();
 
 vi.mock('../server/lib/supabase.js', () => ({
@@ -77,7 +73,7 @@ describe('Authentication Middleware', () => {
     delete process.env.ALLOW_DEMO_MODE;
   });
 
-  it('rejects unauthenticated requests (no auth header)', async () => {
+  it('rejects unauthenticated requests with 401 (no auth header)', async () => {
     const { requireAuth } = await import('../server/middleware/auth.js');
     const req = createMockReq();
     const res = createMockRes();
@@ -86,10 +82,13 @@ describe('Authentication Middleware', () => {
     await requireAuth(req as Request, res as Response, next as NextFunction);
 
     expect(res.status).toHaveBeenCalledWith(401);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({ error: expect.any(String) })
+    );
     expect(next).not.toHaveBeenCalled();
   });
 
-  it('rejects invalid bearer tokens', async () => {
+  it('rejects invalid bearer tokens with 401', async () => {
     mockGetUser.mockResolvedValue({
       data: { user: null },
       error: { message: 'Invalid token' },
@@ -108,7 +107,7 @@ describe('Authentication Middleware', () => {
     expect(next).not.toHaveBeenCalled();
   });
 
-  it('accepts valid bearer tokens and sets req.user', async () => {
+  it('accepts valid bearer tokens, sets req.user, and calls next()', async () => {
     mockGetUser.mockResolvedValue({
       data: { user: { id: 'user-123', email: 'student@test.com' } },
       error: null,
@@ -132,19 +131,7 @@ describe('Authentication Middleware', () => {
     expect(req.user.role).toBe('student');
   });
 
-  it('does not fall into demo mode when ALLOW_DEMO_MODE is not set', async () => {
-    const { requireAuth } = await import('../server/middleware/auth.js');
-    const req = createMockReq();
-    const res = createMockRes();
-    const next = vi.fn();
-
-    await requireAuth(req as Request, res as Response, next as NextFunction);
-
-    expect(res.status).toHaveBeenCalledWith(401);
-    expect(next).not.toHaveBeenCalled();
-  });
-
-  it('does not fall into demo mode in production even if ALLOW_DEMO_MODE=true', async () => {
+  it('rejects demo mode in production with 500 even when ALLOW_DEMO_MODE=true', async () => {
     process.env.NODE_ENV = 'production';
     process.env.ALLOW_DEMO_MODE = 'true';
 
