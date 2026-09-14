@@ -131,12 +131,16 @@ export const rateLimitConfig = {
     windowMs: 15 * 60 * 1000,
     max: 30, // 30 requests per window
     message: 'Too many admin requests, please try again later',
+    standardHeaders: true,
+    legacyHeaders: false,
   },
   // Auth endpoints (login, signup)
   auth: {
     windowMs: 15 * 60 * 1000,
     max: 5, // 5 attempts per 15 minutes
     message: 'Too many authentication attempts, please try again later',
+    standardHeaders: true,
+    legacyHeaders: false,
   },
   // Webhook endpoints (no rate limit - Stripe handles this)
   webhook: {

@@ -17,7 +17,7 @@ import {
   insertStudentContactSchema,
 } from '@shared/schema';
 import { logger } from '../lib/logger';
-import { auditProfile } from '../lib/audit';
+import { auditProfile, writeAuditLog } from '../lib/audit';
 import * as studentRepo from '../repositories/student-repo';
 import * as contactRepo from '../repositories/student-repo'; // Re-export for clarity
 import * as englishProofRepo from '../repositories/student-repo'; // Re-export for clarity

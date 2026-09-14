@@ -10,7 +10,7 @@ import { logger } from '../lib/logger';
 import { asyncHandler } from '../lib/errors';
 import { requireAuth } from '../middleware/auth';
 import { requireRole, requireOwnerOrAdmin } from '../middleware/rbac';
-import { auditAuth, auditAdmin } from '../lib/audit';
+import { auditSystem, auditAdmin } from '../lib/audit';
 import {
   sendTicketCreatedEmailToStaff,
   sendTicketStatusUpdateEmail,
@@ -214,9 +214,8 @@ router.post('/', requireAuth, asyncHandler(async (req: any, res) => {
       });
 
     // Audit log
-    await auditAuth(
-      'system.maintenance_mode', // Using generic type for now
-      user.id,
+    await auditSystem(
+      'system.maintenance_mode',
       `Created support ticket ${ticket.ticket_number}: ${subject}`,
       {
         ticketId: ticket.id,

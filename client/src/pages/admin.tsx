@@ -60,6 +60,15 @@ interface Analytics {
   totalRevenue: number;
 }
 
+interface AuditLogEntry {
+  id: string;
+  event_type: string;
+  severity: 'info' | 'warning' | 'error' | 'critical';
+  action_description: string;
+  created_at: string;
+  actor_user_id?: string;
+}
+
 // Stats Card Component
 function StatCard({
   title,
@@ -436,7 +445,7 @@ function StudentManagement() {
 function AuditLogs() {
   const [dateRange, setDateRange] = useState("7d");
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading } = useQuery<{ logs: AuditLogEntry[] }>({
     queryKey: ['/api/admin/audit-logs', { limit: 100 }],
   });
 

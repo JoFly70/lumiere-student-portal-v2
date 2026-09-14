@@ -234,7 +234,7 @@ window.ENV = {
 
       // Send password reset email via Supabase
       const { error } = await supabaseAdmin.auth.resetPasswordForEmail(email, {
-        redirectTo: `${process.env.APP_URL || 'http://localhost:5000'}/update-password`,
+        redirectTo: `${process.env.APP_URL || 'http://localhost:5000'}/reset-password`,
       });
 
       // Always return success to prevent email enumeration
@@ -263,6 +263,7 @@ window.ENV = {
   });
 
   // Update password endpoint (after clicking reset link)
+  // Validates the recovery access_token before updating the password.
   app.post("/api/auth/update-password", async (req, res) => {
     try {
       const { password, access_token } = req.body;
@@ -281,10 +282,26 @@ window.ENV = {
         return res.status(503).json({ error: "Service unavailable" });
       }
 
-      // Update password via Supabase
-      const { data, error } = await supabaseAdmin.auth.updateUser(
-        { password }
-      );
+      // Validate the recovery token by calling Supabase auth.getUser with it.
+      // This confirms the token is valid, not expired, and identifies the user.
+      const { data: tokenData, error: tokenError } = await supabaseAdmin.auth.getUser(access_token);
+
+      if (tokenError || !tokenData.user) {
+        logger.warn("Password update rejected: invalid or expired recovery token", { error: tokenError?.message });
+        return res.status(401).json({ error: "Invalid or expired password reset token" });
+      }
+
+      // Use the Supabase client with the user's recovery token to update the password.
+      // This ensures the password change applies only to the user identified by the token,
+      // not via the service-role key.
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+      const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+      const userClient = createClient(supabaseUrl, supabaseAnonKey, {
+        global: { headers: { Authorization: `Bearer ${access_token}` } }
+      });
+
+      const { data, error } = await userClient.auth.updateUser({ password });
 
       if (error) {
         logger.warn("Password update failed", { error: error.message });
@@ -982,10 +999,11 @@ window.ENV = {
 
       // Derive user_id from authenticated session, not from request body.
       // Students can only generate plans for themselves.
-      // Staff/admins may generate for another student by passing user_id.
+      // Admins and staff may generate for another student by passing user_id.
+      // Coaches must NOT access or generate plans for another student by default.
       let targetUserId = authUser.id;
       if (req.body.user_id && req.body.user_id !== authUser.id) {
-        if (!['admin', 'staff', 'coach'].includes(userRole)) {
+        if (!['admin', 'staff'].includes(userRole)) {
           return res.status(403).json({ error: "You can only generate plans for yourself" });
         }
         targetUserId = req.body.user_id;
@@ -1059,8 +1077,9 @@ window.ENV = {
         return res.status(404).json({ error: "Plan not found" });
       }
 
-      // Ownership enforcement: students can only view their own plans
-      if (plan.user_id !== authUser.id && !['admin', 'staff', 'coach'].includes(userRole)) {
+      // Ownership enforcement: students can only view their own plans.
+      // Admins and staff may view any plan. Coaches must NOT access another student's plan.
+      if (plan.user_id !== authUser.id && !['admin', 'staff'].includes(userRole)) {
         return res.status(403).json({ error: "Access denied" });
       }
 

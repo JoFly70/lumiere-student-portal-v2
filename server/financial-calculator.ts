@@ -149,7 +149,7 @@ export async function calculateFinancials(inputs: FinancialInputs): Promise<Fina
   completion_target.setMonth(completion_target.getMonth() + inputs.pace_months);
 
   // Generate monthly schedule with running totals
-  const monthly_schedule = [];
+  const monthly_schedule: FinancialResult['monthly_schedule'] = [];
   let total_paid = upfront_due;
   
   for (let i = 1; i <= inputs.pace_months; i++) {

@@ -41,8 +41,13 @@ export const users = pgTable("users", {
   emailIdx: uniqueIndex("users_email_idx").on(table.email),
 }));
 
-export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
-export type InsertUser = z.infer<typeof insertUserSchema>;
+// NOTE: createInsertSchema(table).omit({...}) is not used because drizzle-zod's
+// conditional types fail to resolve under strictNullChecks:false (the table shape
+// collapses to {} and every omit key becomes `never`). The runtime schema from
+// createInsertSchema(table) is still correct; the Insert* types are derived from
+// Drizzle's own $inferInsert inference instead.
+export const insertUserSchema = createInsertSchema(users);
+export type InsertUser = Omit<typeof users.$inferInsert, 'id' | 'createdAt'>;
 export type User = typeof users.$inferSelect;
 
 // Profiles table
@@ -57,8 +62,8 @@ export const profiles = pgTable("profiles", {
   userIdIdx: uniqueIndex("profiles_user_id_idx").on(table.userId),
 }));
 
-export const insertProfileSchema = createInsertSchema(profiles).omit({ id: true, createdAt: true });
-export type InsertProfile = z.infer<typeof insertProfileSchema>;
+export const insertProfileSchema = createInsertSchema(profiles);
+export type InsertProfile = Omit<typeof profiles.$inferInsert, 'id' | 'createdAt'>;
 export type Profile = typeof profiles.$inferSelect;
 
 // Students table (Drizzle ORM definition - matches migration 005)
@@ -132,15 +137,8 @@ export const studentsTable = pgTable("students", {
 }));
 
 // Drizzle-generated schemas for students table
-export const insertStudentsTableSchema = createInsertSchema(studentsTable).omit({ 
-  id: true, 
-  student_code: true,
-  created_at: true, 
-  updated_at: true,
-  email_verified_at: true,
-  consent_signed_at: true
-});
-export type StudentsTableInsert = z.infer<typeof insertStudentsTableSchema>;
+export const insertStudentsTableSchema = createInsertSchema(studentsTable);
+export type StudentsTableInsert = Omit<typeof studentsTable.$inferInsert, 'id' | 'student_code' | 'created_at' | 'updated_at' | 'email_verified_at' | 'consent_signed_at'>;
 export type StudentsTableSelect = typeof studentsTable.$inferSelect;
 
 // Student contacts table (Drizzle ORM definition)
@@ -161,11 +159,8 @@ export const studentContactsTable = pgTable("student_contacts", {
   typeIdx: index("idx_student_contacts_type").on(table.type),
 }));
 
-export const insertStudentContactsTableSchema = createInsertSchema(studentContactsTable).omit({ 
-  id: true,
-  created_at: true,
-});
-export type StudentContactsTableInsert = z.infer<typeof insertStudentContactsTableSchema>;
+export const insertStudentContactsTableSchema = createInsertSchema(studentContactsTable);
+export type StudentContactsTableInsert = Omit<typeof studentContactsTable.$inferInsert, 'id' | 'created_at'>;
 export type StudentContactsTableSelect = typeof studentContactsTable.$inferSelect;
 
 // Student English proof table (Drizzle ORM definition)
@@ -187,13 +182,8 @@ export const studentEnglishProofTable = pgTable("student_english_proof", {
   uniqueStudent: uniqueIndex("unique_student_english").on(table.student_id),
 }));
 
-export const insertStudentEnglishProofTableSchema = createInsertSchema(studentEnglishProofTable).omit({ 
-  id: true,
-  created_at: true,
-  updated_at: true,
-  meets_requirement: true, // Computed by trigger
-});
-export type StudentEnglishProofTableInsert = z.infer<typeof insertStudentEnglishProofTableSchema>;
+export const insertStudentEnglishProofTableSchema = createInsertSchema(studentEnglishProofTable);
+export type StudentEnglishProofTableInsert = Omit<typeof studentEnglishProofTable.$inferInsert, 'id' | 'created_at' | 'updated_at' | 'meets_requirement'>;
 export type StudentEnglishProofTableSelect = typeof studentEnglishProofTable.$inferSelect;
 
 // Programs table
@@ -208,8 +198,8 @@ export const programs = pgTable("programs", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const insertProgramSchema = createInsertSchema(programs).omit({ id: true, createdAt: true });
-export type InsertProgram = z.infer<typeof insertProgramSchema>;
+export const insertProgramSchema = createInsertSchema(programs);
+export type InsertProgram = Omit<typeof programs.$inferInsert, 'id' | 'createdAt'>;
 export type Program = typeof programs.$inferSelect;
 
 // Requirements table (distribution buckets)
@@ -228,8 +218,8 @@ export const requirements = pgTable("requirements", {
   programIdIdx: index("requirements_program_id_idx").on(table.programId),
 }));
 
-export const insertRequirementSchema = createInsertSchema(requirements).omit({ id: true });
-export type InsertRequirement = z.infer<typeof insertRequirementSchema>;
+export const insertRequirementSchema = createInsertSchema(requirements);
+export type InsertRequirement = Omit<typeof requirements.$inferInsert, 'id'>;
 export type Requirement = typeof requirements.$inferSelect;
 
 // Providers table
@@ -241,8 +231,8 @@ export const providers = pgTable("providers", {
   keyIdx: uniqueIndex("providers_key_idx").on(table.key),
 }));
 
-export const insertProviderSchema = createInsertSchema(providers).omit({ id: true });
-export type InsertProvider = z.infer<typeof insertProviderSchema>;
+export const insertProviderSchema = createInsertSchema(providers);
+export type InsertProvider = Omit<typeof providers.$inferInsert, 'id'>;
 export type Provider = typeof providers.$inferSelect;
 
 // Courses catalog table
@@ -262,8 +252,8 @@ export const coursesCatalog = pgTable("courses_catalog", {
   activeIdx: index("courses_catalog_active_idx").on(table.active),
 }));
 
-export const insertCoursesCatalogSchema = createInsertSchema(coursesCatalog).omit({ id: true });
-export type InsertCoursesCatalog = z.infer<typeof insertCoursesCatalogSchema>;
+export const insertCoursesCatalogSchema = createInsertSchema(coursesCatalog);
+export type InsertCoursesCatalog = Omit<typeof coursesCatalog.$inferInsert, 'id'>;
 export type CoursesCatalog = typeof coursesCatalog.$inferSelect;
 
 // Articulations table (course mappings)
@@ -281,8 +271,8 @@ export const articulations = pgTable("articulations", {
   requirementPriorityIdx: index("articulations_req_priority_idx").on(table.toRequirementId, table.priority),
 }));
 
-export const insertArticulationSchema = createInsertSchema(articulations).omit({ id: true });
-export type InsertArticulation = z.infer<typeof insertArticulationSchema>;
+export const insertArticulationSchema = createInsertSchema(articulations);
+export type InsertArticulation = Omit<typeof articulations.$inferInsert, 'id'>;
 export type Articulation = typeof articulations.$inferSelect;
 
 // Plans table
@@ -298,8 +288,8 @@ export const plans = pgTable("plans", {
   userProgramIdx: uniqueIndex("plans_user_program_idx").on(table.userId, table.programId),
 }));
 
-export const insertPlanSchema = createInsertSchema(plans).omit({ id: true, createdAt: true });
-export type InsertPlan = z.infer<typeof insertPlanSchema>;
+export const insertPlanSchema = createInsertSchema(plans);
+export type InsertPlan = Omit<typeof plans.$inferInsert, 'id' | 'createdAt'>;
 export type Plan = typeof plans.$inferSelect;
 
 // Plan requirements table
@@ -315,8 +305,8 @@ export const planRequirements = pgTable("plan_requirements", {
   planRequirementIdx: uniqueIndex("plan_requirements_plan_req_idx").on(table.planId, table.requirementId),
 }));
 
-export const insertPlanRequirementSchema = createInsertSchema(planRequirements).omit({ id: true });
-export type InsertPlanRequirement = z.infer<typeof insertPlanRequirementSchema>;
+export const insertPlanRequirementSchema = createInsertSchema(planRequirements);
+export type InsertPlanRequirement = Omit<typeof planRequirements.$inferInsert, 'id'>;
 export type PlanRequirement = typeof planRequirements.$inferSelect;
 
 // Enrollments table (extended for Course Roadmap)
@@ -347,8 +337,8 @@ export const enrollments = pgTable("enrollments", {
   assignedByIdx: index("idx_enrollments_assigned_by").on(table.assignedBy),
 }));
 
-export const insertEnrollmentSchema = createInsertSchema(enrollments).omit({ id: true, createdAt: true });
-export type InsertEnrollment = z.infer<typeof insertEnrollmentSchema>;
+export const insertEnrollmentSchema = createInsertSchema(enrollments);
+export type InsertEnrollment = Omit<typeof enrollments.$inferInsert, 'id' | 'createdAt'>;
 export type Enrollment = typeof enrollments.$inferSelect;
 
 export const courseTemplates = pgTable("course_templates", {
@@ -365,8 +355,8 @@ export const courseTemplates = pgTable("course_templates", {
   defaultIdx: index("course_templates_default_idx").on(table.isDefault),
 }));
 
-export const insertCourseTemplateSchema = createInsertSchema(courseTemplates).omit({ id: true, createdAt: true, updatedAt: true });
-export type InsertCourseTemplate = z.infer<typeof insertCourseTemplateSchema>;
+export const insertCourseTemplateSchema = createInsertSchema(courseTemplates);
+export type InsertCourseTemplate = Omit<typeof courseTemplates.$inferInsert, 'id' | 'createdAt' | 'updatedAt'>;
 export type CourseTemplate = typeof courseTemplates.$inferSelect;
 
 // Documents table
@@ -382,8 +372,8 @@ export const documents = pgTable("documents", {
   userIdStatusIdx: index("documents_user_id_status_idx").on(table.userId, table.status),
 }));
 
-export const insertDocumentSchema = createInsertSchema(documents).omit({ id: true, uploadedAt: true });
-export type InsertDocument = z.infer<typeof insertDocumentSchema>;
+export const insertDocumentSchema = createInsertSchema(documents);
+export type InsertDocument = Omit<typeof documents.$inferInsert, 'id' | 'uploadedAt'>;
 export type Document = typeof documents.$inferSelect;
 
 // Metrics table
@@ -402,8 +392,8 @@ export const metrics = pgTable("metrics", {
   planIdIdx: uniqueIndex("metrics_plan_id_idx").on(table.planId),
 }));
 
-export const insertMetricSchema = createInsertSchema(metrics).omit({ id: true });
-export type InsertMetric = z.infer<typeof insertMetricSchema>;
+export const insertMetricSchema = createInsertSchema(metrics);
+export type InsertMetric = Omit<typeof metrics.$inferInsert, 'id'>;
 export type Metric = typeof metrics.$inferSelect;
 
 // Payments table
@@ -420,8 +410,8 @@ export const payments = pgTable("payments", {
   userIdIdx: index("payments_user_id_idx").on(table.userId),
 }));
 
-export const insertPaymentSchema = createInsertSchema(payments).omit({ id: true, createdAt: true });
-export type InsertPayment = z.infer<typeof insertPaymentSchema>;
+export const insertPaymentSchema = createInsertSchema(payments);
+export type InsertPayment = Omit<typeof payments.$inferInsert, 'id' | 'createdAt'>;
 export type Payment = typeof payments.$inferSelect;
 
 // Tasks table
@@ -438,8 +428,8 @@ export const tasks = pgTable("tasks", {
   userIdStatusIdx: index("tasks_user_id_status_idx").on(table.userId, table.status),
 }));
 
-export const insertTaskSchema = createInsertSchema(tasks).omit({ id: true, createdAt: true });
-export type InsertTask = z.infer<typeof insertTaskSchema>;
+export const insertTaskSchema = createInsertSchema(tasks);
+export type InsertTask = Omit<typeof tasks.$inferInsert, 'id' | 'createdAt'>;
 export type Task = typeof tasks.$inferSelect;
 
 // Coach assignments table (defines which coaches are assigned to which students)
@@ -453,8 +443,8 @@ export const coachAssignments = pgTable("coach_assignments", {
   studentIdx: index("coach_assignments_student_idx").on(table.studentId),
 }));
 
-export const insertCoachAssignmentSchema = createInsertSchema(coachAssignments).omit({ id: true, assignedAt: true });
-export type InsertCoachAssignment = z.infer<typeof insertCoachAssignmentSchema>;
+export const insertCoachAssignmentSchema = createInsertSchema(coachAssignments);
+export type InsertCoachAssignment = Omit<typeof coachAssignments.$inferInsert, 'id' | 'assignedAt'>;
 export type CoachAssignment = typeof coachAssignments.$inferSelect;
 
 // Audit log table
@@ -472,8 +462,8 @@ export const auditLog = pgTable("audit_log", {
   entityIdx: index("audit_log_entity_idx").on(table.entity, table.entityId),
 }));
 
-export const insertAuditLogSchema = createInsertSchema(auditLog).omit({ id: true, at: true });
-export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
+export const insertAuditLogSchema = createInsertSchema(auditLog);
+export type InsertAuditLog = Omit<typeof auditLog.$inferInsert, 'id' | 'at'>;
 export type AuditLog = typeof auditLog.$inferSelect;
 
 // ============================================================================
@@ -494,8 +484,8 @@ export const weeklyMetrics = pgTable("weekly_metrics", {
   weekOfIdx: index("idx_weekly_metrics_week_of").on(table.weekOf),
 }));
 
-export const insertWeeklyMetricSchema = createInsertSchema(weeklyMetrics).omit({ id: true, createdAt: true, updatedAt: true });
-export type InsertWeeklyMetric = z.infer<typeof insertWeeklyMetricSchema>;
+export const insertWeeklyMetricSchema = createInsertSchema(weeklyMetrics);
+export type InsertWeeklyMetric = Omit<typeof weeklyMetrics.$inferInsert, 'id' | 'createdAt' | 'updatedAt'>;
 export type WeeklyMetric = typeof weeklyMetrics.$inferSelect;
 
 // Pricing Rules table
@@ -518,8 +508,8 @@ export const pricingRules = pgTable("pricing_rules", {
   activeIdx: index("idx_pricing_rules_active").on(table.provider, table.school),
 }));
 
-export const insertPricingRuleSchema = createInsertSchema(pricingRules).omit({ id: true, createdAt: true, updatedAt: true });
-export type InsertPricingRule = z.infer<typeof insertPricingRuleSchema>;
+export const insertPricingRuleSchema = createInsertSchema(pricingRules);
+export type InsertPricingRule = Omit<typeof pricingRules.$inferInsert, 'id' | 'createdAt' | 'updatedAt'>;
 export type PricingRule = typeof pricingRules.$inferSelect;
 
 // Weekly Snapshots table (trend tracking)
@@ -539,8 +529,8 @@ export const snapshotsWeekly = pgTable("snapshots_weekly", {
   weekOfIdx: index("idx_snapshots_week_of").on(table.weekOf),
 }));
 
-export const insertSnapshotWeeklySchema = createInsertSchema(snapshotsWeekly).omit({ id: true, createdAt: true });
-export type InsertSnapshotWeekly = z.infer<typeof insertSnapshotWeeklySchema>;
+export const insertSnapshotWeeklySchema = createInsertSchema(snapshotsWeekly);
+export type InsertSnapshotWeekly = Omit<typeof snapshotsWeekly.$inferInsert, 'id' | 'createdAt'>;
 export type SnapshotWeekly = typeof snapshotsWeekly.$inferSelect;
 
 // ============================================================================

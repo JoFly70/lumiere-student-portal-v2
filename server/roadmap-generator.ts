@@ -420,7 +420,7 @@ export async function generateRoadmap(
   };
 
   // Calculate financials
-  let financials = null;
+  let financials: import('./financial-calculator').FinancialResult | null = null;
   try {
     const { calculateFinancials, saveFinancials } = await import('./financial-calculator');
     

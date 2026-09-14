@@ -1,15 +1,42 @@
-import type * as Sentry from '@sentry/node';
 import { logger } from './logger';
 
-let SentrySDK: typeof Sentry | null = null;
-let nodeProfilingIntegration: any = null;
+/**
+ * Sentry is an optional dependency. When @sentry/node and
+ * @sentry/profiling-node are not installed we fall back to no-op stubs so the
+ * application still type-checks and runs. The packages are loaded lazily via
+ * dynamic import so their absence never breaks startup.
+ */
+
+// Minimal structural type for the subset of the Sentry SDK we use. This avoids
+// importing the (possibly missing) @sentry/node types at compile time.
+interface SentrySDKLike {
+  init: (opts: Record<string, unknown>) => void;
+  Handlers: {
+    requestHandler: () => (req: unknown, res: unknown, next: () => void) => void;
+    tracingHandler: () => (req: unknown, res: unknown, next: () => void) => void;
+    errorHandler: () => (err: unknown, req: unknown, res: unknown, next: (err?: unknown) => void) => void;
+  };
+  captureException: (err: unknown) => void;
+}
+
+let SentrySDK: SentrySDKLike | null = null;
+let nodeProfilingIntegration: (() => unknown) | null = null;
 
 // Try to import Sentry (optional dependency)
 try {
-  SentrySDK = await import('@sentry/node');
-  const profiling = await import('@sentry/profiling-node');
-  nodeProfilingIntegration = profiling.nodeProfilingIntegration;
-} catch (error) {
+  // Use a non-literal module specifier and `any` typing so TypeScript does not
+  // try to resolve the (optional, possibly uninstalled) @sentry packages at
+  // compile time. The packages are loaded lazily; if they are missing the
+  // catch branch leaves SentrySDK as null and the no-op fallback is used.
+  const sentryModuleSpec: string = '@sentry/node';
+  const profilingModuleSpec: string = '@sentry/profiling-node';
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sentryModule: any = await import(sentryModuleSpec);
+  SentrySDK = sentryModule as SentrySDKLike;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const profiling: any = await import(profilingModuleSpec);
+  nodeProfilingIntegration = profiling?.nodeProfilingIntegration ?? null;
+} catch {
   logger.debug('Sentry packages not installed (optional)');
 }
 
@@ -28,7 +55,7 @@ if (SentrySDK && dsn) {
     // Profiling
     profilesSampleRate: isProduction ? 0.1 : 1.0,
     // Filter out health check requests
-    beforeSend(event, hint) {
+    beforeSend(event: { request?: { url?: string } }) {
       const url = event.request?.url;
       if (url && (url.includes('/health') || url.includes('/live') || url.includes('/ready'))) {
         return null; // Don't send health check errors
@@ -36,7 +63,7 @@ if (SentrySDK && dsn) {
       return event;
     },
   });
-  
+
   logger.info('✓ Sentry error tracking initialized', {
     environment,
     dsn: dsn.substring(0, 20) + '...',
@@ -51,12 +78,15 @@ if (SentrySDK && dsn) {
   }
 }
 
-export const Sentry = SentrySDK || {
+const noOpHandler = () => (_req: unknown, _res: unknown, next: () => void) => next();
+const noOpErrorHandler = () => (err: unknown, _req: unknown, _res: unknown, next: (e?: unknown) => void) => next(err);
+
+export const Sentry: SentrySDKLike = SentrySDK ?? ({
   Handlers: {
-    requestHandler: () => (req: any, res: any, next: any) => next(),
-    tracingHandler: () => (req: any, res: any, next: any) => next(),
-    errorHandler: () => (err: any, req: any, res: any, next: any) => next(err),
+    requestHandler: noOpHandler,
+    tracingHandler: noOpHandler,
+    errorHandler: noOpErrorHandler,
   },
   captureException: () => {},
-};
+} as unknown as SentrySDKLike);
 export const isSentryConfigured = Boolean(SentrySDK && dsn);

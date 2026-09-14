@@ -11,7 +11,7 @@ import {
   insertStudentDocumentSchema,
 } from '@shared/schema';
 import { logger } from '../lib/logger';
-import { auditDocument } from '../lib/audit';
+import { auditDocument, writeAuditLog } from '../lib/audit';
 
 /**
  * Get document by ID

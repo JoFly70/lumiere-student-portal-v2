@@ -328,6 +328,41 @@ export async function auditSystem(
   });
 }
 
+/**
+ * Write a student-scoped audit log entry.
+ *
+ * This is a simpler convenience wrapper used by the student/document services
+ * for recording mutations against a student record. It bridges to the
+ * canonical {@link createAuditLog} with a stable, minimal call shape.
+ */
+export async function writeAuditLog(entry: {
+  studentId: string;
+  actorId: string;
+  action: string;
+  entityType: string;
+  entityId: string;
+  oldValue?: unknown;
+  newValue?: unknown;
+  metadata?: Record<string, unknown>;
+}): Promise<void> {
+  await createAuditLog({
+    eventType: 'admin.bulk_operation',
+    severity: 'info',
+    actorUserId: entry.actorId,
+    targetUserId: entry.studentId,
+    targetResourceType: entry.entityType,
+    targetResourceId: entry.entityId,
+    actionDescription: `${entry.action} ${entry.entityType} ${entry.entityId}`,
+    metadata: {
+      ...entry.metadata,
+      action: entry.action,
+      oldValue: entry.oldValue,
+      newValue: entry.newValue,
+    },
+    isEducationalRecord: entry.entityType === 'student' || entry.entityType === 'document',
+  });
+}
+
 // ==================== QUERY FUNCTIONS ====================
 
 /**
