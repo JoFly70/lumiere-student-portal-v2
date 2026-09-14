@@ -1,0 +1,123 @@
+Short answer: solid start, but a few fixes before import.
+
+What’s off (and how to fix fast):
+
+1. Number mismatches → trust the URL, not the title
+
+* **Math 301: Linear Algebra** → URL says `math-201-linear-algebra` → make it **Math 201**, **level = lower**.
+* **Economics 302: Intermediate Macroeconomics** → URL `economics-202-...` → **Econ 202**, **level = lower**.
+* **Economics 301: Intermediate Microeconomics** → URL `economics-201-...` → **Econ 201**, **level = lower**.
+
+2. Level inference rule (use this consistently)
+
+* Parse the **first 3-digit number from the URL slug** (source of truth).
+* 100–299 → **lower**, 300+ → **upper**.
+* If no number → keep your current “lower” for 101/105/etc; unknown otherwise.
+* For lab courses, keep `has_lab = true` for titles like `111L`, `112L`, `101L`.
+
+3. Subjects
+
+* Use your canonical set. Map “Education & Teaching” → **Education** (or whatever bucket you use in the portal).
+
+If you want Replit to fix this list automatically, paste this **one file** and run it.
+
+```js
+// normalize_courses.mjs
+import fs from 'node:fs';
+
+const IN  = 'courses_in.json';     // put your JSON here (the array you pasted)
+const OUT = 'courses_clean.json';
+
+const SUBJECT_MAP = {
+  'Education & Teaching': 'Education',
+  'Social Science': 'Social Science',
+  'Science': 'Science',
+  'Business': 'Business',
+  'Psychology': 'Psychology',
+  'Math': 'Math'
+};
+
+function inferFromUrl(url) {
+  // Pull first 3-digit number from the slug, e.g. .../economics-202-... → 202
+  const m = url.match(/\/([a-z0-9-]+)\.html$/i);
+  if (!m) return { code: null, level: 'unknown' };
+  const slug = m[1];
+  const num = slug.match(/\b([1-9]\d\d)l?\b/i); // catch 101, 201, 111l, etc.
+  if (!num) return { code: null, level: 'unknown' };
+  const n = parseInt(num[1], 10);
+  const level = (n >= 100 && n <= 299) ? 'lower' : (n >= 300 ? 'upper' : 'unknown');
+  return { code: n, level };
+}
+
+function fixTitleNumber(title, codeFromUrl) {
+  if (!codeFromUrl) return title;
+  // Replace any existing 3-digit number before colon with the URL one, else prepend it.
+  // e.g. "Math 301: Linear Algebra" -> "Math 201: Linear Algebra"
+  const parts = title.split(':');
+  const head = parts[0];
+  const rest = parts.slice(1).join(':');
+  if (/\b[1-9]\d\d\b/.test(head)) {
+    return head.replace(/\b[1-9]\d\d\b/, String(codeFromUrl)) + (rest ? ':' + rest : '');
+  }
+  // If no number exists in the head, insert after the subject word.
+  // e.g. "Linear Algebra" (rare) → leave unchanged
+  return title;
+}
+
+function fixHasLab(title) {
+  // If title has like '111L', '112L', keep has_lab = true
+  return /\b[1-9]\d{2}L\b/i.test(title);
+}
+
+const rows = JSON.parse(fs.readFileSync(IN, 'utf8'));
+
+const cleaned = rows.map(r => {
+  const subj = SUBJECT_MAP[r.subject] || r.subject || null;
+  const { code, level } = inferFromUrl(r.url || '');
+  const fixedTitle = fixTitleNumber(r.title || '', code);
+  // prefer level from URL if available
+  const finalLevel = level !== 'unknown' ? level : (r.level || 'unknown');
+  // preserve explicit lab flag, else infer from title
+  const hasLab = (r.has_lab === true) ? true : fixHasLab(r.title || '');
+  return {
+    provider: 'Study.com',
+    subject: subj,
+    title: fixedTitle,
+    url: (r.url || '').split('?')[0],
+    level: finalLevel,
+    credit_value: r.credit_value ?? null,
+    credit_type: r.credit_type ?? null,
+    has_lab,
+    description: r.description ?? null
+  };
+}).reduce((acc, cur) => {
+  // de-dupe by URL
+  if (!acc.some(x => x.url === cur.url)) acc.push(cur);
+  return acc;
+}, []);
+
+console.log(`Input: ${rows.length} → Output: ${cleaned.length}`);
+fs.writeFileSync(OUT, JSON.stringify(cleaned, null, 2));
+console.log(`Wrote ${OUT}`);
+```
+
+How to run in Replit:
+
+1. Create a file named `courses_in.json` and paste your array into it.
+2. Create `normalize_courses.mjs` with the code above.
+3. In the shell:
+
+   ```
+   node normalize_courses.mjs
+   ```
+4. Use the generated `courses_clean.json` for your Supabase import/upsert.
+
+Result for your list:
+
+* “Math 301: Linear Algebra” → **Math 201**, **level: lower**
+* “Economics 302: Intermediate Macroeconomics” → **Econ 202**, **level: lower**
+* “Economics 301: Intermediate Microeconomics” → **Econ 201**, **level: lower**
+* Physics 111L / 112L keep **has_lab = true** and **level: lower**
+* Everything normalized to your subject buckets and deduped.
+
+If you want, I can also drop the **import script** that reads `courses_clean.json` and upserts straight into your Supabase tables.
