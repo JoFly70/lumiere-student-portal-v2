@@ -20,6 +20,7 @@ import {
 } from '@shared/knowledge-schema';
 import { eq, and, desc, max, sql } from 'drizzle-orm';
 import type { PgTransaction } from 'drizzle-orm/pg-core';
+import type { SQL } from 'drizzle-orm';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -152,17 +153,21 @@ export async function getEvidenceSource(id: string, tx: Tx = db) {
   return row ?? null;
 }
 
+export type SourceType = (typeof evidenceSources.sourceType.enumValues)[number];
+
 export async function listEvidenceSources(filters?: {
-  sourceType?: string;
+  sourceType?: SourceType;
   institutionId?: string;
   providerId?: string;
   limit?: number;
   offset?: number;
 }, tx: Tx = db) {
+  const conditions: SQL[] = [];
+  if (filters?.sourceType) conditions.push(eq(evidenceSources.sourceType, filters.sourceType));
+  if (filters?.institutionId) conditions.push(eq(evidenceSources.institutionId, filters.institutionId));
+  if (filters?.providerId) conditions.push(eq(evidenceSources.providerId, filters.providerId));
   let query = tx.select().from(evidenceSources).$dynamic();
-  if (filters?.sourceType) query = query.where(eq(evidenceSources.sourceType, filters.sourceType as any));
-  if (filters?.institutionId) query = query.where(eq(evidenceSources.institutionId, filters.institutionId));
-  if (filters?.providerId) query = query.where(eq(evidenceSources.providerId, filters.providerId));
+  if (conditions.length > 0) query = query.where(and(...conditions));
   const limit = filters?.limit ?? 50;
   const offset = filters?.offset ?? 0;
   return await query.limit(limit).offset(offset).orderBy(desc(evidenceSources.createdAt));
@@ -215,19 +220,25 @@ export async function getClaimByKey(claimKey: string, tx: Tx = db) {
   return row ?? null;
 }
 
+export type ClaimStatusFilter = (typeof knowledgeClaims.status.enumValues)[number];
+export type ClaimTypeFilter = (typeof knowledgeClaims.claimType.enumValues)[number];
+export type SubjectTypeFilter = (typeof knowledgeClaims.subjectType.enumValues)[number];
+
 export async function listClaims(filters?: {
-  status?: string;
-  claimType?: string;
-  subjectType?: string;
+  status?: ClaimStatusFilter;
+  claimType?: ClaimTypeFilter;
+  subjectType?: SubjectTypeFilter;
   claimKey?: string;
   limit?: number;
   offset?: number;
 }, tx: Tx = db) {
+  const conditions: SQL[] = [];
+  if (filters?.status) conditions.push(eq(knowledgeClaims.status, filters.status));
+  if (filters?.claimType) conditions.push(eq(knowledgeClaims.claimType, filters.claimType));
+  if (filters?.subjectType) conditions.push(eq(knowledgeClaims.subjectType, filters.subjectType));
+  if (filters?.claimKey) conditions.push(eq(knowledgeClaims.claimKey, filters.claimKey));
   let query = tx.select().from(knowledgeClaims).$dynamic();
-  if (filters?.status) query = query.where(eq(knowledgeClaims.status, filters.status as any));
-  if (filters?.claimType) query = query.where(eq(knowledgeClaims.claimType, filters.claimType as any));
-  if (filters?.subjectType) query = query.where(eq(knowledgeClaims.subjectType, filters.subjectType as any));
-  if (filters?.claimKey) query = query.where(eq(knowledgeClaims.claimKey, filters.claimKey));
+  if (conditions.length > 0) query = query.where(and(...conditions));
   const limit = filters?.limit ?? 50;
   const offset = filters?.offset ?? 0;
   return await query.limit(limit).offset(offset).orderBy(desc(knowledgeClaims.createdAt));
@@ -313,6 +324,61 @@ export async function findEvidenceRelationship(claimVersionId: string, evidenceE
   return row ?? null;
 }
 
+export interface EvidenceWithProvenance {
+  relationship: typeof claimEvidence.$inferSelect;
+  excerpt: {
+    id: string;
+    excerptText: string;
+    locator: string | null;
+    pageNumber: number | null;
+    section: string | null;
+  };
+  source: {
+    id: string;
+    sourceType: string;
+    title: string;
+    sourceUrl: string | null;
+    authorityLevel: string;
+    publishedAt: Date | null;
+    effectiveFrom: Date | null;
+    effectiveTo: Date | null;
+  };
+}
+
+export async function listEvidenceWithProvenance(claimVersionId: string, tx: Tx = db): Promise<EvidenceWithProvenance[]> {
+  const rows = await tx
+    .select({
+      relationship: claimEvidence,
+      excerpt: evidenceExcerpts,
+      source: evidenceSources,
+    })
+    .from(claimEvidence)
+    .innerJoin(evidenceExcerpts, eq(claimEvidence.evidenceExcerptId, evidenceExcerpts.id))
+    .innerJoin(evidenceSources, eq(evidenceExcerpts.evidenceSourceId, evidenceSources.id))
+    .where(eq(claimEvidence.claimVersionId, claimVersionId));
+
+  return rows.map((row) => ({
+    relationship: row.relationship,
+    excerpt: {
+      id: row.excerpt.id,
+      excerptText: row.excerpt.excerptText,
+      locator: row.excerpt.locator,
+      pageNumber: row.excerpt.pageNumber,
+      section: row.excerpt.section,
+    },
+    source: {
+      id: row.source.id,
+      sourceType: row.source.sourceType,
+      title: row.source.title,
+      sourceUrl: row.source.sourceUrl,
+      authorityLevel: row.source.authorityLevel,
+      publishedAt: row.source.publishedAt,
+      effectiveFrom: row.source.effectiveFrom,
+      effectiveTo: row.source.effectiveTo,
+    },
+  }));
+}
+
 // ── Verification Events ───────────────────────────────────────────────────────
 
 export async function appendVerificationEvent(input: CreateVerificationEventInput, tx: Tx = db) {
@@ -352,15 +418,20 @@ export async function getConflict(id: string, tx: Tx = db) {
   return row ?? null;
 }
 
+export type ConflictStatusFilter = (typeof knowledgeConflicts.status.enumValues)[number];
+export type ConflictTypeFilter = (typeof knowledgeConflicts.conflictType.enumValues)[number];
+
 export async function listConflicts(filters?: {
-  status?: string;
-  conflictType?: string;
+  status?: ConflictStatusFilter;
+  conflictType?: ConflictTypeFilter;
   limit?: number;
   offset?: number;
 }, tx: Tx = db) {
+  const conditions: SQL[] = [];
+  if (filters?.status) conditions.push(eq(knowledgeConflicts.status, filters.status));
+  if (filters?.conflictType) conditions.push(eq(knowledgeConflicts.conflictType, filters.conflictType));
   let query = tx.select().from(knowledgeConflicts).$dynamic();
-  if (filters?.status) query = query.where(eq(knowledgeConflicts.status, filters.status as any));
-  if (filters?.conflictType) query = query.where(eq(knowledgeConflicts.conflictType, filters.conflictType as any));
+  if (conditions.length > 0) query = query.where(and(...conditions));
   const limit = filters?.limit ?? 50;
   const offset = filters?.offset ?? 0;
   return await query.limit(limit).offset(offset).orderBy(desc(knowledgeConflicts.createdAt));

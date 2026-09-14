@@ -33,6 +33,13 @@ import type {
   CreateAcademicRuleInput,
   CreateEquivalencyInput,
   CreateArticulationInput,
+  EvidenceWithProvenance,
+  SourceType,
+  ClaimStatusFilter,
+  ClaimTypeFilter,
+  SubjectTypeFilter,
+  ConflictStatusFilter,
+  ConflictTypeFilter,
 } from '../repositories/knowledge-repo';
 
 import { z } from 'zod';
@@ -216,18 +223,18 @@ export interface KnowledgeService {
   // Evidence
   createEvidenceSource(input: CreateEvidenceSourceInput): Promise<EvidenceSourceRow>;
   addEvidenceExcerpt(input: CreateExcerptInput): Promise<EvidenceExcerptRow>;
-  listEvidenceSources(filters?: { sourceType?: string; institutionId?: string; providerId?: string; limit?: number; offset?: number }): Promise<EvidenceSourceRow[]>;
+  listEvidenceSources(filters?: { sourceType?: SourceType; institutionId?: string; providerId?: string; limit?: number; offset?: number }): Promise<EvidenceSourceRow[]>;
   getEvidenceSourceDetail(id: string): Promise<{ source: EvidenceSourceRow; excerpts: EvidenceExcerptRow[] }>;
   // Claims
   createKnowledgeClaim(input: CreateClaimInput): Promise<ClaimRow>;
-  listClaims(filters?: { status?: string; claimType?: string; subjectType?: string; claimKey?: string; limit?: number; offset?: number }): Promise<ClaimRow[]>;
+  listClaims(filters?: { status?: ClaimStatusFilter; claimType?: ClaimTypeFilter; subjectType?: SubjectTypeFilter; claimKey?: string; limit?: number; offset?: number }): Promise<ClaimRow[]>;
   getClaimDetail(id: string): Promise<{ claim: ClaimRow; versions: ClaimVersionRow[] }>;
   // Claim versions
   createClaimVersion(input: CreateClaimVersionInput): Promise<ClaimVersionRow>;
   getClaimVersionDetail(id: string): Promise<{
     version: ClaimVersionRow;
     claim: ClaimRow;
-    evidenceRelationships: ClaimEvidenceRow[];
+    evidenceRelationships: EvidenceWithProvenance[];
     verificationEvents: VerificationEventRow[];
     openConflicts: ConflictRow[];
     canonicalRecords: { academicRules: AcademicRuleRow[]; equivalencies: EquivalencyRow[]; articulations: ArticulationRow[] };
@@ -243,7 +250,7 @@ export interface KnowledgeService {
   // Conflicts
   createKnowledgeConflict(input: CreateConflictInput): Promise<ConflictRow>;
   resolveKnowledgeConflict(conflictId: string, resolutionNotes: string, resolvedBy: string): Promise<ConflictRow>;
-  listConflicts(filters?: { status?: string; conflictType?: string; limit?: number; offset?: number }): Promise<ConflictRow[]>;
+  listConflicts(filters?: { status?: ConflictStatusFilter; conflictType?: ConflictTypeFilter; limit?: number; offset?: number }): Promise<ConflictRow[]>;
   getConflict(id: string): Promise<ConflictRow>;
   // Canonical creation
   createAcademicRuleFromVerifiedClaim(input: CreateAcademicRuleInput): Promise<AcademicRuleRow>;
@@ -642,7 +649,7 @@ export function createKnowledgeService(
 
   // ── Read methods ────────────────────────────────────────────────────────────
 
-  async function listEvidenceSources(filters?: { sourceType?: string; institutionId?: string; providerId?: string; limit?: number; offset?: number }): Promise<EvidenceSourceRow[]> {
+  async function listEvidenceSources(filters?: { sourceType?: SourceType; institutionId?: string; providerId?: string; limit?: number; offset?: number }): Promise<EvidenceSourceRow[]> {
     return await repository.listEvidenceSources(filters);
   }
 
@@ -655,7 +662,7 @@ export function createKnowledgeService(
     return { source, excerpts };
   }
 
-  async function listClaims(filters?: { status?: string; claimType?: string; subjectType?: string; claimKey?: string; limit?: number; offset?: number }): Promise<ClaimRow[]> {
+  async function listClaims(filters?: { status?: ClaimStatusFilter; claimType?: ClaimTypeFilter; subjectType?: SubjectTypeFilter; claimKey?: string; limit?: number; offset?: number }): Promise<ClaimRow[]> {
     return await repository.listClaims(filters);
   }
 
@@ -671,7 +678,7 @@ export function createKnowledgeService(
   async function getClaimVersionDetail(id: string): Promise<{
     version: ClaimVersionRow;
     claim: ClaimRow;
-    evidenceRelationships: ClaimEvidenceRow[];
+    evidenceRelationships: EvidenceWithProvenance[];
     verificationEvents: VerificationEventRow[];
     openConflicts: ConflictRow[];
     canonicalRecords: { academicRules: AcademicRuleRow[]; equivalencies: EquivalencyRow[]; articulations: ArticulationRow[] };
@@ -684,7 +691,7 @@ export function createKnowledgeService(
     if (!claim) {
       throw notFoundError('Parent claim not found', { claimId: version.claimId });
     }
-    const evidenceRelationships = await repository.listEvidenceForClaimVersion(id);
+    const evidenceRelationships = await repository.listEvidenceWithProvenance(id);
     const verificationEvents = await repository.listVerificationEvents(id);
     const openConflicts = await repository.listOpenConflictsForVersion(id);
     const academicRules = await repository.getAcademicRulesByClaimVersion(id);
@@ -693,7 +700,7 @@ export function createKnowledgeService(
     return { version, claim, evidenceRelationships, verificationEvents, openConflicts, canonicalRecords: { academicRules, equivalencies, articulations } };
   }
 
-  async function listConflicts(filters?: { status?: string; conflictType?: string; limit?: number; offset?: number }): Promise<ConflictRow[]> {
+  async function listConflicts(filters?: { status?: ConflictStatusFilter; conflictType?: ConflictTypeFilter; limit?: number; offset?: number }): Promise<ConflictRow[]> {
     return await repository.listConflicts(filters);
   }
 

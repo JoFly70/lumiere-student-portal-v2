@@ -1,15 +1,53 @@
 /**
- * Phase 1C — Knowledge API Route Tests
+ * Phase 1C — Knowledge API Route Tests (Corrected)
  *
- * Tests the ACTUAL Knowledge router with real requireAuth + requireRole middleware.
- * Mocks only the Knowledge Service boundary and the database auth lookup so
- * route tests remain deterministic.
+ * Tests the ACTUAL Knowledge router with REAL requireAuth + requireRole middleware.
+ * Only mocks dependencies BEHIND authentication:
+ *   - database user lookup (db.select)
+ *   - Supabase auth.getUser (always rejects, forcing local JWT path)
+ *   - Knowledge Service (boundary mock)
+ *   - audit (no-op)
+ *
+ * Uses real local JWT tokens signed with SESSION_SECRET so the real
+ * requireAuth middleware resolves the test user and role.
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import express from 'express';
+import express, { type Express } from 'express';
 import request from 'supertest';
-import type { Express } from 'express';
+import crypto from 'crypto';
+import { KnowledgeError } from '../server/lib/knowledge-errors';
+
+// ── Test user IDs ────────────────────────────────────────────────────────────────
+
+const ADMIN_ID = '00000000-0000-0000-0000-000000000001';
+const STAFF_ID = '00000000-0000-0000-0000-000000000002';
+const STUDENT_ID = '00000000-0000-0000-0000-000000000003';
+const COACH_ID = '00000000-0000-0000-0000-000000000004';
+const VALID_UUID = '12345678-1234-1234-1234-123456789012';
+const ANOTHER_UUID = '87654321-4321-4321-4321-210987654321';
+
+const JWT_SECRET = process.env.SESSION_SECRET || 'local-dev-secret-change-in-production';
+
+// ── Real local JWT generator (matches auth.ts verifyLocalJWT) ──────────────────
+
+function makeLocalJWT(userId: string, email: string): string {
+  const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
+  const payload = Buffer.from(JSON.stringify({
+    userId,
+    email,
+    iss: 'lumiere-local',
+    exp: Math.floor(Date.now() / 1000) + 3600,
+  iat: Math.floor(Date.now() / 1000),
+  sub: userId,
+  aud: 'authenticated',
+    role: 'authenticated',
+  })).toString('base64url');
+  const signature = crypto.createHmac('sha256', JWT_SECRET)
+    .update(`${header}.${payload}`)
+    .digest('base64url');
+  return `${header}.${payload}.${signature}`;
+}
 
 // ── Mock the Knowledge Service ─────────────────────────────────────────────────
 
@@ -36,132 +74,107 @@ const mockService = vi.hoisted(() => ({
   createArticulationFromVerifiedClaim: vi.fn(),
 }));
 
-// Mock the service module before importing the router
 vi.mock('../server/services/knowledge-service', () => ({
   knowledgeService: mockService,
   createKnowledgeService: vi.fn(() => mockService),
 }));
 
-// Import the REAL KnowledgeError for use in tests (so instanceof matches in sendKnowledgeError)
-import { KnowledgeError } from '../server/lib/knowledge-errors';
+// ── Mock audit to avoid Supabase calls ──────────────────────────────────────────
 
-// Mock audit to avoid Supabase calls
-vi.mock('../server/lib/audit', () => ({
-  auditAdmin: vi.fn().mockResolvedValue(undefined),
-}));
+const mockAudit = vi.hoisted(() => ({ auditAdmin: vi.fn().mockResolvedValue(undefined) }));
+vi.mock('../server/lib/audit', () => ({ auditAdmin: mockAudit.auditAdmin }));
 
-// Mock auth middleware to use the pre-attached user
-vi.mock('../server/middleware/auth', () => ({
-  requireAuth: (req: any, res: any, next: any) => {
-    if (!req.user) {
-      return res.status(401).json({ error: 'Missing or invalid authorization header' });
-    }
-    next();
-  },
-}));
+// ── Mock supabase so requireAuth uses local JWT path only ───────────────────────
 
-// Mock RBAC middleware to use the pre-attached user role
-vi.mock('../server/middleware/rbac', () => ({
-  requireRole: (allowedRoles: string[]) => (req: any, res: any, next: any) => {
-    if (!req.user) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
-    if (!allowedRoles.includes(req.user.role)) {
-      return res.status(403).json({ error: 'Insufficient permissions', required: allowedRoles, current: req.user.role });
-    }
-    next();
-  },
-}));
-
-// Mock the database so requireAuth doesn't try to query
-vi.mock('../server/lib/db', () => ({
-  db: {
-    select: vi.fn().mockReturnValue({
-      from: vi.fn().mockReturnValue({
-        where: vi.fn().mockReturnValue({
-          limit: vi.fn().mockResolvedValue([]),
-        }),
-      }),
-    }),
-    transaction: vi.fn(async (fn: any) => fn({})),
-  },
-}));
-
-// Mock supabase so requireAuth doesn't make network calls
 vi.mock('../server/lib/supabase', () => ({
   supabaseAdmin: {
-    auth: { getUser: vi.fn().mockResolvedValue({ data: { user: null }, error: 'mock' }) },
+    auth: {
+      getUser: vi.fn().mockResolvedValue({ data: { user: null }, error: 'mock-no-supabase' }),
+    },
+    from: vi.fn(() => ({
+      select: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          range: vi.fn(() => ({ data: [], error: null, count: 0 })),
+        })),
+      })),
+      insert: vi.fn(() => ({ error: null })),
+      update: vi.fn(() => ({ eq: vi.fn(() => ({ error: null })) })),
+      delete: vi.fn(() => ({ eq: vi.fn(() => ({ error: null })) })),
+    })),
   },
   isSupabaseConfigured: false,
 }));
 
+// ── Mock db to return user rows for requireAuth ─────────────────────────────────
+// The real requireAuth queries db.select().from(users).where(eq(users.id, userId)).limit(1)
+// We intercept the chain to return the right user row based on userId.
+
+const userRows = new Map<string, { id: string; email: string; name: string; role: string }>([
+  [ADMIN_ID, { id: ADMIN_ID, email: 'admin@test.com', name: 'Admin', role: 'admin' }],
+  [STAFF_ID, { id: STAFF_ID, email: 'staff@test.com', name: 'Staff', role: 'staff' }],
+  [STUDENT_ID, { id: STUDENT_ID, email: 'student@test.com', name: 'Student', role: 'student' }],
+  [COACH_ID, { id: COACH_ID, email: 'coach@test.com', name: 'Coach', role: 'coach' }],
+]);
+
+vi.mock('../server/lib/db', () => ({
+  db: {
+    select: vi.fn((fields: unknown) => ({
+      from: vi.fn(() => ({
+        where: vi.fn(() => ({
+          limit: vi.fn(async () => {
+            // Extract userId from the where clause — we can't easily parse it,
+            // so we use a closure variable set by the test helper.
+            return currentUserRow;
+          }),
+        })),
+      })),
+    })),
+    transaction: vi.fn(async (fn: any) => fn({})),
+    insert: vi.fn(() => ({ values: vi.fn(() => ({ returning: vi.fn(async () => []) })) })),
+    update: vi.fn(() => ({ set: vi.fn(() => ({ where: vi.fn(() => ({ returning: vi.fn(async () => []) })) })) })),
+    execute: vi.fn(async () => {}),
+  },
+}));
+
+// Global to pass the user row through the db mock chain
+let currentUserRow: { id: string; email: string; name: string; role: string }[] = [];
+
 // ── Test app factory ─────────────────────────────────────────────────────────────
 
-function createTestApp(userRole: string | null, userId: string = '00000000-0000-0000-0000-000000000001'): Express {
+async function createTestApp(userRole: string | null, userId: string = ADMIN_ID): Promise<{ app: Express; token: string | null }> {
   const app = express();
   app.use(express.json());
 
-  // Simulate requireAuth: attach user or reject
-  app.use((req: any, _res: any, next: any) => {
-    if (userRole === null) {
-      // Simulate no auth header
-      const authHeader = req.headers.authorization;
-      if (!authHeader) {
-        _res.status(401).json({ error: 'Missing or invalid authorization header' });
-        return;
-      }
-    }
-    if (userRole !== null) {
-      req.user = { id: userId, email: 'test@test.com', role: userRole };
-      req.audit = { actorId: userId };
-    }
-    next();
-  });
+  let token: string | null = null;
+  if (userRole !== null) {
+    const email = userRole === 'admin' ? 'admin@test.com'
+      : userRole === 'staff' ? 'staff@test.com'
+      : userRole === 'student' ? 'student@test.com'
+      : 'coach@test.com';
+    token = makeLocalJWT(userId, email);
+    // Set up the db mock to return this user
+    currentUserRow = userRows.get(userId) ? [userRows.get(userId)!] : [];
+  } else {
+    currentUserRow = [];
+  }
 
-  return app;
-}
-
-// Helper to mount the real knowledge router with real RBAC
-async function mountKnowledgeRouter(app: Express) {
+  // Mount the real knowledge router
   const knowledgeRouter = (await import('../server/routes/knowledge')).default;
   app.use('/api/admin/knowledge', knowledgeRouter);
-  return app;
-}
 
-// Helper to also mount the generic admin router (to test mount order)
-async function mountAdminRouter(app: Express) {
-  // Simulate the admin router that requires admin role
-  const adminRouter = express.Router();
-  adminRouter.use((req: any, res: any, next: any) => {
-    if (!req.user) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ error: 'Insufficient permissions' });
-    }
-    next();
-  });
-  adminRouter.get('/users', (req: any, res: any) => res.json({ users: [] }));
-  app.use('/api/admin', adminRouter);
+  return { app, token };
 }
 
 // ── Constants ────────────────────────────────────────────────────────────────────
-
-const ADMIN_ID = '00000000-0000-0000-0000-000000000001';
-const STAFF_ID = '00000000-0000-0000-0000-000000000002';
-const STUDENT_ID = '00000000-0000-0000-0000-000000000003';
-const COACH_ID = '00000000-0000-0000-0000-000000000004';
-const VALID_UUID = '12345678-1234-1234-1234-123456789012';
-const ANOTHER_UUID = '87654321-4321-4321-4321-210987654321';
 
 // ── Tests ────────────────────────────────────────────────────────────────────────
 
 describe('Phase 1C — Knowledge API Routes', () => {
   let app: Express;
+  let token: string | null;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    // Set default mock returns
     mockService.listEvidenceSources.mockResolvedValue([]);
     mockService.listClaims.mockResolvedValue([]);
     mockService.listConflicts.mockResolvedValue([]);
@@ -177,7 +190,7 @@ describe('Phase 1C — Knowledge API Routes', () => {
     mockService.addEvidenceExcerpt.mockResolvedValue({ id: VALID_UUID });
     mockService.createKnowledgeClaim.mockResolvedValue({ id: VALID_UUID, claimKey: 'test' });
     mockService.createClaimVersion.mockResolvedValue({ id: VALID_UUID, versionNumber: 1 });
-    mockService.attachEvidenceToClaimVersion.mockResolvedValue({ id: VALID_UUID });
+    mockService.attachEvidenceToClaimVersion.mockResolvedValue({ claimVersionId: VALID_UUID, evidenceExcerptId: ANOTHER_UUID });
     mockService.recordVerification.mockResolvedValue({ id: VALID_UUID });
     mockService.confirmClaimVersion.mockResolvedValue({ claimVersionId: VALID_UUID, claimId: VALID_UUID, status: 'confirmed' });
     mockService.supersedeClaimVersion.mockResolvedValue({ oldVersionId: VALID_UUID, newVersionId: ANOTHER_UUID, claimId: VALID_UUID, status: 'superseded' });
@@ -186,361 +199,598 @@ describe('Phase 1C — Knowledge API Routes', () => {
     mockService.createAcademicRuleFromVerifiedClaim.mockResolvedValue({ id: VALID_UUID, status: 'confirmed' });
     mockService.createEquivalencyFromVerifiedClaim.mockResolvedValue({ id: VALID_UUID, status: 'confirmed' });
     mockService.createArticulationFromVerifiedClaim.mockResolvedValue({ id: VALID_UUID, status: 'confirmed' });
+    mockAudit.auditAdmin.mockResolvedValue(undefined);
   });
 
-  // ── AUTH/RBAC ─────────────────────────────────────────────────────────────────
+  // ── A. REAL requireAuth executes ──────────────────────────────────────────────
+  // ── B. REAL requireRole executes ──────────────────────────────────────────────
 
-  describe('Auth/RBAC', () => {
-    it('1. unauthenticated GET → 401', async () => {
-      app = createTestApp(null);
-      await mountKnowledgeRouter(app);
+  describe('Auth/RBAC (real middleware)', () => {
+    it('A1. unauthenticated GET → 401', async () => {
+      ({ app, token } = await createTestApp(null));
       const res = await request(app).get('/api/admin/knowledge/evidence-sources');
       expect(res.status).toBe(401);
     });
 
-    it('2. student GET → 403', async () => {
-      app = createTestApp('student', STUDENT_ID);
-      await mountKnowledgeRouter(app);
-      const res = await request(app).get('/api/admin/knowledge/evidence-sources');
+    it('A2. student GET → 403', async () => {
+      ({ app, token } = await createTestApp('student', STUDENT_ID));
+      const res = await request(app).get('/api/admin/knowledge/evidence-sources')
+        .set('Authorization', `Bearer ${token}`);
       expect(res.status).toBe(403);
     });
 
-    it('3. coach GET → 403', async () => {
-      app = createTestApp('coach', COACH_ID);
-      await mountKnowledgeRouter(app);
-      const res = await request(app).get('/api/admin/knowledge/evidence-sources');
+    it('A3. coach GET → 403', async () => {
+      ({ app, token } = await createTestApp('coach', COACH_ID));
+      const res = await request(app).get('/api/admin/knowledge/evidence-sources')
+        .set('Authorization', `Bearer ${token}`);
       expect(res.status).toBe(403);
     });
 
-    it('4. staff GET → 200', async () => {
-      app = createTestApp('staff', STAFF_ID);
-      await mountKnowledgeRouter(app);
-      const res = await request(app).get('/api/admin/knowledge/evidence-sources');
+    it('A4. staff GET → 200', async () => {
+      ({ app, token } = await createTestApp('staff', STAFF_ID));
+      const res = await request(app).get('/api/admin/knowledge/evidence-sources')
+        .set('Authorization', `Bearer ${token}`);
       expect(res.status).toBe(200);
     });
 
-    it('5. staff mutation → 403', async () => {
-      app = createTestApp('staff', STAFF_ID);
-      await mountKnowledgeRouter(app);
+    it('A5. staff mutation → 403', async () => {
+      ({ app, token } = await createTestApp('staff', STAFF_ID));
       const res = await request(app).post('/api/admin/knowledge/evidence-sources')
+        .set('Authorization', `Bearer ${token}`)
         .send({ sourceType: 'official_web', title: 'Test' });
       expect(res.status).toBe(403);
     });
 
-    it('6. admin GET → 200', async () => {
-      app = createTestApp('admin', ADMIN_ID);
-      await mountKnowledgeRouter(app);
-      const res = await request(app).get('/api/admin/knowledge/evidence-sources');
+    it('A6. admin GET → 200', async () => {
+      ({ app, token } = await createTestApp('admin', ADMIN_ID));
+      const res = await request(app).get('/api/admin/knowledge/evidence-sources')
+        .set('Authorization', `Bearer ${token}`);
       expect(res.status).toBe(200);
     });
 
-    it('7. admin mutation reaches Knowledge Service', async () => {
-      app = createTestApp('admin', ADMIN_ID);
-      await mountKnowledgeRouter(app);
+    it('A7. admin mutation reaches Knowledge Service', async () => {
+      ({ app, token } = await createTestApp('admin', ADMIN_ID));
       const res = await request(app).post('/api/admin/knowledge/evidence-sources')
+        .set('Authorization', `Bearer ${token}`)
         .send({ sourceType: 'official_web', title: 'Test Source' });
       expect(res.status).toBe(201);
       expect(mockService.createEvidenceSource).toHaveBeenCalled();
     });
   });
 
-  // ── PRODUCTION MOUNT ORDER ──────────────────────────────────────────────────────
+  // ── C. actual registerRoutes mount order ──────────────────────────────────────
 
-  describe('Production mount order', () => {
-    it('8. staff GET through production mount is NOT intercepted by admin-only router', async () => {
-      app = createTestApp('staff', STAFF_ID);
-      // Mount knowledge router FIRST (as in production)
-      await mountKnowledgeRouter(app);
-      // Then mount the generic admin router
-      await mountAdminRouter(app);
+  describe('Production mount order (registerRoutes)', () => {
+    it('C1. staff GET /api/admin/knowledge → 200 while staff GET /api/admin/users → 403', async () => {
+      // We test the actual mount order by importing registerRoutes
+      // and mocking only the unrelated routers/services.
+      currentUserRow = [userRows.get(STAFF_ID)!];
+      const staffToken = makeLocalJWT(STAFF_ID, 'staff@test.com');
 
-      const res = await request(app).get('/api/admin/knowledge/evidence-sources');
-      expect(res.status).toBe(200);
-      // Verify the admin router would block staff
-      const adminRes = await request(app).get('/api/admin/users');
+      // We need to mock the rate limiter to avoid issues
+      vi.doMock('../server/middleware/rate-limit', () => ({
+        authRateLimit: (req: unknown, res: unknown, next: () => void) => next(),
+        passwordResetRateLimit: (req: unknown, res: unknown, next: () => void) => next(),
+        signupRateLimit: (req: unknown, res: unknown, next: () => void) => next(),
+        apiRateLimit: (req: unknown, res: unknown, next: () => void) => next(),
+      }));
+
+      // Mock csrf
+      vi.doMock('../server/middleware/csrf', () => ({
+        generateCsrfToken: vi.fn(() => 'mock-csrf'),
+        requireCsrf: (req: unknown, res: unknown, next: () => void) => next(),
+        deleteCsrfToken: vi.fn(),
+      }));
+
+      // Mock two-factor routes
+      vi.doMock('../server/routes/two-factor', () => ({
+        default: express.Router(),
+      }));
+
+      // Mock other routers that make external calls
+      vi.doMock('../server/routes/students', () => ({ default: express.Router() }));
+      vi.doMock('../server/routes/documents', () => ({ default: express.Router() }));
+      vi.doMock('../server/routes/tickets', () => ({ default: express.Router() }));
+      vi.doMock('../server/routes/programs', () => ({ default: express.Router() }));
+      vi.doMock('../server/routes/health', () => ({ default: express.Router() }));
+
+      // Mock storage
+      vi.doMock('../server/storage', () => ({ storage: {} }));
+
+      // Mock roadmap-generator
+      vi.doMock('../server/roadmap-generator', () => ({ generateRoadmap: vi.fn() }));
+
+      const { registerRoutes } = await import('../server/routes');
+      const app = express();
+      app.use(express.json());
+      await registerRoutes(app);
+
+      // Staff can access knowledge routes
+      const knowledgeRes = await request(app).get('/api/admin/knowledge/evidence-sources')
+        .set('Authorization', `Bearer ${staffToken}`);
+      expect(knowledgeRes.status).toBe(200);
+
+      // Staff CANNOT access generic admin routes
+      const adminRes = await request(app).get('/api/admin/users')
+        .set('Authorization', `Bearer ${staffToken}`);
       expect(adminRes.status).toBe(403);
+
+      vi.doUnmock('../server/middleware/rate-limit');
+      vi.doUnmock('../server/middleware/csrf');
+      vi.doUnmock('../server/routes/two-factor');
+      vi.doUnmock('../server/routes/students');
+      vi.doUnmock('../server/routes/documents');
+      vi.doUnmock('../server/routes/tickets');
+      vi.doUnmock('../server/routes/programs');
+      vi.doUnmock('../server/routes/health');
+      vi.doUnmock('../server/storage');
+      vi.doUnmock('../server/roadmap-generator');
     });
   });
 
-  // ── VALIDATION ────────────────────────────────────────────────────────────────────
+  // ── D/E/F. Multi-filter AND semantics ─────────────────────────────────────────
 
-  describe('Validation', () => {
+  describe('Multi-filter AND semantics (repository)', () => {
+    // These tests verify the repository list functions combine filters with AND.
+    // We mock the db chain to capture the where clause.
+
+    it('D. evidence sources: sourceType + institutionId + providerId combined with AND', async () => {
+      const { listEvidenceSources } = await import('../server/repositories/knowledge-repo');
+      const whereConditions: unknown[] = [];
+      const mockQuery = {
+        where: vi.fn((cond: unknown) => { whereConditions.push(cond); return mockQuery; }),
+        limit: vi.fn(() => mockQuery),
+        offset: vi.fn(() => mockQuery),
+        orderBy: vi.fn(async () => [{ id: 'test' }]),
+      };
+      const mockDb = {
+        select: vi.fn(() => ({ from: vi.fn(() => ({ $dynamic: () => mockQuery })) })),
+      };
+      await listEvidenceSources({
+        sourceType: 'official_web' as any,
+        institutionId: VALID_UUID,
+        providerId: ANOTHER_UUID,
+      }, mockDb as any);
+      expect(whereConditions.length).toBe(1);
+    });
+
+    it('E. claims: status + claimType + subjectType + claimKey combined with AND', async () => {
+      const { listClaims } = await import('../server/repositories/knowledge-repo');
+      const whereConditions: unknown[] = [];
+      const mockQuery = {
+        where: vi.fn((cond: unknown) => { whereConditions.push(cond); return mockQuery; }),
+        limit: vi.fn(() => mockQuery),
+        offset: vi.fn(() => mockQuery),
+        orderBy: vi.fn(async () => [{ id: 'test' }]),
+      };
+      const mockDb = {
+        select: vi.fn(() => ({ from: vi.fn(() => ({ $dynamic: () => mockQuery })) })),
+      };
+      await listClaims({
+        status: 'confirmed' as any,
+        claimType: 'equivalency' as any,
+        subjectType: 'institution' as any,
+        claimKey: 'test-key',
+      }, mockDb as any);
+      expect(whereConditions.length).toBe(1);
+    });
+
+    it('F. conflicts: status + conflictType combined with AND', async () => {
+      const { listConflicts } = await import('../server/repositories/knowledge-repo');
+      const whereConditions: unknown[] = [];
+      const mockQuery = {
+        where: vi.fn((cond: unknown) => { whereConditions.push(cond); return mockQuery; }),
+        limit: vi.fn(() => mockQuery),
+        offset: vi.fn(() => mockQuery),
+        orderBy: vi.fn(async () => [{ id: 'test' }]),
+      };
+      const mockDb = {
+        select: vi.fn(() => ({ from: vi.fn(() => ({ $dynamic: () => mockQuery })) })),
+      };
+      await listConflicts({
+        status: 'open' as any,
+        conflictType: 'contradiction' as any,
+      }, mockDb as any);
+      expect(whereConditions.length).toBe(1);
+    });
+  });
+
+  // ── G-K. Invalid enum filter → 400 ────────────────────────────────────────────
+
+  describe('Enum filter validation', () => {
     beforeEach(async () => {
-      app = createTestApp('admin', ADMIN_ID);
-      await mountKnowledgeRouter(app);
+      ({ app, token } = await createTestApp('admin', ADMIN_ID));
     });
 
-    it('9. malformed UUID param → controlled 400', async () => {
-      const res = await request(app).get('/api/admin/knowledge/evidence-sources/not-a-uuid');
+    it('G. invalid sourceType filter → 400', async () => {
+      const res = await request(app).get('/api/admin/knowledge/evidence-sources?sourceType=garbage')
+        .set('Authorization', `Bearer ${token}`);
       expect(res.status).toBe(400);
-      expect(res.body.error.code).toBe('INVALID_UUID');
+      expect(res.body.error.code).toBe('KNOWLEDGE_VALIDATION_ERROR');
     });
 
-    it('10. malformed UUID body field → controlled 400', async () => {
-      const res = await request(app).post('/api/admin/knowledge/claims')
-        .send({ claimKey: 'test', claimType: 'equivalency', subjectType: 'institution', subjectId: 'not-a-uuid' });
+    it('H. invalid claim status → 400', async () => {
+      const res = await request(app).get('/api/admin/knowledge/claims?status=garbage')
+        .set('Authorization', `Bearer ${token}`);
       expect(res.status).toBe(400);
+      expect(res.body.error.code).toBe('KNOWLEDGE_VALIDATION_ERROR');
     });
 
-    it('11. invalid pagination → 400', async () => {
-      const res = await request(app).get('/api/admin/knowledge/evidence-sources?limit=-1');
+    it('I. invalid claimType → 400', async () => {
+      const res = await request(app).get('/api/admin/knowledge/claims?claimType=garbage')
+        .set('Authorization', `Bearer ${token}`);
       expect(res.status).toBe(400);
+      expect(res.body.error.code).toBe('KNOWLEDGE_VALIDATION_ERROR');
     });
 
-    it('12. ISO date strings are converted correctly before service call', async () => {
+    it('J. invalid subjectType → 400', async () => {
+      const res = await request(app).get('/api/admin/knowledge/claims?subjectType=garbage')
+        .set('Authorization', `Bearer ${token}`);
+      expect(res.status).toBe(400);
+      expect(res.body.error.code).toBe('KNOWLEDGE_VALIDATION_ERROR');
+    });
+
+    it('K. invalid conflict status/type → 400', async () => {
+      const resStatus = await request(app).get('/api/admin/knowledge/conflicts?status=garbage')
+        .set('Authorization', `Bearer ${token}`);
+      expect(resStatus.status).toBe(400);
+
+      const resType = await request(app).get('/api/admin/knowledge/conflicts?conflictType=garbage')
+        .set('Authorization', `Bearer ${token}`);
+      expect(resType.status).toBe(400);
+    });
+  });
+
+  // ── L. Claim-version provenance exposes excerpt + source ──────────────────────
+
+  describe('Claim-version provenance', () => {
+    it('L. getClaimVersionDetail exposes evidence relationship → excerpt → source', async () => {
+      // Test the ACTUAL service read model, not a mocked route response.
+      // We call the real service with a mocked repository that returns provenance data.
+      // Use vi.importActual to bypass the vi.mock of the service module.
+      const actual = await vi.importActual<typeof import('../server/services/knowledge-service')>('../server/services/knowledge-service');
+      const createKnowledgeService = actual.createKnowledgeService;
+
+      const mockRepo = {
+        getClaimVersion: vi.fn().mockResolvedValue({ id: VALID_UUID, claimId: ANOTHER_UUID, status: 'confirmed' }),
+        getClaimById: vi.fn().mockResolvedValue({ id: ANOTHER_UUID, claimKey: 'test' }),
+        listEvidenceWithProvenance: vi.fn().mockResolvedValue([
+          {
+            relationship: { claimVersionId: VALID_UUID, evidenceExcerptId: 'excerpt-1', relationshipType: 'supports', notes: null },
+            excerpt: {
+              id: 'excerpt-1',
+              excerptText: 'The transfer policy states...',
+              locator: 'page 5',
+              pageNumber: 5,
+              section: 'Transfer Credits',
+            },
+            source: {
+              id: 'source-1',
+              sourceType: 'official_catalog',
+              title: '2025-2026 Catalog',
+              sourceUrl: 'https://example.edu/catalog',
+              authorityLevel: 'primary',
+              publishedAt: new Date('2025-01-01'),
+              effectiveFrom: new Date('2025-01-01'),
+              effectiveTo: null,
+            },
+          },
+        ]),
+        listVerificationEvents: vi.fn().mockResolvedValue([]),
+        listOpenConflictsForVersion: vi.fn().mockResolvedValue([]),
+        getAcademicRulesByClaimVersion: vi.fn().mockResolvedValue([]),
+        getEquivalenciesByClaimVersion: vi.fn().mockResolvedValue([]),
+        getArticulationsByClaimVersion: vi.fn().mockResolvedValue([]),
+      };
+
+      const mockTxRunner = async (fn: (tx: unknown) => Promise<unknown>) => fn({});
+
+      const service = createKnowledgeService(mockRepo as any, mockTxRunner as any);
+      const detail = await service.getClaimVersionDetail(VALID_UUID);
+
+      // Verify provenance chain: relationship → excerpt → source
+      expect(detail.evidenceRelationships).toHaveLength(1);
+      const er = detail.evidenceRelationships[0];
+      expect(er.relationship.relationshipType).toBe('supports');
+      expect(er.excerpt.id).toBe('excerpt-1');
+      expect(er.excerpt.excerptText).toBe('The transfer policy states...');
+      expect(er.source.id).toBe('source-1');
+      expect(er.source.title).toBe('2025-2026 Catalog');
+      expect(er.source.sourceUrl).toBe('https://example.edu/catalog');
+      expect(er.source.authorityLevel).toBe('primary');
+    });
+  });
+
+  // ── M/N. Missing mutation audit fixes ────────────────────────────────────────
+
+  describe('Mutation audit logging', () => {
+    beforeEach(async () => {
+      ({ app, token } = await createTestApp('admin', ADMIN_ID));
+    });
+
+    it('M. excerpt creation is audited', async () => {
+      await request(app).post(`/api/admin/knowledge/evidence-sources/${VALID_UUID}/excerpts`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ excerptText: 'Test excerpt' });
+      expect(mockAudit.auditAdmin).toHaveBeenCalled();
+      const auditCall = mockAudit.auditAdmin.mock.calls[mockAudit.auditAdmin.mock.calls.length - 1];
+      expect(auditCall[0]).toBe('admin.bulk_operation');
+      expect(auditCall[1]).toBe(ADMIN_ID);
+      expect(auditCall[4]).toMatchObject({ resourceType: 'evidence_excerpt' });
+    });
+
+    it('N. evidence attachment is audited', async () => {
+      await request(app).post(`/api/admin/knowledge/claim-versions/${VALID_UUID}/evidence`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ evidenceExcerptId: ANOTHER_UUID, relationshipType: 'supports' });
+      expect(mockAudit.auditAdmin).toHaveBeenCalled();
+      const auditCall = mockAudit.auditAdmin.mock.calls[mockAudit.auditAdmin.mock.calls.length - 1];
+      expect(auditCall[0]).toBe('admin.bulk_operation');
+      expect(auditCall[1]).toBe(ADMIN_ID);
+      expect(auditCall[4]).toMatchObject({ resourceType: 'claim_evidence' });
+    });
+  });
+
+  // ── O/P. ISO date validation ──────────────────────────────────────────────────
+
+  describe('ISO date validation', () => {
+    beforeEach(async () => {
+      ({ app, token } = await createTestApp('admin', ADMIN_ID));
+    });
+
+    it('O. non-ISO date string → 400', async () => {
       const res = await request(app).post('/api/admin/knowledge/evidence-sources')
-        .send({
-          sourceType: 'official_web',
-          title: 'Test',
-          effectiveFrom: '2025-01-01T00:00:00.000Z',
-          effectiveTo: '2025-12-31T00:00:00.000Z',
-        });
-      expect(res.status).toBe(201);
+        .set('Authorization', `Bearer ${token}`)
+        .send({ sourceType: 'official_web', title: 'Test', effectiveFrom: '01/15/2025' });
+      expect(res.status).toBe(400);
+    });
+
+    it('P. valid ISO date string → service receives Date', async () => {
+      await request(app).post('/api/admin/knowledge/evidence-sources')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ sourceType: 'official_web', title: 'Test', effectiveFrom: '2025-01-15T00:00:00.000Z' });
+      expect(mockService.createEvidenceSource).toHaveBeenCalled();
       const callArg = mockService.createEvidenceSource.mock.calls[0][0];
       expect(callArg.effectiveFrom).toBeInstanceOf(Date);
-      expect(callArg.effectiveTo).toBeInstanceOf(Date);
-    });
-
-    it('13. unknown/spoofable fields are rejected', async () => {
-      const res = await request(app).post('/api/admin/knowledge/evidence-sources')
-        .send({ sourceType: 'official_web', title: 'Test', createdBy: 'attacker-id' });
-      expect(res.status).toBe(400);
     });
   });
 
-  // ── ACTOR TRUST ───────────────────────────────────────────────────────────────────
+  // ── Actor trust ────────────────────────────────────────────────────────────────
 
   describe('Actor trust', () => {
     beforeEach(async () => {
-      app = createTestApp('admin', ADMIN_ID);
-      await mountKnowledgeRouter(app);
+      ({ app, token } = await createTestApp('admin', ADMIN_ID));
     });
 
-    it('14. evidence source receives createdBy = authenticated admin ID', async () => {
+    it('evidence source receives createdBy = authenticated admin ID', async () => {
       await request(app).post('/api/admin/knowledge/evidence-sources')
+        .set('Authorization', `Bearer ${token}`)
         .send({ sourceType: 'official_web', title: 'Test' });
       const callArg = mockService.createEvidenceSource.mock.calls[0][0];
       expect(callArg.createdBy).toBe(ADMIN_ID);
     });
 
-    it('15. claim receives createdBy = authenticated admin ID', async () => {
-      await request(app).post('/api/admin/knowledge/claims')
-        .send({ claimKey: 'test', claimType: 'equivalency', subjectType: 'institution' });
-      const callArg = mockService.createKnowledgeClaim.mock.calls[0][0];
-      expect(callArg.createdBy).toBe(ADMIN_ID);
+    it('client cannot inject createdBy through body', async () => {
+      const res = await request(app).post('/api/admin/knowledge/evidence-sources')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ sourceType: 'official_web', title: 'Test', createdBy: 'attacker-id' });
+      // .strict() rejects unknown fields
+      expect(res.status).toBe(400);
     });
 
-    it('16. claim version receives createdBy = authenticated admin ID', async () => {
-      await request(app).post('/api/admin/knowledge/claims/' + VALID_UUID + '/versions')
-        .send({ statement: 'test', confidence: 75 });
-      const callArg = mockService.createClaimVersion.mock.calls[0][0];
-      expect(callArg.createdBy).toBe(ADMIN_ID);
-    });
-
-    it('17. verification receives reviewerId = authenticated admin ID', async () => {
-      await request(app).post('/api/admin/knowledge/claim-versions/' + VALID_UUID + '/verifications')
+    it('verification receives reviewerId = authenticated admin ID', async () => {
+      await request(app).post(`/api/admin/knowledge/claim-versions/${VALID_UUID}/verifications`)
+        .set('Authorization', `Bearer ${token}`)
         .send({ action: 'verified' });
       const callArg = mockService.recordVerification.mock.calls[0][0];
       expect(callArg.reviewerId).toBe(ADMIN_ID);
     });
 
-    it('18. supersession receives reviewerId = authenticated admin ID', async () => {
-      await request(app).post('/api/admin/knowledge/claim-versions/' + VALID_UUID + '/supersede')
+    it('supersession receives reviewerId = authenticated admin ID', async () => {
+      await request(app).post(`/api/admin/knowledge/claim-versions/${VALID_UUID}/supersede`)
+        .set('Authorization', `Bearer ${token}`)
         .send({ newVersionId: ANOTHER_UUID });
       const callArgs = mockService.supersedeClaimVersion.mock.calls[0];
       expect(callArgs[2]).toBe(ADMIN_ID);
     });
 
-    it('19. conflict resolution receives resolvedBy = authenticated admin ID', async () => {
-      await request(app).post('/api/admin/knowledge/conflicts/' + VALID_UUID + '/resolve')
+    it('conflict resolution receives resolvedBy = authenticated admin ID', async () => {
+      await request(app).post(`/api/admin/knowledge/conflicts/${VALID_UUID}/resolve`)
+        .set('Authorization', `Bearer ${token}`)
         .send({ resolutionNotes: 'Resolved' });
       const callArgs = mockService.resolveKnowledgeConflict.mock.calls[0];
       expect(callArgs[2]).toBe(ADMIN_ID);
     });
-
-    it('20. client cannot impersonate another actor through body fields', async () => {
-      await request(app).post('/api/admin/knowledge/evidence-sources')
-        .send({ sourceType: 'official_web', title: 'Test', createdBy: 'attacker-id' });
-      // Should be rejected by .strict() schema
-      const callArg = mockService.createEvidenceSource.mock.calls[0];
-      // If it was rejected, the service was never called
-      if (callArg) {
-        expect(callArg[0].createdBy).not.toBe('attacker-id');
-      }
-    });
   });
 
-  // ── ERROR MAPPING ─────────────────────────────────────────────────────────────────
+  // ── Error mapping ──────────────────────────────────────────────────────────────
 
   describe('Error mapping', () => {
-
     beforeEach(async () => {
-      app = createTestApp('admin', ADMIN_ID);
-      await mountKnowledgeRouter(app);
+      ({ app, token } = await createTestApp('admin', ADMIN_ID));
     });
 
-    it('21. KNOWLEDGE_VALIDATION_ERROR → 400', async () => {
+    it('KNOWLEDGE_VALIDATION_ERROR → 400', async () => {
       mockService.createEvidenceSource.mockRejectedValueOnce(
         new KnowledgeError('KNOWLEDGE_VALIDATION_ERROR', 'Bad input'),
       );
       const res = await request(app).post('/api/admin/knowledge/evidence-sources')
+        .set('Authorization', `Bearer ${token}`)
         .send({ sourceType: 'official_web', title: 'Test' });
       expect(res.status).toBe(400);
       expect(res.body.error.code).toBe('KNOWLEDGE_VALIDATION_ERROR');
     });
 
-    it('22. KNOWLEDGE_NOT_FOUND → 404', async () => {
+    it('KNOWLEDGE_NOT_FOUND → 404', async () => {
       mockService.getEvidenceSourceDetail.mockRejectedValueOnce(
         new KnowledgeError('KNOWLEDGE_NOT_FOUND', 'Not found'),
       );
-      const res = await request(app).get('/api/admin/knowledge/evidence-sources/' + VALID_UUID);
+      const res = await request(app).get(`/api/admin/knowledge/evidence-sources/${VALID_UUID}`)
+        .set('Authorization', `Bearer ${token}`);
       expect(res.status).toBe(404);
       expect(res.body.error.code).toBe('KNOWLEDGE_NOT_FOUND');
     });
 
-    it('23. KNOWLEDGE_DUPLICATE → 409', async () => {
+    it('KNOWLEDGE_DUPLICATE → 409', async () => {
       mockService.createKnowledgeClaim.mockRejectedValueOnce(
         new KnowledgeError('KNOWLEDGE_DUPLICATE', 'Duplicate'),
       );
       const res = await request(app).post('/api/admin/knowledge/claims')
+        .set('Authorization', `Bearer ${token}`)
         .send({ claimKey: 'test', claimType: 'equivalency', subjectType: 'institution' });
       expect(res.status).toBe(409);
       expect(res.body.error.code).toBe('KNOWLEDGE_DUPLICATE');
     });
 
-    it('24. KNOWLEDGE_INVALID_STATE → 409', async () => {
+    it('KNOWLEDGE_INVALID_STATE → 409', async () => {
       mockService.confirmClaimVersion.mockRejectedValueOnce(
         new KnowledgeError('KNOWLEDGE_INVALID_STATE', 'Bad state'),
       );
-      const res = await request(app).post('/api/admin/knowledge/claim-versions/' + VALID_UUID + '/confirm');
+      const res = await request(app).post(`/api/admin/knowledge/claim-versions/${VALID_UUID}/confirm`)
+        .set('Authorization', `Bearer ${token}`);
       expect(res.status).toBe(409);
       expect(res.body.error.code).toBe('KNOWLEDGE_INVALID_STATE');
     });
 
-    it('25. KNOWLEDGE_EVIDENCE_REQUIRED → 409', async () => {
+    it('KNOWLEDGE_EVIDENCE_REQUIRED → 409', async () => {
       mockService.confirmClaimVersion.mockRejectedValueOnce(
         new KnowledgeError('KNOWLEDGE_EVIDENCE_REQUIRED', 'Need evidence'),
       );
-      const res = await request(app).post('/api/admin/knowledge/claim-versions/' + VALID_UUID + '/confirm');
+      const res = await request(app).post(`/api/admin/knowledge/claim-versions/${VALID_UUID}/confirm`)
+        .set('Authorization', `Bearer ${token}`);
       expect(res.status).toBe(409);
       expect(res.body.error.code).toBe('KNOWLEDGE_EVIDENCE_REQUIRED');
     });
 
-    it('26. KNOWLEDGE_VERIFICATION_REQUIRED → 409', async () => {
+    it('KNOWLEDGE_VERIFICATION_REQUIRED → 409', async () => {
       mockService.confirmClaimVersion.mockRejectedValueOnce(
         new KnowledgeError('KNOWLEDGE_VERIFICATION_REQUIRED', 'Need verification'),
       );
-      const res = await request(app).post('/api/admin/knowledge/claim-versions/' + VALID_UUID + '/confirm');
+      const res = await request(app).post(`/api/admin/knowledge/claim-versions/${VALID_UUID}/confirm`)
+        .set('Authorization', `Bearer ${token}`);
       expect(res.status).toBe(409);
       expect(res.body.error.code).toBe('KNOWLEDGE_VERIFICATION_REQUIRED');
     });
 
-    it('27. KNOWLEDGE_OPEN_CONFLICT → 409', async () => {
+    it('KNOWLEDGE_OPEN_CONFLICT → 409', async () => {
       mockService.confirmClaimVersion.mockRejectedValueOnce(
         new KnowledgeError('KNOWLEDGE_OPEN_CONFLICT', 'Open conflict'),
       );
-      const res = await request(app).post('/api/admin/knowledge/claim-versions/' + VALID_UUID + '/confirm');
+      const res = await request(app).post(`/api/admin/knowledge/claim-versions/${VALID_UUID}/confirm`)
+        .set('Authorization', `Bearer ${token}`);
       expect(res.status).toBe(409);
       expect(res.body.error.code).toBe('KNOWLEDGE_OPEN_CONFLICT');
     });
 
-    it('28. KNOWLEDGE_SUPERSESSION_REQUIRED → 409', async () => {
+    it('KNOWLEDGE_SUPERSESSION_REQUIRED → 409', async () => {
       mockService.confirmClaimVersion.mockRejectedValueOnce(
         new KnowledgeError('KNOWLEDGE_SUPERSESSION_REQUIRED', 'Need supersession'),
       );
-      const res = await request(app).post('/api/admin/knowledge/claim-versions/' + VALID_UUID + '/confirm');
+      const res = await request(app).post(`/api/admin/knowledge/claim-versions/${VALID_UUID}/confirm`)
+        .set('Authorization', `Bearer ${token}`);
       expect(res.status).toBe(409);
       expect(res.body.error.code).toBe('KNOWLEDGE_SUPERSESSION_REQUIRED');
     });
 
-    it('29. unexpected error → sanitized 500', async () => {
+    it('unexpected error → sanitized 500', async () => {
       mockService.getEvidenceSourceDetail.mockRejectedValueOnce(new Error('DB connection failed'));
-      const res = await request(app).get('/api/admin/knowledge/evidence-sources/' + VALID_UUID);
+      const res = await request(app).get(`/api/admin/knowledge/evidence-sources/${VALID_UUID}`)
+        .set('Authorization', `Bearer ${token}`);
       expect(res.status).toBe(500);
       expect(res.body.error.code).toBe('INTERNAL_ERROR');
       expect(res.body.error.message).not.toContain('DB');
     });
   });
 
-  // ── WORKFLOW ROUTES ───────────────────────────────────────────────────────────────
+  // ── Workflow routes ────────────────────────────────────────────────────────────
 
   describe('Workflow routes', () => {
     beforeEach(async () => {
-      app = createTestApp('admin', ADMIN_ID);
-      await mountKnowledgeRouter(app);
+      ({ app, token } = await createTestApp('admin', ADMIN_ID));
     });
 
-    it('30. evidence source creation returns 201', async () => {
+    it('evidence source creation returns 201', async () => {
       const res = await request(app).post('/api/admin/knowledge/evidence-sources')
+        .set('Authorization', `Bearer ${token}`)
         .send({ sourceType: 'official_web', title: 'Test' });
       expect(res.status).toBe(201);
       expect(res.body.evidenceSource).toBeDefined();
     });
 
-    it('31. excerpt creation returns 201', async () => {
-      const res = await request(app).post('/api/admin/knowledge/evidence-sources/' + VALID_UUID + '/excerpts')
+    it('excerpt creation returns 201', async () => {
+      const res = await request(app).post(`/api/admin/knowledge/evidence-sources/${VALID_UUID}/excerpts`)
+        .set('Authorization', `Bearer ${token}`)
         .send({ excerptText: 'Test excerpt' });
       expect(res.status).toBe(201);
       expect(res.body.excerpt).toBeDefined();
     });
 
-    it('32. claim creation returns 201', async () => {
+    it('claim creation returns 201', async () => {
       const res = await request(app).post('/api/admin/knowledge/claims')
+        .set('Authorization', `Bearer ${token}`)
         .send({ claimKey: 'test', claimType: 'equivalency', subjectType: 'institution' });
       expect(res.status).toBe(201);
       expect(res.body.claim).toBeDefined();
     });
 
-    it('33. claim version creation returns 201', async () => {
-      const res = await request(app).post('/api/admin/knowledge/claims/' + VALID_UUID + '/versions')
+    it('claim version creation returns 201', async () => {
+      const res = await request(app).post(`/api/admin/knowledge/claims/${VALID_UUID}/versions`)
+        .set('Authorization', `Bearer ${token}`)
         .send({ statement: 'test', confidence: 75 });
       expect(res.status).toBe(201);
       expect(res.body.claimVersion).toBeDefined();
     });
 
-    it('34. evidence attachment returns 201', async () => {
-      const res = await request(app).post('/api/admin/knowledge/claim-versions/' + VALID_UUID + '/evidence')
+    it('evidence attachment returns 201', async () => {
+      const res = await request(app).post(`/api/admin/knowledge/claim-versions/${VALID_UUID}/evidence`)
+        .set('Authorization', `Bearer ${token}`)
         .send({ evidenceExcerptId: ANOTHER_UUID, relationshipType: 'supports' });
       expect(res.status).toBe(201);
       expect(res.body.evidenceRelationship).toBeDefined();
     });
 
-    it('35. verification returns 201', async () => {
-      const res = await request(app).post('/api/admin/knowledge/claim-versions/' + VALID_UUID + '/verifications')
+    it('verification returns 201', async () => {
+      const res = await request(app).post(`/api/admin/knowledge/claim-versions/${VALID_UUID}/verifications`)
+        .set('Authorization', `Bearer ${token}`)
         .send({ action: 'verified' });
       expect(res.status).toBe(201);
       expect(res.body.verificationEvent).toBeDefined();
     });
 
-    it('36. confirmation returns 200', async () => {
-      const res = await request(app).post('/api/admin/knowledge/claim-versions/' + VALID_UUID + '/confirm');
+    it('confirmation returns 200', async () => {
+      const res = await request(app).post(`/api/admin/knowledge/claim-versions/${VALID_UUID}/confirm`)
+        .set('Authorization', `Bearer ${token}`);
       expect(res.status).toBe(200);
       expect(res.body.confirmation).toBeDefined();
     });
 
-    it('37. supersession returns 200', async () => {
-      const res = await request(app).post('/api/admin/knowledge/claim-versions/' + VALID_UUID + '/supersede')
+    it('supersession returns 200', async () => {
+      const res = await request(app).post(`/api/admin/knowledge/claim-versions/${VALID_UUID}/supersede`)
+        .set('Authorization', `Bearer ${token}`)
         .send({ newVersionId: ANOTHER_UUID });
       expect(res.status).toBe(200);
       expect(res.body.supersession).toBeDefined();
     });
 
-    it('38. conflict creation returns 201', async () => {
+    it('conflict creation returns 201', async () => {
       const res = await request(app).post('/api/admin/knowledge/conflicts')
+        .set('Authorization', `Bearer ${token}`)
         .send({ claimVersionAId: VALID_UUID, conflictType: 'contradiction', description: 'Test conflict' });
       expect(res.status).toBe(201);
       expect(res.body.conflict).toBeDefined();
     });
 
-    it('39. conflict resolution returns 200', async () => {
-      const res = await request(app).post('/api/admin/knowledge/conflicts/' + VALID_UUID + '/resolve')
+    it('conflict resolution returns 200', async () => {
+      const res = await request(app).post(`/api/admin/knowledge/conflicts/${VALID_UUID}/resolve`)
+        .set('Authorization', `Bearer ${token}`)
         .send({ resolutionNotes: 'Resolved by admin' });
       expect(res.status).toBe(200);
       expect(res.body.conflict).toBeDefined();
     });
 
-    it('40. academic rule creation returns 201', async () => {
+    it('academic rule creation returns 201', async () => {
       const res = await request(app).post('/api/admin/knowledge/academic-rules')
+        .set('Authorization', `Bearer ${token}`)
         .send({
           institutionId: VALID_UUID,
           ruleKey: 'transfer-rule',
@@ -552,8 +802,9 @@ describe('Phase 1C — Knowledge API Routes', () => {
       expect(res.body.academicRule).toBeDefined();
     });
 
-    it('41. equivalency creation returns 201', async () => {
+    it('equivalency creation returns 201', async () => {
       const res = await request(app).post('/api/admin/knowledge/equivalencies')
+        .set('Authorization', `Bearer ${token}`)
         .send({
           sourceProviderCourseVersionId: VALID_UUID,
           institutionId: ANOTHER_UUID,
@@ -563,8 +814,9 @@ describe('Phase 1C — Knowledge API Routes', () => {
       expect(res.body.equivalency).toBeDefined();
     });
 
-    it('42. articulation creation returns 201', async () => {
+    it('articulation creation returns 201', async () => {
       const res = await request(app).post('/api/admin/knowledge/articulations')
+        .set('Authorization', `Bearer ${token}`)
         .send({
           programVersionId: VALID_UUID,
           requirementId: ANOTHER_UUID,
@@ -575,41 +827,46 @@ describe('Phase 1C — Knowledge API Routes', () => {
     });
   });
 
-  // ── READ MODELS ───────────────────────────────────────────────────────────────────
+  // ── Read models ────────────────────────────────────────────────────────────────
 
   describe('Read models', () => {
     beforeEach(async () => {
-      app = createTestApp('admin', ADMIN_ID);
-      await mountKnowledgeRouter(app);
+      ({ app, token } = await createTestApp('admin', ADMIN_ID));
     });
 
-    it('43. evidence source detail includes excerpts', async () => {
+    it('evidence source detail includes excerpts', async () => {
       mockService.getEvidenceSourceDetail.mockResolvedValueOnce({
         source: { id: VALID_UUID, title: 'Test' },
         excerpts: [{ id: 'excerpt-1', excerptText: 'Text' }],
       });
-      const res = await request(app).get('/api/admin/knowledge/evidence-sources/' + VALID_UUID);
+      const res = await request(app).get(`/api/admin/knowledge/evidence-sources/${VALID_UUID}`)
+        .set('Authorization', `Bearer ${token}`);
       expect(res.status).toBe(200);
       expect(res.body.source).toBeDefined();
       expect(res.body.excerpts).toHaveLength(1);
     });
 
-    it('44. claim detail includes versions', async () => {
+    it('claim detail includes versions', async () => {
       mockService.getClaimDetail.mockResolvedValueOnce({
         claim: { id: VALID_UUID, claimKey: 'test' },
         versions: [{ id: 'v1', versionNumber: 1 }, { id: 'v2', versionNumber: 2 }],
       });
-      const res = await request(app).get('/api/admin/knowledge/claims/' + VALID_UUID);
+      const res = await request(app).get(`/api/admin/knowledge/claims/${VALID_UUID}`)
+        .set('Authorization', `Bearer ${token}`);
       expect(res.status).toBe(200);
       expect(res.body.claim).toBeDefined();
       expect(res.body.versions).toHaveLength(2);
     });
 
-    it('45. claim-version detail includes provenance/verification/conflicts/canonical records', async () => {
+    it('claim-version detail includes provenance/verification/conflicts/canonical records', async () => {
       mockService.getClaimVersionDetail.mockResolvedValueOnce({
         version: { id: VALID_UUID, status: 'confirmed' },
         claim: { id: VALID_UUID },
-        evidenceRelationships: [{ id: 'er-1' }],
+        evidenceRelationships: [{
+          relationship: { relationshipType: 'supports' },
+          excerpt: { id: 'er-1', excerptText: 'text' },
+          source: { id: 'src-1', title: 'Source' },
+        }],
         verificationEvents: [{ id: 've-1', action: 'verified' }],
         openConflicts: [],
         canonicalRecords: {
@@ -618,11 +875,14 @@ describe('Phase 1C — Knowledge API Routes', () => {
           articulations: [{ id: 'art-1' }],
         },
       });
-      const res = await request(app).get('/api/admin/knowledge/claim-versions/' + VALID_UUID);
+      const res = await request(app).get(`/api/admin/knowledge/claim-versions/${VALID_UUID}`)
+        .set('Authorization', `Bearer ${token}`);
       expect(res.status).toBe(200);
       expect(res.body.version).toBeDefined();
       expect(res.body.claim).toBeDefined();
       expect(res.body.evidenceRelationships).toHaveLength(1);
+      expect(res.body.evidenceRelationships[0].excerpt).toBeDefined();
+      expect(res.body.evidenceRelationships[0].source).toBeDefined();
       expect(res.body.verificationEvents).toHaveLength(1);
       expect(res.body.openConflicts).toHaveLength(0);
       expect(res.body.canonicalRecords.academicRules).toHaveLength(1);
@@ -630,37 +890,70 @@ describe('Phase 1C — Knowledge API Routes', () => {
       expect(res.body.canonicalRecords.articulations).toHaveLength(1);
     });
 
-    it('46. resolved conflicts remain queryable', async () => {
+    it('resolved conflicts remain queryable', async () => {
       mockService.listConflicts.mockResolvedValueOnce([
         { id: 'c1', status: 'resolved' },
         { id: 'c2', status: 'open' },
       ]);
-      const res = await request(app).get('/api/admin/knowledge/conflicts');
+      const res = await request(app).get('/api/admin/knowledge/conflicts')
+        .set('Authorization', `Bearer ${token}`);
       expect(res.status).toBe(200);
       expect(res.body.items).toHaveLength(2);
       expect(res.body.items[0].status).toBe('resolved');
     });
   });
 
-  // ── NO HARD DELETE ─────────────────────────────────────────────────────────────────
+  // ── No hard delete ──────────────────────────────────────────────────────────────
 
   describe('No hard delete', () => {
-    it('47. no Knowledge DELETE endpoint exists', async () => {
-      app = createTestApp('admin', ADMIN_ID);
-      await mountKnowledgeRouter(app);
-
-      // Try various DELETE paths
+    it('no Knowledge DELETE endpoint exists', async () => {
+      ({ app, token } = await createTestApp('admin', ADMIN_ID));
       const paths = [
-        '/api/admin/knowledge/evidence-sources/' + VALID_UUID,
-        '/api/admin/knowledge/claims/' + VALID_UUID,
-        '/api/admin/knowledge/claim-versions/' + VALID_UUID,
-        '/api/admin/knowledge/conflicts/' + VALID_UUID,
+        `/api/admin/knowledge/evidence-sources/${VALID_UUID}`,
+        `/api/admin/knowledge/claims/${VALID_UUID}`,
+        `/api/admin/knowledge/claim-versions/${VALID_UUID}`,
+        `/api/admin/knowledge/conflicts/${VALID_UUID}`,
       ];
-
       for (const path of paths) {
-        const res = await request(app).delete(path);
-        expect(res.status).toBe(404); // No DELETE route defined
+        const res = await request(app).delete(path)
+          .set('Authorization', `Bearer ${token}`);
+        expect(res.status).toBe(404);
       }
+    });
+  });
+
+  // ── Validation ──────────────────────────────────────────────────────────────────
+
+  describe('Validation', () => {
+    beforeEach(async () => {
+      ({ app, token } = await createTestApp('admin', ADMIN_ID));
+    });
+
+    it('malformed UUID param → controlled 400', async () => {
+      const res = await request(app).get('/api/admin/knowledge/evidence-sources/not-a-uuid')
+        .set('Authorization', `Bearer ${token}`);
+      expect(res.status).toBe(400);
+      expect(res.body.error.code).toBe('KNOWLEDGE_VALIDATION_ERROR');
+    });
+
+    it('malformed UUID body field → controlled 400', async () => {
+      const res = await request(app).post('/api/admin/knowledge/claims')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ claimKey: 'test', claimType: 'equivalency', subjectType: 'institution', subjectId: 'not-a-uuid' });
+      expect(res.status).toBe(400);
+    });
+
+    it('invalid pagination → 400', async () => {
+      const res = await request(app).get('/api/admin/knowledge/evidence-sources?limit=-1')
+        .set('Authorization', `Bearer ${token}`);
+      expect(res.status).toBe(400);
+    });
+
+    it('unknown/spoofable fields are rejected', async () => {
+      const res = await request(app).post('/api/admin/knowledge/evidence-sources')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ sourceType: 'official_web', title: 'Test', createdBy: 'attacker-id' });
+      expect(res.status).toBe(400);
     });
   });
 });

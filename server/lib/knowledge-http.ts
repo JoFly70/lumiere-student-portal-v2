@@ -6,6 +6,7 @@
  */
 
 import type { Response } from 'express';
+import { ZodError } from 'zod';
 import { KnowledgeError } from './knowledge-errors';
 import type { KnowledgeErrorCode } from './knowledge-errors';
 import { logger } from './logger';
@@ -22,10 +23,8 @@ const HTTP_STATUS_MAP: Record<KnowledgeErrorCode, number> = {
 };
 
 export function sendKnowledgeError(res: Response, error: unknown): void {
-  // Handle Zod validation errors at the route boundary
-  if (error && typeof error === 'object' && 'name' in error && (error as any).name === 'ZodError') {
-    const zodError = error as any;
-    const firstIssue = zodError.issues?.[0];
+  if (error instanceof ZodError) {
+    const firstIssue = error.issues[0];
     res.status(400).json({
       error: {
         code: 'KNOWLEDGE_VALIDATION_ERROR',
@@ -50,7 +49,6 @@ export function sendKnowledgeError(res: Response, error: unknown): void {
     return;
   }
 
-  // Unknown/unexpected error — sanitize to 500 without leaking internals
   logger.error('Knowledge API unexpected error', {
     error: error instanceof Error ? { name: error.name, message: error.message } : String(error),
   });

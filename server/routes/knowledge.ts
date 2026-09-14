@@ -20,7 +20,36 @@ import { requireRole } from '../middleware/rbac';
 import { knowledgeService } from '../services/knowledge-service';
 import { sendKnowledgeError } from '../lib/knowledge-http';
 import { auditAdmin } from '../lib/audit';
-import { logger } from '../lib/logger';
+import {
+  sourceTypeEnum,
+  claimStatusEnum,
+  claimTypeEnum,
+  subjectTypeEnum,
+  conflictStatusEnum,
+  conflictTypeEnum,
+  evidenceRelationshipTypeEnum,
+  verificationActionEnum,
+  authorityLevelEnum,
+  ruleKindEnum,
+} from '@shared/knowledge-schema';
+import type {
+  CreateEvidenceSourceInput,
+  CreateExcerptInput,
+  CreateClaimInput,
+  CreateClaimVersionInput,
+  AttachEvidenceInput,
+  CreateVerificationEventInput,
+  CreateConflictInput,
+  CreateAcademicRuleInput,
+  CreateEquivalencyInput,
+  CreateArticulationInput,
+  SourceType,
+  ClaimStatusFilter,
+  ClaimTypeFilter,
+  SubjectTypeFilter,
+  ConflictStatusFilter,
+  ConflictTypeFilter,
+} from '../repositories/knowledge-repo';
 
 const router = Router();
 
@@ -28,11 +57,31 @@ const router = Router();
 router.use(requireAuth);
 router.use(requireRole(['staff', 'admin']));
 
+// ── Enum value arrays derived from the shared schema ────────────────────────────
+
+const SOURCE_TYPES = sourceTypeEnum.enumValues as readonly [string, ...string[]];
+const CLAIM_STATUSES = claimStatusEnum.enumValues as readonly [string, ...string[]];
+const CLAIM_TYPES = claimTypeEnum.enumValues as readonly [string, ...string[]];
+const SUBJECT_TYPES = subjectTypeEnum.enumValues as readonly [string, ...string[]];
+const CONFLICT_STATUSES = conflictStatusEnum.enumValues as readonly [string, ...string[]];
+const CONFLICT_TYPES = conflictTypeEnum.enumValues as readonly [string, ...string[]];
+const EVIDENCE_RELATIONSHIP_TYPES = evidenceRelationshipTypeEnum.enumValues as readonly [string, ...string[]];
+const VERIFICATION_ACTIONS = verificationActionEnum.enumValues as readonly [string, ...string[]];
+const AUTHORITY_LEVELS = authorityLevelEnum.enumValues as readonly [string, ...string[]];
+const RULE_KINDS = ruleKindEnum.enumValues as readonly [string, ...string[]];
+
 // ── Shared Zod schemas ──────────────────────────────────────────────────────────
 
 const uuidSchema = z.string().uuid();
 const uuidOptionalSchema = z.string().uuid().nullable().optional();
-const isoDateSchema = z.coerce.date();
+
+// Strict ISO 8601 date/datetime string validation — rejects arbitrary Date-parseable values.
+// Accepts YYYY-MM-DD or full ISO 8601 datetime with optional timezone.
+const isoDateSchema = z.string()
+  .regex(/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d{3})?(Z|[+-]\d{2}:\d{2})?)?$/, 'Invalid ISO date format')
+  .transform((val) => new Date(val))
+  .nullable();
+
 const paginationSchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(50),
   offset: z.coerce.number().int().min(0).default(0),
@@ -55,21 +104,27 @@ router.get('/evidence-sources', async (req: Request, res: Response) => {
   try {
     const pagination = parsePagination(req);
     if (!pagination) {
-      return res.status(400).json({ error: { code: 'INVALID_PAGINATION', message: 'Invalid pagination parameters' } });
+      return res.status(400).json({ error: { code: 'KNOWLEDGE_VALIDATION_ERROR', message: 'Invalid pagination parameters' } });
     }
-    const filters: Record<string, unknown> = { limit: pagination.limit, offset: pagination.offset };
-    if (req.query.sourceType) filters.sourceType = req.query.sourceType as string;
-    if (req.query.institutionId) {
-      const inst = uuidSchema.safeParse(req.query.institutionId);
-      if (!inst.success) return res.status(400).json({ error: { code: 'INVALID_UUID', message: 'institutionId must be a valid UUID' } });
-      filters.institutionId = inst.data;
+    const filterSchema = z.object({
+      sourceType: z.enum(SOURCE_TYPES).optional(),
+      institutionId: z.string().uuid().optional(),
+      providerId: z.string().uuid().optional(),
+    });
+    const filterParse = filterSchema.safeParse({
+      sourceType: req.query.sourceType,
+      institutionId: req.query.institutionId,
+      providerId: req.query.providerId,
+    });
+    if (!filterParse.success) {
+      return res.status(400).json({ error: { code: 'KNOWLEDGE_VALIDATION_ERROR', message: filterParse.error.issues[0]?.message ?? 'Invalid filter parameters' } });
     }
-    if (req.query.providerId) {
-      const prov = uuidSchema.safeParse(req.query.providerId);
-      if (!prov.success) return res.status(400).json({ error: { code: 'INVALID_UUID', message: 'providerId must be a valid UUID' } });
-      filters.providerId = prov.data;
-    }
-    const items = await knowledgeService.listEvidenceSources(filters as any);
+    const filters = {
+      ...filterParse.data,
+      limit: pagination.limit,
+      offset: pagination.offset,
+    };
+    const items = await knowledgeService.listEvidenceSources(filters as { sourceType?: SourceType; institutionId?: string; providerId?: string; limit?: number; offset?: number });
     res.json({ items, pagination: { limit: pagination.limit, offset: pagination.offset, count: items.length } });
   } catch (error) {
     sendKnowledgeError(res, error);
@@ -80,7 +135,7 @@ router.get('/evidence-sources/:sourceId', async (req: Request, res: Response) =>
   try {
     const idCheck = uuidSchema.safeParse(req.params.sourceId);
     if (!idCheck.success) {
-      return res.status(400).json({ error: { code: 'INVALID_UUID', message: 'sourceId must be a valid UUID' } });
+      return res.status(400).json({ error: { code: 'KNOWLEDGE_VALIDATION_ERROR', message: 'sourceId must be a valid UUID' } });
     }
     const detail = await knowledgeService.getEvidenceSourceDetail(req.params.sourceId);
     res.json(detail);
@@ -95,14 +150,29 @@ router.get('/claims', async (req: Request, res: Response) => {
   try {
     const pagination = parsePagination(req);
     if (!pagination) {
-      return res.status(400).json({ error: { code: 'INVALID_PAGINATION', message: 'Invalid pagination parameters' } });
+      return res.status(400).json({ error: { code: 'KNOWLEDGE_VALIDATION_ERROR', message: 'Invalid pagination parameters' } });
     }
-    const filters: Record<string, unknown> = { limit: pagination.limit, offset: pagination.offset };
-    if (req.query.status) filters.status = req.query.status as string;
-    if (req.query.claimType) filters.claimType = req.query.claimType as string;
-    if (req.query.subjectType) filters.subjectType = req.query.subjectType as string;
-    if (req.query.claimKey) filters.claimKey = req.query.claimKey as string;
-    const items = await knowledgeService.listClaims(filters as any);
+    const filterSchema = z.object({
+      status: z.enum(CLAIM_STATUSES).optional(),
+      claimType: z.enum(CLAIM_TYPES).optional(),
+      subjectType: z.enum(SUBJECT_TYPES).optional(),
+      claimKey: z.string().optional(),
+    });
+    const filterParse = filterSchema.safeParse({
+      status: req.query.status,
+      claimType: req.query.claimType,
+      subjectType: req.query.subjectType,
+      claimKey: req.query.claimKey,
+    });
+    if (!filterParse.success) {
+      return res.status(400).json({ error: { code: 'KNOWLEDGE_VALIDATION_ERROR', message: filterParse.error.issues[0]?.message ?? 'Invalid filter parameters' } });
+    }
+    const filters = {
+      ...filterParse.data,
+      limit: pagination.limit,
+      offset: pagination.offset,
+    };
+    const items = await knowledgeService.listClaims(filters as { status?: ClaimStatusFilter; claimType?: ClaimTypeFilter; subjectType?: SubjectTypeFilter; claimKey?: string; limit?: number; offset?: number });
     res.json({ items, pagination: { limit: pagination.limit, offset: pagination.offset, count: items.length } });
   } catch (error) {
     sendKnowledgeError(res, error);
@@ -113,7 +183,7 @@ router.get('/claims/:claimId', async (req: Request, res: Response) => {
   try {
     const idCheck = uuidSchema.safeParse(req.params.claimId);
     if (!idCheck.success) {
-      return res.status(400).json({ error: { code: 'INVALID_UUID', message: 'claimId must be a valid UUID' } });
+      return res.status(400).json({ error: { code: 'KNOWLEDGE_VALIDATION_ERROR', message: 'claimId must be a valid UUID' } });
     }
     const detail = await knowledgeService.getClaimDetail(req.params.claimId);
     res.json(detail);
@@ -128,7 +198,7 @@ router.get('/claim-versions/:versionId', async (req: Request, res: Response) => 
   try {
     const idCheck = uuidSchema.safeParse(req.params.versionId);
     if (!idCheck.success) {
-      return res.status(400).json({ error: { code: 'INVALID_UUID', message: 'versionId must be a valid UUID' } });
+      return res.status(400).json({ error: { code: 'KNOWLEDGE_VALIDATION_ERROR', message: 'versionId must be a valid UUID' } });
     }
     const detail = await knowledgeService.getClaimVersionDetail(req.params.versionId);
     res.json(detail);
@@ -143,12 +213,25 @@ router.get('/conflicts', async (req: Request, res: Response) => {
   try {
     const pagination = parsePagination(req);
     if (!pagination) {
-      return res.status(400).json({ error: { code: 'INVALID_PAGINATION', message: 'Invalid pagination parameters' } });
+      return res.status(400).json({ error: { code: 'KNOWLEDGE_VALIDATION_ERROR', message: 'Invalid pagination parameters' } });
     }
-    const filters: Record<string, unknown> = { limit: pagination.limit, offset: pagination.offset };
-    if (req.query.status) filters.status = req.query.status as string;
-    if (req.query.conflictType) filters.conflictType = req.query.conflictType as string;
-    const items = await knowledgeService.listConflicts(filters as any);
+    const filterSchema = z.object({
+      status: z.enum(CONFLICT_STATUSES).optional(),
+      conflictType: z.enum(CONFLICT_TYPES).optional(),
+    });
+    const filterParse = filterSchema.safeParse({
+      status: req.query.status,
+      conflictType: req.query.conflictType,
+    });
+    if (!filterParse.success) {
+      return res.status(400).json({ error: { code: 'KNOWLEDGE_VALIDATION_ERROR', message: filterParse.error.issues[0]?.message ?? 'Invalid filter parameters' } });
+    }
+    const filters = {
+      ...filterParse.data,
+      limit: pagination.limit,
+      offset: pagination.offset,
+    };
+    const items = await knowledgeService.listConflicts(filters as { status?: ConflictStatusFilter; conflictType?: ConflictTypeFilter; limit?: number; offset?: number });
     res.json({ items, pagination: { limit: pagination.limit, offset: pagination.offset, count: items.length } });
   } catch (error) {
     sendKnowledgeError(res, error);
@@ -159,7 +242,7 @@ router.get('/conflicts/:conflictId', async (req: Request, res: Response) => {
   try {
     const idCheck = uuidSchema.safeParse(req.params.conflictId);
     if (!idCheck.success) {
-      return res.status(400).json({ error: { code: 'INVALID_UUID', message: 'conflictId must be a valid UUID' } });
+      return res.status(400).json({ error: { code: 'KNOWLEDGE_VALIDATION_ERROR', message: 'conflictId must be a valid UUID' } });
     }
     const conflict = await knowledgeService.getConflict(req.params.conflictId);
     res.json(conflict);
@@ -180,26 +263,27 @@ router.use((req: Request, res: Response, next) => {
 
 // ── CREATE: Evidence Source ───────────────────────────────────────────────────────
 
+const createEvidenceSourceBody = z.object({
+  sourceType: z.enum(SOURCE_TYPES),
+  title: z.string().trim().min(1),
+  sourceUrl: z.string().nullable().optional(),
+  externalFileId: z.string().nullable().optional(),
+  contentHash: z.string().nullable().optional(),
+  authorityLevel: z.enum(AUTHORITY_LEVELS).optional(),
+  publishedAt: isoDateSchema.optional(),
+  effectiveFrom: isoDateSchema.optional(),
+  effectiveTo: isoDateSchema.optional(),
+  institutionId: uuidOptionalSchema,
+  providerId: uuidOptionalSchema,
+}).strict();
+
 router.post('/evidence-sources', async (req: Request, res: Response) => {
   try {
-    const bodySchema = z.object({
-      sourceType: z.string().min(1),
-      title: z.string().trim().min(1),
-      sourceUrl: z.string().nullable().optional(),
-      externalFileId: z.string().nullable().optional(),
-      contentHash: z.string().nullable().optional(),
-      authorityLevel: z.string().optional(),
-      publishedAt: isoDateSchema.nullable().optional(),
-      effectiveFrom: isoDateSchema.nullable().optional(),
-      effectiveTo: isoDateSchema.nullable().optional(),
-      institutionId: uuidOptionalSchema,
-      providerId: uuidOptionalSchema,
-    }).strict();
-    const validated = bodySchema.parse(req.body);
+    const validated = createEvidenceSourceBody.parse(req.body);
     const result = await knowledgeService.createEvidenceSource({
       ...validated,
       createdBy: req.user!.id,
-    } as any);
+    } as CreateEvidenceSourceInput);
     await auditAdmin('admin.bulk_operation', req.user!.id, undefined,
       `Created evidence source: ${validated.title}`,
       { resourceType: 'evidence_source', resourceId: result.id });
@@ -211,23 +295,27 @@ router.post('/evidence-sources', async (req: Request, res: Response) => {
 
 // ── CREATE: Evidence Excerpt ───────────────────────────────────────────────────────
 
+const createExcerptBody = z.object({
+  excerptText: z.string().trim().min(1),
+  locator: z.string().nullable().optional(),
+  pageNumber: z.number().nullable().optional(),
+  section: z.string().nullable().optional(),
+}).strict();
+
 router.post('/evidence-sources/:sourceId/excerpts', async (req: Request, res: Response) => {
   try {
     const idCheck = uuidSchema.safeParse(req.params.sourceId);
     if (!idCheck.success) {
-      return res.status(400).json({ error: { code: 'INVALID_UUID', message: 'sourceId must be a valid UUID' } });
+      return res.status(400).json({ error: { code: 'KNOWLEDGE_VALIDATION_ERROR', message: 'sourceId must be a valid UUID' } });
     }
-    const bodySchema = z.object({
-      excerptText: z.string().trim().min(1),
-      locator: z.string().nullable().optional(),
-      pageNumber: z.number().nullable().optional(),
-      section: z.string().nullable().optional(),
-    }).strict();
-    const validated = bodySchema.parse(req.body);
+    const validated = createExcerptBody.parse(req.body);
     const result = await knowledgeService.addEvidenceExcerpt({
       ...validated,
       evidenceSourceId: req.params.sourceId,
     });
+    await auditAdmin('admin.bulk_operation', req.user!.id, undefined,
+      `Created evidence excerpt for source: ${req.params.sourceId}`,
+      { resourceType: 'evidence_excerpt', resourceId: result.id, evidenceSourceId: req.params.sourceId });
     res.status(201).json({ excerpt: result });
   } catch (error) {
     sendKnowledgeError(res, error);
@@ -236,19 +324,20 @@ router.post('/evidence-sources/:sourceId/excerpts', async (req: Request, res: Re
 
 // ── CREATE: Claim ──────────────────────────────────────────────────────────────────
 
+const createClaimBody = z.object({
+  claimKey: z.string().trim().min(1),
+  claimType: z.enum(CLAIM_TYPES),
+  subjectType: z.enum(SUBJECT_TYPES),
+  subjectId: uuidOptionalSchema,
+}).strict();
+
 router.post('/claims', async (req: Request, res: Response) => {
   try {
-    const bodySchema = z.object({
-      claimKey: z.string().trim().min(1),
-      claimType: z.string().min(1),
-      subjectType: z.string().min(1),
-      subjectId: uuidOptionalSchema,
-    }).strict();
-    const validated = bodySchema.parse(req.body);
+    const validated = createClaimBody.parse(req.body);
     const result = await knowledgeService.createKnowledgeClaim({
       ...validated,
       createdBy: req.user!.id,
-    } as any);
+    } as CreateClaimInput);
     await auditAdmin('admin.bulk_operation', req.user!.id, undefined,
       `Created knowledge claim: ${validated.claimKey}`,
       { resourceType: 'knowledge_claim', resourceId: result.id });
@@ -260,27 +349,28 @@ router.post('/claims', async (req: Request, res: Response) => {
 
 // ── CREATE: Claim Version ──────────────────────────────────────────────────────────
 
+const createClaimVersionBody = z.object({
+  statement: z.string().trim().min(1),
+  confidence: z.number().int().min(0).max(100),
+  effectiveFrom: isoDateSchema.optional(),
+  effectiveTo: isoDateSchema.optional(),
+  catalogApplicability: z.string().nullable().optional(),
+  cohortApplicability: z.string().nullable().optional(),
+  supersedesVersionId: uuidOptionalSchema,
+}).strict();
+
 router.post('/claims/:claimId/versions', async (req: Request, res: Response) => {
   try {
     const idCheck = uuidSchema.safeParse(req.params.claimId);
     if (!idCheck.success) {
-      return res.status(400).json({ error: { code: 'INVALID_UUID', message: 'claimId must be a valid UUID' } });
+      return res.status(400).json({ error: { code: 'KNOWLEDGE_VALIDATION_ERROR', message: 'claimId must be a valid UUID' } });
     }
-    const bodySchema = z.object({
-      statement: z.string().trim().min(1),
-      confidence: z.number().int().min(0).max(100),
-      effectiveFrom: isoDateSchema.nullable().optional(),
-      effectiveTo: isoDateSchema.nullable().optional(),
-      catalogApplicability: z.string().nullable().optional(),
-      cohortApplicability: z.string().nullable().optional(),
-      supersedesVersionId: uuidOptionalSchema,
-    }).strict();
-    const validated = bodySchema.parse(req.body);
+    const validated = createClaimVersionBody.parse(req.body);
     const result = await knowledgeService.createClaimVersion({
       ...validated,
       claimId: req.params.claimId,
       createdBy: req.user!.id,
-    } as any);
+    } as CreateClaimVersionInput);
     await auditAdmin('admin.bulk_operation', req.user!.id, undefined,
       `Created claim version for claim: ${req.params.claimId}`,
       { resourceType: 'claim_version', resourceId: result.id });
@@ -292,22 +382,26 @@ router.post('/claims/:claimId/versions', async (req: Request, res: Response) => 
 
 // ── CREATE: Attach Evidence ────────────────────────────────────────────────────────
 
+const attachEvidenceBody = z.object({
+  evidenceExcerptId: z.string().uuid(),
+  relationshipType: z.enum(EVIDENCE_RELATIONSHIP_TYPES),
+  notes: z.string().nullable().optional(),
+}).strict();
+
 router.post('/claim-versions/:versionId/evidence', async (req: Request, res: Response) => {
   try {
     const idCheck = uuidSchema.safeParse(req.params.versionId);
     if (!idCheck.success) {
-      return res.status(400).json({ error: { code: 'INVALID_UUID', message: 'versionId must be a valid UUID' } });
+      return res.status(400).json({ error: { code: 'KNOWLEDGE_VALIDATION_ERROR', message: 'versionId must be a valid UUID' } });
     }
-    const bodySchema = z.object({
-      evidenceExcerptId: z.string().uuid(),
-      relationshipType: z.string().min(1),
-      notes: z.string().nullable().optional(),
-    }).strict();
-    const validated = bodySchema.parse(req.body);
+    const validated = attachEvidenceBody.parse(req.body);
     const result = await knowledgeService.attachEvidenceToClaimVersion({
       ...validated,
       claimVersionId: req.params.versionId,
-    } as any);
+    } as AttachEvidenceInput);
+    await auditAdmin('admin.bulk_operation', req.user!.id, undefined,
+      `Attached evidence to claim version: ${req.params.versionId}`,
+      { resourceType: 'claim_evidence', resourceId: result.claimVersionId, claimVersionId: req.params.versionId, evidenceExcerptId: validated.evidenceExcerptId });
     res.status(201).json({ evidenceRelationship: result });
   } catch (error) {
     sendKnowledgeError(res, error);
@@ -316,23 +410,24 @@ router.post('/claim-versions/:versionId/evidence', async (req: Request, res: Res
 
 // ── CREATE: Record Verification ────────────────────────────────────────────────────
 
+const recordVerificationBody = z.object({
+  action: z.enum(VERIFICATION_ACTIONS),
+  rationale: z.string().nullable().optional(),
+}).strict();
+
 router.post('/claim-versions/:versionId/verifications', async (req: Request, res: Response) => {
   try {
     const idCheck = uuidSchema.safeParse(req.params.versionId);
     if (!idCheck.success) {
-      return res.status(400).json({ error: { code: 'INVALID_UUID', message: 'versionId must be a valid UUID' } });
+      return res.status(400).json({ error: { code: 'KNOWLEDGE_VALIDATION_ERROR', message: 'versionId must be a valid UUID' } });
     }
-    const bodySchema = z.object({
-      action: z.string().min(1),
-      rationale: z.string().nullable().optional(),
-    }).strict();
-    const validated = bodySchema.parse(req.body);
+    const validated = recordVerificationBody.parse(req.body);
     const result = await knowledgeService.recordVerification({
       claimVersionId: req.params.versionId,
-      action: validated.action as any,
+      action: validated.action,
       reviewerId: req.user!.id,
       rationale: validated.rationale,
-    });
+    } as CreateVerificationEventInput);
     await auditAdmin('admin.bulk_operation', req.user!.id, undefined,
       `Recorded verification: ${validated.action} for version ${req.params.versionId}`,
       { resourceType: 'verification_event', resourceId: result.id });
@@ -348,7 +443,7 @@ router.post('/claim-versions/:versionId/confirm', async (req: Request, res: Resp
   try {
     const idCheck = uuidSchema.safeParse(req.params.versionId);
     if (!idCheck.success) {
-      return res.status(400).json({ error: { code: 'INVALID_UUID', message: 'versionId must be a valid UUID' } });
+      return res.status(400).json({ error: { code: 'KNOWLEDGE_VALIDATION_ERROR', message: 'versionId must be a valid UUID' } });
     }
     const result = await knowledgeService.confirmClaimVersion(req.params.versionId);
     await auditAdmin('admin.bulk_operation', req.user!.id, undefined,
@@ -362,16 +457,17 @@ router.post('/claim-versions/:versionId/confirm', async (req: Request, res: Resp
 
 // ── POST: Supersede Claim Version ──────────────────────────────────────────────────
 
+const supersedeBody = z.object({
+  newVersionId: z.string().uuid(),
+}).strict();
+
 router.post('/claim-versions/:oldVersionId/supersede', async (req: Request, res: Response) => {
   try {
     const idCheck = uuidSchema.safeParse(req.params.oldVersionId);
     if (!idCheck.success) {
-      return res.status(400).json({ error: { code: 'INVALID_UUID', message: 'oldVersionId must be a valid UUID' } });
+      return res.status(400).json({ error: { code: 'KNOWLEDGE_VALIDATION_ERROR', message: 'oldVersionId must be a valid UUID' } });
     }
-    const bodySchema = z.object({
-      newVersionId: z.string().uuid(),
-    }).strict();
-    const validated = bodySchema.parse(req.body);
+    const validated = supersedeBody.parse(req.body);
     const result = await knowledgeService.supersedeClaimVersion(
       req.params.oldVersionId,
       validated.newVersionId,
@@ -388,18 +484,17 @@ router.post('/claim-versions/:oldVersionId/supersede', async (req: Request, res:
 
 // ── CREATE: Conflict ────────────────────────────────────────────────────────────────
 
+const createConflictBody = z.object({
+  claimVersionAId: z.string().uuid(),
+  claimVersionBId: uuidOptionalSchema,
+  conflictType: z.enum(CONFLICT_TYPES),
+  description: z.string().trim().min(1),
+}).strict();
+
 router.post('/conflicts', async (req: Request, res: Response) => {
   try {
-    const bodySchema = z.object({
-      claimVersionAId: z.string().uuid(),
-      claimVersionBId: uuidOptionalSchema,
-      conflictType: z.string().min(1),
-      description: z.string().trim().min(1),
-    }).strict();
-    const validated = bodySchema.parse(req.body);
-    const result = await knowledgeService.createKnowledgeConflict({
-      ...validated,
-    } as any);
+    const validated = createConflictBody.parse(req.body);
+    const result = await knowledgeService.createKnowledgeConflict(validated as CreateConflictInput);
     await auditAdmin('admin.bulk_operation', req.user!.id, undefined,
       `Created knowledge conflict`,
       { resourceType: 'knowledge_conflict', resourceId: result.id });
@@ -411,16 +506,17 @@ router.post('/conflicts', async (req: Request, res: Response) => {
 
 // ── POST: Resolve Conflict ──────────────────────────────────────────────────────────
 
+const resolveConflictBody = z.object({
+  resolutionNotes: z.string().trim().min(1),
+}).strict();
+
 router.post('/conflicts/:conflictId/resolve', async (req: Request, res: Response) => {
   try {
     const idCheck = uuidSchema.safeParse(req.params.conflictId);
     if (!idCheck.success) {
-      return res.status(400).json({ error: { code: 'INVALID_UUID', message: 'conflictId must be a valid UUID' } });
+      return res.status(400).json({ error: { code: 'KNOWLEDGE_VALIDATION_ERROR', message: 'conflictId must be a valid UUID' } });
     }
-    const bodySchema = z.object({
-      resolutionNotes: z.string().trim().min(1),
-    }).strict();
-    const validated = bodySchema.parse(req.body);
+    const validated = resolveConflictBody.parse(req.body);
     const result = await knowledgeService.resolveKnowledgeConflict(
       req.params.conflictId,
       validated.resolutionNotes,
@@ -437,23 +533,22 @@ router.post('/conflicts/:conflictId/resolve', async (req: Request, res: Response
 
 // ── CREATE: Academic Rule ───────────────────────────────────────────────────────────
 
+const createAcademicRuleBody = z.object({
+  institutionId: z.string().uuid(),
+  programVersionId: uuidOptionalSchema,
+  ruleKey: z.string().trim().min(1),
+  ruleKind: z.enum(RULE_KINDS),
+  title: z.string().trim().min(1),
+  ruleValue: z.record(z.unknown()).optional(),
+  claimVersionId: z.string().uuid(),
+  effectiveFrom: isoDateSchema.optional(),
+  effectiveTo: isoDateSchema.optional(),
+}).strict();
+
 router.post('/academic-rules', async (req: Request, res: Response) => {
   try {
-    const bodySchema = z.object({
-      institutionId: z.string().uuid(),
-      programVersionId: uuidOptionalSchema,
-      ruleKey: z.string().trim().min(1),
-      ruleKind: z.string().min(1),
-      title: z.string().trim().min(1),
-      ruleValue: z.record(z.unknown()).optional(),
-      claimVersionId: z.string().uuid(),
-      effectiveFrom: isoDateSchema.nullable().optional(),
-      effectiveTo: isoDateSchema.nullable().optional(),
-    }).strict();
-    const validated = bodySchema.parse(req.body);
-    const result = await knowledgeService.createAcademicRuleFromVerifiedClaim({
-      ...validated,
-    } as any);
+    const validated = createAcademicRuleBody.parse(req.body);
+    const result = await knowledgeService.createAcademicRuleFromVerifiedClaim(validated as CreateAcademicRuleInput);
     await auditAdmin('admin.bulk_operation', req.user!.id, undefined,
       `Created academic rule: ${validated.ruleKey}`,
       { resourceType: 'academic_rule', resourceId: result.id });
@@ -465,22 +560,21 @@ router.post('/academic-rules', async (req: Request, res: Response) => {
 
 // ── CREATE: Equivalency ─────────────────────────────────────────────────────────────
 
+const createEquivalencyBody = z.object({
+  sourceProviderCourseVersionId: z.string().uuid(),
+  targetInstitutionCourseVersionId: uuidOptionalSchema,
+  institutionId: z.string().uuid(),
+  claimVersionId: z.string().uuid(),
+  effectiveFrom: isoDateSchema.optional(),
+  effectiveTo: isoDateSchema.optional(),
+  confidence: z.number().int().min(0).max(100).optional(),
+  notes: z.string().nullable().optional(),
+}).strict();
+
 router.post('/equivalencies', async (req: Request, res: Response) => {
   try {
-    const bodySchema = z.object({
-      sourceProviderCourseVersionId: z.string().uuid(),
-      targetInstitutionCourseVersionId: uuidOptionalSchema,
-      institutionId: z.string().uuid(),
-      claimVersionId: z.string().uuid(),
-      effectiveFrom: isoDateSchema.nullable().optional(),
-      effectiveTo: isoDateSchema.nullable().optional(),
-      confidence: z.number().int().min(0).max(100).optional(),
-      notes: z.string().nullable().optional(),
-    }).strict();
-    const validated = bodySchema.parse(req.body);
-    const result = await knowledgeService.createEquivalencyFromVerifiedClaim({
-      ...validated,
-    } as any);
+    const validated = createEquivalencyBody.parse(req.body);
+    const result = await knowledgeService.createEquivalencyFromVerifiedClaim(validated as CreateEquivalencyInput);
     await auditAdmin('admin.bulk_operation', req.user!.id, undefined,
       `Created equivalency`,
       { resourceType: 'equivalency', resourceId: result.id });
@@ -492,23 +586,22 @@ router.post('/equivalencies', async (req: Request, res: Response) => {
 
 // ── CREATE: Articulation ─────────────────────────────────────────────────────────────
 
+const createArticulationBody = z.object({
+  programVersionId: z.string().uuid(),
+  requirementId: z.string().uuid(),
+  institutionCourseVersionId: uuidOptionalSchema,
+  equivalencyId: uuidOptionalSchema,
+  creditsApplied: z.number().nullable().optional(),
+  priority: z.number().optional(),
+  claimVersionId: z.string().uuid(),
+  effectiveFrom: isoDateSchema.optional(),
+  effectiveTo: isoDateSchema.optional(),
+}).strict();
+
 router.post('/articulations', async (req: Request, res: Response) => {
   try {
-    const bodySchema = z.object({
-      programVersionId: z.string().uuid(),
-      requirementId: z.string().uuid(),
-      institutionCourseVersionId: uuidOptionalSchema,
-      equivalencyId: uuidOptionalSchema,
-      creditsApplied: z.number().nullable().optional(),
-      priority: z.number().optional(),
-      claimVersionId: z.string().uuid(),
-      effectiveFrom: isoDateSchema.nullable().optional(),
-      effectiveTo: isoDateSchema.nullable().optional(),
-    }).strict();
-    const validated = bodySchema.parse(req.body);
-    const result = await knowledgeService.createArticulationFromVerifiedClaim({
-      ...validated,
-    } as any);
+    const validated = createArticulationBody.parse(req.body);
+    const result = await knowledgeService.createArticulationFromVerifiedClaim(validated as CreateArticulationInput);
     await auditAdmin('admin.bulk_operation', req.user!.id, undefined,
       `Created articulation`,
       { resourceType: 'articulation', resourceId: result.id });
