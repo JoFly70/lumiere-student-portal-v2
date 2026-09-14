@@ -559,18 +559,25 @@ describe('ADMIN — real router from server/routes/admin.ts', () => {
     adminRouter = mod.default;
   });
 
-  async function makeAdminApp(router: express.Router): Promise<express.Application> {
-    const { requireAuth } = await import('../server/middleware/auth.js');
+  function makeAdminApp(router: express.Router): express.Application {
     const app = express();
     app.use(express.json());
-    app.use('/api/admin', requireAuth, router);
+    app.use('/api/admin', router);
     return app;
   }
+
+  it('GET /api/admin/users → 401 when no token provided', async () => {
+    setupAuthUser(null);
+
+    const app = makeAdminApp(adminRouter);
+    const res = await request(app).get('/api/admin/users');
+    expect(res.status).toBe(401);
+  });
 
   it('GET /api/admin/users → 403 when student accesses admin API', async () => {
     setupAuthUser({ id: 'student-1', email: 'a@test.com', role: 'student' });
 
-    const app = await makeAdminApp(adminRouter);
+    const app = makeAdminApp(adminRouter);
     const res = await request(app)
       .get('/api/admin/users')
       .set('Authorization', 'Bearer valid-token');
@@ -595,7 +602,7 @@ describe('ADMIN — real router from server/routes/admin.ts', () => {
       },
     });
 
-    const app = await makeAdminApp(adminRouter);
+    const app = makeAdminApp(adminRouter);
     const res = await request(app)
       .get('/api/admin/users')
       .set('Authorization', 'Bearer valid-token');

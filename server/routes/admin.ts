@@ -14,7 +14,8 @@ import { auditAdmin } from '../lib/audit';
 
 const router = Router();
 
-// All admin routes require admin role
+// All admin routes require authentication then admin role
+router.use(requireAuth);
 router.use(requireRole(['admin']));
 
 // ==================== USER MANAGEMENT ====================
