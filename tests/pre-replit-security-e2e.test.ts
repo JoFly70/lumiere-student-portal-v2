@@ -55,6 +55,15 @@ let adminRest: ReturnType<typeof createClient>;
 let studentId = '';
 let student2Id = '';
 let staffId = '';
+let student1RowId = '';
+let student2RowId = '';
+let doc1Id = '';
+let doc2Id = '';
+let progId = '';
+let courseId = '';
+let courseId2 = '';
+let pcId = '';
+let trackedPcIds: string[] = [];
 const trackedAuthIds: string[] = [];
 const trackedUsersRows: string[] = [];
 
@@ -62,8 +71,12 @@ let cleanupError: string | null = null;
 async function cleanup(): Promise<void> {
   const errors: string[] = [];
   try {
+    await admin.from('documents').delete().like('uploaded_filename', `${PREFIX}%`);
     await admin.from('support_tickets').delete().like('subject', `${PREFIX}%`);
     await admin.from('audit_logs').delete().like('target_resource_id', `${PREFIX}%`);
+    if (trackedPcIds.length) await admin.from('program_courses').delete().in('id', trackedPcIds);
+    await admin.from('courses').delete().like('code', `${PREFIX}%`);
+    await admin.from('degree_programs').delete().like('code', `${PREFIX}%`);
     await admin.from('students').delete().like('student_code', `${PREFIX}%`);
     await admin.from('users').delete().like('email', `${PREFIX}%@prsec.test`);
   } catch (e) { errors.push(`db: ${(e as Error).message}`); }
@@ -114,8 +127,11 @@ describe_sec('Pre-Replit Security Sweep — real access tests', () => {
         await admin.auth.admin.deleteUser(u.id).catch(() => {});
       }
     }
+    await admin.from('documents').delete().like('uploaded_filename', 'prsec-%');
     await admin.from('support_tickets').delete().like('subject', 'prsec-%');
     await admin.from('audit_logs').delete().like('target_resource_id', 'prsec-%');
+    await admin.from('degree_programs').delete().like('code', 'prsec-%');
+    await admin.from('courses').delete().like('code', 'prsec-%');
     await admin.from('students').delete().like('student_code', 'prsec-%');
     await admin.from('users').delete().like('email', 'prsec-%@prsec.test');
     anonRest = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_ANON_KEY!, {
@@ -139,8 +155,8 @@ describe_sec('Pre-Replit Security Sweep — real access tests', () => {
       if (r.error) throw new Error(`students insert(${role}): ${r.error.message}`);
       return r.data.id;
     };
-    await mkStudent(studentId, 'student');
-    await mkStudent(student2Id, 'student2');
+    student1RowId = await mkStudent(studentId, 'student');
+    student2RowId = await mkStudent(student2Id, 'student2');
   });
 
   afterAll(async () => {
@@ -162,6 +178,14 @@ describe_sec('Pre-Replit Security Sweep — real access tests', () => {
     await check('students rows', cnt('students', 'student_code', `${PREFIX}%`));
     await check('tickets rows', cnt('support_tickets', 'subject', `${PREFIX}%`));
     await check('audit rows', cnt('audit_logs', 'target_resource_id', `${PREFIX}%`));
+    await check('documents rows', cnt('documents', 'uploaded_filename', `${PREFIX}%`));
+    await check('degree_programs rows', cnt('degree_programs', 'code', `${PREFIX}%`));
+    await check('courses rows', cnt('courses', 'code', `${PREFIX}%`));
+    await check('program_courses rows', async () => {
+      if (trackedPcIds.length === 0) return 0;
+      const r = await admin.from('program_courses').select('id', { count: 'exact', head: true }).in('id', trackedPcIds);
+      return r.count ?? -1;
+    });
     if (cleanupError) throw new Error(`cleanup errors: ${cleanupError}`);
   });
 
@@ -258,23 +282,37 @@ describe_sec('Pre-Replit Security Sweep — real access tests', () => {
     });
 
     it_sec('admin can read and mutate knowledge rows (Phase 1 rule)', async () => {
-      const read = await adminRest.from('knowledge_institutions').select('slug').limit(1);
-      expect(read.error).toBeNull();
-      expect((read.data ?? []).length).toBe(1);
-      const slug = read.data![0].slug;
-      const upd = await adminRest.from('knowledge_institutions').update({ name: `${PREFIX} probe` }).eq('slug', slug).select('slug');
-      expect(upd.error).toBeNull();
-      expect(upd.data ?? []).toHaveLength(1); // admin RLS-visible row actually updated
-      // restore original name via service role
+      const slug = 'tesu';
+      // Capture the canonical seeded name BEFORE mutating so the restore is
+      // exact. A prior version captured after mutation and corrupted the seed.
       const orig = await admin.from('knowledge_institutions').select('name').eq('slug', slug).single();
-      await admin.from('knowledge_institutions').update({ name: orig.data?.name ?? null }).eq('slug', slug);
-      // PostgREST UPDATE under RLS: rows hidden by USING are silently skipped
-      // (0 rows), not an error. Prove denial by zero-row update + unchanged data.
-      const denied = await studentRest.from('knowledge_institutions').update({ name: 'nope' }).eq('slug', slug);
-      expect(denied.error).toBeNull();
-      expect(denied.data ?? []).toHaveLength(0);
-      const after = await admin.from('knowledge_institutions').select('name').eq('slug', slug).single();
-      expect(after.data?.name).toBe(orig.data?.name);
+      expect(orig.error).toBeNull();
+      const canonicalName = orig.data?.name ?? '';
+      expect(canonicalName).not.toBe('');
+      expect(canonicalName.startsWith(PREFIX)).toBe(false); // never restore a probe value
+      try {
+        const read = await adminRest.from('knowledge_institutions').select('slug').eq('slug', slug).limit(1);
+        expect(read.error).toBeNull();
+        expect((read.data ?? []).length).toBe(1);
+        const upd = await adminRest.from('knowledge_institutions').update({ name: `${PREFIX} probe` }).eq('slug', slug).select('slug');
+        expect(upd.error).toBeNull();
+        expect(upd.data ?? []).toHaveLength(1); // admin RLS-visible row actually updated
+        // PostgREST UPDATE under RLS: rows hidden by USING are silently skipped
+        // (0 rows), not an error. Prove denial by zero-row update + unchanged data.
+        const denied = await studentRest.from('knowledge_institutions').update({ name: 'nope' }).eq('slug', slug);
+        expect(denied.error).toBeNull();
+        expect(denied.data ?? []).toHaveLength(0);
+        const after = await admin.from('knowledge_institutions').select('name').eq('slug', slug).single();
+        expect(after.data?.name).toBe(`${PREFIX} probe`);
+      } finally {
+        // Failure-safe: the seeded name returns to its canonical value even if
+        // an assertion above fails.
+        const restored = await admin.from('knowledge_institutions')
+          .update({ name: canonicalName }).eq('slug', slug).select('name').single();
+        if (restored.error || restored.data?.name !== canonicalName) {
+          throw new Error(`seed restore failed for ${slug}: ${restored.error?.message ?? restored.data?.name}`);
+        }
+      }
     });
   });
 
@@ -308,6 +346,183 @@ describe_sec('Pre-Replit Security Sweep — real access tests', () => {
       const staffView = await staffRest.from('support_tickets').select('*').eq('id', mk.data!.id);
       expect(staffView.error).toBeNull();
       expect(staffView.data?.length).toBe(1);
+    });
+  });
+
+  // ═══ Document ownership (documents.student_id -> students.id -> students.user_id) ═══
+  describe('document ownership isolation', () => {
+    beforeAll(async () => {
+      const mkDoc = async (studentRowId: string, tag: string) => {
+        const ins = await admin.from('documents').insert({
+          student_id: studentRowId,
+          doc_type: 'other',
+          uploaded_filename: `${PREFIX}-doc-${tag}`,
+          storage_url: `prsec://${PREFIX}/doc-${tag}`,
+        }).select('id').single();
+        if (ins.error) throw new Error(`documents insert(${tag}): ${ins.error.message}`);
+        return ins.data!.id;
+      };
+      doc1Id = await mkDoc(student1RowId, 's1');
+      doc2Id = await mkDoc(student2RowId, 's2');
+    });
+
+    it_sec('student 1 selects own document', async () => {
+      const own = await studentRest.from('documents').select('*').eq('id', doc1Id);
+      expect(own.error).toBeNull();
+      expect(own.data?.length).toBe(1);
+    });
+
+    it_sec('student 1 cannot select student 2\'s document', async () => {
+      const other = await studentRest.from('documents').select('*').eq('id', doc2Id);
+      expect(other.error).toBeNull();
+      expect(other.data ?? []).toHaveLength(0);
+    });
+
+    it_sec('student 2 selects own document', async () => {
+      const own = await student2Rest.from('documents').select('*').eq('id', doc2Id);
+      expect(own.error).toBeNull();
+      expect(own.data?.length).toBe(1);
+    });
+
+    it_sec('student 2 cannot select student 1\'s document', async () => {
+      const other = await student2Rest.from('documents').select('*').eq('id', doc1Id);
+      expect(other.error).toBeNull();
+      expect(other.data ?? []).toHaveLength(0);
+    });
+
+    it_sec('staff selects both documents', async () => {
+      for (const id of [doc1Id, doc2Id]) {
+        const r = await staffRest.from('documents').select('*').eq('id', id);
+        expect(r.error).toBeNull();
+        expect(r.data?.length).toBe(1);
+      }
+    });
+
+    it_sec('anon still cannot select documents', async () => {
+      const r = await anonRest.from('documents').select('*').limit(1);
+      expect(r.data ?? []).toHaveLength(0);
+      expect(r.error).toBeTruthy();
+    });
+
+    it_sec('student cannot INSERT documents (RLS WITH CHECK denies)', async () => {
+      const ins = await studentRest.from('documents').insert({
+        student_id: student1RowId,
+        doc_type: 'other',
+        uploaded_filename: `${PREFIX}-student-write`,
+        storage_url: `prsec://${PREFIX}/student-write`,
+      });
+      expect(ins.error).toBeTruthy();
+    });
+
+    it_sec('student cannot UPDATE documents (zero-row, unchanged)', async () => {
+      const up = await studentRest.from('documents').update({ staff_notes: 'tampered' }).eq('id', doc1Id);
+      expect(up.error).toBeNull();
+      expect(up.data ?? []).toHaveLength(0);
+      const check = await admin.from('documents').select('staff_notes').eq('id', doc1Id).single();
+      expect(check.data?.staff_notes ?? null).toBeNull();
+    });
+
+    it_sec('student cannot DELETE documents (zero-row, still present)', async () => {
+      const del = await studentRest.from('documents').delete().eq('id', doc1Id);
+      expect(del.error).toBeNull();
+      expect(del.data ?? []).toHaveLength(0);
+      const still = await admin.from('documents').select('id').eq('id', doc1Id);
+      expect(still.data?.length).toBe(1);
+    });
+  });
+
+  // ═══ Legacy catalog mutation boundary: admin + staff only ═══
+  describe('legacy catalog mutation role boundary', () => {
+    beforeAll(async () => {
+      const insProg = await admin.from('degree_programs').insert({
+        code: `${PREFIX}-PROG`, name: `${PREFIX} Program`,
+        total_credits_required: 120, core_credits_required: 60, elective_credits_required: 60,
+        is_active: true,
+      }).select('id').single();
+      if (insProg.error) throw new Error(`degree_programs insert: ${insProg.error.message}`);
+      progId = insProg.data!.id;
+
+      const insCourse = async (tag: string) => {
+        const r = await admin.from('courses').insert({
+          code: `${PREFIX}-C-${tag}`, name: `${PREFIX} Course ${tag}`, provider: 'prsec', credits: 3,
+          is_active: true,
+        }).select('id').single();
+        if (r.error) throw new Error(`courses insert(${tag}): ${r.error.message}`);
+        return r.data!.id;
+      };
+      courseId = await insCourse('A');
+      courseId2 = await insCourse('B');
+
+      const insPc = await admin.from('program_courses').insert({
+        program_id: progId, course_id: courseId, requirement_type: 'core',
+      }).select('id').single();
+      if (insPc.error) throw new Error(`program_courses insert: ${insPc.error.message}`);
+      pcId = insPc.data!.id;
+      trackedPcIds.push(pcId);
+    });
+
+    it_sec('coach cannot INSERT degree_programs, courses, or program_courses', async () => {
+      const p = await coachRest.from('degree_programs').insert({ code: `${PREFIX}-CP`, name: 'coach probe' });
+      expect(p.error).toBeTruthy();
+      const c = await coachRest.from('courses').insert({ code: `${PREFIX}-CC`, name: 'coach probe', provider: 'prsec' });
+      expect(c.error).toBeTruthy();
+      const pc = await coachRest.from('program_courses').insert({ program_id: progId, course_id: courseId2, requirement_type: 'core' });
+      expect(pc.error).toBeTruthy();
+    });
+
+    it_sec('coach cannot UPDATE catalog rows (zero-row, underlying unchanged)', async () => {
+      const p = await coachRest.from('degree_programs').update({ name: 'coach-tamper' }).eq('id', progId).select('id');
+      expect(p.error).toBeNull();
+      expect(p.data ?? []).toHaveLength(0);
+      const c = await coachRest.from('courses').update({ name: 'coach-tamper' }).eq('id', courseId).select('id');
+      expect(c.error).toBeNull();
+      expect(c.data ?? []).toHaveLength(0);
+      const pc = await coachRest.from('program_courses').update({ requirement_type: 'elective' }).eq('id', pcId).select('id');
+      expect(pc.error).toBeNull();
+      expect(pc.data ?? []).toHaveLength(0);
+      const after = await admin.from('program_courses').select('requirement_type').eq('id', pcId).single();
+      expect(after.data?.requirement_type).toBe('core');
+    });
+
+    it_sec('coach cannot DELETE catalog rows (zero-row, still present)', async () => {
+      const p = await coachRest.from('degree_programs').delete().eq('id', progId).select('id');
+      expect(p.error).toBeNull();
+      expect(p.data ?? []).toHaveLength(0);
+      const c = await coachRest.from('courses').delete().eq('id', courseId).select('id');
+      expect(c.error).toBeNull();
+      expect(c.data ?? []).toHaveLength(0);
+      const pc = await coachRest.from('program_courses').delete().eq('id', pcId).select('id');
+      expect(pc.error).toBeNull();
+      expect(pc.data ?? []).toHaveLength(0);
+      const check = await admin.from('degree_programs').select('id').eq('id', progId);
+      expect(check.data?.length).toBe(1);
+    });
+
+    it_sec('coach retains intended active-row read visibility', async () => {
+      const p = await coachRest.from('degree_programs').select('id').eq('id', progId);
+      expect(p.error).toBeNull();
+      expect(p.data?.length).toBe(1);
+      const c = await coachRest.from('courses').select('id').eq('id', courseId);
+      expect(c.error).toBeNull();
+      expect(c.data?.length).toBe(1);
+      const pc = await coachRest.from('program_courses').select('id').eq('id', pcId);
+      expect(pc.error).toBeNull();
+      expect(pc.data?.length).toBe(1);
+    });
+
+    it_sec('staff retains representative mutations on legacy catalog', async () => {
+      const upPc = await staffRest.from('program_courses').update({ requirement_type: 'elective' }).eq('id', pcId).select('requirement_type').single();
+      expect(upPc.error).toBeNull();
+      expect(upPc.data?.requirement_type).toBe('elective');
+      await staffRest.from('program_courses').update({ requirement_type: 'core' }).eq('id', pcId);
+      const insC = await staffRest.from('courses').insert({
+        code: `${PREFIX}-C-STAFF`, name: `${PREFIX} Staff Course`, provider: 'prsec', credits: 3, is_active: false,
+      }).select('id').single();
+      expect(insC.error).toBeNull();
+      const upC = await staffRest.from('courses').update({ name: `${PREFIX} Staff Course v2` }).eq('id', insC.data!.id).select('id').single();
+      expect(upC.error).toBeNull();
+      const delC = await staffRest.from('courses').delete().eq('id', insC.data!.id).select('id').single();
+      expect(delC.error).toBeNull();
     });
   });
 
