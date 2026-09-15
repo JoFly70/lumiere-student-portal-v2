@@ -10,6 +10,7 @@ export type QuantitativeRequirementStatus =
   | "SATISFIED"
   | "PARTIAL"
   | "MISSING"
+  | "CONFLICT"
   | "MANUAL_REVIEW";
 
 export interface QuantitativeRequirementInput {
@@ -33,9 +34,18 @@ export interface QuantitativeContributionInput {
   readonly claimVersionIds: readonly string[];
 }
 
+export interface QuantitativeConflictInput {
+  readonly conflictId: string;
+  readonly requirementId: string;
+  readonly academicRuleId: string | null;
+  readonly sourceIds: readonly string[];
+  readonly claimVersionIds: readonly string[];
+}
+
 export interface QuantitativeRequirementsInput {
   readonly requirements: readonly QuantitativeRequirementInput[];
   readonly contributions: readonly QuantitativeContributionInput[];
+  readonly conflicts?: readonly QuantitativeConflictInput[];
 }
 
 export interface RequirementResultProvenance {
@@ -45,6 +55,7 @@ export interface RequirementResultProvenance {
   readonly verificationEventIds: readonly string[];
   readonly decisionIds: readonly string[];
   readonly exceptionIds: readonly string[];
+  readonly conflictIds: readonly string[];
   readonly sourceIds: readonly string[];
   readonly claimVersionIds: readonly string[];
 }
@@ -162,6 +173,7 @@ function sortedUnique(values: readonly (string | null)[]): readonly string[] {
 function provenanceFor(
   requirements: readonly QuantitativeRequirementInput[],
   contributions: readonly QuantitativeContributionInput[],
+  conflicts: readonly QuantitativeConflictInput[] = [],
 ): RequirementResultProvenance {
   return Object.freeze({
     studentCreditRecordIds: sortedUnique(
@@ -170,9 +182,13 @@ function provenanceFor(
     requirementIds: sortedUnique([
       ...requirements.map((requirement) => requirement.requirementId),
       ...contributions.map((contribution) => contribution.requirementId),
+      ...conflicts.map((conflict) => conflict.requirementId),
     ]),
     academicRuleIds: sortedUnique(
-      requirements.map((requirement) => requirement.academicRuleId),
+      [
+        ...requirements.map((requirement) => requirement.academicRuleId),
+        ...conflicts.map((conflict) => conflict.academicRuleId),
+      ],
     ),
     verificationEventIds: sortedUnique(
       contributions.map((item) => item.verificationEventId),
@@ -181,13 +197,16 @@ function provenanceFor(
     exceptionIds: sortedUnique(
       contributions.flatMap((item) => item.exceptionIds),
     ),
+    conflictIds: sortedUnique(conflicts.map((item) => item.conflictId)),
     sourceIds: sortedUnique([
       ...requirements.flatMap((requirement) => requirement.sourceIds),
       ...contributions.flatMap((item) => item.sourceIds),
+      ...conflicts.flatMap((item) => item.sourceIds),
     ]),
     claimVersionIds: sortedUnique([
       ...requirements.flatMap((requirement) => requirement.claimVersionIds),
       ...contributions.flatMap((item) => item.claimVersionIds),
+      ...conflicts.flatMap((item) => item.claimVersionIds),
     ]),
   });
 }
@@ -196,6 +215,7 @@ function manualReviewResult(
   requirements: readonly QuantitativeRequirementInput[],
   contributions: readonly QuantitativeContributionInput[],
   reason: string,
+  conflicts: readonly QuantitativeConflictInput[] = [],
 ): QuantitativeRequirementResult {
   const requirement = requirements[0];
   const hasOneRuleIdentity = requirements.every(
@@ -216,7 +236,25 @@ function manualReviewResult(
     appliedAmount: null,
     remainingAmount: null,
     reason,
-    provenance: provenanceFor(requirements, contributions),
+    provenance: provenanceFor(requirements, contributions, conflicts),
+  });
+}
+
+function conflictResult(
+  requirement: QuantitativeRequirementInput,
+  contributions: readonly QuantitativeContributionInput[],
+  conflicts: readonly QuantitativeConflictInput[],
+): QuantitativeRequirementResult {
+  return Object.freeze({
+    projectionKind: "INFORMATIONAL_ONLY",
+    requirementId: requirement.requirementId,
+    academicRuleId: requirement.academicRuleId,
+    status: "CONFLICT",
+    requiredAmount: null,
+    appliedAmount: null,
+    remainingAmount: null,
+    reason: "UNRESOLVED_CANONICAL_CONFLICT",
+    provenance: provenanceFor([requirement], contributions, conflicts),
   });
 }
 
@@ -233,6 +271,23 @@ function unmatchedContributionsResult(
     remainingAmount: null,
     reason: "UNMATCHED_CONTRIBUTION_REQUIREMENT",
     provenance: provenanceFor([], contributions),
+  });
+}
+
+function unattributedConflictsResult(
+  conflicts: readonly QuantitativeConflictInput[],
+  reason: string,
+): QuantitativeRequirementResult {
+  return Object.freeze({
+    projectionKind: "INFORMATIONAL_ONLY",
+    requirementId: null,
+    academicRuleId: null,
+    status: "MANUAL_REVIEW",
+    requiredAmount: null,
+    appliedAmount: null,
+    remainingAmount: null,
+    reason,
+    provenance: provenanceFor([], [], conflicts),
   });
 }
 
@@ -297,6 +352,27 @@ function evaluateRequirement(
 export function evaluateQuantitativeRequirements(
   input: QuantitativeRequirementsInput,
 ): readonly QuantitativeRequirementResult[] {
+  const conflicts = input.conflicts ?? [];
+  const conflictsByIdentity = new Map<string, QuantitativeConflictInput[]>();
+  for (const conflict of conflicts) {
+    const matchingConflicts = conflictsByIdentity.get(conflict.conflictId) ?? [];
+    matchingConflicts.push(conflict);
+    conflictsByIdentity.set(conflict.conflictId, matchingConflicts);
+  }
+  const withCollisionEvidence = (
+    selectedConflicts: readonly QuantitativeConflictInput[],
+  ): readonly QuantitativeConflictInput[] => {
+    const completeConflicts = new Set(selectedConflicts);
+    for (const conflict of selectedConflicts) {
+      const identityGroup = conflictsByIdentity.get(conflict.conflictId) ?? [];
+      if (identityGroup.length > 1) {
+        for (const matchingConflict of identityGroup) {
+          completeConflicts.add(matchingConflict);
+        }
+      }
+    }
+    return [...completeConflicts];
+  };
   const requirementsByIdentity = new Map<string, QuantitativeRequirementInput[]>();
   const invalidRequirements: QuantitativeRequirementInput[] = [];
   const suppliedRequirementIds = new Set<string>();
@@ -320,10 +396,16 @@ export function evaluateQuantitativeRequirements(
     const associatedContributions = input.contributions.filter(
       (contribution) => invalidRequirementIds.has(contribution.requirementId),
     );
+    const associatedConflicts = withCollisionEvidence(
+      conflicts.filter(
+        (conflict) => invalidRequirementIds.has(conflict.requirementId),
+      ),
+    );
     results.push(manualReviewResult(
       invalidRequirements,
       associatedContributions,
       "INVALID_REQUIREMENT_IDENTITY",
+      associatedConflicts,
     ));
   }
 
@@ -332,11 +414,17 @@ export function evaluateQuantitativeRequirements(
     const contributions = input.contributions.filter(
       (contribution) => contribution.requirementId === requirement.requirementId,
     );
+    const requirementConflicts = withCollisionEvidence(
+      conflicts.filter(
+        (conflict) => conflict.requirementId === requirement.requirementId,
+      ),
+    );
     if (requirements.length > 1) {
       return manualReviewResult(
         requirements,
         contributions,
         "AMBIGUOUS_REQUIREMENT_IDENTITY",
+        requirementConflicts,
       );
     }
     if (
@@ -350,6 +438,7 @@ export function evaluateQuantitativeRequirements(
         requirements,
         contributions,
         "INVALID_STUDENT_CREDIT_RECORD_IDENTITY",
+        requirementConflicts,
       );
     }
     const creditRecordIds = new Set<string>();
@@ -359,9 +448,74 @@ export function evaluateQuantitativeRequirements(
           requirements,
           contributions,
           "AMBIGUOUS_CONTRIBUTION_IDENTITY",
+          requirementConflicts,
         );
       }
       creditRecordIds.add(contribution.studentCreditRecordId);
+    }
+    if (
+      requirement.academicRuleId !== null
+      && !isMeaningfulIdentifier(requirement.academicRuleId)
+    ) {
+      return manualReviewResult(
+        requirements,
+        contributions,
+        "INVALID_ACADEMIC_RULE_IDENTITY",
+        requirementConflicts,
+      );
+    }
+    if (
+      requirementConflicts.some(
+        (conflict) => !isMeaningfulIdentifier(conflict.conflictId),
+      )
+    ) {
+      return manualReviewResult(
+        requirements,
+        contributions,
+        "INVALID_CONFLICT_IDENTITY",
+        requirementConflicts,
+      );
+    }
+    if (
+      requirementConflicts.some(
+        (conflict) => conflict.academicRuleId !== null
+          && !isMeaningfulIdentifier(conflict.academicRuleId),
+      )
+    ) {
+      return manualReviewResult(
+        requirements,
+        contributions,
+        "INVALID_CONFLICT_RULE_IDENTITY",
+        requirementConflicts,
+      );
+    }
+    if (
+      requirementConflicts.some(
+        (conflict) => (conflictsByIdentity.get(conflict.conflictId)?.length ?? 0) > 1,
+      )
+    ) {
+      return manualReviewResult(
+        requirements,
+        contributions,
+        "AMBIGUOUS_CONFLICT_IDENTITY",
+        requirementConflicts,
+      );
+    }
+    if (
+      requirementConflicts.some(
+        (conflict) => conflict.academicRuleId !== null
+          && conflict.academicRuleId !== requirement.academicRuleId,
+      )
+    ) {
+      return manualReviewResult(
+        requirements,
+        contributions,
+        "CONFLICT_RULE_IDENTITY_MISMATCH",
+        requirementConflicts,
+      );
+    }
+    if (requirementConflicts.length > 0) {
+      return conflictResult(requirement, contributions, requirementConflicts);
     }
     return evaluateRequirement(requirement, contributions);
   }));
@@ -371,6 +525,59 @@ export function evaluateQuantitativeRequirements(
   );
   if (unmatchedContributions.length > 0) {
     results.push(unmatchedContributionsResult(unmatchedContributions));
+  }
+
+  const duplicateConflictIdsConsumedBySuppliedTargets = new Set<string>();
+  for (const [conflictId, identityGroup] of conflictsByIdentity) {
+    if (
+      identityGroup.length > 1
+      && identityGroup.some(
+        (conflict) => suppliedRequirementIds.has(conflict.requirementId),
+      )
+    ) {
+      duplicateConflictIdsConsumedBySuppliedTargets.add(conflictId);
+    }
+  }
+  let remainingConflicts = conflicts.filter(
+    (conflict) => !suppliedRequirementIds.has(conflict.requirementId)
+      && !duplicateConflictIdsConsumedBySuppliedTargets.has(conflict.conflictId),
+  );
+  const takeConflicts = (
+    reason: string,
+    predicate: (conflict: QuantitativeConflictInput) => boolean,
+  ) => {
+    const matching = remainingConflicts.filter(predicate);
+    if (matching.length > 0) {
+      results.push(unattributedConflictsResult(matching, reason));
+      const matchingFacts = new Set(matching);
+      remainingConflicts = remainingConflicts.filter(
+        (conflict) => !matchingFacts.has(conflict),
+      );
+    }
+  };
+  takeConflicts(
+    "INVALID_CONFLICT_IDENTITY",
+    (conflict) => !isMeaningfulIdentifier(conflict.conflictId),
+  );
+  takeConflicts(
+    "AMBIGUOUS_CONFLICT_IDENTITY",
+    (conflict) => isMeaningfulIdentifier(conflict.conflictId)
+      && (conflictsByIdentity.get(conflict.conflictId)?.length ?? 0) > 1,
+  );
+  takeConflicts(
+    "INVALID_CONFLICT_RULE_IDENTITY",
+    (conflict) => conflict.academicRuleId !== null
+      && !isMeaningfulIdentifier(conflict.academicRuleId),
+  );
+  takeConflicts(
+    "INVALID_CONFLICT_REQUIREMENT_IDENTITY",
+    (conflict) => !isMeaningfulIdentifier(conflict.requirementId),
+  );
+  if (remainingConflicts.length > 0) {
+    results.push(unattributedConflictsResult(
+      remainingConflicts,
+      "UNMATCHED_CONFLICT_REQUIREMENT",
+    ));
   }
 
   return Object.freeze(results.sort((left, right) => (
