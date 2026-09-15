@@ -1,3 +1,6 @@
+<!-- NONCANONICAL / HISTORICAL: This document references a noncanonical Supabase project.
+Read REPLIT_HANDOFF.md for authoritative project identity. Canonical Supabase is rheronevecsffaejteoj. -->
+
 # Quick Deployment Reference Card
 
 Fast reference for deploying Lumiere Student Portal. For detailed instructions, see DEPLOYMENT_MASTER_GUIDE.md.

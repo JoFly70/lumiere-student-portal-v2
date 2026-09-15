@@ -1,3 +1,6 @@
+<!-- NONCANONICAL / HISTORICAL: This document references a noncanonical Supabase project.
+Read REPLIT_HANDOFF.md for authoritative project identity. Canonical Supabase is rheronevecsffaejteoj. -->
+
 # Environment Variables Configuration
 
 This document lists ALL environment variables needed for deploying the Lumiere Student Portal to production.

@@ -1,3 +1,13 @@
+<!--
+LUMIÈRE OS CURRENT HANDOFF:
+Read REPLIT_HANDOFF.md before making changes.
+GitHub main is source of truth.
+Phases 0–2 are closed.
+Canonical Supabase is rheronevecsffaejteoj.
+Do not use historical Supabase project references.
+Next phase is Phase 3 deterministic Degree Audit Engine.
+-->
+
 # Lumiere Student Portal
 
 ## Overview

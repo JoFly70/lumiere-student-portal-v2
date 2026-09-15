@@ -1,3 +1,6 @@
+<!-- NONCANONICAL / HISTORICAL: This document references a noncanonical Supabase project.
+Read REPLIT_HANDOFF.md for authoritative project identity. Canonical Supabase is rheronevecsffaejteoj. -->
+
 # Lumiere Student Portal - Complete Deployment Guide
 
 Your complete step-by-step guide to deploying the Lumiere Student Portal to production.
