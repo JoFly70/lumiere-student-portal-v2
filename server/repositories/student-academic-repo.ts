@@ -48,6 +48,11 @@ export async function getStudent(studentId: string, tx: Tx = db) {
   return row ?? null;
 }
 
+export async function getStudentByUserId(userId: string, tx: Tx = db) {
+  const [row] = await tx.select().from(studentsTable).where(eq(studentsTable.user_id, userId)).limit(1);
+  return row ?? null;
+}
+
 export async function getProgramVersion(programVersionId: string, tx: Tx = db) {
   const [row] = await tx.select().from(programVersions).where(eq(programVersions.id, programVersionId)).limit(1);
   return row ?? null;

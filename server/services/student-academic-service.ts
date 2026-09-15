@@ -95,6 +95,7 @@ export interface StudentAcademicService {
   revokeAcademicException(input: { exceptionId: string }): Promise<ExceptionRow>;
   // Read Model
   getStudentAcademicRecord(studentId: string): Promise<StudentAcademicRecord>;
+  getStudentAcademicRecordForUser(userId: string): Promise<StudentAcademicRecord>;
 }
 
 export function createStudentAcademicService(
@@ -587,6 +588,12 @@ export function createStudentAcademicService(
     };
   }
 
+  async function getStudentAcademicRecordForUser(userId: string): Promise<StudentAcademicRecord> {
+    const student = await repository.getStudentByUserId(userId);
+    if (!student) throw notFoundError('Student not found for user', { userId });
+    return await getStudentAcademicRecord(student.id);
+  }
+
   return {
     assignProgram,
     switchProgramAssignment,
@@ -600,6 +607,7 @@ export function createStudentAcademicService(
     supersedeAcademicException,
     revokeAcademicException,
     getStudentAcademicRecord,
+    getStudentAcademicRecordForUser,
   };
 }
 

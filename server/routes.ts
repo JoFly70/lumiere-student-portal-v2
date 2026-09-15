@@ -1142,6 +1142,15 @@ window.ENV = {
   const knowledgeRouter = (await import('./routes/knowledge')).default;
   app.use('/api/admin/knowledge', knowledgeRouter);
 
+  // Student Academic Record API must also be mounted BEFORE the generic admin
+  // router so staff access is not blocked by the admin-only guard.
+  const studentAcademicRouter = (await import('./routes/student-academic')).default;
+  app.use('/api/admin/student-academic', studentAcademicRouter);
+
+  // Student self-read endpoint (student role only, own record only)
+  const { studentSelfRouter } = await import('./routes/student-academic');
+  app.use('/api/student', studentSelfRouter);
+
   app.use('/api/admin', adminRouter);
   app.use('/api', programsRouter);
 
