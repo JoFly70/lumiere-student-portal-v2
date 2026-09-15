@@ -117,7 +117,7 @@
     "@types/supertest": "^7.2.1",
     "@types/ws": "^8.5.13",
     "@vitejs/plugin-react": "^4.7.0",
-    "@vitest/coverage-v8": "^2.1.0",
+    "@vitest/coverage-v8": "3.2.6",
     "autoprefixer": "^10.4.20",
     "drizzle-kit": "^0.31.4",
     "esbuild": "^0.25.0",
@@ -127,7 +127,7 @@
     "tsx": "^4.20.5",
     "typescript": "5.6.3",
     "vite": "^5.4.20",
-    "vitest": "^2.1.9"
+    "vitest": "3.2.6"
   },
   "optionalDependencies": {
     "bufferutil": "^4.0.8"
