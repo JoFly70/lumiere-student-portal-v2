@@ -39,7 +39,7 @@ EVIDENCE → CLAIM → VERIFICATION → CANONICAL RULE
 - Stripe (payments/billing)
 - Redis (rate limiting, in-memory fallback)
 - Helmet (security headers)
-- Sentry (error tracking)
+- Sentry integration hooks (optional; SDK packages are not installed by default)
 - Zod (validation)
 - Recharts (charts)
 - Winston (logging)
@@ -65,13 +65,13 @@ Do not invent dependencies — verify against `package.json`.
 
 ## D. COMPLETED PHASES
 
-All phases below are **CLOSED**. Closure SHA: `0368d3a332e4d2c1a41cfc66d0b7dad7ae709d46`
+All phases below are **CLOSED**. Phase 0–2 code/security closure SHA: `0368d3a332e4d2c1a41cfc66d0b7dad7ae709d46`. The Replit handoff documentation was added afterward on `main`; always import current GitHub `main` rather than a hardcoded handoff SHA.
 
 ### PHASE 0 — Stabilization / Auth / Security Baseline
 - Staff role added to canonical role model
-- `current_user_role()` SECURITY DEFINER helper (pinned search_path)
-- RLS baseline across all tables
-- Anon privileges removed from sensitive tables
+- Plan isolation and auth/RBAC baseline hardened
+- Password recovery/update and admin-router protections stabilized
+- Baseline check/test/build gates established
 
 ### PHASE 1 — Canonical Knowledge Core
 - Knowledge institutions, programs, courses, providers, articulations
@@ -92,6 +92,8 @@ All phases below are **CLOSED**. Closure SHA: `0368d3a332e4d2c1a41cfc66d0b7dad7a
 - Real Auth/RBAC/PostgreSQL E2E
 - Real audit trail (SECURITY DEFINER, locked down)
 - Security hardening (pre-Replit sweep + corrections)
+- `current_user_role()` SECURITY DEFINER helper locked down with pinned search path
+- Anon privileges removed from sensitive/canonical internal tables
 - Ownership/RLS verification with real JWTs
 
 ---
@@ -181,7 +183,7 @@ Files containing noncanonical Supabase refs (`ypbzdbfqoflyszdsbivn` or `brrktoof
 
 | File | Ref | Classification |
 |---|---|---|
-| `.env` | `ypbzdbfqoflyszdsbivn` | Local only (gitignored); must be replaced with canonical values |
+| `.env` | historical local drift | Gitignored and not imported from GitHub. Create fresh Replit secrets; during Bolt work local values had previously regressed to a noncanonical project. |
 | `DEPLOYMENT_CHECKLIST.md` | `ypbzdbfqoflyszdsbivn` | Historical |
 | `DEPLOYMENT_MASTER_GUIDE.md` | `ypbzdbfqoflyszdsbivn` | Historical |
 | `DEPLOY_NETLIFY.md` | `ypbzdbfqoflyszdsbivn` | Historical |
