@@ -1136,6 +1136,7 @@ window.ENV = {
   const ticketsRouter = (await import('./routes/tickets')).default;
   const adminRouter = (await import('./routes/admin')).default;
   const programsRouter = (await import('./routes/programs')).default;
+  const adminDegreeProgressRouter = (await import('./routes/admin-degree-progress')).default;
 
   app.use('/api/students', studentsRouter);
   app.use('/api/documents', documentsRouter);
@@ -1150,6 +1151,7 @@ window.ENV = {
   // router so staff access is not blocked by the admin-only guard.
   const studentAcademicRouter = (await import('./routes/student-academic')).default;
   app.use('/api/admin/student-academic', studentAcademicRouter);
+  app.use('/api/admin/degree-progress', adminDegreeProgressRouter);
 
   // Student self-read endpoint (student role only, own record only)
   const { studentSelfRouter } = await import('./routes/student-academic');
