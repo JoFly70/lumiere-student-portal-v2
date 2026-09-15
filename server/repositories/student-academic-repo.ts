@@ -466,31 +466,29 @@ export async function getAcademicRuleWithProgramVersion(academicRuleId: string, 
 
 export async function getLatestVerificationEventsBatch(creditRecordIds: string[], tx: Tx = db): Promise<Record<string, VerificationEventRow>> {
   if (creditRecordIds.length === 0) return {};
-  const rows = await tx.execute(sql`
-    SELECT DISTINCT ON (credit_record_id) *
-    FROM student_credit_verification_events
-    WHERE credit_record_id = ANY(${sql.raw(`ARRAY[${creditRecordIds.map(id => `'${id}'`).join(',')}]`)}::uuid[])
-    ORDER BY credit_record_id, seq DESC
-  `);
+  const rows = await tx.select()
+    .from(studentCreditVerificationEvents)
+    .where(inArray(studentCreditVerificationEvents.creditRecordId, creditRecordIds))
+    .orderBy(desc(studentCreditVerificationEvents.seq));
   const result: Record<string, VerificationEventRow> = {};
-  for (const row of rows as any[]) {
-    result[row.credit_record_id] = row as unknown as VerificationEventRow;
+  for (const row of rows) {
+    if (!(row.creditRecordId in result)) result[row.creditRecordId] = row;
   }
   return result;
 }
 
 export async function getLatestDecisionsBatch(creditRecordIds: string[], programAssignmentId: string, tx: Tx = db): Promise<Record<string, DecisionRow>> {
   if (creditRecordIds.length === 0) return {};
-  const rows = await tx.execute(sql`
-    SELECT DISTINCT ON (credit_record_id) *
-    FROM student_credit_decisions
-    WHERE program_assignment_id = ${programAssignmentId}
-      AND credit_record_id = ANY(${sql.raw(`ARRAY[${creditRecordIds.map(id => `'${id}'`).join(',')}]`)}::uuid[])
-    ORDER BY credit_record_id, seq DESC
-  `);
+  const rows = await tx.select()
+    .from(studentCreditDecisions)
+    .where(and(
+      eq(studentCreditDecisions.programAssignmentId, programAssignmentId),
+      inArray(studentCreditDecisions.creditRecordId, creditRecordIds),
+    ))
+    .orderBy(desc(studentCreditDecisions.seq));
   const result: Record<string, DecisionRow> = {};
-  for (const row of rows as any[]) {
-    result[row.credit_record_id] = row as unknown as DecisionRow;
+  for (const row of rows) {
+    if (!(row.creditRecordId in result)) result[row.creditRecordId] = row;
   }
   return result;
 }

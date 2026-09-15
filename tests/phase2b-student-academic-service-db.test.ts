@@ -90,39 +90,58 @@ describe_db('Phase 2B: Real DB Service Tests — Student Academic Record', () =>
 
     const errors: string[] = [];
 
-    // Cleanup in dependency order
+    // Collect our prefixed credit-record IDs BEFORE cleanup so their events/decisions
+    // can be verified as fully removed afterward (parameterized, never broad).
+    const crIdsResult = await db.execute(sql`
+      SELECT cr.id FROM student_credit_records cr
+      INNER JOIN students s ON s.id = cr.student_id
+      WHERE s.student_code LIKE ${PREFIX + '%'} OR s.id LIKE ${PREFIX + '%'}
+    `);
+    const crIds = (crIdsResult as any[]).map(r => r.id);
+
+    // Prefix-based cleanup: ALL prefixed Phase 2B fixtures, even if a test failed midway.
+    // Dependency order avoids FK violations. Scoped by prefix only.
     const cleanupStmts = [
-      sql`DELETE FROM student_academic_exceptions WHERE student_id = ${testStudentId}`,
-      sql`DELETE FROM student_credit_decisions WHERE credit_record_id IN (SELECT id FROM student_credit_records WHERE student_id = ${testStudentId})`,
-      sql`DELETE FROM student_credit_verification_events WHERE credit_record_id IN (SELECT id FROM student_credit_records WHERE student_id = ${testStudentId})`,
-      sql`DELETE FROM student_credit_records WHERE student_id = ${testStudentId}`,
-      sql`DELETE FROM student_academic_sources WHERE student_id = ${testStudentId}`,
-      sql`DELETE FROM student_program_assignments WHERE student_id = ${testStudentId}`,
-      sql`DELETE FROM students WHERE id = ${testStudentId}`,
-      sql`DELETE FROM users WHERE id = ${testUserId}`,
-      sql`DELETE FROM knowledge_program_versions WHERE program_id = ${testProgramId}`,
-      sql`DELETE FROM knowledge_programs_v2 WHERE id = ${testProgramId}`,
+      sql`DELETE FROM student_academic_exceptions WHERE student_id IN (SELECT id FROM students WHERE student_code LIKE ${PREFIX + '%'} OR id LIKE ${PREFIX + '%'})`,
+      sql`DELETE FROM student_credit_decisions WHERE credit_record_id IN (SELECT id FROM student_credit_records WHERE student_id IN (SELECT id FROM students WHERE student_code LIKE ${PREFIX + '%'} OR id LIKE ${PREFIX + '%'}))`,
+      sql`DELETE FROM student_credit_verification_events WHERE credit_record_id IN (SELECT id FROM student_credit_records WHERE student_id IN (SELECT id FROM students WHERE student_code LIKE ${PREFIX + '%'} OR id LIKE ${PREFIX + '%'}))`,
+      sql`DELETE FROM student_credit_records WHERE student_id IN (SELECT id FROM students WHERE student_code LIKE ${PREFIX + '%'} OR id LIKE ${PREFIX + '%'})`,
+      sql`DELETE FROM student_academic_sources WHERE student_id IN (SELECT id FROM students WHERE student_code LIKE ${PREFIX + '%'} OR id LIKE ${PREFIX + '%'})`,
+      sql`DELETE FROM student_program_assignments WHERE student_id IN (SELECT id FROM students WHERE student_code LIKE ${PREFIX + '%'} OR id LIKE ${PREFIX + '%'})`,
+      sql`DELETE FROM students WHERE student_code LIKE ${PREFIX + '%'} OR id LIKE ${PREFIX + '%'}`,
+      sql`DELETE FROM users WHERE email LIKE ${PREFIX + '%@test.lumiere.app'}`,
+      sql`DELETE FROM knowledge_program_versions WHERE version_label LIKE ${PREFIX + '%'}`,
+      sql`DELETE FROM knowledge_programs_v2 WHERE code LIKE ${PREFIX + '%'}`,
     ];
 
     for (const stmt of cleanupStmts) {
       try { await db.execute(stmt); } catch (e) { errors.push((e as Error).message); }
     }
 
-    // Verify zero fixtures remain
+    // Verify zero prefixed fixtures remain (scoped by prefix, never broad)
     const checks = [
-      { label: 'exceptions', query: sql`SELECT count(*)::int as cnt FROM student_academic_exceptions WHERE student_id = ${testStudentId}` },
-      { label: 'credit_records', query: sql`SELECT count(*)::int as cnt FROM student_credit_records WHERE student_id = ${testStudentId}` },
-      { label: 'sources', query: sql`SELECT count(*)::int as cnt FROM student_academic_sources WHERE student_id = ${testStudentId}` },
-      { label: 'assignments', query: sql`SELECT count(*)::int as cnt FROM student_program_assignments WHERE student_id = ${testStudentId}` },
-      { label: 'users', query: sql`SELECT count(*)::int as cnt FROM users WHERE id = ${testUserId}` },
-      { label: 'students', query: sql`SELECT count(*)::int as cnt FROM students WHERE id = ${testStudentId}` },
-      { label: 'program_versions', query: sql`SELECT count(*)::int as cnt FROM knowledge_program_versions WHERE program_id = ${testProgramId}` },
-      { label: 'programs', query: sql`SELECT count(*)::int as cnt FROM knowledge_programs_v2 WHERE id = ${testProgramId}` },
+      { label: 'exceptions', query: sql`SELECT count(*)::int as cnt FROM student_academic_exceptions WHERE student_id IN (SELECT id FROM students WHERE student_code LIKE ${PREFIX + '%'} OR id LIKE ${PREFIX + '%'})` },
+      { label: 'credit_records', query: sql`SELECT count(*)::int as cnt FROM student_credit_records WHERE student_id IN (SELECT id FROM students WHERE student_code LIKE ${PREFIX + '%'} OR id LIKE ${PREFIX + '%'})` },
+      { label: 'sources', query: sql`SELECT count(*)::int as cnt FROM student_academic_sources WHERE student_id IN (SELECT id FROM students WHERE student_code LIKE ${PREFIX + '%'} OR id LIKE ${PREFIX + '%'})` },
+      { label: 'assignments', query: sql`SELECT count(*)::int as cnt FROM student_program_assignments WHERE student_id IN (SELECT id FROM students WHERE student_code LIKE ${PREFIX + '%'} OR id LIKE ${PREFIX + '%'})` },
+      { label: 'users', query: sql`SELECT count(*)::int as cnt FROM users WHERE email LIKE ${PREFIX + '%@test.lumiere.app'}` },
+      { label: 'students', query: sql`SELECT count(*)::int as cnt FROM students WHERE student_code LIKE ${PREFIX + '%'} OR id LIKE ${PREFIX + '%'}` },
+      { label: 'program_versions', query: sql`SELECT count(*)::int as cnt FROM knowledge_program_versions WHERE version_label LIKE ${PREFIX + '%'}` },
+      { label: 'programs', query: sql`SELECT count(*)::int as cnt FROM knowledge_programs_v2 WHERE code LIKE ${PREFIX + '%'}` },
     ];
 
     for (const c of checks) {
       const r = await db.execute(c.query);
       if ((r as any[])[0].cnt > 0) errors.push(`${c.label}: ${(r as any[])[0].cnt} leftover`);
+    }
+
+    // Verify no events/decisions remain for our collected prefixed credit records
+    if (crIds.length > 0) {
+      const inClause = sql.join(crIds.map(id => sql`${id}`), sql`, `);
+      const evCount = await db.execute(sql`SELECT count(*)::int as cnt FROM student_credit_verification_events WHERE credit_record_id IN (${inClause})`);
+      if ((evCount as any[])[0].cnt > 0) errors.push(`verification_events: ${(evCount as any[])[0].cnt} leftover`);
+      const decCount = await db.execute(sql`SELECT count(*)::int as cnt FROM student_credit_decisions WHERE credit_record_id IN (${inClause})`);
+      if ((decCount as any[])[0].cnt > 0) errors.push(`decisions: ${(decCount as any[])[0].cnt} leftover`);
     }
 
     // Verify institutions unchanged
@@ -412,7 +431,36 @@ describe_db('Phase 2B: Real DB Service Tests — Student Academic Record', () =>
     expect(oldCheck.status).toBe('superseded');
   });
 
-  it_db('13. getStudentAcademicRecord returns coherent structure', async () => {
+  it_db('12b. supersede requires active assignment and matching student', async () => {
+    // Create an exception, then mark its assignment completed directly
+    const assignment = await repo.getActiveAssignmentForStudent(testStudentId);
+    const exc = await service.createAcademicException({
+      studentId: testStudentId,
+      programAssignmentId: assignment.id,
+      exceptionType: 'other',
+      rationale: 'To be blocked',
+      approvedBy: testUserId,
+    });
+
+    // Force assignment to completed (bypassing service, simulating lifecycle end)
+    await db.execute(sql`UPDATE student_program_assignments SET status = 'completed' WHERE id = ${assignment.id}`);
+
+    // Supersede must fail with INVALID_STATE and leave the old exception active
+    await expect(service.supersedeAcademicException({
+      oldExceptionId: exc.id,
+      exceptionType: 'other',
+      rationale: 'Should be blocked',
+      approvedBy: testUserId,
+    })).rejects.toThrow(/must be active/);
+
+    const check = await repo.getException(exc.id);
+    expect(check.status).toBe('active');
+
+    // Restore assignment to active for subsequent tests
+    await db.execute(sql`UPDATE student_program_assignments SET status = 'active' WHERE id = ${assignment.id}`);
+  });
+
+  it_db('13. getStudentAcademicRecord returns coherent structure with camelCase batch rows', async () => {
     const record = await service.getStudentAcademicRecord(testStudentId);
     expect(record.student.id).toBe(testStudentId);
     expect(record.activeProgramAssignment).toBeTruthy();
@@ -420,6 +468,19 @@ describe_db('Phase 2B: Real DB Service Tests — Student Academic Record', () =>
     expect(record.academicSources.length).toBeGreaterThan(0);
     expect(record.creditRecords.length).toBeGreaterThan(0);
     expect(record.activeExceptions).toBeDefined();
+
+    // Regression: batch rows must expose camelCase fields, not raw snake_case
+    const crId = record.creditRecords[0].id;
+    const latestV = record.latestVerifications[crId];
+    expect(latestV).toBeTruthy();
+    expect(latestV.creditRecordId).toBe(crId);
+    expect(typeof latestV.seq).toBe('number');
+    if (record.latestDecisions[crId]) {
+      const latestD = record.latestDecisions[crId];
+      expect(latestD.creditRecordId).toBe(crId);
+      expect(latestD.programAssignmentId).toBe(record.activeProgramAssignment.id);
+      expect(typeof latestD.seq).toBe('number');
+    }
   });
 
   it_db('14. transaction rollback leaves no partial state when a write is fault-injected', async () => {

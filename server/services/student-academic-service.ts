@@ -503,6 +503,12 @@ export function createStudentAcademicService(
 
       const assignment = await repository.getAssignment(oldException.programAssignmentId, tx);
       if (!assignment) throw notFoundError('Program assignment not found', { programAssignmentId: oldException.programAssignmentId });
+      if (assignment.status !== 'active') {
+        throw invalidStateError('Program assignment must be active to supersede an exception', { programAssignmentId: oldException.programAssignmentId, status: assignment.status });
+      }
+      if (assignment.studentId !== oldException.studentId) {
+        throw validationError('Program assignment does not belong to the exception student', { assignmentStudentId: assignment.studentId, exceptionStudentId: oldException.studentId });
+      }
 
       // Validate replacement targets BEFORE changing the old exception
       await validateExceptionTargets({

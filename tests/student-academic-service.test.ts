@@ -523,6 +523,35 @@ describe('Phase 2B — Student Academic Record Service', () => {
       expect(result.newException.status).toBe('active');
       expect(result.newException.supersedesExceptionId).toBe(old.id);
     });
+
+    it('rejects supersede when assignment is not active and leaves old exception active', async () => {
+      await service.assignProgram({ studentId: 's1', programVersionId: 'pv1' });
+      const old = await service.createAcademicException({
+        studentId: 's1', programAssignmentId: 'pa-1', exceptionType: 'other', rationale: 'Old',
+      });
+      // Force assignment to completed
+      await repo.updateAssignmentStatus('pa-1', 'completed');
+      await expect(service.supersedeAcademicException({
+        oldExceptionId: old.id, exceptionType: 'other', rationale: 'New',
+      })).rejects.toThrow(/must be active/);
+      const check = await repo.getException(old.id);
+      expect(check.status).toBe('active');
+    });
+
+    it('rejects supersede when assignment student does not match exception student', async () => {
+      await service.assignProgram({ studentId: 's1', programVersionId: 'pv1' });
+      const old = await service.createAcademicException({
+        studentId: 's1', programAssignmentId: 'pa-1', exceptionType: 'other', rationale: 'Old',
+      });
+      // Corrupt the assignment's student link to simulate mismatch
+      const assignment = await repo.getAssignment('pa-1');
+      repo._store.assignments.set('pa-1', { ...assignment, studentId: 's-other' });
+      await expect(service.supersedeAcademicException({
+        oldExceptionId: old.id, exceptionType: 'other', rationale: 'New',
+      })).rejects.toThrow(/does not belong/);
+      const check = await repo.getException(old.id);
+      expect(check.status).toBe('active');
+    });
   });
 
   describe('revokeAcademicException', () => {
@@ -665,6 +694,25 @@ describe('Phase 2B — Student Academic Record Service', () => {
       const record = await service.getStudentAcademicRecord('s1');
       expect(record.latestVerifications['cr-1']).toBeTruthy();
       expect(record.latestVerifications['cr-1'].action).toBe('verified');
+    });
+
+    it('batch rows expose camelCase fields', async () => {
+      await service.assignProgram({ studentId: 's1', programVersionId: 'pv1' });
+      await service.createAcademicSource({ studentId: 's1', sourceType: 'transcript', title: 'T' });
+      await service.createCreditRecord({ sourceId: 'src-1', rawTitle: 'Course 1' });
+      await service.recordCreditVerification({ creditRecordId: 'cr-1', action: 'verified', reviewerId: 'u1' });
+
+      const record = await service.getStudentAcademicRecord('s1');
+      const latestV = record.latestVerifications['cr-1'];
+      expect(latestV.creditRecordId).toBe('cr-1');
+      expect(latestV.reviewerId).toBe('u1');
+      expect(typeof latestV.seq).toBe('number');
+
+      const latestD = record.latestDecisions['cr-1'];
+      if (latestD) {
+        expect(latestD.creditRecordId).toBe('cr-1');
+        expect(latestD.programAssignmentId).toBe('pa-1');
+      }
     });
   });
 });
