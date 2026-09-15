@@ -9,8 +9,22 @@ import {
 import {
   degreeEvaluationSnapshotRepository,
   deriveDegreeEvaluationConflictFacts,
+  readDegreeEvaluationSnapshotFacts,
 } from "../server/repositories/degree-evaluation-snapshot-repo";
 import { readDegreeEvaluationSnapshot } from "../server/services/degree-evaluation-snapshot-service";
+import { PgDialect } from "drizzle-orm/pg-core";
+import {
+  claimEvidence,
+  claimVersions,
+  evidenceExcerpts,
+  evidenceSources,
+  knowledgeClaims,
+  programVersions,
+  requirementsV2,
+} from "@shared/knowledge-schema";
+import {
+  studentProgramAssignments,
+} from "@shared/student-academic-schema";
 
 describe("bounded degree-evaluation snapshot reader", () => {
   const context = {
@@ -459,6 +473,149 @@ describe("bounded degree-evaluation snapshot reader", () => {
     expect(repository.readFacts).toHaveBeenCalledTimes(1);
     expect(tx.execute).toHaveBeenCalledTimes(1);
     expect(output.asOf).toBe(asOf);
+  });
+
+  it("reads only active requirements and their dependent facts", async () => {
+    const requirements = [{
+      id: "requirement-active",
+      programVersionId: context.programVersionId,
+      code: "ACTIVE",
+      title: "Active requirement",
+      description: null,
+      creditsRequired: 3,
+      levelRequirement: null,
+      sequence: 1,
+      ruleExpression: null,
+      active: true,
+      metadata: {},
+    }, {
+      id: "requirement-deactivated",
+      programVersionId: context.programVersionId,
+      code: "DEACTIVATED",
+      title: "Soft-deactivated requirement",
+      description: null,
+      creditsRequired: 3,
+      levelRequirement: null,
+      sequence: 2,
+      ruleExpression: null,
+      active: false,
+      metadata: {},
+    }];
+    const claims = [{
+      id: "claim-active",
+      claimKey: "requirement-active",
+      claimType: "requirement",
+      subjectType: "requirement",
+      subjectId: "requirement-active",
+      currentVersionId: "claim-version-active",
+      status: "confirmed",
+      createdAt: null,
+      createdBy: null,
+    }];
+    const claimVersionRows = [{
+      id: "claim-version-active",
+      claimId: "claim-active",
+      versionNumber: 1,
+      statement: "Active requirement needs three credits",
+      status: "confirmed",
+      normalizedValue: {
+        projectionKind: "QUANTITATIVE_REQUIREMENT",
+        kind: "minimum",
+        unit: "credits",
+        requiredAmount: "3",
+        academicRuleId: null,
+      },
+      confidence: null,
+      effectiveFrom: null,
+      effectiveTo: null,
+      catalogApplicability: null,
+      cohortApplicability: null,
+      supersedesVersionId: null,
+      createdAt: null,
+      createdBy: null,
+    }];
+    const queryCalls: Array<{ table: unknown; query: ReturnType<PgDialect["sqlToQuery"]> }> = [];
+    const tx = {
+      select: vi.fn(() => ({
+        from: vi.fn((table: unknown) => ({
+          where: vi.fn(async (condition: Parameters<PgDialect["sqlToQuery"]>[0]) => {
+            const query = new PgDialect().sqlToQuery(condition);
+            queryCalls.push({ table, query });
+            if (table === requirementsV2) {
+              return query.params.includes(true)
+                ? requirements.filter((row) => row.active)
+                : requirements;
+            }
+            if (table === knowledgeClaims) {
+              const requestedIds = new Set(query.params.filter(
+                (value): value is string => typeof value === "string",
+              ));
+              return claims.filter((row) => requestedIds.has(row.subjectId));
+            }
+            if (table === claimVersions) return claimVersionRows;
+            if (table === claimEvidence) return [{
+              claimVersionId: "claim-version-active",
+              evidenceExcerptId: "excerpt-active",
+              relationshipType: "supports",
+              notes: null,
+              createdAt: null,
+            }];
+            if (table === evidenceExcerpts) return [{
+              id: "excerpt-active",
+              evidenceSourceId: "source-active",
+              excerptText: "three credits",
+              locator: null,
+              pageNumber: null,
+              section: null,
+              metadata: null,
+              createdAt: null,
+            }];
+            if (table === evidenceSources) return [{
+              id: "source-active",
+              sourceType: null,
+              institutionId: null,
+              providerId: null,
+              title: "catalog",
+              metadata: null,
+              sourceUrl: null,
+              externalFileId: null,
+              contentHash: null,
+              authorityLevel: null,
+              publishedAt: null,
+              retrievedAt: null,
+              effectiveFrom: null,
+              effectiveTo: null,
+              createdAt: null,
+              createdBy: null,
+            }];
+            if (table === programVersions) return [{ id: context.programVersionId }];
+            if (table === studentProgramAssignments) return [{
+              id: context.programAssignmentId,
+              studentId: context.studentId,
+              programVersionId: context.programVersionId,
+              status: "active",
+            }];
+            return [];
+          }),
+        })),
+      })),
+    };
+
+    const facts = await readDegreeEvaluationSnapshotFacts(context, tx as never);
+    const requirementQuery = queryCalls.find((call) => call.table === requirementsV2);
+    const claimQuery = queryCalls.find((call) => call.table === knowledgeClaims);
+    expect(requirementQuery?.query.params).toEqual([context.programVersionId, true]);
+    expect(facts.requirements.map((row) => row.id)).toEqual(["requirement-active"]);
+    expect(claimQuery?.query.params).toContain("requirement-active");
+    expect(claimQuery?.query.params).not.toContain("requirement-deactivated");
+    expect(facts.claims.map((row) => row.subjectId)).toEqual(["requirement-active"]);
+
+    const output = assembleDegreeEvaluationSnapshot({ context, asOf, facts });
+    expect(output.status).toBe("ACCEPTED");
+    if (output.status === "ACCEPTED") {
+      expect(output.compositionInput.requirements).toHaveLength(1);
+      expect(output.compositionInput.requirements[0].requirementId).toBe("requirement-active");
+    }
   });
 
   it("ignores valid historical non-active assignments", () => {

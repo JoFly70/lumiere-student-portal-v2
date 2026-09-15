@@ -219,7 +219,10 @@ export async function readDegreeEvaluationSnapshotFacts(
     tx.select().from(programVersions)
       .where(eq(programVersions.id, context.programVersionId)),
     tx.select().from(requirementsV2)
-      .where(eq(requirementsV2.programVersionId, context.programVersionId)),
+      .where(and(
+        eq(requirementsV2.programVersionId, context.programVersionId),
+        eq(requirementsV2.active, true),
+      )),
     tx.select().from(academicRulesTable)
       .where(eq(academicRulesTable.programVersionId, context.programVersionId)),
     tx.select().from(studentAcademicSources)
