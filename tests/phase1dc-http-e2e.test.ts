@@ -12,7 +12,7 @@
  * are skipped. Also requires DATABASE_URL pointing to rheronevecsffaejteoj.
  */
 
-import { describe, it, expect, afterEach, beforeAll, vitest } from 'vitest';
+import { describe, it, expect, afterEach, afterAll, beforeAll, vitest } from 'vitest';
 import express, { type Express } from 'express';
 import request from 'supertest';
 import { createClient } from '@supabase/supabase-js';
@@ -271,6 +271,22 @@ describe_e2e('Phase 1D-C: Real HTTP/Auth/RBAC E2E + Phase 1 Closure', () => {
     if (!IS_TARGET) {
       throw new Error('RUN_PHASE1DC_E2E=1 but DATABASE_URL does not point to rheronevecsffaejteoj. Refusing to run.');
     }
+
+    // ── Fail-closed Supabase preflight ─────────────────────────────────────
+    // Verify ALL runtime env values before ANY mutation. Never print key values.
+    const checks: { label: string; pass: boolean }[] = [
+      { label: 'DATABASE_URL', pass: (process.env.DATABASE_URL ?? '').includes('rheronevecsffaejteoj') },
+      { label: 'SUPABASE_URL', pass: process.env.SUPABASE_URL === 'https://rheronevecsffaejteoj.supabase.co' },
+      { label: 'VITE_SUPABASE_URL', pass: process.env.VITE_SUPABASE_URL === 'https://rheronevecsffaejteoj.supabase.co' },
+      { label: 'SUPABASE_SERVICE_KEY', pass: (process.env.SUPABASE_SERVICE_KEY ?? '').startsWith('sb_secret_') },
+      { label: 'SUPABASE_ANON_KEY', pass: (process.env.SUPABASE_ANON_KEY ?? '').startsWith('sb_publishable_') },
+      { label: 'VITE_SUPABASE_ANON_KEY', pass: (process.env.VITE_SUPABASE_ANON_KEY ?? '').startsWith('sb_publishable_') },
+    ];
+    const failed = checks.filter(c => !c.pass);
+    if (failed.length > 0) {
+      throw new Error(`Supabase preflight FAILED: ${failed.map(c => c.label).join(', ')} did not meet required criteria. Aborting before any mutation.`);
+    }
+
     tesuId = await getTesuId();
     preTestCounts = await snapshotCounts();
 
@@ -278,6 +294,55 @@ describe_e2e('Phase 1D-C: Real HTTP/Auth/RBAC E2E + Phase 1 Closure', () => {
     adminUser = await createTestUser('admin');
     staffUser = await createTestUser('staff');
     studentUser = await createTestUser('student');
+  });
+
+  // ── Emergency cleanup safety hook ──────────────────────────────────────────
+  // Runs even if earlier tests failed. Idempotent. Verifies no leftover users.
+  afterAll(async () => {
+    if (!RUN_TESTS) return;
+
+    // Run full fixture cleanup
+    await cleanupAllFixtures();
+
+    // Verify no remaining Phase 1D-C test users in public.users
+    const leftoverDbUsers = await db.select({ id: users.id, email: users.email })
+      .from(users)
+      .where(sql`${users.email} LIKE ${PREFIX + '%'} `);
+
+    if (leftoverDbUsers.length > 0) {
+      // Attempt targeted deletion
+      for (const u of leftoverDbUsers) {
+        try { await db.delete(users).where(eq(users.id, u.id)); } catch {}
+      }
+      // Verify again
+      const recheck = await db.select({ id: users.id })
+        .from(users)
+        .where(sql`${users.email} LIKE ${PREFIX + '%'} `);
+      if (recheck.length > 0) {
+        throw new Error(`Emergency cleanup FAILED: ${recheck.length} leftover public.users rows with prefix ${PREFIX}`);
+      }
+    }
+
+    // Verify no remaining Phase 1D-C test users in Supabase Auth
+    const { data: authList } = await getSupabaseAdmin().auth.admin.listUsers();
+    const leftoverAuthUsers = (authList?.users ?? []).filter(
+      (u: { email?: string }) => (u.email ?? '').startsWith(PREFIX)
+    );
+
+    if (leftoverAuthUsers.length > 0) {
+      // Attempt targeted deletion
+      for (const u of leftoverAuthUsers) {
+        try { await getSupabaseAdmin().auth.admin.deleteUser((u as { id: string }).id); } catch {}
+      }
+      // Verify again
+      const { data: recheckList } = await getSupabaseAdmin().auth.admin.listUsers();
+      const recheckLeftover = (recheckList?.users ?? []).filter(
+        (u: { email?: string }) => (u.email ?? '').startsWith(PREFIX)
+      );
+      if (recheckLeftover.length > 0) {
+        throw new Error(`Emergency cleanup FAILED: ${recheckLeftover.length} leftover Supabase Auth users with prefix ${PREFIX}`);
+      }
+    }
   });
 
   afterEach(async () => {
