@@ -122,9 +122,15 @@ export async function createAuditLog(entry: AuditLogEntry): Promise<void> {
       session_id: entry.sessionId,
     };
 
+    // The shared supabaseAdmin client can carry a signed-in user's JWT after
+    // auth routes call signInWithPassword/getUser on it (supabase-js v2 fills
+    // Authorization from the active session for every REST call). Audit
+    // writes MUST run as service_role, so pin the service-key Authorization
+    // header on the request builder itself.
     const { error } = await supabaseAdmin
       .from('audit_logs')
-      .insert(dbEntry);
+      .insert(dbEntry)
+      .setHeader('Authorization', `Bearer ${process.env.SUPABASE_SERVICE_KEY}`);
 
     if (error) {
       logger.error('Failed to create audit log', {

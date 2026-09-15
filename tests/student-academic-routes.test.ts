@@ -13,6 +13,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import express, { type Express } from 'express';
 import request from 'supertest';
 import crypto from 'crypto';
+import { readFileSync } from 'fs';
 import { StudentAcademicError } from '../server/lib/student-academic-errors';
 
 // ── Test user IDs ────────────────────────────────────────────────────────────────
@@ -577,6 +578,18 @@ describe('Phase 2C — Student Academic Record API Routes', () => {
         .set('Authorization', `Bearer ${token}`).send({ programVersionId: VALID_UUID });
       const call = mockAudit.createAuditLog.mock.calls[0][0];
       expect(call.isEducationalRecord).toBe(true);
+    });
+
+    it('48b. audit sink pins service-role Authorization header (Phase 2D regression)', async () => {
+      // The shared supabaseAdmin client can carry a signed-in user's JWT after
+      // auth routes use it; createAuditLog must pin the service key per request.
+      const source = readFileSync('server/lib/audit.ts', 'utf8');
+      const insertBlock = source.slice(
+        source.indexOf("from('audit_logs')"),
+        source.indexOf("from('audit_logs')") + 400
+      );
+      expect(insertBlock).toContain("insert(dbEntry)");
+      expect(insertBlock).toContain("setHeader('Authorization', `Bearer ${process.env.SUPABASE_SERVICE_KEY}`)");
     });
 
     it('49. failed mutation is not recorded as successful mutation', async () => {
