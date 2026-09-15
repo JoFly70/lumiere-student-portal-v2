@@ -136,14 +136,16 @@ async function createTestApp(userRole: string | null, userId: string = ADMIN_ID)
   } else {
     currentUserRow = [];
   }
-
-  const internalRouter = (await import('../server/routes/student-academic')).default;
-  const { studentSelfRouter } = await import('../server/routes/student-academic');
+  const { default: internalRouter, studentSelfRouter } = await import('../server/routes/student-academic');
   app.use('/api/admin/student-academic', internalRouter);
   app.use('/api/student', studentSelfRouter);
 
   return { app, token };
 }
+
+// Warm the router import at module load so the first test in the file
+// doesn't pay module-graph cost inside vitest's 5s per-test window.
+await import('../server/routes/student-academic');
 
 // ── Full internal record fixture ────────────────────────────────────────────────
 
@@ -173,14 +175,14 @@ describe('Phase 2C — Student Academic Record API Routes', () => {
     mockService.assignProgram.mockResolvedValue({ id: VALID_UUID, status: 'active', studentId: STUDENT_PK });
     mockService.switchProgramAssignment.mockResolvedValue({ oldAssignment: { id: VALID_UUID, status: 'superseded' }, newAssignment: { id: ANOTHER_UUID, status: 'active' } });
     mockService.createAcademicSource.mockResolvedValue({ id: VALID_UUID, status: 'received', studentId: STUDENT_PK });
-    mockService.transitionAcademicSource.mockResolvedValue({ id: VALID_UUID, status: 'extracted' });
-    mockService.createCreditRecord.mockResolvedValue({ id: VALID_UUID, status: 'extracted' });
-    mockService.correctCreditRecord.mockResolvedValue({ id: VALID_UUID, status: 'extracted' });
+    mockService.transitionAcademicSource.mockResolvedValue({ id: VALID_UUID, status: 'extracted', studentId: STUDENT_PK });
+    mockService.createCreditRecord.mockResolvedValue({ id: VALID_UUID, status: 'extracted', studentId: STUDENT_PK });
+    mockService.correctCreditRecord.mockResolvedValue({ id: VALID_UUID, status: 'extracted', studentId: STUDENT_PK });
     mockService.recordCreditVerification.mockResolvedValue({ id: VALID_UUID, action: 'verified' });
     mockService.recordCreditDecision.mockResolvedValue({ id: VALID_UUID, action: 'accepted' });
-    mockService.createAcademicException.mockResolvedValue({ id: VALID_UUID, status: 'active' });
-    mockService.supersedeAcademicException.mockResolvedValue({ oldException: { id: VALID_UUID, status: 'superseded' }, newException: { id: ANOTHER_UUID, status: 'active' } });
-    mockService.revokeAcademicException.mockResolvedValue({ id: VALID_UUID, status: 'revoked' });
+    mockService.createAcademicException.mockResolvedValue({ id: VALID_UUID, status: 'active', studentId: STUDENT_PK });
+    mockService.supersedeAcademicException.mockResolvedValue({ oldException: { id: VALID_UUID, status: 'superseded' }, newException: { id: ANOTHER_UUID, status: 'active', studentId: STUDENT_PK } });
+    mockService.revokeAcademicException.mockResolvedValue({ id: VALID_UUID, status: 'revoked', studentId: STUDENT_PK });
     mockService.getStudentAcademicRecord.mockResolvedValue(fullRecord);
     mockService.getStudentAcademicRecordForUser.mockResolvedValue(fullRecord);
     mockAudit.createAuditLog.mockResolvedValue(undefined);
@@ -549,7 +551,7 @@ describe('Phase 2C — Student Academic Record API Routes', () => {
     });
   });
 
-  // ── AUDIT ───────────────────────────────────────────────────────────────────
+  // ── AUDIT ───────────────────────────────────────────────────────────────
 
   describe('Audit', () => {
     beforeEach(async () => {
@@ -583,6 +585,66 @@ describe('Phase 2C — Student Academic Record API Routes', () => {
         .set('Authorization', `Bearer ${token}`).send({ programVersionId: VALID_UUID });
       expect(mockAudit.createAuditLog).not.toHaveBeenCalled();
     });
+
+    it('50. students.id is never passed as targetUserId (FK is users.id)', async () => {
+      await request(app).post(`/api/admin/student-academic/students/${STUDENT_PK}/program-assignments`)
+        .set('Authorization', `Bearer ${token}`).send({ programVersionId: VALID_UUID });
+      const call = mockAudit.createAuditLog.mock.calls[0][0];
+      expect(call.targetUserId).toBeUndefined();
+      expect(call.targetUserId).not.toBe(STUDENT_PK);
+      // 'target_user_id' key must not be set to a students.id value
+      expect(call.target_user_id).toBeUndefined();
+    });
+
+    it('51. known studentId stored in audit metadata, not targetUserId', async () => {
+      await request(app).post(`/api/admin/student-academic/students/${STUDENT_PK}/program-assignments`)
+        .set('Authorization', `Bearer ${token}`).send({ programVersionId: VALID_UUID });
+      const call = mockAudit.createAuditLog.mock.calls[0][0];
+      expect(call.metadata.studentId).toBe(STUDENT_PK);
+      expect(call.targetUserId).toBeUndefined();
+    });
+
+    it('52. audit metadata merged with route metadata without sensitive fields', async () => {
+      await request(app).post(`/api/admin/student-academic/students/${STUDENT_PK}/sources`)
+        .set('Authorization', `Bearer ${token}`).send({ sourceType: 'transcript', title: 'T' });
+      const call = mockAudit.createAuditLog.mock.calls[0][0];
+      expect(call.metadata).toMatchObject({ sourceType: 'transcript', studentId: STUDENT_PK });
+      const serialized = JSON.stringify(call.metadata);
+      expect(serialized).not.toContain('rationale');
+      expect(serialized).not.toContain('title');
+    });
+
+    it('53. returned-row studentIds propagate to audit metadata', async () => {
+      await request(app).post(`/api/admin/student-academic/sources/${VALID_UUID}/transition`)
+        .set('Authorization', `Bearer ${token}`).send({ newStatus: 'extracted' });
+      expect(mockAudit.createAuditLog.mock.calls[0][0].metadata.studentId).toBe(STUDENT_PK);
+
+      await request(app).post(`/api/admin/student-academic/sources/${VALID_UUID}/credit-records`)
+        .set('Authorization', `Bearer ${token}`).send({ rawTitle: 'T' });
+      expect(mockAudit.createAuditLog.mock.calls[1][0].metadata.studentId).toBe(STUDENT_PK);
+
+      await request(app).patch(`/api/admin/student-academic/credit-records/${VALID_UUID}/correct`)
+        .set('Authorization', `Bearer ${token}`).send({ rawTitle: 'Fixed' });
+      expect(mockAudit.createAuditLog.mock.calls[2][0].metadata.studentId).toBe(STUDENT_PK);
+
+      await request(app).post(`/api/admin/student-academic/exceptions/${VALID_UUID}/supersede`)
+        .set('Authorization', `Bearer ${token}`).send({ exceptionType: 'other', rationale: 'R' });
+      expect(mockAudit.createAuditLog.mock.calls[3][0].metadata.studentId).toBe(STUDENT_PK);
+
+      await request(app).post(`/api/admin/student-academic/exceptions/${VALID_UUID}/revoke`)
+        .set('Authorization', `Bearer ${token}`);
+      expect(mockAudit.createAuditLog.mock.calls[4][0].metadata.studentId).toBe(STUDENT_PK);
+    });
+
+    it('54. admin actor role recorded for admin', async () => {
+      ({ app, token } = await createTestApp('admin', ADMIN_ID));
+      await request(app).post(`/api/admin/student-academic/students/${STUDENT_PK}/program-assignments`)
+        .set('Authorization', `Bearer ${token}`).send({ programVersionId: VALID_UUID });
+      const call = mockAudit.createAuditLog.mock.calls[0][0];
+      expect(call.actorUserId).toBe(ADMIN_ID);
+      expect(call.actorRole).toBe('admin');
+      expect(call.isEducationalRecord).toBe(true);
+    });
   });
 
   // ── NO DELETE ───────────────────────────────────────────────────────────────
@@ -601,6 +663,117 @@ describe('Phase 2C — Student Academic Record API Routes', () => {
         const res = await request(app).delete(path).set('Authorization', `Bearer ${token}`);
         expect(res.status).toBe(404);
       }
+    });
+  });
+
+  // ── REVOKE STRICT EMPTY BODY ──────────────────────────────────────────────
+
+  describe('Revoke strict empty body', () => {
+    beforeEach(async () => {
+      ({ app, token } = await createTestApp('admin', ADMIN_ID));
+    });
+
+    it('55. empty body succeeds', async () => {
+      const res = await request(app).post(`/api/admin/student-academic/exceptions/${VALID_UUID}/revoke`)
+        .set('Authorization', `Bearer ${token}`);
+      expect(res.status).toBe(200);
+      expect(mockService.revokeAcademicException).toHaveBeenCalledWith({ exceptionId: VALID_UUID });
+    });
+
+    it('56. empty JSON object body succeeds', async () => {
+      const res = await request(app).post(`/api/admin/student-academic/exceptions/${VALID_UUID}/revoke`)
+        .set('Authorization', `Bearer ${token}`).send({});
+      expect(res.status).toBe(200);
+    });
+
+    const rejectedFields = ['approvedBy', 'studentId', 'status', 'metadata', 'rationale', 'unknownField'];
+    for (const field of rejectedFields) {
+      it(`57. revoke rejects body field "${field}" → 400`, async () => {
+        const res = await request(app).post(`/api/admin/student-academic/exceptions/${VALID_UUID}/revoke`)
+          .set('Authorization', `Bearer ${token}`).send({ [field]: 'x' });
+        expect(res.status).toBe(400);
+        expect(mockService.revokeAcademicException).not.toHaveBeenCalled();
+      });
+    }
+  });
+
+  // ── SEMANTIC DATE VALIDATION ──────────────────────────────────────────────
+
+  describe('Semantic date validation (Zod 3.24)', () => {
+    beforeEach(async () => {
+      ({ app, token } = await createTestApp('admin', ADMIN_ID));
+    });
+
+    it('58. impossible date 2025-02-30 → 400', async () => {
+      const res = await request(app).post(`/api/admin/student-academic/students/${STUDENT_PK}/sources`)
+        .set('Authorization', `Bearer ${token}`).send({ sourceType: 'transcript', title: 'T', sourceDate: '2025-02-30' });
+      expect(res.status).toBe(400);
+      expect(mockService.createAcademicSource).not.toHaveBeenCalled();
+    });
+
+    it('59. impossible date 2025-13-01 → 400', async () => {
+      const res = await request(app).post(`/api/admin/student-academic/students/${STUDENT_PK}/sources`)
+        .set('Authorization', `Bearer ${token}`).send({ sourceType: 'transcript', title: 'T', sourceDate: '2025-13-01' });
+      expect(res.status).toBe(400);
+    });
+
+    it('60. valid leap day 2024-02-29 accepted', async () => {
+      const res = await request(app).post(`/api/admin/student-academic/students/${STUDENT_PK}/sources`)
+        .set('Authorization', `Bearer ${token}`).send({ sourceType: 'transcript', title: 'T', sourceDate: '2024-02-29' });
+      expect(res.status).toBe(201);
+      expect(mockService.createAcademicSource.mock.calls[0][0].sourceDate).toBe('2024-02-29');
+    });
+
+    it('61. impossible datetime 2025-02-30T10:00:00Z → 400', async () => {
+      const res = await request(app).post(`/api/admin/student-academic/students/${STUDENT_PK}/exceptions`)
+        .set('Authorization', `Bearer ${token}`).send({ programAssignmentId: ANOTHER_UUID, exceptionType: 'other', rationale: 'R', effectiveFrom: '2025-02-30T10:00:00Z' });
+      expect(res.status).toBe(400);
+      expect(mockService.createAcademicException).not.toHaveBeenCalled();
+    });
+
+    it('62. invalid datetime hour 2025-01-15T25:00:00Z → 400', async () => {
+      const res = await request(app).post(`/api/admin/student-academic/students/${STUDENT_PK}/exceptions`)
+        .set('Authorization', `Bearer ${token}`).send({ programAssignmentId: ANOTHER_UUID, exceptionType: 'other', rationale: 'R', effectiveFrom: '2025-01-15T25:00:00Z' });
+      expect(res.status).toBe(400);
+    });
+
+    it('63. valid Z datetime transformed to Date', async () => {
+      await request(app).post(`/api/admin/student-academic/students/${STUDENT_PK}/exceptions`)
+        .set('Authorization', `Bearer ${token}`).send({ programAssignmentId: ANOTHER_UUID, exceptionType: 'other', rationale: 'R', effectiveFrom: '2025-01-15T10:00:00Z' });
+      expect(mockService.createAcademicException).toHaveBeenCalled();
+      expect(mockService.createAcademicException.mock.calls[0][0].effectiveFrom).toBeInstanceOf(Date);
+    });
+
+    it('64. valid offset datetime transformed to Date', async () => {
+      await request(app).post(`/api/admin/student-academic/students/${STUDENT_PK}/exceptions`)
+        .set('Authorization', `Bearer ${token}`).send({ programAssignmentId: ANOTHER_UUID, exceptionType: 'other', rationale: 'R', effectiveFrom: '2025-01-15T10:00:00+02:00' });
+      expect(mockService.createAcademicException).toHaveBeenCalled();
+      expect(mockService.createAcademicException.mock.calls[0][0].effectiveFrom).toBeInstanceOf(Date);
+    });
+  });
+
+  // ── STUDENT ID NORMALIZATION ──────────────────────────────────────────────
+
+  describe('Student ID normalization', () => {
+    beforeEach(async () => {
+      ({ app, token } = await createTestApp('admin', ADMIN_ID));
+    });
+
+    it('65. trimmed studentId used for service and audit', async () => {
+      const rawId = encodeURIComponent(` ${STUDENT_PK} `);
+      const res = await request(app).post(`/api/admin/student-academic/students/${rawId}/program-assignments`)
+        .set('Authorization', `Bearer ${token}`).send({ programVersionId: VALID_UUID });
+      expect(res.status).toBe(201);
+      expect(mockService.assignProgram.mock.calls[0][0].studentId).toBe(STUDENT_PK);
+      const auditCall = mockAudit.createAuditLog.mock.calls[0][0];
+      expect(auditCall.metadata.studentId).toBe(STUDENT_PK);
+    });
+
+    it('66. whitespace-only studentId → 400', async () => {
+      const rawId = encodeURIComponent('   ');
+      const res = await request(app).get(`/api/admin/student-academic/students/${rawId}`)
+        .set('Authorization', `Bearer ${token}`);
+      expect(res.status).toBe(400);
     });
   });
 

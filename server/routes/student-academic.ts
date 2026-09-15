@@ -46,15 +46,12 @@ const EXCEPTION_TYPES = studentAcademicExceptionTypeEnum.enumValues as readonly 
 const uuidSchema = z.string().uuid();
 const uuidOptionalSchema = z.string().uuid().nullable().optional();
 
-// Strict YYYY-MM-DD date (no time component)
-const dateOnlySchema = z.string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format (expected YYYY-MM-DD)')
-  .nullable()
-  .optional();
+// Semantic YYYY-MM-DD (rejects impossible calendar dates such as 2025-02-30)
+const dateOnlySchema = z.string().date().nullable().optional();
 
-// Strict ISO datetime → Date
+// Semantic ISO datetime (Z or offset) → Date for the service layer
 const isoDateTimeSchema = z.string()
-  .regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?(Z|[+-]\d{2}:\d{2})$/, 'Invalid ISO datetime format')
+  .datetime({ offset: true })
   .transform((val) => new Date(val))
   .nullable()
   .optional();
@@ -70,6 +67,10 @@ const studentIdParamSchema = z.string().trim().min(1).max(128);
 
 // ── Audit helper (local to this router) ───────────────────────────────────────
 
+// audit_logs.target_user_id is a FK to users.id — students.id must NEVER go
+// there (the insert would fail). When a student is involved, its id is
+// recorded in metadata.studentId instead. Metadata carries identifiers only:
+// no rationale, grades, snapshots, raw request bodies, or secrets.
 async function auditMutation(req: Request, opts: {
   studentId?: string | null;
   resourceType: string;
@@ -79,16 +80,17 @@ async function auditMutation(req: Request, opts: {
 }): Promise<void> {
   const user = req.user;
   if (!user) return;
+  const metadata: Record<string, unknown> = { ...(opts.metadata ?? {}) };
+  if (opts.studentId) metadata.studentId = opts.studentId;
   await createAuditLog({
     eventType: 'admin.bulk_operation',
     severity: 'info',
     actorUserId: user.id,
     actorRole: user.role,
-    targetUserId: opts.studentId ?? undefined,
     targetResourceType: opts.resourceType,
     targetResourceId: opts.resourceId,
     actionDescription: `${opts.action} ${opts.resourceType} ${opts.resourceId}`,
-    metadata: opts.metadata ?? {},
+    metadata,
     isEducationalRecord: true,
   });
 }
@@ -182,7 +184,7 @@ internalRouter.get('/students/:studentId', async (req: Request, res: Response) =
     if (!idCheck.success) {
       return res.status(400).json({ error: { code: 'STUDENT_ACADEMIC_VALIDATION_ERROR', message: 'studentId must be a non-empty string of at most 128 characters' } });
     }
-    const record = await studentAcademicService.getStudentAcademicRecord(req.params.studentId);
+    const record = await studentAcademicService.getStudentAcademicRecord(idCheck.data);
     res.json(record);
   } catch (error) {
     sendStudentAcademicError(res, error);
@@ -205,14 +207,14 @@ internalRouter.post('/students/:studentId/program-assignments', async (req: Requ
     }
     const validated = assignProgramBody.parse(req.body);
     const result = await studentAcademicService.assignProgram({
-      studentId: req.params.studentId,
+      studentId: idCheck.data,
       programVersionId: validated.programVersionId,
       cohortLabel: validated.cohortLabel ?? null,
       reason: validated.reason ?? null,
       assignedBy: req.user!.id,
     });
     await auditMutation(req, {
-      studentId: req.params.studentId,
+      studentId: idCheck.data,
       resourceType: 'program_assignment',
       resourceId: result.id,
       action: 'assign',
@@ -237,13 +239,13 @@ internalRouter.post('/students/:studentId/program-assignments/switch', async (re
     }
     const validated = switchProgramBody.parse(req.body);
     const result = await studentAcademicService.switchProgramAssignment({
-      studentId: req.params.studentId,
+      studentId: idCheck.data,
       newProgramVersionId: validated.newProgramVersionId,
       reason: validated.reason ?? null,
       assignedBy: req.user!.id,
     });
     await auditMutation(req, {
-      studentId: req.params.studentId,
+      studentId: idCheck.data,
       resourceType: 'program_assignment',
       resourceId: result.newAssignment.id,
       action: 'switch',
@@ -276,7 +278,7 @@ internalRouter.post('/students/:studentId/sources', async (req: Request, res: Re
     }
     const validated = createSourceBody.parse(req.body);
     const result = await studentAcademicService.createAcademicSource({
-      studentId: req.params.studentId,
+      studentId: idCheck.data,
       documentId: validated.documentId ?? null,
       sourceType: validated.sourceType,
       title: validated.title,
@@ -288,7 +290,7 @@ internalRouter.post('/students/:studentId/sources', async (req: Request, res: Re
       createdBy: req.user!.id,
     });
     await auditMutation(req, {
-      studentId: req.params.studentId,
+      studentId: idCheck.data,
       resourceType: 'academic_source',
       resourceId: result.id,
       action: 'create',
@@ -316,6 +318,7 @@ internalRouter.post('/sources/:sourceId/transition', async (req: Request, res: R
       newStatus: validated.newStatus as SourceStatus,
     });
     await auditMutation(req, {
+      studentId: result.studentId,
       resourceType: 'academic_source',
       resourceId: result.id,
       action: 'transition',
@@ -370,6 +373,7 @@ internalRouter.post('/sources/:sourceId/credit-records', async (req: Request, re
       createdBy: req.user!.id,
     });
     await auditMutation(req, {
+      studentId: result.studentId,
       resourceType: 'credit_record',
       resourceId: result.id,
       action: 'create',
@@ -414,6 +418,7 @@ internalRouter.patch('/credit-records/:creditRecordId/correct', async (req: Requ
       rationale: rationale ?? null,
     });
     await auditMutation(req, {
+      studentId: result.studentId,
       resourceType: 'credit_record',
       resourceId: result.id,
       action: 'correct',
@@ -521,7 +526,7 @@ internalRouter.post('/students/:studentId/exceptions', async (req: Request, res:
     }
     const validated = createExceptionBody.parse(req.body);
     const result = await studentAcademicService.createAcademicException({
-      studentId: req.params.studentId,
+      studentId: idCheck.data,
       programAssignmentId: validated.programAssignmentId,
       exceptionType: validated.exceptionType as ExceptionType,
       requirementId: validated.requirementId ?? null,
@@ -533,7 +538,7 @@ internalRouter.post('/students/:studentId/exceptions', async (req: Request, res:
       approvedBy: req.user!.id,
     });
     await auditMutation(req, {
-      studentId: req.params.studentId,
+      studentId: idCheck.data,
       resourceType: 'academic_exception',
       resourceId: result.id,
       action: 'create',
@@ -574,6 +579,7 @@ internalRouter.post('/exceptions/:exceptionId/supersede', async (req: Request, r
       approvedBy: req.user!.id,
     });
     await auditMutation(req, {
+      studentId: result.newException.studentId,
       resourceType: 'academic_exception',
       resourceId: result.newException.id,
       action: 'supersede',
@@ -585,14 +591,18 @@ internalRouter.post('/exceptions/:exceptionId/supersede', async (req: Request, r
   }
 });
 
+const revokeExceptionBody = z.object({}).strict();
+
 internalRouter.post('/exceptions/:exceptionId/revoke', async (req: Request, res: Response) => {
   try {
     const idCheck = uuidSchema.safeParse(req.params.exceptionId);
     if (!idCheck.success) {
       return res.status(400).json({ error: { code: 'STUDENT_ACADEMIC_VALIDATION_ERROR', message: 'exceptionId must be a valid UUID' } });
     }
+    revokeExceptionBody.parse(req.body ?? {});
     const result = await studentAcademicService.revokeAcademicException({ exceptionId: req.params.exceptionId });
     await auditMutation(req, {
+      studentId: result.studentId,
       resourceType: 'academic_exception',
       resourceId: result.id,
       action: 'revoke',
