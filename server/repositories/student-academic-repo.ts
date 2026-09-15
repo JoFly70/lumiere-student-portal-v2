@@ -25,6 +25,7 @@ import {
   institutions,
   institutionCourses,
   institutionCourseVersions,
+  creditProviders,
   providerCourseVersions,
   equivalenciesV2,
   claimVersions,
@@ -32,10 +33,13 @@ import {
   requirementsV2,
   academicRules,
 } from '@shared/knowledge-schema';
-import { eq, and, desc, sql, isNull } from 'drizzle-orm';
+import { eq, and, desc, sql, isNull, inArray } from 'drizzle-orm';
 import type { PgTransaction } from 'drizzle-orm/pg-core';
 
 export type Tx = PgTransaction<any, any, any> | typeof db;
+
+export type VerificationEventRow = NonNullable<Awaited<ReturnType<typeof appendVerificationEvent>>>;
+export type DecisionRow = NonNullable<Awaited<ReturnType<typeof appendDecision>>>;
 
 // ── Program Assignments ─────────────────────────────────────────────────────
 
@@ -388,6 +392,21 @@ export async function lockExceptionRow(exceptionId: string, tx: Tx = db): Promis
 
 // ── Knowledge Provenance Reads ───────────────────────────────────────────────
 
+export async function getInstitution(institutionId: string, tx: Tx = db) {
+  const [row] = await tx.select().from(institutions).where(eq(institutions.id, institutionId)).limit(1);
+  return row ?? null;
+}
+
+export async function getCreditProvider(providerId: string, tx: Tx = db) {
+  const [row] = await tx.select().from(creditProviders).where(eq(creditProviders.id, providerId)).limit(1);
+  return row ?? null;
+}
+
+export async function getProviderCourseVersion(courseVersionId: string, tx: Tx = db) {
+  const [row] = await tx.select().from(providerCourseVersions).where(eq(providerCourseVersions.id, courseVersionId)).limit(1);
+  return row ?? null;
+}
+
 export async function getEquivalency(equivalencyId: string, tx: Tx = db) {
   const [row] = await tx.select().from(equivalenciesV2).where(eq(equivalenciesV2.id, equivalencyId)).limit(1);
   return row ?? null;
@@ -441,4 +460,37 @@ export async function getAcademicRuleWithProgramVersion(academicRuleId: string, 
     .where(eq(academicRules.id, academicRuleId))
     .limit(1);
   return rows[0] ?? null;
+}
+
+// ── Batch reads for read model ──────────────────────────────────────────────
+
+export async function getLatestVerificationEventsBatch(creditRecordIds: string[], tx: Tx = db): Promise<Record<string, VerificationEventRow>> {
+  if (creditRecordIds.length === 0) return {};
+  const rows = await tx.execute(sql`
+    SELECT DISTINCT ON (credit_record_id) *
+    FROM student_credit_verification_events
+    WHERE credit_record_id = ANY(${sql.raw(`ARRAY[${creditRecordIds.map(id => `'${id}'`).join(',')}]`)}::uuid[])
+    ORDER BY credit_record_id, seq DESC
+  `);
+  const result: Record<string, VerificationEventRow> = {};
+  for (const row of rows as any[]) {
+    result[row.credit_record_id] = row as unknown as VerificationEventRow;
+  }
+  return result;
+}
+
+export async function getLatestDecisionsBatch(creditRecordIds: string[], programAssignmentId: string, tx: Tx = db): Promise<Record<string, DecisionRow>> {
+  if (creditRecordIds.length === 0) return {};
+  const rows = await tx.execute(sql`
+    SELECT DISTINCT ON (credit_record_id) *
+    FROM student_credit_decisions
+    WHERE program_assignment_id = ${programAssignmentId}
+      AND credit_record_id = ANY(${sql.raw(`ARRAY[${creditRecordIds.map(id => `'${id}'`).join(',')}]`)}::uuid[])
+    ORDER BY credit_record_id, seq DESC
+  `);
+  const result: Record<string, DecisionRow> = {};
+  for (const row of rows as any[]) {
+    result[row.credit_record_id] = row as unknown as DecisionRow;
+  }
+  return result;
 }

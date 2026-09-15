@@ -179,12 +179,34 @@ function createMockRepo() {
     async lockExceptionRow(id: string, tx?: Tx) {},
 
     // Knowledge provenance reads
-    async getEquivalency(id: string, tx?: Tx) { return null; },
-    async getInstitutionCourseVersion(id: string, tx?: Tx) { return null; },
-    async getClaimVersion(id: string, tx?: Tx) { return null; },
-    async getClaim(id: string, tx?: Tx) { return null; },
-    async getRequirementWithProgramVersion(id: string, tx?: Tx) { return null; },
-    async getAcademicRuleWithProgramVersion(id: string, tx?: Tx) { return null; },
+    async getInstitution(id: string, tx?: Tx) { return store.institutions?.get(id) ?? null; },
+    async getCreditProvider(id: string, tx?: Tx) { return store.creditProviders?.get(id) ?? null; },
+    async getProviderCourseVersion(id: string, tx?: Tx) { return store.providerCourseVersions?.get(id) ?? null; },
+    async getEquivalency(id: string, tx?: Tx) { return store.equivalencies?.get(id) ?? null; },
+    async getInstitutionCourseVersion(id: string, tx?: Tx) { return store.institutionCourseVersions?.get(id) ?? null; },
+    async getClaimVersion(id: string, tx?: Tx) { return store.claimVersions?.get(id) ?? null; },
+    async getClaim(id: string, tx?: Tx) { return store.claims?.get(id) ?? null; },
+    async getRequirementWithProgramVersion(id: string, tx?: Tx) { return store.requirements?.get(id) ?? null; },
+    async getAcademicRuleWithProgramVersion(id: string, tx?: Tx) { return store.academicRules?.get(id) ?? null; },
+
+    // Batch reads
+    async getLatestVerificationEventsBatch(ids: string[], tx?: Tx) {
+      const result: Record<string, any> = {};
+      for (const id of ids) {
+        const events = (store.verificationEvents.get(id) ?? []).sort((a: any, b: any) => b.seq - a.seq);
+        if (events[0]) result[id] = events[0];
+      }
+      return result;
+    },
+    async getLatestDecisionsBatch(ids: string[], paId: string, tx?: Tx) {
+      const result: Record<string, any> = {};
+      for (const id of ids) {
+        const key = `${id}:${paId}`;
+        const decisions = (store.decisions.get(key) ?? []).sort((a: any, b: any) => b.seq - a.seq);
+        if (decisions[0]) result[id] = decisions[0];
+      }
+      return result;
+    },
   };
 }
 
@@ -209,6 +231,21 @@ describe('Phase 2B — Student Academic Record Service', () => {
     repo._store.programVersions.set('pv1', { id: 'pv1', programId: 'prog-1', status: 'active', versionLabel: 'v1' });
     // Seed a draft program version
     repo._store.programVersions.set('pv-draft', { id: 'pv-draft', programId: 'prog-1', status: 'draft', versionLabel: 'draft' });
+    // Seed knowledge entities for provenance
+    repo._store.institutions = new Map([['inst-1', { id: 'inst-1', name: 'Test Inst', slug: 'test' }], ['inst-2', { id: 'inst-2', name: 'Other Inst', slug: 'other' }]]);
+    repo._store.creditProviders = new Map([['cp-1', { id: 'cp-1', name: 'Test Provider' }]]);
+    repo._store.providerCourseVersions = new Map([['pcv-1', { id: 'pcv-1', title: 'Test Provider Course' }]]);
+    repo._store.institutionCourseVersions = new Map([['icv-1', { version: { id: 'icv-1' }, institution: { id: 'inst-1' } }]]);
+    repo._store.equivalencies = new Map([['eq-1', { id: 'eq-1', institutionId: 'inst-1' }]]);
+    repo._store.claimVersions = new Map([['cv-1', { id: 'cv-1', claimId: 'cl-1', status: 'confirmed' }]]);
+    repo._store.claims = new Map([['cl-1', { id: 'cl-1', currentVersionId: 'cv-1' }]]);
+    repo._store.requirements = new Map([['req-1', { requirement: { id: 'req-1' }, programVersion: { id: 'pv1' } }]]);
+    repo._store.academicRules = new Map([
+      ['ar-1', { rule: { id: 'ar-1', institutionId: 'inst-1', programVersionId: 'pv1' }, programVersion: { id: 'pv1' } }],
+      ['ar-inst', { rule: { id: 'ar-inst', institutionId: 'inst-1', programVersionId: null }, programVersion: null }],
+      ['ar-other-pv', { rule: { id: 'ar-other-pv', institutionId: 'inst-1', programVersionId: 'pv-other' }, programVersion: { id: 'pv-other' } }],
+      ['ar-other-inst', { rule: { id: 'ar-other-inst', institutionId: 'inst-2', programVersionId: null }, programVersion: null }],
+    ]);
   });
 
   // ── Program Assignment ─────────────────────────────────────────────────────
@@ -527,6 +564,107 @@ describe('Phase 2B — Student Academic Record Service', () => {
     it('rejects missing student', async () => {
       await expect(service.getStudentAcademicRecord('missing'))
         .rejects.toThrow(/Student not found/);
+    });
+  });
+
+  // ── Regression tests for Phase 2B corrections ──────────────────────────────────
+
+  describe('source provenance validation', () => {
+    it('rejects nonexistent issuing institution', async () => {
+      await expect(service.createAcademicSource({ studentId: 's1', sourceType: 'transcript', title: 'T', issuingInstitutionId: 'missing' }))
+        .rejects.toThrow(/Issuing institution not found/);
+    });
+
+    it('rejects nonexistent issuing provider', async () => {
+      await expect(service.createAcademicSource({ studentId: 's1', sourceType: 'transcript', title: 'T', issuingProviderId: 'missing' }))
+        .rejects.toThrow(/Issuing credit provider not found/);
+    });
+
+    it('accepts valid issuing institution', async () => {
+      const result = await service.createAcademicSource({ studentId: 's1', sourceType: 'transcript', title: 'T', issuingInstitutionId: 'inst-1' });
+      expect(result.issuingInstitutionId).toBe('inst-1');
+    });
+  });
+
+  describe('credit course version validation', () => {
+    it('rejects nonexistent institution course version', async () => {
+      await service.createAcademicSource({ studentId: 's1', sourceType: 'transcript', title: 'T' });
+      await expect(service.createCreditRecord({ sourceId: 'src-1', rawTitle: 'Test', institutionCourseVersionId: 'missing' }))
+        .rejects.toThrow(/Institution course version not found/);
+    });
+
+    it('rejects nonexistent provider course version', async () => {
+      await service.createAcademicSource({ studentId: 's1', sourceType: 'transcript', title: 'T' });
+      await expect(service.createCreditRecord({ sourceId: 'src-1', rawTitle: 'Test', providerCourseVersionId: 'missing' }))
+        .rejects.toThrow(/Provider course version not found/);
+    });
+
+    it('accepts valid course version references', async () => {
+      await service.createAcademicSource({ studentId: 's1', sourceType: 'transcript', title: 'T' });
+      const result = await service.createCreditRecord({ sourceId: 'src-1', rawTitle: 'Test', institutionCourseVersionId: 'icv-1' });
+      expect(result.institutionCourseVersionId).toBe('icv-1');
+    });
+  });
+
+  describe('academic rule scoping', () => {
+    beforeEach(async () => {
+      await service.assignProgram({ studentId: 's1', programVersionId: 'pv1' });
+    });
+
+    it('rejects program-specific rule from another program version', async () => {
+      await expect(service.createAcademicException({
+        studentId: 's1', programAssignmentId: 'pa-1', exceptionType: 'other', academicRuleId: 'ar-other-pv', rationale: 'Test',
+      })).rejects.toThrow(/different program version/);
+    });
+
+    it('rejects institution-wide rule from another institution', async () => {
+      await expect(service.createAcademicException({
+        studentId: 's1', programAssignmentId: 'pa-1', exceptionType: 'other', academicRuleId: 'ar-other-inst', rationale: 'Test',
+      })).rejects.toThrow(/different institution/);
+    });
+
+    it('accepts program-specific rule matching assignment program version', async () => {
+      const result = await service.createAcademicException({
+        studentId: 's1', programAssignmentId: 'pa-1', exceptionType: 'other', academicRuleId: 'ar-1', rationale: 'Test',
+      });
+      expect(result.status).toBe('active');
+    });
+
+    it('accepts institution-wide rule matching assignment institution', async () => {
+      const result = await service.createAcademicException({
+        studentId: 's1', programAssignmentId: 'pa-1', exceptionType: 'other', academicRuleId: 'ar-inst', rationale: 'Test',
+      });
+      expect(result.status).toBe('active');
+    });
+  });
+
+  describe('supersede exception validation', () => {
+    it('invalid replacement leaves old exception active', async () => {
+      await service.assignProgram({ studentId: 's1', programVersionId: 'pv1' });
+      const old = await service.createAcademicException({
+        studentId: 's1', programAssignmentId: 'pa-1', exceptionType: 'other', rationale: 'Old',
+      });
+      // Attempt supersede with invalid academic rule
+      await expect(service.supersedeAcademicException({
+        oldExceptionId: old.id, exceptionType: 'other', academicRuleId: 'ar-other-inst', rationale: 'Invalid replacement',
+      })).rejects.toThrow(/different institution/);
+      // Old exception should remain active
+      const check = await repo.getException(old.id);
+      expect(check.status).toBe('active');
+    });
+  });
+
+  describe('batch read model', () => {
+    it('returns same correct latest seq results', async () => {
+      await service.assignProgram({ studentId: 's1', programVersionId: 'pv1' });
+      await service.createAcademicSource({ studentId: 's1', sourceType: 'transcript', title: 'T' });
+      await service.createCreditRecord({ sourceId: 'src-1', rawTitle: 'Course 1' });
+      await service.recordCreditVerification({ creditRecordId: 'cr-1', action: 'submitted' });
+      await service.recordCreditVerification({ creditRecordId: 'cr-1', action: 'verified' });
+
+      const record = await service.getStudentAcademicRecord('s1');
+      expect(record.latestVerifications['cr-1']).toBeTruthy();
+      expect(record.latestVerifications['cr-1'].action).toBe('verified');
     });
   });
 });

@@ -167,6 +167,16 @@ export function createStudentAcademicService(
       if (doc.userId !== student.user_id) throw validationError('Document does not belong to this student', { documentId: input.documentId, studentUserId: student.user_id });
     }
 
+    if (input.issuingInstitutionId) {
+      const inst = await repository.getInstitution(input.issuingInstitutionId);
+      if (!inst) throw notFoundError('Issuing institution not found', { issuingInstitutionId: input.issuingInstitutionId });
+    }
+
+    if (input.issuingProviderId) {
+      const provider = await repository.getCreditProvider(input.issuingProviderId);
+      if (!provider) throw notFoundError('Issuing credit provider not found', { issuingProviderId: input.issuingProviderId });
+    }
+
     return await repository.createSource({
       studentId: input.studentId,
       documentId: input.documentId ?? null,
@@ -198,6 +208,16 @@ export function createStudentAcademicService(
   async function createCreditRecord(input: { sourceId: string; recordType?: string; sourceLineKey?: string | null; rawCourseCode?: string | null; rawTitle: string; rawCredits?: string | null; rawGrade?: string | null; rawLevel?: string | null; term?: string | null; completedOn?: string | null; institutionCourseVersionId?: string | null; providerCourseVersionId?: string | null; normalizedCredits?: string | null; normalizedLevel?: string | null; createdBy?: string | null }): Promise<CreditRecordRow> {
     const source = await repository.getSource(input.sourceId);
     if (!source) throw notFoundError('Academic source not found', { sourceId: input.sourceId });
+
+    if (input.institutionCourseVersionId) {
+      const icv = await repository.getInstitutionCourseVersion(input.institutionCourseVersionId);
+      if (!icv) throw notFoundError('Institution course version not found', { institutionCourseVersionId: input.institutionCourseVersionId });
+    }
+
+    if (input.providerCourseVersionId) {
+      const pcv = await repository.getProviderCourseVersion(input.providerCourseVersionId);
+      if (!pcv) throw notFoundError('Provider course version not found', { providerCourseVersionId: input.providerCourseVersionId });
+    }
 
     // studentId is always derived server-side from the source
     return await repository.createCreditRecord({
@@ -331,8 +351,6 @@ export function createStudentAcademicService(
         if (latestDecision && latestDecision.action === 'accepted') {
           throw duplicateError('Latest decision for this record+assignment is already accepted; revoke first', { creditRecordId: input.creditRecordId, programAssignmentId: input.programAssignmentId, decisionId: latestDecision.id });
         }
-        // Validate provenance
-        await validateProvenance(input, assignment, tx);
       }
 
       if (input.action === 'rejected' || input.action === 'needs_review') {
@@ -357,6 +375,9 @@ export function createStudentAcademicService(
           throw validationError('Revoked decisions must not have positive creditsAwarded', { creditsAwarded: input.creditsAwarded });
         }
       }
+
+      // Validate provenance for ALL actions when provenance fields are supplied
+      await validateProvenance(input, assignment, tx);
 
       return await repository.appendDecision({
         creditRecordId: input.creditRecordId,
@@ -412,20 +433,15 @@ export function createStudentAcademicService(
 
   // ── Exceptions ──────────────────────────────────────────────────────────────
 
-  async function createAcademicException(input: { studentId: string; programAssignmentId: string; exceptionType: ExceptionType; requirementId?: string | null; academicRuleId?: string | null; creditRecordId?: string | null; approvedBy?: string | null; rationale: string; effectiveFrom?: Date | null; effectiveTo?: Date | null }): Promise<ExceptionRow> {
-    const assignment = await repository.getAssignment(input.programAssignmentId);
-    if (!assignment) throw notFoundError('Program assignment not found', { programAssignmentId: input.programAssignmentId });
-    if (assignment.status !== 'active') throw invalidStateError('Program assignment must be active', { programAssignmentId: input.programAssignmentId, status: assignment.status });
-    if (assignment.studentId !== input.studentId) throw validationError('Assignment does not belong to this student', { assignmentStudentId: assignment.studentId, studentId: input.studentId });
-
+  async function validateExceptionTargets(input: { studentId: string; programAssignmentId: string; exceptionType: ExceptionType; requirementId?: string | null; academicRuleId?: string | null; creditRecordId?: string | null }, assignment: AssignmentRow, tx?: Tx): Promise<void> {
     if (input.creditRecordId) {
-      const record = await repository.getCreditRecord(input.creditRecordId);
+      const record = await repository.getCreditRecord(input.creditRecordId, tx);
       if (!record) throw notFoundError('Credit record not found', { creditRecordId: input.creditRecordId });
       if (record.studentId !== input.studentId) throw validationError('Credit record does not belong to this student', { recordStudentId: record.studentId, studentId: input.studentId });
     }
 
     if (input.requirementId) {
-      const reqPv = await repository.getRequirementWithProgramVersion(input.requirementId);
+      const reqPv = await repository.getRequirementWithProgramVersion(input.requirementId, tx);
       if (!reqPv) throw notFoundError('Requirement not found', { requirementId: input.requirementId });
       if (reqPv.programVersion.id !== assignment.programVersionId) {
         throw provenanceMismatchError('Requirement does not belong to the assigned program version', { requirementProgramVersionId: reqPv.programVersion.id, assignmentProgramVersionId: assignment.programVersionId });
@@ -433,15 +449,19 @@ export function createStudentAcademicService(
     }
 
     if (input.academicRuleId) {
-      const rulePv = await repository.getAcademicRuleWithProgramVersion(input.academicRuleId);
+      const rulePv = await repository.getAcademicRuleWithProgramVersion(input.academicRuleId, tx);
       if (!rulePv) throw notFoundError('Academic rule not found', { academicRuleId: input.academicRuleId });
-      // Rule must either apply to the assigned program version or be institution-wide
-      const pvWithProgram = await repository.getProgramVersionWithProgram(assignment.programVersionId);
+      const pvWithProgram = await repository.getProgramVersionWithProgram(assignment.programVersionId, tx);
       if (!pvWithProgram) throw notFoundError('Program version not found', { programVersionId: assignment.programVersionId });
-      if (rulePv.programVersion && rulePv.programVersion.id !== assignment.programVersionId) {
-        // Check if it's institution-wide (programVersionId is null and institution matches)
+      // If rule has a programVersionId, it MUST match the assignment's programVersionId
+      if (rulePv.programVersion) {
+        if (rulePv.programVersion.id !== assignment.programVersionId) {
+          throw provenanceMismatchError('Academic rule belongs to a different program version', { ruleProgramVersionId: rulePv.programVersion.id, assignmentProgramVersionId: assignment.programVersionId });
+        }
+      } else {
+        // Institution-wide rule: institutionId MUST match the assigned program's institution
         if (rulePv.rule.institutionId !== pvWithProgram.institution.id) {
-          throw provenanceMismatchError('Academic rule does not apply to the assigned program version or institution', { ruleProgramVersionId: rulePv.programVersion?.id, assignmentProgramVersionId: assignment.programVersionId });
+          throw provenanceMismatchError('Institution-wide academic rule belongs to a different institution', { ruleInstitutionId: rulePv.rule.institutionId, assignmentInstitutionId: pvWithProgram.institution.id });
         }
       }
     }
@@ -450,6 +470,15 @@ export function createStudentAcademicService(
     if (input.exceptionType !== 'other' && !input.requirementId && !input.academicRuleId && !input.creditRecordId) {
       throw validationError('Non-"other" exceptions require at least one target: requirementId, academicRuleId, or creditRecordId', { exceptionType: input.exceptionType });
     }
+  }
+
+  async function createAcademicException(input: { studentId: string; programAssignmentId: string; exceptionType: ExceptionType; requirementId?: string | null; academicRuleId?: string | null; creditRecordId?: string | null; approvedBy?: string | null; rationale: string; effectiveFrom?: Date | null; effectiveTo?: Date | null }): Promise<ExceptionRow> {
+    const assignment = await repository.getAssignment(input.programAssignmentId);
+    if (!assignment) throw notFoundError('Program assignment not found', { programAssignmentId: input.programAssignmentId });
+    if (assignment.status !== 'active') throw invalidStateError('Program assignment must be active', { programAssignmentId: input.programAssignmentId, status: assignment.status });
+    if (assignment.studentId !== input.studentId) throw validationError('Assignment does not belong to this student', { assignmentStudentId: assignment.studentId, studentId: input.studentId });
+
+    await validateExceptionTargets(input, assignment);
 
     return await repository.createException({
       studentId: input.studentId,
@@ -471,6 +500,19 @@ export function createStudentAcademicService(
       const oldException = await repository.getException(input.oldExceptionId, tx);
       if (!oldException) throw notFoundError('Exception not found', { exceptionId: input.oldExceptionId });
       if (oldException.status !== 'active') throw invalidStateError('Only active exceptions can be superseded', { exceptionId: input.oldExceptionId, status: oldException.status });
+
+      const assignment = await repository.getAssignment(oldException.programAssignmentId, tx);
+      if (!assignment) throw notFoundError('Program assignment not found', { programAssignmentId: oldException.programAssignmentId });
+
+      // Validate replacement targets BEFORE changing the old exception
+      await validateExceptionTargets({
+        studentId: oldException.studentId,
+        programAssignmentId: oldException.programAssignmentId,
+        exceptionType: input.exceptionType,
+        requirementId: input.requirementId ?? null,
+        academicRuleId: input.academicRuleId ?? null,
+        creditRecordId: input.creditRecordId ?? null,
+      }, assignment, tx);
 
       const updated = await repository.updateExceptionStatus(input.oldExceptionId, 'superseded', tx);
       const newException = await repository.createException({
@@ -516,20 +558,13 @@ export function createStudentAcademicService(
     const academicSources = await repository.listSourcesForStudent(studentId);
     const creditRecords = await repository.listCreditRecordsByStudent(studentId);
 
-    // Fetch latest verification per credit record (avoid N+1 by batching)
-    const latestVerifications: Record<string, VerificationEventRow> = {};
-    for (const cr of creditRecords) {
-      const latestV = await repository.getLatestVerificationEvent(cr.id);
-      if (latestV) latestVerifications[cr.id] = latestV;
-    }
+    // Batch reads: latest verification + latest decision per credit record
+    const creditRecordIds = creditRecords.map(cr => cr.id);
+    const latestVerifications = await repository.getLatestVerificationEventsBatch(creditRecordIds);
 
-    // Fetch latest decision for active assignment per credit record
-    const latestDecisions: Record<string, DecisionRow> = {};
+    let latestDecisions: Record<string, DecisionRow> = {};
     if (activeProgramAssignment) {
-      for (const cr of creditRecords) {
-        const latestD = await repository.getLatestDecision(cr.id, activeProgramAssignment.id);
-        if (latestD) latestDecisions[cr.id] = latestD;
-      }
+      latestDecisions = await repository.getLatestDecisionsBatch(creditRecordIds, activeProgramAssignment.id);
     }
 
     const activeExceptions = await repository.listActiveExceptionsForStudent(studentId);

@@ -144,13 +144,33 @@ describe_db('Phase 2B: Real DB Service Tests — Student Academic Record', () =>
     expect(assignment.studentId).toBe(testStudentId);
   });
 
-  it_db('2. concurrent duplicate active assignment → one winner', async () => {
-    // The first assignment already exists from test 1
-    await expect(service.assignProgram({
-      studentId: testStudentId,
-      programVersionId,
-      assignedBy: testUserId,
-    })).rejects.toThrow(/already has an active/);
+  it_db('2. real concurrent duplicate active assignment → one winner', async () => {
+    // Create a dedicated disposable student with NO active assignment
+    const concUserId = `${PREFIX}-conc-user`;
+    const concStudentId = `${PREFIX}-conc-student`;
+    await db.execute(sql`INSERT INTO users (id, email, name, role) VALUES (${concUserId}, ${PREFIX + 'conc@test.lumiere.app'}, ${PREFIX + ' Conc'}, 'staff')`);
+    await db.execute(sql`INSERT INTO students (id, user_id, student_code, status, first_name, last_name, dob, residency, email, phone_primary, address_country, address_line1) VALUES (${concStudentId}, ${concUserId}, ${PREFIX + '-CONC'}, 'lead', 'Conc', 'Student', '2000-01-01', 'us', ${PREFIX + 'conc@test.lumiere.app'}, '555-2222', 'US', '789 Conc St')`);
+
+    // Start TWO assignProgram calls concurrently
+    const results = await Promise.allSettled([
+      service.assignProgram({ studentId: concStudentId, programVersionId, assignedBy: testUserId }),
+      service.assignProgram({ studentId: concStudentId, programVersionId, assignedBy: testUserId }),
+    ]);
+
+    const fulfilled = results.filter(r => r.status === 'fulfilled');
+    const rejected = results.filter(r => r.status === 'rejected');
+    expect(fulfilled).toHaveLength(1);
+    expect(rejected).toHaveLength(1);
+
+    // DB contains exactly 1 active assignment
+    const active = await repo.getActiveAssignmentForStudent(concStudentId);
+    expect(active).toBeTruthy();
+    expect(active.status).toBe('active');
+
+    // Cleanup
+    await db.execute(sql`DELETE FROM student_program_assignments WHERE student_id = ${concStudentId}`);
+    await db.execute(sql`DELETE FROM students WHERE id = ${concStudentId}`);
+    await db.execute(sql`DELETE FROM users WHERE id = ${concUserId}`);
   });
 
   it_db('3. switch assignment atomically supersedes old', async () => {
@@ -249,20 +269,42 @@ describe_db('Phase 2B: Real DB Service Tests — Student Academic Record', () =>
     expect(decision.action).toBe('accepted');
   });
 
-  it_db('8. duplicate concurrent acceptance → one effective winner', async () => {
-    const sources = await repo.listSourcesForStudent(testStudentId);
-    const source = sources.find(s => s.title === 'Test Transcript');
-    const records = await repo.listCreditRecordsBySource(source.id);
-    const record = records[0];
+  it_db('8. real concurrent acceptance → one effective winner', async () => {
+    // Create a fresh verified credit record with no prior decision
+    const concSource = await service.createAcademicSource({
+      studentId: testStudentId,
+      sourceType: 'exam_score',
+      title: 'Concurrent Exam',
+      createdBy: testUserId,
+    });
+    const concRecord = await service.createCreditRecord({
+      sourceId: concSource.id,
+      rawTitle: 'Concurrent Test Course',
+      rawCredits: '3.00',
+    });
+    await service.recordCreditVerification({ creditRecordId: concRecord.id, action: 'verified', reviewerId: testUserId });
+
     const assignment = await repo.getActiveAssignmentForStudent(testStudentId);
 
-    await expect(service.recordCreditDecision({
-      creditRecordId: record.id,
-      programAssignmentId: assignment.id,
-      action: 'accepted',
-      creditsAwarded: '3.00',
-      decidedBy: testUserId,
-    })).rejects.toThrow(/already accepted/);
+    // Start TWO accepted decisions concurrently
+    const results = await Promise.allSettled([
+      service.recordCreditDecision({ creditRecordId: concRecord.id, programAssignmentId: assignment.id, action: 'accepted', creditsAwarded: '3.00', decidedBy: testUserId }),
+      service.recordCreditDecision({ creditRecordId: concRecord.id, programAssignmentId: assignment.id, action: 'accepted', creditsAwarded: '3.00', decidedBy: testUserId }),
+    ]);
+
+    const fulfilled = results.filter(r => r.status === 'fulfilled');
+    const rejected = results.filter(r => r.status === 'rejected');
+    expect(fulfilled).toHaveLength(1);
+    expect(rejected).toHaveLength(1);
+
+    // Decision history contains exactly one accepted decision
+    const decisions = await repo.listDecisions(concRecord.id, assignment.id);
+    const acceptedDecisions = decisions.filter(d => d.action === 'accepted');
+    expect(acceptedDecisions).toHaveLength(1);
+
+    // Latest effective decision is accepted
+    const latest = await repo.getLatestDecision(concRecord.id, assignment.id);
+    expect(latest.action).toBe('accepted');
   });
 
   it_db('9. accepted credit cannot be corrected until decision revoked', async () => {
