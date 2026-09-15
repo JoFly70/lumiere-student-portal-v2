@@ -40,6 +40,7 @@ function makeRepo() {
     updateError: undefined as any,
     updateErrorOnCall: undefined as number | undefined,
     lifecycleUpdateCalls: 0,
+    lifecycleUpdates: [] as Row[],
   };
   const cloneState = () => ({
     decisions: new Map([...state.decisions].map(([id, row]) => [id, { ...row }])),
@@ -119,20 +120,22 @@ function makeRepo() {
     async updatePlacementLifecycle(id: string, update: any, tx?: unknown) {
       state.calls.push(`update lifecycle ${tx === transaction}`);
       state.lifecycleUpdateCalls++;
+      state.lifecycleUpdates.push({ ...update });
       if (state.updateError || state.lifecycleUpdateCalls === state.updateErrorOnCall) {
         throw state.updateError ?? new Error("update failed");
       }
       const old = state.placements.get(id);
       if (!old) return null;
+      const at = update.at ?? new Date(state.lifecycleUpdateCalls);
       const row = {
         ...old,
         status: update.status,
-        updatedAt: new Date(),
+        updatedAt: at,
         ...(update.status === "revoked"
-          ? { revokedBy: update.actor, revokedAt: new Date(), revocationRationale: update.rationale }
+          ? { revokedBy: update.actor, revokedAt: at, revocationRationale: update.rationale }
           : {
             supersededBy: update.actor,
-            supersededAt: new Date(),
+            supersededAt: at,
             supersedeRationale: update.rationale,
             supersededByPlacementId: update.supersededByPlacementId,
           }),
@@ -284,6 +287,40 @@ describe("Phase 4B — Student Credit Placement service", () => {
     expect(result.oldPlacement.status).toBe("superseded");
     expect(result.newPlacement.status).toBe("active");
     expect(result.newPlacement.supersedesPlacementId).toBe(old.id);
+  });
+
+  it("uses one immutable timestamp across the two supersession updates", async () => {
+    const { service, state } = serviceFor();
+    const old = await service.createPlacement(createInput());
+
+    await service.supersedePlacement({
+      oldPlacementId: old.id,
+      requirementId: "requirement-2",
+      actor: "actor-2",
+      rationale: "Recorded replacement",
+    });
+
+    const updates = state.lifecycleUpdates;
+    expect(updates).toHaveLength(2);
+    expect(updates[0]).toMatchObject({
+      status: "superseded",
+      actor: "actor-2",
+      rationale: "Recorded replacement",
+    });
+    expect(updates[0].supersededByPlacementId).toBeUndefined();
+    expect(updates[1]).toMatchObject({
+      status: "superseded",
+      actor: "actor-2",
+      rationale: "Recorded replacement",
+      supersededByPlacementId: "placement-2",
+    });
+    expect(updates[1]).toEqual({
+      ...updates[0],
+      supersededByPlacementId: "placement-2",
+    });
+    expect(updates[0].at).toBeInstanceOf(Date);
+    expect(updates[1].at).toBe(updates[0].at);
+    expect(state.placements.get(old.id).supersededAt).toBe(updates[0].at);
   });
 
   it("supersedes an active placement with a distinct identity", async () => {
@@ -541,5 +578,60 @@ describe("Phase 4B — Student Credit Placement service", () => {
       return;
     }
     throw new Error("expected validation error");
+  });
+
+  it("adds a forward migration that freezes terminal placement lifecycle fields", () => {
+    const sql = readFileSync(join(
+      process.cwd(),
+      "supabase/migrations/20260916020000_phase4b_student_credit_placement_lifecycle_hardening.sql",
+    ), "utf8");
+    const start = sql.indexOf("CREATE OR REPLACE FUNCTION student_cp_guard_terminal_updates()");
+    const end = sql.indexOf("CREATE TRIGGER student_cp_guard_terminal_updates", start);
+    const guard = sql.slice(start, end);
+
+    expect(start).toBeGreaterThanOrEqual(0);
+    expect(end).toBeGreaterThan(start);
+    expect(sql).toContain("BEFORE UPDATE ON student_credit_placements");
+    expect(guard).toContain("OLD.status = 'revoked'");
+    expect(guard).toContain("OLD.status = 'superseded'");
+    expect(guard).toContain("NEW.status IS DISTINCT FROM OLD.status");
+    expect(guard).toContain("OLD.revoked_by IS DISTINCT FROM NEW.revoked_by");
+    expect(guard).toContain("OLD.revoked_at IS DISTINCT FROM NEW.revoked_at");
+    expect(guard).toContain("OLD.revocation_rationale IS DISTINCT FROM NEW.revocation_rationale");
+    expect(guard).toContain("OLD.superseded_by IS DISTINCT FROM NEW.superseded_by");
+    expect(guard).toContain("OLD.superseded_at IS DISTINCT FROM NEW.superseded_at");
+    expect(guard).toContain("OLD.supersede_rationale IS DISTINCT FROM NEW.supersede_rationale");
+    expect(guard).toContain("OLD.superseded_by_placement_id IS NOT NULL");
+    expect(guard).toContain(
+      "NEW.superseded_by_placement_id IS DISTINCT FROM OLD.superseded_by_placement_id",
+    );
+    expect(guard.match(/RAISE EXCEPTION/g)).toHaveLength(4);
+    expect(guard).toContain("terminal student credit placement status is immutable");
+    expect(guard).toContain("revoked student credit placement audit is immutable");
+    expect(guard).toContain("superseded student credit placement audit is immutable");
+    expect(guard).toContain("reciprocal child link is immutable once populated");
+    expect(guard).toContain("NULL -> non-null");
+    expect(guard).not.toContain("OLD.status = 'active'");
+    expect(guard).not.toContain("NEW.superseded_by_placement_id IS NULL");
+  });
+
+  it("keeps terminal update protection separate from deferred graph validation", () => {
+    const sql = readFileSync(join(
+      process.cwd(),
+      "supabase/migrations/20260916020000_phase4b_student_credit_placement_lifecycle_hardening.sql",
+    ), "utf8");
+    const priorSql = readFileSync(join(
+      process.cwd(),
+      "supabase/migrations/20260916010000_phase4b_student_credit_placement.sql",
+    ), "utf8");
+
+    expect(sql).toContain("DROP TRIGGER IF EXISTS student_cp_guard_terminal_updates");
+    expect(sql).toContain(
+      "CREATE TRIGGER student_cp_guard_terminal_updates\n  BEFORE UPDATE ON student_credit_placements",
+    );
+    expect(priorSql).toContain("DEFERRABLE INITIALLY DEFERRED");
+    expect(sql).not.toMatch(/UPDATE\s+student_credit_placements/i);
+    expect(sql).not.toMatch(/INSERT\s+INTO\s+student_credit_placements/i);
+    expect(sql).not.toContain("DELETE FROM student_credit_placements");
   });
 });

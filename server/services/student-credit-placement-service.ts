@@ -311,10 +311,12 @@ export function createStudentCreditPlacementService(
 
       // Release the old active identity before inserting the replacement. The
       // transaction runner owns rollback, so any later failure restores it.
+      const occurredAt = new Date();
       const transitionedOld = await repository.updatePlacementLifecycle(oldId, {
         status: "superseded",
         actor: input.actor,
         rationale: input.rationale,
+        at: occurredAt,
       }, tx);
       if (!transitionedOld) throw notFoundError("Student credit placement disappeared during supersede", { placementId: oldId });
 
@@ -344,6 +346,7 @@ export function createStudentCreditPlacementService(
         status: "superseded",
         actor: input.actor,
         rationale: input.rationale,
+        at: occurredAt,
         supersededByPlacementId: newPlacement.id,
       }, tx);
       if (!updatedOld) throw notFoundError("Student credit placement disappeared during supersede", { placementId: oldId });
@@ -365,10 +368,12 @@ export function createStudentCreditPlacementService(
           status: placement.status,
         });
       }
+      const occurredAt = new Date();
       const updated = await repository.updatePlacementLifecycle(placementId, {
         status: "revoked",
         actor: input.actor,
         rationale: input.rationale,
+        at: occurredAt,
       }, tx);
       if (!updated) throw notFoundError("Student credit placement disappeared during revoke", { placementId });
       return updated;
