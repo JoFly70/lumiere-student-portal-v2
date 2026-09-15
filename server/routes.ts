@@ -4,7 +4,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import express from "express";
 import { storage } from "./storage";
-import { supabaseAdmin, isSupabaseConfigured } from "./lib/supabase";
+import { supabaseAdmin, createUserAuthClient, isSupabaseConfigured } from "./lib/supabase";
 import { logger } from "./lib/logger";
 import { generateRoadmap } from "./roadmap-generator";
 import { db } from "./lib/db";
@@ -176,8 +176,10 @@ window.ENV = {
         return res.status(500).json({ error: "Failed to create user profile" });
       }
 
-      // Sign in the user to get session tokens
-      const { data: signInData, error: signInError } = await supabaseAdmin.auth.signInWithPassword({
+      // Sign in the user to get session tokens — isolated client so the
+      // shared service-role client never acquires a user session.
+      const userAuthClient = createUserAuthClient();
+      const { data: signInData, error: signInError } = await userAuthClient.auth.signInWithPassword({
         email,
         password,
       });
@@ -366,8 +368,10 @@ window.ENV = {
         return res.status(503).json({ error: "Authentication service unavailable" });
       }
 
-      // Authenticate with Supabase
-      const { data, error } = await supabaseAdmin.auth.signInWithPassword({
+      // Authenticate with Supabase — isolated client so the shared
+      // service-role client never acquires a user session.
+      const userAuthClient = createUserAuthClient();
+      const { data, error } = await userAuthClient.auth.signInWithPassword({
         email,
         password,
       });

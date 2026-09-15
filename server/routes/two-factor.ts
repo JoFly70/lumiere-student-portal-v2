@@ -6,7 +6,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { requireAuth } from '../middleware/auth';
 import { logger } from '../lib/logger';
-import { supabaseAdmin } from '../lib/supabase';
+import { supabaseAdmin, createUserAuthClient } from '../lib/supabase';
 import {
   generate2FASecret,
   verify2FAToken,
@@ -189,8 +189,10 @@ router.post('/disable', async (req, res) => {
 
     const { password } = schema.parse(req.body);
 
-    // Verify password before disabling 2FA
-    const { error: authError } = await supabaseAdmin.auth.signInWithPassword({
+    // Verify password before disabling 2FA — isolated client so the shared
+    // service-role client never acquires a user session.
+    const userAuthClient = createUserAuthClient();
+    const { error: authError } = await userAuthClient.auth.signInWithPassword({
       email: user.email,
       password,
     });

@@ -38,3 +38,24 @@ export function getSupabaseClient(anonKey: string) {
   }
   return createClient(supabaseUrl, anonKey);
 }
+
+// End-user password authentication must NEVER run on the shared
+// service-role client: signInWithPassword mutates the client's active
+// session, so a shared client would silently start sending that user's JWT
+// on every subsequent REST call (breaking service-role authority and
+// cross-request isolation). Each call gets an isolated client with no
+// persisted session.
+const userAuthAnonKey = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+
+export function createUserAuthClient() {
+  if (!supabaseUrl || !userAuthAnonKey) {
+    throw new Error('User auth client unavailable: SUPABASE_URL and SUPABASE_ANON_KEY must be configured');
+  }
+  return createClient(supabaseUrl, userAuthAnonKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+      detectSessionInUrl: false,
+    },
+  });
+}
