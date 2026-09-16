@@ -7,6 +7,7 @@ import {
   ADMIN_STUDENTS_PATH,
   adminTabFromSearch,
   adminStudentWorkspacePath,
+  academicCreditRows,
   attentionItemLabel,
   classifyWorkspaceQueryError,
   diagnosticItemStatus,
@@ -227,6 +228,84 @@ describe("admin student workspace presentation", () => {
     expect(vm.program).toBe(metadata.program);
     expect(vm.programVersion).toBe(metadata.programVersion);
     expect(vm.snapshot).toBe(metadata.snapshot);
+  });
+  it("presents coherent canonical academic rows without selecting latest state", () => {
+    const latestVerification = { id: "verification-latest", creditRecordId: "credit-1", action: "verified", seq: 9 };
+    const latestDecision = { id: "decision-latest", creditRecordId: "credit-1", programAssignmentId: "assignment-1", action: "accepted", creditsAwarded: "3.00", seq: 7 };
+    const placement = {
+      id: "placement-1",
+      studentCreditDecisionId: "decision-latest",
+      programAssignmentId: "assignment-1",
+      requirementId: "requirement-1",
+      status: "superseded",
+      rationale: "Canonical history",
+      provenance: { evidenceExcerptId: "excerpt-1" },
+      supersededByPlacementId: "placement-2",
+    };
+    const vm = toWorkspaceViewModel({
+      report: { status: "COMPOSED" },
+      needsAttention: { groups: { manualReview: [], missing: [], partial: [], conflict: [] } },
+      displayLabels: {},
+      academicDetail: {
+        academicSources: [{ id: "source-1", studentId: "student-1", title: "Official transcript" }],
+        creditRecords: [{ id: "credit-1", studentId: "student-1", sourceId: "source-1", rawTitle: "Calculus I" }],
+        latestVerifications: { "credit-1": latestVerification },
+        latestDecisions: { "credit-1": latestDecision },
+        placements: [placement],
+      },
+    });
+    const rows = academicCreditRows(vm.academicDetail);
+    expect(rows).toEqual([{
+      creditRecord: expect.objectContaining({ id: "credit-1", rawTitle: "Calculus I" }),
+      source: expect.objectContaining({ id: "source-1", title: "Official transcript" }),
+      latestVerification,
+      latestDecision,
+      placements: [placement],
+    }]);
+    expect(rows[0].placements[0]).toMatchObject({
+      status: "superseded",
+      provenance: { evidenceExcerptId: "excerpt-1" },
+      supersededByPlacementId: "placement-2",
+    });
+  });
+  it("renders operator academic detail as read-only canonical presentation", async () => {
+    useQueryMock.mockReturnValueOnce({
+      isLoading: false,
+      isError: false,
+      data: {
+        student: { id: "student-1", first_name: "Ada", last_name: "Lovelace", email: "ada@example.test" },
+        assignment: { id: "assignment-1" },
+        program: { id: "program-1", name: "Computer Science" },
+        programVersion: { id: "version-1", versionLabel: "2025" },
+        report: { status: "COMPOSED" },
+        needsAttention: { groups: { manualReview: [], missing: [], partial: [], conflict: [] } },
+        displayLabels: { requirements: { "requirement-1": { label: "Quantitative reasoning", source: "canonical" } } },
+        academicDetail: {
+          academicSources: [{ id: "source-1", title: "Official transcript", sourceType: "institution_transcript", status: "verified" }],
+          creditRecords: [{ id: "credit-1", sourceId: "source-1", rawCourseCode: "MATH 101", rawTitle: "Calculus I", normalizedCredits: "3.00", status: "verified" }],
+          latestVerifications: { "credit-1": { id: "verification-1", creditRecordId: "credit-1", action: "verified" } },
+          latestDecisions: { "credit-1": { id: "decision-1", creditRecordId: "credit-1", action: "accepted", creditsAwarded: "3.00" } },
+          placements: [
+            { id: "placement-1", studentCreditDecisionId: "decision-1", requirementId: "requirement-1", status: "active", rationale: "Canonical placement", provenance: { sourceId: "source-1" } },
+            { id: "placement-history", studentCreditDecisionId: "decision-older", requirementId: "requirement-1", status: "superseded", rationale: "Earlier recorded placement", provenance: { sourceId: "source-1" }, supersededByPlacementId: "placement-1" },
+          ],
+        },
+      },
+    } as any);
+    const { default: AdminStudentWorkspace } = await import("@/pages/admin-student-workspace");
+    const markup = renderToStaticMarkup(React.createElement(AdminStudentWorkspace));
+    expect(markup).toContain("Operator academic detail");
+    expect(markup).toContain("Official transcript");
+    expect(markup).toContain("MATH 101");
+    expect(markup).toContain("Latest verification");
+    expect(markup).toContain("Latest decision");
+    expect(markup).toContain("Quantitative reasoning");
+    expect(markup).toContain("Lifecycle &amp; provenance");
+    expect(markup).toContain("Historical placement records");
+    expect(markup).toContain("Earlier recorded placement");
+    expect(markup).toContain("Read-only canonical view");
+    expect(markup).toContain("No academic values are recomputed here");
+    expect(markup).not.toContain("<button");
   });
   it("returns no-attention empty state for complete report", () => {
     const vm = toWorkspaceViewModel({ student: {}, report: { status: "COMPOSED", phase3Output: { results: [] }, integrationDiagnostics: [] }, needsAttention: { groups: { manualReview: [], missing: [], partial: [], conflict: [] } }, displayLabels: {}, snapshot: {} } as any);

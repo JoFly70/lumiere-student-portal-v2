@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
+import type { ReactNode } from "react";
 import { useParams, Link } from "wouter";
-import { AlertCircle, ArrowLeft, ChevronDown, Fingerprint, RefreshCw, ShieldCheck } from "lucide-react";
+import { AlertCircle, ArrowLeft, ChevronDown, Database, FileCheck2, Fingerprint, RefreshCw, ShieldCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +14,7 @@ import {
   diagnosticItemStatus,
   isDiagnosticAttentionItem,
   selectWorkspaceState,
+  academicCreditRows,
   type WorkspaceAttentionItem,
   type WorkspaceRecord,
 } from "./admin-student-workspace-presentation";
@@ -30,6 +32,17 @@ function Evidence({ item }: { item: WorkspaceAttentionItem }) {
     </summary>
     <pre className="mt-3 overflow-auto rounded-md bg-muted/60 p-3 text-xs text-muted-foreground">{JSON.stringify({ reason: item.reason, evidence: item.evidence, provenance: item.provenance, requiredAmount: item.requiredAmount, appliedAmount: item.appliedAmount, remainingAmount: item.remainingAmount }, null, 2)}</pre>
   </details>;
+}
+function displayDate(value: unknown): string {
+  if (value instanceof Date) return value.toISOString();
+  return typeof value === "string" && value ? value : "Not provided";
+}
+function DetailField({ label, children }: { label: string; children: ReactNode }) {
+  return <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</dt><dd className="mt-1 text-sm">{children}</dd></div>;
+}
+function Reference({ value: reference }: { value: unknown }) {
+  if (typeof reference !== "string" || !reference) return null;
+  return <p className="mt-2 font-mono text-[11px] text-muted-foreground">Reference: {reference}</p>;
 }
 export default function AdminStudentWorkspace() {
   const { studentId = "" } = useParams<{ studentId: string }>();
@@ -52,6 +65,16 @@ export default function AdminStudentWorkspace() {
       ? String((entry as WorkspaceRecord).label) : undefined;
   };
   const name = value(student, "preferred_name", "preferredName") !== "Not provided" ? value(student, "preferred_name", "preferredName") : `${value(student, "first_name", "firstName")} ${value(student, "last_name", "lastName")}`;
+  const academicRows = academicCreditRows(vm.academicDetail);
+  const placementLabel = (placement: WorkspaceRecord) => {
+    const requirementId = placement.requirementId;
+    const academicRuleId = placement.academicRuleId;
+    return label("requirements", requirementId)
+      ?? (typeof academicRuleId === "string"
+        ? vm.labels.academicRules[academicRuleId]?.label
+        : undefined)
+      ?? "Canonical placement";
+  };
   return <div className="mx-auto max-w-6xl space-y-6">
     <Link href={ADMIN_STUDENTS_PATH} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" />Back to Students</Link>
     <header className="flex flex-col justify-between gap-4 border-b border-border/70 pb-6 md:flex-row md:items-end">
@@ -64,6 +87,47 @@ export default function AdminStudentWorkspace() {
        <Card><CardHeader><CardTitle className="text-sm text-muted-foreground">Snapshot</CardTitle></CardHeader><CardContent><p className="text-sm">{String(snapshot.asOf ?? vm.asOf ?? "As-of unavailable")}</p><p className="mt-2 flex items-center gap-1 truncate font-mono text-xs text-muted-foreground"><Fingerprint className="h-3.5 w-3.5 shrink-0" />{String(snapshot.fingerprint ?? vm.snapshotFingerprint ?? "Fingerprint unavailable")}</p></CardContent></Card>
     </section>
       <Card className={vm.attention.hasAttention ? "border-amber-500/40" : ""}><CardHeader><div className="flex items-center justify-between"><div><CardTitle>Needs attention</CardTitle><p className="mt-1 text-sm text-muted-foreground">Prioritized items retained from the canonical report.</p></div><Badge variant={vm.attention.hasAttention ? "destructive" : "secondary"}>{vm.attention.total} items</Badge></div></CardHeader><CardContent>{vm.attention.total === 0 ? <div className="rounded-md bg-muted/50 px-4 py-8 text-center text-sm text-muted-foreground">No manual-review, conflict, missing, or partial items reported.</div> : <div className="divide-y">{vm.attention.items.map((item, i) => <div key={i} className="py-3">{isDiagnosticAttentionItem(item) ? <div className="flex items-center gap-2">{diagnosticItemStatus(item) && <Badge variant="outline">{diagnosticItemStatus(item)}</Badge>}<span className="font-medium">{item.kind === "integration-diagnostic" ? "Integration diagnostic" : "Diagnostic"}</span><span className="text-sm text-muted-foreground">{typeof item.diagnostic === "object" ? JSON.stringify(item.diagnostic) : String(item.diagnostic)}</span></div> : <><div className="flex flex-wrap items-center gap-2">{attentionItemStatus(vm, item) && <Badge variant="outline">{attentionItemStatus(vm, item)}</Badge>}<span className="font-medium">{attentionItemLabel(vm.labels, item)}</span>{item.reason && <span className="text-sm text-muted-foreground">· {item.reason}</span>}</div><Evidence item={item} /></>}</div>)}</div>}</CardContent></Card>
+    <section aria-labelledby="operator-academic-detail" className="space-y-4">
+      <div>
+        <h2 id="operator-academic-detail" className="text-xl font-semibold">Operator academic detail</h2>
+        <p className="mt-1 text-sm text-muted-foreground">Canonical source, credit, latest verification, latest decision, and placement records. No academic values are recomputed here.</p>
+      </div>
+      {academicRows.length === 0
+        ? <Card><CardContent className="py-10 text-center text-sm text-muted-foreground">No canonical credit records are available.</CardContent></Card>
+        : academicRows.map((row) => {
+          const credit = row.creditRecord;
+          const source = row.source;
+          const verification = row.latestVerification;
+          const decision = row.latestDecision;
+          return <Card key={String(credit.id)}>
+            <CardHeader className="space-y-2">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div><CardTitle>{value(credit, "rawCourseCode") !== "Not provided" ? `${value(credit, "rawCourseCode")} · ${value(credit, "rawTitle")}` : value(credit, "rawTitle")}</CardTitle><p className="mt-1 text-sm text-muted-foreground">{value(credit, "term")} · {value(credit, "recordType")}</p></div>
+                <Badge variant="outline">{value(credit, "status")}</Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <dl className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <DetailField label="Source"><span className="font-medium">{source ? value(source, "title") : "Source unavailable"}</span><span className="block text-muted-foreground">{source ? `${value(source, "sourceType")} · ${value(source, "status")}` : "Canonical source record not supplied"}</span></DetailField>
+                <DetailField label="Credit"><span className="font-medium">{value(credit, "normalizedCredits", "rawCredits")} credits</span><span className="block text-muted-foreground">Grade {value(credit, "rawGrade")} · Level {value(credit, "normalizedLevel", "rawLevel")}</span></DetailField>
+                <DetailField label="Latest verification">{verification ? <><Badge variant="secondary">{value(verification, "action")}</Badge><span className="mt-1 block text-muted-foreground">{displayDate(verification.createdAt)}</span></> : "No verification recorded"}</DetailField>
+                <DetailField label="Latest decision">{decision ? <><Badge variant="secondary">{value(decision, "action")}</Badge><span className="mt-1 block text-muted-foreground">{value(decision, "creditsAwarded")} credits awarded · {displayDate(decision.createdAt)}</span></> : "No decision for the active assignment"}</DetailField>
+              </dl>
+              <div className="border-t pt-4">
+                <h3 className="flex items-center gap-2 text-sm font-semibold"><FileCheck2 className="h-4 w-4" />Placement</h3>
+                {row.placements.length === 0
+                  ? <p className="mt-2 text-sm text-muted-foreground">No placement tied to the latest decision.</p>
+                  : <div className="mt-3 grid gap-3 md:grid-cols-2">{row.placements.map((placement) => <div key={String(placement.id)} className="rounded-md border bg-muted/20 p-3"><div className="flex flex-wrap items-center justify-between gap-2"><span className="font-medium">{placementLabel(placement)}</span><Badge variant="outline">{value(placement, "status")}</Badge></div><p className="mt-2 text-sm text-muted-foreground">{value(placement, "rationale")}</p><details className="mt-3"><summary className="cursor-pointer text-xs font-medium">Lifecycle & provenance</summary><dl className="mt-3 grid gap-3 sm:grid-cols-2"><DetailField label="Recorded">{displayDate(placement.createdAt)}</DetailField><DetailField label="Updated">{displayDate(placement.updatedAt)}</DetailField><DetailField label="Revocation">{value(placement, "revocationRationale")}</DetailField><DetailField label="Supersession">{value(placement, "supersedeRationale")}</DetailField></dl><pre className="mt-3 overflow-auto rounded bg-muted p-3 text-xs text-muted-foreground">{JSON.stringify({ provenance: placement.provenance, metadata: placement.metadata }, null, 2)}</pre><Reference value={placement.id} /></details></div>)}</div>}
+              </div>
+              <details className="border-t pt-4">
+                <summary className="flex cursor-pointer items-center gap-2 text-sm font-semibold"><Database className="h-4 w-4" />Provenance references</summary>
+                <div className="mt-3 grid gap-3 md:grid-cols-3"><Reference value={source?.id} /><Reference value={credit.id} /><Reference value={decision?.basisClaimVersionId} /></div>
+              </details>
+            </CardContent>
+          </Card>;
+        })}
+    </section>
+    {vm.academicDetail.placements.filter((placement) => !academicRows.some((row) => row.placements.includes(placement))).length > 0 && <Card><CardHeader><CardTitle>Historical placement records</CardTitle><p className="text-sm text-muted-foreground">Placements retained for earlier canonical decisions in this active assignment.</p></CardHeader><CardContent className="divide-y">{vm.academicDetail.placements.filter((placement) => !academicRows.some((row) => row.placements.includes(placement))).map((placement) => <div key={String(placement.id)} className="py-3"><div className="flex items-center justify-between gap-2"><span className="font-medium">{placementLabel(placement)}</span><Badge variant="outline">{value(placement, "status")}</Badge></div><p className="mt-1 text-sm text-muted-foreground">{value(placement, "rationale")}</p><details className="mt-2"><summary className="cursor-pointer text-xs font-medium">Lifecycle & provenance</summary><pre className="mt-2 overflow-auto rounded bg-muted p-3 text-xs text-muted-foreground">{JSON.stringify({ provenance: placement.provenance, metadata: placement.metadata, supersedesPlacementId: placement.supersedesPlacementId, supersededByPlacementId: placement.supersededByPlacementId }, null, 2)}</pre><Reference value={placement.id} /></details></div>)}</CardContent></Card>}
     <Card><CardHeader><CardTitle>Report provenance</CardTitle></CardHeader><CardContent className="grid gap-4 text-sm md:grid-cols-3"><div><p className="text-muted-foreground">Report status</p><p className="mt-1 font-medium">{vm.provenance.reportStatus}</p></div><div><p className="text-muted-foreground">Reasons</p><p className="mt-1 font-medium">{vm.provenance.reasons.length || "None reported"}</p></div><div><p className="text-muted-foreground">Diagnostics</p><p className="mt-1 font-medium">{vm.provenance.integrationDiagnostics.length + vm.provenance.diagnostics.length || "None reported"}</p></div></CardContent></Card>
   </div>;
 }

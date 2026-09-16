@@ -17,6 +17,9 @@ import type { DegreeEvaluationSnapshotContext } from "@shared/degree-evaluation-
 import type {
   DegreeProgressReport,
 } from "./degree-progress-service";
+import type { StudentAcademicRecord } from "./student-academic-service";
+import type { StudentCreditPlacement } from "@shared/student-credit-placement-schema";
+import type { PlacementReadModel } from "../repositories/student-credit-placement-repo";
 
 export type WorkspaceLabelSource = "canonical" | "id-fallback";
 
@@ -45,6 +48,10 @@ export interface WorkspaceDependencies {
   readonly getProgress: (
     context: DegreeEvaluationSnapshotContext,
   ) => Promise<DegreeProgressReport>;
+  readonly getAcademicRecord: (studentId: string) => Promise<StudentAcademicRecord>;
+  readonly listPlacementsForAssignment: (
+    programAssignmentId: string,
+  ) => Promise<PlacementReadModel[]>;
   /**
    * Canonical display lookups are injectable so the presentation boundary can
    * be tested without replacing the resolver itself.  The repository
@@ -66,6 +73,15 @@ export interface WorkspaceLabelInput {
   readonly program: unknown;
   readonly programVersion: unknown;
   readonly report: DegreeProgressReport;
+  readonly academicDetail: WorkspaceAcademicDetail;
+}
+
+export interface WorkspaceAcademicDetail {
+  readonly academicSources: readonly unknown[];
+  readonly creditRecords: readonly unknown[];
+  readonly latestVerifications: Readonly<Record<string, unknown>>;
+  readonly latestDecisions: Readonly<Record<string, unknown>>;
+  readonly placements: readonly StudentCreditPlacement[];
 }
 
 export interface AdminStudentWorkspace {
@@ -78,6 +94,7 @@ export interface AdminStudentWorkspace {
   readonly report: DegreeProgressReport;
   readonly needsAttention: NeedsAttentionPresentation;
   readonly displayLabels: WorkspaceDisplayLabels;
+  readonly academicDetail: WorkspaceAcademicDetail;
   readonly snapshot: {
     readonly asOf: string | null;
     readonly fingerprint: string | null;
@@ -122,6 +139,93 @@ export class WorkspaceContextMismatchError extends Error {
     super("Degree progress context mismatch");
     this.name = "WorkspaceContextMismatchError";
   }
+}
+
+function asRecordMap(value: unknown): Record<string, unknown> {
+  return record(value) ?? {};
+}
+
+function validateAcademicDetail(
+  value: StudentAcademicRecord,
+  context: DegreeEvaluationSnapshotContext,
+  placementRows: readonly PlacementReadModel[],
+): WorkspaceAcademicDetail {
+  const academicStudentId = getFirstString(value.student, ["id", "studentId", "student_id"]);
+  const assignmentId = getString(value.activeProgramAssignment, "id");
+  const assignmentStudentId = getFirstString(
+    value.activeProgramAssignment,
+    ["studentId", "student_id"],
+  );
+  const programVersionId = getFirstString(
+    value.activeProgramAssignment,
+    ["programVersionId", "program_version_id"],
+  );
+  const returnedVersion = record(value.programVersion)?.version
+    ?? record(value.programVersion)?.programVersion;
+  if (
+    academicStudentId !== context.studentId
+    || assignmentId !== context.programAssignmentId
+    || assignmentStudentId !== context.studentId
+    || programVersionId !== context.programVersionId
+    || getString(returnedVersion, "id") !== context.programVersionId
+  ) throw new WorkspaceContextMismatchError();
+
+  const sourceIds = new Set<string>();
+  for (const source of value.academicSources) {
+    const id = getString(source, "id");
+    if (!id || getFirstString(source, ["studentId", "student_id"]) !== context.studentId) {
+      throw new WorkspaceContextMismatchError();
+    }
+    sourceIds.add(id);
+  }
+  const creditRecordIds = new Set<string>();
+  for (const creditRecord of value.creditRecords) {
+    const id = getString(creditRecord, "id");
+    const sourceId = getFirstString(creditRecord, ["sourceId", "source_id"]);
+    if (
+      !id
+      || getFirstString(creditRecord, ["studentId", "student_id"]) !== context.studentId
+      || !sourceId
+      || !sourceIds.has(sourceId)
+    ) throw new WorkspaceContextMismatchError();
+    creditRecordIds.add(id);
+  }
+  const latestVerifications = asRecordMap(value.latestVerifications);
+  for (const [creditRecordId, event] of Object.entries(latestVerifications)) {
+    if (
+      !creditRecordIds.has(creditRecordId)
+      || getFirstString(event, ["creditRecordId", "credit_record_id"]) !== creditRecordId
+    ) throw new WorkspaceContextMismatchError();
+  }
+  const latestDecisions = asRecordMap(value.latestDecisions);
+  for (const [creditRecordId, decision] of Object.entries(latestDecisions)) {
+    if (
+      !creditRecordIds.has(creditRecordId)
+      || getFirstString(decision, ["creditRecordId", "credit_record_id"]) !== creditRecordId
+      || getFirstString(decision, ["programAssignmentId", "program_assignment_id"])
+        !== context.programAssignmentId
+    ) throw new WorkspaceContextMismatchError();
+  }
+  for (const { placement, decision, creditRecord } of placementRows) {
+    if (
+      placement.programAssignmentId !== context.programAssignmentId
+      || decision.id !== placement.studentCreditDecisionId
+      || decision.programAssignmentId !== context.programAssignmentId
+      || creditRecord.id !== decision.creditRecordId
+      || creditRecord.studentId !== context.studentId
+      || !creditRecordIds.has(creditRecord.id)
+      || !sourceIds.has(creditRecord.sourceId)
+    ) {
+      throw new WorkspaceContextMismatchError();
+    }
+  }
+  return {
+    academicSources: value.academicSources,
+    creditRecords: value.creditRecords,
+    latestVerifications,
+    latestDecisions,
+    placements: placementRows.map(({ placement }) => placement),
+  };
 }
 
 function meaningful(value: unknown): value is string {
@@ -306,6 +410,7 @@ async function resolveDefaultLabels(
 ): Promise<WorkspaceDisplayLabels> {
   const ids = new Map<string, Set<string>>();
   collectCanonicalIds(input.report, ids);
+  collectCanonicalIds(input.academicDetail.placements, ids);
   const program = record(input.program);
   const version = record(input.programVersion);
   const programId = getString(program, "id");
@@ -569,6 +674,9 @@ export async function loadAdminStudentWorkspace(
     // 500 response.
     throw new WorkspaceContextMismatchError();
   }
+  const academicRecord = await dependencies.getAcademicRecord(studentId);
+  const placementRows = await dependencies.listPlacementsForAssignment(assignmentId);
+  const academicDetail = validateAcademicDetail(academicRecord, context, placementRows);
   const resolveLabels = dependencies.resolveDisplayLabels ?? dependencies.resolveLabels;
   const getRequirementDisplay = dependencies.getRequirementDisplay
     ?? getRequirementWithProgramVersion;
@@ -581,6 +689,7 @@ export async function loadAdminStudentWorkspace(
       program,
       programVersion,
       report,
+      academicDetail,
     })
     : await resolveDefaultLabels({
       student,
@@ -588,10 +697,12 @@ export async function loadAdminStudentWorkspace(
       program,
       programVersion,
       report,
+      academicDetail,
     }, getRequirementDisplay, getAcademicRuleDisplay);
   const displayLabels = normalizeLabels(labels, (() => {
     const ids = new Map<string, Set<string>>();
     collectCanonicalIds(report, ids);
+    collectCanonicalIds(academicDetail.placements, ids);
     addId(ids, "programs", getString(program, "id"));
     addId(ids, "programVersions", getString(programVersion, "id"));
     return ids;
@@ -611,6 +722,7 @@ export async function loadAdminStudentWorkspace(
     report,
     needsAttention: attention(report),
     displayLabels,
+    academicDetail,
     snapshot,
     asOf: snapshot.asOf,
     snapshotFingerprint: snapshot.fingerprint,
