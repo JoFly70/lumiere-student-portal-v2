@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function Login() {
   const [, setLocation] = useLocation();
-  const { login, signup, isAuthenticated } = useAuth();
+  const { login, signup, isAuthenticated, user } = useAuth();
 
   // Login form state
   const [loginEmail, setLoginEmail] = useState('');
@@ -27,7 +27,7 @@ export default function Login() {
 
   // Redirect if already authenticated
   if (isAuthenticated) {
-    setLocation('/flight-deck');
+    setLocation(user?.role === 'admin' ? '/admin' : user?.role === 'coach' || user?.role === 'staff' ? '/support' : '/flight-deck');
     return null;
   }
 
@@ -38,7 +38,6 @@ export default function Login() {
 
     try {
       await login(loginEmail, loginPassword);
-      setLocation('/flight-deck');
     } catch (error) {
       setLoginError(error instanceof Error ? error.message : 'Login failed');
     } finally {
@@ -53,9 +52,6 @@ export default function Login() {
 
     try {
       await signup(signupEmail, signupPassword, signupName);
-      // If signup succeeds, the AuthProvider will handle navigation or show verification message
-      // For now, assume email verification is required
-      setLocation('/flight-deck');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Sign-up failed';
 
