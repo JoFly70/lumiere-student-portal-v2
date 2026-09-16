@@ -31,10 +31,10 @@ import {
 } from "lucide-react";
 import { apiRequest } from "@/lib/api";
 import { ProgramsManagement } from "@/components/programs-management";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import {
   adminStudentWorkspacePath,
-  adminTabFromLocation,
+  adminTabFromSearch,
   adminTabPath,
   type AdminTab,
 } from "./admin-student-workspace-presentation";
@@ -522,8 +522,9 @@ function AuditLogs() {
 
 // Main Admin Dashboard
 export default function Admin() {
-  const [location, setLocation] = useLocation();
-  const selectedTab = adminTabFromLocation(location);
+  const [, setLocation] = useLocation();
+  const search = useSearch();
+  const selectedTab = adminTabFromSearch(search);
   return (
     <div className="space-y-6">
       <div>

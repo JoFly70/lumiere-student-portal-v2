@@ -10,9 +10,8 @@ export const ADMIN_TABS = ["overview", "users", "students", "programs", "logs"] 
 export type AdminTab = typeof ADMIN_TABS[number];
 export const ADMIN_STUDENTS_PATH = "/admin?tab=students";
 
-export function adminTabFromLocation(location: string): AdminTab {
-  const query = location.includes("?") ? location.slice(location.indexOf("?") + 1) : "";
-  const tab = new URLSearchParams(query).get("tab");
+export function adminTabFromSearch(search: string): AdminTab {
+  const tab = new URLSearchParams(search).get("tab");
   return ADMIN_TABS.includes(tab as AdminTab) ? tab as AdminTab : "overview";
 }
 

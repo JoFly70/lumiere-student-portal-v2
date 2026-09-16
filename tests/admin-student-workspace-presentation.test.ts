@@ -5,7 +5,7 @@ import {
   ADMIN_STUDENT_WORKSPACE_QUERY_KEY,
   ADMIN_STUDENT_WORKSPACE_QUERY_OPTIONS,
   ADMIN_STUDENTS_PATH,
-  adminTabFromLocation,
+  adminTabFromSearch,
   adminStudentWorkspacePath,
   attentionItemLabel,
   classifyWorkspaceQueryError,
@@ -15,11 +15,30 @@ import {
 } from "@/pages/admin-student-workspace-presentation";
 
 const useQueryMock = vi.hoisted(() => vi.fn(() => ({ isLoading: true })));
+const useLocationMock = vi.hoisted(() => vi.fn());
+const useSearchMock = vi.hoisted(() => vi.fn());
+const setLocationMock = vi.hoisted(() => vi.fn());
+const tabsPropsMock = vi.hoisted(() => vi.fn());
 vi.stubGlobal("React", React);
-vi.mock("@tanstack/react-query", () => ({ useQuery: useQueryMock }));
+vi.mock("@tanstack/react-query", () => ({
+  useQuery: useQueryMock,
+  useMutation: vi.fn(),
+  useQueryClient: vi.fn(),
+}));
 vi.mock("wouter", () => ({
   useParams: () => ({ studentId: "student-1" }),
+  useLocation: useLocationMock,
+  useSearch: useSearchMock,
   Link: ({ children }: { children: unknown }) => children,
+}));
+vi.mock("@/components/ui/tabs", () => ({
+  Tabs: (props: Record<string, unknown>) => {
+    tabsPropsMock(props);
+    return null;
+  },
+  TabsContent: () => null,
+  TabsList: () => null,
+  TabsTrigger: () => null,
 }));
 
 describe("admin student workspace presentation", () => {
@@ -251,12 +270,28 @@ describe("admin student workspace presentation", () => {
     });
     expect(useQueryMock.mock.calls[0][0]).not.toHaveProperty("refetchInterval");
   });
-  it("defaults plain and invalid admin locations to Overview", () => {
-    expect(adminTabFromLocation("/admin")).toBe("overview");
-    expect(adminTabFromLocation("/admin?tab=unknown")).toBe("overview");
+  it("defaults missing and invalid admin search values to Overview", () => {
+    expect(adminTabFromSearch("")).toBe("overview");
+    expect(adminTabFromSearch("?tab=unknown")).toBe("overview");
   });
-  it("opens Students from the validated admin query parameter", () => {
+  it("opens Students from the Back destination under Wouter and navigates tab changes", async () => {
     expect(ADMIN_STUDENTS_PATH).toBe("/admin?tab=students");
-    expect(adminTabFromLocation(ADMIN_STUDENTS_PATH)).toBe("students");
+    useLocationMock.mockReturnValue(["/admin", setLocationMock]);
+    useSearchMock.mockReturnValue(new URL(ADMIN_STUDENTS_PATH, "https://example.test").search);
+    const { default: Admin } = await import("@/pages/admin");
+    renderToStaticMarkup(React.createElement(Admin));
+    const tabsProps = tabsPropsMock.mock.calls.at(-1)?.[0];
+    expect(useLocationMock).toHaveBeenCalled();
+    expect(useSearchMock).toHaveBeenCalled();
+    expect(tabsProps.value).toBe("students");
+    tabsProps.onValueChange("programs");
+    expect(setLocationMock).toHaveBeenCalledWith("/admin?tab=programs");
+  });
+  it("keeps plain Admin on Overview under Wouter", async () => {
+    useLocationMock.mockReturnValue(["/admin", setLocationMock]);
+    useSearchMock.mockReturnValue("");
+    const { default: Admin } = await import("@/pages/admin");
+    renderToStaticMarkup(React.createElement(Admin));
+    expect(tabsPropsMock.mock.calls.at(-1)?.[0].value).toBe("overview");
   });
 });
