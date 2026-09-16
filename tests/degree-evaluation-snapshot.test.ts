@@ -11,7 +11,10 @@ import {
   deriveDegreeEvaluationConflictFacts,
   readDegreeEvaluationSnapshotFacts,
 } from "../server/repositories/degree-evaluation-snapshot-repo";
-import { readDegreeEvaluationSnapshot } from "../server/services/degree-evaluation-snapshot-service";
+import {
+  readDegreeEvaluationSnapshot,
+  readDegreeEvaluationSnapshotInTransaction,
+} from "../server/services/degree-evaluation-snapshot-service";
 import { PgDialect } from "drizzle-orm/pg-core";
 import {
   claimEvidence,
@@ -87,6 +90,28 @@ describe("bounded degree-evaluation snapshot reader", () => {
     expect(assembleDegreeEvaluationSnapshot).toBeTypeOf("function");
     expect(degreeEvaluationSnapshotRepository).toBeDefined();
     expect(readDegreeEvaluationSnapshot).toBeTypeOf("function");
+    expect(readDegreeEvaluationSnapshotInTransaction).toBeTypeOf("function");
+  });
+
+  it("reads through a provided transaction and repository without starting a transaction", async () => {
+    const tx = {
+      execute: vi.fn().mockResolvedValue({
+        rows: [{ asOf: new Date(asOf) }],
+      }),
+    };
+    const repository = {
+      readFacts: vi.fn().mockResolvedValue(baseFacts()),
+    };
+
+    const output = await readDegreeEvaluationSnapshotInTransaction(
+      context,
+      tx as never,
+      repository as never,
+    );
+
+    expect(output.status).toBe("ACCEPTED");
+    expect(tx.execute).toHaveBeenCalledOnce();
+    expect(repository.readFacts).toHaveBeenCalledWith(context, tx);
   });
 
   it("accepts the exact empty-credit composition boundary", () => {

@@ -57,13 +57,34 @@ export interface RevokePlacementInput {
   rationale: string;
 }
 
+export interface AssertPlacementContextInput {
+  placementId: string;
+  studentId: string;
+  programAssignmentId: string;
+  programVersionId: string;
+}
+
+export interface StudentCreditPlacementMutationOptions {
+  readonly beforeWrite?: (tx: StudentCreditPlacementTx) => Promise<void>;
+}
+
 export interface StudentCreditPlacementService {
-  createPlacement(input: CreatePlacementInput): Promise<StudentCreditPlacement>;
-  supersedePlacement(input: SupersedePlacementInput): Promise<{
+  assertPlacementContext(input: AssertPlacementContextInput): Promise<StudentCreditPlacement>;
+  createPlacement(
+    input: CreatePlacementInput,
+    options?: StudentCreditPlacementMutationOptions,
+  ): Promise<StudentCreditPlacement>;
+  supersedePlacement(
+    input: SupersedePlacementInput,
+    options?: StudentCreditPlacementMutationOptions,
+  ): Promise<{
     oldPlacement: StudentCreditPlacement;
     newPlacement: StudentCreditPlacement;
   }>;
-  revokePlacement(input: RevokePlacementInput): Promise<StudentCreditPlacement>;
+  revokePlacement(
+    input: RevokePlacementInput,
+    options?: StudentCreditPlacementMutationOptions,
+  ): Promise<StudentCreditPlacement>;
 }
 
 type TransactionRunner = <T>(
@@ -127,6 +148,69 @@ export function createStudentCreditPlacementService(
   repository: StudentCreditPlacementRepository = studentCreditPlacementRepository,
   transactionRunner: TransactionRunner = defaultTransactionRunner,
 ): StudentCreditPlacementService {
+  async function lockPlacementIdentity(
+    decisionId: string,
+    assignmentId: string,
+    tx: StudentCreditPlacementTx,
+  ): Promise<string> {
+    // Decision writes serialize on the credit-record row. A placement must
+    // first lock/read the selected decision to discover that immutable row,
+    // then join the same credit-record lock domain before taking the assignment
+    // lock. This avoids inverting recordCreditDecision's credit-record-first
+    // order while retaining the existing decision and assignment locks.
+    await repository.lockDecisionRow(decisionId, tx);
+    const initialDecision = await repository.getDecisionContext(decisionId, tx);
+    if (!initialDecision) {
+      throw notFoundError("Student credit decision not found", {
+        studentCreditDecisionId: decisionId,
+      });
+    }
+    const creditRecordId = requireText(
+      initialDecision.creditRecord.id,
+      "creditRecordId",
+    );
+    await repository.lockCreditRecordRow(creditRecordId, tx);
+    await repository.lockAssignmentRow(assignmentId, tx);
+    return creditRecordId;
+  }
+
+  async function assertPlacementContext(
+    input: AssertPlacementContextInput,
+  ): Promise<StudentCreditPlacement> {
+    const placementId = requireText(input.placementId, "placementId");
+    const studentId = requireText(input.studentId, "studentId");
+    const programAssignmentId = requireText(input.programAssignmentId, "programAssignmentId");
+    const programVersionId = requireText(input.programVersionId, "programVersionId");
+    const placement = await repository.getPlacement(placementId);
+    if (!placement) {
+      throw notFoundError("Student credit placement not found", { placementId });
+    }
+    if (placement.programAssignmentId !== programAssignmentId) {
+      throw provenanceMismatchError(
+        "Student credit placement does not belong to the active program assignment",
+        { placementId, programAssignmentId },
+      );
+    }
+    const assignmentContext = await repository.getAssignmentContext(
+      placement.programAssignmentId,
+    );
+    if (!assignmentContext) {
+      throw notFoundError("Program assignment not found", {
+        programAssignmentId: placement.programAssignmentId,
+      });
+    }
+    if (
+      assignmentContext.assignment.studentId !== studentId
+      || assignmentContext.assignment.programVersionId !== programVersionId
+    ) {
+      throw provenanceMismatchError(
+        "Student credit placement does not belong to the resolved degree progress context",
+        { placementId, studentId, programAssignmentId, programVersionId },
+      );
+    }
+    return placement;
+  }
+
   async function validateIdentity(
     input: {
       studentCreditDecisionId: string;
@@ -139,6 +223,7 @@ export function createStudentCreditPlacementService(
       provenance?: JsonValue;
     },
     tx: StudentCreditPlacementTx,
+    lockedCreditRecordId: string,
   ): Promise<{ metadata: Record<string, unknown>; provenance: Record<string, unknown> }> {
     const decisionId = requireText(input.studentCreditDecisionId, "studentCreditDecisionId");
     const assignmentId = requireText(input.programAssignmentId, "programAssignmentId");
@@ -148,8 +233,20 @@ export function createStudentCreditPlacementService(
 
     const decisionContext = await repository.getDecisionContext(decisionId, tx);
     if (!decisionContext) throw notFoundError("Student credit decision not found", { studentCreditDecisionId: decisionId });
+    if (decisionContext.creditRecord.id !== lockedCreditRecordId) {
+      throw provenanceMismatchError(
+        "Student credit decision changed credit-record identity during placement",
+        { studentCreditDecisionId: decisionId },
+      );
+    }
     const assignmentContext = await repository.getAssignmentContext(assignmentId, tx);
     if (!assignmentContext) throw notFoundError("Program assignment not found", { programAssignmentId: assignmentId });
+    if (assignmentContext.assignment.status !== "active") {
+      throw invalidStateError("Program assignment must be active for placement", {
+        programAssignmentId: assignmentId,
+        status: assignmentContext.assignment.status,
+      });
+    }
 
     if (decisionContext.decision.programAssignmentId !== assignmentId) {
       throw provenanceMismatchError(
@@ -170,8 +267,34 @@ export function createStudentCreditPlacementService(
       );
     }
 
+    const latestDecision = await repository.getLatestDecision(
+      lockedCreditRecordId,
+      assignmentId,
+      tx,
+    );
+    if (
+      !latestDecision
+      || latestDecision.id !== decisionId
+      || latestDecision.action !== "accepted"
+    ) {
+      throw invalidStateError(
+        "Placement requires the current accepted credit decision",
+        {
+          studentCreditDecisionId: decisionId,
+          latestDecisionId: latestDecision?.id ?? null,
+          latestDecisionAction: latestDecision?.action ?? null,
+        },
+      );
+    }
+
     const requirementContext = await repository.getRequirementContext(requirementId, tx);
     if (!requirementContext) throw notFoundError("Requirement not found", { requirementId });
+    if (requirementContext.requirement.active !== true) {
+      throw invalidStateError("Requirement must be active for placement", {
+        requirementId,
+        active: requirementContext.requirement.active,
+      });
+    }
     const requirementProgramVersionId =
       requirementContext.requirement.programVersionId
       ?? requirementContext.programVersion?.id;
@@ -213,20 +336,28 @@ export function createStudentCreditPlacementService(
     };
   }
 
-  async function createPlacement(input: CreatePlacementInput): Promise<StudentCreditPlacement> {
+  async function createPlacement(
+    input: CreatePlacementInput,
+    options: StudentCreditPlacementMutationOptions = {},
+  ): Promise<StudentCreditPlacement> {
     return transactionRunner(async (tx) => {
       const decisionId = requireText(input.studentCreditDecisionId, "studentCreditDecisionId");
       const assignmentId = requireText(input.programAssignmentId, "programAssignmentId");
+      const requirementId = requireText(input.requirementId, "requirementId");
 
-      // These locks intentionally precede all context reads and uniqueness checks.
-      await repository.lockDecisionRow(decisionId, tx);
-      await repository.lockAssignmentRow(assignmentId, tx);
-
-      const values = await validateIdentity(input, tx);
+      const creditRecordId = await lockPlacementIdentity(
+        decisionId,
+        assignmentId,
+        tx,
+      );
+      // Lock order: decision -> credit record -> assignment -> requirement.
+      await repository.lockRequirementRow(requirementId, tx);
+      await options.beforeWrite?.(tx);
+      const values = await validateIdentity(input, tx, creditRecordId);
       const existing = await repository.getActiveExactPlacement({
         studentCreditDecisionId: decisionId,
         programAssignmentId: assignmentId,
-        requirementId: requireText(input.requirementId, "requirementId"),
+        requirementId,
         academicRuleId: input.academicRuleId ?? null,
       }, tx);
       if (existing) {
@@ -239,7 +370,7 @@ export function createStudentCreditPlacementService(
         return await repository.insertPlacement({
           studentCreditDecisionId: decisionId,
           programAssignmentId: assignmentId,
-          requirementId: requireText(input.requirementId, "requirementId"),
+          requirementId,
           academicRuleId: input.academicRuleId ?? null,
           actor: input.actor,
           rationale: input.rationale,
@@ -260,7 +391,10 @@ export function createStudentCreditPlacementService(
     });
   }
 
-  async function supersedePlacement(input: SupersedePlacementInput): Promise<{
+  async function supersedePlacement(
+    input: SupersedePlacementInput,
+    options: StudentCreditPlacementMutationOptions = {},
+  ): Promise<{
     oldPlacement: StudentCreditPlacement;
     newPlacement: StudentCreditPlacement;
   }> {
@@ -279,11 +413,9 @@ export function createStudentCreditPlacementService(
         });
       }
 
-      await repository.lockDecisionRow(oldPlacement.studentCreditDecisionId, tx);
-      await repository.lockAssignmentRow(oldPlacement.programAssignmentId, tx);
-
       const decisionId = input.studentCreditDecisionId ?? oldPlacement.studentCreditDecisionId;
       const assignmentId = input.programAssignmentId ?? oldPlacement.programAssignmentId;
+      const requirementId = requireText(input.requirementId, "requirementId");
       if (decisionId !== oldPlacement.studentCreditDecisionId || assignmentId !== oldPlacement.programAssignmentId) {
         throw provenanceMismatchError("A replacement placement must retain the historical decision and assignment", {
           oldDecisionId: oldPlacement.studentCreditDecisionId,
@@ -291,12 +423,19 @@ export function createStudentCreditPlacementService(
         });
       }
 
+      const creditRecordId = await lockPlacementIdentity(
+        decisionId,
+        assignmentId,
+        tx,
+      );
+      // Lock the replacement requirement before validation or any lifecycle write.
+      await repository.lockRequirementRow(requirementId, tx);
+      await options.beforeWrite?.(tx);
       const values = await validateIdentity({
         ...input,
         studentCreditDecisionId: decisionId,
         programAssignmentId: assignmentId,
-      }, tx);
-      const requirementId = requireText(input.requirementId, "requirementId");
+      }, tx, creditRecordId);
       const existing = await repository.getActiveExactPlacement({
         studentCreditDecisionId: decisionId,
         programAssignmentId: assignmentId,
@@ -354,7 +493,10 @@ export function createStudentCreditPlacementService(
     });
   }
 
-  async function revokePlacement(input: RevokePlacementInput): Promise<StudentCreditPlacement> {
+  async function revokePlacement(
+    input: RevokePlacementInput,
+    options: StudentCreditPlacementMutationOptions = {},
+  ): Promise<StudentCreditPlacement> {
     return transactionRunner(async (tx) => {
       const placementId = requireText(input.placementId, "placementId");
       requireText(input.actor, "actor");
@@ -368,6 +510,26 @@ export function createStudentCreditPlacementService(
           status: placement.status,
         });
       }
+      await repository.lockAssignmentRow(placement.programAssignmentId, tx);
+      const assignmentContext = await repository.getAssignmentContext(
+        placement.programAssignmentId,
+        tx,
+      );
+      if (!assignmentContext) {
+        throw notFoundError("Program assignment not found", {
+          programAssignmentId: placement.programAssignmentId,
+        });
+      }
+      if (assignmentContext.assignment.status !== "active") {
+        throw invalidStateError(
+          "Program assignment must be active to revoke a placement",
+          {
+            programAssignmentId: placement.programAssignmentId,
+            status: assignmentContext.assignment.status,
+          },
+        );
+      }
+      await options.beforeWrite?.(tx);
       const occurredAt = new Date();
       const updated = await repository.updatePlacementLifecycle(placementId, {
         status: "revoked",
@@ -380,7 +542,12 @@ export function createStudentCreditPlacementService(
     });
   }
 
-  return { createPlacement, supersedePlacement, revokePlacement };
+  return {
+    assertPlacementContext,
+    createPlacement,
+    supersedePlacement,
+    revokePlacement,
+  };
 }
 
 export const createStudentCreditPlacementServiceWithDefaults =
