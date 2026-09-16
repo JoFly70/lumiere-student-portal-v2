@@ -6,7 +6,11 @@ const mockGetUser = vi.fn();
 const mockFrom = vi.fn();
 const mockResetPasswordForEmail = vi.fn();
 const mockUpdateUser = vi.fn();
-const mockCreateClient = vi.fn();
+const mockAdminSignOut = vi.fn();
+const mockAdminCreateUser = vi.fn();
+const mockAdminUpdateUserById = vi.fn();
+const mockUserSignInWithPassword = vi.fn();
+const mockUserSignOut = vi.fn();
 
 let isSupabaseConfiguredMock = true;
 
@@ -17,16 +21,23 @@ vi.mock('../server/lib/supabase.js', () => ({
       resetPasswordForEmail: mockResetPasswordForEmail,
       updateUser: mockUpdateUser,
       signInWithPassword: vi.fn(),
+      admin: {
+        createUser: mockAdminCreateUser,
+        updateUserById: mockAdminUpdateUserById,
+        signOut: mockAdminSignOut,
+      },
     },
     from: mockFrom,
   },
   get isSupabaseConfigured() {
     return isSupabaseConfiguredMock;
   },
-}));
-
-vi.mock('@supabase/supabase-js', () => ({
-  createClient: (...args: any[]) => mockCreateClient(...args),
+  createUserAuthClient: () => ({
+    auth: {
+      signInWithPassword: mockUserSignInWithPassword,
+      signOut: mockUserSignOut,
+    },
+  }),
 }));
 
 vi.mock('../server/lib/logger.js', () => ({
@@ -621,6 +632,87 @@ describe('ROADMAP — own-plan generation exercises the API contract', () => {
 
 // ── PASSWORD RESET ─────────────────────────────────────────────────────────
 
+describe('AUTH — POST /api/auth/signup', () => {
+  it('returns 409 for the observed Supabase duplicate-user response', async () => {
+    mockAdminCreateUser.mockResolvedValue({
+      data: { user: null },
+      error: {
+        status: 400,
+        code: 'unexpected_failure',
+        message: 'A user with this email address has already been registered',
+      },
+    });
+
+    const res = await request(app)
+      .post('/api/auth/signup')
+      .send({
+        email: 'existing@test.com',
+        password: 'password123',
+        fullName: 'Existing User',
+      });
+
+    expect(res.status).toBe(409);
+    expect(res.body.code).toBe('EMAIL_ALREADY_REGISTERED');
+    expect(mockFrom).not.toHaveBeenCalled();
+  });
+});
+
+describe('AUTH — POST /api/auth/login reconciliation', () => {
+  beforeEach(() => {
+    mockUserSignInWithPassword.mockResolvedValue({
+      data: {
+        user: { id: 'auth-user', email: 'user@test.com', user_metadata: {} },
+        session: {
+          access_token: 'access-token',
+          refresh_token: 'refresh-token',
+          expires_at: 123,
+        },
+      },
+      error: null,
+    });
+    mockUserSignOut.mockResolvedValue({ error: null });
+  });
+
+  it('fails closed when the authenticated user has no application account', async () => {
+    mockFrom.mockReturnValue({
+      select: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+        })),
+      })),
+    });
+
+    const res = await request(app)
+      .post('/api/auth/login')
+      .send({ email: 'user@test.com', password: 'password123' });
+
+    expect(res.status).toBe(500);
+    expect(res.body.code).toBe('ACCOUNT_RECONCILIATION_FAILED');
+    expect(mockUserSignOut).toHaveBeenCalledWith({ scope: 'global' });
+  });
+
+  it('fails closed when the application-account lookup errors', async () => {
+    mockFrom.mockReturnValue({
+      select: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          maybeSingle: vi.fn().mockResolvedValue({
+            data: null,
+            error: { message: 'database unavailable' },
+          }),
+        })),
+      })),
+    });
+
+    const res = await request(app)
+      .post('/api/auth/login')
+      .send({ email: 'user@test.com', password: 'password123' });
+
+    expect(res.status).toBe(500);
+    expect(res.body.code).toBe('ACCOUNT_RECONCILIATION_FAILED');
+    expect(res.body.error).not.toContain('database unavailable');
+  });
+});
+
 describe('PASSWORD RESET — POST /api/auth/reset-password', () => {
   it('returns 200 with success message (anti-enumeration)', async () => {
     mockResetPasswordForEmail.mockResolvedValue({ error: null });
@@ -666,6 +758,18 @@ describe('PASSWORD RESET — POST /api/auth/update-password', () => {
     expect(res.status).toBe(400);
   });
 
+  it('enforces the server-side minimum password length', async () => {
+    const res = await request(app)
+      .post('/api/auth/update-password')
+      .send({
+        password: 'short',
+        access_token: 'unused',
+        recovery_type: 'recovery',
+      });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain('at least 6 characters');
+  });
+
   it('returns 401 when recovery token is invalid', async () => {
     mockGetUser.mockResolvedValue({
       data: { user: null },
@@ -673,7 +777,11 @@ describe('PASSWORD RESET — POST /api/auth/update-password', () => {
     });
     const res = await request(app)
       .post('/api/auth/update-password')
-      .send({ password: 'newpassword123', access_token: 'invalid-recovery-token' });
+      .send({
+        password: 'newpassword123',
+        access_token: 'invalid-recovery-token',
+        recovery_type: 'recovery',
+      });
     expect(res.status).toBe(401);
     expect(res.body.error).toContain('Invalid or expired');
   });
@@ -683,22 +791,139 @@ describe('PASSWORD RESET — POST /api/auth/update-password', () => {
       data: { user: { id: 'user-1', email: 'user@test.com' } },
       error: null,
     });
-    const mockUserClientUpdate = vi.fn().mockResolvedValue({
+    mockAdminUpdateUserById.mockResolvedValue({
       data: { user: { id: 'user-1' } },
       error: null,
     });
-    mockCreateClient.mockReturnValue({
-      auth: { updateUser: mockUserClientUpdate },
-    });
+    mockAdminSignOut.mockResolvedValue({ error: null });
+    const recoveryToken = `header.${Buffer.from(JSON.stringify({
+      amr: [{ method: 'otp' }],
+    })).toString('base64url')}.signature`;
 
     const res = await request(app)
       .post('/api/auth/update-password')
-      .send({ password: 'newpassword123', access_token: 'valid-recovery-token' });
+      .send({
+        password: 'newpassword123',
+        access_token: recoveryToken,
+        recovery_type: 'recovery',
+        user_id: 'attacker-chosen-user',
+      });
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
     expect(res.body.message).toContain('Password updated');
-    // Verify the user client was created with the recovery token, not the service role key
-    expect(mockCreateClient).toHaveBeenCalled();
-    expect(mockUserClientUpdate).toHaveBeenCalledWith({ password: 'newpassword123' });
+    expect(mockAdminUpdateUserById).toHaveBeenCalledWith(
+      'user-1',
+      { password: 'newpassword123' },
+    );
+    expect(mockAdminSignOut).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 and does not revoke when the admin password update fails', async () => {
+    mockGetUser.mockResolvedValue({
+      data: { user: { id: 'validated-user', email: 'user@test.com' } },
+      error: null,
+    });
+    mockAdminUpdateUserById.mockResolvedValue({
+      data: { user: null },
+      error: { message: 'admin update failed' },
+    });
+    const recoveryToken = `header.${Buffer.from(JSON.stringify({
+      amr: [{ method: 'recovery' }],
+    })).toString('base64url')}.signature`;
+
+    const res = await request(app)
+      .post('/api/auth/update-password')
+      .send({
+        password: 'newpassword123',
+        access_token: recoveryToken,
+        recovery_type: 'recovery',
+        user_id: 'attacker-chosen-user',
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('Failed to update password');
+    expect(mockAdminUpdateUserById).toHaveBeenCalledWith(
+      'validated-user',
+      { password: 'newpassword123' },
+    );
+    expect(mockAdminSignOut).not.toHaveBeenCalled();
+  });
+
+  it('does not attempt a second sign-out after the admin password update succeeds', async () => {
+    mockGetUser.mockResolvedValue({
+      data: { user: { id: 'user-1', email: 'user@test.com' } },
+      error: null,
+    });
+    mockAdminUpdateUserById.mockResolvedValue({
+      data: { user: { id: 'user-1' } },
+      error: null,
+    });
+    mockAdminSignOut.mockResolvedValue({
+      error: { message: 'revocation unavailable' },
+    });
+    const recoveryToken = `header.${Buffer.from(JSON.stringify({
+      amr: [{ method: 'otp' }],
+    })).toString('base64url')}.signature`;
+
+    const res = await request(app)
+      .post('/api/auth/update-password')
+      .send({
+        password: 'newpassword123',
+        access_token: recoveryToken,
+        recovery_type: 'recovery',
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(mockAdminSignOut).not.toHaveBeenCalled();
+  });
+});
+
+describe('AUTH — POST /api/auth/logout', () => {
+  it('revokes the validated bearer session globally', async () => {
+    mockGetUser.mockResolvedValue({
+      data: { user: { id: 'user-1', email: 'user@test.com' } },
+      error: null,
+    });
+    mockAdminSignOut.mockResolvedValue({ error: null });
+
+    const res = await request(app)
+      .post('/api/auth/logout')
+      .set('Authorization', 'Bearer validated-jwt');
+
+    expect(res.status).toBe(200);
+    expect(mockAdminSignOut).toHaveBeenCalledWith('validated-jwt', 'global');
+  });
+
+  it('fails explicitly when global logout revocation cannot be confirmed', async () => {
+    mockGetUser.mockResolvedValue({
+      data: { user: { id: 'user-1', email: 'user@test.com' } },
+      error: null,
+    });
+    mockAdminSignOut.mockResolvedValue({
+      error: { message: 'revocation unavailable' },
+    });
+
+    const res = await request(app)
+      .post('/api/auth/logout')
+      .set('Authorization', 'Bearer validated-jwt');
+
+    expect(res.status).toBe(503);
+    expect(res.body.code).toBe('SESSION_REVOCATION_FAILED');
+  });
+
+  it('rejects a supplied bearer credential that cannot be validated', async () => {
+    mockGetUser.mockResolvedValue({
+      data: { user: null },
+      error: { message: 'invalid token' },
+    });
+
+    const res = await request(app)
+      .post('/api/auth/logout')
+      .set('Authorization', 'Bearer invalid-jwt');
+
+    expect(res.status).toBe(401);
+    expect(res.body.code).toBe('INVALID_SESSION');
+    expect(mockAdminSignOut).not.toHaveBeenCalled();
   });
 });

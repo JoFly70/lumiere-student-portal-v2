@@ -16,6 +16,10 @@ const LOCAL_JWT_SECRET = process.env.SESSION_SECRET || 'local-dev-secret-change-
 // Helper to verify local JWT
 function verifyLocalJWT(token: string): { userId: string; email: string } | null {
   try {
+    // Local JWTs are a development/test compatibility path. Production
+    // authentication is exclusively validated by Supabase.
+    if (process.env.NODE_ENV === 'production') return null;
+
     const parts = token.split('.');
     if (parts.length !== 3) return null;
 
@@ -35,13 +39,16 @@ function verifyLocalJWT(token: string): { userId: string; email: string } | null
     const decoded = JSON.parse(Buffer.from(payload, 'base64url').toString());
     
     // Check expiration
-    if (decoded.exp && decoded.exp < Math.floor(Date.now() / 1000)) {
+    if (typeof decoded.exp !== 'number' || decoded.exp < Math.floor(Date.now() / 1000)) {
       logger.debug('Local JWT expired');
       return null;
     }
 
     // Check issuer
     if (decoded.iss !== 'lumiere-local') {
+      return null;
+    }
+    if (typeof decoded.userId !== 'string' || typeof decoded.email !== 'string') {
       return null;
     }
 
@@ -135,6 +142,10 @@ export async function requireAuth(
         req.audit = { actorId: userData[0].id };
         return next();
       }
+
+      // A locally-issued token is not sufficient by itself: the account must
+      // have an explicitly reconciled local profile.
+      return res.status(401).json({ error: 'Account profile is not available' });
     }
 
     // Try Supabase verification
@@ -167,19 +178,9 @@ export async function requireAuth(
 
       logger.debug('Query result', { userId: user.id, found: userData.length > 0 });
 
-      // Auto-create user if doesn't exist
       if (userData.length === 0) {
-        logger.info('Creating new user in local database', { userId: user.id, email: user.email });
-        
-        const newUser = await db.insert(users).values({
-          id: user.id,
-          email: user.email || '',
-          name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
-          role: 'student', // Default role
-        }).returning();
-
-        userData = newUser;
-        logger.info('User created successfully', { userId: user.id });
+        logger.warn('Authenticated Supabase user has no local profile', { userId: user.id });
+        return res.status(401).json({ error: 'Account profile is not available' });
       }
 
       // Attach user to request
@@ -273,18 +274,9 @@ export async function optionalAuth(
       .where(eq(users.id, user.id))
       .limit(1);
 
-      // Auto-create user if doesn't exist
       if (userData.length === 0) {
-        logger.info('Creating new user in local database (optionalAuth)', { userId: user.id, email: user.email });
-        
-        const newUser = await db.insert(users).values({
-          id: user.id,
-          email: user.email || '',
-          name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
-          role: 'student',
-        }).returning();
-
-        userData = newUser;
+        logger.debug('Optional auth user has no local profile', { userId: user.id });
+        return next();
       }
 
       if (userData.length > 0) {

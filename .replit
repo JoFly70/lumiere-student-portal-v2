@@ -5,3 +5,18 @@ channel = "stable-25_05"
 
 [agent]
 expertMode = true
+
+[[ports]]
+localPort = 5000
+externalPort = 80
+
+[deployment]
+deploymentTarget = "autoscale"
+run = ["npm", "start"]
+
+[userenv]
+
+[userenv.production]
+APP_URL = "https://lumiere-student-portal-v-2.replit.app"
+PUBLIC_APP_URL = "https://lumiere-student-portal-v-2.replit.app"
+AUTH_EMAIL_MODE = "custom_smtp"

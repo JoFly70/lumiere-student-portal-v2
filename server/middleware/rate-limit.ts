@@ -59,6 +59,24 @@ export const passwordResetRateLimit = rateLimit({
 });
 
 /**
+ * Rate limiting for password changes after recovery
+ * - 5 attempts per 15 minutes per IP
+ */
+export const passwordUpdateRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: { error: 'Too many password update attempts. Please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (_req, res) => {
+    res.status(429).json({
+      error: 'Too many password update attempts. Please try again later.',
+    });
+  },
+  skip: (req) => process.env.NODE_ENV === 'test',
+});
+
+/**
  * Moderate rate limiting for general API endpoints
  * - 100 requests per 15 minutes per IP
  * - Protects against general abuse

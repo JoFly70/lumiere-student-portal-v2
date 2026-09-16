@@ -797,6 +797,7 @@ describe('Phase 2C — Student Academic Record API Routes', () => {
       vi.doMock('../server/middleware/rate-limit', () => ({
         authRateLimit: (req: unknown, res: unknown, next: () => void) => next(),
         passwordResetRateLimit: (req: unknown, res: unknown, next: () => void) => next(),
+        passwordUpdateRateLimit: (req: unknown, res: unknown, next: () => void) => next(),
         signupRateLimit: (req: unknown, res: unknown, next: () => void) => next(),
         apiRateLimit: (req: unknown, res: unknown, next: () => void) => next(),
       }));
