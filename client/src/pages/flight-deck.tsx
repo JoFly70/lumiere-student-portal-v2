@@ -6,6 +6,7 @@
 
 import { memo } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { Link } from 'wouter';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -36,15 +37,88 @@ import {
   ChartSkeleton,
 } from '@/components/flight-deck-charts';
 
+async function fetchStudentRecordStatus(): Promise<'ready' | 'missing'> {
+  const response = await fetch('/api/students/me', { credentials: 'include' });
+
+  if (response.status === 404) {
+    return 'missing';
+  }
+
+  if (!response.ok) {
+    throw new Error(`Failed to check student profile: ${response.status}`);
+  }
+
+  return 'ready';
+}
+
 export default function FlightDeck() {
+  const {
+    data: studentRecordStatus,
+    isLoading: studentRecordLoading,
+    error: studentRecordError,
+    refetch: refetchStudentRecord,
+  } = useQuery({
+    queryKey: ['/api/students/me', 'flight-deck-readiness'],
+    queryFn: fetchStudentRecordStatus,
+    retry: false,
+  });
+
   const { data, isLoading, error, refetch } = useQuery<FlightDeckResult>({
     queryKey: ['/api/flight-deck'],
-    retry: 2, // Retry failed requests twice
-    retryDelay: 1000, // Wait 1 second between retries
-    staleTime: 5 * 60 * 1000, // 5 minutes - data is fairly static
-    gcTime: 10 * 60 * 1000, // 10 minutes - keep in cache longer
-    refetchOnWindowFocus: false, // Disable auto-refetch on focus (expensive calculation)
+    retry: 2,
+    retryDelay: 1000,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    enabled: studentRecordStatus === 'ready',
   });
+
+  if (studentRecordLoading) {
+    return <FlightDeckSkeleton />;
+  }
+
+  if (studentRecordError) {
+    const errorMessage = studentRecordError instanceof Error
+      ? studentRecordError.message
+      : 'Failed to check student profile';
+
+    return (
+      <div className="p-6 space-y-4" data-testid="flight-deck-profile-error">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{errorMessage}</AlertDescription>
+        </Alert>
+        <Button
+          onClick={() => refetchStudentRecord()}
+          variant="outline"
+          className="w-full md:w-auto"
+        >
+          <RefreshCw className="w-4 h-4 mr-2" />
+          Retry
+        </Button>
+      </div>
+    );
+  }
+
+  if (studentRecordStatus === 'missing') {
+    return (
+      <div className="p-6" data-testid="flight-deck-incomplete-state">
+        <Card className="max-w-2xl">
+          <CardHeader>
+            <CardTitle>Your Lumiere plan is not ready yet</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Your advisor must create your student record before progress, timeline, and cost projections can be shown.
+            </p>
+            <Button asChild variant="outline">
+              <Link href="/support">Contact Support</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return <FlightDeckSkeleton />;
