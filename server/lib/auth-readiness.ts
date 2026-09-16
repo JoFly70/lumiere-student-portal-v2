@@ -15,6 +15,11 @@ export type AuthReadinessConfig = {
   supabaseServiceKey?: string;
   sessionSecret?: string;
   demoMode?: boolean;
+  /**
+   * Non-secret deployment declaration only. This does not prove SMTP delivery
+   * or validate the provider-side configuration.
+   */
+  authEmailMode?: string;
 };
 
 export type AuthReadinessProbes = {
@@ -35,7 +40,10 @@ export type AuthReadinessResult = {
     demoModeDisabled: boolean;
     sessionSecret: boolean;
     authEmail: boolean;
+    customSmtpDeclared: boolean;
   };
+  /** Safe, non-secret deployment signal; never treated as delivery proof. */
+  mailMode: 'custom_smtp' | 'supabase_default' | 'unknown';
   /** Safe diagnostic names only; never includes URLs, connection strings, or keys. */
   failures: string[];
 };
@@ -87,10 +95,20 @@ function hasSafeSessionSecret(value: string | undefined): boolean {
   ].includes(value);
 }
 
+function resolveAuthEmailMode(
+  value: string | undefined,
+): 'custom_smtp' | 'supabase_default' | 'unknown' {
+  const normalized = value?.trim().toLowerCase();
+  if (normalized === 'custom_smtp') return 'custom_smtp';
+  if (normalized === 'supabase_default') return 'supabase_default';
+  return 'unknown';
+}
+
 export async function validateProductionAuthReadiness(
   config: AuthReadinessConfig,
   probes: AuthReadinessProbes = {},
 ): Promise<AuthReadinessResult> {
+  const mailMode = resolveAuthEmailMode(config.authEmailMode);
   const checks = {
     appUrl: isProductionUrl(config.appUrl),
     supabaseUrl: isProductionUrl(config.supabaseUrl),
@@ -104,6 +122,10 @@ export async function validateProductionAuthReadiness(
     // ENABLE_EMAIL_VERIFICATION is intentionally not consulted because
     // administrator-confirmed signup is a valid production configuration.
     authEmail: Boolean(config.supabaseAnonKey && config.supabaseServiceKey && probes.checkAuthEmail),
+    // Self-declared deployment fact only. Actual Supabase SMTP configuration is
+    // verified by the separate deploy/CI auth-config check, and inbox delivery
+    // remains an end-to-end smoke test.
+    customSmtpDeclared: mailMode === 'custom_smtp',
   };
 
   if (probes.checkTables) {
@@ -126,5 +148,5 @@ export async function validateProductionAuthReadiness(
   const failures = Object.entries(checks)
     .filter(([, value]) => !value)
     .map(([name]) => name);
-  return { ready: failures.length === 0, checks, failures };
+  return { ready: failures.length === 0, checks, mailMode, failures };
 }
