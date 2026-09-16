@@ -1,6 +1,11 @@
-import { describe, expect, it } from "vitest";
+import * as React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { describe, expect, it, vi } from "vitest";
 import {
   ADMIN_STUDENT_WORKSPACE_QUERY_KEY,
+  ADMIN_STUDENT_WORKSPACE_QUERY_OPTIONS,
+  ADMIN_STUDENTS_PATH,
+  adminTabFromLocation,
   adminStudentWorkspacePath,
   attentionItemLabel,
   classifyWorkspaceQueryError,
@@ -8,6 +13,14 @@ import {
   selectWorkspaceState,
   toWorkspaceViewModel,
 } from "@/pages/admin-student-workspace-presentation";
+
+const useQueryMock = vi.hoisted(() => vi.fn(() => ({ isLoading: true })));
+vi.stubGlobal("React", React);
+vi.mock("@tanstack/react-query", () => ({ useQuery: useQueryMock }));
+vi.mock("wouter", () => ({
+  useParams: () => ({ studentId: "student-1" }),
+  Link: ({ children }: { children: unknown }) => children,
+}));
 
 describe("admin student workspace presentation", () => {
   const report = {
@@ -223,5 +236,27 @@ describe("admin student workspace presentation", () => {
   it("exports stable endpoint query key and eye destination", () => {
     expect(ADMIN_STUDENT_WORKSPACE_QUERY_KEY("abc")).toEqual(["/api/admin/students/abc/workspace"]);
     expect(adminStudentWorkspacePath("abc")).toBe("/admin/students/abc");
+  });
+  it("configures the workspace page to refetch whenever it mounts", async () => {
+    expect(ADMIN_STUDENT_WORKSPACE_QUERY_OPTIONS).toEqual({
+      staleTime: 0,
+      refetchOnMount: true,
+    });
+    const { default: AdminStudentWorkspace } = await import("@/pages/admin-student-workspace");
+    renderToStaticMarkup(React.createElement(AdminStudentWorkspace));
+    expect(useQueryMock).toHaveBeenCalledWith({
+      queryKey: ["/api/admin/students/student-1/workspace"],
+      staleTime: 0,
+      refetchOnMount: true,
+    });
+    expect(useQueryMock.mock.calls[0][0]).not.toHaveProperty("refetchInterval");
+  });
+  it("defaults plain and invalid admin locations to Overview", () => {
+    expect(adminTabFromLocation("/admin")).toBe("overview");
+    expect(adminTabFromLocation("/admin?tab=unknown")).toBe("overview");
+  });
+  it("opens Students from the validated admin query parameter", () => {
+    expect(ADMIN_STUDENTS_PATH).toBe("/admin?tab=students");
+    expect(adminTabFromLocation(ADMIN_STUDENTS_PATH)).toBe("students");
   });
 });

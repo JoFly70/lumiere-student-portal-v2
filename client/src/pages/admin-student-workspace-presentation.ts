@@ -1,7 +1,24 @@
 export const ADMIN_STUDENT_WORKSPACE_QUERY_KEY = (studentId: string) =>
   [`/api/admin/students/${encodeURIComponent(studentId)}/workspace`] as const;
+export const ADMIN_STUDENT_WORKSPACE_QUERY_OPTIONS = {
+  staleTime: 0,
+  refetchOnMount: true,
+} as const;
 export const adminStudentWorkspacePath = (studentId: string) =>
   `/admin/students/${encodeURIComponent(studentId)}`;
+export const ADMIN_TABS = ["overview", "users", "students", "programs", "logs"] as const;
+export type AdminTab = typeof ADMIN_TABS[number];
+export const ADMIN_STUDENTS_PATH = "/admin?tab=students";
+
+export function adminTabFromLocation(location: string): AdminTab {
+  const query = location.includes("?") ? location.slice(location.indexOf("?") + 1) : "";
+  const tab = new URLSearchParams(query).get("tab");
+  return ADMIN_TABS.includes(tab as AdminTab) ? tab as AdminTab : "overview";
+}
+
+export function adminTabPath(tab: AdminTab): string {
+  return tab === "overview" ? "/admin" : `/admin?tab=${tab}`;
+}
 
 export type WorkspaceRecord = Record<string, unknown>;
 export type AttentionStatus = "MANUAL_REVIEW" | "CONFLICT" | "MISSING" | "PARTIAL";

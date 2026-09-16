@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   ADMIN_STUDENT_WORKSPACE_QUERY_KEY,
+  ADMIN_STUDENT_WORKSPACE_QUERY_OPTIONS,
+  ADMIN_STUDENTS_PATH,
   attentionItemLabel,
   attentionItemStatus,
   diagnosticItemStatus,
@@ -31,7 +33,10 @@ function Evidence({ item }: { item: WorkspaceAttentionItem }) {
 }
 export default function AdminStudentWorkspace() {
   const { studentId = "" } = useParams<{ studentId: string }>();
-  const query = useQuery({ queryKey: ADMIN_STUDENT_WORKSPACE_QUERY_KEY(studentId) });
+  const query = useQuery({
+    queryKey: ADMIN_STUDENT_WORKSPACE_QUERY_KEY(studentId),
+    ...ADMIN_STUDENT_WORKSPACE_QUERY_OPTIONS,
+  });
   const state = selectWorkspaceState(query);
   if (state.kind === "loading") return <div role={state.role} aria-live={state.ariaLive} className="space-y-4"><span className="sr-only">Loading student workspace</span><div className="h-8 w-64 animate-pulse rounded bg-muted" /><div className="h-32 animate-pulse rounded-lg bg-muted" /><div className="h-64 animate-pulse rounded-lg bg-muted" /></div>;
   if (state.kind === "error") return <Card><CardContent className="flex flex-col items-center gap-3 py-16 text-center"><AlertCircle className="h-8 w-8 text-destructive" /><h2 className="text-lg font-semibold">Workspace unavailable</h2><p className="text-sm text-muted-foreground">The canonical student workspace could not be loaded.</p><Button onClick={() => query.refetch()}><RefreshCw className="mr-2 h-4 w-4" />Retry</Button></CardContent></Card>;
@@ -48,7 +53,7 @@ export default function AdminStudentWorkspace() {
   };
   const name = value(student, "preferred_name", "preferredName") !== "Not provided" ? value(student, "preferred_name", "preferredName") : `${value(student, "first_name", "firstName")} ${value(student, "last_name", "lastName")}`;
   return <div className="mx-auto max-w-6xl space-y-6">
-    <Link href="/admin" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" />Back to Students</Link>
+    <Link href={ADMIN_STUDENTS_PATH} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" />Back to Students</Link>
     <header className="flex flex-col justify-between gap-4 border-b border-border/70 pb-6 md:flex-row md:items-end">
       <div><p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary">Lumière / student workspace</p><h1 className="text-3xl font-semibold tracking-tight">{name}</h1><p className="mt-1 text-muted-foreground">{value(student, "email")} · <span className="font-mono">{value(student, "student_code", "studentCode")}</span></p></div>
       <Badge variant="outline" className="w-fit gap-2"><ShieldCheck className="h-3.5 w-3.5" />Read-only canonical view</Badge>

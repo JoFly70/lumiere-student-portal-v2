@@ -32,7 +32,12 @@ import {
 import { apiRequest } from "@/lib/api";
 import { ProgramsManagement } from "@/components/programs-management";
 import { useLocation } from "wouter";
-import { adminStudentWorkspacePath } from "./admin-student-workspace-presentation";
+import {
+  adminStudentWorkspacePath,
+  adminTabFromLocation,
+  adminTabPath,
+  type AdminTab,
+} from "./admin-student-workspace-presentation";
 
 // Types
 interface User {
@@ -517,6 +522,8 @@ function AuditLogs() {
 
 // Main Admin Dashboard
 export default function Admin() {
+  const [location, setLocation] = useLocation();
+  const selectedTab = adminTabFromLocation(location);
   return (
     <div className="space-y-6">
       <div>
@@ -526,7 +533,11 @@ export default function Admin() {
         </p>
       </div>
 
-      <Tabs defaultValue="overview" className="space-y-6">
+      <Tabs
+        value={selectedTab}
+        onValueChange={(tab) => setLocation(adminTabPath(tab as AdminTab))}
+        className="space-y-6"
+      >
         <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-grid">
           <TabsTrigger value="overview">
             <BarChart3 className="w-4 h-4 mr-2" />
