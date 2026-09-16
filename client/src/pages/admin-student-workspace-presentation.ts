@@ -12,12 +12,26 @@ export interface WorkspaceAttentionItem extends WorkspaceRecord {
   academicRuleId?: string;
   reason?: string;
 }
+const diagnosticItemMarker = Symbol("admin-student-workspace-diagnostic");
 export interface DiagnosticAttentionItem {
   readonly kind: "diagnostic" | "integration-diagnostic";
   readonly diagnostic: unknown;
-  readonly status: "MANUAL_REVIEW";
+  readonly [diagnosticItemMarker]: true;
 }
 export type VisibleAttentionItem = WorkspaceAttentionItem | DiagnosticAttentionItem;
+
+export function isDiagnosticAttentionItem(item: VisibleAttentionItem): item is DiagnosticAttentionItem {
+  return (item as DiagnosticAttentionItem)[diagnosticItemMarker] === true;
+}
+
+function diagnosticItem(
+  kind: DiagnosticAttentionItem["kind"],
+  diagnostic: unknown,
+): DiagnosticAttentionItem {
+  const item = { kind, diagnostic } as DiagnosticAttentionItem;
+  Object.defineProperty(item, diagnosticItemMarker, { value: true });
+  return item;
+}
 export interface WorkspaceViewModel {
   readonly student?: unknown;
   readonly assignment?: unknown;
@@ -59,11 +73,15 @@ const asItem = (value: unknown): WorkspaceAttentionItem =>
 const statusForGroup = (group: AttentionGroupName): AttentionStatus =>
   group === "manualReview" ? "MANUAL_REVIEW" : group.toUpperCase() as AttentionStatus;
 
-export function attentionItemStatus(viewModel: WorkspaceViewModel, item: WorkspaceAttentionItem): AttentionStatus | string {
+export function attentionItemStatus(viewModel: WorkspaceViewModel, item: WorkspaceAttentionItem): AttentionStatus | string | undefined {
   for (const status of statuses) {
     if (viewModel.attention.grouped[status].includes(item)) return status;
   }
-  return item.status ?? "MANUAL_REVIEW";
+  return item.status;
+}
+
+export function diagnosticItemStatus(item: DiagnosticAttentionItem): string | undefined {
+  return isRecord(item.diagnostic) ? asString(item.diagnostic.status) : undefined;
 }
 
 export function attentionItemLabel(labels: WorkspaceLabels, item: WorkspaceAttentionItem): string {
@@ -74,23 +92,6 @@ export function attentionItemLabel(labels: WorkspaceLabels, item: WorkspaceAtten
   return "Report review";
 }
 
-function stableKey(value: unknown): string {
-  if (Array.isArray(value)) return `[${value.map(stableKey).join(",")}]`;
-  if (isRecord(value)) {
-    return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableKey(value[key])}`).join(",")}}`;
-  }
-  return JSON.stringify(value);
-}
-
-function uniquePush(items: VisibleAttentionItem[], seen: Set<string>, item: VisibleAttentionItem): void {
-  const identity = item.kind
-    ? `${item.kind}:${stableKey(item.diagnostic)}`
-    : `${item.status ?? "UNKNOWN"}:${stableKey(item)}`;
-  if (seen.has(identity)) return;
-  seen.add(identity);
-  items.push(item);
-}
-
 export function toWorkspaceViewModel(workspace: WorkspaceRecord): WorkspaceViewModel {
   const report = isRecord(workspace.report) ? workspace.report : {};
   const rawNeeds = isRecord(workspace.needsAttention) ? workspace.needsAttention : {};
@@ -99,14 +100,13 @@ export function toWorkspaceViewModel(workspace: WorkspaceRecord): WorkspaceViewM
     MANUAL_REVIEW: [], CONFLICT: [], MISSING: [], PARTIAL: [],
   };
   const items: VisibleAttentionItem[] = [];
-  const seen = new Set<string>();
   for (const group of groupNames) {
     for (const raw of asArray(rawGroups[group])) {
       const item = asItem(raw);
       // Group membership is authoritative. Keep the server item untouched;
       // callers can use attentionItemStatus for a display-only group badge.
       grouped[statusForGroup(group)].push(item);
-      uniquePush(items, seen, item);
+      items.push(item);
     }
   }
 
@@ -117,10 +117,10 @@ export function toWorkspaceViewModel(workspace: WorkspaceRecord): WorkspaceViewM
   const integrationDiagnostics = authoritativeIntegrationDiagnostics;
   const provenanceIntegrationDiagnostics = authoritativeIntegrationDiagnostics;
   for (const diagnostic of diagnostics) {
-    uniquePush(items, seen, { kind: "diagnostic", diagnostic, status: "MANUAL_REVIEW" });
+    items.push(diagnosticItem("diagnostic", diagnostic));
   }
   for (const diagnostic of integrationDiagnostics) {
-    uniquePush(items, seen, { kind: "integration-diagnostic", diagnostic, status: "MANUAL_REVIEW" });
+    items.push(diagnosticItem("integration-diagnostic", diagnostic));
   }
 
   const labelsRecord = isRecord(workspace.displayLabels) ? workspace.displayLabels : {};
@@ -143,12 +143,12 @@ export function toWorkspaceViewModel(workspace: WorkspaceRecord): WorkspaceViewM
     }
   }
   for (const item of items) {
-    if ("kind" in item) continue;
+    if (isDiagnosticAttentionItem(item)) continue;
     const id = item.requirementId;
     if (id && !requirements[id]) requirements[id] = { label: id, source: "id-fallback" };
   }
   const reasons = asArray(rawNeeds.reasons).filter((reason): reason is string => typeof reason === "string");
-  const evidence = items.filter((item): item is WorkspaceAttentionItem => !("kind" in item))
+  const evidence = items.filter((item): item is WorkspaceAttentionItem => !isDiagnosticAttentionItem(item))
     .map((item) => item.evidence).filter((item) => item !== undefined);
   return {
     student: workspace.student, assignment: workspace.assignment, program: workspace.program,

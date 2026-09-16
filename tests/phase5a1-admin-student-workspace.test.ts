@@ -398,6 +398,85 @@ describe("Phase 5A.1 — admin student workspace", () => {
     );
   });
 
+  it("uses production repository defaults and preserves canonical ownership fallbacks", async () => {
+    const productionReport = {
+      ...report,
+      phase3Output: {
+        ...report.phase3Output,
+        recordedCreditProjection: { results: [] },
+        results: [
+          { ...report.phase3Output.results[0], requirementId: "requirement-canonical", academicRuleId: "rule-canonical" },
+          { ...report.phase3Output.results[0], requirementId: "requirement-missing", academicRuleId: "rule-missing" },
+          { ...report.phase3Output.results[0], requirementId: "requirement-foreign", academicRuleId: "rule-foreign" },
+        ],
+      },
+    };
+    canonicalRepo.getStudent.mockResolvedValue({ id: STUDENT_ID, first_name: "Ada", last_name: "Lovelace" });
+    canonicalRepo.getActiveAssignmentForStudent.mockResolvedValue({
+      id: "assignment-1",
+      studentId: STUDENT_ID,
+      programVersionId: "version-1",
+      status: "active",
+    });
+    canonicalRepo.getProgramVersionWithProgram.mockResolvedValue({
+      institution: { id: "institution-1" },
+      program: { id: "program-1", institutionId: "institution-1", name: "Canonical Program" },
+      version: { id: "version-1", programId: "program-1", versionLabel: "2025 Catalog" },
+    });
+    canonicalRepo.getRequirementWithProgramVersion.mockImplementation(async (id: string) => {
+      if (id === "requirement-canonical") return {
+        requirement: { id, programVersionId: "version-1", title: "Canonical Requirement" },
+        programVersion: { id: "version-1" },
+      };
+      if (id === "requirement-foreign") return {
+        requirement: { id, programVersionId: "foreign-version", title: "Foreign Requirement" },
+        programVersion: { id: "foreign-version" },
+      };
+      return null;
+    });
+    canonicalRepo.getAcademicRuleWithProgramVersion.mockImplementation(async (id: string) => {
+      if (id === "rule-canonical") return {
+        rule: { id, programVersionId: "version-1", title: "Canonical Rule" },
+        programVersion: { id: "version-1" },
+      };
+      if (id === "rule-foreign") return {
+        rule: { id, programVersionId: "foreign-version", title: "Foreign Rule" },
+        programVersion: { id: "foreign-version" },
+      };
+      return null;
+    });
+    const app = express();
+    app.use(express.json());
+    mockDb.rows = [{ id: ADMIN_ID, email: "admin@test.com", name: "Admin", role: "admin" }];
+    const { createAdminStudentWorkspaceRouter } = await import("../server/routes/admin-student-workspace");
+    app.use("/api/admin", createAdminStudentWorkspaceRouter({
+      getProgress: vi.fn().mockResolvedValue(productionReport),
+    }));
+    const response = await request(app)
+      .get(`/api/admin/students/${STUDENT_ID}/workspace`)
+      .set("Authorization", `Bearer ${token(ADMIN_ID, "admin")}`);
+
+    expect(response.status).toBe(200);
+    expect(canonicalRepo.getRequirementWithProgramVersion).toHaveBeenCalledTimes(3);
+    expect(canonicalRepo.getAcademicRuleWithProgramVersion).toHaveBeenCalledTimes(3);
+    expect(response.body.displayLabels.requirements).toEqual({
+      "requirement-canonical": { label: "Canonical Requirement", source: "canonical" },
+      "requirement-missing": { label: "requirement-missing", source: "id-fallback" },
+      "requirement-foreign": { label: "requirement-foreign", source: "id-fallback" },
+    });
+    expect(response.body.displayLabels.academicRules).toEqual({
+      "rule-canonical": { label: "Canonical Rule", source: "canonical" },
+      "rule-missing": { label: "rule-missing", source: "id-fallback" },
+      "rule-foreign": { label: "rule-foreign", source: "id-fallback" },
+    });
+    expect(response.body.displayLabels.missingIds).toEqual(expect.arrayContaining([
+      "requirement-missing",
+      "requirement-foreign",
+      "rule-missing",
+      "rule-foreign",
+    ]));
+  });
+
   it("does not expose a write handler", async () => {
     const { app, auth } = await appFor("admin");
     const response = await request(app)

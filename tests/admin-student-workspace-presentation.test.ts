@@ -4,6 +4,7 @@ import {
   adminStudentWorkspacePath,
   attentionItemLabel,
   classifyWorkspaceQueryError,
+  diagnosticItemStatus,
   selectWorkspaceState,
   toWorkspaceViewModel,
 } from "@/pages/admin-student-workspace-presentation";
@@ -72,6 +73,17 @@ describe("admin student workspace presentation", () => {
     expect(vm.attention.items[0]).toBe(item);
     expect(item.status).toBe("MISSING");
   });
+  it("does not confuse an authoritative result kind with a client diagnostic wrapper", () => {
+    const item = { kind: "diagnostic", status: "MISSING", requirementId: "r-kind" };
+    const vm = toWorkspaceViewModel({
+      report: { status: "COMPOSED" },
+      needsAttention: { groups: { manualReview: [], missing: [item], partial: [], conflict: [] } },
+      displayLabels: {},
+    });
+    expect(vm.attention.items).toEqual([item]);
+    expect(vm.attention.grouped.MISSING).toEqual([item]);
+    expect(vm.provenance.evidence).toEqual([]);
+  });
   it("does not append report-level manual review when serialized authoritative groups already contain attention", () => {
     const serverResponse = {
       report: { status: "MANUAL_REVIEW", integrationDiagnostics: [{ code: "REPORT_ONLY" }] },
@@ -90,7 +102,7 @@ describe("admin student workspace presentation", () => {
       expect.objectContaining({ kind: "integration-diagnostic", diagnostic: { code: "SIDEcar" } }),
     ]);
   });
-  it("uses structural keys across the serialized boundary and ignores report diagnostics when sidecar exists", () => {
+  it("preserves every authoritative occurrence in sidecar order", () => {
     const serverResponse = {
       report: { status: "COMPOSED", integrationDiagnostics: [{ code: "TIMEOUT", message: "same" }] },
       needsAttention: {
@@ -106,8 +118,17 @@ describe("admin student workspace presentation", () => {
       displayLabels: {},
     };
     const vm = toWorkspaceViewModel(JSON.parse(JSON.stringify(serverResponse)));
-    expect(vm.attention.total).toBe(3);
+    expect(vm.attention.total).toBe(6);
     expect(vm.attention.items).toHaveLength(vm.attention.total);
+    expect(vm.attention.items.slice(0, 2)).toEqual(serverResponse.needsAttention.groups.missing);
+    expect(vm.attention.items.slice(2, 4)).toEqual([
+      { kind: "diagnostic", diagnostic: serverResponse.needsAttention.diagnostics[0] },
+      { kind: "diagnostic", diagnostic: serverResponse.needsAttention.diagnostics[1] },
+    ]);
+    expect(vm.attention.items.slice(4)).toEqual([
+      { kind: "integration-diagnostic", diagnostic: serverResponse.needsAttention.integrationDiagnostics[0] },
+      { kind: "integration-diagnostic", diagnostic: serverResponse.needsAttention.integrationDiagnostics[1] },
+    ]);
     expect(vm.attention.hasAttention).toBe(true);
     expect(vm.provenance.integrationDiagnostics).toEqual(serverResponse.needsAttention.integrationDiagnostics);
   });
@@ -132,29 +153,36 @@ describe("admin student workspace presentation", () => {
     expect(attentionItemLabel(vm.labels, vm.attention.items[0])).toBe("rule-404");
     expect(attentionItemLabel(vm.labels, { status: "CONFLICT", academicRuleId: "rule-404" })).not.toContain("Rule");
   });
-  it("shows diagnostics and integration diagnostics as visible attention items", () => {
+  it("shows diagnostic statuses only when the server supplied them", () => {
     const diagnostic = { code: "SOURCE_UNAVAILABLE", message: "Source unavailable" };
     const integration = { code: "TIMEOUT" };
+    const supplied = { code: "REVIEW", status: "MANUAL_REVIEW" };
     const vm = toWorkspaceViewModel({
       report: { status: "COMPOSED", integrationDiagnostics: [integration] },
-      needsAttention: { hasAttention: false, groups: { manualReview: [], missing: [], partial: [], conflict: [] }, reasons: [], diagnostics: [diagnostic], integrationDiagnostics: [integration] },
+      needsAttention: { hasAttention: false, groups: { manualReview: [], missing: [], partial: [], conflict: [] }, reasons: [], diagnostics: [diagnostic, supplied], integrationDiagnostics: [integration] },
       displayLabels: {},
     });
     expect(vm.attention.items).toEqual([
       expect.objectContaining({ kind: "diagnostic", diagnostic }),
+      expect.objectContaining({ kind: "diagnostic", diagnostic: supplied }),
       expect.objectContaining({ kind: "integration-diagnostic", diagnostic: integration }),
     ]);
-    expect(vm.attention.total).toBe(2);
+    expect(vm.attention.items[0]).not.toHaveProperty("status");
+    expect(vm.attention.items[2]).not.toHaveProperty("status");
+    expect(diagnosticItemStatus(vm.attention.items[0] as any)).toBeUndefined();
+    expect(diagnosticItemStatus(vm.attention.items[1] as any)).toBe("MANUAL_REVIEW");
+    expect(vm.attention.total).toBe(3);
     expect(vm.attention.hasAttention).toBe(true);
   });
-  it("does not invent duplicate source items", () => {
+  it("keeps duplicate authoritative source occurrences visible", () => {
     const source = { status: "MISSING", requirementId: "r1" };
     const vm = toWorkspaceViewModel({
       report: { status: "COMPOSED" },
       needsAttention: { hasAttention: true, groups: { manualReview: [], missing: [source, source], partial: [], conflict: [] }, diagnostics: [source], integrationDiagnostics: [] },
       displayLabels: {},
     });
-    expect(vm.attention.items.filter((item) => item === source)).toHaveLength(1);
+    expect(vm.attention.items.filter((item) => item === source)).toHaveLength(2);
+    expect(vm.attention.total).toBe(3);
   });
   it("preserves typed top-level metadata", () => {
     const metadata = {
