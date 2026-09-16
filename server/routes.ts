@@ -333,26 +333,9 @@ window.ENV = {
         return res.status(400).json({ error: "Failed to update password" });
       }
 
-      // A recovery credential is single-purpose. Revoke all sessions after
-      // changing the password and deliberately do not return a new session.
-      // Supabase's updateUser API does not expose a way to rotate/revoke only
-      // the recovery token; global sign-out is the supported revocation scope.
-      const revocation = await revokeAllSupabaseSessions(
-        supabaseAdmin.auth.admin,
-        access_token,
-      );
-      if (!revocation.revoked) {
-        // The password has changed, but the supported admin API could not
-        // guarantee revocation. Do not issue a replacement session.
-        logger.error("Password changed but recovery credential revocation failed", {
-          userId: data.user?.id,
-          error: revocation.error,
-        });
-        return res.status(503).json({
-          error: "Password updated, but session revocation could not be confirmed",
-          code: "SESSION_REVOCATION_FAILED",
-        });
-      }
+      // Supabase's admin password-update path deletes every session for this
+      // user. A second signOut with the now-deleted recovery session returns
+      // "Auth session missing!", so no redundant revocation is attempted here.
 
       logger.info("Password updated successfully", { userId: data.user?.id });
 

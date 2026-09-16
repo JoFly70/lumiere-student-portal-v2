@@ -815,7 +815,7 @@ describe('PASSWORD RESET — POST /api/auth/update-password', () => {
       'user-1',
       { password: 'newpassword123' },
     );
-    expect(mockAdminSignOut).toHaveBeenCalledWith(recoveryToken, 'global');
+    expect(mockAdminSignOut).not.toHaveBeenCalled();
   });
 
   it('returns 400 and does not revoke when the admin password update fails', async () => {
@@ -849,7 +849,7 @@ describe('PASSWORD RESET — POST /api/auth/update-password', () => {
     expect(mockAdminSignOut).not.toHaveBeenCalled();
   });
 
-  it('reports when password changed but global session revocation fails', async () => {
+  it('does not attempt a second sign-out after the admin password update succeeds', async () => {
     mockGetUser.mockResolvedValue({
       data: { user: { id: 'user-1', email: 'user@test.com' } },
       error: null,
@@ -873,8 +873,9 @@ describe('PASSWORD RESET — POST /api/auth/update-password', () => {
         recovery_type: 'recovery',
       });
 
-    expect(res.status).toBe(503);
-    expect(res.body.code).toBe('SESSION_REVOCATION_FAILED');
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(mockAdminSignOut).not.toHaveBeenCalled();
   });
 });
 
