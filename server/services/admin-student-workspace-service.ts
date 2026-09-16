@@ -45,6 +45,13 @@ export interface WorkspaceDependencies {
   readonly getProgress: (
     context: DegreeEvaluationSnapshotContext,
   ) => Promise<DegreeProgressReport>;
+  /**
+   * Canonical display lookups are injectable so the presentation boundary can
+   * be tested without replacing the resolver itself.  The repository
+   * functions remain the production defaults.
+   */
+  readonly getRequirementDisplay?: (requirementId: string) => Promise<unknown | null>;
+  readonly getAcademicRuleDisplay?: (academicRuleId: string) => Promise<unknown | null>;
   readonly resolveDisplayLabels?: (
     input: WorkspaceLabelInput,
   ) => Promise<Partial<WorkspaceDisplayLabels> | WorkspaceDisplayLabels>;
@@ -107,6 +114,13 @@ export class WorkspaceNotFoundError extends Error {
   ) {
     super(message);
     this.name = "WorkspaceNotFoundError";
+  }
+}
+
+export class WorkspaceContextMismatchError extends Error {
+  constructor() {
+    super("Degree progress context mismatch");
+    this.name = "WorkspaceContextMismatchError";
   }
 }
 
@@ -177,6 +191,22 @@ function canonical(label: unknown, id: string): WorkspaceLabel {
     : fallback(id);
 }
 
+/**
+ * Label maps can cross this boundary more than once (for example, a custom
+ * resolver's result is normalized after it returns).  Validate source here
+ * rather than reconstructing it from the label, so an explicit fallback can
+ * never become canonical on the second pass.
+ */
+function normalizeLabel(
+  label: unknown,
+  id: string,
+  source: unknown,
+): WorkspaceLabel {
+  if (source === "id-fallback") return fallback(id);
+  if (source === "canonical") return canonical(label, id);
+  return canonical(label, id);
+}
+
 function addId(target: Map<string, Set<string>>, kind: string, id: unknown): void {
   if (!meaningful(id)) return;
   const ids = target.get(kind) ?? new Set<string>();
@@ -218,7 +248,7 @@ function asMap(
     if (typeof entry === "string") result[id] = canonical(entry, id);
     else {
       const item = record(entry);
-      result[id] = canonical(item?.label, id);
+      result[id] = normalizeLabel(item?.label, id, item?.source);
     }
   }
   return result;
@@ -265,7 +295,15 @@ function normalizeLabels(
   };
 }
 
-async function resolveDefaultLabels(input: WorkspaceLabelInput): Promise<WorkspaceDisplayLabels> {
+async function resolveDefaultLabels(
+  input: WorkspaceLabelInput,
+  getRequirementDisplay: (
+    requirementId: string,
+  ) => Promise<unknown | null>,
+  getAcademicRuleDisplay: (
+    academicRuleId: string,
+  ) => Promise<unknown | null>,
+): Promise<WorkspaceDisplayLabels> {
   const ids = new Map<string, Set<string>>();
   collectCanonicalIds(input.report, ids);
   const program = record(input.program);
@@ -296,7 +334,7 @@ async function resolveDefaultLabels(input: WorkspaceLabelInput): Promise<Workspa
   }
 
   await Promise.all([...((ids.get("requirements") ?? new Set<string>()))].map(async (id) => {
-    const row = await getRequirementWithProgramVersion(id);
+    const row = await getRequirementDisplay(id);
     const requirement = record(row)?.requirement;
     const canonicalVersion = record(row)?.programVersion;
     const requirementVersionId = getFirstString(requirement, ["programVersionId", "program_version_id"])
@@ -314,7 +352,7 @@ async function resolveDefaultLabels(input: WorkspaceLabelInput): Promise<Workspa
     );
   }));
   await Promise.all([...((ids.get("academicRules") ?? new Set<string>()))].map(async (id) => {
-    const row = await getAcademicRuleWithProgramVersion(id);
+    const row = await getAcademicRuleDisplay(id);
     const rule = record(row)?.rule;
     const canonicalVersion = record(row)?.programVersion;
     const ruleVersionId = getFirstString(rule, ["programVersionId", "program_version_id"])
@@ -329,7 +367,9 @@ async function resolveDefaultLabels(input: WorkspaceLabelInput): Promise<Workspa
       id,
     );
   }));
-  return normalizeLabels(result, ids);
+  // The caller owns the single normalization pass.  Keeping this resolver's
+  // result raw avoids reinterpreting an explicit WorkspaceLabel.source.
+  return result;
 }
 
 type AttentionStatus = "MISSING" | "PARTIAL" | "CONFLICT" | "MANUAL_REVIEW";
@@ -355,24 +395,20 @@ function canonicalResultItems(report: DegreeProgressReport): {
 }[] {
   const phase3 = record(report.phase3Output);
   if (!phase3) return [];
-  const credit = record(phase3.recordedCreditProjection);
-  const exceptions = record(phase3.recordedExceptionProjection);
-  const locations = [
-    phase3.results,
-    phase3.observations,
-    credit?.results,
-    exceptions?.results,
-    exceptions?.observations,
-  ];
+  const locations = [phase3.results, phase3.observations];
   const result: { status: AttentionStatus; value: unknown }[] = [];
-  const seen = new Set<unknown>();
+  const seen = new Set<string>();
   for (const location of locations) {
     if (!Array.isArray(location)) continue;
     for (const value of location) {
       const row = record(value);
       const status = attentionStatus(row?.status);
-      if (!row || !status || seen.has(value)) continue;
-      seen.add(value);
+      if (!row || !status) continue;
+      // The aggregate is the canonical attention surface.  It may repeat an
+      // item in results and observations; retain its first appearance only.
+      const key = stableAttentionKey(value);
+      if (seen.has(key)) continue;
+      seen.add(key);
       result.push({ status, value });
     }
   }
@@ -391,40 +427,16 @@ function stableAttentionKey(value: unknown): string {
 }
 
 function canonicalDiagnostics(report: DegreeProgressReport): unknown[] {
-  const reportRecord = record(report);
   const phase3 = record(report.phase3Output);
-  const credit = record(phase3?.recordedCreditProjection);
-  const exceptions = record(phase3?.recordedExceptionProjection);
-  const locations = [
-    reportRecord?.diagnostics,
-    phase3?.diagnostics,
-    credit?.diagnostics,
-    exceptions?.diagnostics,
-  ];
+  const locations = [phase3?.diagnostics];
   const diagnostics: unknown[] = [];
-  const seen = new Set<string>();
   for (const location of locations) {
     if (!Array.isArray(location)) continue;
     for (const value of location) {
       const row = record(value);
       if (!row || row.status !== "MANUAL_REVIEW") continue;
-      const key = stableAttentionKey(value);
-      if (seen.has(key)) continue;
-      seen.add(key);
       diagnostics.push(value);
     }
-  }
-  return diagnostics;
-}
-
-function canonicalIntegrationDiagnostics(report: DegreeProgressReport): unknown[] {
-  const diagnostics: unknown[] = [];
-  const seen = new Set<string>();
-  for (const value of report.integrationDiagnostics) {
-    const key = stableAttentionKey(value);
-    if (seen.has(key)) continue;
-    seen.add(key);
-    diagnostics.push(value);
   }
   return diagnostics;
 }
@@ -436,9 +448,6 @@ function attention(report: DegreeProgressReport): NeedsAttentionPresentation {
     partial: [] as unknown[],
     conflict: [] as unknown[],
   };
-  if (report.status === "MANUAL_REVIEW") groups.manualReview.push({
-    status: report.status,
-  });
   const reasons = new Set<string>();
   for (const item of canonicalResultItems(report)) {
     const group = item.status === "MANUAL_REVIEW"
@@ -453,7 +462,9 @@ function attention(report: DegreeProgressReport): NeedsAttentionPresentation {
     const reason = getString(diagnostic, "reason") ?? getString(diagnostic, "code");
     if (reason) reasons.add(reason);
   }
-  const integrationDiagnostics = canonicalIntegrationDiagnostics(report);
+  // This is a Degree Progress Service sidecar.  Keep its exact array,
+  // ordering, values, and object identity at the presentation boundary.
+  const integrationDiagnostics = report.integrationDiagnostics;
   integrationDiagnostics.forEach((diagnostic) => {
     const reason = getString(diagnostic, "reason") ?? getString(diagnostic, "code");
     if (reason) reasons.add(reason);
@@ -547,7 +558,22 @@ export async function loadAdminStudentWorkspace(
   // This is intentionally the sole progress-service invocation on a valid
   // request.  No retry or second composition/re-evaluation is performed.
   const report = await dependencies.getProgress(context);
+  const reportContext = record(report.context);
+  if (
+    reportContext?.studentId !== context.studentId
+    || reportContext?.programAssignmentId !== context.programAssignmentId
+    || reportContext?.programVersionId !== context.programVersionId
+  ) {
+    // Do this before any label lookup or presentation serialization.  The
+    // route intentionally maps this internal integrity failure to a sanitized
+    // 500 response.
+    throw new WorkspaceContextMismatchError();
+  }
   const resolveLabels = dependencies.resolveDisplayLabels ?? dependencies.resolveLabels;
+  const getRequirementDisplay = dependencies.getRequirementDisplay
+    ?? getRequirementWithProgramVersion;
+  const getAcademicRuleDisplay = dependencies.getAcademicRuleDisplay
+    ?? getAcademicRuleWithProgramVersion;
   const labels = resolveLabels
     ? await resolveLabels({
       student,
@@ -562,7 +588,7 @@ export async function loadAdminStudentWorkspace(
       program,
       programVersion,
       report,
-    });
+    }, getRequirementDisplay, getAcademicRuleDisplay);
   const displayLabels = normalizeLabels(labels, (() => {
     const ids = new Map<string, Set<string>>();
     collectCanonicalIds(report, ids);

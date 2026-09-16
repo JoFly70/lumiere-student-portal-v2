@@ -59,6 +59,13 @@ const asItem = (value: unknown): WorkspaceAttentionItem =>
 const statusForGroup = (group: AttentionGroupName): AttentionStatus =>
   group === "manualReview" ? "MANUAL_REVIEW" : group.toUpperCase() as AttentionStatus;
 
+export function attentionItemStatus(viewModel: WorkspaceViewModel, item: WorkspaceAttentionItem): AttentionStatus | string {
+  for (const status of statuses) {
+    if (viewModel.attention.grouped[status].includes(item)) return status;
+  }
+  return item.status ?? "MANUAL_REVIEW";
+}
+
 export function attentionItemLabel(labels: WorkspaceLabels, item: WorkspaceAttentionItem): string {
   const requirementId = asString(item.requirementId);
   if (requirementId) return labels.requirements[requirementId]?.label ?? requirementId;
@@ -96,29 +103,15 @@ export function toWorkspaceViewModel(workspace: WorkspaceRecord): WorkspaceViewM
   for (const group of groupNames) {
     for (const raw of asArray(rawGroups[group])) {
       const item = asItem(raw);
-      const status = asString(item.status) as AttentionStatus | undefined;
-      const normalized = status && statuses.includes(status) ? status : statusForGroup(group);
-      const displayItem = item.status ? item : { ...item, status: normalized };
-      grouped[normalized].push(displayItem);
-      uniquePush(items, seen, displayItem);
+      // Group membership is authoritative. Keep the server item untouched;
+      // callers can use attentionItemStatus for a display-only group badge.
+      grouped[statusForGroup(group)].push(item);
+      uniquePush(items, seen, item);
     }
   }
 
   const diagnostics = asArray(rawNeeds.diagnostics);
   const authoritativeIntegrationDiagnostics = asArray(rawNeeds.integrationDiagnostics);
-  const hasAuthoritativeAttention = Object.values(grouped).some((group) => group.length > 0);
-  // A report-level manual review has no requirement row to live in a group,
-  // but is only a fallback when the authoritative sidecar is otherwise empty.
-  if (
-    report.status === "MANUAL_REVIEW"
-    && !hasAuthoritativeAttention
-    && diagnostics.length === 0
-    && authoritativeIntegrationDiagnostics.length === 0
-  ) {
-    const reportItem: WorkspaceAttentionItem = { status: "MANUAL_REVIEW", reason: "Report requires manual review" };
-    grouped.MANUAL_REVIEW.push(reportItem);
-    uniquePush(items, seen, reportItem);
-  }
   // The sidecar is authoritative whenever present, including when it is an
   // empty array. Never concatenate report-level provenance diagnostics.
   const integrationDiagnostics = authoritativeIntegrationDiagnostics;
@@ -180,14 +173,27 @@ export type WorkspaceQueryState = {
   isLoading?: boolean;
   isError?: boolean;
   data?: unknown;
+  error?: unknown;
 };
+export type WorkspaceQueryErrorKind = "not-found" | "error";
+
+export function classifyWorkspaceQueryError(error: unknown): WorkspaceQueryErrorKind {
+  const message = error instanceof Error ? error.message : String(error ?? "");
+  const statusMatch = message.match(/^\s*(\d{3})(?::|\s|$)/);
+  return statusMatch?.[1] === "404" ? "not-found" : "error";
+}
+
 export function selectWorkspaceState(query: WorkspaceQueryState):
   | { kind: "loading"; role: "status"; ariaLive: "polite" }
-  | { kind: "error" }
-  | { kind: "empty" }
+  | { kind: "error"; error?: unknown }
+  | { kind: "empty"; reason?: "not-found" }
   | { kind: "ready"; viewModel: WorkspaceViewModel } {
   if (query.isLoading) return { kind: "loading", role: "status", ariaLive: "polite" };
-  if (query.isError) return { kind: "error" };
+  if (query.isError) {
+    return classifyWorkspaceQueryError(query.error) === "not-found"
+      ? { kind: "empty", reason: "not-found" }
+      : { kind: "error", error: query.error };
+  }
   if (!isRecord(query.data)) return { kind: "empty" };
   return { kind: "ready", viewModel: toWorkspaceViewModel(query.data) };
 }

@@ -3,6 +3,7 @@ import {
   ADMIN_STUDENT_WORKSPACE_QUERY_KEY,
   adminStudentWorkspacePath,
   attentionItemLabel,
+  classifyWorkspaceQueryError,
   selectWorkspaceState,
   toWorkspaceViewModel,
 } from "@/pages/admin-student-workspace-presentation";
@@ -50,15 +51,26 @@ describe("admin student workspace presentation", () => {
     expect(vm.attention.items).not.toContain(nestedProvenance);
     expect(vm.attention.items).not.toContainEqual(expect.objectContaining({ requirementId: "r-fake" }));
   });
-  it("shows report-level manual review even without a requirement result", () => {
+  it("does not synthesize report-level manual review without an authoritative sidecar item", () => {
     const vm = toWorkspaceViewModel({
       report: { status: "MANUAL_REVIEW" },
       needsAttention: { hasAttention: true, groups: { manualReview: [], missing: [], partial: [], conflict: [] }, reasons: [], diagnostics: [], integrationDiagnostics: [] },
       displayLabels: {},
     });
-    expect(vm.attention.hasAttention).toBe(true);
-    expect(vm.attention.total).toBe(1);
-    expect(vm.attention.items[0]).toMatchObject({ status: "MANUAL_REVIEW" });
+    expect(vm.attention.hasAttention).toBe(false);
+    expect(vm.attention.total).toBe(0);
+  });
+  it("keeps an authoritative conflict group even when the embedded item status disagrees", () => {
+    const item = { status: "MISSING", requirementId: "r-conflict" };
+    const vm = toWorkspaceViewModel({
+      report: { status: "COMPOSED" },
+      needsAttention: { groups: { manualReview: [], missing: [], partial: [], conflict: [item] } },
+      displayLabels: {},
+    });
+    expect(vm.attention.grouped.CONFLICT).toEqual([item]);
+    expect(vm.attention.grouped.MISSING).toEqual([]);
+    expect(vm.attention.items[0]).toBe(item);
+    expect(item.status).toBe("MISSING");
   });
   it("does not append report-level manual review when serialized authoritative groups already contain attention", () => {
     const serverResponse = {
@@ -165,6 +177,15 @@ describe("admin student workspace presentation", () => {
     expect(selectWorkspaceState({ isError: true } as any).kind).toBe("error");
     expect(selectWorkspaceState({ data: null } as any).kind).toBe("empty");
     expect(selectWorkspaceState({ data: { student: {} } } as any).kind).toBe("ready");
+  });
+  it("classifies query errors by HTTP status without treating authorization failures as not-found", () => {
+    expect(classifyWorkspaceQueryError(new Error("404: not found"))).toBe("not-found");
+    expect(classifyWorkspaceQueryError(new Error("4040: network payload"))).toBe("error");
+    expect(selectWorkspaceState({ isError: true, error: new Error("404: not found") } as any)).toMatchObject({ kind: "empty", reason: "not-found" });
+    expect(selectWorkspaceState({ isError: true, error: new Error("401: unauthorized") } as any)).toMatchObject({ kind: "error" });
+    expect(selectWorkspaceState({ isError: true, error: new Error("403: forbidden") } as any)).toMatchObject({ kind: "error" });
+    expect(selectWorkspaceState({ isError: true, error: new Error("500: server error") } as any)).toMatchObject({ kind: "error" });
+    expect(selectWorkspaceState({ isError: true, error: new Error("network failed") } as any)).toMatchObject({ kind: "error" });
   });
   it("exposes accessible loading announcement metadata", () => {
     expect(selectWorkspaceState({ isLoading: true } as any)).toMatchObject({

@@ -78,7 +78,8 @@ const deps = vi.hoisted(() => ({
   getActiveAssignment: vi.fn(),
   getProgramContext: vi.fn(),
   getProgress: vi.fn(),
-  resolveDisplayLabels: vi.fn(),
+  getRequirementDisplay: vi.fn(),
+  getAcademicRuleDisplay: vi.fn(),
 }));
 
 const report = {
@@ -97,6 +98,18 @@ const report = {
   phase3Output: {
     status: "COMPOSED",
     diagnostics: [],
+    results: [{
+      projectionKind: "INFORMATIONAL_ONLY",
+      requirementId: "requirement-1",
+      academicRuleId: "rule-1",
+      status: "CONFLICT",
+      requiredAmount: "3",
+      appliedAmount: "0",
+      remainingAmount: "3",
+      reason: "CANONICAL_CONFLICT",
+      provenance: {},
+    }],
+    observations: [],
     recordedCreditProjection: {
       results: [{
         projectionKind: "INFORMATIONAL_ONLY",
@@ -111,16 +124,6 @@ const report = {
       }],
     },
   },
-};
-
-const labels = {
-  programs: { "program-1": { label: "Canonical Program", source: "canonical" as const } },
-  programVersions: { "version-1": { label: "2025 Catalog", source: "canonical" as const } },
-  requirements: { "requirement-1": { label: "Canonical Requirement", source: "canonical" as const } },
-  academicRules: {},
-  courses: {},
-  sources: {},
-  missingIds: ["rule-1"],
 };
 
 async function appFor(role: "admin" | "staff" | "coach" | null): Promise<{
@@ -156,7 +159,15 @@ describe("Phase 5A.1 — admin student workspace", () => {
       version: { id: "version-1", programId: "program-1", versionLabel: "2025 Catalog" },
     });
     deps.getProgress.mockResolvedValue(report);
-    deps.resolveDisplayLabels.mockResolvedValue(labels);
+    deps.getRequirementDisplay.mockResolvedValue({
+      requirement: {
+        id: "requirement-1",
+        programVersionId: "version-1",
+        title: "Canonical Requirement",
+      },
+      programVersion: { id: "version-1" },
+    });
+    deps.getAcademicRuleDisplay.mockResolvedValue(null);
   });
 
   it("returns one operator workspace and invokes progress exactly once", async () => {
@@ -182,6 +193,8 @@ describe("Phase 5A.1 — admin student workspace", () => {
       source: "id-fallback",
     });
     expect(response.body.displayLabels.missingIds).toContain("rule-1");
+    expect(deps.getRequirementDisplay).toHaveBeenCalledWith("requirement-1");
+    expect(deps.getAcademicRuleDisplay).toHaveBeenCalledWith("rule-1");
     expect(response.body.needsAttention.groups.conflict).toHaveLength(1);
     expect(response.body.snapshot).toEqual({
       asOf: report.snapshot.asOf,
@@ -314,8 +327,7 @@ describe("Phase 5A.1 — admin student workspace", () => {
   it("uses only canonical rows from the active program version for labels", async () => {
     // The default resolver must refuse rows whose canonical ownership points
     // at another version, rather than displaying misleading titles.
-    deps.resolveDisplayLabels.mockReset();
-    canonicalRepo.getRequirementWithProgramVersion.mockResolvedValue({
+    deps.getRequirementDisplay.mockResolvedValue({
       requirement: {
         id: "requirement-1",
         programVersionId: "different-version",
@@ -323,7 +335,7 @@ describe("Phase 5A.1 — admin student workspace", () => {
       },
       programVersion: { id: "different-version", status: "active" },
     });
-    canonicalRepo.getAcademicRuleWithProgramVersion.mockResolvedValue({
+    deps.getAcademicRuleDisplay.mockResolvedValue({
       rule: {
         id: "rule-1",
         programVersionId: "different-version",
@@ -349,18 +361,11 @@ describe("Phase 5A.1 — admin student workspace", () => {
     expect(response.body.displayLabels.missingIds).toEqual(
       expect.arrayContaining(["requirement-1", "rule-1"]),
     );
+    expect(deps.getRequirementDisplay).toHaveBeenCalledWith("requirement-1");
+    expect(deps.getAcademicRuleDisplay).toHaveBeenCalledWith("rule-1");
   });
 
   it("does not advertise course or source labels without canonical lookups", async () => {
-    deps.resolveDisplayLabels.mockResolvedValueOnce({
-      programs: {},
-      programVersions: {},
-      requirements: {},
-      academicRules: {},
-      courses: { "course-1": { label: "Inferred course", source: "canonical" } },
-      sources: { "source-1": { label: "Inferred source", source: "canonical" } },
-      missingIds: [],
-    });
     const { app, auth } = await appFor("admin");
     const response = await request(app)
       .get(`/api/admin/students/${STUDENT_ID}/workspace`)
@@ -372,9 +377,8 @@ describe("Phase 5A.1 — admin student workspace", () => {
   });
 
   it("accounts for every missing canonical requirement and rule label", async () => {
-    deps.resolveDisplayLabels.mockReset();
-    canonicalRepo.getRequirementWithProgramVersion.mockResolvedValueOnce(null);
-    canonicalRepo.getAcademicRuleWithProgramVersion.mockResolvedValueOnce(null);
+    deps.getRequirementDisplay.mockResolvedValueOnce(null);
+    deps.getAcademicRuleDisplay.mockResolvedValueOnce(null);
     const { app, auth } = await appFor("admin");
     const response = await request(app)
       .get(`/api/admin/students/${STUDENT_ID}/workspace`)
@@ -403,7 +407,7 @@ describe("Phase 5A.1 — admin student workspace", () => {
     expect(deps.getProgress).not.toHaveBeenCalled();
   });
 
-  it("groups report-level manual review without changing the report", async () => {
+  it("exposes report-level manual review without inventing an attention group", async () => {
     const manualReport = {
       ...report,
       status: "MANUAL_REVIEW",
@@ -422,10 +426,14 @@ describe("Phase 5A.1 — admin student workspace", () => {
 
     expect(response.status).toBe(200);
     expect(response.body.report).toEqual(manualReport);
-    expect(response.body.needsAttention.groups.manualReview).toEqual([
-      { status: "MANUAL_REVIEW" },
-    ]);
-    expect(response.body.needsAttention.reasons).toContain("SNAPSHOT_READER_FAILED");
+    expect(response.body.needsAttention.reportStatus).toBe("MANUAL_REVIEW");
+    expect(response.body.needsAttention.groups).toEqual({
+      manualReview: [],
+      missing: [],
+      partial: [],
+      conflict: [],
+    });
+    expect(response.body.needsAttention.reasons).toEqual(["SNAPSHOT_READER_FAILED"]);
   });
 
   it("uses only canonical result and diagnostic locations for attention", async () => {
@@ -455,10 +463,8 @@ describe("Phase 5A.1 — admin student workspace", () => {
       phase3Output: {
         ...report.phase3Output,
         diagnostics: [diagnostic, { ...diagnostic }],
-        recordedCreditProjection: {
-          ...report.phase3Output.recordedCreditProjection,
-          results: [canonicalResult],
-        },
+        results: [canonicalResult],
+        observations: [],
         arbitraryNested: nestedNoise,
       },
       integrationDiagnostics: [],
@@ -480,10 +486,67 @@ describe("Phase 5A.1 — admin student workspace", () => {
       "CANONICAL_DIAGNOSTIC",
       "CANONICAL_PARTIAL",
     ]);
-    expect(response.body.needsAttention.diagnostics).toEqual([diagnostic]);
+    expect(response.body.needsAttention.diagnostics).toEqual([diagnostic, diagnostic]);
   });
 
-  it("keeps manual-review diagnostics in the diagnostic sidecar only", async () => {
+  it("does not rescan nested recorded projections when aggregate items repeat", async () => {
+    const aggregateResult = {
+      projectionKind: "INFORMATIONAL_ONLY",
+      requirementId: "requirement-1",
+      academicRuleId: "rule-1",
+      status: "PARTIAL",
+      reason: "CANONICAL_PARTIAL",
+      provenance: {},
+    };
+    const attentionReport = {
+      ...report,
+      phase3Output: {
+        ...report.phase3Output,
+        results: [aggregateResult],
+        observations: [aggregateResult],
+        recordedExceptionProjection: {
+          results: [aggregateResult],
+          observations: [aggregateResult],
+        },
+      },
+      integrationDiagnostics: [],
+    };
+    deps.getProgress.mockResolvedValue(attentionReport);
+    const { app, auth } = await appFor("admin");
+    const response = await request(app)
+      .get(`/api/admin/students/${STUDENT_ID}/workspace`)
+      .set("Authorization", `Bearer ${auth}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.needsAttention.groups.partial).toEqual([aggregateResult]);
+  });
+
+  it("returns a sanitized 500 for a progress context mismatch without resolving labels", async () => {
+    const reportSerialization = vi.fn(() => {
+      throw new Error("report must not be serialized");
+    });
+    deps.getProgress.mockResolvedValueOnce({
+      ...report,
+      context: {
+        ...report.context,
+        programVersionId: "foreign-version",
+      },
+      toJSON: reportSerialization,
+    });
+    const { app, auth } = await appFor("admin");
+    const response = await request(app)
+      .get(`/api/admin/students/${STUDENT_ID}/workspace`)
+      .set("Authorization", `Bearer ${auth}`);
+
+    expect(response.status).toBe(500);
+    expect(response.body).toEqual({ error: "Internal server error" });
+    expect(deps.getProgress).toHaveBeenCalledTimes(1);
+    expect(deps.getRequirementDisplay).not.toHaveBeenCalled();
+    expect(deps.getAcademicRuleDisplay).not.toHaveBeenCalled();
+    expect(reportSerialization).not.toHaveBeenCalled();
+  });
+
+  it("keeps manual-review aggregate diagnostics in the diagnostic sidecar only", async () => {
     const diagnostic = {
       stage: "COMPOSITION",
       projectionKind: "INFORMATIONAL_ONLY",
@@ -507,9 +570,43 @@ describe("Phase 5A.1 — admin student workspace", () => {
       .set("Authorization", `Bearer ${auth}`);
 
     expect(response.status).toBe(200);
-    expect(response.body.needsAttention.groups.manualReview).toEqual([
-      { status: "MANUAL_REVIEW" },
-    ]);
+    expect(response.body.needsAttention.reportStatus).toBe("MANUAL_REVIEW");
+    expect(response.body.needsAttention.groups.manualReview).toEqual([]);
     expect(response.body.needsAttention.diagnostics).toEqual([diagnostic]);
+  });
+
+  it("does not synthesize attention for manual review with empty phase3 aggregates", async () => {
+    const manualReport = {
+      ...report,
+      status: "MANUAL_REVIEW",
+      phase3Output: {
+        ...report.phase3Output,
+        results: [],
+        observations: [],
+        diagnostics: [],
+      },
+      integrationDiagnostics: [],
+    };
+    deps.getProgress.mockResolvedValue(manualReport);
+    const { app, auth } = await appFor("admin");
+    const response = await request(app)
+      .get(`/api/admin/students/${STUDENT_ID}/workspace`)
+      .set("Authorization", `Bearer ${auth}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.needsAttention).toEqual({
+      hasAttention: false,
+      reportStatus: "MANUAL_REVIEW",
+      groups: {
+        manualReview: [],
+        missing: [],
+        partial: [],
+        conflict: [],
+      },
+      reasons: [],
+      diagnostics: [],
+      integrationDiagnostics: [],
+    });
+    expect(response.body.report).toEqual(manualReport);
   });
 });
