@@ -83,9 +83,10 @@ export function registerHealthRoutes(app: Express) {
 
   // Readiness probe (for Kubernetes-style orchestration)
   app.get('/ready', async (req, res) => {
+    let productionReadiness: Awaited<ReturnType<typeof validateProductionAuthReadiness>> | null = null;
     try {
       if (process.env.NODE_ENV === 'production') {
-        const readiness = await validateProductionAuthReadiness({
+        productionReadiness = await validateProductionAuthReadiness({
           appUrl: process.env.APP_URL,
           supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL,
           databaseUrl: process.env.DATABASE_URL,
@@ -93,6 +94,7 @@ export function registerHealthRoutes(app: Express) {
           supabaseServiceKey: process.env.SUPABASE_SERVICE_KEY,
           sessionSecret: process.env.SESSION_SECRET,
           demoMode: process.env.ALLOW_DEMO_MODE === 'true',
+          authEmailMode: process.env.AUTH_EMAIL_MODE,
         }, {
           checkTables: async () => {
             const [users, profiles] = await Promise.all([
@@ -122,9 +124,13 @@ export function registerHealthRoutes(app: Express) {
             }
           },
         });
-        if (!readiness.ready) {
-          logger.warn('Production auth readiness check failed', { failures: readiness.failures });
-          return res.status(503).json({ ready: false, checks: readiness.checks });
+        if (!productionReadiness.ready) {
+          logger.warn('Production auth readiness check failed', { failures: productionReadiness.failures });
+          return res.status(503).json({
+            ready: false,
+            checks: productionReadiness.checks,
+            mailMode: productionReadiness.mailMode,
+          });
         }
       }
       // Skip DB check if Supabase not configured (development)
@@ -142,6 +148,13 @@ export function registerHealthRoutes(app: Express) {
         throw error;
       }
 
+      if (productionReadiness) {
+        return res.status(200).json({
+          ready: true,
+          checks: productionReadiness.checks,
+          mailMode: productionReadiness.mailMode,
+        });
+      }
       res.status(200).json({ ready: true });
     } catch (error) {
       logger.error('Readiness check failed', {
