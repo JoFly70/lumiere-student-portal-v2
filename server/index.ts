@@ -213,7 +213,6 @@ const createLimiter = (config: typeof rateLimitConfig.api) => {
 
 const apiLimiter = createLimiter(rateLimitConfig.api);
 const adminLimiter = createLimiter(rateLimitConfig.admin);
-const authLimiter = createLimiter(rateLimitConfig.auth);
 
 // Webhook routes MUST come before body parsing AND rate limiting
 declare module 'http' {
@@ -227,7 +226,6 @@ registerWebhookRoutes(app);
 
 // Apply rate limits AFTER webhooks (webhooks excluded - Stripe handles their own rate limiting)
 app.use('/api/admin', adminLimiter);
-app.use('/api/auth', authLimiter);
 // API limiter must be last (after more specific routes)
 app.use('/api', apiLimiter);
 
