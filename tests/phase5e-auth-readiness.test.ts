@@ -9,6 +9,7 @@ const validConfig = {
   supabaseServiceKey: 'service-key',
   sessionSecret: 'a-production-session-secret-with-32-chars',
   demoMode: false,
+  authEmailMode: 'custom_smtp',
 };
 
 describe('production auth readiness', () => {
@@ -89,6 +90,35 @@ describe('production auth readiness', () => {
       checkAuthEmail: async () => false,
     });
     expect(disabled.failures).toContain('authEmail');
+  });
+
+
+  it('requires custom SMTP to be declared in production readiness', async () => {
+    const probes = {
+      checkTables: async () => ({ users: true, profiles: true }),
+      checkAuthEmail: async () => true,
+    };
+
+    const missing = await validateProductionAuthReadiness({
+      ...validConfig,
+      authEmailMode: undefined,
+    }, probes);
+    expect(missing.ready).toBe(false);
+    expect(missing.mailMode).toBe('unknown');
+    expect(missing.failures).toContain('customSmtpDeclared');
+
+    const platformDefault = await validateProductionAuthReadiness({
+      ...validConfig,
+      authEmailMode: 'supabase_default',
+    }, probes);
+    expect(platformDefault.ready).toBe(false);
+    expect(platformDefault.mailMode).toBe('supabase_default');
+    expect(platformDefault.failures).toContain('customSmtpDeclared');
+
+    const custom = await validateProductionAuthReadiness(validConfig, probes);
+    expect(custom.ready).toBe(true);
+    expect(custom.mailMode).toBe('custom_smtp');
+    expect(custom.checks.customSmtpDeclared).toBe(true);
   });
 
   it('fails closed when the settings probe errors', async () => {
