@@ -1,4 +1,5 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import { getAuthToken } from "./api";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
@@ -15,7 +16,7 @@ export async function apiRequest(
   const headers: Record<string, string> = data ? { "Content-Type": "application/json" } : {};
   
   // Add auth token if available
-  const accessToken = sessionStorage.getItem('sb_access_token');
+  const accessToken = getAuthToken();
   if (accessToken) {
     headers["Authorization"] = `Bearer ${accessToken}`;
   }
@@ -32,6 +33,50 @@ export async function apiRequest(
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  if (value === null || typeof value !== "object") {
+    return false;
+  }
+
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
+}
+
+function buildQueryKeyUrl(queryKey: readonly unknown[]): string {
+  const pathSegments: string[] = [];
+  const searchParams = new URLSearchParams();
+
+  for (const keyPart of queryKey) {
+    if (typeof keyPart === "string" || (typeof keyPart === "number" && Number.isFinite(keyPart))) {
+      pathSegments.push(String(keyPart));
+      continue;
+    }
+
+    if (!isPlainObject(keyPart)) {
+      continue;
+    }
+
+    for (const [key, value] of Object.entries(keyPart)) {
+      if (value === undefined || value === null) {
+        continue;
+      }
+
+      if (
+        typeof value === "string" ||
+        typeof value === "boolean" ||
+        (typeof value === "number" && Number.isFinite(value))
+      ) {
+        searchParams.append(key, String(value));
+      }
+    }
+  }
+
+  const path = pathSegments.join("/");
+  const query = searchParams.toString();
+  return query ? `${path}?${query}` : path;
+}
+
 export const getQueryFn: <T>(options: {
   on401: UnauthorizedBehavior;
 }) => QueryFunction<T> =
@@ -40,12 +85,12 @@ export const getQueryFn: <T>(options: {
     const headers: Record<string, string> = {};
     
     // Add auth token if available
-    const accessToken = sessionStorage.getItem('sb_access_token');
+    const accessToken = getAuthToken();
     if (accessToken) {
       headers["Authorization"] = `Bearer ${accessToken}`;
     }
     
-    const res = await fetch(queryKey.join("/") as string, {
+    const res = await fetch(buildQueryKeyUrl(queryKey), {
       headers,
       credentials: "include",
     });

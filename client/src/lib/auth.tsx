@@ -1,17 +1,17 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { useLocation } from 'wouter';
-import { setAuthToken, setCsrfToken } from './api';
+import { isRestorableAuthState, publishAuthLifecycle } from './auth-lifecycle';
 
 interface User {
   id: string;
   email: string;
   name: string;
-  role: string;
+  role?: string;
 }
 
 interface AuthSession {
   access_token: string;
-  refresh_token: string | null;
+  refresh_token?: string | null;
   expires_at: number;
   csrf_token?: string;
 }
@@ -34,32 +34,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<AuthSession | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const identityRef = useRef<string | null>(null);
   const [, setLocation] = useLocation();
+
+  const publishAuthState = (nextUser: User | null, nextSession: AuthSession | null) => {
+    identityRef.current = publishAuthLifecycle(
+      identityRef.current,
+      nextUser,
+      nextSession,
+      () => {
+        setUser(nextUser);
+        setSession(nextSession);
+      },
+    );
+  };
 
   // Load stored session on mount
   useEffect(() => {
     const loadStoredSession = () => {
+      let nextUser: User | null = null;
+      let nextSession: AuthSession | null = null;
+
       try {
         const stored = localStorage.getItem(AUTH_STORAGE_KEY);
         if (stored) {
           const data = JSON.parse(stored);
 
-          // Check if session is expired
-          if (data.session && data.session.expires_at) {
-            const now = Math.floor(Date.now() / 1000);
-            if (data.session.expires_at > now) {
-              setUser(data.user);
-              setSession(data.session);
-            } else {
-              // Session expired, clear storage
-              localStorage.removeItem(AUTH_STORAGE_KEY);
-            }
+          if (isRestorableAuthState(data)) {
+            nextUser = data.user;
+            nextSession = data.session;
+          } else {
+            // Session is expired or malformed, clear storage.
+            localStorage.removeItem(AUTH_STORAGE_KEY);
           }
         }
       } catch (error) {
         console.error('Failed to load stored session:', error);
         localStorage.removeItem(AUTH_STORAGE_KEY);
       } finally {
+        publishAuthState(nextUser, nextSession);
         setIsLoading(false);
       }
     };
@@ -67,19 +80,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loadStoredSession();
   }, []);
 
-  // Store session when it changes and update API client
+  // Store session when it changes.
   useEffect(() => {
     if (user && session) {
       try {
         localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({ user, session }));
-        setAuthToken(session.access_token);
-        setCsrfToken(session.csrf_token || null);
       } catch (error) {
         console.error('Failed to store session:', error);
       }
-    } else {
-      setAuthToken(null);
-      setCsrfToken(null);
     }
   }, [user, session]);
 
@@ -110,8 +118,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       csrfToken = csrfData.csrfToken;
     }
 
-    setUser(data.user);
-    setSession({
+    publishAuthState(data.user, {
       ...data.session,
       csrf_token: csrfToken,
     });
@@ -150,8 +157,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         csrfToken = csrfData.csrfToken;
       }
 
-      setUser(data.user);
-      setSession({
+      publishAuthState(data.user, {
         ...data.session,
         csrf_token: csrfToken,
       });
@@ -159,9 +165,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
-    // Call logout endpoint to clear CSRF token on server
-    if (session?.access_token && session?.csrf_token) {
-      try {
+    try {
+      // Call logout endpoint to clear CSRF token on server before local auth state.
+      if (session?.access_token && session?.csrf_token) {
         await fetch('/api/auth/logout', {
           method: 'POST',
           headers: {
@@ -169,15 +175,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             'X-CSRF-Token': session.csrf_token,
           },
         });
-      } catch (error) {
-        console.error('Logout request failed:', error);
       }
+    } catch (error) {
+      console.error('Logout request failed:', error);
+    } finally {
+      publishAuthState(null, null);
+      localStorage.removeItem(AUTH_STORAGE_KEY);
+      setLocation('/login');
     }
-
-    setUser(null);
-    setSession(null);
-    localStorage.removeItem(AUTH_STORAGE_KEY);
-    setLocation('/login');
   };
 
   const value: AuthContextType = {
