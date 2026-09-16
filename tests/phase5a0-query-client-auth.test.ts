@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { getAuthToken, setAuthToken } from '../client/src/lib/api';
-import { apiRequest, getQueryFn } from '../client/src/lib/queryClient';
+import { apiRequest, getQueryFn, queryClient } from '../client/src/lib/queryClient';
 
 type SessionStorageShim = {
   getItem(key: string): string | null;
@@ -28,6 +28,64 @@ function okResponse(body: unknown = {}) {
     text: vi.fn().mockResolvedValue(''),
   } as unknown as Response;
 }
+
+const defaultQueryCallsites = [
+  {
+    sourceFile: 'client/src/pages/admin.tsx',
+    callsite: 'analytics/dashboard',
+    queryKey: ['/api/admin/analytics/dashboard'],
+  },
+  {
+    sourceFile: 'client/src/pages/admin.tsx',
+    callsite: 'users object key',
+    queryKey: ['/api/admin/users', { search: 'Ada', role: 'admin' }],
+  },
+  {
+    sourceFile: 'client/src/pages/admin.tsx',
+    callsite: 'students object key',
+    queryKey: ['/api/admin/students', { search: 'Ada', status: 'active' }],
+  },
+  {
+    sourceFile: 'client/src/pages/admin.tsx',
+    callsite: 'audit logs object key',
+    queryKey: ['/api/admin/audit-logs', { limit: 100 }],
+  },
+  {
+    sourceFile: 'client/src/pages/dashboard.tsx',
+    callsite: 'system/check',
+    queryKey: ['/api/system/check'],
+  },
+  {
+    sourceFile: 'client/src/pages/dashboard.tsx',
+    callsite: 'me',
+    queryKey: ['/api/me'],
+  },
+  {
+    sourceFile: 'client/src/pages/dashboard.tsx',
+    callsite: 'degree-templates',
+    queryKey: ['/api/degree-templates'],
+  },
+  {
+    sourceFile: 'client/src/pages/dashboard.tsx',
+    callsite: 'plans+planId',
+    queryKey: ['/api/plans', 'plan-123'],
+  },
+  {
+    sourceFile: 'client/src/pages/flight-deck.tsx',
+    callsite: 'flight-deck',
+    queryKey: ['/api/flight-deck'],
+  },
+  {
+    sourceFile: 'client/src/pages/roadmap.tsx',
+    callsite: 'enrollments',
+    queryKey: ['/api/enrollments'],
+  },
+  {
+    sourceFile: 'client/src/components/course-assignment-dialog.tsx',
+    callsite: 'templates',
+    queryKey: ['/api/templates'],
+  },
+] as const;
 
 describe('Phase 5A.0 query client authentication', () => {
   const originalSessionStorage = Object.getOwnPropertyDescriptor(globalThis, 'sessionStorage');
@@ -84,6 +142,52 @@ describe('Phase 5A.0 query client authentication', () => {
       body: JSON.stringify({ name: 'Ada' }),
       credentials: 'include',
     });
+  });
+
+  it('covers every live default-query callsite through the singleton queryClient', async () => {
+    expect(defaultQueryCallsites).toHaveLength(11);
+    expect(defaultQueryCallsites.map(({ sourceFile }) => sourceFile)).toEqual([
+      'client/src/pages/admin.tsx',
+      'client/src/pages/admin.tsx',
+      'client/src/pages/admin.tsx',
+      'client/src/pages/admin.tsx',
+      'client/src/pages/dashboard.tsx',
+      'client/src/pages/dashboard.tsx',
+      'client/src/pages/dashboard.tsx',
+      'client/src/pages/dashboard.tsx',
+      'client/src/pages/flight-deck.tsx',
+      'client/src/pages/roadmap.tsx',
+      'client/src/components/course-assignment-dialog.tsx',
+    ]);
+    expect(defaultQueryCallsites.map(({ callsite }) => callsite)).toEqual([
+      'analytics/dashboard',
+      'users object key',
+      'students object key',
+      'audit logs object key',
+      'system/check',
+      'me',
+      'degree-templates',
+      'plans+planId',
+      'flight-deck',
+      'enrollments',
+      'templates',
+    ]);
+
+    for (const site of defaultQueryCallsites) {
+      queryClient.clear();
+      fetchMock.mockReset().mockResolvedValue(okResponse({ callsite: site.callsite }));
+      sessionStorage.setItem('sb_access_token', 'stale-session-token');
+      setAuthToken('current-token');
+
+      await queryClient.fetchQuery({ queryKey: site.queryKey });
+
+      expect(fetchMock, `${site.sourceFile} ${site.callsite}`).toHaveBeenCalledTimes(1);
+      const [, requestInit] = fetchMock.mock.calls[0];
+      expect(requestInit.headers, `${site.sourceFile} ${site.callsite}`).toEqual({
+        Authorization: 'Bearer current-token',
+      });
+      expect(requestInit.credentials, `${site.sourceFile} ${site.callsite}`).toBe('include');
+    }
   });
 
   it('does not send an Authorization header when the current auth token is null', async () => {
