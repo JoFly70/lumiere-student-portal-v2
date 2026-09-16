@@ -31,6 +31,13 @@ import {
 } from "lucide-react";
 import { apiRequest } from "@/lib/api";
 import { ProgramsManagement } from "@/components/programs-management";
+import { useLocation, useSearch } from "wouter";
+import {
+  adminStudentWorkspacePath,
+  adminTabFromSearch,
+  adminTabPath,
+  type AdminTab,
+} from "./admin-student-workspace-presentation";
 
 // Types
 interface User {
@@ -356,6 +363,7 @@ function UserManagement() {
 function StudentManagement() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [, setLocation] = useLocation();
 
   const { data, isLoading } = useQuery<{ students: Student[] }>({
     queryKey: ['/api/admin/students', { search, status: statusFilter !== 'all' ? statusFilter : undefined }],
@@ -427,7 +435,7 @@ function StudentManagement() {
                   </TableCell>
                   <TableCell className="capitalize">{student.residency}</TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="icon">
+                     <Button variant="ghost" size="icon" aria-label={`Open ${student.first_name} ${student.last_name}`} onClick={() => setLocation(adminStudentWorkspacePath(student.id))}>
                       <Eye className="w-4 h-4" />
                     </Button>
                   </TableCell>
@@ -514,6 +522,9 @@ function AuditLogs() {
 
 // Main Admin Dashboard
 export default function Admin() {
+  const [, setLocation] = useLocation();
+  const search = useSearch();
+  const selectedTab = adminTabFromSearch(search);
   return (
     <div className="space-y-6">
       <div>
@@ -523,7 +534,11 @@ export default function Admin() {
         </p>
       </div>
 
-      <Tabs defaultValue="overview" className="space-y-6">
+      <Tabs
+        value={selectedTab}
+        onValueChange={(tab) => setLocation(adminTabPath(tab as AdminTab))}
+        className="space-y-6"
+      >
         <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-grid">
           <TabsTrigger value="overview">
             <BarChart3 className="w-4 h-4 mr-2" />
