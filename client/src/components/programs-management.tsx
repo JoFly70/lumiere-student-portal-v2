@@ -20,6 +20,8 @@ import {
   Trash2,
   Loader2,
   Search,
+  AlertCircle,
+  RefreshCw,
 } from "lucide-react";
 
 interface DegreeProgram {
@@ -82,7 +84,12 @@ export function ProgramsManagement() {
     is_active: true,
   });
 
-  const { data: programs, isLoading: loadingPrograms } = useQuery<DegreeProgram[]>({
+  const {
+    data: programs,
+    isLoading: loadingPrograms,
+    isError: programsError,
+    refetch: refetchPrograms,
+  } = useQuery<DegreeProgram[]>({
     queryKey: ['programs'],
     queryFn: async () => apiRequest('/api/programs'),
   });
@@ -424,6 +431,22 @@ export function ProgramsManagement() {
             {loadingPrograms ? (
               <div className="flex justify-center py-8">
                 <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : programsError ? (
+              <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-6 text-center">
+                <AlertCircle className="w-6 h-6 mx-auto mb-2 text-destructive" />
+                <p className="font-medium">Programs could not be loaded</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  This is a system error, not an empty programs list.
+                </p>
+                <Button
+                  variant="outline"
+                  className="mt-4"
+                  onClick={() => void refetchPrograms()}
+                >
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Retry
+                </Button>
               </div>
             ) : (
               <Table>
