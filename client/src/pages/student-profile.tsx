@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { Link } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -170,12 +171,15 @@ export default function StudentProfile() {
   if (!profile) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
+        <div className="text-center max-w-md">
           <User className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-          <div className="text-lg font-medium">No Profile Found</div>
+          <div className="text-lg font-medium">Student record not ready</div>
           <p className="text-sm text-muted-foreground mt-2">
-            Please contact support to create your student profile.
+            Your Lumiere advisor must create your student record before your profile can be displayed.
           </p>
+          <Button asChild variant="outline" className="mt-4">
+            <Link href="/support">Contact Support</Link>
+          </Button>
         </div>
       </div>
     );
