@@ -20,7 +20,7 @@ import {
   programVersions,
   requirementsV2,
 } from "@shared/knowledge-schema";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, desc, sql } from "drizzle-orm";
 import type { PgTransaction } from "drizzle-orm/pg-core";
 
 export type StudentCreditPlacementTx = PgTransaction<any, any, any> | typeof db;
@@ -69,9 +69,16 @@ export type PlacementReadModel = {
  */
 export interface StudentCreditPlacementRepository {
   lockDecisionRow(decisionId: string, tx?: StudentCreditPlacementTx): Promise<void>;
+  lockCreditRecordRow(creditRecordId: string, tx?: StudentCreditPlacementTx): Promise<void>;
   lockAssignmentRow(assignmentId: string, tx?: StudentCreditPlacementTx): Promise<void>;
+  lockRequirementRow(requirementId: string, tx?: StudentCreditPlacementTx): Promise<void>;
   lockPlacementRow(placementId: string, tx?: StudentCreditPlacementTx): Promise<void>;
   getDecisionContext(decisionId: string, tx?: StudentCreditPlacementTx): Promise<DecisionContext | null>;
+  getLatestDecision(
+    creditRecordId: string,
+    programAssignmentId: string,
+    tx?: StudentCreditPlacementTx,
+  ): Promise<typeof studentCreditDecisions.$inferSelect | null>;
   getAssignmentContext(assignmentId: string, tx?: StudentCreditPlacementTx): Promise<AssignmentContext | null>;
   getRequirementContext(requirementId: string, tx?: StudentCreditPlacementTx): Promise<RequirementContext | null>;
   getAcademicRuleContext(ruleId: string, tx?: StudentCreditPlacementTx): Promise<AcademicRuleContext | null>;
@@ -105,11 +112,25 @@ export async function lockDecisionRow(
   await tx.execute(sql`SELECT id FROM student_credit_decisions WHERE id = ${decisionId} FOR UPDATE`);
 }
 
+export async function lockCreditRecordRow(
+  creditRecordId: string,
+  tx: StudentCreditPlacementTx = db,
+): Promise<void> {
+  await tx.execute(sql`SELECT id FROM student_credit_records WHERE id = ${creditRecordId} FOR UPDATE`);
+}
+
 export async function lockAssignmentRow(
   assignmentId: string,
   tx: StudentCreditPlacementTx = db,
 ): Promise<void> {
   await tx.execute(sql`SELECT id FROM student_program_assignments WHERE id = ${assignmentId} FOR UPDATE`);
+}
+
+export async function lockRequirementRow(
+  requirementId: string,
+  tx: StudentCreditPlacementTx = db,
+): Promise<void> {
+  await tx.execute(sql`SELECT id FROM knowledge_requirements_v2 WHERE id = ${requirementId} FOR UPDATE`);
 }
 
 export async function lockPlacementRow(
@@ -130,6 +151,23 @@ export async function getDecisionContext(
     .where(eq(studentCreditDecisions.id, decisionId))
     .limit(1);
   return rows[0] ?? null;
+}
+
+export async function getLatestDecision(
+  creditRecordId: string,
+  programAssignmentId: string,
+  tx: StudentCreditPlacementTx = db,
+): Promise<typeof studentCreditDecisions.$inferSelect | null> {
+  const [row] = await tx
+    .select()
+    .from(studentCreditDecisions)
+    .where(and(
+      eq(studentCreditDecisions.creditRecordId, creditRecordId),
+      eq(studentCreditDecisions.programAssignmentId, programAssignmentId),
+    ))
+    .orderBy(desc(studentCreditDecisions.seq))
+    .limit(1);
+  return row ?? null;
 }
 
 export async function getAssignmentContext(
@@ -281,9 +319,12 @@ export async function updatePlacementLifecycle(
 
 export const studentCreditPlacementRepository: StudentCreditPlacementRepository = {
   lockDecisionRow,
+  lockCreditRecordRow,
   lockAssignmentRow,
+  lockRequirementRow,
   lockPlacementRow,
   getDecisionContext,
+  getLatestDecision,
   getAssignmentContext,
   getRequirementContext,
   getAcademicRuleContext,

@@ -1138,6 +1138,7 @@ window.ENV = {
   const programsRouter = (await import('./routes/programs')).default;
   const adminDegreeProgressRouter = (await import('./routes/admin-degree-progress')).default;
   const adminStudentWorkspaceRouter = (await import('./routes/admin-student-workspace')).default;
+  const adminStudentCreditPlacementRouter = (await import('./routes/admin-student-credit-placement')).default;
 
   app.use('/api/students', studentsRouter);
   app.use('/api/documents', documentsRouter);
@@ -1154,6 +1155,7 @@ window.ENV = {
   app.use('/api/admin/student-academic', studentAcademicRouter);
   app.use('/api/admin/degree-progress', adminDegreeProgressRouter);
   app.use('/api/admin', adminStudentWorkspaceRouter);
+  app.use('/api/admin', adminStudentCreditPlacementRouter);
 
   // Student self-read endpoint (student role only, own record only)
   const { studentSelfRouter } = await import('./routes/student-academic');

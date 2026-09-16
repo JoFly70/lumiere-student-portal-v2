@@ -81,8 +81,14 @@ vi.mock('../server/services/knowledge-service', () => ({
 
 // ── Mock audit to avoid Supabase calls ──────────────────────────────────────────
 
-const mockAudit = vi.hoisted(() => ({ auditAdmin: vi.fn().mockResolvedValue(undefined) }));
-vi.mock('../server/lib/audit', () => ({ auditAdmin: mockAudit.auditAdmin }));
+const mockAudit = vi.hoisted(() => ({
+  auditAdmin: vi.fn().mockResolvedValue(undefined),
+  createAuditLog: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock('../server/lib/audit', () => ({
+  auditAdmin: mockAudit.auditAdmin,
+  createAuditLog: mockAudit.createAuditLog,
+}));
 
 // ── Mock supabase so requireAuth uses local JWT path only ───────────────────────
 
@@ -200,6 +206,7 @@ describe('Phase 1C — Knowledge API Routes', () => {
     mockService.createEquivalencyFromVerifiedClaim.mockResolvedValue({ id: VALID_UUID, status: 'confirmed' });
     mockService.createArticulationFromVerifiedClaim.mockResolvedValue({ id: VALID_UUID, status: 'confirmed' });
     mockAudit.auditAdmin.mockResolvedValue(undefined);
+    mockAudit.createAuditLog.mockResolvedValue(undefined);
   });
 
   // ── A. REAL requireAuth executes ──────────────────────────────────────────────

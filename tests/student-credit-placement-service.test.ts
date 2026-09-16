@@ -16,18 +16,29 @@ type Row = Record<string, any>;
 function makeRepo() {
   const state = {
     decisions: new Map<string, Row>([
-      ["decision-1", { id: "decision-1", programAssignmentId: "assignment-1" }],
+      ["decision-1", {
+        id: "decision-1",
+        creditRecordId: "record-1",
+        programAssignmentId: "assignment-1",
+        seq: 1,
+        action: "accepted",
+      }],
     ]),
     records: new Map<string, Row>([
       ["record-1", { id: "record-1", studentId: "student-1" }],
     ]),
     assignments: new Map<string, Row>([
-      ["assignment-1", { id: "assignment-1", studentId: "student-1", programVersionId: "program-version-1" }],
+      ["assignment-1", {
+        id: "assignment-1",
+        studentId: "student-1",
+        programVersionId: "program-version-1",
+        status: "active",
+      }],
     ]),
     requirements: new Map<string, Row>([
-      ["requirement-1", { id: "requirement-1", programVersionId: "program-version-1" }],
-      ["requirement-2", { id: "requirement-2", programVersionId: "program-version-1" }],
-      ["requirement-other", { id: "requirement-other", programVersionId: "program-version-2" }],
+      ["requirement-1", { id: "requirement-1", programVersionId: "program-version-1", active: true }],
+      ["requirement-2", { id: "requirement-2", programVersionId: "program-version-1", active: true }],
+      ["requirement-other", { id: "requirement-other", programVersionId: "program-version-2", active: true }],
     ]),
     rules: new Map<string, Row>([
       ["rule-1", { id: "rule-1", programVersionId: "program-version-1" }],
@@ -61,8 +72,14 @@ function makeRepo() {
     async lockDecisionRow(id: string, tx?: unknown) {
       state.calls.push(`lock decision ${id} ${tx === transaction}`);
     },
+    async lockCreditRecordRow(id: string, tx?: unknown) {
+      state.calls.push(`lock credit record ${id} ${tx === transaction}`);
+    },
     async lockAssignmentRow(id: string, tx?: unknown) {
       state.calls.push(`lock assignment ${id} ${tx === transaction}`);
+    },
+    async lockRequirementRow(id: string, tx?: unknown) {
+      state.calls.push(`lock requirement ${id} ${tx === transaction}`);
     },
     async lockPlacementRow(id: string, tx?: unknown) {
       state.calls.push(`lock placement ${id} ${tx === transaction}`);
@@ -73,6 +90,15 @@ function makeRepo() {
       if (!decision) return null;
       const creditRecord = state.records.get(decision.creditRecordId ?? "record-1");
       return creditRecord ? { decision, creditRecord } : null;
+    },
+    async getLatestDecision(creditRecordId: string, assignmentId: string, tx?: unknown) {
+      state.calls.push(`read latest decision ${creditRecordId} ${assignmentId} ${tx === transaction}`);
+      return [...state.decisions.values()]
+        .filter((decision) => (
+          decision.creditRecordId === creditRecordId
+          && decision.programAssignmentId === assignmentId
+        ))
+        .sort((left, right) => right.seq - left.seq)[0] ?? null;
     },
     async getAssignmentContext(id: string, tx?: unknown) {
       state.calls.push(`read assignment ${id} ${tx === transaction}`);
@@ -179,6 +205,33 @@ async function expectCode(promise: Promise<unknown>, code: string) {
 }
 
 describe("Phase 4B — Student Credit Placement service", () => {
+  it("confirms a placement belongs to the exact student progress context", async () => {
+    const { service } = serviceFor();
+    const placement = await service.createPlacement(createInput());
+    await expect(service.assertPlacementContext({
+      placementId: placement.id,
+      studentId: "student-1",
+      programAssignmentId: "assignment-1",
+      programVersionId: "program-version-1",
+    })).resolves.toMatchObject({ id: placement.id });
+  });
+
+  it.each([
+    ["student", { studentId: "student-2" }],
+    ["assignment", { programAssignmentId: "assignment-2" }],
+    ["program version", { programVersionId: "program-version-2" }],
+  ])("rejects placement context with a mismatched %s", async (_field, overrides) => {
+    const { service } = serviceFor();
+    const placement = await service.createPlacement(createInput());
+    await expectCode(service.assertPlacementContext({
+      placementId: placement.id,
+      studentId: "student-1",
+      programAssignmentId: "assignment-1",
+      programVersionId: "program-version-1",
+      ...overrides,
+    }), "STUDENT_ACADEMIC_PROVENANCE_MISMATCH");
+  });
+
   it("creates a valid placement without academic result inference", async () => {
     const { service } = serviceFor();
     const placement = await service.createPlacement(createInput());
@@ -261,19 +314,149 @@ describe("Phase 4B — Student Credit Placement service", () => {
     await expect(service.createPlacement(createInput())).rejects.toBe(error);
   });
 
-  it("uses one transaction and locks before reads and active check", async () => {
+  it("uses one transaction and joins the decision writer lock order before freshness reads", async () => {
     const { service, state } = serviceFor();
     await service.createPlacement(createInput());
     expect(state.calls).toEqual([
       "lock decision decision-1 true",
+      "read decision decision-1 true",
+      "lock credit record record-1 true",
       "lock assignment assignment-1 true",
+      "lock requirement requirement-1 true",
       "read decision decision-1 true",
       "read assignment assignment-1 true",
+      "read latest decision record-1 assignment-1 true",
       "read requirement requirement-1 true",
       "check active true",
       "insert true",
     ]);
   });
+
+  it("runs the create guard after all required locks and before validation or insert", async () => {
+    const { service, state } = serviceFor();
+    await service.createPlacement(createInput(), {
+      beforeWrite: async () => {
+        state.calls.push("guard");
+      },
+    });
+
+    expect(state.calls).toEqual([
+      "lock decision decision-1 true",
+      "read decision decision-1 true",
+      "lock credit record record-1 true",
+      "lock assignment assignment-1 true",
+      "lock requirement requirement-1 true",
+      "guard",
+      "read decision decision-1 true",
+      "read assignment assignment-1 true",
+      "read latest decision record-1 assignment-1 true",
+      "read requirement requirement-1 true",
+      "check active true",
+      "insert true",
+    ]);
+  });
+
+  it("propagates a create guard failure before validation or insert", async () => {
+    const { service, state } = serviceFor();
+    const error = new Error("stale snapshot");
+
+    await expect(service.createPlacement(createInput(), {
+      beforeWrite: async () => {
+        state.calls.push("guard");
+        throw error;
+      },
+    })).rejects.toBe(error);
+
+    expect(state.calls.slice(-2)).toEqual([
+      "lock requirement requirement-1 true",
+      "guard",
+    ]);
+    expect(state.calls).not.toContain("insert true");
+    expect(state.placements.size).toBe(0);
+  });
+
+  it("lets a serialized second create observe changed snapshot state and abort before writing", async () => {
+    const { service, state } = serviceFor();
+    const expectedFingerprint = "fingerprint-before-first-write";
+    const guard = async () => {
+      const currentFingerprint = state.placements.size === 0
+        ? expectedFingerprint
+        : "fingerprint-after-first-write";
+      state.calls.push(`guard ${currentFingerprint}`);
+      if (currentFingerprint !== expectedFingerprint) {
+        throw new Error("stale snapshot");
+      }
+    };
+
+    await service.createPlacement(createInput(), { beforeWrite: guard });
+    state.calls.length = 0;
+    await expect(service.createPlacement(
+      createInput({ requirementId: "requirement-2" }),
+      { beforeWrite: guard },
+    )).rejects.toThrow("stale snapshot");
+
+    expect(state.calls.slice(-2)).toEqual([
+      "lock requirement requirement-2 true",
+      "guard fingerprint-after-first-write",
+    ]);
+    expect(state.calls).not.toContain("insert true");
+    expect(state.placements.size).toBe(1);
+  });
+
+  it("rejects create with an inactive locked requirement without inserting", async () => {
+    const { service, state } = serviceFor();
+    state.requirements.get("requirement-1").active = false;
+    await expectCode(
+      service.createPlacement(createInput()),
+      "STUDENT_ACADEMIC_INVALID_STATE",
+    );
+    const requirementLock = state.calls.indexOf("lock requirement requirement-1 true");
+    const requirementRead = state.calls.indexOf("read requirement requirement-1 true");
+    expect(requirementLock).toBeGreaterThan(-1);
+    expect(requirementLock).toBeLessThan(requirementRead);
+    expect(state.calls).not.toContain("insert true");
+    expect(state.placements.size).toBe(0);
+  });
+
+  it("rejects create when the locked assignment is no longer active without inserting", async () => {
+    const { service, state } = serviceFor();
+    state.assignments.get("assignment-1").status = "superseded";
+    await expectCode(
+      service.createPlacement(createInput()),
+      "STUDENT_ACADEMIC_INVALID_STATE",
+    );
+    expect(state.calls).not.toContain("insert true");
+    expect(state.placements.size).toBe(0);
+  });
+
+  it("rejects create when a different decision is latest", async () => {
+    const { service, state } = serviceFor();
+    state.decisions.set("decision-2", {
+      id: "decision-2",
+      creditRecordId: "record-1",
+      programAssignmentId: "assignment-1",
+      seq: 2,
+      action: "accepted",
+    });
+    await expectCode(
+      service.createPlacement(createInput()),
+      "STUDENT_ACADEMIC_INVALID_STATE",
+    );
+    expect(state.calls).not.toContain("insert true");
+  });
+
+  it.each(["rejected", "needs_review", "revoked"])(
+    "rejects create when the latest decision is %s",
+    async (action) => {
+      const { service, state } = serviceFor();
+      state.decisions.get("decision-1").action = action;
+      await expectCode(
+        service.createPlacement(createInput()),
+        "STUDENT_ACADEMIC_INVALID_STATE",
+      );
+      expect(state.calls).not.toContain("insert true");
+    },
+  );
 
   it("supersedes an active placement with the same exact identity", async () => {
     const { service } = serviceFor();
@@ -287,6 +470,138 @@ describe("Phase 4B — Student Credit Placement service", () => {
     expect(result.oldPlacement.status).toBe("superseded");
     expect(result.newPlacement.status).toBe("active");
     expect(result.newPlacement.supersedesPlacementId).toBe(old.id);
+  });
+
+  it("rejects supersede when the assignment became inactive and preserves the old placement", async () => {
+    const { service, state } = serviceFor();
+    const old = await service.createPlacement(createInput());
+    state.assignments.get("assignment-1").status = "superseded";
+    await expectCode(service.supersedePlacement({
+      oldPlacementId: old.id,
+      requirementId: "requirement-2",
+      actor: "actor-2",
+      rationale: "Replacement",
+    }), "STUDENT_ACADEMIC_INVALID_STATE");
+    expect(state.placements.get(old.id).status).toBe("active");
+    expect(state.placements.size).toBe(1);
+  });
+
+  it("rejects supersede with an inactive locked replacement requirement before lifecycle mutation", async () => {
+    const { service, state } = serviceFor();
+    const old = await service.createPlacement(createInput());
+    state.requirements.get("requirement-2").active = false;
+    state.calls.length = 0;
+    await expectCode(service.supersedePlacement({
+      oldPlacementId: old.id,
+      requirementId: "requirement-2",
+      actor: "actor-2",
+      rationale: "Replacement",
+    }), "STUDENT_ACADEMIC_INVALID_STATE");
+    const requirementLock = state.calls.indexOf("lock requirement requirement-2 true");
+    const requirementRead = state.calls.indexOf("read requirement requirement-2 true");
+    expect(requirementLock).toBeGreaterThan(-1);
+    expect(requirementLock).toBeLessThan(requirementRead);
+    expect(state.calls).not.toContain("update lifecycle true");
+    expect(state.calls).not.toContain("insert true");
+    expect(state.placements.get(old.id).status).toBe("active");
+    expect(state.placements.size).toBe(1);
+  });
+
+  it("rejects supersede when the historical decision is no longer latest accepted", async () => {
+    const { service, state } = serviceFor();
+    const old = await service.createPlacement(createInput());
+    state.decisions.set("decision-2", {
+      id: "decision-2",
+      creditRecordId: "record-1",
+      programAssignmentId: "assignment-1",
+      seq: 2,
+      action: "revoked",
+    });
+    await expectCode(service.supersedePlacement({
+      oldPlacementId: old.id,
+      requirementId: "requirement-2",
+      actor: "actor-2",
+      rationale: "Replacement",
+    }), "STUDENT_ACADEMIC_INVALID_STATE");
+    expect(state.placements.get(old.id).status).toBe("active");
+    expect(state.calls).not.toContain("update lifecycle true");
+  });
+
+  it("locks the credit record before supersede freshness reads and lifecycle writes", async () => {
+    const { service, state } = serviceFor();
+    const old = await service.createPlacement(createInput());
+    state.calls.length = 0;
+    await service.supersedePlacement({
+      oldPlacementId: old.id,
+      requirementId: "requirement-2",
+      actor: "actor-2",
+      rationale: "Replacement",
+    });
+    const creditLock = state.calls.indexOf("lock credit record record-1 true");
+    const latestRead = state.calls.indexOf("read latest decision record-1 assignment-1 true");
+    const lifecycleWrite = state.calls.indexOf("update lifecycle true");
+    expect(creditLock).toBeGreaterThan(-1);
+    expect(creditLock).toBeLessThan(latestRead);
+    expect(latestRead).toBeLessThan(lifecycleWrite);
+  });
+
+  it("runs the supersede guard after all required locks and before validation or lifecycle writes", async () => {
+    const { service, state } = serviceFor();
+    const old = await service.createPlacement(createInput());
+    state.calls.length = 0;
+
+    await service.supersedePlacement({
+      oldPlacementId: old.id,
+      requirementId: "requirement-2",
+      actor: "actor-2",
+      rationale: "Replacement",
+    }, {
+      beforeWrite: async () => {
+        state.calls.push("guard");
+      },
+    });
+
+    expect(state.calls.slice(0, 9)).toEqual([
+      "lock placement placement-1 true",
+      "read placement placement-1 true",
+      "lock decision decision-1 true",
+      "read decision decision-1 true",
+      "lock credit record record-1 true",
+      "lock assignment assignment-1 true",
+      "lock requirement requirement-2 true",
+      "guard",
+      "read decision decision-1 true",
+    ]);
+    expect(state.calls.indexOf("guard")).toBeLessThan(
+      state.calls.indexOf("update lifecycle true"),
+    );
+  });
+
+  it("propagates a supersede guard failure before validation or lifecycle writes", async () => {
+    const { service, state } = serviceFor();
+    const old = await service.createPlacement(createInput());
+    state.calls.length = 0;
+    const error = new Error("stale snapshot");
+
+    await expect(service.supersedePlacement({
+      oldPlacementId: old.id,
+      requirementId: "requirement-2",
+      actor: "actor-2",
+      rationale: "Replacement",
+    }, {
+      beforeWrite: async () => {
+        state.calls.push("guard");
+        throw error;
+      },
+    })).rejects.toBe(error);
+
+    expect(state.calls.slice(-2)).toEqual([
+      "lock requirement requirement-2 true",
+      "guard",
+    ]);
+    expect(state.calls).not.toContain("update lifecycle true");
+    expect(state.calls).not.toContain("insert true");
+    expect(state.placements.get(old.id).status).toBe("active");
   });
 
   it("uses one immutable timestamp across the two supersession updates", async () => {
@@ -402,6 +717,73 @@ describe("Phase 4B — Student Credit Placement service", () => {
       actor: "actor-2",
       rationale: "Again",
     }), "STUDENT_ACADEMIC_INVALID_STATE");
+  });
+
+  it("rejects revoke when the assignment became inactive and preserves the placement", async () => {
+    const { service, state } = serviceFor();
+    const placement = await service.createPlacement(createInput());
+    state.assignments.get("assignment-1").status = "superseded";
+    await expectCode(service.revokePlacement({
+      placementId: placement.id,
+      actor: "actor-2",
+      rationale: "Revoked record",
+    }), "STUDENT_ACADEMIC_INVALID_STATE");
+    expect(state.placements.get(placement.id).status).toBe("active");
+    expect(state.calls.slice(-3)).toEqual([
+      "read placement placement-1 true",
+      "lock assignment assignment-1 true",
+      "read assignment assignment-1 true",
+    ]);
+  });
+
+  it("runs the revoke guard after the active assignment read and before lifecycle update", async () => {
+    const { service, state } = serviceFor();
+    const placement = await service.createPlacement(createInput());
+    state.calls.length = 0;
+
+    await service.revokePlacement({
+      placementId: placement.id,
+      actor: "actor-2",
+      rationale: "Revoke",
+    }, {
+      beforeWrite: async () => {
+        state.calls.push("guard");
+      },
+    });
+
+    expect(state.calls).toEqual([
+      "lock placement placement-1 true",
+      "read placement placement-1 true",
+      "lock assignment assignment-1 true",
+      "read assignment assignment-1 true",
+      "guard",
+      "update lifecycle true",
+    ]);
+  });
+
+  it("propagates a revoke guard failure before lifecycle update", async () => {
+    const { service, state } = serviceFor();
+    const placement = await service.createPlacement(createInput());
+    state.calls.length = 0;
+    const error = new Error("stale snapshot");
+
+    await expect(service.revokePlacement({
+      placementId: placement.id,
+      actor: "actor-2",
+      rationale: "Revoke",
+    }, {
+      beforeWrite: async () => {
+        state.calls.push("guard");
+        throw error;
+      },
+    })).rejects.toBe(error);
+
+    expect(state.calls.slice(-2)).toEqual([
+      "read assignment assignment-1 true",
+      "guard",
+    ]);
+    expect(state.calls).not.toContain("update lifecycle true");
+    expect(state.placements.get(placement.id).status).toBe("active");
   });
 
   it("preserves identity and base provenance through lifecycle transitions", async () => {

@@ -65,6 +65,14 @@ async function readInsideTransaction(
   return assembleDegreeEvaluationSnapshot({ context, asOf, facts });
 }
 
+export async function readDegreeEvaluationSnapshotInTransaction(
+  context: DegreeEvaluationSnapshotContext,
+  tx: DegreeEvaluationSnapshotTx,
+  repository: DegreeEvaluationSnapshotRepository = degreeEvaluationSnapshotRepository,
+): Promise<DegreeEvaluationSnapshotOutput> {
+  return readInsideTransaction(context, tx, repository);
+}
+
 export async function readDegreeEvaluationSnapshot(
   request: DegreeEvaluationSnapshotContext | DegreeEvaluationSnapshotReadRequest,
   options: DegreeEvaluationSnapshotServiceOptions = {},
@@ -84,7 +92,7 @@ export async function readDegreeEvaluationSnapshot(
   };
   if (requestOptions.transaction !== undefined) {
     return requestOptions.transaction(transactionConfig, (transaction) => (
-      readInsideTransaction(context, transaction, repository)
+      readDegreeEvaluationSnapshotInTransaction(context, transaction, repository)
     ));
   }
 
@@ -95,7 +103,7 @@ export async function readDegreeEvaluationSnapshot(
     await transaction.execute(
       sql`SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY`,
     );
-    return readInsideTransaction(
+    return readDegreeEvaluationSnapshotInTransaction(
       context,
       transaction,
       repository,
