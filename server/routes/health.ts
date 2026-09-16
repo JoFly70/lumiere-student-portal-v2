@@ -1,6 +1,7 @@
 import { type Express } from 'express';
 import { supabaseAdmin, isSupabaseConfigured } from '../lib/supabase';
 import { logger } from '../lib/logger';
+import { validateProductionAuthReadiness } from '../lib/auth-readiness';
 
 export function registerHealthRoutes(app: Express) {
   // Health check endpoint for monitoring/load balancers
@@ -83,6 +84,49 @@ export function registerHealthRoutes(app: Express) {
   // Readiness probe (for Kubernetes-style orchestration)
   app.get('/ready', async (req, res) => {
     try {
+      if (process.env.NODE_ENV === 'production') {
+        const readiness = await validateProductionAuthReadiness({
+          appUrl: process.env.APP_URL,
+          supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL,
+          databaseUrl: process.env.DATABASE_URL,
+          supabaseAnonKey: process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+          supabaseServiceKey: process.env.SUPABASE_SERVICE_KEY,
+          sessionSecret: process.env.SESSION_SECRET,
+          demoMode: process.env.ALLOW_DEMO_MODE === 'true',
+        }, {
+          checkTables: async () => {
+            const [users, profiles] = await Promise.all([
+              supabaseAdmin.from('users').select('id').limit(1),
+              supabaseAdmin.from('profiles').select('id').limit(1),
+            ]);
+            return { users: !users.error, profiles: !profiles.error };
+          },
+          checkAuthEmail: async () => {
+            const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+            const anonKey = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+            if (!supabaseUrl || !anonKey) return false;
+            try {
+              const response = await fetch(`${supabaseUrl.replace(/\/$/, '')}/auth/v1/settings`, {
+                headers: { apikey: anonKey },
+              });
+              if (!response.ok) return false;
+              const settings = await response.json() as {
+                disable_signup?: boolean;
+                external?: { email?: boolean | { enabled?: boolean } };
+              };
+              const email = settings.external?.email;
+              const emailEnabled = typeof email === 'boolean' ? email : email?.enabled === true;
+              return emailEnabled === true && settings.disable_signup !== true;
+            } catch {
+              return false;
+            }
+          },
+        });
+        if (!readiness.ready) {
+          logger.warn('Production auth readiness check failed', { failures: readiness.failures });
+          return res.status(503).json({ ready: false, checks: readiness.checks });
+        }
+      }
       // Skip DB check if Supabase not configured (development)
       if (!isSupabaseConfigured) {
         return res.status(200).json({ ready: true, note: 'Running without database (dev mode)' });

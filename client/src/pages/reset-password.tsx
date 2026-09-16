@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useLayoutEffect, useState } from 'react';
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CheckCircle2 } from 'lucide-react';
+import { extractRecoveryToken, recoveryUrlWithoutCredentials } from '@/lib/recovery-token';
 
 export default function ResetPassword() {
   const [, setLocation] = useLocation();
@@ -15,14 +16,16 @@ export default function ResetPassword() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
-  // Check for recovery token in URL hash or query params
-  const getRecoveryToken = (): string | null => {
-    const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    const queryParams = new URLSearchParams(window.location.search);
-    return hashParams.get('access_token') || queryParams.get('access_token');
-  };
+  const [recoveryToken] = useState(() => extractRecoveryToken(window.location.href));
 
-  const recoveryToken = getRecoveryToken();
+  useLayoutEffect(() => {
+    const currentUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    const cleanUrl = recoveryUrlWithoutCredentials(window.location.href);
+    if (cleanUrl !== currentUrl) {
+      window.history.replaceState(null, '', cleanUrl);
+    }
+  }, []);
+
   const isRecoveryMode = !!recoveryToken;
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
@@ -65,7 +68,11 @@ export default function ResetPassword() {
       const response = await fetch('/api/auth/update-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: newPassword, access_token: recoveryToken }),
+        body: JSON.stringify({
+          password: newPassword,
+          access_token: recoveryToken,
+          recovery_type: 'recovery',
+        }),
       });
 
       if (!response.ok) {

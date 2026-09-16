@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { Request, Response, NextFunction } from 'express';
+import crypto from 'node:crypto';
 
 const mockGetUser = vi.fn();
 
@@ -147,5 +148,79 @@ describe('Authentication Middleware', () => {
 
     process.env.NODE_ENV = 'test';
     delete process.env.ALLOW_DEMO_MODE;
+  });
+
+  it('fails closed when a valid Supabase user has no local profile', async () => {
+    mockGetUser.mockResolvedValue({
+      data: { user: { id: 'unreconciled-user', email: 'user@test.com' } },
+      error: null,
+    });
+    mockDbLimit.mockResolvedValue([]);
+
+    const { requireAuth } = await import('../server/middleware/auth.js');
+    const req = createMockReq({ headers: { authorization: 'Bearer valid-token' } });
+    const res = createMockRes();
+    const next = vi.fn();
+
+    await requireAuth(req as Request, res as Response, next as NextFunction);
+
+    expect(res.status).toHaveBeenCalledWith(401);
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('leaves optional auth unauthenticated when the local profile is missing', async () => {
+    mockGetUser.mockResolvedValue({
+      data: { user: { id: 'unreconciled-user', email: 'user@test.com' } },
+      error: null,
+    });
+    mockDbLimit.mockResolvedValue([]);
+
+    const { optionalAuth } = await import('../server/middleware/auth.js');
+    const req = createMockReq({ headers: { authorization: 'Bearer valid-token' } });
+    const res = createMockRes();
+    const next = vi.fn();
+
+    await optionalAuth(req as Request, res as Response, next as NextFunction);
+
+    expect(next).toHaveBeenCalled();
+    expect(req.user).toBeUndefined();
+  });
+
+  it('does not accept local development JWTs in production', async () => {
+    process.env.NODE_ENV = 'production';
+    const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
+    const payload = Buffer.from(JSON.stringify({
+      iss: 'lumiere-local',
+      userId: 'known-admin',
+      email: 'admin@test.com',
+      exp: Math.floor(Date.now() / 1000) + 3600,
+    })).toString('base64url');
+    const signature = crypto
+      .createHmac('sha256', process.env.SESSION_SECRET || 'local-dev-secret-change-in-production')
+      .update(`${header}.${payload}`)
+      .digest('base64url');
+    mockGetUser.mockResolvedValue({
+      data: { user: null },
+      error: { message: 'invalid Supabase token' },
+    });
+    mockDbLimit.mockResolvedValue([{
+      id: 'known-admin',
+      email: 'admin@test.com',
+      name: 'Admin',
+      role: 'admin',
+    }]);
+
+    const { requireAuth } = await import('../server/middleware/auth.js');
+    const req = createMockReq({
+      headers: { authorization: `Bearer ${header}.${payload}.${signature}` },
+    });
+    const res = createMockRes();
+    const next = vi.fn();
+
+    await requireAuth(req as Request, res as Response, next as NextFunction);
+
+    expect(res.status).toHaveBeenCalledWith(401);
+    expect(mockGetUser).toHaveBeenCalled();
+    expect(next).not.toHaveBeenCalled();
   });
 });

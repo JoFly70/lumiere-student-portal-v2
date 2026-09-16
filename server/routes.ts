@@ -13,11 +13,18 @@ import { eq } from "drizzle-orm";
 import {
   authRateLimit,
   passwordResetRateLimit,
+  passwordUpdateRateLimit,
   signupRateLimit,
   apiRateLimit,
 } from "./middleware/rate-limit";
 import { generateCsrfToken, requireCsrf, deleteCsrfToken } from "./middleware/csrf";
 import twoFactorRoutes from "./routes/two-factor";
+import {
+  hasRecoveryAuthenticationMethod,
+  isDuplicateSignupError,
+  resolvePasswordResetAppUrl,
+} from "./lib/auth-policy";
+import { revokeAllSupabaseSessions } from "./lib/session-revocation";
 
 // Helper to get user ID from Supabase token
 async function getUserFromToken(authHeader: string | undefined): Promise<{ id: string; email: string } | null> {
@@ -121,8 +128,8 @@ window.ENV = {
 
       if (authError) {
         logger.warn("Sign-up failed", { email, error: authError.message });
-        if (authError.message.includes('already registered') || authError.message.includes('User already registered')) {
-          return res.status(409).json({ error: "Email already registered" });
+        if (isDuplicateSignupError(authError)) {
+          return res.status(409).json({ error: "Email already registered", code: "EMAIL_ALREADY_REGISTERED" });
         }
         if (authError.message.includes('Password should be')) {
           return res.status(400).json({ error: "Password must be at least 6 characters" });
@@ -229,9 +236,17 @@ window.ENV = {
         return res.status(503).json({ error: "Service unavailable" });
       }
 
+      const appUrl = resolvePasswordResetAppUrl(
+        process.env.APP_URL,
+        process.env.NODE_ENV === "production",
+      );
+      if (!appUrl) {
+        return res.status(503).json({ error: "Password reset service is not configured" });
+      }
+
       // Send password reset email via Supabase
       const { error } = await supabaseAdmin.auth.resetPasswordForEmail(email, {
-        redirectTo: `${process.env.APP_URL || 'http://localhost:5000'}/reset-password`,
+        redirectTo: `${appUrl || 'http://localhost:5000'}/reset-password`,
       });
 
       // Always return success to prevent email enumeration
@@ -261,16 +276,22 @@ window.ENV = {
 
   // Update password endpoint (after clicking reset link)
   // Validates the recovery access_token before updating the password.
-  app.post("/api/auth/update-password", async (req, res) => {
+  app.post("/api/auth/update-password", passwordUpdateRateLimit, async (req, res) => {
     try {
-      const { password, access_token } = req.body;
+      const { password, access_token, recovery_type } = req.body;
 
       if (!password || typeof password !== 'string') {
         return res.status(400).json({ error: "Password is required" });
       }
+      if (password.length < 6) {
+        return res.status(400).json({ error: "Password must be at least 6 characters" });
+      }
 
       if (!access_token || typeof access_token !== 'string') {
         return res.status(400).json({ error: "Access token is required" });
+      }
+      if (recovery_type !== 'recovery') {
+        return res.status(401).json({ error: "Invalid password reset credential", code: "RECOVERY_REQUIRED" });
       }
 
       // Ensure Supabase is configured
@@ -279,13 +300,25 @@ window.ENV = {
         return res.status(503).json({ error: "Service unavailable" });
       }
 
-      // Validate the recovery token by calling Supabase auth.getUser with it.
-      // This confirms the token is valid, not expired, and identifies the user.
+      // Validate the recovery credential by calling Supabase auth.getUser with
+      // it, then send it as the bearer credential for updateUser. Supabase's
+      // server API does not expose a recovery-token-only introspection method;
+      // getUser is the safest supported validation. The JWT amr claim plus the
+      // client type=recovery marker reject ordinary password bearer tokens, but
+      // Supabase provides no cryptographic recovery-only discriminator: OTP
+      // and magic-link/recovery tokens may be indistinguishable.
       const { data: tokenData, error: tokenError } = await supabaseAdmin.auth.getUser(access_token);
 
       if (tokenError || !tokenData.user) {
         logger.warn("Password update rejected: invalid or expired recovery token", { error: tokenError?.message });
         return res.status(401).json({ error: "Invalid or expired password reset token" });
+      }
+
+      if (!hasRecoveryAuthenticationMethod(access_token)) {
+        logger.warn("Password update rejected: credential is not recovery-authenticated", {
+          userId: tokenData.user.id,
+        });
+        return res.status(401).json({ error: "Invalid password reset credential", code: "RECOVERY_REQUIRED" });
       }
 
       // Use the Supabase client with the user's recovery token to update the password.
@@ -303,6 +336,27 @@ window.ENV = {
       if (error) {
         logger.warn("Password update failed", { error: error.message });
         return res.status(400).json({ error: "Failed to update password" });
+      }
+
+      // A recovery credential is single-purpose. Revoke all sessions after
+      // changing the password and deliberately do not return a new session.
+      // Supabase's updateUser API does not expose a way to rotate/revoke only
+      // the recovery token; global sign-out is the supported revocation scope.
+      const revocation = await revokeAllSupabaseSessions(
+        supabaseAdmin.auth.admin,
+        access_token,
+      );
+      if (!revocation.revoked) {
+        // The password has changed, but the supported admin API could not
+        // guarantee revocation. Do not issue a replacement session.
+        logger.error("Password changed but recovery credential revocation failed", {
+          userId: data.user?.id,
+          error: revocation.error,
+        });
+        return res.status(503).json({
+          error: "Password updated, but session revocation could not be confirmed",
+          code: "SESSION_REVOCATION_FAILED",
+        });
       }
 
       logger.info("Password updated successfully", { userId: data.user?.id });
@@ -326,11 +380,31 @@ window.ENV = {
       const user = await getUserFromToken(req.headers.authorization);
 
       if (user) {
+        const bearerToken = req.headers.authorization!.substring(7);
+        // Revoke the Supabase session as well as the application CSRF token.
+        // No replacement session is issued by logout.
+        const revocation = await revokeAllSupabaseSessions(
+          supabaseAdmin.auth.admin,
+          bearerToken,
+        );
         // Delete CSRF token if provided
         const csrfToken = req.headers['x-csrf-token'] as string;
         if (csrfToken) {
           deleteCsrfToken(user.id, csrfToken);
         }
+        if (!revocation.revoked) {
+          logger.warn("Supabase logout revocation failed", { userId: user.id, error: revocation.error });
+          return res.status(503).json({
+            error: "Logout could not be confirmed",
+            code: "SESSION_REVOCATION_FAILED",
+          });
+        }
+      }
+      else if (req.headers.authorization) {
+        return res.status(401).json({
+          error: "Logout credential is invalid or expired",
+          code: "INVALID_SESSION",
+        });
       }
 
       return res.json({ success: true, message: "Logged out successfully" });
@@ -377,11 +451,21 @@ window.ENV = {
       }
 
       // Fetch user details from users table
-      const { data: userData, error: userError } = await supabaseAdmin
-        .from('users')
-        .select('id, email, name, role')
-        .eq('id', data.user.id)
-        .maybeSingle();
+      let userData: { id: string; email: string; name: string; role: string } | null = null;
+      let userError: { message?: string } | null = null;
+      try {
+        const result = await supabaseAdmin
+          .from('users')
+          .select('id, email, name, role')
+          .eq('id', data.user.id)
+          .maybeSingle();
+        userData = result.data;
+        userError = result.error;
+      } catch (lookupError) {
+        userError = {
+          message: lookupError instanceof Error ? lookupError.message : String(lookupError),
+        };
+      }
 
       if (userError) {
         logger.error("Failed to fetch user data after login", {
@@ -390,16 +474,30 @@ window.ENV = {
         });
       }
 
+      if (!userData) {
+        logger.error("Authenticated user has no local profile after login", {
+          userId: data.user.id,
+          error: "profile_missing",
+        });
+        try {
+          await userAuthClient.auth.signOut({ scope: 'global' });
+        } catch (revokeError) {
+          logger.warn("Failed to revoke unreconciled login session", {
+            userId: data.user.id,
+            error: revokeError instanceof Error ? revokeError.message : String(revokeError),
+          });
+        }
+        return res.status(500).json({
+          error: "Unable to reconcile account",
+          code: "ACCOUNT_RECONCILIATION_FAILED",
+        });
+      }
+
       logger.info("User logged in successfully", { email, userId: data.user.id });
 
       return res.json({
         success: true,
-        user: userData || {
-          id: data.user.id,
-          email: data.user.email,
-          name: data.user.user_metadata?.name || email.split('@')[0],
-          role: 'student'
-        },
+        user: userData,
         session: {
           access_token: data.session.access_token,
           refresh_token: data.session.refresh_token,

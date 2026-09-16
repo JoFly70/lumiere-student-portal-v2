@@ -7,6 +7,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 const originalNodeEnv = process.env.NODE_ENV;
 let authRateLimit: RequestHandler;
 let passwordResetRateLimit: RequestHandler;
+let passwordUpdateRateLimit: RequestHandler;
 let signupRateLimit: RequestHandler;
 
 beforeAll(async () => {
@@ -14,6 +15,7 @@ beforeAll(async () => {
   const middleware = await import("../server/middleware/rate-limit");
   authRateLimit = middleware.authRateLimit;
   passwordResetRateLimit = middleware.passwordResetRateLimit;
+  passwordUpdateRateLimit = middleware.passwordUpdateRateLimit;
   signupRateLimit = middleware.signupRateLimit;
 });
 
@@ -61,6 +63,12 @@ describe("authentication rate-limit wiring", () => {
       204, 204, 204, 429,
     ]);
     expect(result.policy).toMatch(/3;w=3600/);
+  });
+
+  it("gives password updates their own five-attempt limiter", async () => {
+    const result = await requestStatuses(passwordUpdateRateLimit, 6);
+    expect(result.statuses).toEqual([204, 204, 204, 204, 204, 429]);
+    expect(result.policy).toMatch(/5;w=900/);
   });
 
   it("does not mount a second global auth limiter before request logging", () => {
