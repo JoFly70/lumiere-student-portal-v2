@@ -34,56 +34,67 @@ const defaultQueryCallsites = [
     sourceFile: 'client/src/pages/admin.tsx',
     callsite: 'analytics/dashboard',
     queryKey: ['/api/admin/analytics/dashboard'],
+    expectedUrl: '/api/admin/analytics/dashboard',
   },
   {
     sourceFile: 'client/src/pages/admin.tsx',
     callsite: 'users object key',
     queryKey: ['/api/admin/users', { search: 'Ada', role: 'admin' }],
+    expectedUrl: '/api/admin/users?search=Ada&role=admin',
   },
   {
     sourceFile: 'client/src/pages/admin.tsx',
     callsite: 'students object key',
     queryKey: ['/api/admin/students', { search: 'Ada', status: 'active' }],
+    expectedUrl: '/api/admin/students?search=Ada&status=active',
   },
   {
     sourceFile: 'client/src/pages/admin.tsx',
     callsite: 'audit logs object key',
     queryKey: ['/api/admin/audit-logs', { limit: 100 }],
+    expectedUrl: '/api/admin/audit-logs?limit=100',
   },
   {
     sourceFile: 'client/src/pages/dashboard.tsx',
     callsite: 'system/check',
     queryKey: ['/api/system/check'],
+    expectedUrl: '/api/system/check',
   },
   {
     sourceFile: 'client/src/pages/dashboard.tsx',
     callsite: 'me',
     queryKey: ['/api/me'],
+    expectedUrl: '/api/me',
   },
   {
     sourceFile: 'client/src/pages/dashboard.tsx',
     callsite: 'degree-templates',
     queryKey: ['/api/degree-templates'],
+    expectedUrl: '/api/degree-templates',
   },
   {
     sourceFile: 'client/src/pages/dashboard.tsx',
     callsite: 'plans+planId',
     queryKey: ['/api/plans', 'plan-123'],
+    expectedUrl: '/api/plans/plan-123',
   },
   {
     sourceFile: 'client/src/pages/flight-deck.tsx',
     callsite: 'flight-deck',
     queryKey: ['/api/flight-deck'],
+    expectedUrl: '/api/flight-deck',
   },
   {
     sourceFile: 'client/src/pages/roadmap.tsx',
     callsite: 'enrollments',
     queryKey: ['/api/enrollments'],
+    expectedUrl: '/api/enrollments',
   },
   {
     sourceFile: 'client/src/components/course-assignment-dialog.tsx',
     callsite: 'templates',
     queryKey: ['/api/templates'],
+    expectedUrl: '/api/templates',
   },
 ] as const;
 
@@ -182,12 +193,43 @@ describe('Phase 5A.0 query client authentication', () => {
       await queryClient.fetchQuery({ queryKey: site.queryKey });
 
       expect(fetchMock, `${site.sourceFile} ${site.callsite}`).toHaveBeenCalledTimes(1);
-      const [, requestInit] = fetchMock.mock.calls[0];
+      const [requestUrl, requestInit] = fetchMock.mock.calls[0];
+      expect(requestUrl, `${site.sourceFile} ${site.callsite}`).toBe(site.expectedUrl);
       expect(requestInit.headers, `${site.sourceFile} ${site.callsite}`).toEqual({
         Authorization: 'Bearer current-token',
       });
       expect(requestInit.credentials, `${site.sourceFile} ${site.callsite}`).toBe('include');
     }
+  });
+
+  it('skips unsupported and nullish key values while preserving scalar filter values', async () => {
+    setAuthToken('current-token');
+
+    const queryFn = getQueryFn({ on401: 'throw' });
+    await queryFn({
+      queryKey: [
+        '/api/filter-values',
+        undefined,
+        null,
+        {
+          empty: '',
+          enabled: false,
+          count: 0,
+          omittedUndefined: undefined,
+          omittedNull: null,
+          omittedNestedObject: { value: 'unsupported' },
+          omittedArray: ['unsupported'],
+          omittedInfinite: Infinity,
+        },
+        7,
+        false,
+      ],
+    } as any);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0][0]).toBe(
+      '/api/filter-values/7?empty=&enabled=false&count=0',
+    );
   });
 
   it('does not send an Authorization header when the current auth token is null', async () => {
