@@ -6,9 +6,9 @@ const mockGetUser = vi.fn();
 const mockFrom = vi.fn();
 const mockResetPasswordForEmail = vi.fn();
 const mockUpdateUser = vi.fn();
-const mockCreateClient = vi.fn();
 const mockAdminSignOut = vi.fn();
 const mockAdminCreateUser = vi.fn();
+const mockAdminUpdateUserById = vi.fn();
 const mockUserSignInWithPassword = vi.fn();
 const mockUserSignOut = vi.fn();
 
@@ -23,6 +23,7 @@ vi.mock('../server/lib/supabase.js', () => ({
       signInWithPassword: vi.fn(),
       admin: {
         createUser: mockAdminCreateUser,
+        updateUserById: mockAdminUpdateUserById,
         signOut: mockAdminSignOut,
       },
     },
@@ -37,10 +38,6 @@ vi.mock('../server/lib/supabase.js', () => ({
       signOut: mockUserSignOut,
     },
   }),
-}));
-
-vi.mock('@supabase/supabase-js', () => ({
-  createClient: (...args: any[]) => mockCreateClient(...args),
 }));
 
 vi.mock('../server/lib/logger.js', () => ({
@@ -794,12 +791,9 @@ describe('PASSWORD RESET — POST /api/auth/update-password', () => {
       data: { user: { id: 'user-1', email: 'user@test.com' } },
       error: null,
     });
-    const mockUserClientUpdate = vi.fn().mockResolvedValue({
+    mockAdminUpdateUserById.mockResolvedValue({
       data: { user: { id: 'user-1' } },
       error: null,
-    });
-    mockCreateClient.mockReturnValue({
-      auth: { updateUser: mockUserClientUpdate },
     });
     mockAdminSignOut.mockResolvedValue({ error: null });
     const recoveryToken = `header.${Buffer.from(JSON.stringify({
@@ -812,14 +806,47 @@ describe('PASSWORD RESET — POST /api/auth/update-password', () => {
         password: 'newpassword123',
         access_token: recoveryToken,
         recovery_type: 'recovery',
+        user_id: 'attacker-chosen-user',
       });
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
     expect(res.body.message).toContain('Password updated');
-    // Verify the user client was created with the recovery token, not the service role key
-    expect(mockCreateClient).toHaveBeenCalled();
-    expect(mockUserClientUpdate).toHaveBeenCalledWith({ password: 'newpassword123' });
+    expect(mockAdminUpdateUserById).toHaveBeenCalledWith(
+      'user-1',
+      { password: 'newpassword123' },
+    );
     expect(mockAdminSignOut).toHaveBeenCalledWith(recoveryToken, 'global');
+  });
+
+  it('returns 400 and does not revoke when the admin password update fails', async () => {
+    mockGetUser.mockResolvedValue({
+      data: { user: { id: 'validated-user', email: 'user@test.com' } },
+      error: null,
+    });
+    mockAdminUpdateUserById.mockResolvedValue({
+      data: { user: null },
+      error: { message: 'admin update failed' },
+    });
+    const recoveryToken = `header.${Buffer.from(JSON.stringify({
+      amr: [{ method: 'recovery' }],
+    })).toString('base64url')}.signature`;
+
+    const res = await request(app)
+      .post('/api/auth/update-password')
+      .send({
+        password: 'newpassword123',
+        access_token: recoveryToken,
+        recovery_type: 'recovery',
+        user_id: 'attacker-chosen-user',
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('Failed to update password');
+    expect(mockAdminUpdateUserById).toHaveBeenCalledWith(
+      'validated-user',
+      { password: 'newpassword123' },
+    );
+    expect(mockAdminSignOut).not.toHaveBeenCalled();
   });
 
   it('reports when password changed but global session revocation fails', async () => {
@@ -827,13 +854,9 @@ describe('PASSWORD RESET — POST /api/auth/update-password', () => {
       data: { user: { id: 'user-1', email: 'user@test.com' } },
       error: null,
     });
-    mockCreateClient.mockReturnValue({
-      auth: {
-        updateUser: vi.fn().mockResolvedValue({
-          data: { user: { id: 'user-1' } },
-          error: null,
-        }),
-      },
+    mockAdminUpdateUserById.mockResolvedValue({
+      data: { user: { id: 'user-1' } },
+      error: null,
     });
     mockAdminSignOut.mockResolvedValue({
       error: { message: 'revocation unavailable' },

@@ -321,17 +321,12 @@ window.ENV = {
         return res.status(401).json({ error: "Invalid password reset credential", code: "RECOVERY_REQUIRED" });
       }
 
-      // Use the Supabase client with the user's recovery token to update the password.
-      // This ensures the password change applies only to the user identified by the token,
-      // not via the service-role key.
-      const { createClient } = await import('@supabase/supabase-js');
-      const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-      const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-      const userClient = createClient(supabaseUrl, supabaseAnonKey, {
-        global: { headers: { Authorization: `Bearer ${access_token}` } }
-      });
-
-      const { data, error } = await userClient.auth.updateUser({ password });
+      // The recovery token has already been validated by Supabase and its user
+      // ID is authoritative. Never accept a caller-supplied user ID here.
+      const { data, error } = await supabaseAdmin.auth.admin.updateUserById(
+        tokenData.user.id,
+        { password },
+      );
 
       if (error) {
         logger.warn("Password update failed", { error: error.message });
