@@ -18,3 +18,4 @@ run = ["npm", "start"]
 
 [userenv.production]
 APP_URL = "https://lumiere-student-portal-v-2.replit.app"
+PUBLIC_APP_URL = "https://lumiere-student-portal-v-2.replit.app"
