@@ -78,6 +78,8 @@ const deps = vi.hoisted(() => ({
   getActiveAssignment: vi.fn(),
   getProgramContext: vi.fn(),
   getProgress: vi.fn(),
+  getAcademicRecord: vi.fn(),
+  listPlacementsForAssignment: vi.fn(),
   getRequirementDisplay: vi.fn(),
   getAcademicRuleDisplay: vi.fn(),
 }));
@@ -126,6 +128,88 @@ const report = {
   },
 };
 
+const academicRecord = {
+  student: { id: STUDENT_ID },
+  activeProgramAssignment: {
+    id: "assignment-1",
+    studentId: STUDENT_ID,
+    programVersionId: "version-1",
+    status: "active",
+  },
+  programVersion: {
+    institution: { id: "institution-1" },
+    program: { id: "program-1", institutionId: "institution-1" },
+    version: { id: "version-1", programId: "program-1" },
+  },
+  academicSources: [{
+    id: "source-1",
+    studentId: STUDENT_ID,
+    title: "Official transcript",
+    sourceType: "institution_transcript",
+    status: "verified",
+    metadata: { evidenceUrl: "https://evidence.invalid/transcript" },
+  }],
+  creditRecords: [{
+    id: "credit-1",
+    studentId: STUDENT_ID,
+    sourceId: "source-1",
+    rawCourseCode: "MATH 101",
+    rawTitle: "Calculus I",
+    normalizedCredits: "3.00",
+    metadata: { sourcePage: 2 },
+  }],
+  latestVerifications: {
+    "credit-1": {
+      id: "verification-1",
+      creditRecordId: "credit-1",
+      seq: 2,
+      action: "verified",
+      snapshot: { evidenceExcerptId: "excerpt-1" },
+    },
+  },
+  latestDecisions: {
+    "credit-1": {
+      id: "decision-1",
+      creditRecordId: "credit-1",
+      programAssignmentId: "assignment-1",
+      seq: 3,
+      action: "accepted",
+      creditsAwarded: "3.00",
+      basisClaimVersionId: "claim-version-1",
+      metadata: { rationaleSource: "canonical" },
+    },
+  },
+  activeExceptions: [],
+};
+
+const placement = {
+  id: "placement-1",
+  studentCreditDecisionId: "decision-1",
+  programAssignmentId: "assignment-1",
+  requirementId: "requirement-1",
+  academicRuleId: "rule-1",
+  status: "active",
+  supersedesPlacementId: null,
+  supersededByPlacementId: null,
+  actor: ADMIN_ID,
+  rationale: "Recorded transfer placement",
+  metadata: { source: "operator" },
+  provenance: { decisionId: "decision-1", evidenceExcerptId: "excerpt-1" },
+  revokedBy: null,
+  revokedAt: null,
+  revocationRationale: null,
+  supersededBy: null,
+  supersededAt: null,
+  supersedeRationale: null,
+  createdAt: new Date("2025-01-02T00:00:00.000Z"),
+  updatedAt: new Date("2025-01-02T00:00:00.000Z"),
+};
+const placementReadModel = {
+  placement,
+  decision: academicRecord.latestDecisions["credit-1"],
+  creditRecord: academicRecord.creditRecords[0],
+};
+
 async function appFor(role: "admin" | "staff" | "coach" | null): Promise<{
   app: Express;
   auth: string | null;
@@ -159,6 +243,8 @@ describe("Phase 5A.1 — admin student workspace", () => {
       version: { id: "version-1", programId: "program-1", versionLabel: "2025 Catalog" },
     });
     deps.getProgress.mockResolvedValue(report);
+    deps.getAcademicRecord.mockResolvedValue(academicRecord);
+    deps.listPlacementsForAssignment.mockResolvedValue([placementReadModel]);
     deps.getRequirementDisplay.mockResolvedValue({
       requirement: {
         id: "requirement-1",
@@ -182,6 +268,19 @@ describe("Phase 5A.1 — admin student workspace", () => {
       studentId: STUDENT_ID,
       programAssignmentId: "assignment-1",
       programVersionId: "version-1",
+    });
+    expect(deps.getAcademicRecord).toHaveBeenCalledWith(STUDENT_ID);
+    expect(deps.listPlacementsForAssignment).toHaveBeenCalledWith("assignment-1");
+    expect(response.body.academicDetail).toMatchObject({
+      academicSources: academicRecord.academicSources,
+      creditRecords: academicRecord.creditRecords,
+      latestVerifications: academicRecord.latestVerifications,
+      latestDecisions: academicRecord.latestDecisions,
+      placements: [expect.objectContaining({
+        id: "placement-1",
+        status: "active",
+        provenance: placement.provenance,
+      })],
     });
     expect(response.body.report).toEqual(report);
     expect(response.body.displayLabels.requirements["requirement-1"]).toEqual({
@@ -212,6 +311,8 @@ describe("Phase 5A.1 — admin student workspace", () => {
       expect(response.status).toBe(role === null ? 401 : 403);
       expect(deps.getStudent).not.toHaveBeenCalled();
       expect(deps.getProgress).not.toHaveBeenCalled();
+      expect(deps.getAcademicRecord).not.toHaveBeenCalled();
+      expect(deps.listPlacementsForAssignment).not.toHaveBeenCalled();
     }
   });
 
@@ -365,6 +466,127 @@ describe("Phase 5A.1 — admin student workspace", () => {
     expect(deps.getAcademicRuleDisplay).toHaveBeenCalledWith("rule-1");
   });
 
+  it("rejects a foreign academic read model or placement without recomputing progress", async () => {
+    const { app, auth } = await appFor("admin");
+    deps.getAcademicRecord.mockResolvedValueOnce({
+      ...academicRecord,
+      activeProgramAssignment: {
+        ...academicRecord.activeProgramAssignment,
+        id: "foreign-assignment",
+      },
+    });
+    const foreignRecord = await request(app)
+      .get(`/api/admin/students/${STUDENT_ID}/workspace`)
+      .set("Authorization", `Bearer ${auth}`);
+    expect(foreignRecord.status).toBe(500);
+    expect(deps.getProgress).toHaveBeenCalledTimes(1);
+    expect(deps.listPlacementsForAssignment).toHaveBeenCalledWith("assignment-1");
+
+    vi.clearAllMocks();
+    deps.getStudent.mockResolvedValue({ id: STUDENT_ID });
+    deps.getActiveAssignment.mockResolvedValue(academicRecord.activeProgramAssignment);
+    deps.getProgramContext.mockResolvedValue(academicRecord.programVersion);
+    deps.getProgress.mockResolvedValue(report);
+    deps.getAcademicRecord.mockResolvedValue(academicRecord);
+    deps.listPlacementsForAssignment.mockResolvedValue([{
+      ...placementReadModel,
+      placement: { ...placement, programAssignmentId: "foreign-assignment" },
+    }]);
+    deps.getRequirementDisplay.mockResolvedValue(null);
+    deps.getAcademicRuleDisplay.mockResolvedValue(null);
+    const foreignPlacement = await request(app)
+      .get(`/api/admin/students/${STUDENT_ID}/workspace`)
+      .set("Authorization", `Bearer ${auth}`);
+    expect(foreignPlacement.status).toBe(500);
+    expect(deps.getProgress).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects a same-assignment placement whose decision or credit belongs elsewhere", async () => {
+    const { app, auth } = await appFor("admin");
+    deps.listPlacementsForAssignment.mockResolvedValueOnce([{
+      placement,
+      decision: {
+        ...academicRecord.latestDecisions["credit-1"],
+        programAssignmentId: "foreign-assignment",
+      },
+      creditRecord: academicRecord.creditRecords[0],
+    }]);
+    const foreignDecision = await request(app)
+      .get(`/api/admin/students/${STUDENT_ID}/workspace`)
+      .set("Authorization", `Bearer ${auth}`);
+    expect(foreignDecision.status).toBe(500);
+
+    deps.listPlacementsForAssignment.mockResolvedValueOnce([{
+      placement,
+      decision: academicRecord.latestDecisions["credit-1"],
+      creditRecord: {
+        ...academicRecord.creditRecords[0],
+        studentId: "foreign-student",
+      },
+    }]);
+    const foreignCredit = await request(app)
+      .get(`/api/admin/students/${STUDENT_ID}/workspace`)
+      .set("Authorization", `Bearer ${auth}`);
+    expect(foreignCredit.status).toBe(500);
+    expect(deps.getProgress).toHaveBeenCalledTimes(2);
+  });
+
+  it.each([
+    {
+      name: "source owned by another student",
+      academic: {
+        ...academicRecord,
+        academicSources: [{ ...academicRecord.academicSources[0], studentId: "foreign-student" }],
+      },
+    },
+    {
+      name: "credit owned by another student",
+      academic: {
+        ...academicRecord,
+        creditRecords: [{ ...academicRecord.creditRecords[0], studentId: "foreign-student" }],
+      },
+    },
+    {
+      name: "credit linked to an unreturned source",
+      academic: {
+        ...academicRecord,
+        creditRecords: [{ ...academicRecord.creditRecords[0], sourceId: "foreign-source" }],
+      },
+    },
+    {
+      name: "verification linked to another credit",
+      academic: {
+        ...academicRecord,
+        latestVerifications: {
+          "credit-1": {
+            ...academicRecord.latestVerifications["credit-1"],
+            creditRecordId: "foreign-credit",
+          },
+        },
+      },
+    },
+    {
+      name: "latest decision linked to another assignment",
+      academic: {
+        ...academicRecord,
+        latestDecisions: {
+          "credit-1": {
+            ...academicRecord.latestDecisions["credit-1"],
+            programAssignmentId: "foreign-assignment",
+          },
+        },
+      },
+    },
+  ])("fails closed when the canonical academic model has $name", async ({ academic }) => {
+    deps.getAcademicRecord.mockResolvedValueOnce(academic);
+    const { app, auth } = await appFor("admin");
+    const response = await request(app)
+      .get(`/api/admin/students/${STUDENT_ID}/workspace`)
+      .set("Authorization", `Bearer ${auth}`);
+    expect(response.status).toBe(500);
+    expect(deps.getProgress).toHaveBeenCalledTimes(1);
+  });
+
   it("does not advertise course or source labels without canonical lookups", async () => {
     const { app, auth } = await appFor("admin");
     const response = await request(app)
@@ -451,6 +673,8 @@ describe("Phase 5A.1 — admin student workspace", () => {
     const { createAdminStudentWorkspaceRouter } = await import("../server/routes/admin-student-workspace");
     app.use("/api/admin", createAdminStudentWorkspaceRouter({
       getProgress: vi.fn().mockResolvedValue(productionReport),
+      getAcademicRecord: vi.fn().mockResolvedValue(academicRecord),
+      listPlacementsForAssignment: vi.fn().mockResolvedValue([]),
     }));
     const response = await request(app)
       .get(`/api/admin/students/${STUDENT_ID}/workspace`)

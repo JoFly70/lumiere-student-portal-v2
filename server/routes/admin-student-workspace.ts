@@ -8,6 +8,8 @@ import {
   type WorkspaceDependencies,
 } from "../services/admin-student-workspace-service";
 import { getDegreeProgress } from "../services/degree-progress-service";
+import { studentAcademicService } from "../services/student-academic-service";
+import { listPlacementsForAssignment } from "../repositories/student-credit-placement-repo";
 
 const studentIdSchema = z.string().trim().min(1).max(128);
 
@@ -55,4 +57,6 @@ export function createAdminStudentWorkspaceRouter(dependencies: WorkspaceDepende
 
 export default createAdminStudentWorkspaceRouter({
   getProgress: getDegreeProgress,
+  getAcademicRecord: (studentId) => studentAcademicService.getStudentAcademicRecord(studentId),
+  listPlacementsForAssignment,
 });

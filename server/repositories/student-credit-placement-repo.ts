@@ -57,6 +57,12 @@ export type AcademicRuleContext = {
   programVersion: typeof programVersions.$inferSelect | null;
 };
 
+export type PlacementReadModel = {
+  placement: StudentCreditPlacement;
+  decision: typeof studentCreditDecisions.$inferSelect;
+  creditRecord: typeof studentCreditRecords.$inferSelect;
+};
+
 /**
  * This interface is deliberately small so service tests can use a fake
  * transaction-aware repository without constructing a Drizzle client.
@@ -74,6 +80,10 @@ export interface StudentCreditPlacementRepository {
     tx?: StudentCreditPlacementTx,
   ): Promise<StudentCreditPlacement | null>;
   getPlacement(placementId: string, tx?: StudentCreditPlacementTx): Promise<StudentCreditPlacement | null>;
+  listPlacementsForAssignment(
+    programAssignmentId: string,
+    tx?: StudentCreditPlacementTx,
+  ): Promise<PlacementReadModel[]>;
   insertPlacement(input: PlacementInput, tx?: StudentCreditPlacementTx): Promise<StudentCreditPlacement>;
   updatePlacementLifecycle(
     placementId: string,
@@ -191,6 +201,29 @@ export async function getPlacement(
   return row ?? null;
 }
 
+export async function listPlacementsForAssignment(
+  programAssignmentId: string,
+  tx: StudentCreditPlacementTx = db,
+): Promise<PlacementReadModel[]> {
+  return await tx
+    .select({
+      placement: studentCreditPlacements,
+      decision: studentCreditDecisions,
+      creditRecord: studentCreditRecords,
+    })
+    .from(studentCreditPlacements)
+    .innerJoin(
+      studentCreditDecisions,
+      eq(studentCreditDecisions.id, studentCreditPlacements.studentCreditDecisionId),
+    )
+    .innerJoin(
+      studentCreditRecords,
+      eq(studentCreditRecords.id, studentCreditDecisions.creditRecordId),
+    )
+    .where(eq(studentCreditPlacements.programAssignmentId, programAssignmentId))
+    .orderBy(studentCreditPlacements.createdAt, studentCreditPlacements.id);
+}
+
 export async function insertPlacement(
   input: PlacementInput,
   tx: StudentCreditPlacementTx = db,
@@ -256,6 +289,7 @@ export const studentCreditPlacementRepository: StudentCreditPlacementRepository 
   getAcademicRuleContext,
   getActiveExactPlacement,
   getPlacement,
+  listPlacementsForAssignment,
   insertPlacement,
   updatePlacementLifecycle,
 };

@@ -57,6 +57,7 @@ export interface WorkspaceViewModel {
   readonly asOf?: unknown;
   readonly snapshotFingerprint?: unknown;
   readonly report?: WorkspaceRecord;
+  readonly academicDetail: WorkspaceAcademicDetailViewModel;
   readonly labels: WorkspaceLabels;
   readonly attention: {
     readonly total: number;
@@ -72,6 +73,20 @@ export interface WorkspaceViewModel {
     readonly reportStatus?: string;
   };
 }
+export interface WorkspaceAcademicDetailViewModel {
+  readonly academicSources: readonly WorkspaceRecord[];
+  readonly creditRecords: readonly WorkspaceRecord[];
+  readonly latestVerifications: Readonly<Record<string, WorkspaceRecord>>;
+  readonly latestDecisions: Readonly<Record<string, WorkspaceRecord>>;
+  readonly placements: readonly WorkspaceRecord[];
+}
+export interface WorkspaceAcademicCreditRow {
+  readonly creditRecord: WorkspaceRecord;
+  readonly source?: WorkspaceRecord;
+  readonly latestVerification?: WorkspaceRecord;
+  readonly latestDecision?: WorkspaceRecord;
+  readonly placements: readonly WorkspaceRecord[];
+}
 export interface WorkspaceLabels {
   readonly requirements: Record<string, { label: string; source: string }>;
   readonly academicRules: Record<string, { label: string; source: string }>;
@@ -86,6 +101,13 @@ const asArray = (value: unknown): readonly unknown[] => Array.isArray(value) ? v
 const asString = (value: unknown): string | undefined => typeof value === "string" ? value : undefined;
 const asItem = (value: unknown): WorkspaceAttentionItem =>
   isRecord(value) ? value as WorkspaceAttentionItem : { value };
+const asRecords = (value: unknown): readonly WorkspaceRecord[] =>
+  asArray(value).filter(isRecord);
+const asRecordMap = (value: unknown): Readonly<Record<string, WorkspaceRecord>> => {
+  if (!isRecord(value)) return {};
+  return Object.fromEntries(Object.entries(value).filter((entry): entry is [string, WorkspaceRecord] =>
+    isRecord(entry[1])));
+};
 const statusForGroup = (group: AttentionGroupName): AttentionStatus =>
   group === "manualReview" ? "MANUAL_REVIEW" : group.toUpperCase() as AttentionStatus;
 
@@ -166,10 +188,19 @@ export function toWorkspaceViewModel(workspace: WorkspaceRecord): WorkspaceViewM
   const reasons = asArray(rawNeeds.reasons).filter((reason): reason is string => typeof reason === "string");
   const evidence = items.filter((item): item is WorkspaceAttentionItem => !isDiagnosticAttentionItem(item))
     .map((item) => item.evidence).filter((item) => item !== undefined);
+  const rawAcademicDetail = isRecord(workspace.academicDetail) ? workspace.academicDetail : {};
+  const academicDetail: WorkspaceAcademicDetailViewModel = {
+    academicSources: asRecords(rawAcademicDetail.academicSources),
+    creditRecords: asRecords(rawAcademicDetail.creditRecords),
+    latestVerifications: asRecordMap(rawAcademicDetail.latestVerifications),
+    latestDecisions: asRecordMap(rawAcademicDetail.latestDecisions),
+    placements: asRecords(rawAcademicDetail.placements),
+  };
   return {
     student: workspace.student, assignment: workspace.assignment, program: workspace.program,
     programVersion: workspace.programVersion, snapshot: workspace.snapshot,
     asOf: workspace.asOf, snapshotFingerprint: workspace.snapshotFingerprint, report,
+    academicDetail,
     labels: { ...labelsRecord, requirements, academicRules },
     attention: {
       total: items.length,
@@ -183,6 +214,34 @@ export function toWorkspaceViewModel(workspace: WorkspaceRecord): WorkspaceViewM
       reportStatus: asString(report.status),
     },
   };
+}
+
+export function academicCreditRows(
+  detail: WorkspaceAcademicDetailViewModel,
+): readonly WorkspaceAcademicCreditRow[] {
+  const sources = new Map(detail.academicSources.map((source) => [asString(source.id), source]));
+  const placementsByDecision = new Map<string, WorkspaceRecord[]>();
+  for (const placement of detail.placements) {
+    const decisionId = asString(placement.studentCreditDecisionId);
+    if (!decisionId) continue;
+    const group = placementsByDecision.get(decisionId) ?? [];
+    group.push(placement);
+    placementsByDecision.set(decisionId, group);
+  }
+  return detail.creditRecords.map((creditRecord) => {
+    const creditRecordId = asString(creditRecord.id);
+    const latestDecision = creditRecordId ? detail.latestDecisions[creditRecordId] : undefined;
+    const decisionId = latestDecision ? asString(latestDecision.id) : undefined;
+    return {
+      creditRecord,
+      source: sources.get(asString(creditRecord.sourceId)),
+      latestVerification: creditRecordId
+        ? detail.latestVerifications[creditRecordId]
+        : undefined,
+      latestDecision,
+      placements: decisionId ? placementsByDecision.get(decisionId) ?? [] : [],
+    };
+  });
 }
 
 export type WorkspaceQueryState = {
