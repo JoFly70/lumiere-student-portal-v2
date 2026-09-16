@@ -1,4 +1,5 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import { getAuthToken } from "./api";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
@@ -15,7 +16,7 @@ export async function apiRequest(
   const headers: Record<string, string> = data ? { "Content-Type": "application/json" } : {};
   
   // Add auth token if available
-  const accessToken = sessionStorage.getItem('sb_access_token');
+  const accessToken = getAuthToken();
   if (accessToken) {
     headers["Authorization"] = `Bearer ${accessToken}`;
   }
@@ -40,7 +41,7 @@ export const getQueryFn: <T>(options: {
     const headers: Record<string, string> = {};
     
     // Add auth token if available
-    const accessToken = sessionStorage.getItem('sb_access_token');
+    const accessToken = getAuthToken();
     if (accessToken) {
       headers["Authorization"] = `Bearer ${accessToken}`;
     }
