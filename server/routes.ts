@@ -63,11 +63,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     express.static(publicPath)(req, res, next);
   });
   
-  // Landing page at root - public marketing page (must be before Vite catch-all)
-  app.get("/", (req, res) => {
-    res.sendFile(path.join(publicPath, "landing.html"));
-  });
-
   // Serve env.js with actual environment variables
   app.get("/env.js", (req, res) => {
     // Support both NEXT_PUBLIC_* and standard naming conventions
