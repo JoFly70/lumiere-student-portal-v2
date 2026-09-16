@@ -22,6 +22,7 @@ import NotFound from "@/pages/not-found";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
 import Admin from "@/pages/admin";
+import AdminStudentWorkspace from "@/pages/admin-student-workspace";
 
 function Router() {
   return (
@@ -35,6 +36,13 @@ function Router() {
         {() => (
           <ProtectedRoute requireRole="admin">
             <Admin />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/admin/students/:studentId">
+        {() => (
+          <ProtectedRoute requireRole="admin">
+            <AdminStudentWorkspace />
           </ProtectedRoute>
         )}
       </Route>

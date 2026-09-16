@@ -31,6 +31,8 @@ import {
 } from "lucide-react";
 import { apiRequest } from "@/lib/api";
 import { ProgramsManagement } from "@/components/programs-management";
+import { useLocation } from "wouter";
+import { adminStudentWorkspacePath } from "./admin-student-workspace-presentation";
 
 // Types
 interface User {
@@ -356,6 +358,7 @@ function UserManagement() {
 function StudentManagement() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [, setLocation] = useLocation();
 
   const { data, isLoading } = useQuery<{ students: Student[] }>({
     queryKey: ['/api/admin/students', { search, status: statusFilter !== 'all' ? statusFilter : undefined }],
@@ -427,7 +430,7 @@ function StudentManagement() {
                   </TableCell>
                   <TableCell className="capitalize">{student.residency}</TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="icon">
+                     <Button variant="ghost" size="icon" aria-label={`Open ${student.first_name} ${student.last_name}`} onClick={() => setLocation(adminStudentWorkspacePath(student.id))}>
                       <Eye className="w-4 h-4" />
                     </Button>
                   </TableCell>
