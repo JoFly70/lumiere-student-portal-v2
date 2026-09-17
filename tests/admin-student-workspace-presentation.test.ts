@@ -23,8 +23,11 @@ const tabsPropsMock = vi.hoisted(() => vi.fn());
 vi.stubGlobal("React", React);
 vi.mock("@tanstack/react-query", () => ({
   useQuery: useQueryMock,
-  useMutation: vi.fn(),
+  useMutation: vi.fn(() => ({ isPending: false, mutate: vi.fn() })),
   useQueryClient: vi.fn(),
+}));
+vi.mock("@/lib/auth", () => ({
+  useAuthFetch: vi.fn(() => vi.fn()),
 }));
 vi.mock("wouter", () => ({
   useParams: () => ({ studentId: "student-1" }),
@@ -303,9 +306,14 @@ describe("admin student workspace presentation", () => {
     expect(markup).toContain("Lifecycle &amp; provenance");
     expect(markup).toContain("Historical placement records");
     expect(markup).toContain("Earlier recorded placement");
-    expect(markup).toContain("Read-only canonical view");
+    expect(markup).toContain("Canonical view · controlled placement writes");
+    expect(markup).toContain("Placement controls are disabled until a fresh canonical snapshot");
     expect(markup).toContain("No academic values are recomputed here");
-    expect(markup).not.toContain("<button");
+    expect(markup).toContain("Add placement");
+    expect(markup).toContain("Supersede");
+    expect(markup).toContain("Revoke");
+    expect(markup).toContain("disabled");
+    expect(markup).toContain("Refresh workspace");
   });
   it("returns no-attention empty state for complete report", () => {
     const vm = toWorkspaceViewModel({ student: {}, report: { status: "COMPOSED", phase3Output: { results: [] }, integrationDiagnostics: [] }, needsAttention: { groups: { manualReview: [], missing: [], partial: [], conflict: [] } }, displayLabels: {}, snapshot: {} } as any);
