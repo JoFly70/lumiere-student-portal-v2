@@ -29,6 +29,7 @@ import {
   HelpCircle,
 } from 'lucide-react';
 import type { FlightDeckResult } from '@shared/flight-deck-engine';
+import { getAuthToken } from '@/lib/api';
 import { 
   CreditsDonutChart, 
   PaceGaugeChart, 
@@ -38,7 +39,17 @@ import {
 } from '@/components/flight-deck-charts';
 
 async function fetchStudentRecordStatus(): Promise<'ready' | 'missing'> {
-  const response = await fetch('/api/students/me', { credentials: 'include' });
+  const token = getAuthToken();
+  const headers: Record<string, string> = {};
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch('/api/students/me', {
+    credentials: 'include',
+    headers,
+  });
 
   if (response.status === 404) {
     return 'missing';
