@@ -6,8 +6,12 @@ import {
   canonicalLabelOptions,
   classifyPlacementWorkflowError,
   createPlacementBody,
+  placementActionCopy,
+  placementDialogLocked,
   placementEndpoint,
   placementMutationOutcome,
+  placementRequirementLabel,
+  placementSuccessMessage,
   placementWritesEnabled,
   revokePlacementBody,
   supersedePlacementBody,
@@ -90,6 +94,31 @@ describe("Phase 5C.2 controlled placement UI safety helpers", () => {
     expect(validSnapshotFingerprint(`SHA256:${"a".repeat(64)}`)).toBe(false);
   });
 
+  it("locks an open dialog immediately when writes lock, a request is pending, or a stale draft is retained", () => {
+    expect(placementDialogLocked(false, false, false)).toBe(false);
+    expect(placementDialogLocked(true, false, false)).toBe(true);
+    expect(placementDialogLocked(false, true, false)).toBe(true);
+    expect(placementDialogLocked(false, false, true)).toBe(true);
+  });
+
+  it("uses plain placement action language", () => {
+    expect(placementActionCopy("supersede")).toEqual({
+      trigger: "Replace this placement",
+      confirm: "Replace placement",
+      completed: "Placement replaced.",
+    });
+    expect(placementActionCopy("revoke").trigger).toBe("Revoke placement");
+  });
+
+  it("claims workspace refresh only after a valid refreshed snapshot", () => {
+    expect(placementSuccessMessage("create", true)).toBe(
+      "Placement added. The student workspace was refreshed.",
+    );
+    expect(placementSuccessMessage("create", false)).toBe(
+      "Placement added. The workspace could not be refreshed. Review the latest student record before making another change.",
+    );
+  });
+
   it("uses human labels, excludes id fallbacks, and sorts by label then id", () => {
     expect(canonicalLabelOptions({
       "requirement-z": { label: "Writing", source: "canonical" },
@@ -101,6 +130,24 @@ describe("Phase 5C.2 controlled placement UI safety helpers", () => {
       { id: "requirement-b", label: "Quantitative reasoning" },
       { id: "requirement-z", label: "Writing" },
     ]);
+  });
+
+  it("keeps the placement requirement record-specific when a display label is missing", () => {
+    const labels = {
+      requirements: {},
+      academicRules: {},
+      programs: {},
+      programVersions: {},
+    };
+    expect(placementRequirementLabel(
+      { requirementId: "requirement-42" },
+      labels,
+    )).toBe("Requirement requirement-42");
+    expect(placementRequirementLabel(
+      { requirementId: null, academicRuleId: "rule-7" },
+      labels,
+    )).toBe("Academic rule rule-7");
+    expect(placementRequirementLabel({}, labels)).toBe("Requirement unavailable");
   });
 
   it("offers create only for a latest accepted decision with an id", () => {
@@ -146,7 +193,7 @@ describe("Phase 5C.2 controlled placement UI safety helpers", () => {
     }).kind).toBe("snapshot-unavailable");
   });
 
-  it("refreshes without retry or optimistic patch after success or stale", () => {
+  it("refreshes without retry or optimistic patch and preserves stale drafts", () => {
     expect(placementMutationOutcome("success")).toEqual({
       refetchCanonicalWorkspace: true,
       retryAutomatically: false,
@@ -156,7 +203,7 @@ describe("Phase 5C.2 controlled placement UI safety helpers", () => {
     expect(placementMutationOutcome("stale")).toEqual({
       refetchCanonicalWorkspace: true,
       retryAutomatically: false,
-      resetDialog: true,
+      resetDialog: false,
       optimisticPatch: false,
     });
     expect(placementMutationOutcome("conflict")).toMatchObject({

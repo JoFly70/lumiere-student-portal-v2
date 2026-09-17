@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
+import { AlertCircle, LockKeyhole } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -20,13 +21,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/hooks/use-toast";
 import { useAuthFetch } from "@/lib/auth";
 import {
   classifyPlacementWorkflowError,
   createPlacementBody,
+  placementActionCopy,
+  placementDialogLocked,
   placementEndpoint,
   placementMutationOutcome,
+  placementSuccessMessage,
   revokePlacementBody,
   supersedePlacementBody,
   type CanonicalLabelOption,
@@ -42,44 +45,72 @@ class PlacementRequestError extends Error {
   }
 }
 
+export interface PlacementActionFeedback {
+  readonly kind: "success" | "error";
+  readonly message: string;
+}
+
 export interface PlacementActionDialogProps {
   readonly operation: PlacementOperation;
   readonly studentId: string;
+  readonly studentName: string;
   readonly snapshotFingerprint: string;
   readonly decisionId?: string;
   readonly placementId?: string;
+  readonly placementLabel?: string;
+  readonly placementStatus?: string;
+  readonly currentRationale?: string;
   readonly requirements: readonly CanonicalLabelOption[];
   readonly academicRules: readonly CanonicalLabelOption[];
   readonly disabled?: boolean;
+  readonly disabledReason?: string;
   readonly onRefreshCanonical: () => Promise<boolean>;
   readonly onSnapshotUnavailable: () => void;
+  readonly onFeedback: (feedback: PlacementActionFeedback) => void;
 }
 
 export function PlacementActionDialog({
   operation,
   studentId,
+  studentName,
   snapshotFingerprint,
   decisionId,
   placementId,
+  placementLabel,
+  placementStatus,
+  currentRationale,
   requirements,
   academicRules,
   disabled = false,
+  disabledReason,
   onRefreshCanonical,
   onSnapshotUnavailable,
+  onFeedback,
 }: PlacementActionDialogProps) {
   const authFetch = useAuthFetch();
-  const { toast } = useToast();
+  const fieldId = useId();
   const [open, setOpen] = useState(false);
   const [requirementId, setRequirementId] = useState("");
   const [academicRuleId, setAcademicRuleId] = useState(NO_RULE);
   const [rationale, setRationale] = useState("");
   const [confirmed, setConfirmed] = useState(false);
+  const [staleDraft, setStaleDraft] = useState(false);
+  const [dialogFeedback, setDialogFeedback] = useState<PlacementActionFeedback | null>(null);
+
+  const needsPlacementFields = operation !== "revoke";
+  const optionsUnavailable = needsPlacementFields && requirements.length === 0;
+  const locallyDisabled = disabled || optionsUnavailable;
+  const lockReason = optionsUnavailable
+    ? "No named degree requirements are available for placement."
+    : disabledReason ?? "Placement changes are temporarily unavailable while the student workspace refreshes.";
 
   const reset = () => {
     setRequirementId("");
     setAcademicRuleId(NO_RULE);
     setRationale("");
     setConfirmed(false);
+    setStaleDraft(false);
+    setDialogFeedback(null);
   };
 
   const mutation = useMutation({
@@ -133,20 +164,15 @@ export function PlacementActionDialog({
       return payload;
     },
     onSuccess: async () => {
-      const outcome = placementMutationOutcome("success");
-      if (outcome.resetDialog) {
-        setOpen(false);
-        reset();
-      }
-      if (outcome.refetchCanonicalWorkspace) await onRefreshCanonical();
-      toast({
-        title: operation === "create"
-          ? "Placement recorded"
-          : operation === "supersede"
-            ? "Placement superseded"
-            : "Placement revoked",
-        description: "The canonical workspace has been refreshed.",
-      });
+      const refreshed = await onRefreshCanonical();
+      const feedback: PlacementActionFeedback = {
+        kind: refreshed ? "success" : "error",
+        message: placementSuccessMessage(operation, refreshed),
+      };
+      if (!refreshed) onSnapshotUnavailable();
+      onFeedback(feedback);
+      setOpen(false);
+      reset();
     },
     onError: async (error) => {
       const workflowError = error instanceof PlacementRequestError
@@ -159,130 +185,167 @@ export function PlacementActionDialog({
       if (workflowError.kind === "snapshot-unavailable") {
         onSnapshotUnavailable();
       }
-      if (outcome.resetDialog) {
-        setOpen(false);
-        reset();
+      if (workflowError.kind === "stale") {
+        setStaleDraft(true);
+        setConfirmed(false);
       }
-      if (outcome.refetchCanonicalWorkspace) await onRefreshCanonical();
-      toast({
-        title: workflowError.kind === "stale"
-          ? "Workspace refreshed—review required"
-          : "Placement update failed",
-        description: workflowError.message,
-        variant: "destructive",
-      });
+      const refreshed = outcome.refetchCanonicalWorkspace
+        ? await onRefreshCanonical()
+        : false;
+      const message = workflowError.kind === "stale"
+        ? refreshed
+          ? "The student record changed. The workspace was refreshed. Your draft is preserved below for reference; close this dialog and review the updated placement before trying again."
+          : "The student record changed, but the workspace could not be refreshed. Your draft is preserved below for reference. Close this dialog and refresh the workspace before trying again."
+        : workflowError.message;
+      const feedback: PlacementActionFeedback = { kind: "error", message };
+      setDialogFeedback(feedback);
+      onFeedback(feedback);
     },
   });
 
-  const needsPlacementFields = operation !== "revoke";
+  const locked = placementDialogLocked(locallyDisabled, mutation.isPending, staleDraft);
   const formComplete = (!needsPlacementFields || requirementId.length > 0)
     && rationale.trim().length > 0
     && confirmed;
-  const triggerLabel = operation === "create"
-    ? "Add placement"
+  const actionCopy = placementActionCopy(operation);
+  const triggerLabel = actionCopy.trigger;
+  const confirmLabel = actionCopy.confirm;
+  const dialogTitle = operation === "create"
+    ? `Add a placement for ${studentName}`
     : operation === "supersede"
-      ? "Supersede"
-      : "Revoke";
-  const confirmLabel = operation === "create"
-    ? "Confirm placement"
-    : operation === "supersede"
-      ? "Confirm supersession"
-      : "Confirm revocation";
+      ? `Replace ${placementLabel ?? "this placement"}`
+      : `Revoke ${placementLabel ?? "this placement"}`;
+  const requirementIdValue = requirements.find((option) => option.id === requirementId);
+  const requirementSelectId = `${fieldId}-requirement`;
+  const ruleSelectId = `${fieldId}-academic-rule`;
+  const rationaleId = `${fieldId}-rationale`;
+  const confirmationId = `${fieldId}-confirm`;
+  const dialogLockMessageId = `${fieldId}-dialog-lock-message`;
+  const triggerLockMessageId = `${fieldId}-trigger-lock-message`;
 
-  return <Dialog open={open} onOpenChange={(next) => {
-    if (mutation.isPending) return;
-    setOpen(next);
-    if (!next) reset();
-  }}>
-    <DialogTrigger asChild>
-      <Button
-        type="button"
-        size="sm"
-        variant={operation === "revoke" ? "destructive" : "outline"}
-        disabled={disabled}
-      >
-        {triggerLabel}
-      </Button>
-    </DialogTrigger>
-    <DialogContent>
-      <DialogHeader>
-        <DialogTitle>{triggerLabel}</DialogTitle>
-        <DialogDescription>
-          {operation === "create"
-            ? "Record an operator-selected requirement placement for the latest accepted decision."
-            : operation === "supersede"
-              ? "Replace this active placement while retaining its server-controlled decision and assignment identity."
-              : "Revoke this active placement. Its lifecycle and provenance history will remain visible."}
-        </DialogDescription>
-      </DialogHeader>
-      <div className="space-y-4">
-        {needsPlacementFields && <>
-          <div className="space-y-2">
-            <Label>Requirement</Label>
-            <Select value={requirementId} onValueChange={setRequirementId}>
-              <SelectTrigger><SelectValue placeholder="Select a canonical requirement" /></SelectTrigger>
-              <SelectContent>
-                {requirements.map((option) =>
-                  <SelectItem key={option.id} value={option.id}>
-                    <span>{option.label}</span>
-                    <span className="ml-2 font-mono text-[10px] text-muted-foreground">{option.id}</span>
-                  </SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label>Academic rule (optional)</Label>
-            <Select value={academicRuleId} onValueChange={setAcademicRuleId}>
-              <SelectTrigger><SelectValue placeholder="No academic rule" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value={NO_RULE}>No academic rule</SelectItem>
-                {academicRules.map((option) =>
-                  <SelectItem key={option.id} value={option.id}>
-                    <span>{option.label}</span>
-                    <span className="ml-2 font-mono text-[10px] text-muted-foreground">{option.id}</span>
-                  </SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-        </>}
-        <div className="space-y-2">
-          <Label htmlFor={`${operation}-${placementId ?? decisionId}-rationale`}>Rationale</Label>
-          <Textarea
-            id={`${operation}-${placementId ?? decisionId}-rationale`}
-            value={rationale}
-            onChange={(event) => setRationale(event.target.value)}
-            placeholder="Explain the operator-controlled placement change"
-            disabled={mutation.isPending}
-          />
-        </div>
-        <div className="flex items-start gap-3 rounded-md border p-3">
-          <Checkbox
-            id={`${operation}-${placementId ?? decisionId}-confirm`}
-            checked={confirmed}
-            onCheckedChange={(checked) => setConfirmed(checked === true)}
-            disabled={mutation.isPending}
-          />
-          <Label
-            htmlFor={`${operation}-${placementId ?? decisionId}-confirm`}
-            className="text-sm font-normal leading-5"
-          >
-            I confirm this is an intentional operator action against the current canonical snapshot.
-          </Label>
-        </div>
-      </div>
-      <DialogFooter>
-        <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={mutation.isPending}>
-          Cancel
-        </Button>
+  return <div className="space-y-2">
+    <Dialog open={open} onOpenChange={(next) => {
+      if (mutation.isPending) return;
+      setOpen(next);
+      if (!next) reset();
+    }}>
+      <DialogTrigger asChild>
         <Button
           type="button"
-          variant={operation === "revoke" ? "destructive" : "default"}
-          disabled={!formComplete || mutation.isPending}
-          onClick={() => mutation.mutate()}
+          size="sm"
+          variant={operation === "revoke" ? "destructive" : "outline"}
+          disabled={locallyDisabled}
+          aria-describedby={locallyDisabled ? triggerLockMessageId : undefined}
         >
-          {mutation.isPending ? "Submitting…" : confirmLabel}
+          {triggerLabel}
         </Button>
-      </DialogFooter>
-    </DialogContent>
-  </Dialog>;
+      </DialogTrigger>
+      <DialogContent aria-busy={mutation.isPending}>
+        <DialogHeader>
+          <DialogTitle>{dialogTitle}</DialogTitle>
+          <DialogDescription>
+            {operation === "create"
+              ? "Apply the accepted credit decision to a named degree requirement."
+              : operation === "supersede"
+                ? "Choose a new requirement for this placement. The previous record will remain in its history."
+                : "Remove this active placement. The record and its history will remain visible."}
+          </DialogDescription>
+        </DialogHeader>
+
+        <dl className="grid gap-3 rounded-md border bg-muted/30 p-3 text-sm sm:grid-cols-2">
+          <div><dt className="text-xs font-medium text-muted-foreground">Student</dt><dd>{studentName}</dd></div>
+          {operation !== "create" && <>
+            <div><dt className="text-xs font-medium text-muted-foreground">Current requirement</dt><dd>{placementLabel ?? "Not provided"}</dd></div>
+            <div><dt className="text-xs font-medium text-muted-foreground">Current status</dt><dd>{placementStatus ?? "Not provided"}</dd></div>
+            <div className="sm:col-span-2"><dt className="text-xs font-medium text-muted-foreground">Current rationale</dt><dd>{currentRationale ?? "Not provided"}</dd></div>
+          </>}
+        </dl>
+
+        {(locallyDisabled || staleDraft) && <div id={dialogLockMessageId} role="status" className="flex gap-2 rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-sm text-amber-900 dark:text-amber-200">
+          <LockKeyhole className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>{staleDraft ? "This draft is read-only because the student record changed." : lockReason}</span>
+        </div>}
+
+        {dialogFeedback && <div role="alert" className="flex gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>{dialogFeedback.message}</span>
+        </div>}
+
+        <div className="space-y-4">
+          {needsPlacementFields && <>
+            <div className="space-y-2">
+              <Label htmlFor={requirementSelectId}>New requirement</Label>
+              <Select value={requirementId} onValueChange={setRequirementId} disabled={locked}>
+                <SelectTrigger id={requirementSelectId}>
+                  <SelectValue placeholder="Select a degree requirement" />
+                </SelectTrigger>
+                <SelectContent>
+                  {requirements.map((option) =>
+                    <SelectItem key={option.id} value={option.id}>
+                      <span>{option.label}</span>
+                      <span className="ml-2 font-mono text-[10px] text-muted-foreground">{option.id}</span>
+                    </SelectItem>)}
+                </SelectContent>
+              </Select>
+              {requirementIdValue && <p className="text-xs text-muted-foreground">Selected: {requirementIdValue.label}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor={ruleSelectId}>Academic rule (optional)</Label>
+              <Select value={academicRuleId} onValueChange={setAcademicRuleId} disabled={locked}>
+                <SelectTrigger id={ruleSelectId}>
+                  <SelectValue placeholder="No academic rule" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NO_RULE}>No academic rule</SelectItem>
+                  {academicRules.map((option) =>
+                    <SelectItem key={option.id} value={option.id}>
+                      <span>{option.label}</span>
+                      <span className="ml-2 font-mono text-[10px] text-muted-foreground">{option.id}</span>
+                    </SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </>}
+          <div className="space-y-2">
+            <Label htmlFor={rationaleId}>{operation === "create" ? "Rationale" : "Rationale for this change"}</Label>
+            <Textarea
+              id={rationaleId}
+              value={rationale}
+              onChange={(event) => setRationale(event.target.value)}
+              placeholder="Explain why this placement change is needed"
+              disabled={locked}
+              readOnly={staleDraft}
+            />
+          </div>
+          <div className="flex items-start gap-3 rounded-md border p-3">
+            <Checkbox
+              id={confirmationId}
+              checked={confirmed}
+              onCheckedChange={(checked) => setConfirmed(checked === true)}
+              disabled={locked}
+            />
+            <Label htmlFor={confirmationId} className="text-sm font-normal leading-5">
+              I reviewed the student and placement details above and intend to {operation === "create" ? "add this placement" : operation === "supersede" ? "replace this placement" : "revoke this placement"}.
+            </Label>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={mutation.isPending}>
+            {staleDraft ? "Close and review workspace" : "Cancel"}
+          </Button>
+          <Button
+            type="button"
+            variant={operation === "revoke" ? "destructive" : "default"}
+            disabled={!formComplete || locked}
+            onClick={() => mutation.mutate()}
+          >
+            {mutation.isPending ? "Saving…" : confirmLabel}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    {locallyDisabled && <p id={triggerLockMessageId} className="max-w-xs text-xs text-muted-foreground">
+      {lockReason}
+    </p>}
+  </div>;
 }

@@ -30,6 +30,12 @@ export interface PlacementMutationOutcome {
   readonly optimisticPatch: false;
 }
 
+export interface PlacementActionCopy {
+  readonly trigger: string;
+  readonly confirm: string;
+  readonly completed: string;
+}
+
 const asString = (value: unknown): string | undefined =>
   typeof value === "string" && value.trim() ? value : undefined;
 
@@ -47,6 +53,46 @@ export function placementWritesEnabled(
     && !workspaceRefreshing;
 }
 
+export function placementDialogLocked(
+  writesDisabled: boolean,
+  mutationPending: boolean,
+  staleDraft: boolean,
+): boolean {
+  return writesDisabled || mutationPending || staleDraft;
+}
+
+export function placementActionCopy(operation: PlacementOperation): PlacementActionCopy {
+  if (operation === "create") {
+    return {
+      trigger: "Add placement",
+      confirm: "Add placement",
+      completed: "Placement added.",
+    };
+  }
+  if (operation === "supersede") {
+    return {
+      trigger: "Replace this placement",
+      confirm: "Replace placement",
+      completed: "Placement replaced.",
+    };
+  }
+  return {
+    trigger: "Revoke placement",
+    confirm: "Revoke placement",
+    completed: "Placement revoked.",
+  };
+}
+
+export function placementSuccessMessage(
+  operation: PlacementOperation,
+  workspaceRefreshed: boolean,
+): string {
+  const action = placementActionCopy(operation).completed;
+  return workspaceRefreshed
+    ? `${action} The student workspace was refreshed.`
+    : `${action} The workspace could not be refreshed. Review the latest student record before making another change.`;
+}
+
 export function canonicalLabelOptions(
   labels: WorkspaceLabels["requirements"] | WorkspaceLabels["academicRules"],
 ): readonly CanonicalLabelOption[] {
@@ -58,6 +104,23 @@ export function canonicalLabelOptions(
     .map(([id, entry]) => ({ id, label: entry.label.trim() }))
     .sort((left, right) =>
       left.label.localeCompare(right.label) || left.id.localeCompare(right.id));
+}
+
+export function placementRequirementLabel(
+  placement: WorkspaceRecord,
+  labels: WorkspaceLabels,
+): string {
+  const requirementId = asString(placement.requirementId);
+  if (requirementId) {
+    const requirementLabel = asString(labels.requirements[requirementId]?.label);
+    return requirementLabel ?? `Requirement ${requirementId}`;
+  }
+  const academicRuleId = asString(placement.academicRuleId);
+  if (academicRuleId) {
+    const academicRuleLabel = asString(labels.academicRules[academicRuleId]?.label);
+    return academicRuleLabel ?? `Academic rule ${academicRuleId}`;
+  }
+  return "Requirement unavailable";
 }
 
 export function placementEndpoint(
@@ -170,7 +233,7 @@ export function placementMutationOutcome(
   return {
     refetchCanonicalWorkspace: result === "success" || result === "stale",
     retryAutomatically: false,
-    resetDialog: result === "success" || result === "stale",
+    resetDialog: result === "success",
     optimisticPatch: false,
   };
 }

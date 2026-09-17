@@ -310,8 +310,8 @@ describe("admin student workspace presentation", () => {
     expect(markup).toContain("Placement controls are disabled until a fresh canonical snapshot");
     expect(markup).toContain("No academic values are recomputed here");
     expect(markup).toContain("Add placement");
-    expect(markup).toContain("Supersede");
-    expect(markup).toContain("Revoke");
+    expect(markup).toContain("Replace this placement");
+    expect(markup).toContain("Revoke placement");
     expect(markup).toContain("disabled");
     expect(markup).toContain("Refresh workspace");
   });

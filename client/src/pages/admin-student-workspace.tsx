@@ -5,7 +5,10 @@ import { AlertCircle, ArrowLeft, ChevronDown, Database, FileCheck2, Fingerprint,
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PlacementActionDialog } from "@/components/placement-action-dialog";
+import {
+  PlacementActionDialog,
+  type PlacementActionFeedback,
+} from "@/components/placement-action-dialog";
 import {
   ADMIN_STUDENT_WORKSPACE_QUERY_KEY,
   ADMIN_STUDENT_WORKSPACE_QUERY_OPTIONS,
@@ -25,6 +28,7 @@ import {
   canSupersedePlacement,
   canonicalLabelOptions,
   placementWritesEnabled,
+  placementRequirementLabel,
   validSnapshotFingerprint,
 } from "./controlled-placement-workflow";
 
@@ -53,9 +57,23 @@ function Reference({ value: reference }: { value: unknown }) {
   if (typeof reference !== "string" || !reference) return null;
   return <p className="mt-2 font-mono text-[11px] text-muted-foreground">Reference: {reference}</p>;
 }
+function InlinePlacementFeedback({ feedback }: { feedback?: PlacementActionFeedback }) {
+  if (!feedback) return null;
+  return <div
+    role={feedback.kind === "error" ? "alert" : "status"}
+    className={`mt-3 rounded-md border px-3 py-2 text-sm ${
+      feedback.kind === "error"
+        ? "border-destructive/40 bg-destructive/5 text-destructive"
+        : "border-green-600/30 bg-green-600/5 text-green-800 dark:text-green-300"
+    }`}
+  >
+    {feedback.message}
+  </div>;
+}
 export default function AdminStudentWorkspace() {
   const { studentId = "" } = useParams<{ studentId: string }>();
   const [snapshotUnavailable, setSnapshotUnavailable] = useState(false);
+  const [placementFeedback, setPlacementFeedback] = useState<Record<string, PlacementActionFeedback>>({});
   const query = useQuery({
     queryKey: ADMIN_STUDENT_WORKSPACE_QUERY_KEY(studentId),
     ...ADMIN_STUDENT_WORKSPACE_QUERY_OPTIONS,
@@ -88,6 +106,13 @@ export default function AdminStudentWorkspace() {
     snapshotUnavailable,
     query.isFetching,
   );
+  const writesDisabledReason = !snapshotFingerprint
+    ? "Placement changes are unavailable until this student has a valid current snapshot."
+    : snapshotUnavailable
+      ? "Placement changes are unavailable because the latest student record could not be loaded."
+      : query.isFetching
+        ? "Placement changes are temporarily unavailable while the student workspace refreshes."
+        : undefined;
   const refreshCanonical = async (): Promise<boolean> => {
     const refreshed = await query.refetch();
     const refreshedState = selectWorkspaceState(refreshed);
@@ -105,13 +130,7 @@ export default function AdminStudentWorkspace() {
     return hasValidFingerprint;
   };
   const placementLabel = (placement: WorkspaceRecord) => {
-    const requirementId = placement.requirementId;
-    const academicRuleId = placement.academicRuleId;
-    return label("requirements", requirementId)
-      ?? (typeof academicRuleId === "string"
-        ? vm.labels.academicRules[academicRuleId]?.label
-        : undefined)
-      ?? "Canonical placement";
+    return placementRequirementLabel(placement, vm.labels);
   };
   return <div className="mx-auto max-w-6xl space-y-6">
     <Link href={ADMIN_STUDENTS_PATH} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" />Back to Students</Link>
@@ -146,6 +165,7 @@ export default function AdminStudentWorkspace() {
           const source = row.source;
           const verification = row.latestVerification;
           const decision = row.latestDecision;
+          const creditFeedbackKey = `credit:${String(credit.id)}`;
           return <Card key={String(credit.id)}>
             <CardHeader className="space-y-2">
               <div className="flex flex-wrap items-start justify-between gap-3">
@@ -167,19 +187,96 @@ export default function AdminStudentWorkspace() {
                     ? <PlacementActionDialog
                         operation="create"
                         studentId={studentId}
+                        studentName={name}
                         snapshotFingerprint={snapshotFingerprint ?? ""}
                         decisionId={String(decision!.id)}
                         requirements={requirementOptions}
                         academicRules={academicRuleOptions}
                         disabled={writesDisabled}
+                        disabledReason={writesDisabledReason}
                         onRefreshCanonical={refreshCanonical}
                         onSnapshotUnavailable={() => setSnapshotUnavailable(true)}
+                        onFeedback={(feedback) => setPlacementFeedback((current) => ({
+                          ...current,
+                          [creditFeedbackKey]: feedback,
+                        }))}
                       />
                     : null}
                 </div>
+                <InlinePlacementFeedback feedback={placementFeedback[creditFeedbackKey]} />
                 {row.placements.length === 0
                   ? <p className="mt-2 text-sm text-muted-foreground">No placement tied to the latest decision.</p>
-                  : <div className="mt-3 grid gap-3 md:grid-cols-2">{row.placements.map((placement) => <div key={String(placement.id)} className="rounded-md border bg-muted/20 p-3"><div className="flex flex-wrap items-center justify-between gap-2"><span className="font-medium">{placementLabel(placement)}</span><Badge variant="outline">{value(placement, "status")}</Badge></div><p className="mt-2 text-sm text-muted-foreground">{value(placement, "rationale")}</p>{canSupersedePlacement(placement, decision) || canRevokePlacement(placement) ? <div className="mt-3 flex flex-wrap gap-2">{canSupersedePlacement(placement, decision) ? <PlacementActionDialog operation="supersede" studentId={studentId} snapshotFingerprint={snapshotFingerprint ?? ""} placementId={String(placement.id)} requirements={requirementOptions} academicRules={academicRuleOptions} disabled={writesDisabled} onRefreshCanonical={refreshCanonical} onSnapshotUnavailable={() => setSnapshotUnavailable(true)} /> : null}{canRevokePlacement(placement) ? <PlacementActionDialog operation="revoke" studentId={studentId} snapshotFingerprint={snapshotFingerprint ?? ""} placementId={String(placement.id)} requirements={requirementOptions} academicRules={academicRuleOptions} disabled={writesDisabled} onRefreshCanonical={refreshCanonical} onSnapshotUnavailable={() => setSnapshotUnavailable(true)} /> : null}</div> : null}<details className="mt-3"><summary className="cursor-pointer text-xs font-medium">Lifecycle & provenance</summary><dl className="mt-3 grid gap-3 sm:grid-cols-2"><DetailField label="Recorded">{displayDate(placement.createdAt)}</DetailField><DetailField label="Updated">{displayDate(placement.updatedAt)}</DetailField><DetailField label="Revocation">{value(placement, "revocationRationale")}</DetailField><DetailField label="Supersession">{value(placement, "supersedeRationale")}</DetailField></dl><pre className="mt-3 overflow-auto rounded bg-muted p-3 text-xs text-muted-foreground">{JSON.stringify({ provenance: placement.provenance, metadata: placement.metadata }, null, 2)}</pre><Reference value={placement.id} /></details></div>)}</div>}
+                  : <div className="mt-3 grid gap-3 md:grid-cols-2">
+                      {row.placements.map((placement) => {
+                        const placementKey = `placement:${String(placement.id)}`;
+                        const currentLabel = placementLabel(placement);
+                        const currentStatus = value(placement, "status");
+                        const currentRationale = value(placement, "rationale");
+                        const reportFeedback = (feedback: PlacementActionFeedback) =>
+                          setPlacementFeedback((current) => ({ ...current, [placementKey]: feedback }));
+                        return <div key={String(placement.id)} className="rounded-md border bg-muted/20 p-3">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <span className="font-medium">{currentLabel}</span>
+                            <Badge variant="outline">{currentStatus}</Badge>
+                          </div>
+                          <p className="mt-2 text-sm text-muted-foreground">{currentRationale}</p>
+                          {canSupersedePlacement(placement, decision) || canRevokePlacement(placement)
+                            ? <div className="mt-3 flex flex-wrap gap-2">
+                                {canSupersedePlacement(placement, decision)
+                                  ? <PlacementActionDialog
+                                      operation="supersede"
+                                      studentId={studentId}
+                                      studentName={name}
+                                      snapshotFingerprint={snapshotFingerprint ?? ""}
+                                      placementId={String(placement.id)}
+                                      placementLabel={currentLabel}
+                                      placementStatus={currentStatus}
+                                      currentRationale={currentRationale}
+                                      requirements={requirementOptions}
+                                      academicRules={academicRuleOptions}
+                                      disabled={writesDisabled}
+                                      disabledReason={writesDisabledReason}
+                                      onRefreshCanonical={refreshCanonical}
+                                      onSnapshotUnavailable={() => setSnapshotUnavailable(true)}
+                                      onFeedback={reportFeedback}
+                                    />
+                                  : null}
+                                {canRevokePlacement(placement)
+                                  ? <PlacementActionDialog
+                                      operation="revoke"
+                                      studentId={studentId}
+                                      studentName={name}
+                                      snapshotFingerprint={snapshotFingerprint ?? ""}
+                                      placementId={String(placement.id)}
+                                      placementLabel={currentLabel}
+                                      placementStatus={currentStatus}
+                                      currentRationale={currentRationale}
+                                      requirements={requirementOptions}
+                                      academicRules={academicRuleOptions}
+                                      disabled={writesDisabled}
+                                      disabledReason={writesDisabledReason}
+                                      onRefreshCanonical={refreshCanonical}
+                                      onSnapshotUnavailable={() => setSnapshotUnavailable(true)}
+                                      onFeedback={reportFeedback}
+                                    />
+                                  : null}
+                              </div>
+                            : null}
+                          <InlinePlacementFeedback feedback={placementFeedback[placementKey]} />
+                          <details className="mt-3">
+                            <summary className="cursor-pointer text-xs font-medium">Lifecycle & provenance</summary>
+                            <dl className="mt-3 grid gap-3 sm:grid-cols-2">
+                              <DetailField label="Recorded">{displayDate(placement.createdAt)}</DetailField>
+                              <DetailField label="Updated">{displayDate(placement.updatedAt)}</DetailField>
+                              <DetailField label="Revocation">{value(placement, "revocationRationale")}</DetailField>
+                              <DetailField label="Supersession">{value(placement, "supersedeRationale")}</DetailField>
+                            </dl>
+                            <pre className="mt-3 overflow-auto rounded bg-muted p-3 text-xs text-muted-foreground">{JSON.stringify({ provenance: placement.provenance, metadata: placement.metadata }, null, 2)}</pre>
+                            <Reference value={placement.id} />
+                          </details>
+                        </div>;
+                      })}
+                    </div>}
               </div>
               <details className="border-t pt-4">
                 <summary className="flex cursor-pointer items-center gap-2 text-sm font-semibold"><Database className="h-4 w-4" />Provenance references</summary>
@@ -189,7 +286,57 @@ export default function AdminStudentWorkspace() {
           </Card>;
         })}
     </section>
-    {vm.academicDetail.placements.filter((placement) => !academicRows.some((row) => row.placements.includes(placement))).length > 0 && <Card><CardHeader><CardTitle>Historical placement records</CardTitle><p className="text-sm text-muted-foreground">Placements retained for earlier canonical decisions in this active assignment.</p></CardHeader><CardContent className="divide-y">{vm.academicDetail.placements.filter((placement) => !academicRows.some((row) => row.placements.includes(placement))).map((placement) => <div key={String(placement.id)} className="py-3"><div className="flex items-center justify-between gap-2"><span className="font-medium">{placementLabel(placement)}</span><Badge variant="outline">{value(placement, "status")}</Badge></div><p className="mt-1 text-sm text-muted-foreground">{value(placement, "rationale")}</p>{canRevokePlacement(placement) ? <div className="mt-3"><PlacementActionDialog operation="revoke" studentId={studentId} snapshotFingerprint={snapshotFingerprint ?? ""} placementId={String(placement.id)} requirements={requirementOptions} academicRules={academicRuleOptions} disabled={writesDisabled} onRefreshCanonical={refreshCanonical} onSnapshotUnavailable={() => setSnapshotUnavailable(true)} /></div> : null}<details className="mt-2"><summary className="cursor-pointer text-xs font-medium">Lifecycle & provenance</summary><pre className="mt-2 overflow-auto rounded bg-muted p-3 text-xs text-muted-foreground">{JSON.stringify({ provenance: placement.provenance, metadata: placement.metadata, supersedesPlacementId: placement.supersedesPlacementId, supersededByPlacementId: placement.supersededByPlacementId }, null, 2)}</pre><Reference value={placement.id} /></details></div>)}</CardContent></Card>}
+    {vm.academicDetail.placements.filter((placement) => !academicRows.some((row) => row.placements.includes(placement))).length > 0 && <Card>
+      <CardHeader>
+        <CardTitle>Historical placement records</CardTitle>
+        <p className="text-sm text-muted-foreground">Placements retained for earlier decisions in this active assignment. An active record can still be revoked here.</p>
+      </CardHeader>
+      <CardContent className="divide-y">
+        {vm.academicDetail.placements.filter((placement) => !academicRows.some((row) => row.placements.includes(placement))).map((placement) => {
+          const placementKey = `placement:${String(placement.id)}`;
+          const currentLabel = placementLabel(placement);
+          const currentStatus = value(placement, "status");
+          const currentRationale = value(placement, "rationale");
+          return <div key={String(placement.id)} className="py-3">
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-medium">{currentLabel}</span>
+              <Badge variant="outline">{currentStatus}</Badge>
+            </div>
+            <p className="mt-1 text-sm text-muted-foreground">{currentRationale}</p>
+            {canRevokePlacement(placement)
+              ? <div className="mt-3">
+                  <PlacementActionDialog
+                    operation="revoke"
+                    studentId={studentId}
+                    studentName={name}
+                    snapshotFingerprint={snapshotFingerprint ?? ""}
+                    placementId={String(placement.id)}
+                    placementLabel={currentLabel}
+                    placementStatus={currentStatus}
+                    currentRationale={currentRationale}
+                    requirements={requirementOptions}
+                    academicRules={academicRuleOptions}
+                    disabled={writesDisabled}
+                    disabledReason={writesDisabledReason}
+                    onRefreshCanonical={refreshCanonical}
+                    onSnapshotUnavailable={() => setSnapshotUnavailable(true)}
+                    onFeedback={(feedback) => setPlacementFeedback((current) => ({
+                      ...current,
+                      [placementKey]: feedback,
+                    }))}
+                  />
+                </div>
+              : null}
+            <InlinePlacementFeedback feedback={placementFeedback[placementKey]} />
+            <details className="mt-2">
+              <summary className="cursor-pointer text-xs font-medium">Lifecycle & provenance</summary>
+              <pre className="mt-2 overflow-auto rounded bg-muted p-3 text-xs text-muted-foreground">{JSON.stringify({ provenance: placement.provenance, metadata: placement.metadata, supersedesPlacementId: placement.supersedesPlacementId, supersededByPlacementId: placement.supersededByPlacementId }, null, 2)}</pre>
+              <Reference value={placement.id} />
+            </details>
+          </div>;
+        })}
+      </CardContent>
+    </Card>}
     <Card><CardHeader><CardTitle>Report provenance</CardTitle></CardHeader><CardContent className="grid gap-4 text-sm md:grid-cols-3"><div><p className="text-muted-foreground">Report status</p><p className="mt-1 font-medium">{vm.provenance.reportStatus}</p></div><div><p className="text-muted-foreground">Reasons</p><p className="mt-1 font-medium">{vm.provenance.reasons.length || "None reported"}</p></div><div><p className="text-muted-foreground">Diagnostics</p><p className="mt-1 font-medium">{vm.provenance.integrationDiagnostics.length + vm.provenance.diagnostics.length || "None reported"}</p></div></CardContent></Card>
   </div>;
 }
