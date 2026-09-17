@@ -1,4 +1,4 @@
-import { Switch, Route, Redirect } from "wouter";
+import { Switch, Route, Redirect, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -24,14 +24,37 @@ import { LogOut } from "lucide-react";
 import Admin from "@/pages/admin";
 import AdminStudentWorkspace from "@/pages/admin-student-workspace";
 
+function RoleLanding() {
+  const { user, isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return null;
+  }
+
+  if (!isAuthenticated) {
+    return <Redirect to="/login" />;
+  }
+
+  if (user?.role === "admin") {
+    return <Redirect to="/admin" />;
+  }
+
+  if (user?.role === "coach" || user?.role === "staff") {
+    return <Redirect to="/support" />;
+  }
+
+  return <Redirect to="/flight-deck" />;
+}
+
 function Router() {
   return (
     <Switch>
       <Route path="/login" component={Login} />
       <Route path="/reset-password" component={ResetPassword} />
       <Route path="/auth/verify" component={VerifyEmail} />
-      <Route path="/">{() => <Redirect to="/flight-deck" />}</Route>
-      <Route path="/dashboard">{() => <Redirect to="/flight-deck" />}</Route>
+      <Route path="/">{() => <RoleLanding />}</Route>
+      <Route path="/dashboard">{() => <RoleLanding />}</Route>
+
       <Route path="/admin">
         {() => (
           <ProtectedRoute requireRole="admin">
@@ -49,7 +72,7 @@ function Router() {
 
       <Route path="/flight-deck">
         {() => (
-          <ProtectedRoute>
+          <ProtectedRoute requireRole="student">
             <FlightDeck />
           </ProtectedRoute>
         )}
@@ -57,7 +80,7 @@ function Router() {
 
       <Route path="/profile">
         {() => (
-          <ProtectedRoute>
+          <ProtectedRoute requireRole="student">
             <StudentProfile />
           </ProtectedRoute>
         )}
@@ -65,7 +88,7 @@ function Router() {
 
       <Route path="/roadmap">
         {() => (
-          <ProtectedRoute>
+          <ProtectedRoute requireRole="student">
             <Roadmap />
           </ProtectedRoute>
         )}
@@ -73,7 +96,7 @@ function Router() {
 
       <Route path="/documents">
         {() => (
-          <ProtectedRoute>
+          <ProtectedRoute requireRole="student">
             <Documents />
           </ProtectedRoute>
         )}
@@ -81,7 +104,7 @@ function Router() {
 
       <Route path="/billing">
         {() => (
-          <ProtectedRoute>
+          <ProtectedRoute requireRole="student">
             <Billing />
           </ProtectedRoute>
         )}
@@ -95,7 +118,6 @@ function Router() {
         )}
       </Route>
 
-      {/* Coaches have no dedicated UI yet — route to support as a safe interim view */}
       <Route path="/coach-dashboard">{() => <Redirect to="/support" />}</Route>
 
       <Route component={NotFound} />
@@ -143,13 +165,27 @@ function AuthenticatedLayout() {
   );
 }
 
+function ApplicationLayout() {
+  const [location] = useLocation();
+  const isAuthRoute =
+    location === "/login" ||
+    location === "/reset-password" ||
+    location === "/auth/verify";
+
+  if (isAuthRoute) {
+    return <Router />;
+  }
+
+  return <AuthenticatedLayout />;
+}
+
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <ThemeProvider>
           <TooltipProvider>
-            <AuthenticatedLayout />
+            <ApplicationLayout />
             <Toaster />
           </TooltipProvider>
         </ThemeProvider>

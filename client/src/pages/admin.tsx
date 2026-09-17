@@ -16,7 +16,6 @@ import {
   DollarSign,
   Activity,
   UserCog,
-  TrendingUp,
   AlertCircle,
   Search,
   MoreHorizontal,
@@ -80,15 +79,11 @@ interface AuditLogEntry {
 function StatCard({
   title,
   value,
-  icon: Icon,
-  change,
-  changeType
+  icon: Icon
 }: {
   title: string;
   value: string | number;
   icon: any;
-  change?: string;
-  changeType?: 'positive' | 'negative' | 'neutral';
 }) {
   return (
     <Card>
@@ -97,16 +92,6 @@ function StatCard({
           <div>
             <p className="text-sm text-muted-foreground">{title}</p>
             <p className="text-3xl font-bold mt-2">{value}</p>
-            {change && (
-              <p className={`text-xs mt-2 flex items-center gap-1 ${
-                changeType === 'positive' ? 'text-green-600' :
-                changeType === 'negative' ? 'text-red-600' :
-                'text-muted-foreground'
-              }`}>
-                <TrendingUp className={`w-3 h-3 ${changeType === 'negative' ? 'rotate-180' : ''}`} />
-                {change}
-              </p>
-            )}
           </div>
           <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
             <Icon className="w-6 h-6 text-primary" />
@@ -136,29 +121,21 @@ function DashboardOverview() {
           title="Total Students"
           value={stats?.studentsByStatus ? Object.values(stats.studentsByStatus).reduce((a, b) => a + b, 0) : 0}
           icon={GraduationCap}
-          change="+12% from last month"
-          changeType="positive"
         />
         <StatCard
           title="Active Enrollments"
           value={stats?.activeEnrollments || 0}
           icon={BookOpen}
-          change="+8% from last month"
-          changeType="positive"
         />
         <StatCard
           title="New Signups (30d)"
           value={stats?.recentSignups || 0}
           icon={Users}
-          change="+23% from last month"
-          changeType="positive"
         />
         <StatCard
           title="Revenue (30d)"
           value={`$${((stats?.totalRevenue || 0) / 100).toLocaleString()}`}
           icon={DollarSign}
-          change="+15% from last month"
-          changeType="positive"
         />
       </div>
 
@@ -217,38 +194,18 @@ function DashboardOverview() {
       <Card>
         <CardHeader>
           <CardTitle>Recent Activity</CardTitle>
-          <CardDescription>Latest actions in the system</CardDescription>
+          <CardDescription>Latest verified actions in the system</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-              <Activity className="w-4 h-4" />
-              <div className="flex-1">
-                <p className="text-sm font-medium">New student enrollment</p>
-                <p className="text-xs text-muted-foreground">John Doe enrolled in BUS-101</p>
-              </div>
-              <span className="text-xs text-muted-foreground">5m ago</span>
-            </div>
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-              <Activity className="w-4 h-4" />
-              <div className="flex-1">
-                <p className="text-sm font-medium">Payment received</p>
-                <p className="text-xs text-muted-foreground">$500 from Sarah Smith</p>
-              </div>
-              <span className="text-xs text-muted-foreground">12m ago</span>
-            </div>
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-              <Activity className="w-4 h-4" />
-              <div className="flex-1">
-                <p className="text-sm font-medium">Document verified</p>
-                <p className="text-xs text-muted-foreground">Transcript approved for Mike Johnson</p>
-              </div>
-              <span className="text-xs text-muted-foreground">1h ago</span>
-            </div>
+          <div className="rounded-lg border border-dashed p-6 text-center">
+            <Activity className="w-5 h-5 mx-auto mb-2 text-muted-foreground" />
+            <p className="text-sm font-medium">Activity feed not connected</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              No sample activity is shown. Verified activity will appear here when the feed is connected.
+            </p>
           </div>
         </CardContent>
-      </Card>
-    </div>
+      </Card>    </div>
   );
 }
 
