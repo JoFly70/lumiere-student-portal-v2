@@ -16,6 +16,8 @@ describe("Knowledge PR 1 evidence-source contract", () => {
       expect(migration).toContain(`ADD COLUMN IF NOT EXISTS ${column}`);
     }
     expect(migration).toContain("ADD COLUMN IF NOT EXISTS academic_year text");
+    expect(migration).toContain("ALTER COLUMN academic_year TYPE text");
+    expect(migration).toContain("USING academic_year::text");
     expect(migration).not.toMatch(/CREATE TABLE|DROP TABLE|DELETE FROM|db:push/i);
     expect(schema).toContain("evidenceLifecycleStatusEnum");
   });
