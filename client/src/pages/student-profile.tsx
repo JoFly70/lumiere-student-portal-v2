@@ -37,6 +37,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { getAuthToken } from "@/lib/api";
 import { ProfileAvatarUpload } from "@/components/profile-avatar-upload";
 import type { Student, StudentContact, InsertStudentContact } from "@shared/schema";
 import {
@@ -48,21 +49,24 @@ import {
 
 // Get current user's student profile
 async function fetchMyProfile(): Promise<Student | null> {
-  try {
-    const response = await fetch('/api/students/me');
-    if (!response.ok) {
-      if (response.status === 404) {
-        console.log('Student profile not found - user may not have a student record yet');
-        return null;
-      }
-      throw new Error(`Failed to fetch profile: ${response.status}`);
-    }
-    const student = await response.json();
-    return student;
-  } catch (error) {
-    console.error('Error fetching profile:', error);
+  const token = getAuthToken();
+  const headers: Record<string, string> = {};
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch('/api/students/me', { headers });
+
+  if (response.status === 404) {
     return null;
   }
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch profile: ${response.status}`);
+  }
+
+  return response.json();
 }
 
 // Get student contacts
@@ -145,9 +149,15 @@ export default function StudentProfile() {
   const [addingContact, setAddingContact] = useState(false);
 
   // Fetch student profile
-  const { data: profile, isLoading: profileLoading } = useQuery({
+  const {
+    data: profile,
+    isLoading: profileLoading,
+    error: profileError,
+    refetch: refetchProfile,
+  } = useQuery({
     queryKey: ['/api/students/me'],
     queryFn: fetchMyProfile,
+    retry: false,
   });
 
   // Fetch authorized contacts
@@ -163,6 +173,23 @@ export default function StudentProfile() {
         <div className="text-center">
           <div className="text-lg font-medium">Loading profile...</div>
           <p className="text-sm text-muted-foreground mt-2">Please wait</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (profileError) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center max-w-md">
+          <AlertCircle className="h-12 w-12 mx-auto text-destructive mb-4" />
+          <div className="text-lg font-medium">Student record could not be loaded</div>
+          <p className="text-sm text-muted-foreground mt-2">
+            This is a system error, not a missing student record.
+          </p>
+          <Button variant="outline" className="mt-4" onClick={() => void refetchProfile()}>
+            Retry
+          </Button>
         </div>
       </div>
     );
