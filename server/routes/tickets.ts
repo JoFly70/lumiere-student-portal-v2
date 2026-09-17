@@ -10,6 +10,7 @@ import { logger } from '../lib/logger';
 import { asyncHandler } from '../lib/errors';
 import { requireAuth } from '../middleware/auth';
 import { requireRole, requireOwnerOrAdmin } from '../middleware/rbac';
+import { userOwnsTicket, isStaffOwner, resolveStudentUserId } from '../lib/resource-ownership';
 import { auditSystem, auditAdmin } from '../lib/audit';
 import {
   sendTicketCreatedEmailToStaff,
@@ -53,6 +54,7 @@ router.get('/', requireAuth, asyncHandler(async (req: any, res) => {
     priority,
     search,
     assignedTo,
+    studentId,
     limit = 50,
     offset = 0,
   } = req.query;
@@ -81,6 +83,23 @@ router.get('/', requireAuth, asyncHandler(async (req: any, res) => {
     // Filter by priority
     if (priority) {
       query = query.eq('priority', priority);
+    }
+
+    // The admin workspace may filter by a selected student. Resolve the
+    // selected profile to its stored auth user id server-side; never accept a
+    // reporter/owner id from the browser.
+    if (studentId) {
+      if (user.role !== 'admin') {
+        return res.status(403).json({ error: 'Student ticket filtering is admin-only' });
+      }
+      const reporterId = await resolveStudentUserId(String(studentId));
+      if (!reporterId) {
+        return res.json({
+          tickets: [],
+          pagination: { total: 0, limit: Number(limit), offset: Number(offset) },
+        });
+      }
+      query = query.eq('reporter_id', reporterId);
     }
 
     // Filter by assigned user (admin only)
@@ -144,7 +163,7 @@ router.get('/:id', requireAuth, asyncHandler(async (req: any, res) => {
     }
 
     // Check access: students can only view their own tickets
-    if (user.role === 'student' && ticket.reporter_id !== user.id) {
+    if (!userOwnsTicket(user, ticket.reporter_id)) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -279,8 +298,8 @@ router.patch('/:id', requireAuth, asyncHandler(async (req: any, res) => {
     }
 
     // Access control
-    const isStaff = ['admin', 'coach', 'staff'].includes(user.role);
-    const isReporter = currentTicket.reporter_id === user.id;
+    const isStaff = isStaffOwner(user);
+    const isReporter = userOwnsTicket({ ...user, role: "student" }, currentTicket.reporter_id);
 
     // Students can only update their own open tickets (limited fields)
     if (user.role === 'student') {
@@ -398,8 +417,8 @@ router.post('/:id/comments', requireAuth, asyncHandler(async (req: any, res) => 
     }
 
     // Check access
-    const isStaff = ['admin', 'coach', 'staff'].includes(user.role);
-    const isReporter = ticket.reporter_id === user.id;
+    const isStaff = isStaffOwner(user);
+    const isReporter = userOwnsTicket({ ...user, role: "student" }, ticket.reporter_id);
 
     if (!isStaff && !isReporter) {
       return res.status(403).json({ error: 'Access denied' });
@@ -572,7 +591,7 @@ router.post('/:ticketId/attachments/upload-url', requireAuth, asyncHandler(async
     }
 
     // Check authorization
-    if (user.role === 'student' && ticket.reporter_id !== user.id) {
+    if (!userOwnsTicket(user, ticket.reporter_id)) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -650,7 +669,7 @@ router.post('/:ticketId/attachments', requireAuth, asyncHandler(async (req: any,
     }
 
     // Check authorization
-    if (user.role === 'student' && ticket.reporter_id !== user.id) {
+    if (!userOwnsTicket(user, ticket.reporter_id)) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -719,7 +738,7 @@ router.get('/:ticketId/attachments/:attachmentId/download-url', requireAuth, asy
     }
 
     // Check authorization
-    if (user.role === 'student' && attachment.support_tickets.reporter_id !== user.id) {
+    if (!userOwnsTicket(user, attachment.support_tickets.reporter_id)) {
       return res.status(403).json({ error: 'Access denied' });
     }
 

@@ -84,17 +84,30 @@ export interface TicketsResponse {
   };
 }
 
+export function ticketQueryParams(filters?: {
+  studentId?: string | null;
+  status?: string;
+  category?: string;
+  priority?: string;
+  search?: string;
+}): URLSearchParams {
+  const queryParams = new URLSearchParams();
+  if (filters?.studentId) queryParams.set('studentId', filters.studentId);
+  if (filters?.status) queryParams.set('status', filters.status);
+  if (filters?.category) queryParams.set('category', filters.category);
+  if (filters?.priority) queryParams.set('priority', filters.priority);
+  if (filters?.search) queryParams.set('search', filters.search);
+  return queryParams;
+}
+
 export function useTickets(filters?: {
+  studentId?: string | null;
   status?: string;
   category?: string;
   priority?: string;
   search?: string;
 }) {
-  const queryParams = new URLSearchParams();
-  if (filters?.status) queryParams.set('status', filters.status);
-  if (filters?.category) queryParams.set('category', filters.category);
-  if (filters?.priority) queryParams.set('priority', filters.priority);
-  if (filters?.search) queryParams.set('search', filters.search);
+  const queryParams = ticketQueryParams(filters);
 
   return useQuery<TicketsResponse>({
     queryKey: ['tickets', filters],

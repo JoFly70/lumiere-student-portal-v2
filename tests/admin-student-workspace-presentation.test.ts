@@ -314,6 +314,9 @@ describe("admin student workspace presentation", () => {
     expect(markup).toContain("Revoke placement");
     expect(markup).toContain("disabled");
     expect(markup).toContain("Refresh workspace");
+    expect(markup).toContain("Documents");
+    expect(markup).toContain("Support");
+    expect(markup).toContain("Loading…");
   });
   it("returns no-attention empty state for complete report", () => {
     const vm = toWorkspaceViewModel({ student: {}, report: { status: "COMPOSED", phase3Output: { results: [] }, integrationDiagnostics: [] }, needsAttention: { groups: { manualReview: [], missing: [], partial: [], conflict: [] } }, displayLabels: {}, snapshot: {} } as any);

@@ -17,7 +17,7 @@ import {
   softDeleteDocument,
   bulkVerifyDocuments,
 } from '../services/document-service';
-import { getStudentByUserId } from '../services/student-service';
+import { studentOwnsProfile } from "../lib/resource-ownership";
 import { insertStudentDocumentSchema } from '@shared/schema';
 import { logger } from '../lib/logger';
 
@@ -40,11 +40,8 @@ router.get('/student/:studentId', async (req, res) => {
     const { studentId } = req.params;
 
     // Check authorization
-    if (req.user?.role === 'student') {
-      const myProfile = await getStudentByUserId(req.user.id);
-      if (!myProfile || myProfile.id !== studentId) {
+    if (req.user && !(await studentOwnsProfile(req.user, studentId))) {
         return res.status(403).json({ error: 'Access denied' });
-      }
     }
 
     const filters = {
@@ -71,11 +68,8 @@ router.post('/student/:studentId/upload-url', async (req, res) => {
     const { studentId } = req.params;
 
     // Check authorization
-    if (req.user?.role === 'student') {
-      const myProfile = await getStudentByUserId(req.user.id);
-      if (!myProfile || myProfile.id !== studentId) {
+    if (req.user && !(await studentOwnsProfile(req.user, studentId))) {
         return res.status(403).json({ error: 'Access denied' });
-      }
     }
 
     // Validate request body
@@ -138,11 +132,8 @@ router.post('/student/:studentId', async (req, res) => {
     const { studentId } = req.params;
 
     // Check authorization
-    if (req.user?.role === 'student') {
-      const myProfile = await getStudentByUserId(req.user.id);
-      if (!myProfile || myProfile.id !== studentId) {
+    if (req.user && !(await studentOwnsProfile(req.user, studentId))) {
         return res.status(403).json({ error: 'Access denied' });
-      }
     }
 
     // Validate (exclude student_id as it comes from URL)
@@ -311,11 +302,8 @@ router.delete('/:id', async (req, res) => {
     }
 
     // Check authorization
-    if (req.user?.role === 'student') {
-      const myProfile = await getStudentByUserId(req.user.id);
-      if (!myProfile || myProfile.id !== document.student_id) {
+    if (req.user && !(await studentOwnsProfile(req.user, document.student_id))) {
         return res.status(403).json({ error: 'Access denied' });
-      }
     }
 
     // Pass actor ID for audit logging
@@ -393,11 +381,8 @@ router.get('/:id', async (req, res) => {
     }
 
     // Check authorization
-    if (req.user?.role === 'student') {
-      const myProfile = await getStudentByUserId(req.user.id);
-      if (!myProfile || myProfile.id !== document.student_id) {
+    if (req.user && !(await studentOwnsProfile(req.user, document.student_id))) {
         return res.status(403).json({ error: 'Access denied' });
-      }
     }
 
     // Generate download URL
