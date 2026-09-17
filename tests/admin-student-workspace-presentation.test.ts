@@ -20,6 +20,12 @@ const useLocationMock = vi.hoisted(() => vi.fn());
 const useSearchMock = vi.hoisted(() => vi.fn());
 const setLocationMock = vi.hoisted(() => vi.fn());
 const tabsPropsMock = vi.hoisted(() => vi.fn());
+const useDocumentsMock = vi.hoisted(() => vi.fn(() => ({
+  isLoading: true, isError: false, data: undefined, refetch: vi.fn(),
+})));
+const useTicketsMock = vi.hoisted(() => vi.fn(() => ({
+  isLoading: true, isError: false, data: undefined, refetch: vi.fn(),
+})));
 vi.stubGlobal("React", React);
 vi.mock("@tanstack/react-query", () => ({
   useQuery: useQueryMock,
@@ -28,6 +34,12 @@ vi.mock("@tanstack/react-query", () => ({
 }));
 vi.mock("@/lib/auth", () => ({
   useAuthFetch: vi.fn(() => vi.fn()),
+}));
+vi.mock("@/hooks/use-documents", () => ({
+  useDocuments: useDocumentsMock,
+}));
+vi.mock("@/hooks/use-tickets", () => ({
+  useTickets: useTicketsMock,
 }));
 vi.mock("wouter", () => ({
   useParams: () => ({ studentId: "student-1" }),
@@ -314,6 +326,91 @@ describe("admin student workspace presentation", () => {
     expect(markup).toContain("Revoke placement");
     expect(markup).toContain("disabled");
     expect(markup).toContain("Refresh workspace");
+    expect(markup).toContain("Documents");
+    expect(markup).toContain("Support");
+    expect(markup).toContain("Loading…");
+  });
+  it("renders selected-student documents and support records without inventing records", async () => {
+    useQueryMock.mockReturnValueOnce({
+      isLoading: false,
+      isError: false,
+      data: {
+        student: { id: "student-1", first_name: "Ada", last_name: "Lovelace" },
+        report: { status: "COMPOSED" },
+        needsAttention: { groups: { manualReview: [], missing: [], partial: [], conflict: [] } },
+        displayLabels: {},
+        academicDetail: {},
+      },
+    } as any);
+    useDocumentsMock.mockReturnValueOnce({
+      isLoading: false,
+      isError: false,
+      data: [{ id: "doc-1", file_name: "transcript.pdf", doc_type: "transcript", status: "verified", uploaded_at: "2025-01-01" }],
+      refetch: vi.fn(),
+    });
+    useTicketsMock.mockReturnValueOnce({
+      isLoading: false,
+      isError: false,
+      data: {
+        tickets: [{ id: "ticket-1", ticket_number: "SUP-1", subject: "Enrollment question", category: "enrollment", priority: "medium", status: "open", created_at: "2025-01-02" }],
+        pagination: { total: 1, limit: 50, offset: 0 },
+      },
+      refetch: vi.fn(),
+    });
+    const { default: AdminStudentWorkspace } = await import("@/pages/admin-student-workspace");
+    const markup = renderToStaticMarkup(React.createElement(AdminStudentWorkspace));
+    expect(useDocumentsMock).toHaveBeenCalledWith("student-1");
+    expect(useTicketsMock).toHaveBeenCalledWith({ studentId: "student-1" });
+    expect(markup).toContain("transcript.pdf");
+    expect(markup).toContain("Enrollment question");
+    expect(markup).not.toContain("demo");
+    expect(markup).not.toContain("fake");
+  });
+  it("shows explicit empty and error/retry states for documents and support", async () => {
+    useQueryMock.mockReturnValueOnce({
+      isLoading: false,
+      isError: false,
+      data: {
+        student: { id: "student-1" },
+        report: { status: "COMPOSED" },
+        needsAttention: { groups: { manualReview: [], missing: [], partial: [], conflict: [] } },
+        displayLabels: {},
+        academicDetail: {},
+      },
+    } as any);
+    useDocumentsMock.mockReturnValueOnce({
+      isLoading: false, isError: false, data: [], refetch: vi.fn(),
+    });
+    useTicketsMock.mockReturnValueOnce({
+      isLoading: true, isError: false, data: undefined, refetch: vi.fn(),
+    });
+    const { default: AdminStudentWorkspace } = await import("@/pages/admin-student-workspace");
+    const emptyMarkup = renderToStaticMarkup(React.createElement(AdminStudentWorkspace));
+    expect(emptyMarkup.match(/No records are available for this student\./g)).toHaveLength(1);
+    expect(emptyMarkup).toContain("Loading…");
+
+    useQueryMock.mockReturnValueOnce({
+      isLoading: false,
+      isError: false,
+      data: {
+        student: { id: "student-1" },
+        report: { status: "COMPOSED" },
+        needsAttention: { groups: { manualReview: [], missing: [], partial: [], conflict: [] } },
+        displayLabels: {},
+        academicDetail: {},
+      },
+    } as any);
+    const documentsRefetch = vi.fn();
+    const ticketsRefetch = vi.fn();
+    useDocumentsMock.mockReturnValueOnce({
+      isLoading: false, isError: true, data: undefined, refetch: documentsRefetch,
+    });
+    useTicketsMock.mockReturnValueOnce({
+      isLoading: false, isError: true, data: undefined, refetch: ticketsRefetch,
+    });
+    const errorMarkup = renderToStaticMarkup(React.createElement(AdminStudentWorkspace));
+    expect(errorMarkup.match(/Could not load this section\./g)).toHaveLength(2);
+    expect(errorMarkup.match(/Retry/g)).toHaveLength(2);
   });
   it("returns no-attention empty state for complete report", () => {
     const vm = toWorkspaceViewModel({ student: {}, report: { status: "COMPOSED", phase3Output: { results: [] }, integrationDiagnostics: [] }, needsAttention: { groups: { manualReview: [], missing: [], partial: [], conflict: [] } }, displayLabels: {}, snapshot: {} } as any);

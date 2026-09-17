@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
 import { useParams, Link } from "wouter";
-import { AlertCircle, ArrowLeft, ChevronDown, Database, FileCheck2, Fingerprint, RefreshCw, ShieldCheck } from "lucide-react";
+import { AlertCircle, ArrowLeft, ChevronDown, Database, FileCheck2, FileText, Fingerprint, LifeBuoy, RefreshCw, ShieldCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,6 +31,8 @@ import {
   placementRequirementLabel,
   validSnapshotFingerprint,
 } from "./controlled-placement-workflow";
+import { useDocuments } from "@/hooks/use-documents";
+import { useTickets, type Ticket } from "@/hooks/use-tickets";
 
 function value(row: unknown, ...keys: string[]) {
   const record = row && typeof row === "object" && !Array.isArray(row) ? row as WorkspaceRecord : {};
@@ -70,6 +72,24 @@ function InlinePlacementFeedback({ feedback }: { feedback?: PlacementActionFeedb
     {feedback.message}
   </div>;
 }
+function WorkspaceResourceState({
+  loading,
+  error,
+  empty,
+  onRetry,
+  children,
+}: {
+  loading?: boolean;
+  error?: boolean;
+  empty: boolean;
+  onRetry: () => void;
+  children: ReactNode;
+}) {
+  if (loading) return <div role="status" aria-live="polite" className="rounded-md border p-6 text-center text-sm text-muted-foreground">Loading…</div>;
+  if (error) return <div role="alert" className="rounded-md border border-destructive/40 bg-destructive/5 p-6 text-center text-sm"><p>Could not load this section.</p><Button className="mt-3" type="button" size="sm" variant="outline" onClick={onRetry}><RefreshCw className="mr-2 h-4 w-4" />Retry</Button></div>;
+  if (empty) return <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">No records are available for this student.</div>;
+  return <>{children}</>;
+}
 export default function AdminStudentWorkspace() {
   const { studentId = "" } = useParams<{ studentId: string }>();
   const [snapshotUnavailable, setSnapshotUnavailable] = useState(false);
@@ -78,6 +98,8 @@ export default function AdminStudentWorkspace() {
     queryKey: ADMIN_STUDENT_WORKSPACE_QUERY_KEY(studentId),
     ...ADMIN_STUDENT_WORKSPACE_QUERY_OPTIONS,
   });
+  const documentsQuery = useDocuments(studentId);
+  const ticketsQuery = useTickets({ studentId });
   const state = selectWorkspaceState(query);
   if (state.kind === "loading") return <div role={state.role} aria-live={state.ariaLive} className="space-y-4"><span className="sr-only">Loading student workspace</span><div className="h-8 w-64 animate-pulse rounded bg-muted" /><div className="h-32 animate-pulse rounded-lg bg-muted" /><div className="h-64 animate-pulse rounded-lg bg-muted" /></div>;
   if (state.kind === "error") return <Card><CardContent className="flex flex-col items-center gap-3 py-16 text-center"><AlertCircle className="h-8 w-8 text-destructive" /><h2 className="text-lg font-semibold">Workspace unavailable</h2><p className="text-sm text-muted-foreground">The canonical student workspace could not be loaded.</p><Button onClick={() => query.refetch()}><RefreshCw className="mr-2 h-4 w-4" />Retry</Button></CardContent></Card>;
@@ -138,6 +160,12 @@ export default function AdminStudentWorkspace() {
       <div><p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary">Lumière / student workspace</p><h1 className="text-3xl font-semibold tracking-tight">{name}</h1><p className="mt-1 text-muted-foreground">{value(student, "email")} · <span className="font-mono">{value(student, "student_code", "studentCode")}</span></p></div>
       <Badge variant="outline" className="w-fit gap-2"><ShieldCheck className="h-3.5 w-3.5" />Canonical view · controlled placement writes</Badge>
     </header>
+     <nav aria-label="Student workspace sections" className="flex flex-wrap gap-2 border-b pb-3">
+       <a href="#workspace-overview" className="rounded-md border px-3 py-2 text-sm font-medium hover:bg-muted">Overview</a>
+       <a href="#workspace-documents" className="rounded-md border px-3 py-2 text-sm font-medium hover:bg-muted"><FileText className="mr-2 inline h-4 w-4" />Documents</a>
+       <a href="#workspace-support" className="rounded-md border px-3 py-2 text-sm font-medium hover:bg-muted"><LifeBuoy className="mr-2 inline h-4 w-4" />Support</a>
+     </nav>
+     <div id="workspace-overview" aria-label="Overview">
     <section className="grid gap-4 md:grid-cols-3">
        <Card><CardHeader><CardTitle className="text-sm text-muted-foreground">Current program</CardTitle></CardHeader><CardContent><p className="text-lg font-semibold">{label("programs", value(vm.program, "id")) ?? value(vm.program, "name", "code")}</p><p className="mt-1 text-sm text-muted-foreground">Version {label("programVersions", value(vm.programVersion, "id")) ?? value(vm.programVersion, "versionLabel", "id")}</p></CardContent></Card>
        <Card><CardHeader><CardTitle className="text-sm text-muted-foreground">Progress status</CardTitle></CardHeader><CardContent><p className="text-lg font-semibold">{value(vm.report, "status")}</p><p className="mt-1 text-sm text-muted-foreground">Canonical degree-progress result</p></CardContent></Card>
@@ -337,6 +365,19 @@ export default function AdminStudentWorkspace() {
         })}
       </CardContent>
     </Card>}
-    <Card><CardHeader><CardTitle>Report provenance</CardTitle></CardHeader><CardContent className="grid gap-4 text-sm md:grid-cols-3"><div><p className="text-muted-foreground">Report status</p><p className="mt-1 font-medium">{vm.provenance.reportStatus}</p></div><div><p className="text-muted-foreground">Reasons</p><p className="mt-1 font-medium">{vm.provenance.reasons.length || "None reported"}</p></div><div><p className="text-muted-foreground">Diagnostics</p><p className="mt-1 font-medium">{vm.provenance.integrationDiagnostics.length + vm.provenance.diagnostics.length || "None reported"}</p></div></CardContent></Card>
+     <Card><CardHeader><CardTitle>Report provenance</CardTitle></CardHeader><CardContent className="grid gap-4 text-sm md:grid-cols-3"><div><p className="text-muted-foreground">Report status</p><p className="mt-1 font-medium">{vm.provenance.reportStatus}</p></div><div><p className="text-muted-foreground">Reasons</p><p className="mt-1 font-medium">{vm.provenance.reasons.length || "None reported"}</p></div><div><p className="text-muted-foreground">Diagnostics</p><p className="mt-1 font-medium">{vm.provenance.integrationDiagnostics.length + vm.provenance.diagnostics.length || "None reported"}</p></div></CardContent></Card>
+     </div>
+     <section id="workspace-documents" aria-labelledby="workspace-documents-heading" className="space-y-4">
+       <div><h2 id="workspace-documents-heading" className="flex items-center gap-2 text-xl font-semibold"><FileText className="h-5 w-5" />Documents</h2><p className="mt-1 text-sm text-muted-foreground">Documents already recorded for this student. This workspace is read-only.</p></div>
+       <WorkspaceResourceState loading={documentsQuery.isLoading} error={documentsQuery.isError} empty={!documentsQuery.data?.length} onRetry={() => void documentsQuery.refetch()}>
+         <div className="grid gap-3 md:grid-cols-2">{documentsQuery.data?.map((document) => <Card key={document.id}><CardContent className="space-y-2 p-4"><div className="flex items-center justify-between gap-3"><p className="font-medium">{document.file_name}</p><Badge variant="outline">{document.status}</Badge></div><p className="text-sm text-muted-foreground">{document.doc_type}{document.issuer ? ` · ${document.issuer}` : ""}</p><p className="text-xs text-muted-foreground">Uploaded {displayDate(document.uploaded_at)}</p></CardContent></Card>)}</div>
+       </WorkspaceResourceState>
+     </section>
+     <section id="workspace-support" aria-labelledby="workspace-support-heading" className="space-y-4">
+       <div><h2 id="workspace-support-heading" className="flex items-center gap-2 text-xl font-semibold"><LifeBuoy className="h-5 w-5" />Support</h2><p className="mt-1 text-sm text-muted-foreground">Support tickets associated with this student. This workspace is read-only.</p></div>
+       <WorkspaceResourceState loading={ticketsQuery.isLoading} error={ticketsQuery.isError} empty={!ticketsQuery.data?.tickets.length} onRetry={() => void ticketsQuery.refetch()}>
+         <div className="space-y-3">{ticketsQuery.data?.tickets.map((ticket: Ticket) => <Card key={ticket.id}><CardContent className="space-y-2 p-4"><div className="flex flex-wrap items-center justify-between gap-3"><p className="font-medium">{ticket.subject}</p><div className="flex gap-2"><Badge variant="outline">{ticket.status}</Badge><Badge variant="secondary">{ticket.priority}</Badge></div></div><p className="text-sm text-muted-foreground">{ticket.ticket_number} · {ticket.category}</p><p className="text-xs text-muted-foreground">Opened {displayDate(ticket.created_at)}</p></CardContent></Card>)}</div>
+       </WorkspaceResourceState>
+     </section>
   </div>;
 }
