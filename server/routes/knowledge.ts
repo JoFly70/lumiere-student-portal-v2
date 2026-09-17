@@ -30,6 +30,7 @@ import {
   evidenceRelationshipTypeEnum,
   verificationActionEnum,
   authorityLevelEnum,
+  evidenceLifecycleStatusEnum,
   ruleKindEnum,
 } from '@shared/knowledge-schema';
 import type {
@@ -50,6 +51,8 @@ import type {
   ConflictStatusFilter,
   ConflictTypeFilter,
 } from '../repositories/knowledge-repo';
+import { createKnowledgeEvidenceUpload, completeKnowledgeEvidenceUpload, createKnowledgeEvidenceDownload } from '../lib/knowledge-storage';
+import { listKnowledgeInstitutions } from '../repositories/knowledge-repo';
 
 const router = Router();
 
@@ -68,6 +71,7 @@ const CONFLICT_TYPES = conflictTypeEnum.enumValues as readonly [string, ...strin
 const EVIDENCE_RELATIONSHIP_TYPES = evidenceRelationshipTypeEnum.enumValues as readonly [string, ...string[]];
 const VERIFICATION_ACTIONS = verificationActionEnum.enumValues as readonly [string, ...string[]];
 const AUTHORITY_LEVELS = authorityLevelEnum.enumValues as readonly [string, ...string[]];
+const EVIDENCE_LIFECYCLE_STATUSES = evidenceLifecycleStatusEnum.enumValues as readonly [string, ...string[]];
 const RULE_KINDS = ruleKindEnum.enumValues as readonly [string, ...string[]];
 
 // ── Shared Zod schemas ──────────────────────────────────────────────────────────
@@ -129,6 +133,12 @@ router.get('/evidence-sources', async (req: Request, res: Response) => {
   } catch (error) {
     sendKnowledgeError(res, error);
   }
+});
+
+router.get('/institutions', async (_req: Request, res: Response) => {
+  try {
+    res.json({ institutions: await listKnowledgeInstitutions() });
+  } catch (error) { sendKnowledgeError(res, error); }
 });
 
 router.get('/evidence-sources/:sourceId', async (req: Request, res: Response) => {
@@ -267,14 +277,15 @@ const createEvidenceSourceBody = z.object({
   sourceType: z.enum(SOURCE_TYPES),
   title: z.string().trim().min(1),
   sourceUrl: z.string().nullable().optional(),
-  externalFileId: z.string().nullable().optional(),
-  contentHash: z.string().nullable().optional(),
   authorityLevel: z.enum(AUTHORITY_LEVELS).optional(),
   publishedAt: isoDateSchema.optional(),
   effectiveFrom: isoDateSchema.optional(),
   effectiveTo: isoDateSchema.optional(),
   institutionId: uuidOptionalSchema,
   providerId: uuidOptionalSchema,
+  academicYear: z.string().trim().min(1).max(50).nullable().optional(),
+  versionLabel: z.string().trim().max(200).nullable().optional(),
+  lifecycleStatus: z.enum(EVIDENCE_LIFECYCLE_STATUSES).optional(),
 }).strict();
 
 router.post('/evidence-sources', async (req: Request, res: Response) => {
@@ -283,6 +294,7 @@ router.post('/evidence-sources', async (req: Request, res: Response) => {
     const result = await knowledgeService.createEvidenceSource({
       ...validated,
       createdBy: req.user!.id,
+      ...(validated.lifecycleStatus === 'current' ? { verifiedAt: new Date(), verifiedBy: req.user!.id } : {}),
     } as CreateEvidenceSourceInput);
     await auditAdmin('admin.bulk_operation', req.user!.id, undefined,
       `Created evidence source: ${validated.title}`,
@@ -291,6 +303,68 @@ router.post('/evidence-sources', async (req: Request, res: Response) => {
   } catch (error) {
     sendKnowledgeError(res, error);
   }
+});
+
+const updateEvidenceSourceMetadataBody = z.object({
+  academicYear: z.string().trim().min(1).max(50).nullable().optional(),
+  versionLabel: z.string().trim().max(200).nullable().optional(),
+  lifecycleStatus: z.enum(EVIDENCE_LIFECYCLE_STATUSES).optional(),
+}).strict();
+
+router.patch('/evidence-sources/:sourceId', async (req: Request, res: Response) => {
+  try {
+    const idCheck = uuidSchema.safeParse(req.params.sourceId);
+    if (!idCheck.success) return res.status(400).json({ error: { code: 'KNOWLEDGE_VALIDATION_ERROR', message: 'sourceId must be a valid UUID' } });
+    const validated = updateEvidenceSourceMetadataBody.parse(req.body);
+    if (Object.keys(validated).length === 0) return res.status(400).json({ error: { code: 'KNOWLEDGE_VALIDATION_ERROR', message: 'At least one metadata field is required' } });
+    const existing = await knowledgeService.getEvidenceSourceDetail(req.params.sourceId);
+    const existingStatus = existing.source.lifecycleStatus;
+    const metadata = validated.lifecycleStatus
+      ? (existingStatus !== 'current' && validated.lifecycleStatus === 'current'
+        ? { ...validated, verifiedAt: new Date(), verifiedBy: req.user!.id }
+        : existingStatus === 'current' && validated.lifecycleStatus !== 'current'
+          ? { ...validated, verifiedAt: null, verifiedBy: null }
+          : validated)
+      : validated;
+    const changed = Object.entries(validated).some(([key, value]) => (existing.source as any)[key] !== value);
+    if (!changed) return res.status(200).json({ evidenceSource: existing.source });
+    const source = await knowledgeService.updateEvidenceSourceMetadata(req.params.sourceId, {
+      ...metadata,
+    } as any);
+    await auditAdmin('admin.bulk_operation', req.user!.id, undefined, `Updated evidence source metadata: ${req.params.sourceId}`, { resourceType: 'evidence_source', resourceId: req.params.sourceId });
+    res.json({ evidenceSource: source });
+  } catch (error) { sendKnowledgeError(res, error); }
+});
+
+router.post('/evidence-sources/:sourceId/upload', async (req: Request, res: Response) => {
+  try {
+    const idCheck = uuidSchema.safeParse(req.params.sourceId);
+    if (!idCheck.success) return res.status(400).json({ error: { code: 'KNOWLEDGE_VALIDATION_ERROR', message: 'sourceId must be a valid UUID' } });
+    await knowledgeService.getEvidenceSourceDetail(req.params.sourceId);
+    const body = z.object({ fileName: z.string().min(1), fileSize: z.number().int(), mimeType: z.literal('application/pdf') }).strict().parse(req.body);
+    res.json(await createKnowledgeEvidenceUpload(req.params.sourceId, body.fileName, body.fileSize, body.mimeType));
+  } catch (error) { sendKnowledgeError(res, error); }
+});
+
+router.post('/evidence-sources/:sourceId/upload/complete', async (req: Request, res: Response) => {
+  try {
+    const idCheck = uuidSchema.safeParse(req.params.sourceId);
+    if (!idCheck.success) return res.status(400).json({ error: { code: 'KNOWLEDGE_VALIDATION_ERROR', message: 'sourceId must be a valid UUID' } });
+    const body = z.object({ storagePath: z.string().min(1) }).strict().parse(req.body);
+    await knowledgeService.getEvidenceSourceDetail(req.params.sourceId);
+    const result = await completeKnowledgeEvidenceUpload(req.params.sourceId, body.storagePath);
+    const source = await knowledgeService.attachEvidenceSourceFile(req.params.sourceId, result.storagePath, result.contentHash);
+    await auditAdmin('admin.bulk_operation', req.user!.id, undefined, `Attached evidence file: ${req.params.sourceId}`, { resourceType: 'evidence_source', resourceId: req.params.sourceId });
+    res.json({ evidenceSource: source });
+  } catch (error) { sendKnowledgeError(res, error); }
+});
+
+router.get('/evidence-sources/:sourceId/download', async (req: Request, res: Response) => {
+  try {
+    const detail = await knowledgeService.getEvidenceSourceDetail(req.params.sourceId);
+    if (!detail.source.externalFileId) return res.status(404).json({ error: { code: 'KNOWLEDGE_NOT_FOUND', message: 'Evidence file not attached' } });
+    res.json(await createKnowledgeEvidenceDownload(req.params.sourceId, detail.source.externalFileId));
+  } catch (error) { sendKnowledgeError(res, error); }
 });
 
 // ── CREATE: Evidence Excerpt ───────────────────────────────────────────────────────

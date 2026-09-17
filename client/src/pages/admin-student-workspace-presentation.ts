@@ -6,7 +6,7 @@ export const ADMIN_STUDENT_WORKSPACE_QUERY_OPTIONS = {
 } as const;
 export const adminStudentWorkspacePath = (studentId: string) =>
   `/admin/students/${encodeURIComponent(studentId)}`;
-export const ADMIN_TABS = ["overview", "users", "students", "programs", "logs"] as const;
+export const ADMIN_TABS = ["overview", "users", "students", "programs", "knowledge", "logs"] as const;
 export type AdminTab = typeof ADMIN_TABS[number];
 export const ADMIN_STUDENTS_PATH = "/admin?tab=students";
 
