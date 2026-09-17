@@ -1035,6 +1035,7 @@ describe('Phase 1C — Knowledge API Routes', () => {
     });
 
     it('admin upload, completion, and download use source-backed storage', async () => {
+      mockAudit.auditAdmin.mockClear();
       const upload = await request(app).post(`/api/admin/knowledge/evidence-sources/${VALID_UUID}/upload`)
         .set('Authorization', `Bearer ${token}`).send({ fileName: 'catalog.pdf', fileSize: 100, mimeType: 'application/pdf' });
       expect(upload.status).toBe(200);
@@ -1044,11 +1045,21 @@ describe('Phase 1C — Knowledge API Routes', () => {
         .set('Authorization', `Bearer ${token}`).send({ storagePath: `evidence-sources/${VALID_UUID}/file.pdf` });
       expect(complete.status).toBe(200);
       expect(mockService.attachEvidenceSourceFile).toHaveBeenCalledWith(VALID_UUID, `evidence-sources/${VALID_UUID}/file.pdf`, 'sha256:abc');
+      expect(mockAudit.auditAdmin).toHaveBeenCalledWith('admin.bulk_operation', ADMIN_ID, undefined, expect.stringContaining('Attached evidence file'), expect.any(Object));
 
       const download = await request(app).get(`/api/admin/knowledge/evidence-sources/${VALID_UUID}/download`)
         .set('Authorization', `Bearer ${token}`);
       expect(download.status).toBe(200);
       expect(mockKnowledgeStorage.createKnowledgeEvidenceDownload).toHaveBeenCalledWith(VALID_UUID, `evidence-sources/${VALID_UUID}/file.pdf`);
+    });
+
+    it('does not audit a failed immutable attachment', async () => {
+      mockAudit.auditAdmin.mockClear();
+      mockService.attachEvidenceSourceFile.mockRejectedValueOnce(new Error('already attached'));
+      const res = await request(app).post(`/api/admin/knowledge/evidence-sources/${VALID_UUID}/upload/complete`)
+        .set('Authorization', `Bearer ${token}`).send({ storagePath: `evidence-sources/${VALID_UUID}/file.pdf` });
+      expect(res.status).toBe(500);
+      expect(mockAudit.auditAdmin).not.toHaveBeenCalled();
     });
 
     it('staff cannot mutate upload, completion, or metadata', async () => {

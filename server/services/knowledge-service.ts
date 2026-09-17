@@ -689,7 +689,7 @@ export function createKnowledgeService(
     const source = await repository.getEvidenceSource(id);
     if (!source) throw notFoundError('Evidence source not found', { evidenceSourceId: id });
     const updated = await repository.attachEvidenceSourceFile(id, externalFileId, contentHash);
-    if (!updated) throw notFoundError('Evidence source not found', { evidenceSourceId: id });
+    if (!updated) throw invalidStateError('Evidence source already has an immutable attachment', { evidenceSourceId: id });
     return updated;
   }
 

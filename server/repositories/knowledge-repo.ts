@@ -19,7 +19,7 @@ import {
   articulationsV2,
   institutions,
 } from '@shared/knowledge-schema';
-import { eq, and, desc, max, sql } from 'drizzle-orm';
+import { eq, and, desc, max, sql, isNull } from 'drizzle-orm';
 import type { PgTransaction } from 'drizzle-orm/pg-core';
 import type { SQL } from 'drizzle-orm';
 
@@ -175,7 +175,8 @@ export async function updateEvidenceSourceMetadata(id: string, input: UpdateEvid
 }
 
 export async function attachEvidenceSourceFile(id: string, externalFileId: string, contentHash: string, tx: Tx = db) {
-  const [row] = await tx.update(evidenceSources).set({ externalFileId, contentHash }).where(eq(evidenceSources.id, id)).returning();
+  const [row] = await tx.update(evidenceSources).set({ externalFileId, contentHash })
+    .where(and(eq(evidenceSources.id, id), isNull(evidenceSources.externalFileId), isNull(evidenceSources.contentHash))).returning();
   return row ?? null;
 }
 

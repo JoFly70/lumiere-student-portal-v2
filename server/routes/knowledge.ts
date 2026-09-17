@@ -354,6 +354,7 @@ router.post('/evidence-sources/:sourceId/upload/complete', async (req: Request, 
     await knowledgeService.getEvidenceSourceDetail(req.params.sourceId);
     const result = await completeKnowledgeEvidenceUpload(req.params.sourceId, body.storagePath);
     const source = await knowledgeService.attachEvidenceSourceFile(req.params.sourceId, result.storagePath, result.contentHash);
+    await auditAdmin('admin.bulk_operation', req.user!.id, undefined, `Attached evidence file: ${req.params.sourceId}`, { resourceType: 'evidence_source', resourceId: req.params.sourceId });
     res.json({ evidenceSource: source });
   } catch (error) { sendKnowledgeError(res, error); }
 });

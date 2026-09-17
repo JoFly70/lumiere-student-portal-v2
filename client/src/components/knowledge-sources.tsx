@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,11 +25,42 @@ export function operationLabel(operation: SourceOperation, pending: boolean) {
 export function canRetryOperation(operation: SourceOperation, hasRetryInput: boolean) {
   return hasRetryInput;
 }
+export function sourceQueryKey(institutionId: string, page: number, pageSize = 50) {
+  return ["/api/admin/knowledge/evidence-sources", {
+    institutionId: institutionId === "all" ? undefined : institutionId,
+    limit: pageSize,
+    offset: page * pageSize,
+  }] as const;
+}
+export function paginationState(page: number, count: number, pageSize = 50) {
+  return { page, hasPrevious: page > 0, hasNext: count >= pageSize };
+}
+export function resetPaginationForInstitutionFilter() {
+  return 0;
+}
+export async function openSignedDownload(
+  request: () => Promise<{ download_url: string }>,
+  open: (url?: string, target?: string) => Window | null,
+) {
+  const popup = open("about:blank", "_blank");
+  if (!popup) throw new Error("Popup was blocked. Allow popups and retry.");
+  try {
+    try { popup.opener = null; } catch { /* cross-window security boundary */ }
+    const result = await request();
+    popup.location.href = result.download_url;
+    return popup;
+  } catch (error) {
+    popup.close();
+    throw error;
+  }
+}
 
 export function KnowledgeSources() {
   const qc = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
   const [institutionId, setInstitutionId] = useState("all");
+  const [page, setPage] = useState(0);
+  const pageSize = 50;
   const [title, setTitle] = useState("");
   const [sourceType, setSourceType] = useState("official_catalog");
   const [sourceUrl, setSourceUrl] = useState("");
@@ -43,8 +74,9 @@ export function KnowledgeSources() {
   const [lastUpload, setLastUpload] = useState<{ source: Source; file: File } | null>(null);
   const [lastDownload, setLastDownload] = useState<Source | null>(null);
   const institutions = useQuery<{ institutions: Institution[] }>({ queryKey: ["/api/admin/knowledge/institutions"] });
-  const sources = useQuery<{ items: Source[] }>({
-    queryKey: ["/api/admin/knowledge/evidence-sources", { institutionId: institutionId === "all" ? undefined : institutionId }],
+  useEffect(() => { setPage(resetPaginationForInstitutionFilter()); }, [institutionId]);
+  const sources = useQuery<{ items: Source[]; pagination: { limit: number; offset: number; count: number } }>({
+    queryKey: sourceQueryKey(institutionId, page, pageSize),
   });
   const create = useMutation({
     mutationFn: () => apiRequest("/api/admin/knowledge/evidence-sources", { method: "POST", body: JSON.stringify({
@@ -80,8 +112,10 @@ export function KnowledgeSources() {
   async function download(source: Source) {
     setOperationError(null); setDownloadingSourceId(source.id); setLastDownload(source);
     try {
-      const result = await apiRequest(`/api/admin/knowledge/evidence-sources/${source.id}/download`);
-      window.open(result.download_url, "_blank", "noopener,noreferrer");
+      await openSignedDownload(
+        () => apiRequest(`/api/admin/knowledge/evidence-sources/${source.id}/download`),
+        (url, target) => window.open(url, target),
+      );
     } catch (error) {
       setOperationError(error instanceof Error ? error.message : "Unable to download source");
       throw error;
@@ -91,6 +125,8 @@ export function KnowledgeSources() {
   if (institutions.isLoading || sources.isLoading) return <div role="status" className="py-12 text-center">Loading Knowledge sources...</div>;
   if (institutions.isError || sources.isError) return <div role="alert" className="space-y-3 py-12 text-center"><p>Unable to load Knowledge sources.</p><Button variant="outline" onClick={() => { institutions.refetch(); sources.refetch(); }}>Retry</Button></div>;
   const rows = sources.data?.items ?? [];
+  const paging = paginationState(page, sources.data?.pagination?.count ?? rows.length, pageSize);
+  const pageEmpty = rows.length === 0 && page > 0;
   return <div className="space-y-6">
     {operationError && <div role="alert" className="space-y-2 rounded border border-destructive/40 bg-destructive/10 p-3 text-sm"><span>{operationError}</span><div className="flex gap-2">
       {lastUpload && canRetryOperation("upload", true) && <Button size="sm" variant="outline" onClick={() => upload(lastUpload.source, lastUpload.file).catch(() => undefined)}>Retry upload</Button>}
@@ -109,7 +145,8 @@ export function KnowledgeSources() {
         <div className="flex items-end"><Button disabled={!title.trim() || create.isPending} onClick={() => { setOperationError(null); create.mutate(); }}>{create.isPending ? "Creating…" : "Create source"}</Button></div>
       </CardContent>
     </Card>
-    {rows.length === 0 ? <Card><CardContent className="py-12 text-center text-muted-foreground">No evidence sources found.</CardContent></Card> :
+    {rows.length === 0 && page === 0 ? <Card><CardContent className="py-12 text-center text-muted-foreground">No evidence sources found.</CardContent></Card> :
+      pageEmpty ? <Card><CardContent className="py-8 text-center text-muted-foreground">No sources found on this page.</CardContent><div className="flex items-center justify-between border-t p-3"><span>Page {page + 1}</span><Button variant="outline" size="sm" onClick={() => setPage((value) => value - 1)}>Previous</Button></div></Card> :
       <Card><CardContent className="divide-y p-0">{rows.map((source) => <div key={source.id} className="flex flex-wrap items-center gap-3 p-4">
         <div className="min-w-56 flex-1"><p className="font-medium">{source.title}</p><p className="text-sm text-muted-foreground">{source.sourceType} {source.versionLabel ? `· ${source.versionLabel}` : ""}</p></div>
         <Badge variant="outline">{source.lifecycleStatus}</Badge>
@@ -118,7 +155,7 @@ export function KnowledgeSources() {
         <Button variant="outline" size="sm" disabled={uploadingSourceId === source.id} onClick={() => { setSelected(source); setOperationError(null); fileRef.current?.click(); }}>{operationLabel("upload", uploadingSourceId === source.id)}</Button>
         {source.externalFileId && <Button variant="outline" size="sm" disabled={downloadingSourceId === source.id} onClick={() => download(source).catch(() => undefined)}>{operationLabel("download", downloadingSourceId === source.id)}</Button>}
         <Select value={source.lifecycleStatus} onValueChange={(s) => { setOperationError(null); update.mutate({ id: source.id, status: s as typeof statuses[number] }); }}><SelectTrigger className="w-40"><SelectValue /></SelectTrigger><SelectContent>{statuses.map((s) => <SelectItem key={s} value={s}>{s.replaceAll("_", " ")}</SelectItem>)}</SelectContent></Select>
-      </div>)}</CardContent></Card>}
+      </div>)}<div className="flex items-center justify-between border-t p-3"><span>Page {page + 1}</span><div className="flex gap-2"><Button variant="outline" size="sm" disabled={!paging.hasPrevious} onClick={() => setPage((value) => value - 1)}>Previous</Button><Button variant="outline" size="sm" disabled={!paging.hasNext} onClick={() => setPage((value) => value + 1)}>Next</Button></div></div></CardContent></Card>}
     <input ref={fileRef} className="hidden" type="file" accept="application/pdf,.pdf" onChange={(e) => { const file = e.target.files?.[0]; if (file && selected) upload(selected, file).catch(() => undefined); e.currentTarget.value = ""; }} />
   </div>;
 }

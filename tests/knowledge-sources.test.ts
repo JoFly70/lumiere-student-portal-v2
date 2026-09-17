@@ -15,7 +15,7 @@ vi.mock("@tanstack/react-query", () => ({
 }));
 vi.mock("@/lib/api", () => ({ apiRequest: vi.fn() }));
 
-import { KnowledgeSources, operationLabel, canRetryOperation } from "../client/src/components/knowledge-sources";
+import { KnowledgeSources, operationLabel, canRetryOperation, openSignedDownload, sourceQueryKey, paginationState, resetPaginationForInstitutionFilter } from "../client/src/components/knowledge-sources";
 
 const view = () => renderToStaticMarkup(React.createElement(KnowledgeSources));
 describe("KnowledgeSources rendered states", () => {
@@ -31,5 +31,36 @@ describe("KnowledgeSources rendered states", () => {
     expect(operationLabel("download", true)).toBe("Opening…");
     expect(canRetryOperation("upload", true)).toBe(true);
     expect(canRetryOperation("download", false)).toBe(false);
+  });
+  it("builds fixed-size paged queries and preserves institution filtering", () => {
+    expect(sourceQueryKey("all", 0)).toEqual(["/api/admin/knowledge/evidence-sources", { institutionId: undefined, limit: 50, offset: 0 }]);
+    expect(sourceQueryKey("inst-1", 2)).toEqual(["/api/admin/knowledge/evidence-sources", { institutionId: "inst-1", limit: 50, offset: 100 }]);
+  });
+  it("keeps exact terminal-page navigation recoverable", () => {
+    expect(paginationState(0, 50)).toMatchObject({ hasNext: true, hasPrevious: false });
+    expect(paginationState(1, 0)).toMatchObject({ hasNext: false, hasPrevious: true, page: 1 });
+    expect(resetPaginationForInstitutionFilter()).toBe(0);
+    expect(sourceQueryKey("inst-1", resetPaginationForInstitutionFilter())).toEqual([
+      "/api/admin/knowledge/evidence-sources", { institutionId: "inst-1", limit: 50, offset: 0 },
+    ]);
+  });
+  it("opens a placeholder before awaiting and navigates after signing", async () => {
+    let resolve!: (value: { download_url: string }) => void;
+    const events: string[] = [];
+    const request = vi.fn(() => { events.push(`request:${popup.opener === null}`); return new Promise<{ download_url: string }>((r) => { resolve = r; }); });
+    const popup: any = { location: { href: "about:blank" }, close: vi.fn(), opener: {} };
+    const open = vi.fn((url?: string, target?: string) => { events.push("open"); return popup; });
+    const opened = openSignedDownload(request, open);
+    expect(open).toHaveBeenCalledWith("about:blank", "_blank");
+    expect(events).toEqual(["open", "request:true"]);
+    expect(popup.location.href).toBe("about:blank");
+    resolve({ download_url: "https://signed" });
+    await opened;
+    expect(popup.location.href).toBe("https://signed");
+    const blockedRequest = vi.fn();
+    await expect(openSignedDownload(blockedRequest, vi.fn(() => null))).rejects.toThrow(/Popup was blocked/);
+    expect(blockedRequest).not.toHaveBeenCalled();
+    await expect(openSignedDownload(async () => { throw new Error("failed"); }, vi.fn(() => popup))).rejects.toThrow("failed");
+    expect(popup.close).toHaveBeenCalled();
   });
 });
