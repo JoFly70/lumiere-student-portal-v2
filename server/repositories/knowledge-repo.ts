@@ -43,7 +43,7 @@ export interface CreateEvidenceSourceInput {
   institutionId?: string | null;
   providerId?: string | null;
   createdBy?: string | null;
-  academicYear?: number | null;
+  academicYear?: string | null;
   versionLabel?: string | null;
   lifecycleStatus?: (typeof evidenceSources.lifecycleStatus.enumValues)[number];
   verifiedAt?: Date | null;
@@ -160,7 +160,7 @@ export async function createEvidenceSource(input: CreateEvidenceSourceInput, tx:
 }
 
 export interface UpdateEvidenceSourceMetadataInput {
-  academicYear?: number | null;
+  academicYear?: string | null;
   versionLabel?: string | null;
   lifecycleStatus?: (typeof evidenceSources.lifecycleStatus.enumValues)[number];
   verifiedAt?: Date | null;

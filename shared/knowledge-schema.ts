@@ -406,7 +406,7 @@ export const evidenceSources = pgTable("knowledge_evidence_sources", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
   // Actor reference — text because users.id is text in the Lumière schema
   createdBy: text("created_by"),
-   academicYear: integer("academic_year"),
+  academicYear: text("academic_year"),
    versionLabel: text("version_label"),
    lifecycleStatus: evidenceLifecycleStatusEnum("lifecycle_status").notNull().default("pending_review"),
    verifiedAt: timestamp("verified_at"),

@@ -1023,13 +1023,13 @@ describe('Phase 1C — Knowledge API Routes', () => {
     it('current metadata edit preserves stored verification fields', async () => {
       const verifiedAt = new Date('2024-01-01T00:00:00.000Z');
       mockService.getEvidenceSourceDetail.mockResolvedValueOnce({
-        source: { id: VALID_UUID, lifecycleStatus: 'current', academicYear: 2024, verifiedAt, verifiedBy: ADMIN_ID }, excerpts: [],
+        source: { id: VALID_UUID, lifecycleStatus: 'current', academicYear: '2024-2025', verifiedAt, verifiedBy: ADMIN_ID }, excerpts: [],
       });
       const res = await request(app).patch(`/api/admin/knowledge/evidence-sources/${VALID_UUID}`)
-        .set('Authorization', `Bearer ${token}`).send({ lifecycleStatus: 'current', academicYear: 2026 });
+        .set('Authorization', `Bearer ${token}`).send({ lifecycleStatus: 'current', academicYear: '2025-2026' });
       expect(res.status).toBe(200);
       const input = mockService.updateEvidenceSourceMetadata.mock.calls.at(-1)?.[1];
-      expect(input).toEqual({ lifecycleStatus: 'current', academicYear: 2026 });
+      expect(input).toEqual({ lifecycleStatus: 'current', academicYear: '2025-2026' });
       expect(input.verifiedAt).toBeUndefined();
       expect(input.verifiedBy).toBeUndefined();
     });

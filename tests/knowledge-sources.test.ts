@@ -9,7 +9,7 @@ vi.mock("@tanstack/react-query", () => ({
     if (queryState.mode === "loading") return { isLoading: true, isError: false };
     if (queryState.mode === "error") return { isLoading: false, isError: true, refetch: vi.fn() };
     if (queryKey[0].includes("institutions")) return { isLoading: false, isError: false, data: { institutions: [] }, refetch: vi.fn() };
-    return { isLoading: false, isError: false, data: { items: queryState.mode === "empty" ? [] : [{ id: "source-1", title: "Real Catalog", sourceType: "official_catalog", lifecycleStatus: "pending_review", academicYear: 2025, versionLabel: "v1", externalFileId: null }] }, refetch: vi.fn() };
+    return { isLoading: false, isError: false, data: { items: queryState.mode === "empty" ? [] : [{ id: "source-1", title: "Real Catalog", sourceType: "official_catalog", lifecycleStatus: "pending_review", academicYear: "2025-2026", versionLabel: "v1", externalFileId: null }] }, refetch: vi.fn() };
   },
   useMutation: () => ({ mutate: vi.fn(), isPending: false }),
 }));

@@ -283,7 +283,7 @@ const createEvidenceSourceBody = z.object({
   effectiveTo: isoDateSchema.optional(),
   institutionId: uuidOptionalSchema,
   providerId: uuidOptionalSchema,
-  academicYear: z.number().int().min(1900).max(2200).nullable().optional(),
+  academicYear: z.string().trim().min(1).max(50).nullable().optional(),
   versionLabel: z.string().trim().max(200).nullable().optional(),
   lifecycleStatus: z.enum(EVIDENCE_LIFECYCLE_STATUSES).optional(),
 }).strict();
@@ -306,7 +306,7 @@ router.post('/evidence-sources', async (req: Request, res: Response) => {
 });
 
 const updateEvidenceSourceMetadataBody = z.object({
-  academicYear: z.number().int().min(1900).max(2200).nullable().optional(),
+  academicYear: z.string().trim().min(1).max(50).nullable().optional(),
   versionLabel: z.string().trim().max(200).nullable().optional(),
   lifecycleStatus: z.enum(EVIDENCE_LIFECYCLE_STATUSES).optional(),
 }).strict();

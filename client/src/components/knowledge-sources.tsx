@@ -11,7 +11,7 @@ import { apiRequest } from "@/lib/api";
 type Institution = { id: string; name: string; slug: string };
 type Source = {
   id: string; title: string; sourceType: string; sourceUrl: string | null;
-  institutionId: string | null; academicYear: number | null; versionLabel: string | null;
+  institutionId: string | null; academicYear: string | null; versionLabel: string | null;
   lifecycleStatus: "current" | "historical" | "superseded" | "pending_review";
   externalFileId: string | null; contentHash: string | null;
 };
@@ -49,13 +49,13 @@ export function KnowledgeSources() {
   const create = useMutation({
     mutationFn: () => apiRequest("/api/admin/knowledge/evidence-sources", { method: "POST", body: JSON.stringify({
       title, sourceType, sourceUrl: sourceUrl || null, institutionId: institutionId === "all" ? null : institutionId,
-      academicYear: academicYear ? Number(academicYear) : null, versionLabel: versionLabel || null, lifecycleStatus,
+      academicYear: academicYear || null, versionLabel: versionLabel || null, lifecycleStatus,
     }) }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/admin/knowledge/evidence-sources"] }); setTitle(""); setSourceUrl(""); setAcademicYear(""); setVersionLabel(""); },
     onError: (error) => setOperationError(error instanceof Error ? error.message : "Unable to create source"),
   });
   const update = useMutation({
-    mutationFn: ({ id, status, academicYear, versionLabel }: { id: string; status?: typeof statuses[number]; academicYear?: number | null; versionLabel?: string | null }) =>
+    mutationFn: ({ id, status, academicYear, versionLabel }: { id: string; status?: typeof statuses[number]; academicYear?: string | null; versionLabel?: string | null }) =>
       apiRequest(`/api/admin/knowledge/evidence-sources/${id}`, { method: "PATCH", body: JSON.stringify({ ...(status ? { lifecycleStatus: status } : {}), ...(academicYear !== undefined ? { academicYear } : {}), ...(versionLabel !== undefined ? { versionLabel } : {}) }) }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/admin/knowledge/evidence-sources"] }),
     onError: (error) => setOperationError(error instanceof Error ? error.message : "Unable to update source"),
@@ -103,7 +103,7 @@ export function KnowledgeSources() {
         <div><Label>Title</Label><Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Source title" /></div>
         <div><Label>Type</Label><Select value={sourceType} onValueChange={setSourceType}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{sourceTypes.map((t) => <SelectItem key={t} value={t}>{t.replaceAll("_", " ")}</SelectItem>)}</SelectContent></Select></div>
         <div><Label>URL</Label><Input value={sourceUrl} onChange={(e) => setSourceUrl(e.target.value)} placeholder="https://..." /></div>
-        <div><Label>Academic year</Label><Input type="number" value={academicYear} onChange={(e) => setAcademicYear(e.target.value)} placeholder="2025" /></div>
+        <div><Label>Academic year</Label><Input value={academicYear} onChange={(e) => setAcademicYear(e.target.value)} placeholder="2025-2026" /></div>
         <div><Label>Version label</Label><Input value={versionLabel} onChange={(e) => setVersionLabel(e.target.value)} placeholder="Version" /></div>
         <div><Label>Status</Label><Select value={lifecycleStatus} onValueChange={(v) => setLifecycleStatus(v as typeof lifecycleStatus)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{statuses.map((s) => <SelectItem key={s} value={s}>{s.replaceAll("_", " ")}</SelectItem>)}</SelectContent></Select></div>
         <div className="flex items-end"><Button disabled={!title.trim() || create.isPending} onClick={() => { setOperationError(null); create.mutate(); }}>{create.isPending ? "Creating…" : "Create source"}</Button></div>
@@ -113,7 +113,7 @@ export function KnowledgeSources() {
       <Card><CardContent className="divide-y p-0">{rows.map((source) => <div key={source.id} className="flex flex-wrap items-center gap-3 p-4">
         <div className="min-w-56 flex-1"><p className="font-medium">{source.title}</p><p className="text-sm text-muted-foreground">{source.sourceType} {source.versionLabel ? `· ${source.versionLabel}` : ""}</p></div>
         <Badge variant="outline">{source.lifecycleStatus}</Badge>
-        <Input className="w-24" type="number" defaultValue={source.academicYear ?? ""} aria-label={`Academic year for ${source.title}`} onBlur={(e) => { const value = e.target.value ? Number(e.target.value) : null; if (value !== source.academicYear) update.mutate({ id: source.id, academicYear: value }); }} />
+        <Input className="w-28" defaultValue={source.academicYear ?? ""} aria-label={`Academic year for ${source.title}`} onBlur={(e) => { const value = e.target.value || null; if (value !== source.academicYear) update.mutate({ id: source.id, academicYear: value }); }} />
         <Input className="w-28" defaultValue={source.versionLabel ?? ""} aria-label={`Version for ${source.title}`} onBlur={(e) => { const value = e.target.value || null; if (value !== source.versionLabel) update.mutate({ id: source.id, versionLabel: value }); }} />
         <Button variant="outline" size="sm" disabled={uploadingSourceId === source.id} onClick={() => { setSelected(source); setOperationError(null); fileRef.current?.click(); }}>{operationLabel("upload", uploadingSourceId === source.id)}</Button>
         {source.externalFileId && <Button variant="outline" size="sm" disabled={downloadingSourceId === source.id} onClick={() => download(source).catch(() => undefined)}>{operationLabel("download", downloadingSourceId === source.id)}</Button>}
