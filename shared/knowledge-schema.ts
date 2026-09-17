@@ -81,6 +81,13 @@ export const authorityLevelEnum = pgEnum("authority_level", [
   "unknown",
 ]);
 
+export const evidenceLifecycleStatusEnum = pgEnum("evidence_lifecycle_status", [
+  "current",
+  "historical",
+  "superseded",
+  "pending_review",
+]);
+
 export const claimTypeEnum = pgEnum("claim_type", [
   "equivalency",
   "requirement",
@@ -399,6 +406,11 @@ export const evidenceSources = pgTable("knowledge_evidence_sources", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
   // Actor reference — text because users.id is text in the Lumière schema
   createdBy: text("created_by"),
+   academicYear: integer("academic_year"),
+   versionLabel: text("version_label"),
+   lifecycleStatus: evidenceLifecycleStatusEnum("lifecycle_status").notNull().default("pending_review"),
+   verifiedAt: timestamp("verified_at"),
+   verifiedBy: text("verified_by"),
 }, (table) => ({
   sourceTypeIdx: index("knowledge_evidence_sources_type_idx").on(table.sourceType),
   institutionIdx: index("knowledge_evidence_sources_inst_idx").on(table.institutionId),

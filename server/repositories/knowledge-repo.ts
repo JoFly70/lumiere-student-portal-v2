@@ -17,6 +17,7 @@ import {
   academicRules,
   equivalenciesV2,
   articulationsV2,
+  institutions,
 } from '@shared/knowledge-schema';
 import { eq, and, desc, max, sql } from 'drizzle-orm';
 import type { PgTransaction } from 'drizzle-orm/pg-core';
@@ -42,6 +43,11 @@ export interface CreateEvidenceSourceInput {
   institutionId?: string | null;
   providerId?: string | null;
   createdBy?: string | null;
+  academicYear?: number | null;
+  versionLabel?: string | null;
+  lifecycleStatus?: (typeof evidenceSources.lifecycleStatus.enumValues)[number];
+  verifiedAt?: Date | null;
+  verifiedBy?: string | null;
 }
 
 export interface CreateExcerptInput {
@@ -144,8 +150,33 @@ export async function createEvidenceSource(input: CreateEvidenceSourceInput, tx:
     institutionId: input.institutionId ?? null,
     providerId: input.providerId ?? null,
     createdBy: input.createdBy ?? null,
+    academicYear: input.academicYear ?? null,
+    versionLabel: input.versionLabel ?? null,
+    lifecycleStatus: input.lifecycleStatus ?? 'pending_review',
+    verifiedAt: input.verifiedAt ?? null,
+    verifiedBy: input.verifiedBy ?? null,
   }).returning();
   return row;
+}
+
+export interface UpdateEvidenceSourceMetadataInput {
+  academicYear?: number | null;
+  versionLabel?: string | null;
+  lifecycleStatus?: (typeof evidenceSources.lifecycleStatus.enumValues)[number];
+  verifiedAt?: Date | null;
+  verifiedBy?: string | null;
+  externalFileId?: string | null;
+  contentHash?: string | null;
+}
+
+export async function updateEvidenceSourceMetadata(id: string, input: UpdateEvidenceSourceMetadataInput, tx: Tx = db) {
+  const [row] = await tx.update(evidenceSources).set(input).where(eq(evidenceSources.id, id)).returning();
+  return row ?? null;
+}
+
+export async function attachEvidenceSourceFile(id: string, externalFileId: string, contentHash: string, tx: Tx = db) {
+  const [row] = await tx.update(evidenceSources).set({ externalFileId, contentHash }).where(eq(evidenceSources.id, id)).returning();
+  return row ?? null;
 }
 
 export async function getEvidenceSource(id: string, tx: Tx = db) {
@@ -171,6 +202,11 @@ export async function listEvidenceSources(filters?: {
   const limit = filters?.limit ?? 50;
   const offset = filters?.offset ?? 0;
   return await query.limit(limit).offset(offset).orderBy(desc(evidenceSources.createdAt));
+}
+
+export async function listKnowledgeInstitutions(tx: Tx = db) {
+  return await tx.select({ id: institutions.id, name: institutions.name, slug: institutions.slug })
+    .from(institutions).where(eq(institutions.active, true)).orderBy(institutions.name);
 }
 
 export async function listEvidenceExcerptsForSource(evidenceSourceId: string, tx: Tx = db) {

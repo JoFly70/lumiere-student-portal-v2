@@ -33,6 +33,7 @@ import type {
   CreateAcademicRuleInput,
   CreateEquivalencyInput,
   CreateArticulationInput,
+  UpdateEvidenceSourceMetadataInput,
   EvidenceWithProvenance,
   SourceType,
   ClaimStatusFilter,
@@ -53,6 +54,7 @@ import {
   claimTypeEnum,
   subjectTypeEnum,
   conflictTypeEnum,
+  evidenceLifecycleStatusEnum,
 } from '@shared/knowledge-schema';
 
 // ── Runtime validation schemas ──────────────────────────────────────────────────
@@ -60,6 +62,7 @@ import {
 const CLAIM_TYPES = claimTypeEnum.enumValues as readonly string[];
 const SUBJECT_TYPES = subjectTypeEnum.enumValues as readonly string[];
 const CONFLICT_TYPES = conflictTypeEnum.enumValues as readonly string[];
+const EVIDENCE_LIFECYCLE_STATUSES = evidenceLifecycleStatusEnum.enumValues as readonly string[];
 const EVIDENCE_RELATIONSHIP_TYPES = ['supports', 'contradicts', 'contextual', 'source_for'] as const;
 
 // Cast helper: Zod enums widen to string; cast back to the narrow union for repository types.
@@ -80,6 +83,11 @@ const evidenceSourceSchema = z.object({
   institutionId: z.string().nullable().optional(),
   providerId: z.string().nullable().optional(),
   createdBy: z.string().nullable().optional(),
+  academicYear: z.number().int().min(1900).max(2200).nullable().optional(),
+  versionLabel: z.string().trim().max(200).nullable().optional(),
+  lifecycleStatus: z.enum([...EVIDENCE_LIFECYCLE_STATUSES] as [string, ...string[]]).optional(),
+  verifiedAt: z.date().nullable().optional(),
+  verifiedBy: z.string().nullable().optional(),
 });
 
 const excerptSchema = z.object({
@@ -225,6 +233,8 @@ export interface KnowledgeService {
   addEvidenceExcerpt(input: CreateExcerptInput): Promise<EvidenceExcerptRow>;
   listEvidenceSources(filters?: { sourceType?: SourceType; institutionId?: string; providerId?: string; limit?: number; offset?: number }): Promise<EvidenceSourceRow[]>;
   getEvidenceSourceDetail(id: string): Promise<{ source: EvidenceSourceRow; excerpts: EvidenceExcerptRow[] }>;
+  updateEvidenceSourceMetadata(id: string, input: UpdateEvidenceSourceMetadataInput): Promise<EvidenceSourceRow>;
+  attachEvidenceSourceFile(id: string, externalFileId: string, contentHash: string): Promise<EvidenceSourceRow>;
   // Claims
   createKnowledgeClaim(input: CreateClaimInput): Promise<ClaimRow>;
   listClaims(filters?: { status?: ClaimStatusFilter; claimType?: ClaimTypeFilter; subjectType?: SubjectTypeFilter; claimKey?: string; limit?: number; offset?: number }): Promise<ClaimRow[]>;
@@ -349,6 +359,7 @@ export function createKnowledgeService(
       ...validated,
       sourceType: asEnum<typeof input.sourceType>(validated.sourceType),
       authorityLevel: validated.authorityLevel ? asEnum<NonNullable<typeof input.authorityLevel>>(validated.authorityLevel) : undefined,
+      lifecycleStatus: validated.lifecycleStatus ? asEnum<NonNullable<typeof input.lifecycleStatus>>(validated.lifecycleStatus) : undefined,
     });
   }
 
@@ -665,6 +676,23 @@ export function createKnowledgeService(
     return { source, excerpts };
   }
 
+  async function updateEvidenceSourceMetadata(id: string, input: UpdateEvidenceSourceMetadataInput): Promise<EvidenceSourceRow> {
+    const source = await repository.getEvidenceSource(id);
+    if (!source) throw notFoundError('Evidence source not found', { evidenceSourceId: id });
+    const validated = parseOrThrow(evidenceSourceSchema.partial(), input);
+    const updated = await repository.updateEvidenceSourceMetadata(id, validated as UpdateEvidenceSourceMetadataInput);
+    if (!updated) throw notFoundError('Evidence source not found', { evidenceSourceId: id });
+    return updated;
+  }
+
+  async function attachEvidenceSourceFile(id: string, externalFileId: string, contentHash: string): Promise<EvidenceSourceRow> {
+    const source = await repository.getEvidenceSource(id);
+    if (!source) throw notFoundError('Evidence source not found', { evidenceSourceId: id });
+    const updated = await repository.attachEvidenceSourceFile(id, externalFileId, contentHash);
+    if (!updated) throw notFoundError('Evidence source not found', { evidenceSourceId: id });
+    return updated;
+  }
+
   async function listClaims(filters?: { status?: ClaimStatusFilter; claimType?: ClaimTypeFilter; subjectType?: SubjectTypeFilter; claimKey?: string; limit?: number; offset?: number }): Promise<ClaimRow[]> {
     return await repository.listClaims(filters);
   }
@@ -720,6 +748,8 @@ export function createKnowledgeService(
     addEvidenceExcerpt,
     listEvidenceSources,
     getEvidenceSourceDetail,
+    updateEvidenceSourceMetadata,
+    attachEvidenceSourceFile,
     createKnowledgeClaim,
     listClaims,
     getClaimDetail,

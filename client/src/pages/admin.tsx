@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { apiRequest } from "@/lib/api";
 import { ProgramsManagement } from "@/components/programs-management";
+import { KnowledgeSources } from "@/components/knowledge-sources";
 import { useLocation, useSearch } from "wouter";
 import {
   adminStudentWorkspacePath,
@@ -496,7 +497,7 @@ export default function Admin() {
         onValueChange={(tab) => setLocation(adminTabPath(tab as AdminTab))}
         className="space-y-6"
       >
-        <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-grid">
+        <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:inline-grid">
           <TabsTrigger value="overview">
             <BarChart3 className="w-4 h-4 mr-2" />
             Overview
@@ -512,6 +513,10 @@ export default function Admin() {
           <TabsTrigger value="programs">
             <BookOpen className="w-4 h-4 mr-2" />
             Programs
+          </TabsTrigger>
+          <TabsTrigger value="knowledge">
+            <BookOpen className="w-4 h-4 mr-2" />
+            Knowledge
           </TabsTrigger>
           <TabsTrigger value="logs">
             <Activity className="w-4 h-4 mr-2" />
@@ -533,6 +538,10 @@ export default function Admin() {
 
         <TabsContent value="programs">
           <ProgramsManagement />
+        </TabsContent>
+
+        <TabsContent value="knowledge">
+          <KnowledgeSources />
         </TabsContent>
 
         <TabsContent value="logs">

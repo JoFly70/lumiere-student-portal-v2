@@ -72,12 +72,21 @@ const mockService = vi.hoisted(() => ({
   createAcademicRuleFromVerifiedClaim: vi.fn(),
   createEquivalencyFromVerifiedClaim: vi.fn(),
   createArticulationFromVerifiedClaim: vi.fn(),
+  updateEvidenceSourceMetadata: vi.fn(),
+  attachEvidenceSourceFile: vi.fn(),
+}));
+
+const mockKnowledgeStorage = vi.hoisted(() => ({
+  createKnowledgeEvidenceUpload: vi.fn(),
+  completeKnowledgeEvidenceUpload: vi.fn(),
+  createKnowledgeEvidenceDownload: vi.fn(),
 }));
 
 vi.mock('../server/services/knowledge-service', () => ({
   knowledgeService: mockService,
   createKnowledgeService: vi.fn(() => mockService),
 }));
+vi.mock('../server/lib/knowledge-storage', () => mockKnowledgeStorage);
 
 // ── Mock audit to avoid Supabase calls ──────────────────────────────────────────
 
@@ -126,13 +135,13 @@ vi.mock('../server/lib/db', () => ({
   db: {
     select: vi.fn((fields: unknown) => ({
       from: vi.fn(() => ({
-        where: vi.fn(() => ({
-          limit: vi.fn(async () => {
-            // Extract userId from the where clause — we can't easily parse it,
-            // so we use a closure variable set by the test helper.
-            return currentUserRow;
-          }),
-        })),
+        where: vi.fn(() => {
+          const chain = {
+            limit: vi.fn(async () => currentUserRow),
+            orderBy: vi.fn(async () => []),
+          };
+          return chain;
+        }),
       })),
     })),
     transaction: vi.fn(async (fn: any) => fn({})),
@@ -184,7 +193,7 @@ describe('Phase 1C — Knowledge API Routes', () => {
     mockService.listEvidenceSources.mockResolvedValue([]);
     mockService.listClaims.mockResolvedValue([]);
     mockService.listConflicts.mockResolvedValue([]);
-    mockService.getEvidenceSourceDetail.mockResolvedValue({ source: { id: VALID_UUID }, excerpts: [] });
+    mockService.getEvidenceSourceDetail.mockResolvedValue({ source: { id: VALID_UUID, externalFileId: `evidence-sources/${VALID_UUID}/file.pdf` }, excerpts: [] });
     mockService.getClaimDetail.mockResolvedValue({ claim: { id: VALID_UUID }, versions: [] });
     mockService.getClaimVersionDetail.mockResolvedValue({
       version: { id: VALID_UUID }, claim: { id: VALID_UUID },
@@ -205,6 +214,11 @@ describe('Phase 1C — Knowledge API Routes', () => {
     mockService.createAcademicRuleFromVerifiedClaim.mockResolvedValue({ id: VALID_UUID, status: 'confirmed' });
     mockService.createEquivalencyFromVerifiedClaim.mockResolvedValue({ id: VALID_UUID, status: 'confirmed' });
     mockService.createArticulationFromVerifiedClaim.mockResolvedValue({ id: VALID_UUID, status: 'confirmed' });
+    mockService.updateEvidenceSourceMetadata.mockResolvedValue({ id: VALID_UUID, title: 'Test', lifecycleStatus: 'current' });
+    mockService.attachEvidenceSourceFile.mockResolvedValue({ id: VALID_UUID, title: 'Test', externalFileId: `evidence-sources/${VALID_UUID}/file.pdf`, contentHash: 'sha256:abc' });
+    mockKnowledgeStorage.createKnowledgeEvidenceUpload.mockResolvedValue({ upload_url: 'https://upload', upload_token: 'token', storage_path: `evidence-sources/${VALID_UUID}/file.pdf`, expires_in: 3600 });
+    mockKnowledgeStorage.completeKnowledgeEvidenceUpload.mockResolvedValue({ storagePath: `evidence-sources/${VALID_UUID}/file.pdf`, contentHash: 'sha256:abc' });
+    mockKnowledgeStorage.createKnowledgeEvidenceDownload.mockResolvedValue({ download_url: 'https://download', expires_in: 3600 });
     mockAudit.auditAdmin.mockResolvedValue(undefined);
     mockAudit.createAuditLog.mockResolvedValue(undefined);
   });
@@ -962,6 +976,97 @@ describe('Phase 1C — Knowledge API Routes', () => {
         .set('Authorization', `Bearer ${token}`)
         .send({ sourceType: 'official_web', title: 'Test', createdBy: 'attacker-id' });
       expect(res.status).toBe(400);
+    });
+  });
+
+  describe('PR1 evidence source behavior', () => {
+    beforeEach(async () => {
+      ({ app, token } = await createTestApp('admin', ADMIN_ID));
+    });
+
+    it('rejects actor, verification, and file fields from create body', async () => {
+      for (const field of ['createdBy', 'verifiedBy', 'verifiedAt', 'externalFileId', 'contentHash']) {
+        const res = await request(app).post('/api/admin/knowledge/evidence-sources')
+          .set('Authorization', `Bearer ${token}`)
+          .send({ sourceType: 'official_web', title: 'Test', [field]: 'spoof' });
+        expect(res.status).toBe(400);
+      }
+    });
+
+    it('rejects empty and actor fields from PATCH', async () => {
+      for (const body of [{}, { createdBy: 'spoof' }, { verifiedBy: 'spoof' }, { verifiedAt: new Date().toISOString() }]) {
+        const res = await request(app).patch(`/api/admin/knowledge/evidence-sources/${VALID_UUID}`)
+          .set('Authorization', `Bearer ${token}`).send(body);
+        expect(res.status).toBe(400);
+      }
+    });
+
+    it('PATCH current derives verification actor/time from session', async () => {
+      const res = await request(app).patch(`/api/admin/knowledge/evidence-sources/${VALID_UUID}`)
+        .set('Authorization', `Bearer ${token}`).send({ lifecycleStatus: 'current' });
+      expect(res.status).toBe(200);
+      const input = mockService.updateEvidenceSourceMetadata.mock.calls.at(-1)?.[1];
+      expect(input.verifiedBy).toBe(ADMIN_ID);
+      expect(input.verifiedAt).toBeInstanceOf(Date);
+    });
+
+    it('PATCH non-current clears verification fields', async () => {
+      mockService.getEvidenceSourceDetail.mockResolvedValueOnce({
+        source: { id: VALID_UUID, lifecycleStatus: 'current', verifiedAt: new Date(), verifiedBy: ADMIN_ID }, excerpts: [],
+      });
+      const res = await request(app).patch(`/api/admin/knowledge/evidence-sources/${VALID_UUID}`)
+        .set('Authorization', `Bearer ${token}`).send({ lifecycleStatus: 'historical' });
+      expect(res.status).toBe(200);
+      expect(mockService.updateEvidenceSourceMetadata.mock.calls.at(-1)?.[1]).toMatchObject({ verifiedBy: null, verifiedAt: null });
+    });
+
+    it('current metadata edit preserves stored verification fields', async () => {
+      const verifiedAt = new Date('2024-01-01T00:00:00.000Z');
+      mockService.getEvidenceSourceDetail.mockResolvedValueOnce({
+        source: { id: VALID_UUID, lifecycleStatus: 'current', academicYear: 2024, verifiedAt, verifiedBy: ADMIN_ID }, excerpts: [],
+      });
+      const res = await request(app).patch(`/api/admin/knowledge/evidence-sources/${VALID_UUID}`)
+        .set('Authorization', `Bearer ${token}`).send({ lifecycleStatus: 'current', academicYear: 2026 });
+      expect(res.status).toBe(200);
+      const input = mockService.updateEvidenceSourceMetadata.mock.calls.at(-1)?.[1];
+      expect(input).toEqual({ lifecycleStatus: 'current', academicYear: 2026 });
+      expect(input.verifiedAt).toBeUndefined();
+      expect(input.verifiedBy).toBeUndefined();
+    });
+
+    it('admin upload, completion, and download use source-backed storage', async () => {
+      const upload = await request(app).post(`/api/admin/knowledge/evidence-sources/${VALID_UUID}/upload`)
+        .set('Authorization', `Bearer ${token}`).send({ fileName: 'catalog.pdf', fileSize: 100, mimeType: 'application/pdf' });
+      expect(upload.status).toBe(200);
+      expect(mockKnowledgeStorage.createKnowledgeEvidenceUpload).toHaveBeenCalledWith(VALID_UUID, 'catalog.pdf', 100, 'application/pdf');
+
+      const complete = await request(app).post(`/api/admin/knowledge/evidence-sources/${VALID_UUID}/upload/complete`)
+        .set('Authorization', `Bearer ${token}`).send({ storagePath: `evidence-sources/${VALID_UUID}/file.pdf` });
+      expect(complete.status).toBe(200);
+      expect(mockService.attachEvidenceSourceFile).toHaveBeenCalledWith(VALID_UUID, `evidence-sources/${VALID_UUID}/file.pdf`, 'sha256:abc');
+
+      const download = await request(app).get(`/api/admin/knowledge/evidence-sources/${VALID_UUID}/download`)
+        .set('Authorization', `Bearer ${token}`);
+      expect(download.status).toBe(200);
+      expect(mockKnowledgeStorage.createKnowledgeEvidenceDownload).toHaveBeenCalledWith(VALID_UUID, `evidence-sources/${VALID_UUID}/file.pdf`);
+    });
+
+    it('staff cannot mutate upload, completion, or metadata', async () => {
+      ({ app, token } = await createTestApp('staff', STAFF_ID));
+      for (const operation of [
+        request(app).post(`/api/admin/knowledge/evidence-sources/${VALID_UUID}/upload`).send({ fileName: 'a.pdf', fileSize: 1, mimeType: 'application/pdf' }),
+        request(app).post(`/api/admin/knowledge/evidence-sources/${VALID_UUID}/upload/complete`).send({ storagePath: `evidence-sources/${VALID_UUID}/file.pdf` }),
+        request(app).patch(`/api/admin/knowledge/evidence-sources/${VALID_UUID}`).send({ lifecycleStatus: 'current' }),
+      ]) {
+        expect((await operation.set('Authorization', `Bearer ${token}`)).status).toBe(403);
+      }
+    });
+
+    it('staff can read institutions and source detail/download', async () => {
+      ({ app, token } = await createTestApp('staff', STAFF_ID));
+      expect((await request(app).get('/api/admin/knowledge/institutions').set('Authorization', `Bearer ${token}`)).status).toBe(200);
+      expect((await request(app).get(`/api/admin/knowledge/evidence-sources/${VALID_UUID}`).set('Authorization', `Bearer ${token}`)).status).toBe(200);
+      expect((await request(app).get(`/api/admin/knowledge/evidence-sources/${VALID_UUID}/download`).set('Authorization', `Bearer ${token}`)).status).toBe(200);
     });
   });
 });
