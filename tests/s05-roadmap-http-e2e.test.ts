@@ -374,7 +374,10 @@ describe.skipIf(!ready)("S05 roadmap — real HTTP end to end", () => {
 
     it("staff can import and preview but publish is admin-only (403); admin may also import", async () => {
       const st = await seedStudent(pg);
-      const imp = await upload(st.id, staff, await xlsx(await scenarioA.workbook.build(), "a.xlsx"));
+      // Build once: the workbook zip embeds its build time (2 s resolution), so two
+      // builds straddling a boundary differ and the replay below would 409 under load.
+      const bytes = await scenarioA.workbook.build();
+      const imp = await upload(st.id, staff, await xlsx(bytes, "a.xlsx"));
       expect(imp.status).toBe(201);
       const prev = await api().get(adminPath(st.id, "/draft/preview")).set(tok(staff));
       expect(prev.status).toBe(200);
@@ -382,7 +385,7 @@ describe.skipIf(!ready)("S05 roadmap — real HTTP end to end", () => {
       expect(pub.status).toBe(403);
       const state = await api().get(adminPath(st.id)).set(tok(staff));
       expect(state.body.published).toBeNull();
-      const adminImp = await upload(st.id, admin, await xlsx(await scenarioA.workbook.build(), "a.xlsx"));
+      const adminImp = await upload(st.id, admin, await xlsx(bytes, "a.xlsx"));
       expect(adminImp.status).toBe(200); // same bytes -> idempotent replay for the admin
       const ok = await api().post(adminPath(st.id, "/draft/publish")).set(tok(admin)).send({ expectedDraftRevision: imp.body.draft.draftRevision, expectedPublishedVersionId: null });
       expect(ok.status).toBe(200);
