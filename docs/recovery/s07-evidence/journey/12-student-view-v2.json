@@ -6,7 +6,7 @@
     "title": "TESU BSBA in Accounting roadmap",
     "summary": null,
     "versionNumber": 2,
-    "publishedAt": "2026-10-26T19:40:28.625Z"
+    "publishedAt": "2026-10-26T19:45:10.705Z"
   },
   "objectives": [
     {
@@ -17,7 +17,7 @@
       "credentialLabel": null,
       "status": "active",
       "note": null,
-      "canonicalProgramName": "BA Liberal Studies mvpnvnpk4",
+      "canonicalProgramName": "BA Liberal Studies mvpo1p9d4",
       "counts": {
         "itemsTotal": 23,
         "itemsOfficiallyAccepted": 0,
@@ -257,7 +257,7 @@
               "dueDate": "2026-11-06",
               "status": "submitted",
               "revision": 2,
-              "updatedAt": "2026-10-26T19:40:28.172Z"
+              "updatedAt": "2026-10-26T19:45:10.173Z"
             }
           ],
           "taskCounts": {
@@ -1436,7 +1436,7 @@
     "credentials": [],
     "sources": [
       {
-        "sourceId": "37f5ddb5-df56-419a-aeae-036d2cd4d17e",
+        "sourceId": "85ab12f6-e13b-4dbb-a13f-5590564f5b1b",
         "title": "Synthetic transcript",
         "sourceType": "transcript",
         "status": "verified",
@@ -1458,8 +1458,8 @@
     "previousVersions": [
       {
         "versionNumber": 1,
-        "publishedAt": "2026-10-26T19:40:27.915Z",
-        "supersededAt": "2026-10-26T19:40:28.625Z"
+        "publishedAt": "2026-10-26T19:45:09.822Z",
+        "supersededAt": "2026-10-26T19:45:10.705Z"
       }
     ],
     "retiredProgress": [

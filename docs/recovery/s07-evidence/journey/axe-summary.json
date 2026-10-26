@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-26T19:41:46.257Z",
+  "generatedAt": "2026-10-26T19:43:58.149Z",
   "rules": "wcag2a, wcag2aa, wcag21aa, best-practice (axe-core)",
   "screensChecked": 23,
   "screensWithViolations": 4,

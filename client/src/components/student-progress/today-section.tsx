@@ -110,9 +110,9 @@ export function TodaySection({ view, linkItems = true }: { view: StudentRoadmapV
         className="grid gap-6 rounded-3xl border border-student-line bg-student-gold-soft p-5 sm:p-8 lg:grid-cols-5 lg:gap-10"
         data-testid="primary-action"
       >
-        <div className={cn("flex flex-col", showPanel ? "lg:col-span-3" : "lg:col-span-5")}>
+        <div className={cn("flex min-w-0 flex-col", showPanel ? "lg:col-span-3" : "lg:col-span-5")}>
           <Eyebrow>{first ? "Your next step" : "Today"}</Eyebrow>
-          <h2 id="today-title" className="mt-3 max-w-3xl font-serif text-3xl leading-[1.1] tracking-tight text-student-ink sm:text-5xl">
+          <h2 id="today-title" className="mt-3 max-w-3xl break-words font-serif text-3xl leading-[1.1] tracking-tight text-student-ink sm:text-5xl">
             {view.today.headline}
           </h2>
           <p className="mt-3 max-w-xl text-base leading-relaxed text-student-muted">{view.today.detail}</p>
@@ -138,7 +138,7 @@ export function TodaySection({ view, linkItems = true }: { view: StudentRoadmapV
           )}
         </div>
         {first && showPanel && (
-          <div className="flex flex-col gap-3 rounded-2xl border border-student-line bg-student-card p-4 sm:p-5 lg:col-span-2" data-testid="focus-item" data-item-key={first.key} data-hero="true">
+          <div className="flex min-w-0 flex-col gap-3 rounded-2xl border border-student-line bg-student-card p-4 sm:p-5 lg:col-span-2" data-testid="focus-item" data-item-key={first.key} data-hero="true">
             <FocusTasks item={first} />
           </div>
         )}

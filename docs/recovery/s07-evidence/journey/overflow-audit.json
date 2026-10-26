@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-10-26T19:41:46.258Z",
+  "generatedAt": "2026-10-26T19:43:58.150Z",
   "screensChecked": 23,
-  "screensWithOverflow": 2,
+  "screensWithOverflow": 0,
   "results": [
     {
       "screen": "a1-staff-v1-draft-review-1440.png",
@@ -53,16 +53,9 @@
       "width": 390,
       "theme": "light",
       "pageOverflowPx": 0,
-      "mainOverflowPx": 76,
-      "spills": [
-        "DIV.flex flex-col lg:col-span-3 +92px",
-        "P.flex items-center gap-2.5 text-xs font-s +92px",
-        "H2.mt-3 max-w-3xl font-serif text-3xl leadi +92px",
-        "P.mt-3 max-w-xl text-base leading-relaxed  +92px",
-        "DIV.mt-4 flex flex-wrap items-center gap-x-4 +92px",
-        "DIV.mt-6 +92px"
-      ],
-      "ok": false
+      "mainOverflowPx": 0,
+      "spills": [],
+      "ok": true
     },
     {
       "screen": "d1-flight-deck-published-1440-dark.png",
@@ -78,16 +71,9 @@
       "width": 390,
       "theme": "dark",
       "pageOverflowPx": 0,
-      "mainOverflowPx": 76,
-      "spills": [
-        "DIV.flex flex-col lg:col-span-3 +92px",
-        "P.flex items-center gap-2.5 text-xs font-s +92px",
-        "H2.mt-3 max-w-3xl font-serif text-3xl leadi +92px",
-        "P.mt-3 max-w-xl text-base leading-relaxed  +92px",
-        "DIV.mt-4 flex flex-wrap items-center gap-x-4 +92px",
-        "DIV.mt-6 +92px"
-      ],
-      "ok": false
+      "mainOverflowPx": 0,
+      "spills": [],
+      "ok": true
     },
     {
       "screen": "d2-roadmap-published-1440-light.png",

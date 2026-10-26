@@ -1,16 +1,16 @@
 {
-  "studentId": "5fc8946b-b90f-4219-a079-6c997fb6c3ac",
-  "planId": "1d3e0f49-89e8-49fc-aa08-6e248ed83db8",
+  "studentId": "beab2192-bfc8-4e52-9715-17f52c5c37a8",
+  "planId": "a94ce0e7-8de5-4b33-b2c3-30e935c38445",
   "published": {
-    "versionId": "74145c15-89ba-49e8-8e6f-c9faf97a1c0a",
+    "versionId": "01656009-c4d8-4cee-b5c7-460d315e6fac",
     "versionNumber": 1,
     "status": "published",
     "title": "TESU BSBA in Accounting roadmap",
-    "createdAt": "2026-10-26T19:40:27.413Z",
-    "createdBy": "01e9fedf-5b8a-4926-8c73-18bb3cc04b30",
-    "publishedAt": "2026-10-26T19:40:27.915Z",
-    "publishedBy": "8f1daa21-1a76-49b4-aba6-3d03529ea175",
-    "importId": "58770955-8cfa-4c21-a3fa-afbe6f1be21b",
+    "createdAt": "2026-10-26T19:45:09.166Z",
+    "createdBy": "dcdc8eeb-5384-4dff-b827-74de6eaf07ce",
+    "publishedAt": "2026-10-26T19:45:09.822Z",
+    "publishedBy": "b3995e4b-090d-4e58-8524-e2e4b8d2c186",
+    "importId": "2f83f9d7-a6ba-43d9-9aaa-87f17bfcac9a",
     "content": {
       "items": [
         {
@@ -2483,15 +2483,15 @@
   "draft": null,
   "versions": [
     {
-      "versionId": "74145c15-89ba-49e8-8e6f-c9faf97a1c0a",
+      "versionId": "01656009-c4d8-4cee-b5c7-460d315e6fac",
       "versionNumber": 1,
       "status": "published",
       "title": "TESU BSBA in Accounting roadmap",
-      "createdAt": "2026-10-26T19:40:27.413Z",
-      "createdBy": "01e9fedf-5b8a-4926-8c73-18bb3cc04b30",
-      "publishedAt": "2026-10-26T19:40:27.915Z",
-      "publishedBy": "8f1daa21-1a76-49b4-aba6-3d03529ea175",
-      "importId": "58770955-8cfa-4c21-a3fa-afbe6f1be21b"
+      "createdAt": "2026-10-26T19:45:09.166Z",
+      "createdBy": "dcdc8eeb-5384-4dff-b827-74de6eaf07ce",
+      "publishedAt": "2026-10-26T19:45:09.822Z",
+      "publishedBy": "b3995e4b-090d-4e58-8524-e2e4b8d2c186",
+      "importId": "2f83f9d7-a6ba-43d9-9aaa-87f17bfcac9a"
     }
   ]
 }
