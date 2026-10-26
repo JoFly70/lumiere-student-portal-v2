@@ -208,6 +208,13 @@ export interface DegreeEvaluationRawBundle {
   readonly assignments: readonly DegreeEvaluationAssignmentRow[];
   readonly programVersions?: readonly DegreeEvaluationProgramVersionRow[];
   readonly requirements: readonly DegreeEvaluationRequirementRow[];
+  /**
+   * Soft-deactivated (active = false) requirement rows of the same program
+   * version that are referenced by a loaded placement or exception.  They are
+   * historical-traceability facts only: never evaluated, never a subject of
+   * knowledge claims.  Absent or empty for students with no such references.
+   */
+  readonly inactiveReferencedRequirements?: readonly DegreeEvaluationRequirementRow[];
   readonly requirementProvenance: readonly DegreeEvaluationRequirementProvenanceRow[];
   readonly claims: readonly DegreeEvaluationClaimRow[];
   readonly claimVersions: readonly DegreeEvaluationClaimVersionRow[];
@@ -420,6 +427,9 @@ function allOccurrences(facts: DegreeEvaluationRawBundle): readonly DegreeEvalua
   add("programAssignment", facts.assignments, (row) => row.id);
   add("programVersion", facts.programVersions ?? [], (row) => row.id);
   add("requirement", facts.requirements, (row) => row.requirementId ?? row.id ?? "");
+  add("inactiveReferencedRequirement", facts.inactiveReferencedRequirements ?? [], (row) => (
+    row.requirementId ?? row.id ?? ""
+  ));
   add("requirementProvenance", facts.requirementProvenance, (row) => (
     row.id ?? `${row.requirementId}:${row.claimVersionId}:${row.evidenceExcerptId ?? ""}:${row.sourceId}`
   ));
@@ -1009,6 +1019,21 @@ export function assembleDegreeEvaluationSnapshot(
   const creditMap = new Map(facts.creditRecords.map((row) => [row.id, row]));
   const decisionMap = new Map(facts.decisions.map((row) => [row.id, row]));
   const requirementMap = new Map(facts.requirements.map((row) => [requirementId(row), row]));
+  const inactiveRequirementMap = new Map(
+    (facts.inactiveReferencedRequirements ?? []).map((row) => [requirementId(row), row]),
+  );
+  if (duplicateReasons(
+    [...facts.requirements, ...(facts.inactiveReferencedRequirements ?? [])],
+    requirementId,
+    "DUPLICATE_REQUIREMENT",
+  ).length
+    || (facts.inactiveReferencedRequirements ?? []).some((row) => (
+      !meaningful(requirementId(row))
+      || row.active !== false
+      || row.programVersionId !== context.programVersionId
+    ))) {
+    fail("INVALID_INACTIVE_REQUIREMENT_FACT", facts.inactiveReferencedRequirements ?? []);
+  }
   const placementExact = new Map<string, number>();
   for (const row of facts.placements) {
     const key = `${row.studentCreditDecisionId}:${row.programAssignmentId}:${row.requirementId}:${row.academicRuleId ?? ""}`;
@@ -1019,12 +1044,17 @@ export function assembleDegreeEvaluationSnapshot(
       || !meaningful(row.requirementId)
       || (row.academicRuleId !== null && !meaningful(row.academicRuleId))
       || !decisionMap.has(row.studentCreditDecisionId)
-      || !requirementMap.has(row.requirementId)
+      || !(requirementMap.has(row.requirementId)
+        || inactiveRequirementMap.has(row.requirementId))
       || (row.academicRuleId !== null && !ruleMap.has(row.academicRuleId))
       || row.programAssignmentId !== context.programAssignmentId
       || (row.studentId !== undefined && row.studentId !== context.studentId)
       || (row.programVersionId !== undefined && row.programVersionId !== context.programVersionId)) {
       fail("INVALID_PLACEMENT_BINDING", [row]);
+    } else if (row.status === "active"
+      && !requirementMap.has(row.requirementId)
+      && inactiveRequirementMap.has(row.requirementId)) {
+      fail("PLACEMENT_BOUND_TO_INACTIVE_REQUIREMENT", [row]);
     }
   }
   if ([...placementExact.values()].some((count) => count > 1)) {
@@ -1067,15 +1097,25 @@ export function assembleDegreeEvaluationSnapshot(
       || (row.programVersionId !== undefined
         && row.programVersionId !== context.programVersionId)
       || (row.requirementId !== null
-        && (!requirementMap.has(row.requirementId)
-          || requirementMap.get(row.requirementId)!.programVersionId
+        && (!(requirementMap.has(row.requirementId)
+            || inactiveRequirementMap.has(row.requirementId))
+          || (requirementMap.get(row.requirementId)
+            ?? inactiveRequirementMap.get(row.requirementId))!.programVersionId
             !== context.programVersionId))
       || (row.academicRuleId !== null
         && (!ruleMap.has(row.academicRuleId)
           || ruleMap.get(row.academicRuleId)!.programVersionId
             !== context.programVersionId))
+      || (row.requirementId !== null
+        && !requirementMap.has(row.requirementId)
+        && !["active", "revoked", "superseded"].includes(row.status))
       || (row.creditRecordId !== null && !creditMap.has(row.creditRecordId))) {
       fail("INVALID_EXCEPTION_TARGET", [row]);
+    } else if (row.status === "active"
+      && row.requirementId !== null
+      && !requirementMap.has(row.requirementId)
+      && inactiveRequirementMap.has(row.requirementId)) {
+      fail("EXCEPTION_BOUND_TO_INACTIVE_REQUIREMENT", [row]);
     }
   }
 

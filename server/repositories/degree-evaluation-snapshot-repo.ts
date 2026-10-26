@@ -238,6 +238,23 @@ export async function readDegreeEvaluationSnapshotFacts(
       .where(eq(studentCreditPlacements.programAssignmentId, context.programAssignmentId)),
   ]);
 
+  // Historical traceability: placements/exceptions may still reference a
+  // soft-deactivated requirement of this program version.  Load only those
+  // rows, as a separate fact collection that is never evaluated.
+  const activeRequirementIdSet = new Set(requirements.map((row) => row.id));
+  const referencedInactiveIds = [...new Set([
+    ...placements.map((row) => row.requirementId),
+    ...exceptions.map((row) => row.requirementId),
+  ].filter((id): id is string => typeof id === "string" && id.length > 0
+    && !activeRequirementIdSet.has(id)))].sort();
+  const inactiveReferencedRequirements = referencedInactiveIds.length === 0
+    ? []
+    : (await tx.select().from(requirementsV2).where(and(
+      eq(requirementsV2.programVersionId, context.programVersionId),
+      eq(requirementsV2.active, false),
+      inArray(requirementsV2.id, referencedInactiveIds),
+    ))).sort((left, right) => (left.id < right.id ? -1 : left.id > right.id ? 1 : 0));
+
   const requirementIds = requirements.map((row) => row.id);
   const initialClaims: DegreeEvaluationClaimRow[] = requirementIds.length === 0
     ? []
@@ -450,6 +467,9 @@ export async function readDegreeEvaluationSnapshotFacts(
     assignments: Object.freeze(assignments),
     programVersions: Object.freeze(programVersionRows),
     requirements: Object.freeze(requirements),
+    ...(inactiveReferencedRequirements.length > 0
+      ? { inactiveReferencedRequirements: Object.freeze(inactiveReferencedRequirements) }
+      : {}),
     requirementProvenance: Object.freeze(derivedConflictFacts.requirementProvenance),
     claims: Object.freeze(claims),
     claimVersions: Object.freeze(claimVersionRows),

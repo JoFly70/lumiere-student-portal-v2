@@ -17,6 +17,7 @@ import { requireAuth } from '../middleware/auth';
 import { requireRole } from '../middleware/rbac';
 import { studentAcademicService } from '../services/student-academic-service';
 import { sendStudentAcademicError } from '../lib/student-academic-http';
+import { createStudentDegreeProgressRouter } from './student-degree-progress';
 import { createAuditLog } from '../lib/audit';
 import {
   studentAcademicSourceTypeEnum,
@@ -627,6 +628,9 @@ studentSelfRouter.get('/academic-record', requireAuth, requireRole(['student']),
     sendStudentAcademicError(res, error);
   }
 });
+
+// GET /degree-progress — canonical degree progress for the authenticated student
+studentSelfRouter.use(createStudentDegreeProgressRouter());
 
 // ── Export ────────────────────────────────────────────────────────────────────
 
