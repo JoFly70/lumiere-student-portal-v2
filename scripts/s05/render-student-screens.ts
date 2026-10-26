@@ -149,8 +149,7 @@ async function openTasks(page: any) {
 async function runAxe(page: any, label: string, results: any[]) {
   await page.addScriptTag({ content: AXE });
   const r = await page.evaluate(async () => {
-    // @ts-ignore
-    const res = await axe.run(document, { runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21aa", "best-practice"] } });
+    const res = await (window as any).axe.run(document, { runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21aa", "best-practice"] } });
     return res.violations.map((v: any) => ({ id: v.id, impact: v.impact, help: v.help, nodes: v.nodes.length, sample: v.nodes.slice(0, 3).map((n: any) => ({ target: n.target.join(" "), summary: n.failureSummary?.split("\n").slice(0, 3).join(" ") })) }));
   });
   results.push({ screen: label, violations: r });

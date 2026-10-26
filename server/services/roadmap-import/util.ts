@@ -67,7 +67,7 @@ export function cellText(v: CellValue | undefined): string {
   if (v instanceof Date) return Number.isNaN(v.getTime()) ? "" : v.toISOString().slice(0, 10);
   if (typeof v === "boolean") return v ? "true" : "false";
   if (typeof v === "number") return Number.isFinite(v) ? String(v) : "";
-  return v.replace(/ /g, " ").trim();
+  return v.replace(/\u00a0/g, " ").trim();
 }
 
 export function isBlank(v: CellValue | undefined): boolean {
