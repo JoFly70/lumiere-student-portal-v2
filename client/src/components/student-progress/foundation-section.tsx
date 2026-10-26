@@ -211,7 +211,7 @@ export function CredentialsList({ foundation }: { foundation: StudentFoundationV
               </div>
             </div>
             <div className="flex items-center gap-2">
-              {amount && <span className="text-sm text-student-muted">{creditsText(amount)}</span>}
+              {amount && <span className="text-sm text-student-muted">{creditsText(amount)} {c.awardedCredits ? "awarded" : "reported"}</span>}
               <StatusPill status={standing.status} label={standing.label} />
             </div>
           </li>

@@ -23,6 +23,7 @@ import {
 import { Eyebrow, STATUS_STYLE, StatusGlyph, StatusPill, buttonClass, cardClass } from "./student-ui";
 import { TaskList } from "./task-controls";
 import { TaskRing } from "./journey-graphics";
+import { MobileCollapse } from "./mobile-collapse";
 
 function primaryLabel(item: StudentRoadmapItemView): string {
   if (item.stage === "not_started") return `Start ${item.title}`;
@@ -144,11 +145,17 @@ export function TodaySection({ view, linkItems = true }: { view: StudentRoadmapV
         )}
       </div>
       {rest.length > 0 && (
-        <ul className="grid gap-4 md:grid-cols-2" aria-label="Also in progress">
-          {rest.map((item) => (
-            <FocusCard key={item.key} item={item} linkItems={linkItems} />
-          ))}
-        </ul>
+        <MobileCollapse
+          label={`Show ${rest.length} more ${rest.length === 1 ? "course" : "courses"} in progress`}
+          openLabel="Hide other courses in progress"
+          testId="also-in-progress"
+        >
+          <ul className="grid gap-4 md:grid-cols-2" aria-label="Also in progress">
+            {rest.map((item) => (
+              <FocusCard key={item.key} item={item} linkItems={linkItems} />
+            ))}
+          </ul>
+        </MobileCollapse>
       )}
     </section>
   );

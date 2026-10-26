@@ -1,17 +1,15 @@
 /**
  * The ONE overall progress presentation: a stacked count bar plus four counts of
- * ROADMAP COURSES, then the prior-credit baseline as a separate, labelled figure.
- * Counts only; there is no weighted percentage and no estimate.
+ * ROADMAP COURSES. Credit is NOT repeated here: the single applied-credit summary
+ * lives in "Your foundation". Counts only; no weighted percentage, no estimate.
  */
 import React from "react";
-import { CheckCheck } from "lucide-react";
 import type { StudentRoadmapView } from "@shared/student-roadmap-contract";
 import {
   COUNT_SCOPE_NOTE,
   awaitingGradingSentence,
   countSegments,
   countsSentence,
-  priorCreditBaseline,
   primaryObjectiveTitle,
   segmentFraction,
 } from "@/pages/student-roadmap-presentation";
@@ -34,7 +32,6 @@ const SEGMENT_STYLE: Record<string, React.CSSProperties> = {
 
 export function ProgressSummary({ view }: { view: StudentRoadmapView }) {
   const segments = countSegments(view.counts);
-  const baseline = priorCreditBaseline(view.foundation);
   const awaiting = awaitingGradingSentence(view);
   const noun = view.counts.itemsTotal === 1 ? "roadmap course" : "roadmap courses";
   return (
@@ -51,8 +48,8 @@ export function ProgressSummary({ view }: { view: StudentRoadmapView }) {
         </div>
       </div>
 
-      <div className="mt-5 grid gap-6 lg:grid-cols-5">
-        <div className="lg:col-span-3">
+      <div className="mt-5">
+        <div>
           <div
             role="img"
             aria-label={countsSentence(view.counts)}
@@ -84,7 +81,10 @@ export function ProgressSummary({ view }: { view: StudentRoadmapView }) {
               </li>
             ))}
           </ul>
-          <p className="mt-3 text-xs text-student-muted" data-testid="count-scope-note">{COUNT_SCOPE_NOTE}</p>
+          <p className="mt-3 text-xs text-student-muted" data-testid="count-scope-note">{COUNT_SCOPE_NOTE}{" "}
+            "Complete at provider" is what you reported; only Lumière can accept it as official credit.{" "}
+            <a href="#section-foundation" className="font-medium text-student-gold-ink underline underline-offset-4" data-testid="link-your-credits">See your credits</a>
+          </p>
           {awaiting && (
             <p className={cn("mt-3 flex items-center gap-2 text-sm font-medium", STATUS_STYLE.submitted.text)} data-testid="awaiting-grading">
               <StatusGlyph status="submitted" className="h-4 w-4" />
@@ -93,19 +93,6 @@ export function ProgressSummary({ view }: { view: StudentRoadmapView }) {
           )}
         </div>
 
-        <div
-          className="rounded-xl border border-student-line bg-student-bg p-4 lg:col-span-2"
-          data-testid="credit-baseline"
-          role="group"
-          aria-label="Prior-credit baseline, separate from roadmap courses"
-        >
-          <p className="text-xs font-semibold uppercase tracking-wider text-student-muted">Prior-credit baseline</p>
-          <p className="mt-1 flex items-start gap-2">
-            <CheckCheck className={cn("mt-1 h-5 w-5 shrink-0", STATUS_STYLE.applied.text)} aria-hidden="true" />
-            <span className="font-serif text-2xl leading-tight text-student-ink" data-testid="baseline-figure">{baseline.headline}</span>
-          </p>
-          <p className="mt-1.5 text-sm leading-relaxed text-student-muted">{baseline.detail}</p>
-        </div>
       </div>
     </section>
   );

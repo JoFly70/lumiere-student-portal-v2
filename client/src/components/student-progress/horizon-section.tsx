@@ -37,7 +37,7 @@ function PhaseRow({ p }: { p: StudentRoadmapView["phases"][number] }) {
     <li className="text-sm">
       <p className="font-medium text-student-ink">{p.title}</p>
       <p className="text-student-muted">
-        {[dateRangeLabel(p.startDate, p.endDate), `${p.counts.itemsTotal} ${p.counts.itemsTotal === 1 ? "item" : "items"}`].filter(Boolean).join(" · ")}
+        {[dateRangeLabel(p.startDate, p.endDate), `${p.counts.itemsTotal} ${p.counts.itemsTotal === 1 ? "course" : "courses"}`].filter(Boolean).join(" · ")}
       </p>
     </li>
   );

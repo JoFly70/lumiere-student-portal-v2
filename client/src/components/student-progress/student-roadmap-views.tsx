@@ -18,7 +18,6 @@ import {
   FLIGHT_DECK_PATH,
   FLIGHT_DECK_SECTIONS,
   ROADMAP_PATH,
-  ROADMAP_SECTIONS,
   isPublished,
   primaryObjectiveTitle,
 } from "@/pages/student-roadmap-presentation";
@@ -31,6 +30,12 @@ import { FoundationSection } from "./foundation-section";
 import { HorizonSection } from "./horizon-section";
 import { JourneyStrip } from "./journey-graphics";
 import { RoadmapNotPublished } from "./roadmap-states";
+
+/** Roadmap page sections. "Phases" (not "Journey"): the Flight Deck's "Journey" is the overview strip. */
+const ROADMAP_NAV = [
+  { id: "section-today", label: "Now" },
+  { id: "section-roadmap", label: "Phases" },
+] as const;
 
 function PageHeader({ eyebrow, title, subtitle, children }: { eyebrow: string; title: string; subtitle?: string | null; children?: React.ReactNode }) {
   return (
@@ -146,7 +151,7 @@ export function RoadmapPageView({
             </p>
           </PageHeader>
         </div>
-        <SectionNav sections={ROADMAP_SECTIONS} label="Roadmap sections" />
+        <SectionNav sections={ROADMAP_NAV} label="Roadmap sections" />
         <div className="mx-auto mt-6 w-full max-w-6xl space-y-10">
           <NowStrip view={view} onJump={(key) => setTargetItemKey(key)} />
           <RoadmapJourney view={view} targetItemKey={targetItemKey} defaultOpenKey={firstFocus} />

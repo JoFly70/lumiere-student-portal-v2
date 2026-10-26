@@ -23,11 +23,20 @@ import {
   objectiveFor,
   objectiveKindHelp,
   phaseItems,
-  phaseSummaryLine,
   sortedPhases,
 } from "@/pages/student-roadmap-presentation";
 import { Pill, SectionHeading } from "./student-ui";
 import { PhaseMarker } from "./journey-graphics";
+
+/** Same wording family as the Flight Deck strip: courses, and reported completion is named as such. */
+function phaseLine(phase: StudentRoadmapPhaseView): string {
+  const c = phase.counts;
+  const finished = c.itemsOfficiallyAccepted + c.itemsProviderComplete;
+  const parts = [`In this phase: ${finished} of ${c.itemsTotal} ${c.itemsTotal === 1 ? "course" : "courses"} finished`];
+  if (c.itemsProviderComplete > 0) parts.push(`${c.itemsProviderComplete} awaiting Lumière's acceptance`);
+  if (c.tasksTotal > 0) parts.push(`${c.tasksGraded} of ${c.tasksTotal} tasks done`);
+  return parts.join(" · ");
+}
 import { AlternativeCard, ItemCard } from "./item-card";
 
 
@@ -89,7 +98,7 @@ function PhaseBlock({
                 </Pill>
               </span>
               <span className="mt-1 block text-sm font-normal text-student-muted">
-                {[dates, phaseSummaryLine(phase)].filter(Boolean).join(" · ")}
+                {[dates, phaseLine(phase)].filter(Boolean).join(" · ")}
               </span>
             </span>
             <ChevronDown className={cn("mt-2 h-5 w-5 shrink-0 text-student-gold-ink transition-transform", isOpen && "rotate-180")} aria-hidden="true" />
@@ -149,8 +158,8 @@ export function RoadmapJourney({ view, targetItemKey = null, defaultOpenKey = nu
       <SectionHeading
         id="roadmap-title"
         eyebrow="Your roadmap"
-        title="Your journey"
-        description={view.plan?.summary ?? "Lumière plans your route. You follow it and report your progress."}
+        title="Your phases"
+        description={view.plan?.summary ?? "Lumière plans your route in phases. You follow it and report your progress."}
       />
 
       {lanes.length > 0 && (

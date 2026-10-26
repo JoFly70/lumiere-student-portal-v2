@@ -7,7 +7,7 @@
  * is a no-op and nothing is pending.
  */
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, type QueryClient } from "@tanstack/react-query";
 import type { StudentProgressUpdate } from "@shared/student-roadmap-contract";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -28,6 +28,15 @@ export function revisionIn(view: StudentRoadmapView, update: StudentProgressUpda
     }
   }
   return null;
+}
+
+/**
+ * The ONE write path after a progress POST: the returned view replaces the
+ * roadmap query data. Flight Deck and Roadmap both read STUDENT_ROADMAP_QUERY_KEY,
+ * so each updates without a reload whichever page made the write.
+ */
+export function applyAuthoritativeView(queryClient: QueryClient, view: StudentRoadmapView): void {
+  queryClient.setQueryData(STUDENT_ROADMAP_QUERY_KEY, view);
 }
 
 export interface RoadmapActions {
@@ -67,7 +76,7 @@ export function RoadmapActionsProvider({ children }: { children: React.ReactNode
       setPending((prev) => new Set(prev).add(key));
       try {
         const view = await postStudentProgress(update);
-        queryClient.setQueryData(STUDENT_ROADMAP_QUERY_KEY, view);
+        applyAuthoritativeView(queryClient, view);
         setMessage(savedMessage(label));
         const rev = previous !== undefined ? revisionIn(view, update) : null;
         setUndo(
