@@ -593,7 +593,14 @@ export interface StudentHighSchoolView {
     readonly id: string;
     readonly schoolLabel: string;
     readonly status: PriorEducationStatus;
-    readonly claims: readonly { readonly id: string; readonly courseTitle: string; readonly claimedHalfUnits: HalfUnits; readonly status: TransferClaimStatus }[];
+    readonly claims: readonly {
+      readonly id: string;
+      readonly courseTitle: string;
+      readonly claimedHalfUnits: HalfUnits;
+      /** What the school accepted (set when status is partially_accepted; may be absent otherwise). */
+      readonly acceptedHalfUnits?: HalfUnits | null;
+      readonly status: TransferClaimStatus;
+    }[];
   }[];
   readonly guardians: readonly HsGuardianView[];
   readonly generatedAt: string;
@@ -661,9 +668,15 @@ export const transferClaimSchema = z
   })
   .strict();
 
+/**
+ * `acceptedHalfUnits` is REQUIRED when status is partially_accepted (the server
+ * answers 422 HS_VALIDATION_FAILED otherwise) and must not exceed the claim;
+ * for the other statuses it is ignored. Transfer awards may never exceed it.
+ */
 export const resolveTransferClaimSchema = z
   .object({
     status: z.enum(["submitted_to_school", "accepted", "partially_accepted", "declined"]),
+    acceptedHalfUnits: halfUnitsSchema.optional(),
     note: z.string().trim().min(3).max(500),
   })
   .strict();
@@ -704,6 +717,26 @@ export const recordTransferAwardSchema = z
     evidenceDocumentId: z.string().trim().min(1).max(128),
   })
   .strict();
+
+/**
+ * Document types (student_documents.doc_type, doc_type_enum) accepted as
+ * evidence per purpose. A verified document of another type is refused with
+ * 422 HS_EVIDENCE_INVALID. Later un-verification of a document is not
+ * re-validated; staff views flag it with `evidenceStillVerified: false`.
+ */
+export const HS_EVIDENCE_DOC_TYPES = {
+  /** Diploma evidence (confer_diploma, historical graduate). */
+  diploma: ["hs_diploma"],
+  /** Transcript evidence (confer_diploma, historical graduate). */
+  transcript: ["hs_transcript"],
+  /** Graduation eligibility confirmation: the school's transcript, or another official school document. */
+  eligibility: ["hs_transcript", "other"],
+  /** Official task / course results. */
+  result: ["hs_transcript", "other"],
+  /** Transfer credit awards: transcript, foreign credential evaluation, or other. */
+  transferAward: ["hs_transcript", "foreign_eval", "other"],
+} as const satisfies Record<string, readonly string[]>;
+export type HsEvidencePurpose = keyof typeof HS_EVIDENCE_DOC_TYPES;
 
 export const voidAwardSchema = z.object({ reason: z.string().trim().min(5).max(500) }).strict();
 
@@ -840,6 +873,8 @@ export interface HsOfficialResultView {
   readonly outcome: HsOfficialTaskOutcome | HsOfficialCourseOutcome;
   readonly scorePercent: number | null;
   readonly evidenceDocumentId: string;
+  /** Computed at read time: false when the evidence document is no longer verified (or was removed). */
+  readonly evidenceStillVerified?: boolean;
   readonly recordedBy: string | null;
   readonly recordedAt: string;
   readonly note: string | null;
@@ -853,6 +888,8 @@ export interface HsCreditAwardView {
   readonly areaKey: string;
   readonly halfUnits: HalfUnits;
   readonly evidenceDocumentId: string;
+  /** Computed at read time: false when the evidence document is no longer verified (or was removed). */
+  readonly evidenceStillVerified?: boolean;
   readonly status: "active" | "voided";
   readonly recordedBy: string | null;
   readonly recordedAt: string;
@@ -892,7 +929,7 @@ export interface StaffHighSchoolState {
       readonly status: PriorEducationStatus;
       readonly evidenceDocumentId: string | null;
       readonly staffNote: string | null;
-      readonly claims: readonly { readonly id: string; readonly courseTitle: string; readonly areaKey: string; readonly claimedHalfUnits: HalfUnits; readonly status: TransferClaimStatus; readonly note: string | null }[];
+      readonly claims: readonly { readonly id: string; readonly courseTitle: string; readonly areaKey: string; readonly claimedHalfUnits: HalfUnits; readonly acceptedHalfUnits?: HalfUnits | null; readonly status: TransferClaimStatus; readonly note: string | null }[];
     }[];
     readonly graduation: HsGraduationView & { readonly eligibilityEvidenceDocumentId: string | null; readonly blockers: readonly string[] };
     /** Same projection the student sees, for "view as student". */
@@ -928,14 +965,15 @@ export interface StaffHighSchoolState {
  *   POST .../enrollments/:eid/results/course                                recordCourseResultSchema
  *   POST .../enrollments/:eid/awards/transfer                               recordTransferAwardSchema
  *   POST .../enrollments/:eid/awards/:awardId/void                      (A) voidAwardSchema
- *   POST .../enrollments/:eid/graduation                                    graduationActionSchema (confirm_eligibility, confer_diploma = A)
+ *   POST .../enrollments/:eid/graduation                                    graduationActionSchema (confirm_eligibility = A, confer_diploma = A; the rest staff|admin)
  *   POST .../enrollments/:eid/guardian-notes                                guardianNoteSchema
  *   POST /api/admin/students/:studentId/high-school/historical-graduate (A) historicalGraduateSchema
  * Every mutation returns the refreshed StaffHighSchoolState.
  *
  * Evidence rule: every evidenceDocumentId must be a student_documents row of
  * THIS student with status 'verified' (verified through the existing Documents
- * workflow). Otherwise 422 HS_EVIDENCE_INVALID; missing -> 400 HS_EVIDENCE_REQUIRED.
+ * workflow) and of an allowed doc_type for its purpose (HS_EVIDENCE_DOC_TYPES).
+ * Otherwise 422 HS_EVIDENCE_INVALID; missing -> 400 HS_EVIDENCE_REQUIRED.
  */
 export const HS_API = {
   student: "/api/student/high-school",

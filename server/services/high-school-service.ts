@@ -17,6 +17,7 @@
 import {
   BUILT_IN_TEMPLATES,
   HS_ERROR_CODES,
+  HS_EVIDENCE_DOC_TYPES,
   HS_OPEN_ENROLLMENT_STATUSES,
   formatHalfUnits,
   hsRoadmapContentSchema,
@@ -24,10 +25,12 @@ import {
   type HsAuditEvent,
   type HsCreditAwardView,
   type HsCurriculumTemplate,
+  type HsPlanCourse,
   type HsEnrollmentStatus,
   type HsEnrollmentSummary,
   type HsErrorCode,
   type HsEventView,
+  type HsEvidencePurpose,
   type HsGraduationAction,
   type HsOfficialResultView,
   type HsRoadmapContent,
@@ -148,6 +151,7 @@ function isUniqueViolation(error: unknown): boolean {
   return false;
 }
 
+const DELIVERY_ORDER: readonly HsDeliveryStatus[] = ["not_requested", "requested", "issued", "delivered"];
 const isOpen = (status: string): boolean => (HS_OPEN_ENROLLMENT_STATUSES as readonly string[]).includes(status);
 
 export function createHighSchoolService(deps: HighSchoolServiceDeps) {
@@ -238,16 +242,30 @@ export function createHighSchoolService(deps: HighSchoolServiceDeps) {
     }
   }
 
-  async function assertEvidence(studentId: string, documentId: string, field: string, tx: Tx): Promise<void> {
-    if (!(await repo.isVerifiedDocument(studentId, documentId, tx))) {
-      throw new HsError(
-        E.EVIDENCE_INVALID,
-        422,
-        "Evidence must be a verified document of this student",
-        { field },
-      );
+  /**
+   * Evidence must be a verified document of THIS student. With a `purpose` its
+   * doc_type must also be in HS_EVIDENCE_DOC_TYPES[purpose] (e.g. diploma evidence
+   * must be an hs_diploma document).
+   */
+  async function assertEvidence(studentId: string, documentId: string, field: string, tx: Tx, purpose?: HsEvidencePurpose): Promise<void> {
+    const docType = await repo.getVerifiedDocumentType(studentId, documentId, tx);
+    if (docType === null) {
+      throw new HsError(E.EVIDENCE_INVALID, 422, "Evidence must be a verified document of this student", { field });
+    }
+    if (purpose) {
+      const allowed: readonly string[] = HS_EVIDENCE_DOC_TYPES[purpose];
+      if (!allowed.includes(docType)) {
+        throw new HsError(
+          E.EVIDENCE_INVALID,
+          422,
+          `This evidence must be a document of type ${allowed.join(" or ")}, but the document is of type ${docType}`,
+          { field, allowedDocTypes: [...allowed], docType },
+        );
+      }
     }
   }
+
+  const todayIso = (now: Date): string => now.toISOString().slice(0, 10);
 
   function currentOf<T extends { status: string }>(rows: readonly T[]): T | null {
     return rows.find((r) => isOpen(r.status)) ?? rows[0] ?? null;
@@ -382,7 +400,13 @@ export function createHighSchoolService(deps: HighSchoolServiceDeps) {
         status: p.status as PriorEducationStatus,
         claims: b.claims
           .filter((c) => c.priorEducationId === p.id)
-          .map((c) => ({ id: c.id, courseTitle: c.courseTitle, claimedHalfUnits: c.claimedHalfUnits, status: c.status as TransferClaimStatus })),
+          .map((c) => ({
+            id: c.id,
+            courseTitle: c.courseTitle,
+            claimedHalfUnits: c.claimedHalfUnits,
+            acceptedHalfUnits: c.acceptedHalfUnits,
+            status: c.status as TransferClaimStatus,
+          })),
       })),
       graduation: toGraduationInput(b.graduation),
       guardians,
@@ -518,9 +542,15 @@ export function createHighSchoolService(deps: HighSchoolServiceDeps) {
     return deps.transaction(async (tx) => {
       const current = currentOf(await repo.listEnrollments(studentId, tx));
       if (!current) throw new HsError(E.NO_ENROLLMENT, 404, "No high school enrollment yet");
+      // Always the student's CURRENT enrollment (open, else the most recent one).
       const enrollment = await requireEnrollment(studentId, current.id, tx, true);
       const graduation = await repo.getGraduation(enrollment.id, tx);
-      const changed = !graduation || graduation.transcriptStatus === "not_requested";
+      if (!graduation || (graduation.status !== "eligibility_confirmed" && graduation.status !== "diploma_conferred")) {
+        throw new HsError(E.NOT_ELIGIBLE, 409, "A transcript can be requested once the school has confirmed graduation eligibility", {
+          blockers: ["Graduation eligibility has not been confirmed"],
+        });
+      }
+      const changed = graduation.transcriptStatus === "not_requested";
       const now = deps.now();
       if (changed) {
         await repo.insertGraduationIfAbsent({ enrollmentId: enrollment.id, studentId }, tx);
@@ -651,6 +681,11 @@ export function createHighSchoolService(deps: HighSchoolServiceDeps) {
         published ? buildCourseViews(published, progress, taskResults, toCourseResults(b.results), input.nowIso) : [],
       );
       const conferred = b.graduation?.status === "diploma_conferred";
+      const stillVerified = await repo.verifiedDocumentIds(
+        studentId,
+        [...new Set([...b.results.filter((r) => r.status === "active").map((r) => r.evidenceDocumentId), ...b.awards.map((a) => a.evidenceDocumentId)])],
+        tx,
+      );
       current = {
         enrollment: summaryOf(currentRow, b.template),
         template: b.template,
@@ -671,6 +706,7 @@ export function createHighSchoolService(deps: HighSchoolServiceDeps) {
               outcome: r.outcome as HsOfficialResultView["outcome"],
               scorePercent: r.scorePercent,
               evidenceDocumentId: r.evidenceDocumentId,
+              evidenceStillVerified: stillVerified.has(r.evidenceDocumentId),
               recordedBy: r.recordedBy,
               recordedAt: r.recordedAt.toISOString(),
               note: r.note,
@@ -685,6 +721,7 @@ export function createHighSchoolService(deps: HighSchoolServiceDeps) {
             areaKey: a.areaKey,
             halfUnits: a.halfUnits,
             evidenceDocumentId: a.evidenceDocumentId,
+            evidenceStillVerified: stillVerified.has(a.evidenceDocumentId),
             status: a.status as HsCreditAwardView["status"],
             recordedBy: a.recordedBy,
             recordedAt: a.recordedAt.toISOString(),
@@ -706,6 +743,7 @@ export function createHighSchoolService(deps: HighSchoolServiceDeps) {
               courseTitle: c.courseTitle,
               areaKey: c.areaKey,
               claimedHalfUnits: c.claimedHalfUnits,
+              acceptedHalfUnits: c.acceptedHalfUnits,
               status: c.status as TransferClaimStatus,
               note: c.resolutionNote,
             })),
@@ -944,14 +982,26 @@ export function createHighSchoolService(deps: HighSchoolServiceDeps) {
       if (!UUID_RE.test(claimId)) throw new HsError(E.CLAIM_NOT_FOUND, 404, "Transfer claim not found");
       const claim = await repo.lockClaim(claimId, tx);
       if (!claim || claim.enrollmentId !== enrollment.id) throw new HsError(E.CLAIM_NOT_FOUND, 404, "Transfer claim not found");
-      if (input.status === "declined" || input.status === "submitted_to_school") {
-        const awards = await repo.listAwards(enrollment.id, tx);
-        if (awards.some((a) => a.claimId === claim.id && a.status === "active")) {
-          throw new HsError(E.OFFICIAL_RECORD_LOCKED, 409, "Void the transfer credit award before changing this claim");
+      if (input.status === "partially_accepted") {
+        if (input.acceptedHalfUnits === undefined) {
+          throw new HsError(E.VALIDATION, 422, "acceptedHalfUnits is required when a claim is partially accepted", { field: "acceptedHalfUnits" });
+        }
+        if (input.acceptedHalfUnits > claim.claimedHalfUnits) {
+          throw new HsError(E.VALIDATION, 422, "acceptedHalfUnits cannot exceed the credit claimed", { field: "acceptedHalfUnits", claimedHalfUnits: claim.claimedHalfUnits });
         }
       }
-      await repo.updateClaim(claim.id, { status: input.status, resolutionNote: input.note, resolvedBy: actorId, resolvedAt: now }, tx);
-      await repo.appendEvent(event(studentId, enrollment.id, "transfer_claim_resolved", actorId, `Transfer claim marked ${input.status.replace(/_/g, " ")}`, { claimId: claim.id, status: input.status }, now), tx);
+      const acceptedHalfUnits = input.status === "partially_accepted" ? (input.acceptedHalfUnits as number) : null;
+      const activeAwarded = (await repo.listAwards(enrollment.id, tx))
+        .filter((a) => a.claimId === claim.id && a.status === "active")
+        .reduce((n, a) => n + a.halfUnits, 0);
+      if (input.status === "declined" || input.status === "submitted_to_school") {
+        if (activeAwarded > 0) throw new HsError(E.OFFICIAL_RECORD_LOCKED, 409, "Void the transfer credit award before changing this claim");
+      } else {
+        const cap = input.status === "accepted" ? claim.claimedHalfUnits : (acceptedHalfUnits as number);
+        if (activeAwarded > cap) throw new HsError(E.OFFICIAL_RECORD_LOCKED, 409, "Void the transfer credit award that exceeds the accepted credit before changing this claim");
+      }
+      await repo.updateClaim(claim.id, { status: input.status, acceptedHalfUnits, resolutionNote: input.note, resolvedBy: actorId, resolvedAt: now }, tx);
+      await repo.appendEvent(event(studentId, enrollment.id, "transfer_claim_resolved", actorId, `Transfer claim marked ${input.status.replace(/_/g, " ")}`, { claimId: claim.id, status: input.status, acceptedHalfUnits }, now), tx);
       return [{ event: "high_school.transfer_claim_changed", description: "Transfer claim updated", studentId, metadata: { enrollmentId: enrollment.id, claimId: claim.id, status: input.status } }];
     });
   }
@@ -1067,14 +1117,61 @@ export function createHighSchoolService(deps: HighSchoolServiceDeps) {
     return { row, content: row.content as HsRoadmapContent };
   }
 
+  /**
+   * Official results and credit are recorded only for courses that are "planned"
+   * in the PUBLISHED roadmap. A replaced/removed course is refused with
+   * 409 HS_INVALID_TRANSITION (the course exists, but its plan status does not allow it).
+   */
+  function assertPlanned(course: HsPlanCourse): void {
+    if (course.status !== "planned") {
+      throw new HsError(E.INVALID_TRANSITION, 409, `Course ${course.key} is ${course.status} in the published roadmap; results and credit can only be recorded for planned courses`, {
+        courseKey: course.key,
+        planStatus: course.status,
+      });
+    }
+  }
+
+  /**
+   * Course keys linked to `courseKey` through replacesCourseKey (either direction,
+   * transitively). Returns the key of a linked course that already holds an ACTIVE
+   * course-completion award, so credit cannot be earned twice across a replacement chain.
+   */
+  function replacementChainAward(content: HsRoadmapContent, courseKey: string, awards: readonly HsCreditAwardRow[]): string | null {
+    const neighbours = new Map<string, Set<string>>();
+    const link = (a: string, b: string) => {
+      if (!neighbours.has(a)) neighbours.set(a, new Set());
+      neighbours.get(a)!.add(b);
+    };
+    for (const c of content.courses) {
+      if (c.replacesCourseKey) {
+        link(c.key, c.replacesCourseKey);
+        link(c.replacesCourseKey, c.key);
+      }
+    }
+    const seen = new Set<string>([courseKey]);
+    const queue = [courseKey];
+    while (queue.length > 0) {
+      const k = queue.shift() as string;
+      for (const n of neighbours.get(k) ?? []) {
+        if (seen.has(n)) continue;
+        seen.add(n);
+        queue.push(n);
+      }
+    }
+    seen.delete(courseKey);
+    const held = awards.find((a) => a.status === "active" && a.source === "course_completion" && a.courseKey !== null && seen.has(a.courseKey));
+    return held?.courseKey ?? null;
+  }
+
   async function recordTaskResult(studentId: string, enrollmentId: string, actorId: string, input: TaskResultInput) {
     return mutateEnrollment(studentId, enrollmentId, async ({ tx, enrollment, now }) => {
       assertOpen(enrollment);
-      await assertEvidence(studentId, input.evidenceDocumentId, "evidenceDocumentId", tx);
+      await assertEvidence(studentId, input.evidenceDocumentId, "evidenceDocumentId", tx, "result");
       const { row: published, content } = await requirePublished(enrollment.id, tx);
       const course = content.courses.find((c) => c.key === input.courseKey);
       const task = course?.tasks.find((t) => t.key === input.taskKey);
       if (!course || !task) throw new HsError(E.UNKNOWN_COURSE_OR_TASK, 422, "That course or task is not in the published roadmap");
+      assertPlanned(course);
 
       const previous = (await repo.listResults(enrollment.id, tx)).filter(
         (r) => r.status === "active" && r.courseKey === course.key && r.taskKey === task.key,
@@ -1134,12 +1231,19 @@ export function createHighSchoolService(deps: HighSchoolServiceDeps) {
   async function recordCourseResult(studentId: string, enrollmentId: string, actorId: string, input: CourseResultInput) {
     return mutateEnrollment(studentId, enrollmentId, async ({ tx, enrollment, now }) => {
       assertOpen(enrollment);
-      await assertEvidence(studentId, input.evidenceDocumentId, "evidenceDocumentId", tx);
+      await assertEvidence(studentId, input.evidenceDocumentId, "evidenceDocumentId", tx, "result");
       const { row: published, content } = await requirePublished(enrollment.id, tx);
       const course = content.courses.find((c) => c.key === input.courseKey);
       if (!course) throw new HsError(E.UNKNOWN_COURSE_OR_TASK, 422, "That course is not in the published roadmap");
+      assertPlanned(course);
       const existing = (await repo.listResults(enrollment.id, tx)).find((r) => r.status === "active" && r.courseKey === course.key && r.taskKey === null);
       if (existing) throw new HsError(E.ALREADY_RECORDED, 409, "An official result is already recorded for this course");
+      if (input.outcome === "completed") {
+        const heldBy = replacementChainAward(content, course.key, await repo.listAwards(enrollment.id, tx));
+        if (heldBy) {
+          throw new HsError(E.ALREADY_RECORDED, 409, `Credit is already awarded for ${heldBy}, which this course replaces or is replaced by; void that award first`, { courseKey: heldBy });
+        }
+      }
       if (input.outcome === "completed" && !content.areas.some((a) => a.key === course.areaKey)) {
         throw new HsError(E.ROADMAP_INVALID, 422, "The course area is not part of the roadmap");
       }
@@ -1211,13 +1315,21 @@ export function createHighSchoolService(deps: HighSchoolServiceDeps) {
       if (claim.status !== "accepted" && claim.status !== "partially_accepted") {
         throw new HsError(E.CLAIM_NOT_ACCEPTED, 409, "The awarding school has not accepted this transfer claim");
       }
-      await assertEvidence(studentId, input.evidenceDocumentId, "evidenceDocumentId", tx);
+      await assertEvidence(studentId, input.evidenceDocumentId, "evidenceDocumentId", tx, "transferAward");
       const template = await loadTemplate(enrollment.templateKey, enrollment.templateVersion, tx);
       if (!template.areas.some((a) => a.key === input.areaKey)) throw new HsError(E.VALIDATION, 422, "Unknown requirement area", { field: "areaKey" });
+      if (input.areaKey !== claim.areaKey) {
+        throw new HsError(E.VALIDATION, 422, "The award area must match the requirement area of the claim", { field: "areaKey", claimAreaKey: claim.areaKey });
+      }
       const awards = await repo.listAwards(enrollment.id, tx);
       const activeForClaim = awards.filter((a) => a.status === "active" && a.claimId === claim.id).reduce((n, a) => n + a.halfUnits, 0);
-      if (activeForClaim + input.halfUnits > claim.claimedHalfUnits) {
-        throw new HsError(E.VALIDATION, 422, "The award exceeds the credit claimed", { field: "halfUnits", remainingHalfUnits: claim.claimedHalfUnits - activeForClaim });
+      // accepted -> up to the credit claimed; partially_accepted -> up to what the school accepted
+      const cap = claim.status === "accepted" ? claim.claimedHalfUnits : Math.min(claim.claimedHalfUnits, claim.acceptedHalfUnits ?? 0);
+      if (activeForClaim + input.halfUnits > cap) {
+        throw new HsError(E.VALIDATION, 422, claim.status === "accepted" ? "The award exceeds the credit claimed" : "The award exceeds the credit the school accepted", {
+          field: "halfUnits",
+          remainingHalfUnits: Math.max(0, cap - activeForClaim),
+        });
       }
       const published = await repo.getVersionByStatus(enrollment.id, "published", tx);
       const policies = effectivePolicies(published ? (published.content as HsRoadmapContent) : null);
@@ -1304,7 +1416,7 @@ export function createHighSchoolService(deps: HighSchoolServiceDeps) {
         case "confirm_eligibility": {
           assertOpen(enrollment);
           if (graduation.status !== "in_progress") throw new HsError(E.ALREADY_RECORDED, 409, "Eligibility is already confirmed");
-          await assertEvidence(studentId, input.evidenceDocumentId, "evidenceDocumentId", tx);
+          await assertEvidence(studentId, input.evidenceDocumentId, "evidenceDocumentId", tx, "eligibility");
           const blockers = creditBlockers(await creditsOf(enrollment, tx));
           if (blockers.length > 0) throw new HsError(E.NOT_ELIGIBLE, 409, "The student does not meet the graduation requirements yet", { blockers });
           await repo.updateGraduation(
@@ -1322,8 +1434,16 @@ export function createHighSchoolService(deps: HighSchoolServiceDeps) {
           }
           const blockers = creditBlockers(await creditsOf(enrollment, tx));
           if (blockers.length > 0) throw new HsError(E.NOT_ELIGIBLE, 409, "The student does not meet the graduation requirements", { blockers });
-          await assertEvidence(studentId, input.diplomaEvidenceDocumentId, "diplomaEvidenceDocumentId", tx);
-          await assertEvidence(studentId, input.transcriptEvidenceDocumentId, "transcriptEvidenceDocumentId", tx);
+          // The conferral date is a fact about the past: never in the future, never before eligibility was confirmed.
+          if (input.conferredOn > todayIso(now)) {
+            throw new HsError(E.VALIDATION, 422, "The conferral date cannot be in the future", { field: "conferredOn" });
+          }
+          const confirmedOn = graduation.eligibilityConfirmedAt ? isoOf(graduation.eligibilityConfirmedAt)!.slice(0, 10) : null;
+          if (confirmedOn && input.conferredOn < confirmedOn) {
+            throw new HsError(E.VALIDATION, 422, "The conferral date cannot be before eligibility was confirmed", { field: "conferredOn", eligibilityConfirmedOn: confirmedOn });
+          }
+          await assertEvidence(studentId, input.diplomaEvidenceDocumentId, "diplomaEvidenceDocumentId", tx, "diploma");
+          await assertEvidence(studentId, input.transcriptEvidenceDocumentId, "transcriptEvidenceDocumentId", tx, "transcript");
           await repo.updateGraduation(
             enrollment.id,
             {
@@ -1342,6 +1462,9 @@ export function createHighSchoolService(deps: HighSchoolServiceDeps) {
           return [meta({ status: "diploma_conferred" })];
         }
         case "set_financial_clearance": {
+          if (graduation.status === "diploma_conferred") {
+            throw new HsError(E.OFFICIAL_RECORD_LOCKED, 409, "Financial clearance can no longer change after the diploma was conferred");
+          }
           await repo.updateGraduation(enrollment.id, { financialClearance: input.value, updatedBy: actorId }, tx);
           await repo.appendEvent(event(studentId, enrollment.id, "financial_clearance_set", actorId, `Financial clearance set to ${input.value}`, { value: input.value, note: input.note }, now), tx);
           return [meta({ value: input.value })];
@@ -1350,6 +1473,16 @@ export function createHighSchoolService(deps: HighSchoolServiceDeps) {
         case "set_diploma_delivery": {
           const isTranscript = input.action === "set_transcript_status";
           const evidence = isTranscript ? graduation.transcriptEvidenceDocumentId : graduation.diplomaEvidenceDocumentId;
+          const from = (isTranscript ? graduation.transcriptStatus : graduation.diplomaDeliveryStatus) as HsDeliveryStatus;
+          const rank = (v: HsDeliveryStatus) => DELIVERY_ORDER.indexOf(v);
+          if (input.value === from) return []; // idempotent: nothing changes, nothing is logged
+          // Delivery only moves forward (not_requested < requested < issued < delivered). While the
+          // enrollment is open, staff may additionally withdraw a request (requested -> not_requested).
+          const forward = rank(input.value) > rank(from);
+          const withdrawRequest = isOpen(enrollment.status) && from === "requested" && input.value === "not_requested";
+          if (!forward && !withdrawRequest) {
+            throw new HsError(E.INVALID_TRANSITION, 409, `${isTranscript ? "Transcript" : "Diploma"} status cannot move from ${from.replace(/_/g, " ")} back to ${input.value.replace(/_/g, " ")}`, { from, to: input.value });
+          }
           if ((input.value === "issued" || input.value === "delivered") && !evidence) {
             throw new HsError(E.EVIDENCE_REQUIRED, 400, "Issued or delivered needs the school's document, recorded when the diploma is conferred");
           }
@@ -1366,14 +1499,21 @@ export function createHighSchoolService(deps: HighSchoolServiceDeps) {
     return deps.transaction(async (tx) => {
       await requireStudent(studentId, tx);
       const template = await loadTemplate(input.templateKey, input.templateVersion, tx);
-      await assertEvidence(studentId, input.diplomaEvidenceDocumentId, "diplomaEvidenceDocumentId", tx);
-      await assertEvidence(studentId, input.transcriptEvidenceDocumentId, "transcriptEvidenceDocumentId", tx);
+      const now = deps.now();
+      if (input.conferredOn > todayIso(now)) {
+        throw new HsError(E.VALIDATION, 422, "The conferral date cannot be in the future", { field: "conferredOn" });
+      }
+      await assertEvidence(studentId, input.diplomaEvidenceDocumentId, "diplomaEvidenceDocumentId", tx, "diploma");
+      await assertEvidence(studentId, input.transcriptEvidenceDocumentId, "transcriptEvidenceDocumentId", tx, "transcript");
       await repo.lockStudent(studentId, tx);
-      for (const e of await repo.listEnrollments(studentId, tx)) {
+      const existing = await repo.listEnrollments(studentId, tx);
+      if (existing.some((e) => isOpen(e.status))) {
+        throw new HsError(E.ENROLLMENT_ALREADY_OPEN, 409, "This student has an open high school enrollment; close it before recording a historical graduate");
+      }
+      for (const e of existing) {
         const g = await repo.getGraduation(e.id, tx);
         if (g?.status === "diploma_conferred") throw new HsError(E.ALREADY_RECORDED, 409, "A high school diploma is already recorded for this student");
       }
-      const now = deps.now();
       const enrollment = await repo.insertEnrollment(
         {
           studentId,
@@ -1401,7 +1541,11 @@ export function createHighSchoolService(deps: HighSchoolServiceDeps) {
           diplomaDeliveryStatus: "issued",
           eligibilityConfirmedAt: now,
           eligibilityConfirmedBy: actorId,
-          eligibilityEvidenceDocumentId: input.diplomaEvidenceDocumentId,
+          // The diploma is NOT silently reused as eligibility evidence. A historical graduate's
+          // eligibility basis is the school's official transcript (the record of credits earned),
+          // so the transcript document is stored here. eligibilityConfirmedAt is the time the
+          // import was recorded (not the school's date); conferredOn carries the school's date.
+          eligibilityEvidenceDocumentId: input.transcriptEvidenceDocumentId,
           updatedBy: actorId,
         },
         tx,

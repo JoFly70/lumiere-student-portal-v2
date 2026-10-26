@@ -558,31 +558,60 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("S11 high school pathway — real HTTP e
     const { eid } = await enroll(s);
     const st = await publishPlan(s, eid);
     const doc = await verifiedDoc(s);
+    const diplomaDoc = await seedDocument(pg, s.student.id, { status: "verified", docType: "hs_diploma" });
     const pending = await seedDocument(pg, s.student.id, { status: "pending" });
     const grad = (as: Actor, body: object) => api().post(`${AE(s.student.id, eid)}/graduation`).set(as.auth).send(body);
+    const today = new Date().toISOString().slice(0, 10);
 
-    const none = await grad(staff, { action: "confirm_eligibility" });
+    // confirm_eligibility is admin-only ("(A)"): staff are refused (403, audited as access_denied) and nothing changes
+    const deniedBefore = auditedTypes().filter((t) => t === "high_school.access_denied").length;
+    const staffConfirm = await grad(staff, { action: "confirm_eligibility", evidenceDocumentId: doc });
+    expect(staffConfirm.status).toBe(403);
+    expect(auditedTypes().filter((t) => t === "high_school.access_denied").length).toBe(deniedBefore + 1);
+    expect((await get(s.student.id)).current!.graduation).toMatchObject({ status: "in_progress", eligibilityConfirmedAt: null, eligibilityEvidenceDocumentId: null });
+
+    const none = await grad(admin, { action: "confirm_eligibility" });
     expect(none.status).toBe(400);
     expect(code(none)).toBe(E.EVIDENCE_REQUIRED);
-    const unverified = await grad(staff, { action: "confirm_eligibility", evidenceDocumentId: pending });
+    const unverified = await grad(admin, { action: "confirm_eligibility", evidenceDocumentId: pending });
     expect(unverified.status).toBe(422);
     expect(code(unverified)).toBe(E.EVIDENCE_INVALID);
-    const short = await grad(staff, { action: "confirm_eligibility", evidenceDocumentId: doc });
+    const short = await grad(admin, { action: "confirm_eligibility", evidenceDocumentId: doc });
     expect(short.status).toBe(409);
     expect(code(short)).toBe(E.NOT_ELIGIBLE);
     expect(short.body.error.details.blockers.length).toBeGreaterThan(0);
     expect((await get(s.student.id)).current!.graduation.blockers.length).toBeGreaterThan(0);
     // confer before eligibility is confirmed
-    expect(code(await grad(admin, { action: "confer_diploma", conferredOn: "2028-06-01", diplomaEvidenceDocumentId: doc, transcriptEvidenceDocumentId: doc }))).toBe(E.NOT_ELIGIBLE);
+    expect(code(await grad(admin, { action: "confer_diploma", conferredOn: today, diplomaEvidenceDocumentId: diplomaDoc, transcriptEvidenceDocumentId: doc }))).toBe(E.NOT_ELIGIBLE);
 
     await complete(s, eid, plannedKeys(st), doc);
     expect((await get(s.student.id)).current!.graduation.blockers).toEqual([]);
-    const confirmed = ok(await grad(staff, { action: "confirm_eligibility", evidenceDocumentId: doc, note: "School completion review received" }));
+    // eligibility evidence must be a transcript / other official-school document, not a diploma
+    const wrongEligibility = await grad(admin, { action: "confirm_eligibility", evidenceDocumentId: diplomaDoc });
+    expect(wrongEligibility.status).toBe(422);
+    expect(code(wrongEligibility)).toBe(E.EVIDENCE_INVALID);
+    expect(wrongEligibility.body.error.message).toMatch(/hs_transcript or other/);
+    const confirmed = ok(await grad(admin, { action: "confirm_eligibility", evidenceDocumentId: doc, note: "School completion review received" }));
     expect(confirmed.current.graduation).toMatchObject({ status: "eligibility_confirmed", eligibilityEvidenceDocumentId: doc });
     expect((await studentView(s)).graduation.status).toBe("eligibility_confirmed");
 
-    const confer = { action: "confer_diploma", conferredOn: "2028-06-01", diplomaEvidenceDocumentId: doc, transcriptEvidenceDocumentId: doc };
+    const confer = { action: "confer_diploma", conferredOn: today, diplomaEvidenceDocumentId: diplomaDoc, transcriptEvidenceDocumentId: doc };
     expect((await grad(staff, confer)).status).toBe(403); // confer is admin-only
+    // evidence document types: the diploma must be an hs_diploma, the transcript an hs_transcript
+    const diplomaIsTranscript = await grad(admin, { ...confer, diplomaEvidenceDocumentId: doc });
+    expect(diplomaIsTranscript.status).toBe(422);
+    expect(code(diplomaIsTranscript)).toBe(E.EVIDENCE_INVALID);
+    expect(diplomaIsTranscript.body.error.message).toMatch(/hs_diploma/);
+    expect(code(await grad(admin, { ...confer, transcriptEvidenceDocumentId: diplomaDoc }))).toBe(E.EVIDENCE_INVALID);
+    // the conferral date is never in the future
+    const future = new Date(Date.now() + 3 * 86_400_000).toISOString().slice(0, 10);
+    const futureConfer = await grad(admin, { ...confer, conferredOn: future });
+    expect(futureConfer.status).toBe(422);
+    expect(code(futureConfer)).toBe(E.VALIDATION);
+    // ... nor before eligibility was confirmed
+    const pastConfer = await grad(admin, { ...confer, conferredOn: "2020-01-01" });
+    expect(pastConfer.status).toBe(422);
+    expect(code(pastConfer)).toBe(E.VALIDATION);
     const noDiploma = await grad(admin, { ...confer, diplomaEvidenceDocumentId: undefined });
     expect(noDiploma.status).toBe(400);
     expect(code(noDiploma)).toBe(E.EVIDENCE_REQUIRED);
@@ -590,7 +619,7 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("S11 high school pathway — real HTTP e
     expect(code(await grad(admin, { ...confer, diplomaEvidenceDocumentId: "no-such-document" }))).toBe(E.EVIDENCE_INVALID);
     expect((await get(s.student.id)).current!.graduation.status).toBe("eligibility_confirmed");
     const conferred = ok(await grad(admin, confer));
-    expect(conferred.current.graduation).toMatchObject({ status: "diploma_conferred", diploma: { conferredOn: "2028-06-01", documentId: doc }, transcript: { documentId: doc } });
+    expect(conferred.current.graduation).toMatchObject({ status: "diploma_conferred", diploma: { conferredOn: today, documentId: diplomaDoc }, transcript: { documentId: doc } });
     expect(conferred.current.enrollment.status).toBe("completed");
     const v = await studentView(s);
     expect(v.graduation.status).toBe("diploma_conferred");
@@ -608,17 +637,28 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("S11 high school pathway — real HTTP e
   // ── 12 ───────────────────────────────────────────────────────────────────
   it("12. a historical graduate is imported with confirmed records only", async () => {
     const s = await seedHsStudent(pg, "Historic");
-    const diploma = await verifiedDoc(s);
+    const diploma = await seedDocument(pg, s.student.id, { status: "verified", docType: "hs_diploma" });
     const transcript = await verifiedDoc(s);
     const pending = await seedDocument(pg, s.student.id, { status: "pending" });
     const body = { templateKey: "us-hs-diploma-21", templateVersion: 1, conferredOn: "2024-06-14", awardingSchoolName: "Synthetic Online Academy", diplomaEvidenceDocumentId: diploma, transcriptEvidenceDocumentId: transcript, note: "Diploma on file" };
     const post = (as: Actor, b: object) => api().post(`${A(s.student.id)}/historical-graduate`).set(as.auth).send(b);
     expect((await post(staff, body)).status).toBe(403);
     expect(code(await post(admin, { ...body, transcriptEvidenceDocumentId: pending }))).toBe(E.EVIDENCE_INVALID);
+    // wrong document types: a transcript is not a diploma and vice versa
+    const swapped = await post(admin, { ...body, diplomaEvidenceDocumentId: transcript, transcriptEvidenceDocumentId: diploma });
+    expect(swapped.status).toBe(422);
+    expect(code(swapped)).toBe(E.EVIDENCE_INVALID);
+    // the conferral date cannot be in the future
+    const futureDate = new Date(Date.now() + 3 * 86_400_000).toISOString().slice(0, 10);
+    const futureHistoric = await post(admin, { ...body, conferredOn: futureDate });
+    expect(futureHistoric.status).toBe(422);
+    expect(code(futureHistoric)).toBe(E.VALIDATION);
     expect((await get(s.student.id)).enrollments).toHaveLength(0);
     const done = ok(await post(admin, body)) as StaffHighSchoolState;
     expect(done.current!.enrollment).toMatchObject({ isHistorical: true, status: "completed", awardingSchoolName: "Synthetic Online Academy" });
     expect(done.current!.graduation).toMatchObject({ status: "diploma_conferred", diploma: { conferredOn: "2024-06-14", documentId: diploma }, transcript: { documentId: transcript } });
+    // eligibility evidence is the transcript document (the diploma is not silently reused)
+    expect(done.current!.graduation.eligibilityEvidenceDocumentId).toBe(transcript);
     expect(done.current!.awards).toHaveLength(0); // no credit is invented for history
     expect(done.current!.credits.earnedHalfUnits).toBe(0);
     const v = await studentView(s);

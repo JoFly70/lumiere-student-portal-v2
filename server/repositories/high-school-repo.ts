@@ -89,6 +89,28 @@ export const highSchoolRepository = {
     return rows.length > 0;
   },
 
+  /** doc_type of a verified, non-deleted document of THIS student; null when there is no such document. */
+  async getVerifiedDocumentType(studentId: string, documentId: string, tx: Tx = db): Promise<string | null> {
+    const rows = (await tx.execute(
+      sql`SELECT doc_type::text AS doc_type FROM student_documents
+          WHERE id = ${documentId} AND student_id = ${studentId}
+            AND status::text = 'verified' AND COALESCE(soft_deleted, false) = false
+          LIMIT 1`,
+    )) as unknown as { doc_type: string }[];
+    return rows[0]?.doc_type ?? null;
+  },
+
+  /** Which of the given documents of THIS student are (still) verified and not deleted. */
+  async verifiedDocumentIds(studentId: string, documentIds: readonly string[], tx: Tx = db): Promise<Set<string>> {
+    if (documentIds.length === 0) return new Set();
+    const rows = (await tx.execute(
+      sql`SELECT id::text AS id FROM student_documents
+          WHERE student_id = ${studentId} AND id::text IN (${sql.join(documentIds.map((d) => sql`${d}`), sql`, `)})
+            AND status::text = 'verified' AND COALESCE(soft_deleted, false) = false`,
+    )) as unknown as { id: string }[];
+    return new Set(Array.from(rows).map((r) => String(r.id)));
+  },
+
   async listContacts(studentId: string, tx: Tx = db): Promise<ContactRow[]> {
     const rows = (await tx.execute(
       sql`SELECT id, type::text AS type, full_name, relationship, scopes, authority_status

@@ -4,8 +4,8 @@
  *
  * Middleware is applied per route (not router-wide) so mounting at /api/admin
  * never intercepts other /api/admin paths. Staff + admin may do everything
- * except the "(A)" actions: publish, void an award, confer a diploma, create a
- * template, record a historical graduate (admin only). A refused request is
+ * except the "(A)" actions: publish, void an award, confirm graduation eligibility,
+ * confer a diploma, create a template, record a historical graduate (admin only). A refused request is
  * audited as high_school.access_denied (non-blocking).
  */
 import { Router, type Request, type RequestHandler, type Response } from "express";
@@ -249,7 +249,8 @@ export function createAdminHighSchoolRouter(deps: AdminHighSchoolRouterDeps) {
     withStudent(async (req, res, studentId) => {
       const parsed = graduationActionSchema.safeParse(req.body ?? {});
       if (!parsed.success) return sendZodError(res, parsed.error, req.body);
-      if (parsed.data.action === "confer_diploma" && req.user!.role !== "admin") {
+      // "(A)" actions: confirming graduation eligibility and conferring the diploma are admin only.
+      if ((parsed.data.action === "confirm_eligibility" || parsed.data.action === "confer_diploma") && req.user!.role !== "admin") {
         denied(req);
         return res.status(403).json({ error: "Insufficient permissions", required: ["admin"], current: req.user!.role });
       }

@@ -101,6 +101,7 @@ export const hsTransferClaims = pgTable(
     courseTitle: text("course_title").notNull(),
     areaKey: text("area_key").notNull(),
     claimedHalfUnits: integer("claimed_half_units").notNull(),
+    acceptedHalfUnits: integer("accepted_half_units"),
     status: text("status").notNull().default("claimed"),
     resolutionNote: text("resolution_note"),
     resolvedBy: text("resolved_by").references(() => users.id, { onDelete: "set null" }),

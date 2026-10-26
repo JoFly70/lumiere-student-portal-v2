@@ -535,19 +535,19 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("S11 high school pathway — service on 
       expect(await codeOf(svc().graduationAction(s.st.studentId, s.eid, staff.userId, graduationActionSchema.parse({ action: "confirm_eligibility", evidenceDocumentId: foreign })))).toMatchObject({ code: "HS_EVIDENCE_INVALID" });
 
       // cannot confer before eligibility
-      expect(await codeOf(svc().graduationAction(s.st.studentId, s.eid, admin.userId, graduationActionSchema.parse({ action: "confer_diploma", conferredOn: "2026-10-20", diplomaEvidenceDocumentId: diploma, transcriptEvidenceDocumentId: s.doc })))).toMatchObject({ code: "HS_NOT_ELIGIBLE" });
+      expect(await codeOf(svc().graduationAction(s.st.studentId, s.eid, admin.userId, graduationActionSchema.parse({ action: "confer_diploma", conferredOn: "2026-10-26", diplomaEvidenceDocumentId: diploma, transcriptEvidenceDocumentId: s.doc })))).toMatchObject({ code: "HS_NOT_ELIGIBLE" });
 
       const confirmed = (await svc().graduationAction(s.st.studentId, s.eid, staff.userId, graduationActionSchema.parse({ action: "confirm_eligibility", evidenceDocumentId: s.doc }))).result;
       expect(confirmed.current!.graduation.status).toBe("eligibility_confirmed");
       expect(confirmed.current!.graduation.eligibilityEvidenceDocumentId).toBe(s.doc);
 
       // diploma and transcript must both be verified evidence
-      expect(await codeOf(svc().graduationAction(s.st.studentId, s.eid, admin.userId, graduationActionSchema.parse({ action: "confer_diploma", conferredOn: "2026-10-20", diplomaEvidenceDocumentId: sample, transcriptEvidenceDocumentId: s.doc })))).toMatchObject({ code: "HS_EVIDENCE_INVALID" });
-      expect(await codeOf(svc().graduationAction(s.st.studentId, s.eid, admin.userId, graduationActionSchema.parse({ action: "confer_diploma", conferredOn: "2026-10-20", diplomaEvidenceDocumentId: diploma, transcriptEvidenceDocumentId: sample })))).toMatchObject({ code: "HS_EVIDENCE_INVALID" });
+      expect(await codeOf(svc().graduationAction(s.st.studentId, s.eid, admin.userId, graduationActionSchema.parse({ action: "confer_diploma", conferredOn: "2026-10-26", diplomaEvidenceDocumentId: sample, transcriptEvidenceDocumentId: s.doc })))).toMatchObject({ code: "HS_EVIDENCE_INVALID" });
+      expect(await codeOf(svc().graduationAction(s.st.studentId, s.eid, admin.userId, graduationActionSchema.parse({ action: "confer_diploma", conferredOn: "2026-10-26", diplomaEvidenceDocumentId: diploma, transcriptEvidenceDocumentId: sample })))).toMatchObject({ code: "HS_EVIDENCE_INVALID" });
 
-      const conferred = (await svc().graduationAction(s.st.studentId, s.eid, admin.userId, graduationActionSchema.parse({ action: "confer_diploma", conferredOn: "2026-10-20", diplomaEvidenceDocumentId: diploma, transcriptEvidenceDocumentId: s.doc }))).result;
+      const conferred = (await svc().graduationAction(s.st.studentId, s.eid, admin.userId, graduationActionSchema.parse({ action: "confer_diploma", conferredOn: "2026-10-26", diplomaEvidenceDocumentId: diploma, transcriptEvidenceDocumentId: s.doc }))).result;
       expect(conferred.current!.enrollment.status).toBe("completed");
-      expect(conferred.current!.graduation).toMatchObject({ status: "diploma_conferred", diploma: { conferredOn: "2026-10-20", documentId: diploma }, transcript: { documentId: s.doc } });
+      expect(conferred.current!.graduation).toMatchObject({ status: "diploma_conferred", diploma: { conferredOn: "2026-10-26", documentId: diploma }, transcript: { documentId: s.doc } });
       const sv = await svc().getStudentView(s.st.studentId);
       expect(sv.graduation.status).toBe("diploma_conferred");
       expect(sv.enrollment.status).toBe("completed");
@@ -595,13 +595,14 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("S11 high school pathway — service on 
       expect(await codeOf(svc().historicalGraduate(st.studentId, admin.userId, historicalGraduateSchema.parse({ ...STD, conferredOn: "2019-06-15", awardingSchoolName: "Synthetic Academy", diplomaEvidenceDocumentId: diploma, transcriptEvidenceDocumentId: transcript, note: "imported again" })))).toMatchObject({ code: "HS_ALREADY_RECORDED" });
     });
 
-    it("financial clearance is null for the student until staff set it; transcript request flows through", async () => {
+    it("financial clearance is null for the student until staff set it; a transcript cannot be requested before eligibility", async () => {
       const s = await enroll("Dor Eliyahu");
       expect((await svc().getStudentView(s.st.studentId)).graduation.financialClearance).toBeNull();
       await svc().graduationAction(s.st.studentId, s.eid, staff.userId, graduationActionSchema.parse({ action: "set_financial_clearance", value: "cleared", note: "Account in good standing" }));
       expect((await svc().getStudentView(s.st.studentId)).graduation.financialClearance).toBe("cleared");
-      const req = await svc().requestTranscript(s.st.studentId, s.st.userId, "Please send it");
-      expect(req.result.graduation.transcript.status).toBe("requested");
+      // a transcript can only be requested once eligibility is confirmed (409 HS_NOT_ELIGIBLE)
+      expect(await codeOf(svc().requestTranscript(s.st.studentId, s.st.userId, "Please send it"))).toMatchObject({ code: "HS_NOT_ELIGIBLE", status: 409 });
+      expect((await svc().getStudentView(s.st.studentId)).graduation.transcript.status).toBe("not_requested");
       expect(await codeOf(svc().graduationAction(s.st.studentId, s.eid, staff.userId, graduationActionSchema.parse({ action: "set_transcript_status", value: "issued" })))).toMatchObject({ code: "HS_EVIDENCE_REQUIRED" });
     });
   });
@@ -801,6 +802,304 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("S11 high school pathway — service on 
     });
   });
 
+  // ── Security / governance fixes ────────────────────────────────────────────
+
+  describe("governance fixes", () => {
+    const confirmEligibility = (s: Scenario) =>
+      svc().graduationAction(s.st.studentId, s.eid, admin.userId, graduationActionSchema.parse({ action: "confirm_eligibility", evidenceDocumentId: s.doc }));
+    const confer = (s: Scenario, diploma: string, conferredOn = "2026-10-26", transcript = s.doc) =>
+      svc().graduationAction(s.st.studentId, s.eid, admin.userId, graduationActionSchema.parse({ action: "confer_diploma", conferredOn, diplomaEvidenceDocumentId: diploma, transcriptEvidenceDocumentId: transcript }));
+    const grad = (s: Scenario, input: Record<string, unknown>) => svc().graduationAction(s.st.studentId, s.eid, staff.userId, graduationActionSchema.parse(input));
+    const staffClone = <T,>(v: T): T => structuredClone(v);
+
+    /** A plan with 21 credits, every course completed, ready for confirm_eligibility. */
+    async function graduateReady(name: string) {
+      const s = await enroll(name);
+      await publishPlan(s, withElectives);
+      await completeAll(s);
+      const diploma = await seedVerifiedDocument(pg, s.st.studentId, "hs_diploma");
+      return { s, diploma };
+    }
+
+    // 2. results and credit only for planned courses; no double credit across replacement chains
+    it("results and credit are refused for replaced/removed courses (409 HS_INVALID_TRANSITION); unknown stays 422", async () => {
+      const s = await enroll("Replaced Rina");
+      await publishPlan(
+        s,
+        compose(withTasks, (c) => ({
+          ...c,
+          courses: [
+            ...c.courses.map((x) => (x.key === "english-1" ? { ...x, status: "replaced" as const } : x.key === "english-2" ? { ...x, status: "removed" as const } : x)),
+            { key: "english-1b", title: "English 1 (new)", areaKey: "english", halfUnits: 2, status: "planned" as const, replacesCourseKey: "english-1", plannedStart: null, plannedEnd: null, tasks: [] },
+          ],
+        })),
+      );
+      const before = await state(s);
+      expect(await codeOf(completeCourse(s, "english-1"))).toMatchObject({ code: "HS_INVALID_TRANSITION", status: 409, details: { courseKey: "english-1", planStatus: "replaced" } });
+      expect(await codeOf(completeCourse(s, "english-2"))).toMatchObject({ code: "HS_INVALID_TRANSITION", status: 409 });
+      expect(await codeOf(svc().recordCourseResult(s.st.studentId, s.eid, staff.userId, recordCourseResultSchema.parse({ courseKey: "english-1", outcome: "not_passed", evidenceDocumentId: s.doc })))).toMatchObject({ code: "HS_INVALID_TRANSITION" });
+      expect(await codeOf(taskResult(s, "exam-1", "passed"))).toMatchObject({ code: "HS_INVALID_TRANSITION", status: 409 });
+      expect(await codeOf(completeCourse(s, "no-such-course"))).toMatchObject({ code: "HS_UNKNOWN_COURSE_OR_TASK", status: 422 });
+      const after = await state(s);
+      expect(after.current!.results).toEqual(before.current!.results);
+      expect(after.current!.credits.earnedHalfUnits).toBe(0);
+      await completeCourse(s, "english-1b"); // the planned replacement works
+      expect((await state(s)).current!.credits.earnedHalfUnits).toBe(2);
+    });
+
+    it("no double credit across a replacement chain unless the old award is voided", async () => {
+      const s = await enroll("Chain Chen");
+      await publishPlan(s, (c) => c);
+      await completeCourse(s, "english-1");
+      // replace english-1 by english-1b (and english-1b by english-1c later)
+      const draft = (await svc().draftFromTemplate(s.st.studentId, s.eid, staff.userId, undefined)).result.current!.draft!;
+      const content = staffClone(draft.content) as HsRoadmapContent;
+      content.courses = content.courses.map((c) => (c.key === "english-1" ? { ...c, status: "replaced" as const } : c));
+      content.courses.push({ key: "english-1b", title: "English 1b", areaKey: "english", halfUnits: 2, status: "planned", replacesCourseKey: "english-1", plannedStart: null, plannedEnd: null, tasks: [] });
+      content.courses.push({ key: "english-1c", title: "English 1c", areaKey: "english", halfUnits: 2, status: "planned", replacesCourseKey: "english-1b", plannedStart: null, plannedEnd: null, tasks: [] });
+      const saved = (await svc().saveDraft(s.st.studentId, s.eid, staff.userId, { expectedDraftRevision: draft.draftRevision, content })).result;
+      await svc().publish(s.st.studentId, s.eid, admin.userId, { expectedDraftRevision: saved.current!.draft!.draftRevision, expectedPublishedVersionId: saved.current!.published!.versionId });
+
+      expect(await codeOf(completeCourse(s, "english-1b"))).toMatchObject({ code: "HS_ALREADY_RECORDED", status: 409 });
+      expect(await codeOf(completeCourse(s, "english-1c"))).toMatchObject({ code: "HS_ALREADY_RECORDED", status: 409 }); // two links away
+      expect((await state(s)).current!.credits.earnedHalfUnits).toBe(2);
+      const award = (await state(s)).current!.awards.find((a) => a.courseKey === "english-1")!;
+      await svc().voidAward(s.st.studentId, s.eid, award.id, admin.userId, "Replaced before credit was final");
+      await completeCourse(s, "english-1b");
+      expect((await state(s)).current!.credits.earnedHalfUnits).toBe(2);
+      // and now english-1c is blocked by english-1b's award
+      expect(await codeOf(completeCourse(s, "english-1c"))).toMatchObject({ code: "HS_ALREADY_RECORDED" });
+    });
+
+    it("surplus credit cannot satisfy the overall total: blockers use the sum of per-area counted credit", async () => {
+      const s = await enroll("Surplus Sam");
+      await publishPlan(s, (c) => ({
+        ...withElectives(c),
+        courses: [...withElectives(c).courses.filter((x) => x.key !== "e5"), { key: "english-5", title: "English 5", areaKey: "english", halfUnits: 2, status: "planned" as const, replacesCourseKey: null, plannedStart: null, plannedEnd: null, tasks: [] }],
+      }));
+      await completeAll(s);
+      const credits = (await state(s)).current!.credits;
+      expect(credits.earnedHalfUnits).toBe(42); // raw official sum, kept for display
+      expect(credits.byArea.find((a) => a.key === "english")).toMatchObject({ earnedHalfUnits: 10, countedHalfUnits: 8 });
+      const blockers = (await state(s)).current!.graduation.blockers;
+      expect(blockers[0]).toMatch(/^Earned 20 of 21 required credits/);
+      expect((await state(s)).current!.graduation.creditsSatisfied).toBe(false);
+      expect(await codeOf(confirmEligibility(s))).toMatchObject({ code: "HS_NOT_ELIGIBLE", status: 409 });
+    });
+
+    // 3. delivery statuses and financial clearance
+    it("delivery statuses only move forward; financial clearance is locked after conferral", async () => {
+      const { s, diploma } = await graduateReady("Delivery Dana");
+      await grad(s, { action: "set_financial_clearance", value: "hold", note: "Balance outstanding" });
+      await grad(s, { action: "set_financial_clearance", value: "cleared", note: "Balance settled" });
+      // before conferral: requested, reset to not_requested (allowed), requested again
+      await grad(s, { action: "set_transcript_status", value: "requested" });
+      await grad(s, { action: "set_transcript_status", value: "not_requested" });
+      await grad(s, { action: "set_transcript_status", value: "requested" });
+      await grad(s, { action: "set_diploma_delivery", value: "requested" });
+      expect(await codeOf(grad(s, { action: "set_diploma_delivery", value: "delivered" }))).toMatchObject({ code: "HS_EVIDENCE_REQUIRED" });
+      await confirmEligibility(s);
+      await confer(s, diploma);
+      const closed = (await state(s)).current!;
+      expect(closed.enrollment.status).toBe("completed");
+      expect(closed.graduation).toMatchObject({ transcript: { status: "issued" }, diploma: { status: "issued" }, financialClearance: "cleared" });
+
+      // closed enrollment: only forward transitions
+      for (const [action, value] of [["set_transcript_status", "requested"], ["set_transcript_status", "not_requested"], ["set_diploma_delivery", "requested"], ["set_diploma_delivery", "not_requested"]] as const) {
+        expect(await codeOf(grad(s, { action, value })), `${action} -> ${value}`).toMatchObject({ code: "HS_INVALID_TRANSITION", status: 409 });
+      }
+      expect(await grad(s, { action: "set_transcript_status", value: "delivered" })).toBeTruthy();
+      expect(await codeOf(grad(s, { action: "set_transcript_status", value: "issued" }))).toMatchObject({ code: "HS_INVALID_TRANSITION" });
+      const events = async () => Number((await pg.sql(`select count(*)::int as n from hs_events where enrollment_id = '${s.eid}'`))[0].n);
+      const n = await events();
+      await grad(s, { action: "set_transcript_status", value: "delivered" }); // same value: idempotent, nothing logged
+      expect(await events()).toBe(n);
+      await grad(s, { action: "set_diploma_delivery", value: "delivered" });
+      const done = (await state(s)).current!.graduation;
+      expect(done).toMatchObject({ transcript: { status: "delivered" }, diploma: { status: "delivered" } });
+
+      // financial clearance can no longer change after conferral
+      expect(await codeOf(grad(s, { action: "set_financial_clearance", value: "hold", note: "Too late to change" }))).toMatchObject({ code: "HS_OFFICIAL_RECORD_LOCKED", status: 409 });
+      expect((await state(s)).current!.graduation.financialClearance).toBe("cleared");
+    });
+
+    it("on a withdrawn enrollment a request cannot be withdrawn either; open enrollments may reset requested -> not_requested only", async () => {
+      const s = await enroll("Closed Cleo");
+      await grad(s, { action: "set_transcript_status", value: "requested" });
+      await svc().updateEnrollment(s.st.studentId, s.eid, staff.userId, updateEnrollmentSchema.parse({ expectedRevision: 0, status: "withdrawn", note: "student left" }));
+      expect(await codeOf(grad(s, { action: "set_transcript_status", value: "not_requested" }))).toMatchObject({ code: "HS_INVALID_TRANSITION", status: 409 });
+    });
+
+    // 4. partial acceptance of transfer claims
+    describe("partial transfer acceptance", () => {
+      async function claim(s: Scenario, half: number, areaKey = "science") {
+        const p = (await svc().recordPriorEducation(s.st.studentId, s.eid, staff.userId, recordPriorEducationSchema.parse({ schoolName: "Synthetic Prep", country: "Canada" }))).result;
+        const priorId = p.current!.priorEducation.at(-1)!.id;
+        const c = (await svc().createTransferClaim(s.st.studentId, s.eid, staff.userId, transferClaimSchema.parse({ priorEducationId: priorId, courseTitle: "Chemistry", areaKey, claimedHalfUnits: half }))).result;
+        return c.current!.priorEducation.at(-1)!.claims.at(-1)!.id;
+      }
+      const resolve = (s: Scenario, claimId: string, input: Record<string, unknown>) =>
+        svc().resolveTransferClaim(s.st.studentId, s.eid, claimId, staff.userId, resolveTransferClaimSchema.parse({ note: "school evaluation received", ...input }));
+      const award = (s: Scenario, claimId: string, halfUnits: number, areaKey = "science", doc = s.doc) =>
+        svc().recordTransferAward(s.st.studentId, s.eid, staff.userId, recordTransferAwardSchema.parse({ claimId, areaKey, halfUnits, evidenceDocumentId: doc }));
+
+      it("acceptedHalfUnits is required for partially_accepted, bounded by the claim, stored and exposed", async () => {
+        const s = await enroll("Partial Pia");
+        const claimId = await claim(s, 4);
+        expect(await codeOf(resolve(s, claimId, { status: "partially_accepted" }))).toMatchObject({ code: "HS_VALIDATION_FAILED", status: 422, details: { field: "acceptedHalfUnits" } });
+        expect(await codeOf(resolve(s, claimId, { status: "partially_accepted", acceptedHalfUnits: 5 }))).toMatchObject({ code: "HS_VALIDATION_FAILED", status: 422 });
+        const st = (await resolve(s, claimId, { status: "partially_accepted", acceptedHalfUnits: 2 })).result;
+        expect(st.current!.priorEducation[0].claims[0]).toMatchObject({ status: "partially_accepted", claimedHalfUnits: 4, acceptedHalfUnits: 2 });
+        const row = (await pg.sql(`select accepted_half_units from hs_transfer_claims where id = '${claimId}'`))[0];
+        expect(row.accepted_half_units).toBe(2);
+        expect((await svc().getStudentView(s.st.studentId)).priorEducation[0].claims[0]).toMatchObject({ claimedHalfUnits: 4, acceptedHalfUnits: 2, status: "partially_accepted" });
+        // the database refuses an accepted amount above the claim
+        await expect(pg.sql(`update hs_transfer_claims set accepted_half_units = 9 where id = '${claimId}'`)).rejects.toThrow();
+        // accepted / declined clear the accepted amount
+        const full = (await resolve(s, claimId, { status: "accepted", acceptedHalfUnits: 1 })).result;
+        expect(full.current!.priorEducation[0].claims[0].acceptedHalfUnits).toBeNull();
+      });
+
+      it("awards stay within the accepted (partial) or claimed (accepted) credit, counting earlier active awards, and in the claim's area", async () => {
+        const s = await enroll("Award Avi");
+        const partial = await claim(s, 4);
+        await resolve(s, partial, { status: "partially_accepted", acceptedHalfUnits: 3 });
+        expect(await codeOf(award(s, partial, 4))).toMatchObject({ code: "HS_VALIDATION_FAILED", status: 422 });
+        expect(await codeOf(award(s, partial, 2, "math"))).toMatchObject({ code: "HS_VALIDATION_FAILED", status: 422, details: { field: "areaKey", claimAreaKey: "science" } });
+        await award(s, partial, 2);
+        expect(await codeOf(award(s, partial, 2))).toMatchObject({ status: 422, details: { remainingHalfUnits: 1 } });
+        await award(s, partial, 1);
+        expect(await codeOf(award(s, partial, 1))).toMatchObject({ status: 422 });
+        // lowering the accepted amount below what is already awarded needs the award voided first
+        expect(await codeOf(resolve(s, partial, { status: "partially_accepted", acceptedHalfUnits: 2 }))).toMatchObject({ code: "HS_OFFICIAL_RECORD_LOCKED", status: 409 });
+
+        const full = await claim(s, 2, "math");
+        await resolve(s, full, { status: "accepted" });
+        expect(await codeOf(award(s, full, 3, "math"))).toMatchObject({ status: 422 });
+        await award(s, full, 2, "math");
+        expect((await state(s)).current!.credits.earnedHalfUnits).toBe(5);
+      });
+    });
+
+    // 5. transcript request
+    it("a student can request a transcript only after eligibility is confirmed, for their current enrollment, idempotently", async () => {
+      const { s, diploma } = await graduateReady("Transcript Tal");
+      expect(await codeOf(svc().requestTranscript(s.st.studentId, s.st.userId, "early"))).toMatchObject({ code: "HS_NOT_ELIGIBLE", status: 409 });
+      await confirmEligibility(s);
+      const first = await svc().requestTranscript(s.st.studentId, s.st.userId, "please");
+      expect(first.result.graduation.transcript.status).toBe("requested");
+      expect(first.audits[0].metadata).toMatchObject({ changed: true });
+      const again = await svc().requestTranscript(s.st.studentId, s.st.userId, undefined);
+      expect(again.result.graduation.transcript.status).toBe("requested");
+      expect(again.audits[0].metadata).toMatchObject({ changed: false });
+      await confer(s, diploma);
+      // after conferral the transcript is already issued: a request never downgrades it
+      const after = await svc().requestTranscript(s.st.studentId, s.st.userId, "again");
+      expect(after.result.graduation.transcript.status).toBe("issued");
+
+      // a later enrollment becomes the current one: the request targets it and is refused
+      await svc().createEnrollment(s.st.studentId, staff.userId, createEnrollmentSchema.parse({ ...TN }));
+      expect(await codeOf(svc().requestTranscript(s.st.studentId, s.st.userId, "wrong enrollment"))).toMatchObject({ code: "HS_NOT_ELIGIBLE", status: 409 });
+      const old = (await pg.sql(`select transcript_status from hs_graduation_records where enrollment_id = '${s.eid}'`))[0];
+      expect(old.transcript_status).toBe("issued");
+    });
+
+    // 6. conferral dates and historical graduates
+    it("conferredOn is never in the future and never before eligibility was confirmed", async () => {
+      const { s, diploma } = await graduateReady("Dates Dov");
+      await confirmEligibility(s);
+      expect(await codeOf(confer(s, diploma, "2026-10-27"))).toMatchObject({ code: "HS_VALIDATION_FAILED", status: 422, details: { field: "conferredOn" } });
+      expect(await codeOf(confer(s, diploma, "2026-10-25"))).toMatchObject({ code: "HS_VALIDATION_FAILED", status: 422, details: { field: "conferredOn" } });
+      expect((await state(s)).current!.graduation.status).toBe("eligibility_confirmed");
+      const done = (await confer(s, diploma, "2026-10-26")).result; // the day of confirmation, which is also today
+      expect(done.current!.graduation.status).toBe("diploma_conferred");
+    });
+
+    it("historical graduate: not in the future, refused while an enrollment is open, eligibility evidence is the transcript", async () => {
+      const st = await seedStudent(pg, { name: "History Hen" });
+      const diploma = await seedVerifiedDocument(pg, st.studentId, "hs_diploma");
+      const transcript = await seedVerifiedDocument(pg, st.studentId, "hs_transcript");
+      const input = (over: Record<string, unknown> = {}) => historicalGraduateSchema.parse({ ...STD, conferredOn: "2019-06-15", awardingSchoolName: "Synthetic Academy", diplomaEvidenceDocumentId: diploma, transcriptEvidenceDocumentId: transcript, note: "imported record", ...over });
+      expect(await codeOf(svc().historicalGraduate(st.studentId, admin.userId, input({ conferredOn: "2026-10-27" })))).toMatchObject({ code: "HS_VALIDATION_FAILED", status: 422 });
+      expect(await codeOf(svc().historicalGraduate(st.studentId, admin.userId, input({ diplomaEvidenceDocumentId: transcript, transcriptEvidenceDocumentId: diploma })))).toMatchObject({ code: "HS_EVIDENCE_INVALID", status: 422 });
+      const open = await svc().createEnrollment(st.studentId, staff.userId, createEnrollmentSchema.parse({ ...STD }));
+      expect(await codeOf(svc().historicalGraduate(st.studentId, admin.userId, input()))).toMatchObject({ code: "HS_ENROLLMENT_ALREADY_OPEN", status: 409 });
+      expect(open.result.enrollments).toHaveLength(1);
+      await svc().updateEnrollment(st.studentId, open.result.current!.enrollment.id, staff.userId, updateEnrollmentSchema.parse({ expectedRevision: 0, status: "withdrawn", note: "student left" }));
+      const out = (await svc().historicalGraduate(st.studentId, admin.userId, input())).result;
+      expect(out.current!.graduation.eligibilityEvidenceDocumentId).toBe(transcript);
+      expect(out.current!.graduation.diploma.documentId).toBe(diploma);
+    });
+
+    // 7. evidence document types
+    it("evidence must be of an allowed document type for its purpose (422 HS_EVIDENCE_INVALID)", async () => {
+      const s = await enroll("Types Tamar");
+      await publishPlan(s, compose(withElectives, withTasks));
+      const diplomaDoc = await seedVerifiedDocument(pg, s.st.studentId, "hs_diploma");
+      const otherDoc = await seedVerifiedDocument(pg, s.st.studentId, "other");
+      const foreignEval = await seedVerifiedDocument(pg, s.st.studentId, "foreign_eval");
+      const idDoc = await seedVerifiedDocument(pg, s.st.studentId, "id_gov");
+
+      // results: hs_transcript or other
+      const bad = await codeOf(svc().recordCourseResult(s.st.studentId, s.eid, staff.userId, recordCourseResultSchema.parse({ courseKey: "english-1", outcome: "completed", evidenceDocumentId: diplomaDoc })));
+      expect(bad).toMatchObject({ code: "HS_EVIDENCE_INVALID", status: 422, details: { docType: "hs_diploma", allowedDocTypes: ["hs_transcript", "other"] } });
+      expect(await codeOf(taskResult(s, "exam-1", "passed", { evidenceDocumentId: foreignEval }))).toMatchObject({ code: "HS_EVIDENCE_INVALID" });
+      expect(await codeOf(taskResult(s, "exam-1", "passed", { evidenceDocumentId: idDoc }))).toMatchObject({ code: "HS_EVIDENCE_INVALID" });
+      await taskResult(s, "exam-1", "passed", { evidenceDocumentId: otherDoc });
+      await svc().recordCourseResult(s.st.studentId, s.eid, staff.userId, recordCourseResultSchema.parse({ courseKey: "english-1", outcome: "completed", evidenceDocumentId: s.doc }));
+
+      // transfer awards: hs_transcript, foreign_eval or other (never a diploma)
+      const p = (await svc().recordPriorEducation(s.st.studentId, s.eid, staff.userId, recordPriorEducationSchema.parse({ schoolName: "Synthetic Prep", country: "Canada" }))).result;
+      const c = (await svc().createTransferClaim(s.st.studentId, s.eid, staff.userId, transferClaimSchema.parse({ priorEducationId: p.current!.priorEducation[0].id, courseTitle: "Algebra", areaKey: "math", claimedHalfUnits: 6 }))).result;
+      const claimId = c.current!.priorEducation[0].claims[0].id;
+      await svc().resolveTransferClaim(s.st.studentId, s.eid, claimId, staff.userId, resolveTransferClaimSchema.parse({ status: "accepted", note: "school accepted" }));
+      const transferAward = (doc: string) => svc().recordTransferAward(s.st.studentId, s.eid, staff.userId, recordTransferAwardSchema.parse({ claimId, areaKey: "math", halfUnits: 2, evidenceDocumentId: doc }));
+      expect(await codeOf(transferAward(diplomaDoc))).toMatchObject({ code: "HS_EVIDENCE_INVALID", status: 422 });
+      await transferAward(foreignEval);
+      await transferAward(otherDoc);
+
+      // eligibility: hs_transcript or other (not a diploma, not a foreign evaluation)
+      expect(await codeOf(svc().graduationAction(s.st.studentId, s.eid, admin.userId, graduationActionSchema.parse({ action: "confirm_eligibility", evidenceDocumentId: diplomaDoc })))).toMatchObject({ code: "HS_EVIDENCE_INVALID", status: 422 });
+      expect(await codeOf(svc().graduationAction(s.st.studentId, s.eid, admin.userId, graduationActionSchema.parse({ action: "confirm_eligibility", evidenceDocumentId: foreignEval })))).toMatchObject({ code: "HS_EVIDENCE_INVALID" });
+    });
+
+    it("staff state flags evidence whose document is no longer verified (evidenceStillVerified)", async () => {
+      const s = await enroll("Reverify Reut");
+      await publishPlan(s, withTasks);
+      const lateDoc = await seedVerifiedDocument(pg, s.st.studentId, "hs_transcript");
+      await taskResult(s, "exam-1", "passed", { evidenceDocumentId: lateDoc });
+      await svc().recordCourseResult(s.st.studentId, s.eid, staff.userId, recordCourseResultSchema.parse({ courseKey: "english-2", outcome: "completed", evidenceDocumentId: lateDoc }));
+      let cur = (await state(s)).current!;
+      expect(cur.results.every((r) => r.evidenceStillVerified === true)).toBe(true);
+      expect(cur.awards.every((a) => a.evidenceStillVerified === true)).toBe(true);
+      await pg.sql(`update student_documents set status = 'rejected', verified = false where id = '${lateDoc}'`);
+      cur = (await state(s)).current!;
+      expect(cur.results.length).toBeGreaterThan(0);
+      expect(cur.results.every((r) => r.evidenceStillVerified === false)).toBe(true);
+      expect(cur.awards.every((a) => a.evidenceStillVerified === false)).toBe(true);
+      expect(JSON.stringify(await svc().getStudentView(s.st.studentId))).not.toContain("evidenceStillVerified");
+    });
+
+    // 8. RLS
+    it("students cannot read hs_credit_awards directly (staff/admin only); own reported progress stays readable", async () => {
+      const pol = await pg.sql(`select tablename, policyname, qual from pg_policies where schemaname = 'public' and tablename like 'hs\\_%' order by tablename`);
+      const awards = pol.filter((p) => p.tablename === "hs_credit_awards");
+      expect(awards).toHaveLength(1);
+      expect(String(awards[0].qual)).toContain("is_staff_or_admin()");
+      expect(String(awards[0].qual)).not.toContain("student_owns_record");
+      // every student-readable policy is limited to the student's own reported progress and its history
+      const studentReadable = pol.filter((p) => String(p.qual).includes("student_owns_record")).map((p) => p.tablename).sort();
+      expect(studentReadable).toEqual(["hs_task_progress", "hs_task_progress_events"]);
+    });
+
+    // projection order
+    it("the student view lists subjects in the canonical order, English first", async () => {
+      const s = await enroll("Order Orna");
+      await publishPlan(s, (c) => c);
+      expect((await svc().getStudentView(s.st.studentId)).subjects.map((x) => x.subject)).toEqual(["english", "mathematics", "science", "social_studies", "humanities_digital", "health_pe", "electives"]);
+    });
+  });
+
   // ── HTTP smoke through the real routers and requireAuth ────────────────────
 
   describe("HTTP smoke (real routers + requireAuth)", () => {
@@ -887,6 +1186,20 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("S11 high school pathway — service on 
 
       const confer = { action: "confer_diploma", conferredOn: "2026-10-26", diplomaEvidenceDocumentId: s.doc, transcriptEvidenceDocumentId: s.doc };
       expect((await request(hs.app).post(`${enr}/graduation`).set(authHeader(staff.token)).send(confer)).status).toBe(403);
+      // confirm_eligibility is admin-only too: staff are refused, audited, and nothing changes
+      const deniedNow = hs.denied.length;
+      const staffConfirm = await request(hs.app).post(`${enr}/graduation`).set(authHeader(staff.token)).send({ action: "confirm_eligibility", evidenceDocumentId: s.doc });
+      expect(staffConfirm.status).toBe(403);
+      expect(hs.denied.length).toBe(deniedNow + 1);
+      expect(hs.denied.at(-1)).toMatchObject({ method: "POST", role: "staff" });
+      expect((await svc().getStaffState(s.st.studentId)).current!.graduation).toMatchObject({ status: "in_progress", eligibilityConfirmedAt: null });
+      const adminConfirm = await request(hs.app).post(`${enr}/graduation`).set(authHeader(admin.token)).send({ action: "confirm_eligibility", evidenceDocumentId: s.doc });
+      expect(adminConfirm.status).toBe(409); // admin is allowed through; credits are not complete
+      expect(adminConfirm.body.error.code).toBe("HS_NOT_ELIGIBLE");
+      // the student transcript request is refused until eligibility is confirmed
+      const early = await request(hs.app).post("/api/student/high-school/transcript-request").set(authHeader(s.st.token)).send({});
+      expect(early.status).toBe(409);
+      expect(early.body.error.code).toBe("HS_NOT_ELIGIBLE");
       const adminConfer = await request(hs.app).post(`${enr}/graduation`).set(authHeader(admin.token)).send(confer);
       expect(adminConfer.status).toBe(409);
       expect(adminConfer.body.error.code).toBe("HS_NOT_ELIGIBLE");

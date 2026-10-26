@@ -26,7 +26,10 @@ the row belongs to the same student and has status 'verified' before any write.
 FK type mapping (as S05): students.id = text, users.id = varchar -> text.
 Writes go through the server (owner / service-role connection); RLS lets
 staff/admin read everything and students read only their own reported
-progress, its history and their active credit awards.
+progress and its history. Credit awards, official results, claims, graduation
+records and events (recorded_by, evidence document ids, staff notes, financial
+standing) are staff/admin only: students read them through the server
+projection, never directly.
 */
 
 CREATE OR REPLACE FUNCTION is_staff_or_admin()
@@ -115,6 +118,8 @@ CREATE TABLE IF NOT EXISTS hs_transfer_claims (
   course_title text NOT NULL,
   area_key text NOT NULL,
   claimed_half_units integer NOT NULL CHECK (claimed_half_units >= 1),
+  -- What the school accepted; set when the claim is resolved as partially_accepted.
+  accepted_half_units integer,
   status text NOT NULL DEFAULT 'claimed',
   resolution_note text,
   resolved_by text REFERENCES users(id) ON DELETE SET NULL,
@@ -122,8 +127,11 @@ CREATE TABLE IF NOT EXISTS hs_transfer_claims (
   created_by text REFERENCES users(id) ON DELETE SET NULL,
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT hs_transfer_claims_status_check
-    CHECK (status IN ('claimed', 'submitted_to_school', 'accepted', 'partially_accepted', 'declined'))
+    CHECK (status IN ('claimed', 'submitted_to_school', 'accepted', 'partially_accepted', 'declined')),
+  CONSTRAINT hs_transfer_claims_accepted_check
+    CHECK (accepted_half_units IS NULL OR (accepted_half_units >= 1 AND accepted_half_units <= claimed_half_units))
 );
+ALTER TABLE hs_transfer_claims ADD COLUMN IF NOT EXISTS accepted_half_units integer;
 CREATE INDEX IF NOT EXISTS hs_transfer_claims_enrollment_idx ON hs_transfer_claims(enrollment_id);
 
 -- D. roadmap versions
@@ -301,23 +309,22 @@ DECLARE t text;
 BEGIN
   FOREACH t IN ARRAY ARRAY[
     'hs_curriculum_templates', 'hs_enrollments', 'hs_prior_education', 'hs_transfer_claims',
-    'hs_roadmap_versions', 'hs_official_results', 'hs_graduation_records', 'hs_events'
+    'hs_roadmap_versions', 'hs_official_results', 'hs_credit_awards', 'hs_graduation_records', 'hs_events'
   ] LOOP
     EXECUTE format('DROP POLICY IF EXISTS %I ON %I', t || '_select', t);
     EXECUTE format('CREATE POLICY %I ON %I FOR SELECT TO authenticated USING (is_staff_or_admin())', t || '_select', t);
   END LOOP;
 END $$;
 
--- Students may read their own reported progress, its history and their active credit.
+-- Students may read their own reported progress and its history (their own reports
+-- only: no staff ids, evidence ids or official data). Credit awards are NOT
+-- student-readable (they carry recorded_by and evidence_document_id).
 DROP POLICY IF EXISTS "hs_task_progress_select" ON hs_task_progress;
 CREATE POLICY "hs_task_progress_select" ON hs_task_progress FOR SELECT TO authenticated
   USING (is_staff_or_admin() OR student_owns_record(student_id));
 DROP POLICY IF EXISTS "hs_task_progress_events_select" ON hs_task_progress_events;
 CREATE POLICY "hs_task_progress_events_select" ON hs_task_progress_events FOR SELECT TO authenticated
   USING (is_staff_or_admin() OR student_owns_record(student_id));
-DROP POLICY IF EXISTS "hs_credit_awards_select" ON hs_credit_awards;
-CREATE POLICY "hs_credit_awards_select" ON hs_credit_awards FOR SELECT TO authenticated
-  USING (is_staff_or_admin() OR (student_owns_record(student_id) AND status = 'active'));
 
 -- Immutability guards
 CREATE OR REPLACE FUNCTION hs_append_only_guard()

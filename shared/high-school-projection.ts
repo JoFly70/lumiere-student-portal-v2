@@ -109,6 +109,7 @@ export interface HsPriorEducationInput {
     readonly id: string;
     readonly courseTitle: string;
     readonly claimedHalfUnits: HalfUnits;
+    readonly acceptedHalfUnits?: HalfUnits | null;
     readonly status: TransferClaimStatus;
   }[];
 }
@@ -190,12 +191,20 @@ export function computeCreditSummary(
   };
 }
 
-/** Why a diploma cannot be confirmed yet; empty = credits satisfied. */
+/**
+ * Why a diploma cannot be confirmed yet; empty = credits satisfied.
+ * The overall check uses the sum of per-area COUNTED credit (min(earned, required)),
+ * so surplus in one area can never satisfy the total. `earnedHalfUnits` stays the
+ * raw official sum for display.
+ */
 export function creditBlockers(credits: HsCreditSummary): string[] {
   const blockers: string[] = [];
-  if (credits.earnedHalfUnits < credits.requiredHalfUnits) {
+  const counted = sumHalfUnits(credits.byArea.map((a) => a.countedHalfUnits));
+  if (counted < credits.requiredHalfUnits) {
+    const surplus = credits.earnedHalfUnits > counted;
     blockers.push(
-      `Earned ${formatHalfUnits(credits.earnedHalfUnits)} of ${formatHalfUnits(credits.requiredHalfUnits)} required credits`,
+      `Earned ${formatHalfUnits(counted)} of ${formatHalfUnits(credits.requiredHalfUnits)} required credits` +
+        (surplus ? " (credit above an area's requirement does not count toward another area)" : ""),
     );
   }
   // Every area must be met: surplus core credit never silently fills an elective
@@ -459,8 +468,9 @@ export function projectStudentView(input: HsProjectionInput): StudentHighSchoolV
     }
   }
 
-  const subjectOrder: HsSubjectArea[] = [];
-  for (const a of areas) if (!subjectOrder.includes(a.subject)) subjectOrder.push(a.subject);
+  // Canonical subject order (English first), regardless of the order of the requirement areas.
+  const present = new Set<HsSubjectArea>(areas.map((a) => a.subject));
+  const subjectOrder: HsSubjectArea[] = HS_SUBJECT_AREAS.filter((s) => present.has(s));
   const subjects: HsSubjectView[] = subjectOrder.map((subject) => {
     const subjectAreas = credits.byArea.filter((a) => a.subject === subject);
     return {
@@ -498,7 +508,13 @@ export function projectStudentView(input: HsProjectionInput): StudentHighSchoolV
       id: p.id,
       schoolLabel: p.schoolName,
       status: p.status,
-      claims: p.claims.map((c) => ({ id: c.id, courseTitle: c.courseTitle, claimedHalfUnits: c.claimedHalfUnits, status: c.status })),
+      claims: p.claims.map((c) => ({
+        id: c.id,
+        courseTitle: c.courseTitle,
+        claimedHalfUnits: c.claimedHalfUnits,
+        acceptedHalfUnits: c.acceptedHalfUnits ?? null,
+        status: c.status,
+      })),
     })),
     guardians: input.guardians,
     generatedAt: input.nowIso,

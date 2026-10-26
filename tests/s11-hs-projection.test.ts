@@ -95,12 +95,27 @@ describe("half-unit credit arithmetic", () => {
     expect(blockers.some((b) => b.includes("Electives"))).toBe(false);
   });
 
+  it("surplus credit in one area cannot satisfy the overall total (no elective shortfall needed)", () => {
+    // 16 core + 1 extra English credit + 5 elective: raw 22, counted 21 (met)
+    const core = TEMPLATE_STANDARD_21.areas.filter((a) => a.kind === "core").map((a) => award(`c-${a.key}`, a.key, a.requiredHalfUnits));
+    const s = computeCreditSummary(TEMPLATE_STANDARD_21.areas, 42, [...core, award("extra-english", "english", 2), award("el", "electives", 10)]);
+    expect(s.earnedHalfUnits).toBe(44);
+    expect(creditBlockers(s)).toEqual([]); // 32 core + 10 elective counted = 42: met
+    const short = computeCreditSummary(TEMPLATE_STANDARD_21.areas, 42, [...core, award("extra-english", "english", 4), award("el", "electives", 8)]);
+    expect(short.earnedHalfUnits).toBe(44);
+    expect(creditBlockers(short)[0]).toMatch(/^Earned 20 of 21 required credits/);
+  });
+
   it("surplus core credit never fills an elective shortfall", () => {
     // 16 core + 1 extra English credit = 21 total, but only 4 of 5 elective credits.
     const core = TEMPLATE_STANDARD_21.areas.filter((a) => a.kind === "core").map((a) => award(`c-${a.key}`, a.key, a.requiredHalfUnits));
     const s = computeCreditSummary(TEMPLATE_STANDARD_21.areas, 42, [...core, award("extra-english", "english", 2), award("el", "electives", 8)]);
-    expect(s.earnedHalfUnits).toBe(42);
-    expect(creditBlockers(s)).toEqual(["Elective area Electives: 4 of 5 credits"]);
+    expect(s.earnedHalfUnits).toBe(42); // raw official sum stays 21 for display
+    // the overall total counts per-area COUNTED credit (20 of 21), so the surplus English credit cannot satisfy it
+    expect(creditBlockers(s)).toEqual([
+      "Earned 20 of 21 required credits (credit above an area's requirement does not count toward another area)",
+      "Elective area Electives: 4 of 5 credits",
+    ]);
   });
 });
 
@@ -246,7 +261,7 @@ describe("student projection", () => {
   it("without a roadmap: template areas, no courses, no pace", () => {
     const v = projectStudentView(input({ roadmap: null }));
     expect(v.roadmap).toBeNull();
-    expect(v.subjects.map((s) => s.subject)).toEqual(["humanities_digital", "english", "mathematics", "science", "social_studies", "health_pe", "electives"]);
+    expect(v.subjects.map((s) => s.subject)).toEqual(["english", "mathematics", "science", "social_studies", "humanities_digital", "health_pe", "electives"]);
     expect(v.credits.requiredHalfUnits).toBe(42);
     expect(v.pace.status).toBe("not_configured");
     expect(v.current).toEqual({ course: null, nextTask: null });
