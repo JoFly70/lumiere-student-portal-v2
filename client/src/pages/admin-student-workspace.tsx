@@ -174,6 +174,7 @@ export default function AdminStudentWorkspace() {
        <a href="#workspace-support" className="rounded-md border px-3 py-2 text-sm font-medium hover:bg-muted"><LifeBuoy className="mr-2 inline h-4 w-4" />Support</a>
        <Link href={`/admin/students/${encodeURIComponent(studentId)}/roadmap`} className="rounded-md border px-3 py-2 text-sm font-medium hover:bg-muted">Roadmap</Link>
      </nav>
+     {canonicalStudentId ? <StudentProfileReview studentId={canonicalStudentId} /> : null}
      <div id="workspace-overview" aria-label="Overview">
     <section className="grid gap-4 md:grid-cols-3">
        <Card><CardHeader><CardTitle className="text-sm text-muted-foreground">Current program</CardTitle></CardHeader><CardContent><p className="text-lg font-semibold">{label("programs", value(vm.program, "id")) ?? value(vm.program, "name", "code")}</p><p className="mt-1 text-sm text-muted-foreground">Version {label("programVersions", value(vm.programVersion, "id")) ?? value(vm.programVersion, "versionLabel", "id")}</p></CardContent></Card>
@@ -376,7 +377,6 @@ export default function AdminStudentWorkspace() {
     </Card>}
      <Card><CardHeader><CardTitle>Report provenance</CardTitle></CardHeader><CardContent className="grid gap-4 text-sm md:grid-cols-3"><div><p className="text-muted-foreground">Report status</p><p className="mt-1 font-medium">{vm.provenance.reportStatus}</p></div><div><p className="text-muted-foreground">Reasons</p><p className="mt-1 font-medium">{vm.provenance.reasons.length || "None reported"}</p></div><div><p className="text-muted-foreground">Diagnostics</p><p className="mt-1 font-medium">{vm.provenance.integrationDiagnostics.length + vm.provenance.diagnostics.length || "None reported"}</p></div></CardContent></Card>
      </div>
-     {canonicalStudentId ? <StudentProfileReview studentId={canonicalStudentId} /> : null}
      <section id="workspace-documents" aria-labelledby="workspace-documents-heading" className="space-y-4">
        <div><h2 id="workspace-documents-heading" className="flex items-center gap-2 text-xl font-semibold"><FileText className="h-5 w-5" />Documents</h2><p className="mt-1 text-sm text-muted-foreground">Documents already recorded for this student. This workspace is read-only.</p></div>
        <WorkspaceResourceState loading={documentsQuery.isLoading} error={documentsQuery.isError} empty={!documentsQuery.data?.length} onRetry={() => void documentsQuery.refetch()}>

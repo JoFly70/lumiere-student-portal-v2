@@ -1,6 +1,6 @@
 import React from "react";
 import type { EvidenceStatus, ProfileAcademicBackground } from "@shared/student-profile-contract";
-import { ProfileSection, Fact, FactGrid, ReadOnlyNote, StatusChip, SubCard, TextLink } from "./profile-ui";
+import { CollapsibleList, ProfileSection, Fact, FactGrid, ReadOnlyNote, StatusChip, SubCard, TextLink } from "./profile-ui";
 import { evidenceChip, hsPathLabel } from "./profile-presentation";
 
 function EvidenceRow({ label, status, testId }: { label: string; status: EvidenceStatus; testId?: string }) {
@@ -51,7 +51,7 @@ export function BackgroundSection({ background }: { background: ProfileAcademicB
           )}
         </SubCard>
 
-        <SubCard title="Evidence on file" testId="evidence-card">
+        <SubCard title="Education evidence on file" testId="evidence-card">
           <ul>
             <EvidenceRow label="Foreign credential evaluation" status={background.foreignEvaluation} testId="ev-foreign" />
             <EvidenceRow label="College transcripts" status={background.collegeTranscripts} testId="ev-transcripts" />
@@ -68,8 +68,7 @@ export function BackgroundSection({ background }: { background: ProfileAcademicB
               : "No prior credentials are recorded. That is fine if you are starting fresh."}
           </p>
         ) : (
-          <ul className="divide-y divide-student-line">
-            {background.priorCredentials.map((c, i) => (
+          <CollapsibleList className="divide-y divide-student-line" label="credentials" items={background.priorCredentials.map((c, i) => (
               <li key={`${c.label}-${i}`} className="flex flex-wrap items-start justify-between gap-2 py-3" data-testid="prior-credential">
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-student-ink">{c.label}</p>
@@ -79,8 +78,7 @@ export function BackgroundSection({ background }: { background: ProfileAcademicB
                 </div>
                 {c.status && <span className="text-xs text-student-muted">{c.status}</span>}
               </li>
-            ))}
-          </ul>
+            ))} />
         )}
       </SubCard>
 

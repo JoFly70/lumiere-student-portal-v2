@@ -6,7 +6,7 @@
  */
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { BadgeCheck, FileCheck2, Fingerprint, Loader2, ShieldAlert, Users } from "lucide-react";
+import { AlertCircle, ArrowRight, CheckCircle2, CircleDashed, Clock, FileCheck2, Fingerprint, Loader2, Paperclip, ShieldAlert, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,8 +24,12 @@ import {
   authorityTrust,
   classifyResolveFailure,
   contactActions,
+  contactNeedsDecision,
   correctionDecisionGate,
   correctionRows,
+  humanize,
+  humanizeList,
+  showVerifyAction,
   correctionStatusLabel,
   identityTrust,
   normalizeHistory,
@@ -56,15 +60,29 @@ async function staffRequest<T>(method: "GET" | "POST", url: string, body?: unkno
 const TONE_CLASS: Record<TrustBadge["tone"], string> = {
   verified: "border-green-600/40 bg-green-600/10 text-green-800 dark:text-green-300",
   pending: "border-amber-500/50 bg-amber-500/10 text-amber-900 dark:text-amber-200",
-  problem: "border-destructive/40 bg-destructive/10 text-destructive",
+  problem: "border-destructive/40 bg-destructive/10 text-red-700 dark:text-red-300",
   reported: "border-border bg-muted text-muted-foreground",
 };
 
+const TONE_ICON: Record<TrustBadge["tone"], typeof CheckCircle2> = {
+  verified: CheckCircle2,
+  pending: Clock,
+  problem: AlertCircle,
+  reported: CircleDashed,
+};
+
 function TrustPill({ badge }: { badge: TrustBadge }) {
+  const Icon = TONE_ICON[badge.tone];
   return <Badge variant="outline" className={`gap-1 whitespace-normal text-left ${TONE_CLASS[badge.tone]}`}>
-    {badge.tone === "verified" ? <BadgeCheck className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /> : null}
+    <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
     {badge.label}
   </Badge>;
+}
+
+function StatusBadge({ status }: { status: IdentityCorrectionRequestView["status"] }) {
+  const tone: TrustBadge["tone"] = status === "approved" ? "verified" : status === "pending" ? "pending" : status === "rejected" ? "problem" : "reported";
+  const Icon = TONE_ICON[tone];
+  return <Badge variant="outline" className={`gap-1 ${TONE_CLASS[tone]}`}><Icon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />{correctionStatusLabel(status)}</Badge>;
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
@@ -134,7 +152,7 @@ function DecisionDialog({ decision, studentId, onClose, onDone }: { decision: De
       </div>
       <DialogFooter>
         <Button type="button" variant="outline" disabled={mutation.isPending} onClick={() => { setError(null); setNote(""); onClose(); }}>Cancel</Button>
-        <Button type="button" variant={destructive ? "destructive" : "default"} className={destructive ? undefined : PRIMARY_ACTION} disabled={!gate.ok || mutation.isPending} onClick={() => { setError(null); mutation.mutate(decision); }}>
+        <Button type="button" variant={destructive ? "destructive" : "default"} className={destructive ? "disabled:bg-muted disabled:text-muted-foreground disabled:opacity-100" : `${PRIMARY_ACTION} disabled:border-transparent disabled:bg-muted disabled:text-muted-foreground disabled:opacity-100`} disabled={!gate.ok || mutation.isPending} onClick={() => { setError(null); mutation.mutate(decision); }}>
           {mutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" /> : null}Confirm
         </Button>
       </DialogFooter>
@@ -144,11 +162,40 @@ function DecisionDialog({ decision, studentId, onClose, onDone }: { decision: De
 
 export function CorrectionTable({ request }: { request: IdentityCorrectionRequestView }) {
   const rows = correctionRows(request);
-  return <div className="overflow-x-auto"><table className="w-full text-sm">
-    <caption className="sr-only">Current and requested identity values</caption>
-    <thead><tr className="text-left text-xs uppercase tracking-wide text-muted-foreground"><th scope="col" className="py-1 pr-3 font-medium">Field</th><th scope="col" className="py-1 pr-3 font-medium">On record</th><th scope="col" className="py-1 font-medium">Requested</th></tr></thead>
-    <tbody className="divide-y">{rows.map((r) => <tr key={r.field}><th scope="row" className="py-2 pr-3 text-left font-medium">{r.label}</th><td className="py-2 pr-3 text-muted-foreground">{r.current}</td><td className="py-2 font-medium">{r.requested}</td></tr>)}</tbody>
-  </table></div>;
+  return <>
+    <ul className="divide-y rounded-md border md:hidden" aria-label="Current and requested identity values">
+      {rows.map((r) => <li key={r.field} className="space-y-1 px-3 py-2 text-sm">
+        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{r.label}</p>
+        <p className="flex flex-wrap items-center gap-x-2 break-words"><span className="text-muted-foreground">{r.current}</span><ArrowRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" /><span className="font-medium">{r.requested}</span></p>
+        <p className="text-xs text-muted-foreground">On record → Requested</p>
+      </li>)}
+    </ul>
+    <div className="hidden overflow-x-auto md:block"><table className="w-full text-sm">
+      <caption className="sr-only">Current and requested identity values</caption>
+      <thead><tr className="text-left text-xs uppercase tracking-wide text-muted-foreground"><th scope="col" className="py-1 pr-3 font-medium">Field</th><th scope="col" className="py-1 pr-3 font-medium">On record</th><th scope="col" className="py-1 font-medium">Requested</th></tr></thead>
+      <tbody className="divide-y">{rows.map((r) => <tr key={r.field}><th scope="row" className="py-2 pr-3 text-left font-medium">{r.label}</th><td className="py-2 pr-3 text-muted-foreground">{r.current}</td><td className="py-2 font-medium">{r.requested}</td></tr>)}</tbody>
+    </table></div>
+  </>;
+}
+
+function ContactDetails({ c }: { c: StudentContactView }) {
+  return <>
+    <p className="text-sm text-muted-foreground">{c.phone}{c.email ? ` · ${c.email}` : ""}</p>
+    <p className="text-xs text-muted-foreground">Requested scopes: {humanizeList(c.requestedScopes, "none")} · In force: {humanizeList(c.effectiveScopes, "none")} · Portal access: none</p>
+    {c.authorityNote ? <p className="text-xs text-muted-foreground">Staff note: {c.authorityNote}</p> : null}
+  </>;
+}
+
+function ContactActions({ c, canDecide, onDecide }: { c: StudentContactView; canDecide: boolean; onDecide?: (d: Decision) => void }) {
+  const actions = contactActions(c);
+  const verify = showVerifyAction(c) && actions.canVerify;
+  if (!verify && !actions.canRevoke) {
+    return c.authorityStatus === "listed" ? <p className="text-xs text-muted-foreground">No authority requested</p> : null;
+  }
+  return <div className="flex flex-wrap gap-2">
+    {verify ? <Button type="button" size="sm" className={PRIMARY_ACTION} disabled={!canDecide} onClick={() => onDecide?.({ kind: "authority", decision: "verify", contact: c })}>Verify authority…</Button> : null}
+    {actions.canRevoke ? <Button type="button" size="sm" variant="outline" disabled={!canDecide} onClick={() => onDecide?.({ kind: "authority", decision: "revoke", contact: c })}>Revoke…</Button> : null}
+  </div>;
 }
 
 export function StudentProfileReviewView({
@@ -170,27 +217,45 @@ export function StudentProfileReviewView({
   const pending = identity.pendingCorrection;
   const trust = identityTrust(identity.verification);
   const past = history.filter((h) => h.status !== "pending");
-  return <section id="workspace-profile" aria-labelledby="workspace-profile-heading" className="space-y-4">
-    <div>
-      <h2 id="workspace-profile-heading" className="flex items-center gap-2 text-xl font-semibold"><Fingerprint className="h-5 w-5" aria-hidden="true" />Profile &amp; identity</h2>
+  const decisionContacts = contacts.filter(contactNeedsDecision);
+  const decisionCount = (pending ? 1 : 0) + decisionContacts.length;
+  return <section id="workspace-profile" aria-labelledby="workspace-profile-heading" className="scroll-mt-4 space-y-5">
+    <div className="border-b pb-3">
+      <h2 id="workspace-profile-heading" className="flex items-center gap-2 text-xl font-semibold"><Fingerprint className="h-5 w-5 text-primary" aria-hidden="true" />Profile &amp; identity</h2>
       <p className="mt-1 text-sm text-muted-foreground">Values the student reported are labelled as such. Only a verified government ID document makes identity verified.</p>
     </div>
     {feedback ? <div role="status" className="rounded-md border border-green-600/30 bg-green-600/5 px-3 py-2 text-sm text-green-800 dark:text-green-300">{feedback}</div> : null}
-    {pending ? <Card className="border-amber-500/50" data-testid="pending-correction">
-      <CardHeader><div className="flex flex-wrap items-center justify-between gap-2"><CardTitle className="flex items-center gap-2 text-base"><ShieldAlert className="h-4 w-4 text-amber-600" aria-hidden="true" />Pending identity correction</CardTitle><Badge variant="outline">{correctionStatusLabel(pending.status)}</Badge></div></CardHeader>
-      <CardContent className="space-y-4">
-        <CorrectionTable request={pending} />
-        <div><p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Student's reason</p><p className="mt-1 text-sm">{pending.reason}</p></div>
-        <p className="text-xs text-muted-foreground">Submitted {new Date(pending.createdAt).toISOString().slice(0, 10)}{pending.evidenceDocumentId ? " · supporting document attached" : " · no supporting document attached"}. Approving does not change document verification.</p>
-        <div className="flex flex-wrap gap-2">
-          <Button type="button" size="sm" className={PRIMARY_ACTION} disabled={!canDecide} onClick={() => onDecide?.({ kind: "correction", decision: "approve", request: pending })}>Approve…</Button>
-          <Button type="button" size="sm" variant="outline" disabled={!canDecide} onClick={() => onDecide?.({ kind: "correction", decision: "reject", request: pending })}>Reject…</Button>
-          <Button asChild size="sm" variant="ghost"><a href={STAFF_PROFILE_PATHS.documents(studentId)}><FileCheck2 className="mr-2 h-4 w-4" aria-hidden="true" />Review documents</a></Button>
-        </div>
-      </CardContent>
-    </Card> : null}
+    {decisionCount > 0 ? <div className="space-y-3 rounded-lg border border-amber-500/50 bg-amber-500/5 p-3 sm:p-4" data-testid="needs-decision" role="group" aria-labelledby="needs-decision-heading">
+      <h3 id="needs-decision-heading" className="flex items-center gap-2 text-base font-semibold"><AlertCircle className="h-4 w-4 text-amber-600" aria-hidden="true" />Needs a decision<Badge variant="secondary" className="ml-1">{decisionCount}</Badge></h3>
+      {pending ? <Card data-testid="pending-correction">
+        <CardHeader className="pb-3"><div className="flex flex-wrap items-center justify-between gap-2"><CardTitle className="flex items-center gap-2 text-base"><ShieldAlert className="h-4 w-4 text-amber-600" aria-hidden="true" />Pending identity correction</CardTitle><StatusBadge status={pending.status} /></div></CardHeader>
+        <CardContent className="space-y-4">
+          <CorrectionTable request={pending} />
+          <div><p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Student's reason</p><p className="mt-1 text-sm">{pending.reason}</p></div>
+          <p className="text-xs text-muted-foreground">Submitted {new Date(pending.createdAt).toISOString().slice(0, 10)}. Approving does not change document verification.</p>
+          <p className="flex flex-wrap items-center gap-2 text-sm" data-testid="correction-evidence">
+            <Paperclip className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+            {pending.evidenceDocumentId
+              ? <><span>Supporting document attached</span><a className="font-medium underline underline-offset-2" href="#workspace-documents">View in Documents</a></>
+              : <span>No supporting document attached — ask the student to upload in Documents</span>}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" size="sm" className={PRIMARY_ACTION} disabled={!canDecide} onClick={() => onDecide?.({ kind: "correction", decision: "approve", request: pending })}>Approve…</Button>
+            <Button type="button" size="sm" variant="outline" disabled={!canDecide} onClick={() => onDecide?.({ kind: "correction", decision: "reject", request: pending })}>Reject…</Button>
+            <Button asChild size="sm" variant="ghost"><a href={STAFF_PROFILE_PATHS.documents(studentId)}><FileCheck2 className="mr-2 h-4 w-4" aria-hidden="true" />Review documents</a></Button>
+          </div>
+        </CardContent>
+      </Card> : null}
+      {decisionContacts.map((c) => <Card key={c.id} data-testid="authority-request">
+        <CardContent className="space-y-2 pt-4">
+          <div className="flex flex-wrap items-center justify-between gap-2"><p className="font-medium">Authority request: {c.fullName} <span className="font-normal text-muted-foreground">· {c.relationship} ({humanize(c.type)})</span></p><TrustPill badge={authorityTrust(c.authorityStatus)} /></div>
+          <ContactDetails c={c} />
+          <ContactActions c={c} canDecide={canDecide} onDecide={onDecide} />
+        </CardContent>
+      </Card>)}
+    </div> : null}
     <div className="grid gap-4 lg:grid-cols-2 [&>*]:min-w-0">
-      <Card><CardHeader><div className="flex flex-wrap items-center justify-between gap-2"><CardTitle className="text-base">Legal identity</CardTitle><TrustPill badge={trust} /></div></CardHeader>
+      <Card><CardHeader className="pb-3"><div className="flex flex-wrap items-center justify-between gap-2"><CardTitle className="text-base">Legal identity</CardTitle><TrustPill badge={trust} /></div></CardHeader>
         <CardContent><dl className="grid gap-3 sm:grid-cols-2">
           <Field label="Student code">{identity.studentCode}</Field>
           <Field label="Legal name">{[identity.firstName, identity.middleName, identity.lastName].filter(Boolean).join(" ")}</Field>
@@ -201,35 +266,27 @@ export function StudentProfileReviewView({
           <Field label="Government ID"><span>{text(identity.govIdType)} <span className="font-mono">{identity.govIdNumberMasked ?? ""}</span></span></Field>
         </dl>
         <p className="mt-3 text-xs text-muted-foreground">Government ID numbers are always masked here.</p></CardContent></Card>
-      <Card><CardHeader><div className="flex flex-wrap items-center justify-between gap-2"><CardTitle className="text-base">Contact information</CardTitle><TrustPill badge={{ label: "Reported by student", tone: "reported" }} /></div></CardHeader>
+      <Card><CardHeader className="pb-3"><div className="flex flex-wrap items-center justify-between gap-2"><CardTitle className="text-base">Contact information</CardTitle><TrustPill badge={{ label: "Reported by student", tone: "reported" }} /></div></CardHeader>
         <CardContent><dl className="grid gap-3 sm:grid-cols-2">
           <Field label="Login email">{contact.email}{contact.emailVerified ? " · verified" : " · unverified"}</Field>
           <Field label="Primary phone">{text(contact.phonePrimary)}</Field>
           <Field label="Secondary phone">{text(contact.phoneSecondary)}</Field>
-          <Field label="Preferred channel">{contact.preferredContactChannel}</Field>
+          <Field label="Preferred channel">{humanize(contact.preferredContactChannel)}</Field>
           <Field label="Timezone">{text(contact.timezone)}</Field>
           <Field label="Address">{[contact.addressLine1, contact.addressLine2, contact.addressCity, contact.addressState, contact.addressPostal, contact.addressCountry].filter(Boolean).join(", ") || "Not provided"}</Field>
         </dl></CardContent></Card>
     </div>
-    <Card><CardHeader><CardTitle className="flex items-center gap-2 text-base"><Users className="h-4 w-4" aria-hidden="true" />Contacts &amp; guardian authority</CardTitle></CardHeader>
+    <Card><CardHeader className="pb-3"><CardTitle className="flex items-center gap-2 text-base"><Users className="h-4 w-4" aria-hidden="true" />Contacts &amp; guardian authority</CardTitle></CardHeader>
       <CardContent className="divide-y">
-        {contacts.length === 0 ? <p className="py-2 text-sm text-muted-foreground">The student has not listed any contacts.</p> : contacts.map((c) => {
-          const actions = contactActions(c);
-          return <div key={c.id} className="space-y-2 py-3" data-testid="staff-contact">
-            <div className="flex flex-wrap items-center justify-between gap-2"><p className="font-medium">{c.fullName} <span className="font-normal text-muted-foreground">· {c.relationship} ({c.type})</span></p><TrustPill badge={authorityTrust(c.authorityStatus)} /></div>
-            <p className="text-sm text-muted-foreground">{c.phone}{c.email ? ` · ${c.email}` : ""}</p>
-            <p className="text-xs text-muted-foreground">Requested scopes: {c.requestedScopes.join(", ") || "none"} · In force: {c.effectiveScopes.join(", ") || "none"} · Portal access: none</p>
-            {c.authorityNote ? <p className="text-xs text-muted-foreground">Staff note: {c.authorityNote}</p> : null}
-            {c.authorityStatus !== "listed" || c.requestedScopes.length > 0 || c.type === "guardian" || c.type === "representative" ? <div className="flex flex-wrap gap-2">
-              {actions.canVerify && c.authorityStatus !== "verified" ? <Button type="button" size="sm" className={PRIMARY_ACTION} disabled={!canDecide} onClick={() => onDecide?.({ kind: "authority", decision: "verify", contact: c })}>Verify authority…</Button> : null}
-              {actions.canRevoke ? <Button type="button" size="sm" variant="outline" disabled={!canDecide} onClick={() => onDecide?.({ kind: "authority", decision: "revoke", contact: c })}>Revoke…</Button> : null}
-            </div> : null}
-          </div>;
-        })}
+        {contacts.length === 0 ? <p className="py-2 text-sm text-muted-foreground">The student has not listed any contacts.</p> : contacts.map((c) => <div key={c.id} className="space-y-2 py-3 first:pt-0" data-testid="staff-contact">
+            <div className="flex flex-wrap items-center justify-between gap-2"><p className="font-medium">{c.fullName} <span className="font-normal text-muted-foreground">· {c.relationship} ({humanize(c.type)})</span></p><TrustPill badge={authorityTrust(c.authorityStatus)} /></div>
+            <ContactDetails c={c} />
+            {contactNeedsDecision(c) ? <p className="text-xs font-medium text-amber-800 dark:text-amber-200">Awaiting your decision — see “Needs a decision” above.</p> : <ContactActions c={c} canDecide={canDecide} onDecide={onDecide} />}
+          </div>)}
       </CardContent></Card>
-    <Card><CardHeader><CardTitle className="text-base">Correction history</CardTitle></CardHeader>
-      <CardContent>{past.length === 0 ? <p className="text-sm text-muted-foreground">No resolved correction requests.</p> : <ul className="divide-y">{past.map((h) => <li key={h.id} className="space-y-1 py-3" data-testid="correction-history-item">
-        <div className="flex flex-wrap items-center justify-between gap-2"><span className="text-sm font-medium">{h.fields.map((f) => correctionRows({ ...h, fields: [f] })[0].label).join(", ")}</span><Badge variant="outline">{correctionStatusLabel(h.status)}</Badge></div>
+    <Card><CardHeader className="pb-3"><CardTitle className="text-base">Correction history</CardTitle></CardHeader>
+      <CardContent>{past.length === 0 ? <p className="text-sm text-muted-foreground">No resolved correction requests.</p> : <ul className="divide-y">{past.map((h) => <li key={h.id} className="space-y-1 py-3 first:pt-0" data-testid="correction-history-item">
+        <div className="flex flex-wrap items-center justify-between gap-2"><span className="text-sm font-medium">{h.fields.map((f) => correctionRows({ ...h, fields: [f] })[0].label).join(", ")}</span><StatusBadge status={h.status} /></div>
         <p className="text-xs text-muted-foreground">{new Date(h.createdAt).toISOString().slice(0, 10)}{h.reviewedAt ? ` → ${new Date(h.reviewedAt).toISOString().slice(0, 10)}` : ""}{h.reviewNote ? ` · Note: ${h.reviewNote}` : ""}</p>
       </li>)}</ul>}</CardContent></Card>
     <p className="text-sm text-muted-foreground">Document verification is managed in <a className="font-medium underline underline-offset-2" href={STAFF_PROFILE_PATHS.documents(studentId)}>Documents</a>. Approving a correction never verifies a document.</p>

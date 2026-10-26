@@ -12,6 +12,14 @@ import {
   Lock,
   ArrowRight,
   Pencil,
+  UserRound,
+  Contact,
+  GraduationCap,
+  Users,
+  FileCheck2,
+  KeyRound,
+  ChevronDown,
+  type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -23,7 +31,7 @@ import { sectionDomId, type ChipTone } from "./profile-presentation";
 export const inputClass =
   "h-11 border-student-line-strong bg-student-card text-student-ink placeholder:text-student-muted focus-visible:ring-student-gold-ink";
 
-export const dialogClass = "student-surface border-student-line bg-student-card text-student-ink max-h-[92vh] overflow-y-auto sm:max-w-lg";
+export const dialogClass = "student-surface border-student-line bg-student-card text-student-ink max-h-[90vh] overflow-y-auto overscroll-contain sm:max-w-lg";
 
 const TONE_TO_PILL = {
   verified: "gold",
@@ -61,6 +69,15 @@ export function StatusChip({
   );
 }
 
+const SECTION_ICONS: Record<string, LucideIcon> = {
+  identity: UserRound,
+  contact: Contact,
+  background: GraduationCap,
+  contacts: Users,
+  eligibility: FileCheck2,
+  account: KeyRound,
+};
+
 /** A titled profile section with a scroll target id. */
 export function ProfileSection({
   id,
@@ -78,19 +95,27 @@ export function ProfileSection({
   testId?: string;
 }) {
   const headingId = `${sectionDomId(id)}-title`;
+  const Icon = SECTION_ICONS[id];
   return (
     <section
       id={sectionDomId(id)}
       aria-labelledby={headingId}
-      className="scroll-mt-20 space-y-4"
+      className="scroll-mt-20 space-y-3 sm:space-y-4"
       data-testid={testId ?? `profile-section-${id}`}
     >
-      <div className="space-y-1">
-        {eyebrow && <p className="text-xs font-semibold uppercase tracking-[0.14em] text-student-gold-ink">{eyebrow}</p>}
-        <h2 id={headingId} className="font-serif text-2xl tracking-tight text-student-ink sm:text-3xl">
-          {title}
-        </h2>
-        {description && <p className="max-w-2xl text-sm leading-relaxed text-student-muted">{description}</p>}
+      <div className="flex items-start gap-3">
+        {Icon && (
+          <span className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-student-gold-soft text-student-gold-ink sm:h-12 sm:w-12" aria-hidden="true" data-testid="section-icon">
+            <Icon className="h-5 w-5 sm:h-6 sm:w-6" />
+          </span>
+        )}
+        <div className="min-w-0 space-y-1">
+          {eyebrow && <p className="text-xs font-semibold uppercase tracking-[0.14em] text-student-gold-ink">{eyebrow}</p>}
+          <h2 id={headingId} className="font-serif text-2xl tracking-tight text-student-ink sm:text-3xl">
+            {title}
+          </h2>
+          {description && <p className="max-w-2xl text-sm leading-relaxed text-student-muted">{description}</p>}
+        </div>
       </div>
       {children}
     </section>
@@ -111,9 +136,9 @@ export function SubCard({
   testId?: string;
 }) {
   return (
-    <div className={cn(cardClass, "min-w-0", className)} data-testid={testId}>
+    <div className={cn(cardClass, "min-w-0 p-4 sm:p-5", className)} data-testid={testId}>
       {(title || action) && (
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2 sm:mb-4">
           {title && <h3 className="text-base font-semibold text-student-ink">{title}</h3>}
           {action}
         </div>
@@ -246,14 +271,22 @@ export function FormActions({
   onCancel,
   saveLabel = "Save changes",
   disabled,
+  sticky = false,
 }: {
+  sticky?: boolean;
   saving: boolean;
   onCancel: () => void;
   saveLabel?: string;
   disabled?: boolean;
 }) {
   return (
-    <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
+    <div
+      className={cn(
+        "flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end",
+        sticky && "sticky -bottom-6 z-10 -mx-6 -mb-6 border-t border-student-line bg-student-card px-6 pb-4 pt-3",
+      )}
+      data-testid={sticky ? "dialog-footer" : undefined}
+    >
       <button
         type="button"
         onClick={onCancel}
@@ -342,5 +375,41 @@ export function SavedIndicator({ saved }: { saved: boolean }) {
         </span>
       )}
     </span>
+  );
+}
+
+/** Long read-only lists show the first few rows and reveal the rest on request. */
+export function CollapsibleList({
+  items,
+  limit = 4,
+  label,
+  className,
+  testId,
+}: {
+  items: React.ReactNode[];
+  limit?: number;
+  label: string;
+  className?: string;
+  testId?: string;
+}) {
+  const [all, setAll] = useState(false);
+  const collapsible = items.length > limit;
+  const shown = collapsible && !all ? items.slice(0, limit) : items;
+  return (
+    <>
+      <ul className={className} data-testid={testId}>{shown}</ul>
+      {collapsible && (
+        <button
+          type="button"
+          aria-expanded={all}
+          onClick={() => setAll((a) => !a)}
+          className="mt-1 inline-flex min-h-[44px] items-center gap-1.5 text-sm font-medium text-student-gold-ink underline-offset-4 hover:underline"
+          data-testid="button-show-all"
+        >
+          {all ? "Show fewer" : `Show all ${items.length} ${label}`}
+          <ChevronDown className={cn("h-4 w-4 transition-transform", all && "rotate-180")} aria-hidden="true" />
+        </button>
+      )}
+    </>
   );
 }

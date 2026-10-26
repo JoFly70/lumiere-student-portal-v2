@@ -1,12 +1,14 @@
 import React from "react";
 import type { ProfileEligibility } from "@shared/student-profile-contract";
 import { Link } from "wouter";
-import { ProfileSection, Fact, FactGrid, ReadOnlyNote, StatusChip, SubCard } from "./profile-ui";
+import { CollapsibleList, ProfileSection, Fact, FactGrid, ReadOnlyNote, StatusChip, SubCard } from "./profile-ui";
 import { buttonClass } from "@/components/student-progress/student-ui";
-import { evidenceChip, needsUpload, residencyLabel } from "./profile-presentation";
+import { EDUCATION_DOC_TYPES, evidenceChip, needsUpload, residencyLabel } from "./profile-presentation";
 
 export function EligibilitySection({ eligibility }: { eligibility: ProfileEligibility }) {
   const eng = eligibility.englishProficiency;
+  // Education evidence (transcripts, degree, evaluation) lives under Academic Background.
+  const documents = eligibility.documents.filter((d) => !EDUCATION_DOC_TYPES.has(d.docType));
   const engLabel =
     eng.meetsRequirement === true ? "Meets the requirement" : eng.meetsRequirement === false ? "Not yet met" : "Not recorded";
   const engTone = eng.meetsRequirement === true ? "verified" : eng.meetsRequirement === false ? "attention" : "missing";
@@ -41,15 +43,14 @@ export function EligibilitySection({ eligibility }: { eligibility: ProfileEligib
         </SubCard>
       </div>
 
-      <SubCard title="Documents" testId="eligibility-documents">
-        {eligibility.documents.length === 0 ? (
+      <SubCard title="Documents for eligibility" testId="eligibility-documents">
+        {documents.length === 0 ? (
           <p className="text-sm text-student-muted" data-testid="documents-empty">No documents are required of you right now.</p>
         ) : (
-          <ul className="divide-y divide-student-line">
-            {eligibility.documents.map((d) => {
+          <CollapsibleList className="divide-y divide-student-line" label="documents" items={documents.map((d) => {
               const chip = evidenceChip(d.status);
               return (
-                <li key={d.docType} className="flex flex-wrap items-center justify-between gap-3 py-3" data-testid="eligibility-document" data-status={d.status}>
+                <li key={d.docType} className="flex flex-wrap items-center justify-between gap-2 py-2.5 sm:gap-3 sm:py-3" data-testid="eligibility-document" data-status={d.status}>
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-student-ink">{d.label}</p>
                     <p className="text-xs text-student-muted">{d.requiredForEnrollment ? "Required for enrollment" : "Optional"}</p>
@@ -64,8 +65,7 @@ export function EligibilitySection({ eligibility }: { eligibility: ProfileEligib
                   </div>
                 </li>
               );
-            })}
-          </ul>
+            })} />
         )}
       </SubCard>
       <ReadOnlyNote>This section is read-only. Residency, English proficiency and document status are set by Lumière after review.</ReadOnlyNote>

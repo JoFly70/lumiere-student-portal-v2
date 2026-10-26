@@ -116,6 +116,11 @@ export function ContactCard({
           Lumière is waiting for a signed consent or legal document. <Link href="/documents" className="font-medium text-student-gold-ink underline underline-offset-4">Upload it in Documents</Link>.
         </p>
       )}
+      {contact.authorityStatus === "revoked" && (
+        <p className="mt-3 text-sm text-student-muted" data-testid="revoked-hint">
+          Next step: <Link href="/documents" className="font-medium text-student-gold-ink underline underline-offset-4">Upload a signed consent in Documents</Link> and Lumière will review it again.
+        </p>
+      )}
       {contact.authorityNote && (
         <p className="mt-3 rounded-lg bg-student-gold-soft px-3 py-2 text-sm text-student-ink" data-testid="authority-note">
           <span className="font-medium">Note from Lumière: </span>{contact.authorityNote}
@@ -331,7 +336,7 @@ export function ContactDialog({
             </p>
           )}
           <FormError message={serverError} />
-          <FormActions saving={busy} onCancel={() => onOpenChange(false)} saveLabel={editing ? "Save contact" : "Add contact"} />
+          <FormActions saving={busy} onCancel={() => onOpenChange(false)} saveLabel={editing ? "Save contact" : "Add contact"} sticky />
         </form>
       </DialogContent>
     </Dialog>
@@ -375,7 +380,7 @@ function DeleteContactDialog({ contact, onClose }: { contact: StudentContactView
               e.preventDefault();
               void remove();
             }}
-            className="min-h-[44px]"
+            className="min-h-[44px] bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:bg-muted disabled:text-muted-foreground disabled:opacity-100"
             data-testid="button-confirm-delete-contact"
           >
             {busy ? "Removing…" : "Remove contact"}

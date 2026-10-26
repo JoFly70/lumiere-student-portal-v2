@@ -25,26 +25,36 @@ const sections = PROFILE_SECTIONS.map((s) => ({ id: sectionDomId(s.id), label: s
 export function ProfileSectionNav() {
   const [active, setActive] = useState<string>(sections[0].id);
   useEffect(() => {
-    if (typeof IntersectionObserver === "undefined") return;
-    const visible = new Map<string, number>();
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const e of entries) visible.set(e.target.id, e.isIntersecting ? e.intersectionRatio : 0);
-        const best = [...visible.entries()].sort((a, b) => b[1] - a[1])[0];
-        if (best && best[1] > 0) setActive(best[0]);
-      },
-      { rootMargin: "-20% 0px -60% 0px", threshold: [0, 0.1, 0.5, 1] },
-    );
-    sections.forEach((s) => {
-      const el = document.getElementById(s.id);
-      if (el) observer.observe(el);
-    });
-    return () => observer.disconnect();
+    let frame = 0;
+    const compute = () => {
+      frame = 0;
+      // The active section is the last one whose top has passed the reading line.
+      // Before the first section reaches it (e.g. at scrollY 0) the first stays active.
+      const line = 140;
+      let current = sections[0].id;
+      for (const s of sections) {
+        const el = document.getElementById(s.id);
+        if (el && el.getBoundingClientRect().top <= line) current = s.id;
+      }
+      setActive(current);
+    };
+    const schedule = () => {
+      if (!frame) frame = window.requestAnimationFrame(compute);
+    };
+    compute();
+    // The app shell scrolls <main>, not the window, so listen in the capture phase.
+    window.addEventListener("scroll", schedule, { passive: true, capture: true });
+    window.addEventListener("resize", schedule);
+    return () => {
+      if (frame) window.cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", schedule, true);
+      window.removeEventListener("resize", schedule);
+    };
   }, []);
   return (
     <nav
       aria-label="Profile sections"
-      className="z-30 -mx-8 hidden min-w-0 border-b border-student-line bg-student-bg px-8 shadow-sm lg:sticky lg:top-0 lg:block"
+      className="z-30 -mx-8 hidden min-w-0 border-b border-student-line bg-student-bg px-8 shadow-sm lg:sticky lg:-top-8 lg:-mt-8 lg:block lg:pt-8"
       data-testid="section-nav"
     >
       <ul className="mx-auto flex max-w-6xl gap-1 overflow-x-auto py-1.5">
@@ -72,6 +82,16 @@ export function ProfileSectionNav() {
 /** Mobile only: one compact floating "Jump to" menu. */
 export function ProfileJumpMenu() {
   const [open, setOpen] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  useEffect(() => {
+    // Radix sets data-scroll-locked on <body> while any modal dialog is open.
+    const sync = () => setDialogOpen(document.body.hasAttribute("data-scroll-locked") || Boolean(document.querySelector('[role="dialog"], [role="alertdialog"]')));
+    sync();
+    const observer = new MutationObserver(sync);
+    observer.observe(document.body, { attributes: true, attributeFilter: ["data-scroll-locked"], childList: true });
+    return () => observer.disconnect();
+  }, []);
+  if (dialogOpen) return null;
   return (
     <div className="student-surface fixed bottom-4 right-4 z-40 !bg-transparent lg:hidden" data-testid="jump-menu">
       {open && (
@@ -188,7 +208,7 @@ export function ProfilePageView({ profile }: { profile: StudentProfileView }) {
   return (
     <StudentSurface testId="page-student-profile">
       <ProfileSectionNav />
-      <div className="mx-auto max-w-6xl space-y-10 pt-6">
+      <div className="mx-auto max-w-6xl space-y-8 pb-24 pt-4 sm:space-y-10 sm:pt-6 lg:pb-0">
         <ProfileHeader identity={profile.identity} />
         <ReadinessPanel items={profile.readiness} />
         <IdentitySection identity={profile.identity} />

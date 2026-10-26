@@ -112,20 +112,27 @@ const workspacePayload = () => ({
 async function newPage(browser: any, o: Opts) {
   const ctx = await browser.newContext({ viewport: { width: o.width, height: o.height }, deviceScaleFactor: 1 });
   const role = o.role ?? "student";
-  await ctx.addInitScript(([theme, r]: string[]) => {
+  // The stubbed session user is the same person as the profile fixture, so the shell and page agree.
+  const pid = o.profile?.identity;
+  const stuFirst: string = pid?.firstName ?? "Amelia";
+  const stuLast: string = pid?.lastName ?? "Hart";
+  const stuEmail: string = o.profile?.contact?.email ?? "amelia.hart@example.com";
+  const sessionName = role === "admin" ? "Synthetic Admin" : `${stuFirst} ${stuLast}`;
+  const sessionEmail = role === "admin" ? "admin.synthetic@example.com" : stuEmail;
+  await ctx.addInitScript(([theme, r, name, email]: string[]) => {
     localStorage.setItem("theme", theme);
     localStorage.setItem("lumiere_auth", JSON.stringify({
-      user: { id: "u1", email: "amelia.hart@example.com", name: r === "admin" ? "Synthetic Admin" : "Amelia Hart", role: r },
+      user: { id: "u1", email, name, role: r },
       session: { access_token: "stub", expires_at: Math.floor(Date.now() / 1000) + 3600 },
     }));
-  }, [o.theme, role]);
+  }, [o.theme, role, sessionName, sessionEmail]);
   await ctx.route(/.*/, async (route: any) => {
     const url = new URL(route.request().url());
     if (url.hostname !== "localhost") return route.abort();
     if (!url.pathname.startsWith("/api/")) return route.continue();
     const json = (status: number, body: unknown) => route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
     const p = url.pathname;
-    if (p === "/api/students/me") return json(200, { id: "s1", first_name: "Amelia", last_name: "Hart", email: "amelia.hart@example.com", photo_url: null });
+    if (p === "/api/students/me") return json(200, { id: "s1", first_name: stuFirst, last_name: stuLast, email: stuEmail, photo_url: null });
     if (p === "/api/students/me/profile") return json(200, o.profile);
     if (p === `/api/students/${STAFF_STUDENT_ID}/profile`) return json(200, staffProfile());
     if (p === `/api/students/${STAFF_STUDENT_ID}/identity-corrections`) return json(200, [PENDING, OLD_REJECTED]);

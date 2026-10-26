@@ -117,7 +117,12 @@ describe("S09 profile: rich profile", () => {
   });
 
   it("eligibility shows upload links only for missing/rejected/resubmit documents", () => {
-    expect(count(markup, 'data-testid="link-upload-document"')).toBe(3);
+    // Education documents (transcript, degree) are shown under Background only, so they do not repeat here.
+    expect(count(markup, 'data-testid="link-upload-document"')).toBe(2);
+    const eligibilityDocs = markup.slice(markup.indexOf('data-testid="eligibility-documents"'));
+    expect(eligibilityDocs.split('data-testid="eligibility-document"').length - 1).toBe(3);
+    expect(text(eligibilityDocs.slice(0, eligibilityDocs.indexOf("</ul>")))).not.toContain("Degree certificate");
+    expect(markup).toContain('data-testid="revoked-hint"');
     expect(t).toContain("Resubmission requested");
     expect(t).toContain("Meets the requirement");
   });

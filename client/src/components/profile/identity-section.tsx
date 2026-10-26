@@ -492,7 +492,7 @@ export function CorrectionDialog({ identity }: { identity: ProfileIdentity }) {
           </p>
 
           <FormError message={serverError} />
-          <FormActions saving={busy} onCancel={() => setOpen(false)} saveLabel="Send request" />
+          <FormActions saving={busy} onCancel={() => setOpen(false)} saveLabel="Send request" sticky />
         </form>
       </DialogContent>
     </Dialog>

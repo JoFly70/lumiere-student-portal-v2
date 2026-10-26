@@ -298,3 +298,12 @@ export function validateEmail(value: string): string | null {
   if (!v) return null;
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) ? null : "Enter a valid email address";
 }
+
+/** Document types shown under Academic Background, so Eligibility does not list them again. */
+export const EDUCATION_DOC_TYPES: ReadonlySet<string> = new Set([
+  "hs_transcript",
+  "hs_diploma",
+  "degree_certificate",
+  "college_transcript",
+  "foreign_eval",
+]);
