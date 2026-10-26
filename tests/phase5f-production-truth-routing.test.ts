@@ -81,10 +81,12 @@ describe("Phase 5F production truth and routing", () => {
     expect(flightDeck).toContain("fetchStudentRecordStatus");
     expect(flightDeck).toContain("getAuthToken");
     expect(flightDeck).toContain("headers.Authorization");
-    expect(flightDeck).toContain("studentRecordStatus === 'missing'");
-    expect(flightDeck).toContain("enabled: studentRecordStatus === 'ready'");
-    expect(flightDeck).toContain("Your Lumiere plan is not ready yet");
-    expect(flightDeck).toContain("before progress, timeline, and cost projections can be shown");
+    expect(flightDeck).toContain('studentRecordStatus === "missing"');
+    expect(flightDeck).toContain('enabled: studentRecordStatus === "ready"');
+    expect(flightDeck).toContain("<PlanNotReady />");
+    const states = read("client/src/components/student-progress/states.tsx");
+    expect(states).toContain("plan is not ready yet");
+    expect(states).toContain("before your academic progress can be shown");
 
     expect(profile).toContain("Student record not ready");
     expect(profile).toContain("Your Lumiere advisor must create your student record");

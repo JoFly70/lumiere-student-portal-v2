@@ -78,6 +78,15 @@ export default {
           foreground: "hsl(var(--sidebar-accent-foreground) / <alpha-value>)",
           border: "var(--sidebar-accent-border)"
         },
+        gold: {
+          DEFAULT: "hsl(var(--gold) / <alpha-value>)",
+          strong: "hsl(var(--gold-strong) / <alpha-value>)",
+          soft: "hsl(var(--gold-soft) / <alpha-value>)",
+        },
+        attention: {
+          DEFAULT: "hsl(var(--attention) / <alpha-value>)",
+          soft: "hsl(var(--attention-soft) / <alpha-value>)",
+        },
         status: {
           online: "rgb(34 197 94)",
           away: "rgb(245 158 11)",

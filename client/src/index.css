@@ -76,6 +76,13 @@
   --chart-4: 35 85% 48%;
   --chart-5: 340 75% 45%;
 
+  /* Lumiere gold + calm attention tones (S04 student experience) */
+  --gold: 40 58% 46%;
+  --gold-strong: 35 68% 30%;
+  --gold-soft: 42 60% 94%;
+  --attention: 30 85% 36%;
+  --attention-soft: 38 92% 94%;
+
   --font-sans: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-serif: Georgia, serif;
   --font-mono: "JetBrains Mono", Menlo, monospace;
@@ -185,6 +192,12 @@
   --destructive: 0 70% 48%;
 
   --destructive-foreground: 0 5% 98%;
+
+  --gold: 41 56% 58%;
+  --gold-strong: 41 62% 70%;
+  --gold-soft: 40 22% 16%;
+  --attention: 36 85% 62%;
+  --attention-soft: 34 30% 15%;
 
   --input: 210 8% 32%;
   --ring: 215 80% 55%;
