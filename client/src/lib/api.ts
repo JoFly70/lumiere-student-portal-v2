@@ -55,6 +55,11 @@ export async function apiRequest<T = any>(
     throw new Error(error.error || `HTTP ${response.status}: ${response.statusText}`);
   }
 
+  // 204 No Content (e.g. DELETE) has no JSON body.
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
   return response.json();
 }
 

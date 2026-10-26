@@ -3,7 +3,7 @@ import { Upload, User } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { apiRequest } from '@/lib/queryClient';
+import { apiRequest } from '@/lib/api';
 
 interface ProfileAvatarUploadProps {
   photoUrl?: string | null;
@@ -72,16 +72,11 @@ export function ProfileAvatarUpload({
       const formData = new FormData();
       formData.append('photo', file);
 
-      const response = await fetch(`/api/students/${studentId}/photo`, {
-        method: 'POST',
-        body: formData,
-      });
-      
-      if (!response.ok) {
-        throw new Error('Upload failed');
-      }
-
-      const data = await response.json();
+      // Shared helper adds Authorization/CSRF; FormData keeps the browser-set multipart Content-Type.
+      const data = await apiRequest<{ photoUrl?: string }>(
+        `/api/students/${encodeURIComponent(studentId)}/photo`,
+        { method: 'POST', body: formData, credentials: 'include' },
+      );
       
       if (data?.photoUrl) {
         onUploadSuccess?.(data.photoUrl);

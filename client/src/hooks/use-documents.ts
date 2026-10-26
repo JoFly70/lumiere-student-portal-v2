@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiRequest } from '@/lib/api';
+import { apiRequest, getAuthToken } from '@/lib/api';
 import type { StudentDocument } from '@shared/schema';
 
 export interface DocumentFilters {
@@ -16,28 +16,35 @@ export interface GenerateUploadUrlInput {
   student_code: string;
 }
 
+// Mirrors the server's presigned upload response (snake_case).
 export interface GenerateUploadUrlResponse {
-  uploadUrl: string;
-  storagePath: string;
-  publicUrl: string;
+  upload_url: string;
+  upload_token: string;
+  storage_path: string;
+  expires_in: number;
 }
 
+// Metadata only. storage_path must be the value returned by the upload-url
+// endpoint; status/verification/url are server-controlled.
 export interface CreateDocumentInput {
   doc_type: string;
   file_name: string;
   storage_path: string;
-  url: string;
   issuer?: string | null;
   doc_date?: string | null;
   score?: string | null;
   country?: string | null;
   notes?: string | null;
-  visibility: 'student_staff' | 'staff_only' | 'public';
-  required_for_enrollment?: boolean;
-  status: 'pending' | 'verified' | 'rejected' | 'resubmit_requested';
-  soft_deleted?: boolean;
-  admin_notes?: string | null;
-  ocr_text?: string | null;
+}
+
+export type DocumentWithDownloadUrl = StudentDocument & {
+  download_url: string;
+  download_expires_in?: number;
+};
+
+// GET /api/documents/:id returns the record plus a short-lived signed download URL.
+export function fetchDocumentWithDownloadUrl(documentId: string): Promise<DocumentWithDownloadUrl> {
+  return apiRequest<DocumentWithDownloadUrl>(`/api/documents/${encodeURIComponent(documentId)}`);
 }
 
 export function useDocuments(studentId: string | null, filters?: DocumentFilters) {
@@ -105,7 +112,12 @@ export function useMyProfile() {
     queryKey: ['student', 'me'],
     queryFn: async () => {
       try {
-        const response = await fetch('/api/students/me');
+        const headers: Record<string, string> = {};
+        const token = getAuthToken();
+        if (token) {
+          headers.Authorization = `Bearer ${token}`;
+        }
+        const response = await fetch('/api/students/me', { headers, credentials: 'include' });
         if (!response.ok) {
           if (response.status === 404) {
             return null;

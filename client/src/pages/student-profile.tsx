@@ -37,7 +37,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { getAuthToken } from "@/lib/api";
+import { api, getAuthToken } from "@/lib/api";
 import { ProfileAvatarUpload } from "@/components/profile-avatar-upload";
 import type { Student, StudentContact, InsertStudentContact } from "@shared/schema";
 import {
@@ -72,9 +72,7 @@ async function fetchMyProfile(): Promise<Student | null> {
 // Get student contacts
 async function fetchContacts(studentId: string): Promise<StudentContact[]> {
   try {
-    const response = await fetch(`/api/students/${studentId}/contacts`);
-    if (!response.ok) return [];
-    return response.json();
+    return await api.get<StudentContact[]>(`/api/students/${encodeURIComponent(studentId)}/contacts`);
   } catch (error) {
     console.error('Error fetching contacts:', error);
     return [];
@@ -317,6 +315,7 @@ function IdentitySection({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/me'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/students/me'] });
       toast({
         title: "Profile updated",
         description: "Your identity information has been saved successfully.",
@@ -598,6 +597,7 @@ function ContactSection({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/me'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/students/me'] });
       toast({
         title: "Contact information updated",
         description: "Your contact details have been saved successfully.",
@@ -913,6 +913,7 @@ function EligibilitySection({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/me'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/students/me'] });
       toast({
         title: "Eligibility updated",
         description: "Your eligibility information has been saved successfully.",
@@ -1262,7 +1263,7 @@ function AuthorizedContactsSection({
 
   const deleteMutation = useMutation({
     mutationFn: async (contactId: string) => {
-      return apiRequest('DELETE', `/api/contacts/${contactId}`);
+      return apiRequest('DELETE', `/api/students/contacts/${encodeURIComponent(contactId)}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/students', studentId, 'contacts'] });

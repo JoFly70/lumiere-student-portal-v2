@@ -34,7 +34,8 @@ import {
   useGenerateUploadUrl,
   useCreateDocument,
   useDeleteDocument,
-  useMyProfile
+  useMyProfile,
+  fetchDocumentWithDownloadUrl
 } from "@/hooks/use-documents";
 import type { StudentDocument } from "@shared/schema";
 
@@ -156,6 +157,7 @@ export default function Documents() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<DocumentCategory | "all">("all");
   const [previewDocument, setPreviewDocument] = useState<StudentDocument | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const documents = documentsData || [];
@@ -219,7 +221,7 @@ export default function Documents() {
           student_code: profile.student_code,
         });
 
-        const uploadResponse = await fetch(uploadUrlData.uploadUrl, {
+        const uploadResponse = await fetch(uploadUrlData.upload_url, {
           method: 'PUT',
           body: file,
           headers: {
@@ -234,11 +236,7 @@ export default function Documents() {
         await createDocument.mutateAsync({
           doc_type: docType,
           file_name: file.name,
-          storage_path: uploadUrlData.storagePath,
-          url: uploadUrlData.publicUrl,
-          visibility: 'student_staff',
-          status: 'pending',
-          required_for_enrollment: false,
+          storage_path: uploadUrlData.storage_path,
         });
 
         setUploadProgress(Math.round(((i + 1) / validFiles.length) * 100));
@@ -298,22 +296,44 @@ export default function Documents() {
     }
   };
 
-  const handleDownload = (doc: StudentDocument) => {
-    const link = document.createElement("a");
-    link.href = doc.url;
-    link.download = doc.file_name;
-    link.target = "_blank";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    toast({
-      title: "Download started",
-      description: `Downloading ${doc.file_name}...`,
-    });
+  const handleDownload = async (doc: StudentDocument) => {
+    try {
+      // Signed URL from the authenticated document endpoint.
+      const { download_url } = await fetchDocumentWithDownloadUrl(doc.id);
+      const link = document.createElement("a");
+      link.href = download_url;
+      link.download = doc.file_name;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast({
+        title: "Download started",
+        description: `Downloading ${doc.file_name}...`,
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Download failed",
+        description: `Failed to download ${doc.file_name}`,
+      });
+    }
   };
 
-  const handlePreview = (doc: StudentDocument) => {
+  const handlePreview = async (doc: StudentDocument) => {
     setPreviewDocument(doc);
+    setPreviewUrl(null);
+    try {
+      const { download_url } = await fetchDocumentWithDownloadUrl(doc.id);
+      setPreviewUrl(download_url);
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Preview failed",
+        description: `Failed to load ${doc.file_name}`,
+      });
+    }
   };
 
   const filteredDocuments = documents.filter(doc => {
@@ -652,7 +672,7 @@ export default function Documents() {
         return (
           <div
             className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4"
-            onClick={() => setPreviewDocument(null)}
+            onClick={() => { setPreviewDocument(null); setPreviewUrl(null); }}
             data-testid="modal-preview"
           >
             <Card
@@ -670,22 +690,26 @@ export default function Documents() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => setPreviewDocument(null)}
+                  onClick={() => { setPreviewDocument(null); setPreviewUrl(null); }}
                   data-testid="button-close-preview"
                 >
                   <X className="h-5 w-5" />
                 </Button>
               </CardHeader>
               <CardContent className="overflow-auto max-h-[calc(90vh-120px)]">
-                {mimeType.startsWith("image/") ? (
+                {!previewUrl && (mimeType.startsWith("image/") || mimeType === "application/pdf") ? (
+                  <div className="flex justify-center py-12 text-muted-foreground">
+                    <Loader2 className="h-8 w-8 animate-spin" />
+                  </div>
+                ) : mimeType.startsWith("image/") ? (
                   <img
-                    src={previewDocument.url}
+                    src={previewUrl ?? undefined}
                     alt={previewDocument.file_name}
                     className="max-w-full h-auto mx-auto rounded-lg"
                   />
                 ) : mimeType === "application/pdf" ? (
                   <iframe
-                    src={previewDocument.url}
+                    src={previewUrl ?? undefined}
                     className="w-full h-[70vh] rounded-lg"
                     title={previewDocument.file_name}
                   />
