@@ -76,7 +76,18 @@ export type AuditEventType =
   | 'system.backup_created'
   | 'system.backup_restored'
   | 'system.maintenance_mode'
-  | 'system.error';
+  | 'system.error'
+  // Support events (S08)
+  | 'support.ticket_created'
+  | 'support.ticket_updated'
+  | 'support.status_changed'
+  | 'support.assignment_changed'
+  | 'support.priority_changed'
+  | 'support.comment_added'
+  | 'support.internal_note_added'
+  | 'support.attachment_added'
+  | 'support.attachment_downloaded'
+  | 'support.access_denied';
 
 export type AuditSeverity = 'info' | 'warning' | 'error' | 'critical';
 
@@ -361,6 +372,34 @@ export async function auditSystem(
     severity: severity || 'info',
     actionDescription: description,
     metadata,
+  });
+}
+
+/**
+ * Log a support-ticket event (S08). Never pass message bodies in metadata.
+ */
+export async function auditSupport(
+  eventType: Extract<AuditEventType, `support.${string}`>,
+  entry: {
+    actorUserId: string;
+    actorRole?: string;
+    ticketId: string;
+    reporterId?: string;
+    description: string;
+    metadata?: Record<string, any>;
+    severity?: AuditSeverity;
+  },
+) {
+  await createAuditLog({
+    eventType,
+    severity: entry.severity || 'info',
+    actorUserId: entry.actorUserId,
+    actorRole: entry.actorRole,
+    targetUserId: entry.reporterId,
+    targetResourceType: 'support_ticket',
+    targetResourceId: entry.ticketId,
+    actionDescription: entry.description,
+    metadata: entry.metadata,
   });
 }
 

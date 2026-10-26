@@ -36,6 +36,7 @@ vi.mock("../server/middleware/rbac", () => ({
 }));
 vi.mock("../server/lib/supabase", () => ({
   supabaseAdmin: { from: supabaseFromMock },
+  isSupabaseConfigured: true,
 }));
 vi.mock("../server/services/student-service", () => ({
   getStudent: getStudentMock,
@@ -50,11 +51,17 @@ vi.mock("../server/lib/email", () => ({
 vi.mock("../server/lib/audit", () => ({
   auditSystem: vi.fn(),
   auditAdmin: vi.fn(),
+  createAuditLog: vi.fn(async () => undefined),
 }));
 
 function queryResult(data: unknown, count = Array.isArray(data) ? data.length : 1) {
   const query: any = {
     eq: vi.fn(() => query),
+    in: vi.fn(() => query),
+    is: vi.fn(() => query),
+    ilike: vi.fn(() => query),
+    limit: vi.fn(() => query),
+    maybeSingle: vi.fn(() => query),
     select: vi.fn(() => query),
     order: vi.fn(() => query),
     range: vi.fn(() => query),
@@ -101,16 +108,19 @@ describe("Phase 5D route ownership and student ticket filtering", () => {
     const response = await request(app).get("/api/tickets?studentId=missing-student");
     expect(response.status).toBe(200);
     expect(response.body.tickets).toEqual([]);
-    const query = supabaseFromMock.mock.results[0].value;
-    expect(query.eq).not.toHaveBeenCalledWith("reporter_id", "missing-student");
+    // S08: the router answers without querying tickets at all.
+    for (const { value: query } of supabaseFromMock.mock.results) {
+      expect(query.eq).not.toHaveBeenCalledWith("reporter_id", "missing-student");
+    }
   });
 
   it.each(["student", "staff", "coach"])("rejects studentId filtering for %s", async (role) => {
     const app = await createApp();
     const response = await request(app).get("/api/tickets?studentId=student-1").set("x-role", role);
     expect(response.status).toBe(403);
-    const query = supabaseFromMock.mock.results[0].value;
-    expect(query.eq).not.toHaveBeenCalledWith("reporter_id", "student-1");
+    for (const { value: query } of supabaseFromMock.mock.results) {
+      expect(query.eq).not.toHaveBeenCalledWith("reporter_id", "student-1");
+    }
   });
 
   it("keeps document list ownership tied to the stored student profile", async () => {
@@ -135,6 +145,8 @@ describe("Phase 5D route ownership and student ticket filtering", () => {
       .get("/api/tickets/ticket-1")
       .set("x-role", "student")
       .set("x-user-id", "student-user");
-    expect(response.status).toBe(403);
+    // S08: another student's ticket is reported as not found (no existence leak).
+    expect(response.status).toBe(404);
+    expect(response.body.ticket).toBeUndefined();
   });
 });

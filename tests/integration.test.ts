@@ -195,6 +195,10 @@ function makeQueryChain(result: { data: any; error: any; count?: number }) {
     select: vi.fn(() => chain),
     eq: vi.fn(() => chain),
     or: vi.fn(() => chain),
+    in: vi.fn(() => chain),
+    is: vi.fn(() => chain),
+    ilike: vi.fn(() => chain),
+    limit: vi.fn(() => chain),
     order: vi.fn(() => chain),
     range: vi.fn(() => chain),
     single: vi.fn(() => Promise.resolve(result)),
@@ -370,7 +374,8 @@ describe('SUPPORT — real router from server/routes/tickets.ts', () => {
     expect(res.status).toBe(401);
   });
 
-  it('GET /api/tickets/:id → 403 when student A requests student B ticket', async () => {
+  // S08: a ticket the caller may not see is reported as 404 (no existence leak).
+  it('GET /api/tickets/:id → 404 when student A requests student B ticket', async () => {
     setupAuthUser({ id: 'student-1', email: 'a@test.com', role: 'student' });
 
     // Mock supabase to return a ticket owned by student-2
@@ -393,7 +398,8 @@ describe('SUPPORT — real router from server/routes/tickets.ts', () => {
     const res = await request(app)
       .get('/api/tickets/ticket-1')
       .set('Authorization', 'Bearer valid-token');
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(404);
+    expect(JSON.stringify(res.body)).not.toContain('Help');
   });
 
   it('GET /api/tickets/:id → 200 when student requests own ticket', async () => {
@@ -406,15 +412,25 @@ describe('SUPPORT — real router from server/routes/tickets.ts', () => {
           reporter_id: 'student-1',
           subject: 'My ticket',
           description: 'I need help',
-          ticket_comments: [
-            { id: 'c1', content: 'Public comment', is_internal: false },
-            { id: 'c2', content: 'Internal note', is_internal: true },
-          ],
-          ticket_attachments: [],
-          ticket_status_history: [],
+          category: 'general',
+          priority: 'medium',
+          status: 'open',
+          created_at: '2026-10-01T00:00:00Z',
+          updated_at: '2026-10-01T00:00:00Z',
+          metadata: {},
         },
         error: null,
       }),
+      // S08: comments, attachments and history are read as separate queries.
+      ticket_comments: (q: any) => makeQueryChain({
+        data: [
+          { id: 'c1', ticket_id: 'ticket-1', author_id: 'staff-1', author_role: 'staff', author_name: 'Advisor', content: 'Public comment', is_internal: false, created_at: '2026-10-01T01:00:00Z' },
+          { id: 'c2', ticket_id: 'ticket-1', author_id: 'staff-1', author_role: 'staff', author_name: 'Advisor', content: 'Internal note', is_internal: true, created_at: '2026-10-01T02:00:00Z' },
+        ],
+        error: null,
+      }),
+      ticket_attachments: (q: any) => makeQueryChain({ data: [], error: null }),
+      ticket_status_history: (q: any) => makeQueryChain({ data: [], error: null }),
     });
 
     const app = makeTicketsApp(ticketsRouter);
@@ -427,6 +443,7 @@ describe('SUPPORT — real router from server/routes/tickets.ts', () => {
     const comments = res.body.ticket.ticket_comments;
     expect(comments).toHaveLength(1);
     expect(comments[0].is_internal).toBe(false);
+    expect(JSON.stringify(res.body)).not.toContain('Internal note');
   });
 });
 
