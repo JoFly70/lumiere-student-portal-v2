@@ -89,15 +89,23 @@ function freePort(): Promise<number> {
   });
 }
 
-function migrationSequence(): string[] {
+function migrationSequence(lineage: "full" | "production" = "full", exclude: readonly string[] = []): string[] {
   const dir = path.join(REPO_ROOT, "supabase", "migrations");
   const all = fs.readdirSync(dir).filter((f) => f.endsWith(".sql")).sort();
-  const rest = all.filter((f) => f !== FIRST_MIGRATION).map((f) => `supabase/migrations/${f}`);
-  return [
+  const rest = all
+    .filter((f) => f !== FIRST_MIGRATION && !exclude.includes(f))
+    .map((f) => `supabase/migrations/${f}`);
+  const head = [
     "tests/helpers/s05-supabase-shim.sql",
     `supabase/migrations/${FIRST_MIGRATION}`,
     "PRODUCTION_DATABASE_SETUP.sql",
     ...rest,
+  ];
+  // S10: "production" = the legacy production lineage only (PRODUCTION_DATABASE_SETUP.sql + the modern
+  // chain), WITHOUT the disposable-only supplements below that reconstruct tables production may lack.
+  if (lineage === "production") return head;
+  return [
+    ...head,
     "scripts/disposable-env/50_runtime_supplement.sql",
     "migrations/004_financial_timeline.sql",
     "migrations/007_course_roadmap_tables.sql",
@@ -107,9 +115,9 @@ function migrationSequence(): string[] {
   ];
 }
 
-async function applySchema(sql: postgres.Sql): Promise<string[]> {
+async function applySchema(sql: postgres.Sql, lineage: "full" | "production", exclude: readonly string[]): Promise<string[]> {
   const applied: string[] = [];
-  for (const entry of migrationSequence()) {
+  for (const entry of migrationSequence(lineage, exclude)) {
     const text = entry.startsWith("@inline:")
       ? entry.slice("@inline:".length)
       : fs.readFileSync(path.join(REPO_ROOT, entry), "utf8");
@@ -126,6 +134,10 @@ async function applySchema(sql: postgres.Sql): Promise<string[]> {
 export interface StartLocalPgOptions {
   /** Skip applying the repository schema (bare cluster only). */
   readonly bare?: boolean;
+  /** S10: "production" skips the disposable-only supplements (legacy production lineage approximation). */
+  readonly lineage?: "full" | "production";
+  /** S10: supabase/migrations file names (not paths) to leave out of the chain. */
+  readonly exclude?: readonly string[];
 }
 
 export async function startLocalPg(options: StartLocalPgOptions = {}): Promise<LocalPg> {
@@ -188,7 +200,7 @@ export async function startLocalPg(options: StartLocalPgOptions = {}): Promise<L
       // Single connection so files that contain their own BEGIN/COMMIT are allowed.
       const migrator = postgres(url, { max: 1, onnotice: () => {} });
       try {
-        appliedFiles = await applySchema(migrator);
+        appliedFiles = await applySchema(migrator, options.lineage ?? "full", options.exclude ?? []);
       } finally {
         await migrator.end({ timeout: 5 });
       }
