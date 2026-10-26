@@ -1,0 +1,24 @@
+{
+  "step": "A5 progress; write result equals fresh GET",
+  "countsBefore": {
+    "itemsTotal": 23,
+    "itemsOfficiallyAccepted": 0,
+    "itemsProviderComplete": 0,
+    "itemsInProgress": 0,
+    "itemsNotStarted": 23,
+    "tasksTotal": 39,
+    "tasksGraded": 0,
+    "tasksSubmitted": 0
+  },
+  "countsAfter": {
+    "itemsTotal": 23,
+    "itemsOfficiallyAccepted": 0,
+    "itemsProviderComplete": 0,
+    "itemsInProgress": 4,
+    "itemsNotStarted": 19,
+    "tasksTotal": 39,
+    "tasksGraded": 0,
+    "tasksSubmitted": 2
+  },
+  "staleRevision": 409
+}

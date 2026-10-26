@@ -1,0 +1,19 @@
+{
+  "step": "A3 student sees a named next task",
+  "state": "PUBLISHED",
+  "focusItemCount": 3,
+  "focusItemTitles": [
+    "U.S. Government / American Government",
+    "U.S. History I",
+    "U.S. History II"
+  ],
+  "currentPhases": 1,
+  "items": 24,
+  "milestoneKinds": [
+    "checkpoint",
+    "application",
+    "graduation",
+    "graduation",
+    "checkpoint"
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "step": "S7 isolation",
+  "otherStudent": {
+    "read": 404,
+    "comment": 404,
+    "patch": 404,
+    "uploadUrl": 404
+  },
+  "otherStudentListContainsTicket": false,
+  "ownerChangeStatusOrPriority": {
+    "status": 403,
+    "priority": 403
+  }
+}

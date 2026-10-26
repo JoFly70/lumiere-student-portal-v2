@@ -1,0 +1,8 @@
+{
+  "step": "S8 staff resolves; student sees outcome",
+  "resolveWithoutNoteStatus": 400,
+  "resolve": 200,
+  "studentSeesStatus": "resolved",
+  "studentSeesResolutionNote": true,
+  "internalLeaked": false
+}

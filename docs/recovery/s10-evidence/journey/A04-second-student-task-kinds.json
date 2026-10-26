@@ -1,0 +1,9 @@
+{
+  "step": "A4 RUT pair task kinds",
+  "taskKinds": [
+    "assignment",
+    "challenge",
+    "exam",
+    "milestone"
+  ]
+}

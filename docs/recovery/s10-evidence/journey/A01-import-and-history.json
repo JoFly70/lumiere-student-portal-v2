@@ -1,0 +1,15 @@
+{
+  "step": "A1 staff imports master+execution pair; history kept separate from plan items",
+  "draftVersion": 1,
+  "planItems": 24,
+  "duplicateKeys": 0,
+  "blockingExceptions": 0,
+  "replayCreatedSecondDraft": false,
+  "reportedHistoryKinds": [
+    "course",
+    "credit_baseline",
+    "transfer"
+  ],
+  "creditBaselineReported": "51",
+  "completedHistoryRowsAsPlanItems": 0
+}

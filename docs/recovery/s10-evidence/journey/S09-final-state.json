@@ -1,0 +1,12 @@
+{
+  "step": "S9 final",
+  "canonicalTablesIdentical": true,
+  "supportWritesTouchedOnly": [
+    "support_tickets",
+    "ticket_attachments",
+    "ticket_comments",
+    "ticket_status_history"
+  ],
+  "academicBackend": "real disposable PostgreSQL 16 + repository migrations",
+  "supportBackend": "S08 in-memory Supabase fake behind the production /api/tickets router (support tables are not in the local migration chain)"
+}
