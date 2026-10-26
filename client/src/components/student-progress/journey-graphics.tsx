@@ -4,8 +4,8 @@
  * and stages only); none is decoration. No percentages, estimates or credits are
  * invented here.
  */
-import React from "react";
-import { Check, Flag, GraduationCap } from "lucide-react";
+import React, { useState } from "react";
+import { Check, ChevronDown, Flag, GraduationCap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { StudentItemStage, StudentRoadmapPhaseView, StudentRoadmapView } from "@shared/student-roadmap-contract";
 import {
@@ -113,11 +113,12 @@ export function StageTrack({ stage }: { stage: StudentItemStage; label?: string 
               </span>
               <span
                 className={cn(
-                  "mt-1 block text-xs leading-tight tracking-tight [overflow-wrap:normal] max-[480px]:text-[10px]",
+                  "mt-1 block text-xs leading-tight [overflow-wrap:normal] [word-break:keep-all]",
                   i === current ? "font-semibold text-student-ink" : reached ? "text-student-ink" : "text-student-muted",
                 )}
               >
-                <span aria-hidden="true">{s.short}</span>
+                {/* Below sm six labels do not fit at a readable size: the markers stay, the labels move to the summary line. */}
+                <span aria-hidden="true" className="max-sm:hidden">{s.short}</span>
                 <span className="sr-only">
                   {s.label}, {state}
                 </span>
@@ -126,6 +127,10 @@ export function StageTrack({ stage }: { stage: StudentItemStage; label?: string 
           );
         })}
       </ol>
+      <p className="mt-2 text-center text-sm text-student-ink sm:hidden" aria-hidden="true" data-testid="stage-track-summary">
+        Step {current + 1} of {STAGES.length}: <strong className="font-semibold">{STAGES[current].label}</strong>
+        {STAGES[current + 1] ? <span className="text-student-muted">. Next: {STAGES[current + 1].label}</span> : null}
+      </p>
     </div>
   );
 }
@@ -214,11 +219,23 @@ function activeItems(phase: StudentRoadmapPhaseView) {
   return phase.items.filter((i) => i.planStatus === "planned" || i.planStatus === "hold");
 }
 
+/**
+ * "2 of 3 courses finished". "Finished" counts courses officially accepted AND
+ * courses the student reported complete at the provider; the second group is
+ * said out loud so reported completion is never read as official credit.
+ */
+export function phaseFinishedLine(phase: StudentRoadmapPhaseView): string {
+  const items = activeItems(phase);
+  const official = items.filter((i) => i.stage === "officially_accepted").length;
+  const provider = items.filter((i) => i.stage === "provider_complete").length;
+  const base = `${official + provider} of ${items.length} ${items.length === 1 ? "course" : "courses"} finished`;
+  return provider > 0 ? `${base} (${provider} awaiting Lumière's acceptance)` : base;
+}
+
 export function phasePipSummary(phase: StudentRoadmapPhaseView): string {
   const items = activeItems(phase);
   const by = (k: StatusKey) => items.filter((i) => stageStatus(i.stage) === k).length;
-  const finished = by("official") + by("provider");
-  const parts = [`${finished} of ${items.length} ${items.length === 1 ? "course" : "courses"} finished`];
+  const parts = [phaseFinishedLine(phase)];
   if (by("progress") > 0) parts.push(`${by("progress")} in progress`);
   if (by("notstarted") > 0) parts.push(`${by("notstarted")} not started`);
   return `${phase.title}: ${parts.join(", ")}`;
@@ -256,6 +273,12 @@ export function JourneyStrip({ view }: { view: StudentRoadmapView }) {
   const grouped = upcomingAll.length > 2 ? upcomingAll.slice(1) : [];
   const phases = allPhases.filter((p) => !grouped.includes(p));
   const groupedCourses = grouped.reduce((n, p) => n + activeItems(p).length, 0);
+  const [showAll, setShowAll] = useState(false);
+  const isOther = (p: StudentRoadmapPhaseView) => p.state === "complete" || p.state === "upcoming";
+  const otherCount = phases.filter(isOther).length + grouped.length;
+  const completeCount = phases.filter((p) => p.state === "complete").length;
+  const upcomingCount = phases.filter((p) => p.state === "upcoming").length + grouped.length;
+  const hideOther = showAll ? "" : "max-md:hidden";
   const grad = horizonMilestones(view).find((m) => m.kind === "graduation");
   const baseline = priorCreditBaseline(view.foundation);
   return (
@@ -271,14 +294,18 @@ export function JourneyStrip({ view }: { view: StudentRoadmapView }) {
           <div className="min-w-0">
             <p className="font-serif text-base leading-snug text-student-ink">Your starting point</p>
             <p className="text-sm text-student-muted">
-              {baseline.applied ? `${baseline.applied} credits applied` : "Record under review"}
+              {baseline.applied === null
+                ? "Record under review"
+                : view.foundation.credentials.length > 0
+                  ? `${view.foundation.credentials.length} prior ${view.foundation.credentials.length === 1 ? "credential" : "credentials"}, see Your foundation`
+                  : "See Your foundation"}
             </p>
           </div>
         </li>
         {phases.map((p) => {
           const help = phaseStateHelp(p.state);
           return (
-            <li key={p.key} className="relative flex gap-3 pb-1 md:flex-col md:gap-2" data-strip="phase" data-phase-state={p.state}>
+            <li key={p.key} className={cn("relative flex gap-3 pb-1 md:flex-col md:gap-2", isOther(p) && hideOther)} data-strip="phase" data-phase-state={p.state}>
               <Rail />
               <span className="relative z-10 shrink-0">
                 <PhaseMarker state={p.state} />
@@ -289,20 +316,14 @@ export function JourneyStrip({ view }: { view: StudentRoadmapView }) {
                   {PHASE_STATE_LABEL[p.state]}
                 </p>
                 <PhasePips phase={p} />
-                <p className="text-sm text-student-muted">
-                  {(() => {
-                    const items = activeItems(p);
-                    const finished = items.filter((i) => i.stage === "officially_accepted" || i.stage === "provider_complete").length;
-                    return `${finished} of ${items.length} ${items.length === 1 ? "course" : "courses"} finished`;
-                  })()}
-                </p>
+                <p className="text-sm text-student-muted">{phaseFinishedLine(p)}</p>
                 {help && <p className="text-xs text-student-muted">{help}</p>}
               </div>
             </li>
           );
         })}
         {grouped.length > 0 && (
-          <li className="relative flex gap-3 pb-1 md:flex-col md:gap-2" data-strip="more" data-testid="strip-more-phases">
+          <li className={cn("relative flex gap-3 pb-1 md:flex-col md:gap-2", hideOther)} data-strip="more" data-testid="strip-more-phases">
             <Rail />
             <span className="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-dashed border-student-line-strong bg-student-card text-xs font-semibold text-student-muted" aria-hidden="true">
               +{grouped.length}
@@ -313,6 +334,24 @@ export function JourneyStrip({ view }: { view: StudentRoadmapView }) {
                 {groupedCourses} {groupedCourses === 1 ? "course" : "courses"}, not started. Details under The horizon.
               </p>
             </div>
+          </li>
+        )}
+        {otherCount > 0 && (
+          <li className="relative pb-1 md:hidden" data-strip="toggle">
+            <button
+              type="button"
+              aria-expanded={showAll}
+              onClick={() => setShowAll((v) => !v)}
+              className="flex min-h-[44px] w-full items-center justify-between gap-3 rounded-xl border border-student-line bg-student-card px-4 text-left text-sm font-medium text-student-ink"
+              data-testid="strip-toggle-other"
+            >
+              <span>
+                {showAll
+                  ? "Hide completed and upcoming phases"
+                  : `Show ${[completeCount ? `${completeCount} completed` : null, upcomingCount ? `${upcomingCount} upcoming` : null].filter(Boolean).join(" and ")} ${otherCount === 1 ? "phase" : "phases"}`}
+              </span>
+              <ChevronDown className={cn("h-5 w-5 shrink-0 text-student-gold-ink transition-transform", showAll && "rotate-180")} aria-hidden="true" />
+            </button>
           </li>
         )}
         <li className="relative flex gap-3 md:flex-col md:gap-2" data-strip="end">

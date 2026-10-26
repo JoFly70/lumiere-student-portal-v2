@@ -67,13 +67,13 @@ describe("S05 Roadmap page", () => {
     expect(fdt).not.toContain("Preliminary");
     expect(fdt).toContain("Waiting for verification");
   });
-  it("shows the prior-credit baseline as a separate, labelled figure", () => {
-    expect(fd).toContain('data-testid="credit-baseline"');
-    expect(fdt).toContain("Prior-credit baseline");
-    expect(fdt).toContain("63 of 120 credits applied");
-    expect(fdt).toContain("separate from the roadmap courses");
-    // The baseline sits outside the count legend, so 0 accepted can never be read as 0 credit.
-    const legend = fd.slice(fd.indexOf('data-testid="count-legend"'), fd.indexOf('data-testid="credit-baseline"'));
+  it("states applied credit ONCE on the Flight Deck (S10 UX pass); the counts section points to it instead of repeating it", () => {
+    expect(fd).not.toContain('data-testid="credit-baseline"');
+    expect(count(fdt, "63 of 120 credits applied")).toBe(1);
+    expect(fdt).toContain("These counts cover roadmap courses only");
+    expect(fd).toContain('data-testid="link-your-credits"');
+    // The count legend carries no credit figure, so 0 accepted can never be read as 0 credit.
+    const legend = fd.slice(fd.indexOf('data-testid="count-legend"'), fd.indexOf('data-testid="count-scope-note"'));
     expect(text(legend)).not.toContain("63");
   });
   it("shows exactly one 'Current phase' and labels the other active phase 'Also active'", () => {

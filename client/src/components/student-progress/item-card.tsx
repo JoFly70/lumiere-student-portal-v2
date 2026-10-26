@@ -228,14 +228,16 @@ export function ItemCard({
           )}
         </div>
         <ItemBadges item={item} />
-        <p className="text-sm text-student-muted"><span className="font-medium text-student-ink">{stageLabel}.</span> {stage.help}</p>
+        {item.stage !== "not_started" && (
+          <p className="text-sm text-student-muted"><span className="font-medium text-student-ink">{stageLabel}.</span> {stage.help}</p>
+        )}
         {item.studentNote && (
           <p className="rounded-lg bg-student-gold-soft px-3 py-2 text-sm text-student-ink" data-testid="student-note">
             <span className="font-medium">Note from Lumière: </span>
             {item.studentNote}
           </p>
         )}
-        <TaskList item={item} collapseDone />
+        <TaskList item={item} collapseDone visibleLimit={4} />
         <ItemActions item={item} />
         {(item.planStatus === "planned" || item.planStatus === "hold") && (
           <p className="text-sm">

@@ -158,25 +158,38 @@ export function TaskList({
   item,
   tasks,
   collapseDone = false,
+  visibleLimit,
   label,
 }: {
   item: StudentRoadmapItemView;
   tasks?: readonly StudentTaskView[];
   collapseDone?: boolean;
+  /** Show at most this many tasks still to do; the rest sit behind "N more tasks". */
+  visibleLimit?: number;
   /** Accessible name of the list; defaults to "Tasks for <course>". */
   label?: string;
 }) {
   const list = tasks ?? item.tasks;
   if (list.length === 0) return null;
   const done = collapseDone ? list.filter((t) => t.status === "graded") : [];
-  if (done.length === 0) return <PlainList item={item} tasks={list} label={label ?? `Tasks for ${item.title}`} />;
-  const todo = list.filter((t) => t.status !== "graded");
+  const todo = collapseDone ? list.filter((t) => t.status !== "graded") : list;
+  const limited = visibleLimit !== undefined && todo.length > visibleLimit + 1;
+  const shown = limited ? todo.slice(0, visibleLimit) : todo;
+  const later = limited ? todo.slice(visibleLimit) : [];
+  if (done.length === 0 && later.length === 0) return <PlainList item={item} tasks={list} label={label ?? `Tasks for ${item.title}`} />;
   return (
     <div>
-      {todo.length > 0 && <PlainList item={item} tasks={todo} label={`Tasks left for ${item.title}`} />}
-      <Disclosure label={`${done.length} done · show`} testId="done-tasks" buttonClassName="min-h-[40px]">
-        <PlainList item={item} tasks={done} label={`Finished tasks for ${item.title}`} />
-      </Disclosure>
+      {shown.length > 0 && <PlainList item={item} tasks={shown} label={`Tasks left for ${item.title}`} />}
+      {later.length > 0 && (
+        <Disclosure label={`${later.length} more tasks to do · show`} testId="later-tasks" buttonClassName="min-h-[40px]">
+          <PlainList item={item} tasks={later} label={`More tasks left for ${item.title}`} />
+        </Disclosure>
+      )}
+      {done.length > 0 && (
+        <Disclosure label={`${done.length} done · show`} testId="done-tasks" buttonClassName="min-h-[40px]">
+          <PlainList item={item} tasks={done} label={`Finished tasks for ${item.title}`} />
+        </Disclosure>
+      )}
     </div>
   );
 }
