@@ -1,0 +1,33 @@
+# apply-schema.sh run, fresh container, 2026-10-26 (NOTICE lines omitted)
+-> supabase/migrations/20251217230356_011_degree_programs_courses.sql
+-> PRODUCTION_DATABASE_SETUP.sql
+-> supabase/migrations/20251217235151_fix_rls_performance_security.sql
+DETAIL:  drop cascades to trigger update_degree_programs_updated_at on table degree_programs
+drop cascades to trigger update_courses_updated_at on table courses
+drop cascades to trigger update_student_enrollments_updated_at on table student_program_enrollments
+drop cascades to trigger update_students_updated_at on table students
+drop cascades to trigger update_support_tickets_updated_at on table support_tickets
+drop cascades to trigger update_ticket_comments_updated_at on table ticket_comments
+drop cascades to trigger update_weekly_metrics_updated_at on table weekly_metrics
+-> supabase/migrations/20260914182506_phase0_add_staff_role.sql
+-> supabase/migrations/20260914195204_phase1a_knowledge_core_schema.sql
+-> supabase/migrations/20260914200029_phase1a_knowledge_core_integrity_fix.sql
+-> supabase/migrations/20260914200820_phase1a_knowledge_history_hardening.sql
+-> supabase/migrations/20260914234000_phase1db_verification_event_sequence.sql
+-> supabase/migrations/20260915160000_phase2a_student_academic_record.sql
+-> supabase/migrations/20260915180000_phase2d_audit_logging.sql
+-> supabase/migrations/20260915190000_phase2d_audit_security_hardening.sql
+-> supabase/migrations/20260915200000_pre_replit_security_hardening.sql
+-> supabase/migrations/20260915210000_policy_auth_users_remediation.sql
+-> supabase/migrations/20260915220000_pre_replit_security_corrections.sql
+-> supabase/migrations/20260916010000_phase4b_student_credit_placement.sql
+-> supabase/migrations/20260916020000_phase4b_student_credit_placement_lifecycle_hardening.sql
+-> supabase/migrations/20260916100000_phase5e_restore_profiles.sql
+-> supabase/migrations/20260917100000_knowledge_evidence_source_metadata.sql
+-> scripts/disposable-env/50_runtime_supplement.sql
+-> migrations/004_financial_timeline.sql
+-> migrations/007_course_roadmap_tables.sql
+-> scripts/disposable-env/90_storage_buckets.sql
+schema applied: 63 public tables
+8f5b93ffb0550ade9dbd313f394ed9af  -
+ERROR lines: 0

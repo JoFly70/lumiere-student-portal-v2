@@ -1,0 +1,7 @@
+id|public|file_size_limit
+documents|f|10485760
+knowledge-evidence|f|10485760
+student-documents|f|10485760
+(3 rows)
+policyname|cmd|roles
+(0 rows)

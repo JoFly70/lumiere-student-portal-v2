@@ -1,9 +1,28 @@
 # Disposable local environment (S02)
 
+> **DISPOSABLE VERIFICATION INFRASTRUCTURE — NOT AN APPROVED PRODUCTION
+> MIGRATION.** The schema produced here is a *reconstruction* from repository
+> evidence. It is not proven to match the production database, and none of
+> these files may be applied to a hosted Supabase project.
+
 Builds the Student Portal schema from a clean state on a **local, throwaway**
-Supabase stack. Nothing here may be pointed at a hosted Supabase project;
-`apply-schema.sh` refuses any non-loopback database URL and any non-empty
-`public` schema.
+Supabase stack. `apply-schema.sh` refuses any non-loopback database URL and
+any non-empty `public` schema.
+
+## Exact build sequence (as executed by `apply-schema.sh`)
+1. `supabase/migrations/20251217230356_011_degree_programs_courses.sql`
+2. `PRODUCTION_DATABASE_SETUP.sql`
+3. every other `supabase/migrations/*.sql` file, in filename order, unmodified (16 files)
+4. `scripts/disposable-env/50_runtime_supplement.sql`
+5. `migrations/004_financial_timeline.sql`
+6. `migrations/007_course_roadmap_tables.sql`
+7. `ALTER TABLE pricing_rules ADD COLUMN IF NOT EXISTS per_credit_price INTEGER`
+8. `scripts/disposable-env/90_storage_buckets.sql`
+
+Expected result: 63 public tables, 0 errors. The `public`-schema dump md5 is
+`8f5b93ffb0550ade9dbd313f394ed9af`, computed from `pg_dump --schema-only --schema=public`
+with comment and blank lines removed. That hash was observed on three clean
+builds across two containers.
 
 ## Prerequisites
 - Docker

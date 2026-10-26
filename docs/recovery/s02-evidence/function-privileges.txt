@@ -1,0 +1,23 @@
+proname|sec_definer|anon_x|auth_x|cfg
+create_audit_log|t|f|f|search_path=public, pg_temp
+current_user_role|t|f|t|search_path=public, pg_temp
+is_staff_or_admin|t|f|t|search_path=public, pg_temp
+knowledge_is_admin|t|f|t|search_path=public, pg_temp
+knowledge_is_staff_or_admin|t|f|t|search_path=public, pg_temp
+purge_expired_audit_logs|t|f|f|search_path=public, pg_temp
+student_owns_record|t|f|t|search_path=public, pg_temp
+update_updated_at_column|t|f|f|search_path=public, pg_temp
+generate_student_code|f|t|t|
+generate_ticket_number|f|f|f|search_path=public, pg_temp
+knowledge_update_updated_at|f|f|f|search_path=public, pg_temp
+set_audit_retention|f|f|f|search_path=public, pg_temp
+set_ticket_number|f|f|f|search_path=public, pg_temp
+student_cp_cross_binding_guard|f|t|t|
+student_cp_guard_immutable_history|f|t|t|
+student_cp_guard_lifecycle|f|t|t|
+student_cp_guard_terminal_updates|f|t|t|
+student_cp_validate_lifecycle_graph|f|t|t|
+update_pricing_rules_timestamp|f|t|t|
+update_weekly_metrics_timestamp|f|t|t|
+validate_english_requirement|f|t|t|
+(21 rows)

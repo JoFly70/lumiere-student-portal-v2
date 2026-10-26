@@ -1,0 +1,56 @@
+tablename|policyname|cmd|roles|using_expr|check_expr
+audit_logs|admin_read_all_audit_logs|SELECT|{authenticated}|(current_user_role() = 'admin'::text)|
+audit_logs|authenticated_read_own_audit_logs|SELECT|{authenticated}|(((actor_user_id)::text = (auth.uid())::text) OR ((target_user_id)::text = (auth.uid())::text))|
+courses|Anyone can view active courses|SELECT|{authenticated}|((is_active = true) OR (current_user_role() = ANY (ARRAY['admin'::text, 'staff'::text])))|
+courses|Only staff can delete courses|DELETE|{authenticated}|(current_user_role() = ANY (ARRAY['admin'::text, 'staff'::text]))|
+courses|Only staff can insert courses|INSERT|{authenticated}||(current_user_role() = ANY (ARRAY['admin'::text, 'staff'::text]))
+courses|Only staff can update courses|UPDATE|{authenticated}|(current_user_role() = ANY (ARRAY['admin'::text, 'staff'::text]))|(current_user_role() = ANY (ARRAY['admin'::text, 'staff'::text]))
+degree_programs|Anyone can view active degree programs|SELECT|{authenticated}|((is_active = true) OR (current_user_role() = ANY (ARRAY['admin'::text, 'staff'::text])))|
+degree_programs|Only staff can delete degree programs|DELETE|{authenticated}|(current_user_role() = ANY (ARRAY['admin'::text, 'staff'::text]))|
+degree_programs|Only staff can insert degree programs|INSERT|{authenticated}||(current_user_role() = ANY (ARRAY['admin'::text, 'staff'::text]))
+degree_programs|Only staff can update degree programs|UPDATE|{authenticated}|(current_user_role() = ANY (ARRAY['admin'::text, 'staff'::text]))|(current_user_role() = ANY (ARRAY['admin'::text, 'staff'::text]))
+documents|Staff can manage documents|ALL|{authenticated}|(current_user_role() = ANY (ARRAY['admin'::text, 'staff'::text, 'coach'::text]))|(current_user_role() = ANY (ARRAY['admin'::text, 'staff'::text, 'coach'::text]))
+documents|Students can view own documents|SELECT|{authenticated}|((EXISTS ( SELECT 1 FROM students s WHERE ((s.id = documents.student_id) AND (s.user_id = (auth.uid())::text))|
+profiles|Staff can manage profiles|ALL|{authenticated}|(current_user_role() = ANY (ARRAY['admin'::text, 'staff'::text]))|(current_user_role() = ANY (ARRAY['admin'::text, 'staff'::text]))
+profiles|Staff can view profiles|SELECT|{authenticated}|(current_user_role() = ANY (ARRAY['admin'::text, 'staff'::text, 'coach'::text]))|
+profiles|Users can update own profile|UPDATE|{authenticated}|((user_id)::text = (( SELECT (auth.uid())::character varying AS uid))::text)|((user_id)::text = (( SELECT (auth.uid())::character varying AS uid))::text)
+profiles|Users can view own profile|SELECT|{authenticated}|((user_id)::text = (( SELECT (auth.uid())::character varying AS uid))::text)|
+program_courses|Anyone can view program course mappings|SELECT|{authenticated}|true|
+program_courses|Only staff can delete program courses|DELETE|{authenticated}|(current_user_role() = ANY (ARRAY['admin'::text, 'staff'::text]))|
+program_courses|Only staff can insert program courses|INSERT|{authenticated}||(current_user_role() = ANY (ARRAY['admin'::text, 'staff'::text]))
+program_courses|Only staff can update program courses|UPDATE|{authenticated}|(current_user_role() = ANY (ARRAY['admin'::text, 'staff'::text]))|(current_user_role() = ANY (ARRAY['admin'::text, 'staff'::text]))
+student_academic_exceptions|student_ae_staff_admin_insert|INSERT|{authenticated}||is_staff_or_admin()
+student_academic_exceptions|student_ae_staff_admin_select|SELECT|{authenticated}|(is_staff_or_admin() OR student_owns_record(student_id))|
+student_academic_exceptions|student_ae_staff_admin_update|UPDATE|{authenticated}|is_staff_or_admin()|is_staff_or_admin()
+student_academic_sources|student_as_staff_admin_insert|INSERT|{authenticated}||is_staff_or_admin()
+student_academic_sources|student_as_staff_admin_select|SELECT|{authenticated}|(is_staff_or_admin() OR student_owns_record(student_id))|
+student_academic_sources|student_as_staff_admin_update|UPDATE|{authenticated}|is_staff_or_admin()|is_staff_or_admin()
+student_credit_decisions|student_cd_staff_admin_insert|INSERT|{authenticated}||is_staff_or_admin()
+student_credit_decisions|student_cd_staff_admin_select|SELECT|{authenticated}|(is_staff_or_admin() OR (EXISTS ( SELECT 1 FROM student_credit_records WHERE ((student_credit_records.id = stu|
+student_credit_placements|student_cp_staff_admin_insert|INSERT|{authenticated}||is_staff_or_admin()
+student_credit_placements|student_cp_staff_admin_select|SELECT|{authenticated}|(is_staff_or_admin() OR (EXISTS ( SELECT 1 FROM (student_credit_decisions d JOIN student_credit_records cr ON |
+student_credit_placements|student_cp_staff_admin_update|UPDATE|{authenticated}|is_staff_or_admin()|is_staff_or_admin()
+student_credit_records|student_cr_staff_admin_insert|INSERT|{authenticated}||is_staff_or_admin()
+student_credit_records|student_cr_staff_admin_select|SELECT|{authenticated}|(is_staff_or_admin() OR student_owns_record(student_id))|
+student_credit_records|student_cr_staff_admin_update|UPDATE|{authenticated}|is_staff_or_admin()|is_staff_or_admin()
+student_credit_verification_events|student_cve_staff_admin_insert|INSERT|{authenticated}||is_staff_or_admin()
+student_credit_verification_events|student_cve_staff_admin_select|SELECT|{authenticated}|(is_staff_or_admin() OR (EXISTS ( SELECT 1 FROM student_credit_records WHERE ((student_credit_records.id = stu|
+student_program_assignments|student_pa_staff_admin_insert|INSERT|{authenticated}||is_staff_or_admin()
+student_program_assignments|student_pa_staff_admin_select|SELECT|{authenticated}|(is_staff_or_admin() OR student_owns_record(student_id))|
+student_program_assignments|student_pa_staff_admin_update|UPDATE|{authenticated}|is_staff_or_admin()|is_staff_or_admin()
+student_program_enrollments|Only staff can delete enrollments|DELETE|{authenticated}|(current_user_role() = ANY (ARRAY['admin'::text, 'staff'::text]))|
+student_program_enrollments|Only staff can insert enrollments|INSERT|{authenticated}||(current_user_role() = ANY (ARRAY['admin'::text, 'staff'::text]))
+student_program_enrollments|Only staff can update enrollments|UPDATE|{authenticated}|(current_user_role() = ANY (ARRAY['admin'::text, 'staff'::text]))|(current_user_role() = ANY (ARRAY['admin'::text, 'staff'::text]))
+student_program_enrollments|Students can view own enrollments|SELECT|{authenticated}|(((student_id)::text = ( SELECT (auth.uid())::text AS uid)) OR (current_user_role() = ANY (ARRAY['admin'::text|
+students|Staff can manage students|ALL|{authenticated}|(current_user_role() = ANY (ARRAY['admin'::text, 'staff'::text, 'coach'::text]))|(current_user_role() = ANY (ARRAY['admin'::text, 'staff'::text, 'coach'::text]))
+students|Students can view own profile|SELECT|{authenticated}|((user_id = ( SELECT (auth.uid())::text AS uid)) OR (current_user_role() = ANY (ARRAY['admin'::text, 'staff'::|
+support_tickets|Staff can update tickets|UPDATE|{authenticated}|(current_user_role() = ANY (ARRAY['admin'::text, 'staff'::text, 'coach'::text]))|(current_user_role() = ANY (ARRAY['admin'::text, 'staff'::text, 'coach'::text]))
+support_tickets|Users can create tickets|INSERT|{authenticated}||(reporter_id = ( SELECT (auth.uid())::text AS uid))
+support_tickets|Users can view own tickets|SELECT|{authenticated}|((reporter_id = ( SELECT (auth.uid())::text AS uid)) OR (assigned_to = ( SELECT (auth.uid())::text AS uid)) OR|
+ticket_comments|Users can create comments|INSERT|{authenticated}||(EXISTS ( SELECT 1 FROM support_tickets st WHERE ((st.id = ticket_comments.ticke
+ticket_comments|Users can view ticket comments|SELECT|{authenticated}|((EXISTS ( SELECT 1 FROM support_tickets st WHERE ((st.id = ticket_comments.ticket_id) AND ((st.reporter_id = |
+users|Staff can view all users|SELECT|{authenticated}|(current_user_role() = ANY (ARRAY['admin'::text, 'staff'::text, 'coach'::text]))|
+users|Users can view own record|SELECT|{authenticated}|((id)::text = ( SELECT (auth.uid())::text AS uid))|
+weekly_metrics|Users can manage own metrics|ALL|{authenticated}|((user_id)::text = ( SELECT (auth.uid())::text AS uid))|
+weekly_metrics|Users can view own metrics|SELECT|{authenticated}|(((user_id)::text = ( SELECT (auth.uid())::text AS uid)) OR (current_user_role() = ANY (ARRAY['admin'::text, '|
+(54 rows)
