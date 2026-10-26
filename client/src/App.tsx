@@ -28,6 +28,7 @@ import { cn } from "@/lib/utils";
 import Admin from "@/pages/admin";
 import AdminStudentWorkspace from "@/pages/admin-student-workspace";
 import AdminStudentRoadmap from "@/pages/admin-student-roadmap";
+import AdminStudentGraduate from "@/pages/admin-student-graduate";
 
 function RoleLanding() {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -71,6 +72,13 @@ function Router() {
         {() => (
           <ProtectedRoute requireRole={["admin", "staff"]}>
             <AdminStudentRoadmap />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/admin/students/:studentId/graduate">
+        {() => (
+          <ProtectedRoute requireRole={["admin", "staff"]}>
+            <AdminStudentGraduate />
           </ProtectedRoute>
         )}
       </Route>

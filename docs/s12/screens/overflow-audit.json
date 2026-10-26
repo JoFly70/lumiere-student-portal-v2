@@ -1,0 +1,102 @@
+[
+  {
+    "screen": "student/a-eneb-only-1440",
+    "overflow": []
+  },
+  {
+    "screen": "student/a-eneb-only-390",
+    "overflow": []
+  },
+  {
+    "screen": "student/b-eligibility-1440",
+    "overflow": []
+  },
+  {
+    "screen": "student/b-eligibility-390",
+    "overflow": []
+  },
+  {
+    "screen": "student/b-registered-1440",
+    "overflow": []
+  },
+  {
+    "screen": "student/b-registered-390",
+    "overflow": []
+  },
+  {
+    "screen": "student/b-partial-recognition-1440",
+    "overflow": []
+  },
+  {
+    "screen": "student/b-partial-recognition-390",
+    "overflow": []
+  },
+  {
+    "screen": "student/b-thesis-submitted-1440",
+    "overflow": []
+  },
+  {
+    "screen": "student/b-thesis-submitted-390",
+    "overflow": []
+  },
+  {
+    "screen": "student/b-procedure-done-1440",
+    "overflow": []
+  },
+  {
+    "screen": "student/b-procedure-done-390",
+    "overflow": []
+  },
+  {
+    "screen": "student/b-conferred-1440",
+    "overflow": []
+  },
+  {
+    "screen": "student/b-conferred-390",
+    "overflow": []
+  },
+  {
+    "screen": "student/b-complete-1440",
+    "overflow": []
+  },
+  {
+    "screen": "student/b-complete-390",
+    "overflow": []
+  },
+  {
+    "screen": "student/b-2025-cohort-1440",
+    "overflow": []
+  },
+  {
+    "screen": "student/b-2025-cohort-390",
+    "overflow": []
+  },
+  {
+    "screen": "student/multi-programme-1440",
+    "overflow": []
+  },
+  {
+    "screen": "student/multi-programme-390",
+    "overflow": []
+  },
+  {
+    "screen": "staff/admitted-staff",
+    "overflow": []
+  },
+  {
+    "screen": "staff/partial-recognition-staff",
+    "overflow": []
+  },
+  {
+    "screen": "staff/procedure-done-admin",
+    "overflow": []
+  },
+  {
+    "screen": "staff/eneb-only-staff",
+    "overflow": []
+  },
+  {
+    "screen": "staff/admitted-staff-390",
+    "overflow": []
+  }
+]

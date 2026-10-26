@@ -8,7 +8,7 @@
  * shown after a 2xx from the verify endpoint; a 422 keeps the dialog open and
  * lists what is missing.
  */
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, ChevronDown, CircleDashed, GraduationCap, Loader2, ShieldAlert } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -191,7 +191,7 @@ function ProgramCard({ p, role, onDialog, canEdit }: { p: StaffGraduateProgramVi
       {sectionsForRoute(p.program.route).map((s) => {
         const recs = recordsOfSection(p, s);
         return <section key={s.key} aria-labelledby={`sec-${p.program.id}-${s.key}`} className="space-y-2">
-          <h4 id={`sec-${p.program.id}-${s.key}`} className="text-sm font-semibold">{s.title}</h4>
+          <h3 id={`sec-${p.program.id}-${s.key}`} className="text-sm font-semibold">{s.title}</h3>
           {recs.length ? <ul className="space-y-2">{recs.map((r) => <RecordCard key={r.id} program={p} rec={r} role={role} onDialog={onDialog} canEdit={canEdit} />)}</ul> : <p className="text-sm text-muted-foreground">No record yet.</p>}
         </section>;
       })}
@@ -200,7 +200,7 @@ function ProgramCard({ p, role, onDialog, canEdit }: { p: StaffGraduateProgramVi
       </div> : null}
 
       <section aria-labelledby={`sub-${p.program.id}`} className="space-y-2">
-        <div className="flex flex-wrap items-center justify-between gap-2"><h4 id={`sub-${p.program.id}`} className="text-sm font-semibold">Subjects (tracked separately from the thesis)</h4>
+        <div className="flex flex-wrap items-center justify-between gap-2"><h3 id={`sub-${p.program.id}`} className="text-sm font-semibold">Subjects (tracked separately from the thesis)</h3>
           {canEdit ? <Button type="button" size="sm" variant="outline" className="min-h-11" onClick={() => onDialog?.({ t: "subject", program: p })}>Add subject…</Button> : null}</div>
         {p.subjects.length === 0 ? <p className="text-sm text-muted-foreground">No subjects recorded.</p> : <ul className="divide-y rounded-md border">
           {p.subjects.map((s) => <li key={s.id} className="flex flex-wrap items-center justify-between gap-2 p-2 text-sm" data-testid="graduate-subject">
@@ -212,7 +212,7 @@ function ProgramCard({ p, role, onDialog, canEdit }: { p: StaffGraduateProgramVi
       </section>
 
       <section aria-labelledby={`cr-${p.program.id}`} className="space-y-2">
-        <div className="flex flex-wrap items-center justify-between gap-2"><h4 id={`cr-${p.program.id}`} className="text-sm font-semibold">Credits by authority (never summed together)</h4>
+        <div className="flex flex-wrap items-center justify-between gap-2"><h3 id={`cr-${p.program.id}`} className="text-sm font-semibold">Credits by authority (never summed together)</h3>
           {canEdit && p.program.route === "eneb_unimarconi" ? <Button type="button" size="sm" variant="outline" className="min-h-11" onClick={() => onDialog?.({ t: "credit", program: p })}>Add credit entry…</Button> : null}</div>
         <ul className="grid gap-2 md:grid-cols-2">{p.creditLayers.map((c) => <li key={c.authority} className="rounded-md border p-2 text-sm" data-testid="credit-layer" data-authority={c.authority}>
           <p className="font-medium">{c.label}: {c.state === "not_applicable" ? "Not applicable" : creditLayerText(c.amount, c.unit)}</p>
@@ -256,14 +256,22 @@ function FormDialog({ title, description, children, submitLabel, gate, onSubmit,
     onError: (err) => setFailure(parseApiFailure(err)),
   });
   const summary = failure ? failureSummary(failure) : null;
+  // A refusal lists what is missing at the TOP of the form and moves focus there, so it is never below the fold.
+  const errorRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!failure) return;
+    errorRef.current?.scrollIntoView({ block: "nearest" });
+    errorRef.current?.focus();
+  }, [failure]);
   return <Dialog open onOpenChange={(open) => { if (!open && !mutation.isPending) onClose(); }}>
     <DialogContent className="max-h-[90dvh] overflow-y-auto">
       <DialogHeader><DialogTitle>{title}</DialogTitle>{description ? <DialogDescription>{description}</DialogDescription> : null}</DialogHeader>
       <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); setFailure(null); mutation.mutate(); }}>
+        {summary ? <div ref={errorRef} tabIndex={-1} role="alert" className="rounded-md border border-destructive/50 bg-destructive/5 p-3 text-sm outline-none" data-testid="dialog-error"><p className="font-medium">{summary.headline}</p>
+          {summary.items.length ? <ul className="mt-1 list-disc pl-5" data-testid="dialog-missing">{summary.items.map((i) => <li key={i}>{i}</li>)}</ul> : null}</div> : null}
         {children}
         {!gate.ok && gate.reason ? <p className="text-xs text-muted-foreground">{gate.reason}</p> : null}
-        {summary ? <div role="alert" className="rounded-md border border-destructive/50 p-3 text-sm" data-testid="dialog-error"><p className="font-medium">{summary.headline}</p>
-          {summary.items.length ? <ul className="mt-1 list-disc pl-5" data-testid="dialog-missing">{summary.items.map((i) => <li key={i}>{i}</li>)}</ul> : null}</div> : null}
+
         <DialogFooter>
           <Button type="button" variant="outline" className="min-h-11" disabled={mutation.isPending} onClick={onClose}>Cancel</Button>
           <Button type="submit" className="min-h-11" disabled={!gate.ok || mutation.isPending}>{mutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" /> : null}{submitLabel}</Button>

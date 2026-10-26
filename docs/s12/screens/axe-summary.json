@@ -1,0 +1,26 @@
+[
+  {
+    "screen": "student/a-eneb-only",
+    "violations": []
+  },
+  {
+    "screen": "student/b-partial-recognition",
+    "violations": []
+  },
+  {
+    "screen": "student/b-procedure-done",
+    "violations": []
+  },
+  {
+    "screen": "student/b-partial-recognition-dark",
+    "violations": []
+  },
+  {
+    "screen": "student/b-procedure-done-dark",
+    "violations": []
+  },
+  {
+    "screen": "staff/admitted",
+    "violations": []
+  }
+]
