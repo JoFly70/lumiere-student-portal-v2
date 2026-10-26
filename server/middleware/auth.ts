@@ -9,6 +9,7 @@ import { logger } from '../lib/logger';
 import { db } from '../lib/db';
 import { users } from '@shared/schema';
 import { eq } from 'drizzle-orm';
+import { ACCOUNT_INACTIVE_RESPONSE, isAccountActive } from '../lib/account-status';
 
 // Local JWT secret (must match routes.ts)
 const LOCAL_JWT_SECRET = process.env.SESSION_SECRET || 'local-dev-secret-change-in-production';
@@ -134,6 +135,9 @@ export async function requireAuth(
       .limit(1);
 
       if (userData.length > 0) {
+        if (!(await isAccountActive(userData[0].id))) {
+          return res.status(403).json(ACCOUNT_INACTIVE_RESPONSE);
+        }
         req.user = {
           id: userData[0].id,
           email: userData[0].email,
@@ -181,6 +185,11 @@ export async function requireAuth(
       if (userData.length === 0) {
         logger.warn('Authenticated Supabase user has no local profile', { userId: user.id });
         return res.status(401).json({ error: 'Account profile is not available' });
+      }
+
+      if (!(await isAccountActive(userData[0].id))) {
+        logger.warn('Rejected request from non-active account', { userId: userData[0].id });
+        return res.status(403).json(ACCOUNT_INACTIVE_RESPONSE);
       }
 
       // Attach user to request
@@ -276,6 +285,10 @@ export async function optionalAuth(
 
       if (userData.length === 0) {
         logger.debug('Optional auth user has no local profile', { userId: user.id });
+        return next();
+      }
+
+      if (!(await isAccountActive(userData[0].id))) {
         return next();
       }
 

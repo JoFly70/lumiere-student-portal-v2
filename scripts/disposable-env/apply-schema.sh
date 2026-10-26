@@ -11,7 +11,8 @@
 #   4. scripts/disposable-env/50_runtime_supplement.sql
 #   5. migrations/004_financial_timeline.sql, migrations/007_course_roadmap_tables.sql
 #   6. per_credit_price column (shared/schema.ts:499; no SQL source)
-#   7. scripts/disposable-env/90_storage_buckets.sql
+#   7. scripts/disposable-env/60_s03_security_remediation.sql (S03; disposable only)
+#   8. scripts/disposable-env/90_storage_buckets.sql
 #
 # Fails closed unless the target is a loopback Postgres. It must never be
 # pointed at a hosted Supabase project: this is not a production migration path.
@@ -48,5 +49,6 @@ run "$ROOT/migrations/004_financial_timeline.sql"
 run "$ROOT/migrations/007_course_roadmap_tables.sql"
 psql "$DB_URL" -X -q -v ON_ERROR_STOP=1 \
   -c "ALTER TABLE pricing_rules ADD COLUMN IF NOT EXISTS per_credit_price INTEGER" > /dev/null
+run "$HERE/60_s03_security_remediation.sql"
 run "$HERE/90_storage_buckets.sql"
 echo "schema applied: $(psql "$DB_URL" -X -Atc "select count(*) from pg_tables where schemaname='public'") public tables"

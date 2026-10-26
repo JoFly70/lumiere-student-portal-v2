@@ -1,0 +1,94 @@
+== public tables: RLS state, policy count, client-role privileges
+tbl|rls|policies|anon_priv|auth_priv
+account_invitations|t|0||
+audit_logs|t|2||S
+course_templates|t|0||
+courses|t|4||S,I,U,D
+courses_catalog|t|0||
+degree_programs|t|4||S,I,U,D
+documents|t|2||S,I,U,D
+duration_rules|t|0||
+enrollments|t|0||
+exam_catalog|t|0||
+financial_rules|t|0||
+knowledge_academic_rules|t|3||S,I,U,D
+knowledge_articulations_v2|t|3||S,I,U,D
+knowledge_claim_evidence|t|3||S,I,U,D
+knowledge_claim_versions|t|3||S,I,U,D
+knowledge_claims|t|3||S,I,U,D
+knowledge_conflicts|t|3||S,I,U,D
+knowledge_credit_providers|t|3||S,I,U,D
+knowledge_equivalencies_v2|t|3||S,I,U,D
+knowledge_evidence_excerpts|t|3||S,I,U,D
+knowledge_evidence_sources|t|3||S,I,U,D
+knowledge_institution_course_versions|t|3||S,I,U,D
+knowledge_institution_courses|t|3||S,I,U,D
+knowledge_institution_versions|t|3||S,I,U,D
+knowledge_institutions|t|3||S,I,U,D
+knowledge_program_versions|t|3||S,I,U,D
+knowledge_programs_v2|t|3||S,I,U,D
+knowledge_provider_course_versions|t|3||S,I,U,D
+knowledge_provider_courses|t|3||S,I,U,D
+knowledge_requirement_groups|t|3||S,I,U,D
+knowledge_requirements_v2|t|3||S,I,U,D
+knowledge_residency_rules|t|3||S,I,U,D
+knowledge_transfer_rules|t|3||S,I,U,D
+knowledge_upper_level_rules|t|3||S,I,U,D
+knowledge_verification_events|t|2||S,I,U,D
+metrics|t|0||
+payments|t|0||
+plan_financials|t|0||
+plans|t|0||
+pricing_rules|t|0||
+profiles|t|4||S
+program_courses|t|4||S,I,U,D
+programs|t|0||
+providers|t|0||
+snapshots_weekly|t|0||
+student_academic_exceptions|t|3||S,I,U,D
+student_academic_sources|t|3||S,I,U,D
+student_audit_log|t|0||
+student_contacts|t|0||
+student_credit_decisions|t|2||S,I,U,D
+student_credit_placements|t|3||S,I,U,D
+student_credit_records|t|3||S,I,U,D
+student_credit_verification_events|t|2||S,I,U,D
+student_documents|t|0||
+student_english_proof|t|0||
+student_program_assignments|t|3||S,I,U,D
+student_program_enrollments|t|4||S,I,U,D
+students|t|2||S,I,U,D
+support_tickets|t|3||S,I,U,D
+ticket_attachments|t|0||
+ticket_comments|t|2||S,I,U,D
+ticket_status_history|t|0||
+users|t|2||S,I,U,D
+weekly_metrics|t|2||S,I,U,D
+== gate: tables with RLS disabled (expect 0 rows)
+relname
+== gate: any anon table privilege in public (expect 0 rows)
+relname
+== gate: authenticated privileges on tables with zero policies (expect 0 rows)
+relname
+== gate: policies granting the coach role blanket access (expect only ticket rows)
+tablename|policyname|cmd
+support_tickets|Staff can update tickets|UPDATE
+ticket_comments|Users can view ticket comments|SELECT
+== profiles column-level UPDATE privilege for authenticated
+column|can_update
+id|f
+user_id|f
+timezone|t
+phone|t
+status|f
+created_at|f
+== functions executable by anon (expect 0 rows)
+proname
+== SECURITY DEFINER functions without a pinned search_path (expect 0 rows)
+proname
+== storage buckets (expect all private) and storage.objects policies
+id|public
+documents|f
+knowledge-evidence|f
+student-documents|f
+policyname|cmd|roles

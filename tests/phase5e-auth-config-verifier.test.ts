@@ -12,6 +12,7 @@ const goodConfig = {
   smtp_admin_email: 'no-reply@auth.lumierepathways.com',
   smtp_sender_name: 'Lumière',
   smtp_pass: 'must-never-leak',
+  disable_signup: true,
 };
 
 describe('Supabase auth config verifier', () => {
@@ -24,6 +25,15 @@ describe('Supabase auth config verifier', () => {
     expect(result.smtpMode).toBe('custom_smtp');
     expect(result.smtpHost).toBe('smtp.resend.com');
     expect(result.smtpSenderEmail).toBe('no-reply@auth.lumierepathways.com');
+  });
+
+  it('fails when Supabase public signup is enabled or unspecified', () => {
+    for (const disable_signup of [false, undefined, 'true']) {
+      const result = checkSupabaseAuthConfig({ ...goodConfig, disable_signup }, appUrl);
+      expect(result.ok).toBe(false);
+      expect(result.publicSignupDisabled).toBe(false);
+      expect(result.failures).toContain('publicSignupDisabled');
+    }
   });
 
   it('fails when the configured Site URL does not match APP_URL', () => {

@@ -6,6 +6,13 @@ const mockGetUser = vi.fn();
 
 const mockDbLimit = vi.fn();
 
+const accountStatusMock = vi.hoisted(() => ({ status: 'active' as string }));
+vi.mock('../server/lib/account-status.js', () => ({
+  ACCOUNT_INACTIVE_RESPONSE: { error: 'Account is not active', code: 'ACCOUNT_INACTIVE' },
+  getAccountStatus: vi.fn(async () => accountStatusMock.status),
+  isAccountActive: vi.fn(async () => accountStatusMock.status === 'active'),
+}));
+
 vi.mock('../server/lib/supabase.js', () => ({
   supabaseAdmin: {
     auth: {
@@ -130,6 +137,32 @@ describe('Authentication Middleware', () => {
     expect(req.user).toBeDefined();
     expect(req.user.id).toBe('user-123');
     expect(req.user.role).toBe('student');
+  });
+
+  it.each(['archived', 'inactive', 'missing'])('rejects a valid token for a %s account with 403', async (status) => {
+    mockGetUser.mockResolvedValue({
+      data: { user: { id: 'user-123', email: 'student@test.com' } },
+      error: null,
+    });
+    mockDbLimit.mockResolvedValue([
+      { id: 'user-123', role: 'student', email: 'student@test.com', name: 'Test Student' },
+    ]);
+    accountStatusMock.status = status;
+    try {
+      const { requireAuth } = await import('../server/middleware/auth.js');
+      const req = createMockReq({ headers: { authorization: 'Bearer valid-token' } });
+      const res = createMockRes();
+      const next = vi.fn();
+
+      await requireAuth(req as Request, res as Response, next as NextFunction);
+
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ code: 'ACCOUNT_INACTIVE' }));
+      expect(next).not.toHaveBeenCalled();
+      expect(req.user).toBeUndefined();
+    } finally {
+      accountStatusMock.status = 'active';
+    }
   });
 
   it('rejects demo mode in production with 500 even when ALLOW_DEMO_MODE=true', async () => {

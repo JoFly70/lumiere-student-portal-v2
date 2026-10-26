@@ -11,6 +11,11 @@ import { asyncHandler } from '../lib/errors';
 import { requireAuth } from '../middleware/auth';
 import { requireRole } from '../middleware/rbac';
 import { auditAdmin } from '../lib/audit';
+import { createInvitation, DEFAULT_INVITATION_TTL_HOURS, MAX_INVITATION_TTL_HOURS } from '../lib/invitations';
+
+// Supabase Auth ban applied when an account is archived, so refresh tokens
+// stop working in addition to the application-level status check.
+const ARCHIVED_BAN_DURATION = '876000h';
 
 const router = Router();
 
@@ -141,22 +146,129 @@ router.delete('/users/:id', asyncHandler(async (req: any, res) => {
       return res.status(500).json({ error: 'Failed to archive user' });
     }
 
+    // The status change above is authoritative (every auth path checks it);
+    // the Supabase ban additionally invalidates existing refresh tokens.
+    let sessionsRevoked = true;
+    try {
+      const { error: banError } = await supabaseAdmin.auth.admin.updateUserById(id, {
+        ban_duration: ARCHIVED_BAN_DURATION,
+      });
+      if (banError) {
+        sessionsRevoked = false;
+        logger.warn('Archived user but failed to revoke auth sessions', { userId: id, error: banError.message });
+      }
+    } catch (banError: any) {
+      sessionsRevoked = false;
+      logger.warn('Archived user but failed to revoke auth sessions', { userId: id, error: banError?.message });
+    }
+
     // Audit log
     await auditAdmin(
       'admin.bulk_operation',
       admin.id,
       id,
       'Archived user account',
-      { action: 'soft_delete' }
+      { action: 'soft_delete', sessionsRevoked }
     );
 
-    logger.info('User archived', { userId: id, adminId: admin.id });
+    logger.info('User archived', { userId: id, adminId: admin.id, sessionsRevoked });
 
-    res.json({ success: true });
+    res.json({ success: true, sessionsRevoked });
   } catch (error: any) {
     logger.error('Error archiving user', { error: error.message });
     res.status(500).json({ error: 'Internal server error' });
   }
+}));
+
+// ==================== INVITATIONS ====================
+// Account creation is invitation-only. Invitations are issued here by an
+// admin; the token is returned once and is not emailed by the server
+// (outbound communications are not enabled).
+
+const createInvitationSchema = z.object({
+  email: z.string().trim().email().max(320),
+  expiresInHours: z.number().int().min(1).max(MAX_INVITATION_TTL_HOURS).optional(),
+}).strict();
+
+/**
+ * POST /api/admin/invitations
+ * Issue a single-use student invitation bound to one email address.
+ */
+router.post('/invitations', asyncHandler(async (req: any, res) => {
+  const parsed = createInvitationSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: 'Validation failed', details: parsed.error.errors });
+  }
+  const admin = req.user;
+  try {
+    const invitation = await createInvitation({
+      email: parsed.data.email,
+      createdBy: admin.id,
+      ttlHours: parsed.data.expiresInHours ?? DEFAULT_INVITATION_TTL_HOURS,
+    });
+    await auditAdmin(
+      'admin.permission_granted',
+      admin.id,
+      undefined,
+      'Issued student account invitation',
+      { invitationId: invitation.id, email: invitation.email, expiresAt: invitation.expiresAt },
+    );
+    res.status(201).json({
+      id: invitation.id,
+      email: invitation.email,
+      expiresAt: invitation.expiresAt,
+      // Shown once; only its hash is stored.
+      token: invitation.token,
+    });
+  } catch (error: any) {
+    logger.error('Failed to create invitation', { error: error.message });
+    res.status(500).json({ error: 'Failed to create invitation' });
+  }
+}));
+
+/**
+ * GET /api/admin/invitations
+ * List invitations (never returns token hashes).
+ */
+router.get('/invitations', asyncHandler(async (_req: any, res) => {
+  const { data, error } = await supabaseAdmin
+    .from('account_invitations')
+    .select('id, email, role, created_by, created_at, expires_at, consumed_at, consumed_by, revoked_at')
+    .order('created_at', { ascending: false })
+    .limit(200);
+  if (error) {
+    logger.error('Failed to list invitations', { error: error.message });
+    return res.status(500).json({ error: 'Failed to list invitations' });
+  }
+  res.json({ invitations: data ?? [] });
+}));
+
+/**
+ * POST /api/admin/invitations/:id/revoke
+ * Revoke an unused invitation.
+ */
+router.post('/invitations/:id/revoke', asyncHandler(async (req: any, res) => {
+  const { id } = req.params;
+  if (!z.string().uuid().safeParse(id).success) {
+    return res.status(400).json({ error: 'Invalid invitation id' });
+  }
+  const { data, error } = await supabaseAdmin
+    .from('account_invitations')
+    .update({ revoked_at: new Date().toISOString() })
+    .eq('id', id)
+    .is('consumed_at', null)
+    .is('revoked_at', null)
+    .select('id')
+    .maybeSingle();
+  if (error) {
+    logger.error('Failed to revoke invitation', { error: error.message });
+    return res.status(500).json({ error: 'Failed to revoke invitation' });
+  }
+  if (!data) {
+    return res.status(409).json({ error: 'Invitation not found, already used, or already revoked' });
+  }
+  await auditAdmin('admin.permission_revoked', req.user.id, undefined, 'Revoked student account invitation', { invitationId: id });
+  res.json({ success: true });
 }));
 
 // ==================== STUDENT MANAGEMENT ====================

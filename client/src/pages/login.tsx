@@ -22,6 +22,10 @@ export default function Login() {
   const [signupEmail, setSignupEmail] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
   const [signupName, setSignupName] = useState('');
+  // Account creation is invitation-only; an invite link carries ?invite=<code>.
+  const [signupInvitation, setSignupInvitation] = useState(() =>
+    typeof window === 'undefined' ? '' : new URLSearchParams(window.location.search).get('invite') ?? '',
+  );
   const [signupError, setSignupError] = useState('');
   const [signupLoading, setSignupLoading] = useState(false);
 
@@ -51,7 +55,7 @@ export default function Login() {
     setSignupLoading(false);
 
     try {
-      await signup(signupEmail, signupPassword, signupName);
+      await signup(signupEmail, signupPassword, signupName, signupInvitation.trim());
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Sign-up failed';
 
@@ -125,6 +129,18 @@ export default function Login() {
 
             <TabsContent value="signup">
               <form onSubmit={handleSignup} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="signup-invitation">Invitation Code</Label>
+                  <Input
+                    id="signup-invitation"
+                    type="text"
+                    value={signupInvitation}
+                    onChange={(e) => setSignupInvitation(e.target.value)}
+                    required
+                    autoComplete="off"
+                  />
+                  <p className="text-xs text-gray-500">Accounts are created by invitation only.</p>
+                </div>
                 <div className="space-y-2">
                   <Label htmlFor="signup-name">Full Name</Label>
                   <Input

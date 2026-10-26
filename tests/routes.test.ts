@@ -14,6 +14,21 @@ const mockUserSignOut = vi.fn();
 
 let isSupabaseConfiguredMock = true;
 
+const accountStatusMock = vi.hoisted(() => ({ status: 'active' as string }));
+vi.mock('../server/lib/account-status.js', () => ({
+  ACCOUNT_INACTIVE_RESPONSE: { error: 'Account is not active', code: 'ACCOUNT_INACTIVE' },
+  getAccountStatus: vi.fn(async () => accountStatusMock.status),
+  isAccountActive: vi.fn(async () => accountStatusMock.status === 'active'),
+}));
+
+const invitationMock = vi.hoisted(() => ({ claimResult: 'inv-1' as string | null }));
+vi.mock('../server/lib/invitations.js', () => ({
+  normalizeInvitationEmail: (e: string) => e.trim().toLowerCase(),
+  claimInvitation: vi.fn(async () => invitationMock.claimResult),
+  releaseInvitation: vi.fn(async () => undefined),
+  consumeInvitation: vi.fn(async () => true),
+}));
+
 vi.mock('../server/lib/supabase.js', () => ({
   supabaseAdmin: {
     auth: {
@@ -649,11 +664,37 @@ describe('AUTH — POST /api/auth/signup', () => {
         email: 'existing@test.com',
         password: 'password123',
         fullName: 'Existing User',
+        invitationToken: 'invite-token',
       });
 
     expect(res.status).toBe(409);
     expect(res.body.code).toBe('EMAIL_ALREADY_REGISTERED');
     expect(mockFrom).not.toHaveBeenCalled();
+  });
+
+  it('rejects signup without an invitation before creating any auth user', async () => {
+    const res = await request(app)
+      .post('/api/auth/signup')
+      .send({ email: 'new@test.com', password: 'password123', fullName: 'New User' });
+
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe('INVITATION_REQUIRED');
+    expect(mockAdminCreateUser).not.toHaveBeenCalled();
+  });
+
+  it('rejects signup with an invalid, used, expired, or mismatched invitation', async () => {
+    invitationMock.claimResult = null;
+    try {
+      const res = await request(app)
+        .post('/api/auth/signup')
+        .send({ email: 'new@test.com', password: 'password123', fullName: 'New User', invitationToken: 'bad' });
+
+      expect(res.status).toBe(403);
+      expect(res.body.code).toBe('INVITATION_INVALID');
+      expect(mockAdminCreateUser).not.toHaveBeenCalled();
+    } finally {
+      invitationMock.claimResult = 'inv-1';
+    }
   });
 });
 
@@ -711,6 +752,35 @@ describe('AUTH — POST /api/auth/login reconciliation', () => {
     expect(res.body.code).toBe('ACCOUNT_RECONCILIATION_FAILED');
     expect(res.body.error).not.toContain('database unavailable');
   });
+
+  it.each(['archived', 'inactive', 'pending', 'missing', 'unknown'])(
+    'rejects login and revokes the session when the account is %s',
+    async (status) => {
+      mockFrom.mockReturnValue({
+        select: vi.fn(() => ({
+          eq: vi.fn(() => ({
+            maybeSingle: vi.fn().mockResolvedValue({
+              data: { id: 'auth-user', email: 'user@test.com', name: 'U', role: 'student' },
+              error: null,
+            }),
+          })),
+        })),
+      });
+      accountStatusMock.status = status;
+      try {
+        const res = await request(app)
+          .post('/api/auth/login')
+          .send({ email: 'user@test.com', password: 'password123' });
+
+        expect(res.status).toBe(403);
+        expect(res.body.code).toBe('ACCOUNT_INACTIVE');
+        expect(res.body.session).toBeUndefined();
+        expect(mockUserSignOut).toHaveBeenCalledWith({ scope: 'global' });
+      } finally {
+        accountStatusMock.status = 'active';
+      }
+    },
+  );
 });
 
 describe('PASSWORD RESET — POST /api/auth/reset-password', () => {

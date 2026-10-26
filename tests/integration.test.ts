@@ -18,6 +18,13 @@ import request from 'supertest';
 const mockGetUser = vi.fn();
 const mockFrom = vi.fn();
 
+const accountStatusMock = vi.hoisted(() => ({ status: 'active' as string }));
+vi.mock('../server/lib/account-status.js', () => ({
+  ACCOUNT_INACTIVE_RESPONSE: { error: 'Account is not active', code: 'ACCOUNT_INACTIVE' },
+  getAccountStatus: vi.fn(async () => accountStatusMock.status),
+  isAccountActive: vi.fn(async () => accountStatusMock.status === 'active'),
+}));
+
 vi.mock('../server/lib/supabase.js', () => ({
   supabaseAdmin: {
     auth: { getUser: mockGetUser },

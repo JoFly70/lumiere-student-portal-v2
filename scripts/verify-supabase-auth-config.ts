@@ -66,6 +66,7 @@ async function main() {
     checks: {
       siteUrlMatch: result.siteUrlMatch,
       resetRedirectPresent: result.resetRedirectPresent,
+      publicSignupDisabled: result.publicSignupDisabled,
       smtpMode: result.smtpMode,
     },
     smtp: {

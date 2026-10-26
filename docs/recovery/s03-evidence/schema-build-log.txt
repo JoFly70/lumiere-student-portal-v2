@@ -1,0 +1,28 @@
+# apply-schema.sh on a reset disposable DB, 2026-10-26 (NOTICE lines omitted)
+-> supabase/migrations/20251217230356_011_degree_programs_courses.sql
+-> PRODUCTION_DATABASE_SETUP.sql
+-> supabase/migrations/20251217235151_fix_rls_performance_security.sql
+-> supabase/migrations/20260914182506_phase0_add_staff_role.sql
+-> supabase/migrations/20260914195204_phase1a_knowledge_core_schema.sql
+-> supabase/migrations/20260914200029_phase1a_knowledge_core_integrity_fix.sql
+-> supabase/migrations/20260914200820_phase1a_knowledge_history_hardening.sql
+-> supabase/migrations/20260914234000_phase1db_verification_event_sequence.sql
+-> supabase/migrations/20260915160000_phase2a_student_academic_record.sql
+-> supabase/migrations/20260915180000_phase2d_audit_logging.sql
+-> supabase/migrations/20260915190000_phase2d_audit_security_hardening.sql
+-> supabase/migrations/20260915200000_pre_replit_security_hardening.sql
+-> supabase/migrations/20260915210000_policy_auth_users_remediation.sql
+-> supabase/migrations/20260915220000_pre_replit_security_corrections.sql
+-> supabase/migrations/20260916010000_phase4b_student_credit_placement.sql
+-> supabase/migrations/20260916020000_phase4b_student_credit_placement_lifecycle_hardening.sql
+-> supabase/migrations/20260916100000_phase5e_restore_profiles.sql
+-> supabase/migrations/20260917100000_knowledge_evidence_source_metadata.sql
+-> scripts/disposable-env/50_runtime_supplement.sql
+-> migrations/004_financial_timeline.sql
+-> migrations/007_course_roadmap_tables.sql
+-> scripts/disposable-env/60_s03_security_remediation.sql
+psql:/home/user/lumiere-student-portal-v2/scripts/disposable-env/60_s03_security_remediation.sql:15: WARNING:  there is already a transaction in progress
+WARNING:  there is no transaction in progress
+-> scripts/disposable-env/90_storage_buckets.sql
+schema applied: 64 public tables
+ERROR lines: 0

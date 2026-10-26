@@ -25,9 +25,21 @@ import {
   resolvePasswordResetAppUrl,
 } from "./lib/auth-policy";
 import { revokeAllSupabaseSessions } from "./lib/session-revocation";
+import { ACCOUNT_INACTIVE_RESPONSE, getAccountStatus, isAccountActive } from "./lib/account-status";
+import {
+  claimInvitation,
+  consumeInvitation,
+  normalizeInvitationEmail,
+  releaseInvitation,
+} from "./lib/invitations";
 
-// Helper to get user ID from Supabase token
-async function getUserFromToken(authHeader: string | undefined): Promise<{ id: string; email: string } | null> {
+// Helper to get user ID from Supabase token. By default the account must have
+// a local user row and an active profile; logout passes requireActive: false
+// so a deactivated user can still end their session.
+async function getUserFromToken(
+  authHeader: string | undefined,
+  options: { requireActive?: boolean } = {},
+): Promise<{ id: string; email: string } | null> {
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return null;
   }
@@ -38,6 +50,9 @@ async function getUserFromToken(authHeader: string | undefined): Promise<{ id: s
   try {
     const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
     if (!error && user) {
+      if (options.requireActive !== false && !(await isAccountActive(user.id))) {
+        return null;
+      }
       return { id: user.id, email: user.email || '' };
     }
   } catch (error) {
@@ -93,16 +108,24 @@ window.ENV = {
   // Apply strict rate limiting: 3 signups per hour per IP
   app.post("/api/auth/signup", signupRateLimit, async (req, res) => {
     try {
-      const { email, password, fullName } = req.body;
+      const { password, fullName, invitationToken } = req.body;
+      const rawEmail = req.body.email;
 
-      if (!email || !password || !fullName) {
+      if (!rawEmail || !password || !fullName) {
         return res.status(400).json({ error: "Email, password, and full name required" });
       }
 
       // Validate input types
-      if (typeof email !== 'string' || typeof password !== 'string' || typeof fullName !== 'string') {
+      if (typeof rawEmail !== 'string' || typeof password !== 'string' || typeof fullName !== 'string') {
         return res.status(400).json({ error: "Invalid input format" });
       }
+
+      // Account creation is invitation-only. The invitation is checked and
+      // claimed server-side before any auth user is created.
+      if (!invitationToken || typeof invitationToken !== 'string') {
+        return res.status(403).json({ error: "An invitation is required to create an account", code: "INVITATION_REQUIRED" });
+      }
+      const email = normalizeInvitationEmail(rawEmail);
 
       // Ensure Supabase is configured
       if (!isSupabaseConfigured) {
@@ -117,6 +140,12 @@ window.ENV = {
       // and configure Supabase email templates in dashboard
       const emailVerificationEnabled = process.env.ENABLE_EMAIL_VERIFICATION === 'true';
 
+      const invitationId = await claimInvitation(invitationToken, email);
+      if (!invitationId) {
+        logger.warn("Sign-up rejected: invitation invalid, expired, used, or for another email", { email });
+        return res.status(403).json({ error: "Invitation is invalid or has expired", code: "INVITATION_INVALID" });
+      }
+
       const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
         email,
         password,
@@ -127,6 +156,7 @@ window.ENV = {
       });
 
       if (authError) {
+        await releaseInvitation(invitationId);
         logger.warn("Sign-up failed", { email, error: authError.message });
         if (isDuplicateSignupError(authError)) {
           return res.status(409).json({ error: "Email already registered", code: "EMAIL_ALREADY_REGISTERED" });
@@ -139,6 +169,7 @@ window.ENV = {
       }
 
       if (!authData.user) {
+        await releaseInvitation(invitationId);
         logger.error("Sign-up succeeded but no user created", { email });
         return res.status(500).json({ error: "Account creation error" });
       }
@@ -157,6 +188,7 @@ window.ENV = {
         logger.error("Failed to create user record", { email, error: userError.message });
         // Cleanup: delete auth user
         await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
+        await releaseInvitation(invitationId);
         return res.status(500).json({ error: "Failed to create user profile" });
       }
 
@@ -174,8 +206,20 @@ window.ENV = {
         // Cleanup: rollback user record and auth user
         await supabaseAdmin.from('users').delete().eq('id', authData.user.id);
         await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
+        await releaseInvitation(invitationId);
         
         return res.status(500).json({ error: "Failed to create user profile" });
+      }
+
+      if (!(await consumeInvitation(invitationId, authData.user.id))) {
+        // The claim lease is held by this request, so this only happens on a
+        // storage failure; roll back rather than leave an unaudited account.
+        logger.error("Failed to consume invitation", { email, invitationId });
+        await supabaseAdmin.from('profiles').delete().eq('user_id', authData.user.id);
+        await supabaseAdmin.from('users').delete().eq('id', authData.user.id);
+        await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
+        await releaseInvitation(invitationId);
+        return res.status(500).json({ error: "Account creation error" });
       }
 
       // Sign in the user to get session tokens — isolated client so the
@@ -355,7 +399,7 @@ window.ENV = {
   // Logout endpoint - clears CSRF token
   app.post("/api/auth/logout", async (req, res) => {
     try {
-      const user = await getUserFromToken(req.headers.authorization);
+      const user = await getUserFromToken(req.headers.authorization, { requireActive: false });
 
       if (user) {
         const bearerToken = req.headers.authorization!.substring(7);
@@ -471,6 +515,20 @@ window.ENV = {
         });
       }
 
+      const accountStatus = await getAccountStatus(data.user.id);
+      if (accountStatus !== 'active') {
+        logger.warn("Login rejected: account not active", { userId: data.user.id, accountStatus });
+        try {
+          await userAuthClient.auth.signOut({ scope: 'global' });
+        } catch (revokeError) {
+          logger.warn("Failed to revoke inactive-account login session", {
+            userId: data.user.id,
+            error: revokeError instanceof Error ? revokeError.message : String(revokeError),
+          });
+        }
+        return res.status(403).json(ACCOUNT_INACTIVE_RESPONSE);
+      }
+
       logger.info("User logged in successfully", { email, userId: data.user.id });
 
       return res.json({
@@ -566,20 +624,16 @@ window.ENV = {
         errorHint: userError?.hint
       });
 
-      // Fallback to auth user data if database query fails (similar to login endpoint)
-      const user = userData || {
-        id: authUser.id,
-        email: authUser.email || '',
-        name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User',
-        role: 'student' as const
-      };
-
+      // No synthesized identity: an authenticated Supabase user without a
+      // reconciled local row is not an application account (matches requireAuth).
       if (!userData) {
-        logger.warn("User not in database, using auth data", { 
-          userId: authUser.id,
-          email: authUser.email
-        });
+        logger.warn("Authenticated user has no local profile", { userId: authUser.id });
+        return res.status(401).json({ error: "Account profile is not available" });
       }
+      if (!(await isAccountActive(authUser.id))) {
+        return res.status(403).json(ACCOUNT_INACTIVE_RESPONSE);
+      }
+      const user = userData;
 
       // Get user's plan
       const { data: planData } = await supabaseAdmin

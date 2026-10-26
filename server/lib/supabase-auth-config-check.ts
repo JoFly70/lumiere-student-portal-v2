@@ -14,6 +14,9 @@ export type SupabaseAuthConfigCheck = {
   ok: boolean;
   siteUrlMatch: boolean;
   resetRedirectPresent: boolean;
+  // Account creation is invitation-only through the server; Supabase's own
+  // public signup endpoint must be disabled so it cannot be bypassed.
+  publicSignupDisabled: boolean;
   smtpMode: 'custom_smtp' | 'supabase_default';
   smtpHost?: string;
   smtpSenderEmail?: string;
@@ -87,15 +90,19 @@ export function checkSupabaseAuthConfig(
     expectedResetUrl && allowList.includes(expectedResetUrl),
   );
 
+  const publicSignupDisabled = config.disable_signup === true;
+
   const failures: string[] = [];
   if (!siteUrlMatch) failures.push('siteUrl');
   if (!resetRedirectPresent) failures.push('resetRedirect');
   if (smtpMode !== 'custom_smtp') failures.push('customSmtp');
+  if (!publicSignupDisabled) failures.push('publicSignupDisabled');
 
   return {
     ok: failures.length === 0,
     siteUrlMatch,
     resetRedirectPresent,
+    publicSignupDisabled,
     smtpMode,
     ...(smtpHost ? { smtpHost } : {}),
     ...(smtpSenderEmail ? { smtpSenderEmail } : {}),
