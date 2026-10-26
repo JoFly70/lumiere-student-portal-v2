@@ -69,7 +69,7 @@ describe("shared rate-limit backend", () => {
   it("configures Redis stores with sendCommand rather than a shared client store", () => {
     const source = fs.readFileSync(path.resolve(process.cwd(), "server/index.ts"), "utf8");
     expect(source).toContain("configureRateLimitBackend(");
-    expect(source).toContain("sendCommand: (...args: string[]) => redisClient.sendCommand(args)");
+    expect(source).toMatch(/sendCommand: \(\.\.\.args: string\[\]\) =>\s*withCommandTimeout\(\(\) => redisClient\.sendCommand\(args\)\)/);
     expect(source).not.toMatch(/client:\s*redisClient/);
   });
 });

@@ -14,7 +14,7 @@ import {
   compressionConfig,
 } from "./config/production";
 import { logger, logStartup, generateRequestId } from "./lib/logger";
-import { configureRateLimitBackend, createRateLimitStore, getRateLimitBackend } from "./lib/rate-limit-store";
+import { checkRedisHealth, configureRateLimitBackend, createRateLimitStore, getRateLimitBackend, trackRedisHealth, withCommandTimeout } from "./lib/rate-limit-store";
 
 const app = express();
 const isProduction = process.env.NODE_ENV === 'production';
@@ -68,6 +68,9 @@ if (redisUrl && isProduction) {
 
     const redisClient = createClient({
       url: redisUrl,
+      // Fail commands immediately while disconnected instead of queuing them
+      // until Redis returns; rate-limited requests then error (fail closed).
+      disableOfflineQueue: true,
       socket: {
         reconnectStrategy: (retries) => {
           // Exponential backoff: 50ms, 100ms, 200ms, ..., up to 3 seconds
@@ -135,6 +138,9 @@ if (redisUrl && isProduction) {
       logger.warn('Redis connection ended', { connectionState });
     });
 
+    // Feed live connection state into /ready (distributedRateLimit)
+    trackRedisHealth(redisClient);
+
     // Attempt initial connection with timeout
     try {
       await Promise.race([
@@ -153,21 +159,19 @@ if (redisUrl && isProduction) {
     // Every limiter (global, admin and the per-endpoint auth limiters) gets its
     // own RedisStore with a distinct prefix on this shared client.
     configureRateLimitBackend((prefix) => new RedisStoreClass({
-      sendCommand: (...args: string[]) => redisClient.sendCommand(args),
+      sendCommand: (...args: string[]) =>
+        withCommandTimeout(() => redisClient.sendCommand(args)),
       prefix,
     }));
 
     // Periodic health check
     setInterval(async () => {
-      try {
-        await redisClient.ping();
+      if (await checkRedisHealth(redisClient)) {
         logger.debug('Redis health check: OK');
-      } catch (pingError) {
-        logger.error('Redis health check failed', {
-          error: pingError instanceof Error ? pingError.message : String(pingError),
-        });
+      } else {
+        logger.error('Redis health check failed; /ready reports not ready until Redis recovers');
       }
-    }, 60000); // Check every 60 seconds
+    }, 15000); // Check every 15 seconds
 
   } catch (error) {
     logger.error('⚠️  Redis initialization failed. Falling back to in-memory rate limiting.', {
