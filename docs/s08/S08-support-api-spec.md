@@ -165,3 +165,7 @@ multi-statement transaction, so the route compensates instead of claiming succes
   double-submit window. The route is correct without it; with it, a racing duplicate insert fails
   with 23505 (reported as a generic 500, nothing duplicated).
 - `apiRequest` now throws `ApiError` (an `Error` subclass) exposing `status`, `code`, `details`.
+
+### S10 orchestrator addition: concurrent duplicate
+
+When the optional unique index `20261028100000_s10_support_idempotency_index.sql` is applied and two requests with the same `idempotencyKey` race, the loser receives `409 SUPPORT_CREATE_IN_PROGRESS` (no claim of success or failure; nothing duplicated). The client treats it as "may have saved" and a retry with the same key returns the completed ticket (`200 replayed:true`).

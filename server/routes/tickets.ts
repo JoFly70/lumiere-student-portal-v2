@@ -655,6 +655,12 @@ export function createTicketsRouter(deps: TicketsRouterDeps): Router {
       })
       .select("*")
       .single();
+    if (error?.code === "23505" && idempotencyKey) {
+      // A concurrent request with the same key won the optional unique index
+      // (20261028100000). Its opening message may still be in flight, so do not
+      // claim either outcome; a retry will return the completed ticket.
+      return fail(res, 409, "SUPPORT_CREATE_IN_PROGRESS", "This request is already being sent. Please check your requests in a moment.");
+    }
     if (error || !created) return dbFail(res, "ticket create failed", error);
     const ticket = created as Row;
 

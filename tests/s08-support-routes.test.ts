@@ -897,6 +897,17 @@ describe("12. external failures", () => {
     expect(h.fake.rows("ticket_comments")).toHaveLength(1);
   });
 
+  it("S10: concurrent duplicate rejected by the unique index -> 409 SUPPORT_CREATE_IN_PROGRESS, nothing created", async () => {
+    const h = build();
+    h.fake.failTable("support_tickets", { message: "duplicate key value violates unique constraint", code: "23505" }, "insert", 1);
+    const res = await as(h, "studentA").post("/api/tickets", { ...VALID_CREATE, idempotencyKey: KEY });
+    expect(res.status).toBe(409);
+    expect(res.body.code).toBe("SUPPORT_CREATE_IN_PROGRESS");
+    expect(bodyText(res)).not.toContain("duplicate key");
+    expect(h.fake.rows("ticket_comments")).toHaveLength(0);
+    expect(h.notify.ticketCreated).not.toHaveBeenCalled();
+  });
+
   it("S10: retry after a FAILED rollback removes the incomplete leftover and recreates cleanly", async () => {
     const h = build();
     h.fake.failTable("ticket_comments", { message: "boom", code: "XX000" }, "insert", 1);

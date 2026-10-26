@@ -65,6 +65,7 @@ export function describeCreateFailure(error: unknown): { message: string; mayHav
   if (error instanceof ApiError) {
     const details = error.details as { mayHaveSaved?: boolean } | undefined;
     if (error.code === 'SUPPORT_CREATE_INCOMPLETE' && details?.mayHaveSaved) return { message: error.message, mayHaveSaved: true };
+    if (error.code === 'SUPPORT_CREATE_IN_PROGRESS') return { message: error.message, mayHaveSaved: true };
     return { message: error.message, mayHaveSaved: false };
   }
   return { message: 'We could not confirm that your request was received.', mayHaveSaved: true };
