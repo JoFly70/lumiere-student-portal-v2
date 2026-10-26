@@ -5,18 +5,37 @@ import { Input } from "@/components/ui/input";
 import { HS_OFFICIAL_COURSE_OUTCOMES, HS_OFFICIAL_TASK_OUTCOMES, formatHalfUnits, type HsReviewQueueItem } from "@shared/high-school-contract";
 import { adminHighSchoolApi } from "@/lib/admin-high-school-api";
 import {
-  courseResultBody, evidenceGate, formatDate, noteGate, planCourseOptions, taskOptions, taskResultBody, validateScore, voidAwardBody, type EvidenceDoc,
+  courseResultBody, evidenceGate, formatDate, noteGate, planCourseOptions, statusLabel, taskOptions, taskResultBody, validateScore, voidAwardBody, type EvidenceDoc,
 } from "@/lib/admin-high-school-logic";
 import { ActionMessage, EvidenceSelect, FIELD_CLASS, Field, GatedButton, Notice, Pill, SectionHeading, type SectionProps } from "./shared";
 import { useStaffAction } from "./use-staff-action";
 
 const docName = (docs: readonly EvidenceDoc[], id: string) => docs.find((d) => d.id === id)?.file_name ?? "Verified document";
 
+function OutcomeCell({ r }: { r: { outcome: string; scorePercent: number | null } }) {
+  return (
+    <span className="inline-flex flex-wrap items-center gap-2">
+      <Pill tone={r.outcome === "passed" || r.outcome === "completed" ? "good" : "bad"}>{statusLabel(r.outcome)}</Pill>
+      {r.scorePercent !== null ? <span className="tabular-nums">{r.scorePercent}%</span> : null}
+    </span>
+  );
+}
+
+/** A warning when the document that backed a record has since been un-verified. */
+function EvidenceCell({ name, verified }: { name: string; verified?: boolean }) {
+  return (
+    <span className="flex flex-wrap items-center gap-2 text-sm">
+      <span className="min-w-0 break-words">{name}</span>
+      {verified === false ? <Pill tone="warn">Evidence no longer verified</Pill> : null}
+    </span>
+  );
+}
+
 function ReviewQueue({ queue, onPick }: { queue: readonly HsReviewQueueItem[]; onPick: (i: HsReviewQueueItem) => void }) {
   return (
     <Card data-testid="review-queue">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base">Review queue {queue.length > 0 ? <Pill tone="warn">{queue.length} waiting</Pill> : null}</CardTitle>
+        <CardTitle className="text-base">Review queue</CardTitle>
         <CardDescription>Exams and assignments the student reports as submitted. These are reports only: the student sees "awaiting the school's grade" until you record the official result.</CardDescription>
       </CardHeader>
       <CardContent className="p-0">
@@ -25,7 +44,7 @@ function ReviewQueue({ queue, onPick }: { queue: readonly HsReviewQueueItem[]; o
             {queue.map((q) => (
               <li key={`${q.courseKey}/${q.taskKey}`} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3" data-testid="review-item">
                 <div className="min-w-0 text-sm">
-                  <p className="font-medium">{q.taskTitle} <span className="font-normal text-muted-foreground">· {q.kind}</span></p>
+                  <p className="font-medium">{q.taskTitle} <span className="font-normal text-muted-foreground">· {statusLabel(q.kind)}</span></p>
                   <p className="text-xs text-muted-foreground">{q.courseTitle} · reported {formatDate(q.reportedAt)}{q.reportedScorePercent !== null ? ` · student saw ${q.reportedScorePercent}% (not official)` : ""}</p>
                   {q.note ? <p className="mt-1 text-xs">“{q.note}”</p> : null}
                 </div>
@@ -65,15 +84,17 @@ export function ResultsSection({ state, studentId, isAdmin, docs }: SectionProps
   const tasks = taskOptions(state, tCourse);
   const picked = courses.find((c) => c.key === cCourse);
   const scoreProblem = validateScore(tScore);
-  const taskGate = !tCourse || !tTask ? { enabled: false, reason: "Choose the course and the task." } : scoreProblem ? { enabled: false, reason: scoreProblem } : evidenceGate(tEvidence, docs);
-  const courseGate = !cCourse ? { enabled: false, reason: "Choose the course." } : evidenceGate(cEvidence, docs);
+  const taskGate = !tCourse || !tTask ? { enabled: false, reason: "Choose the course and the task." } : scoreProblem ? { enabled: false, reason: scoreProblem } : evidenceGate(tEvidence, docs, "result");
+  const courseGate = !cCourse ? { enabled: false, reason: "Choose the course." } : evidenceGate(cEvidence, docs, "result");
   const pick = (q: HsReviewQueueItem) => { setTCourse(q.courseKey); setTTask(q.taskKey); if (q.reportedScorePercent !== null) setTScore(""); document.getElementById("rt-course")?.focus(); };
+  const areaName = (key: string) => cur.template.areas.find((x) => x.key === key)?.label ?? key;
   const activeAwards = cur.awards.filter((a) => a.status === "active");
+  const taskTitle = (courseKey: string, taskKey: string) => cur.published?.content.courses.find((c) => c.key === courseKey)?.tasks.find((t) => t.key === taskKey)?.title ?? "Task";
   const courseTitle = (key: string | null) => (key ? cur.published?.content.courses.find((c) => c.key === key)?.title ?? key : "Transfer credit");
   return (
     <section aria-labelledby="hs-results-h" className="space-y-5">
       <SectionHeading id="hs-results-h" title="Reviews and official results">
-        Only results issued by the awarding school are official. Every result below needs a verified document of this student as evidence.
+        Only results issued by the awarding school are official. Courses listed are those in the published roadmap; every result needs a verified document of this student as evidence.
       </SectionHeading>
       <ReviewQueue queue={cur.reviewQueue} onPick={pick} />
 
@@ -90,18 +111,18 @@ export function ResultsSection({ state, studentId, isAdmin, docs }: SectionProps
             <Field id="rt-task" label="Task">
               <select id="rt-task" className={FIELD_CLASS} value={tTask} onChange={(e) => setTTask(e.target.value)} disabled={!tCourse}>
                 <option value="">Choose a task…</option>
-                {tasks.map((t) => <option key={t.key} value={t.key}>{t.title} ({t.kind})</option>)}
+                {tasks.map((t) => <option key={t.key} value={t.key}>{t.title} ({statusLabel(t.kind)})</option>)}
               </select>
             </Field>
             <div className="grid gap-4 sm:grid-cols-2">
               <Field id="rt-outcome" label="Outcome">
                 <select id="rt-outcome" className={FIELD_CLASS} value={tOutcome} onChange={(e) => setTOutcome(e.target.value)}>
-                  {HS_OFFICIAL_TASK_OUTCOMES.map((o) => <option key={o} value={o}>{o.replace(/_/g, " ")}</option>)}
+                  {HS_OFFICIAL_TASK_OUTCOMES.map((o) => <option key={o} value={o}>{statusLabel(o)}</option>)}
                 </select>
               </Field>
               <Field id="rt-score" label="Official score % (optional)"><Input id="rt-score" inputMode="numeric" value={tScore} onChange={(e) => setTScore(e.target.value)} /></Field>
             </div>
-            <EvidenceSelect id="rt-evidence" value={tEvidence} onChange={setTEvidence} docs={docs} />
+            <EvidenceSelect id="rt-evidence" value={tEvidence} onChange={setTEvidence} docs={docs} purpose="result" />
             <Field id="rt-note" label="Note (optional)"><Input id="rt-note" value={tNote} onChange={(e) => setTNote(e.target.value)} /></Field>
             <ActionMessage message={task.message} />
             <GatedButton id="rt-save" gate={taskGate} pending={task.pending}
@@ -120,11 +141,11 @@ export function ResultsSection({ state, studentId, isAdmin, docs }: SectionProps
             </Field>
             <Field id="rc-outcome" label="Outcome">
               <select id="rc-outcome" className={FIELD_CLASS} value={cOutcome} onChange={(e) => setCOutcome(e.target.value)}>
-                {HS_OFFICIAL_COURSE_OUTCOMES.map((o) => <option key={o} value={o}>{o.replace(/_/g, " ")}</option>)}
+                {HS_OFFICIAL_COURSE_OUTCOMES.map((o) => <option key={o} value={o}>{statusLabel(o)}</option>)}
               </select>
             </Field>
             {picked && cOutcome === "completed" ? <Notice tone="official">Awards {formatHalfUnits(picked.halfUnits)} {picked.halfUnits === 2 ? "credit" : "credits"} toward the course's area.</Notice> : null}
-            <EvidenceSelect id="rc-evidence" value={cEvidence} onChange={setCEvidence} docs={docs} />
+            <EvidenceSelect id="rc-evidence" value={cEvidence} onChange={setCEvidence} docs={docs} purpose="result" />
             <Field id="rc-note" label="Note (optional)"><Input id="rc-note" value={cNote} onChange={(e) => setCNote(e.target.value)} /></Field>
             <ActionMessage message={course.message} />
             <GatedButton id="rc-save" gate={courseGate} pending={course.pending}
@@ -135,22 +156,34 @@ export function ResultsSection({ state, studentId, isAdmin, docs }: SectionProps
 
       <Card data-testid="official-results">
         <CardHeader><CardTitle className="text-base">Official results recorded</CardTitle></CardHeader>
-        <CardContent className="overflow-x-auto p-0" tabIndex={0} role="region" aria-label="Official results table">
+        <CardContent className="p-0">
           {cur.results.length === 0 ? <p className="px-6 pb-5 text-sm text-muted-foreground">No official results yet.</p> : (
-            <table className="w-full min-w-[36rem] text-sm">
-              <caption className="sr-only">Official results</caption>
-              <thead><tr className="border-y text-left text-xs uppercase tracking-wide text-muted-foreground"><th scope="col" className="px-4 py-2 font-medium">Course / task</th><th scope="col" className="px-4 py-2 font-medium">Outcome</th><th scope="col" className="px-4 py-2 font-medium">Evidence</th><th scope="col" className="px-4 py-2 font-medium">Recorded</th></tr></thead>
-              <tbody>
+            <>
+              <table className="hidden w-full table-fixed text-sm md:table">
+                <caption className="sr-only">Official results</caption>
+                <thead><tr className="border-y text-left text-xs uppercase tracking-wide text-muted-foreground"><th scope="col" className="w-[34%] px-4 py-2 font-medium">Course / task</th><th scope="col" className="w-[20%] px-4 py-2 font-medium">Outcome</th><th scope="col" className="w-[28%] px-4 py-2 font-medium">Evidence</th><th scope="col" className="w-[18%] px-4 py-2 font-medium">Recorded</th></tr></thead>
+                <tbody>
+                  {cur.results.map((r) => (
+                    <tr key={r.id} className="border-b align-top last:border-0">
+                      <td className="break-words px-4 py-2"><p className="font-medium">{courseTitle(r.courseKey)}</p><p className="text-xs text-muted-foreground">{r.taskKey ? taskTitle(r.courseKey, r.taskKey) : "Course result"}</p></td>
+                      <td className="px-4 py-2"><OutcomeCell r={r} /></td>
+                      <td className="break-words px-4 py-2"><EvidenceCell name={docName(docs, r.evidenceDocumentId)} verified={r.evidenceStillVerified} /></td>
+                      <td className="px-4 py-2 text-muted-foreground">{formatDate(r.recordedAt)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <ul className="divide-y border-t md:hidden" data-testid="results-cards">
                 {cur.results.map((r) => (
-                  <tr key={r.id} className="border-b last:border-0">
-                    <td className="px-4 py-2"><p className="font-medium">{courseTitle(r.courseKey)}</p>{r.taskKey ? <p className="text-xs text-muted-foreground">{r.taskKey}</p> : <p className="text-xs text-muted-foreground">course result</p>}</td>
-                    <td className="px-4 py-2"><Pill tone={r.outcome === "passed" || r.outcome === "completed" ? "good" : "bad"}>{r.outcome.replace(/_/g, " ")}</Pill>{r.scorePercent !== null ? <span className="ml-2 tabular-nums">{r.scorePercent}%</span> : null}</td>
-                    <td className="px-4 py-2">{docName(docs, r.evidenceDocumentId)}</td>
-                    <td className="px-4 py-2 text-muted-foreground">{formatDate(r.recordedAt)}</td>
-                  </tr>
+                  <li key={r.id} className="space-y-1.5 px-4 py-3 text-sm">
+                    <p className="font-medium">{courseTitle(r.courseKey)}</p>
+                    <p className="text-xs text-muted-foreground">{r.taskKey ? taskTitle(r.courseKey, r.taskKey) : "Course result"} · {formatDate(r.recordedAt)}</p>
+                    <OutcomeCell r={r} />
+                    <EvidenceCell name={docName(docs, r.evidenceDocumentId)} verified={r.evidenceStillVerified} />
+                  </li>
                 ))}
-              </tbody>
-            </table>
+              </ul>
+            </>
           )}
         </CardContent>
       </Card>
@@ -167,9 +200,10 @@ export function ResultsSection({ state, studentId, isAdmin, docs }: SectionProps
               <li key={a.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 text-sm">
                 <div className="min-w-0">
                   <p className={`font-medium ${a.status === "voided" ? "text-muted-foreground line-through" : ""}`}>{courseTitle(a.courseKey)} · {formatHalfUnits(a.halfUnits)} cr</p>
-                  <p className="text-xs text-muted-foreground">{a.source === "transfer" ? "Transfer award" : "Course completion"} · evidence: {docName(docs, a.evidenceDocumentId)}{a.voidReason ? ` · voided: ${a.voidReason}` : ""}</p>
+                  <p className="text-xs text-muted-foreground">{a.source === "transfer" ? "Transfer award" : "Course completion"} · {areaName(a.areaKey)} · evidence: {docName(docs, a.evidenceDocumentId)}{a.voidReason ? ` · voided: ${a.voidReason}` : ""}</p>
+                  {a.status === "active" && a.evidenceStillVerified === false ? <p className="mt-1"><Pill tone="warn">Evidence no longer verified</Pill></p> : null}
                 </div>
-                <Pill tone={a.status === "active" ? "good" : "neutral"}>{a.status}</Pill>
+                <Pill tone={a.status === "active" ? "good" : "neutral"}>{statusLabel(a.status)}</Pill>
               </li>
             ))}
           </ul>

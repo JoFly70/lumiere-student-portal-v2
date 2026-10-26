@@ -1,12 +1,12 @@
 /** Graduation tab: eligibility with blockers, diploma conferral, delivery statuses, financial clearance, archived evidence. */
 import { useState } from "react";
-import { CheckCircle2, CircleAlert } from "lucide-react";
+import { CheckCircle2, CircleAlert, Lock } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { HS_DELIVERY_STATUSES, HS_FINANCIAL_CLEARANCE, formatHalfUnits, type HsDeliveryStatus, type HsFinancialClearance } from "@shared/high-school-contract";
 import { adminHighSchoolApi } from "@/lib/admin-high-school-api";
 import {
-  DELIVERY_LABEL, FINANCIAL_LABEL, conferDiplomaBody, confirmEligibilityBody, deliveryBody, evidenceGate, financialClearanceBody, formatDate, graduationGates, noteGate, type EvidenceDoc,
+  DELIVERY_LABEL, FINANCIAL_LABEL, actorLabel, deliveryOptions, financialGate, conferDiplomaBody, confirmEligibilityBody, deliveryBody, evidenceGate, financialClearanceBody, formatDate, graduationGates, noteGate, remainingHalfUnits, type EvidenceDoc,
 } from "@/lib/admin-high-school-logic";
 import { ActionMessage, EvidenceSelect, FIELD_CLASS, Field, GatedButton, Notice, Pill, SectionHeading, type SectionProps } from "./shared";
 import { useStaffAction } from "./use-staff-action";
@@ -26,13 +26,26 @@ function DeliveryRow({ idp, label, current, docId, docs, studentId, eid, action 
       <div className="flex flex-wrap items-end gap-3">
         <Field id={`${idp}-status`} label={`${label} status`} className="min-w-[12rem] flex-1">
           <select id={`${idp}-status`} className={FIELD_CLASS} value={value} onChange={(e) => setValue(e.target.value as HsDeliveryStatus)}>
-            {HS_DELIVERY_STATUSES.map((s) => <option key={s} value={s}>{DELIVERY_LABEL[s]}</option>)}
+            {HS_DELIVERY_STATUSES.filter((s) => deliveryOptions(current).includes(s)).map((s) => <option key={s} value={s}>{DELIVERY_LABEL[s]}</option>)}
           </select>
         </Field>
         <GatedButton id={`${idp}-save`} variant="outline" size="sm" pending={a.pending} gate={value === current ? { enabled: false, reason: "Unchanged." } : { enabled: true, reason: null }} onClick={() => a.run(deliveryBody(action, value))}>Save</GatedButton>
       </div>
       <p className="text-xs text-muted-foreground">Archived evidence: <span className="font-medium text-foreground">{docName(docs, docId)}</span></p>
       <ActionMessage message={a.message} />
+    </div>
+  );
+}
+
+/** A finished step: one summary row (what, when, who, evidence) instead of a form that can no longer be used. */
+function DoneRow({ testId, title, when, who, evidence }: { testId: string; title: string; when: string | null; who: string | null; evidence: string }) {
+  return (
+    <div data-testid={testId} className="flex items-start gap-3 rounded-lg border border-green-700/30 bg-green-600/5 px-4 py-3 text-sm">
+      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-green-800 dark:text-green-300" aria-hidden="true" />
+      <div className="min-w-0">
+        <p className="font-medium">{title}{when ? ` on ${formatDate(when)}` : ""}{who ? ` by ${who}` : ""}</p>
+        <p className="break-words text-muted-foreground">Evidence: {evidence}</p>
+      </div>
     </div>
   );
 }
@@ -45,17 +58,18 @@ export function GraduationSection({ state, studentId, isAdmin, docs }: SectionPr
   const [conferDate, setConferDate] = useState("");
   const [diplomaDoc, setDiplomaDoc] = useState("");
   const [transcriptDoc, setTranscriptDoc] = useState("");
-  const [finValue, setFinValue] = useState<HsFinancialClearance>("unknown");
+  const [finValue, setFinValue] = useState<HsFinancialClearance>(state.current?.graduation.financialClearance ?? "unknown");
   const [finNote, setFinNote] = useState("");
   const confirmA = useGraduationAction(studentId, eid, "Graduation eligibility confirmed.");
   const conferA = useGraduationAction(studentId, eid, "Diploma conferred and evidence archived.");
   const finA = useGraduationAction(studentId, eid, "Financial clearance saved.");
   if (!cur) return <section aria-labelledby="hs-grad-h"><SectionHeading id="hs-grad-h" title="Graduation" /><Notice>Create the high school program first.</Notice></section>;
   const g = cur.graduation;
+  const actor = (types: RegExp) => actorLabel(state.events.find((e) => types.test(e.type))?.actorId);
   const gates = graduationGates(state, isAdmin);
   const credits = cur.credits;
-  const confirmGate = !gates.confirm.enabled ? gates.confirm : evidenceGate(eligEvidence, docs);
-  const conferGate = !gates.confer.enabled ? gates.confer : !conferDate ? { enabled: false, reason: "Enter the date the school conferred the diploma." } : !evidenceGate(diplomaDoc, docs).enabled ? { enabled: false, reason: "Select the verified diploma document." } : evidenceGate(transcriptDoc, docs).enabled ? { enabled: true, reason: null } : { enabled: false, reason: "Select the verified transcript document." };
+  const confirmGate = !gates.confirm.enabled ? gates.confirm : evidenceGate(eligEvidence, docs, "eligibility");
+  const conferGate = !gates.confer.enabled ? gates.confer : !conferDate ? { enabled: false, reason: "Enter the date the school conferred the diploma." } : !evidenceGate(diplomaDoc, docs, "diploma").enabled ? { enabled: false, reason: "Select the verified diploma document." } : evidenceGate(transcriptDoc, docs, "transcript").enabled ? { enabled: true, reason: null } : { enabled: false, reason: "Select the verified transcript document." };
   return (
     <section aria-labelledby="hs-grad-h" className="space-y-5">
       <SectionHeading id="hs-grad-h" title="Graduation">
@@ -64,7 +78,7 @@ export function GraduationSection({ state, studentId, isAdmin, docs }: SectionPr
 
       <Card data-testid="graduation-status">
         <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3 space-y-0">
-          <div><CardTitle className="text-base">Eligibility</CardTitle><CardDescription>{formatHalfUnits(credits.earnedHalfUnits)} of {formatHalfUnits(credits.requiredHalfUnits)} credits officially earned · core {formatHalfUnits(credits.core.earnedHalfUnits)}/{formatHalfUnits(credits.core.requiredHalfUnits)} · electives {formatHalfUnits(credits.elective.earnedHalfUnits)}/{formatHalfUnits(credits.elective.requiredHalfUnits)}</CardDescription></div>
+          <div><CardTitle className="text-base">Eligibility</CardTitle><CardDescription>{formatHalfUnits(credits.earnedHalfUnits)} of {formatHalfUnits(credits.requiredHalfUnits)} credits officially earned ({formatHalfUnits(remainingHalfUnits(credits.requiredHalfUnits, credits.earnedHalfUnits))} remaining) · core {formatHalfUnits(credits.core.earnedHalfUnits)}/{formatHalfUnits(credits.core.requiredHalfUnits)} · electives {formatHalfUnits(credits.elective.earnedHalfUnits)}/{formatHalfUnits(credits.elective.requiredHalfUnits)}</CardDescription></div>
           <Pill tone={g.status === "diploma_conferred" ? "good" : g.status === "eligibility_confirmed" ? "official" : "warn"}>{STATUS_LABEL[g.status]}</Pill>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -74,33 +88,44 @@ export function GraduationSection({ state, studentId, isAdmin, docs }: SectionPr
               <ul className="ml-6 list-disc space-y-1 text-sm">{g.blockers.map((b) => <li key={b}>{b}</li>)}</ul>
             </div>
           ) : g.status === "in_progress" ? <p className="flex items-center gap-2 text-sm font-medium" data-testid="graduation-blockers"><CheckCircle2 className="h-4 w-4" aria-hidden="true" />No blockers. Eligibility can be confirmed.</p> : null}
-          {g.eligibilityConfirmedAt ? <p className="text-sm text-muted-foreground">Eligibility confirmed {formatDate(g.eligibilityConfirmedAt)}. Evidence: {docName(docs, g.eligibilityEvidenceDocumentId)}.</p> : null}
-          {g.diploma.conferredOn ? <p className="text-sm text-muted-foreground">Diploma conferred {formatDate(g.diploma.conferredOn)}.</p> : null}
         </CardContent>
       </Card>
 
-      <div className="grid gap-5 lg:grid-cols-2">
-        <Card data-testid="confirm-eligibility">
-          <CardHeader><CardTitle className="text-base">Confirm graduation eligibility</CardTitle><CardDescription>Record the school's official completion review. Requires every credit and result to be official.</CardDescription></CardHeader>
-          <CardContent className="grid gap-4">
-            <EvidenceSelect id="ge-evidence" label="School's eligibility confirmation (verified document)" value={eligEvidence} onChange={setEligEvidence} docs={docs} />
-            <Field id="ge-note" label="Note (optional)"><Input id="ge-note" value={eligNote} onChange={(e) => setEligNote(e.target.value)} /></Field>
-            <ActionMessage message={confirmA.message} />
-            <GatedButton id="ge-save" gate={confirmGate} pending={confirmA.pending} onClick={() => confirmA.run(confirmEligibilityBody(eligEvidence, eligNote))}>Confirm eligibility</GatedButton>
-          </CardContent>
-        </Card>
-
-        <Card data-testid="confer-diploma">
-          <CardHeader><CardTitle className="text-base">Confer diploma</CardTitle><CardDescription>Administrator only. Archives the diploma and the transcript by linking verified Documents.</CardDescription></CardHeader>
-          <CardContent className="grid gap-4">
-            <Field id="gc-date" label="Diploma conferred on"><Input id="gc-date" type="date" value={conferDate} onChange={(e) => setConferDate(e.target.value)} /></Field>
-            <EvidenceSelect id="gc-diploma" label="Diploma (verified document)" value={diplomaDoc} onChange={setDiplomaDoc} docs={docs} />
-            <EvidenceSelect id="gc-transcript" label="Official transcript (verified document)" value={transcriptDoc} onChange={setTranscriptDoc} docs={docs} />
-            <ActionMessage message={conferA.message} />
-            <GatedButton id="gc-save" gate={conferGate} pending={conferA.pending} onClick={() => conferA.run(conferDiplomaBody(conferDate, diplomaDoc, transcriptDoc))}>Confer diploma</GatedButton>
-          </CardContent>
-        </Card>
-      </div>
+      <ol className="space-y-4" aria-label="Graduation steps">
+        <li>
+          {g.status !== "in_progress" ? (
+            <DoneRow testId="confirm-eligibility" title="Eligibility confirmed" when={g.eligibilityConfirmedAt} who={actor(/eligib/i)} evidence={docName(docs, g.eligibilityEvidenceDocumentId)} />
+          ) : (
+            <Card data-testid="confirm-eligibility">
+              <CardHeader><CardTitle className="text-base">Step 1 · Confirm graduation eligibility</CardTitle><CardDescription>Record the school's official completion review. Requires every credit and result to be official. Administrator only.</CardDescription></CardHeader>
+              <CardContent className="grid gap-4">
+                <EvidenceSelect id="ge-evidence" label="School's eligibility confirmation (verified document)" value={eligEvidence} onChange={setEligEvidence} docs={docs} purpose="eligibility" />
+                <Field id="ge-note" label="Note (optional)"><Input id="ge-note" value={eligNote} onChange={(e) => setEligNote(e.target.value)} /></Field>
+                <ActionMessage message={confirmA.message} />
+                <GatedButton id="ge-save" gate={confirmGate} pending={confirmA.pending} onClick={() => confirmA.run(confirmEligibilityBody(eligEvidence, eligNote))}>Confirm eligibility</GatedButton>
+              </CardContent>
+            </Card>
+          )}
+        </li>
+        <li>
+          {g.status === "diploma_conferred" ? (
+            <DoneRow testId="confer-diploma" title="Diploma conferred" when={g.diploma.conferredOn} who={actor(/confer|diploma/i)} evidence={`${docName(docs, g.diploma.documentId)} (diploma), ${docName(docs, g.transcript.documentId)} (transcript)`} />
+          ) : g.status === "in_progress" ? (
+            <div data-testid="confer-diploma" className="flex items-start gap-2 rounded-lg border border-dashed px-4 py-3 text-sm text-muted-foreground"><Lock className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" /><div><p className="font-medium text-foreground">Step 2 · Confer diploma</p><p>{gates.confer.reason}</p></div></div>
+          ) : (
+            <Card data-testid="confer-diploma">
+              <CardHeader><CardTitle className="text-base">Step 2 · Confer diploma</CardTitle><CardDescription>Administrator only. Archives the diploma and the transcript by linking verified Documents.</CardDescription></CardHeader>
+              <CardContent className="grid gap-4">
+                <Field id="gc-date" label="Diploma conferred on"><Input id="gc-date" type="date" value={conferDate} onChange={(e) => setConferDate(e.target.value)} /></Field>
+                <EvidenceSelect id="gc-diploma" label="Diploma (verified document)" value={diplomaDoc} onChange={setDiplomaDoc} docs={docs} purpose="diploma" />
+                <EvidenceSelect id="gc-transcript" label="Official transcript (verified document)" value={transcriptDoc} onChange={setTranscriptDoc} docs={docs} purpose="transcript" />
+                <ActionMessage message={conferA.message} />
+                <GatedButton id="gc-save" gate={conferGate} pending={conferA.pending} onClick={() => conferA.run(conferDiplomaBody(conferDate, diplomaDoc, transcriptDoc))}>Confer diploma</GatedButton>
+              </CardContent>
+            </Card>
+          )}
+        </li>
+      </ol>
 
       <div className="grid gap-5 lg:grid-cols-2">
         <Card data-testid="delivery-status">
@@ -124,7 +149,7 @@ export function GraduationSection({ state, studentId, isAdmin, docs }: SectionPr
             </Field>
             <Field id="fc-note" label="Note (required)"><Input id="fc-note" value={finNote} onChange={(e) => setFinNote(e.target.value)} placeholder="Basis for this status" /></Field>
             <ActionMessage message={finA.message} />
-            <GatedButton id="fc-save" variant="outline" gate={noteGate(finNote)} pending={finA.pending} onClick={() => finA.run(financialClearanceBody(finValue, finNote), () => setFinNote(""))}>Save clearance</GatedButton>
+            <GatedButton id="fc-save" variant="outline" gate={financialGate(state, finValue, finNote)} pending={finA.pending} onClick={() => finA.run(financialClearanceBody(finValue, finNote), () => setFinNote(""))}>Save clearance</GatedButton>
           </CardContent>
         </Card>
       </div>

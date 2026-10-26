@@ -6,8 +6,8 @@ import type { ReactNode } from "react";
 import { AlertCircle, CheckCircle2, Info, Loader2, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { evidenceLabel, verifiedEvidenceDocs, type EvidenceDoc, type Gate } from "@/lib/admin-high-school-logic";
-import type { StaffHighSchoolState } from "@shared/high-school-contract";
+import { evidenceLabel, evidenceTypesText, verifiedEvidenceDocs, type EvidenceDoc, type Gate } from "@/lib/admin-high-school-logic";
+import type { HsEvidencePurpose, StaffHighSchoolState } from "@shared/high-school-contract";
 
 export interface SectionProps {
   readonly state: StaffHighSchoolState;
@@ -57,13 +57,16 @@ export function Notice({ tone = "info", children, testId }: { tone?: keyof typeo
 }
 
 /** A disabled action must always say why. */
+/** Disabled = muted outline with readable text (never a pale fill with white text). */
+export const DISABLED_CLASS = "disabled:pointer-events-none disabled:border disabled:border-dashed disabled:border-border disabled:bg-transparent disabled:text-foreground/75 disabled:opacity-100 disabled:shadow-none";
+
 export function GatedButton({ gate, id, children, onClick, pending, variant, type = "button", size }: {
   gate: Gate; id: string; children: ReactNode; onClick?: () => void; pending?: boolean;
   variant?: "default" | "outline" | "destructive" | "secondary"; type?: "button" | "submit"; size?: "sm" | "default";
 }) {
   return (
     <div className="inline-flex flex-col items-start gap-1">
-      <Button id={id} type={type} variant={variant} size={size} disabled={!gate.enabled || pending} onClick={onClick} aria-describedby={gate.reason ? `${id}-why` : undefined} className={`min-h-10 ${!variant || variant === "default" ? "dark:bg-blue-700 dark:text-white dark:hover:bg-blue-800" : ""}`}>
+      <Button id={id} type={type} variant={variant} size={size} disabled={!gate.enabled || pending} onClick={onClick} aria-describedby={gate.reason ? `${id}-why` : undefined} className={`min-h-10 ${DISABLED_CLASS} ${!variant || variant === "default" ? "dark:bg-blue-700 dark:text-white dark:hover:bg-blue-800" : ""}`}>
         {pending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" /> : null}
         {children}
       </Button>
@@ -72,12 +75,12 @@ export function GatedButton({ gate, id, children, onClick, pending, variant, typ
   );
 }
 
-export function EvidenceSelect({ id, value, onChange, docs, label = "Evidence (verified document)" }: {
-  id: string; value: string; onChange: (v: string) => void; docs: readonly EvidenceDoc[]; label?: string;
+export function EvidenceSelect({ id, value, onChange, docs, purpose, label = "Evidence (verified document)" }: {
+  id: string; value: string; onChange: (v: string) => void; docs: readonly EvidenceDoc[]; purpose: HsEvidencePurpose; label?: string;
 }) {
-  const verified = verifiedEvidenceDocs(docs);
+  const verified = verifiedEvidenceDocs(docs, purpose);
   return (
-    <Field id={id} label={label} hint={verified.length === 0 ? "No verified documents yet. Verify the school's document in Documents first." : "Only documents already verified for this student can be evidence."}>
+    <Field id={id} label={label} hint={verified.length === 0 ? `No verified ${evidenceTypesText(purpose)} yet. Verify it in Documents first.` : `Verified documents of this student only: ${evidenceTypesText(purpose)}.`}>
       <select id={id} className={FIELD_CLASS} value={value} onChange={(e) => onChange(e.target.value)} aria-describedby={`${id}-hint`}>
         <option value="">Select a verified document…</option>
         {verified.map((d) => <option key={d.id} value={d.id}>{evidenceLabel(d)}</option>)}
@@ -100,4 +103,14 @@ export function Pill({ children, tone = "neutral" }: { children: ReactNode; tone
     official: "border-foreground/40 bg-foreground/5 text-foreground",
   }[tone];
   return <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${cls}`}>{children}</span>;
+}
+
+/** Small horizontal bar for "planned/earned of required" per area. Decorative: the numbers are always shown as text next to it. */
+export function MiniBar({ value, max, over = false, className = "" }: { value: number; max: number; over?: boolean; className?: string }) {
+  const pct = max <= 0 ? 0 : Math.min(100, Math.round((value * 100) / max));
+  return (
+    <span aria-hidden="true" className={`block h-1.5 w-full overflow-hidden rounded-full bg-muted ${className}`}>
+      <span className={`block h-full rounded-full ${over ? "bg-amber-600" : value >= max && max > 0 ? "bg-green-700 dark:bg-green-500" : "bg-blue-600 dark:bg-blue-400"}`} style={{ width: `${pct}%` }} />
+    </span>
+  );
 }

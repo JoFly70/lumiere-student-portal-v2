@@ -8,10 +8,13 @@
  */
 import {
   HS_API,
+  HS_EVIDENCE_DOC_TYPES,
+  type HsEvidencePurpose,
   creditsToHalfUnits,
   formatHalfUnits,
   sumHalfUnits,
   hsRoadmapContentSchema,
+  type HsCreditSummary,
   type HsCurriculumTemplate,
   type HsEnrollmentSummary,
   type HsGuardianView,
@@ -60,6 +63,7 @@ export function classifyHsFailure(status: number, body: unknown): HsFailure {
     return { kind: "evidence", status, code, message: serverMessage ?? "Select a verified document of this student as evidence." };
   }
   if (code === "HS_POLICY_VIOLATION") return { kind: "policy", status, code, message: serverMessage ?? "A configured school policy does not allow this." };
+  if (code === "HS_INVALID_TRANSITION") return { kind: "policy", status, code, message: serverMessage ?? "That change is not allowed from the current state (for example a replaced course, or moving a delivery status backward)." };
   if (code === "HS_NOT_ELIGIBLE") return { kind: "not_eligible", status, code, message: serverMessage ?? "Graduation requirements are not met yet." };
   if (code === "HS_OFFICIAL_RECORD_LOCKED") return { kind: "locked", status, code, message: serverMessage ?? "This official record is locked." };
   if (status === 403) return { kind: "forbidden", status, code, message: "Only an administrator can do this." };
@@ -287,6 +291,16 @@ export const POLICY_LABELS: Record<keyof HsPolicies, { label: string; hint: stri
   passingPercent: { label: "Passing percentage (staff view only)", hint: "Never shown to the student as a rule.", unit: "%" },
 };
 
+/** Areas to open by default: the first one that still needs planning, else the first with changed courses, else the first. */
+export function defaultOpenAreas(content: HsRoadmapContent): string[] {
+  const rows = areaPlanRows(content);
+  const withCourses = rows.filter((r) => content.courses.some((c) => c.areaKey === r.key));
+  const gap = withCourses.find((r) => r.gapHalfUnits !== 0) ?? rows.find((r) => r.gapHalfUnits !== 0);
+  const changed = withCourses.find((r) => content.courses.some((c) => c.areaKey === r.key && c.status !== "planned"));
+  const pick = gap ?? changed ?? withCourses[0] ?? rows[0];
+  return pick ? [pick.key] : [];
+}
+
 export const NOT_CONFIGURED_TEXT = "Not configured — the school's rules apply";
 
 /** Policy fields are stored as numbers (maxTransfer in half-units) or null; blank = null. */
@@ -373,24 +387,51 @@ export function createEnrollmentBody(f: EnrollmentForm, templateTotalHalfUnits: 
 export const OPEN_STATUSES = ["planned", "active", "on_hold"] as const;
 export const isOpenEnrollment = (e: Pick<HsEnrollmentSummary, "status">): boolean => (OPEN_STATUSES as readonly string[]).includes(e.status);
 
-export function enrollmentTimeline(state: StaffHighSchoolState): { id: string; label: string; status: string; open: boolean; selected: boolean; note: string | null }[] {
+export function enrollmentTimeline(state: StaffHighSchoolState): { id: string; label: string; status: string; open: boolean; selected: boolean; note: string | null; period: string }[] {
   const currentId = state.current?.enrollment.id ?? null;
   return state.enrollments.map((e) => ({
     id: e.id,
     label: `${e.programTitle}${e.isHistorical ? " (historical graduate)" : ""}`,
-    status: e.status.replace(/_/g, " "),
+    status: statusLabel(e.status),
+    period: enrollmentPeriod(e),
     open: isOpenEnrollment(e),
     selected: e.id === currentId,
     note: e.requiredOverrideReason ? `Exception: ${formatHalfUnits(e.totalRequiredHalfUnits)} credits — ${e.requiredOverrideReason}` : null,
   }));
 }
 
+/** "Sep 2, 2024 · target Jun 30, 2028" — what the history row says about timing. */
+export function enrollmentPeriod(e: Pick<HsEnrollmentSummary, "startedOn" | "targetCompletionDate" | "createdAt" | "status">): string {
+  const started = e.startedOn ? `Started ${formatDate(e.startedOn)}` : `Created ${formatDate(e.createdAt)}`;
+  const target = e.targetCompletionDate && isOpenEnrollment(e) ? ` · target ${formatDate(e.targetCompletionDate)}` : "";
+  return `${started}${target}`;
+}
+
 export interface DisclosureGate extends Gate {
   readonly studentSees: string;
 }
 
+export interface DisclosurePreview {
+  /** What the student sees. */
+  readonly sees: string;
+  readonly nameVisible: boolean;
+  /** Why the student sees what they see (always set when the name is not visible). */
+  readonly why: string;
+}
+
+/** The server rule: the name is visible only when disclosed AND a name is set AND the enrollment is active or completed. */
+export function disclosurePreview(status: HsEnrollmentSummary["status"], disclosed: boolean, name: string | null, genericText: string): DisclosurePreview {
+  const trimmed = (name ?? "").trim();
+  if (disclosed && trimmed && (status === "active" || status === "completed")) {
+    return { sees: trimmed, nameVisible: true, why: "Disclosure is on, a name is set and the enrollment is confirmed." };
+  }
+  if (!disclosed) return { sees: genericText, nameVisible: false, why: "Disclosure is off, so the school name stays confidential." };
+  if (!trimmed) return { sees: genericText, nameVisible: false, why: "Disclosure is on but no school name is set." };
+  return { sees: genericText, nameVisible: false, why: `The enrollment is ${statusLabel(status).toLowerCase()}. The name appears once it is active or completed.` };
+}
+
 export function disclosureGate(e: Pick<HsEnrollmentSummary, "status" | "institutionDisclosed" | "awardingSchoolName">, wantDisclosed: boolean, name: string, genericText: string): DisclosureGate {
-  const studentSees = wantDisclosed && name.trim() ? name.trim() : genericText;
+  const studentSees = disclosurePreview(e.status, wantDisclosed, name, genericText).sees;
   if (wantDisclosed) {
     if (e.status !== "active" && e.status !== "completed") return { enabled: false, reason: "Disclose the school name only after the enrollment is confirmed (active or completed).", studentSees };
     if (name.trim().length < 2) return { enabled: false, reason: "Enter the awarding school's name first.", studentSees };
@@ -418,6 +459,14 @@ export const CLAIM_NOT_CREDIT_NOTICE =
   "A prior-study record or transfer claim is not credit. Credit exists only after the awarding school accepts the claim and staff record an official transfer award with its evaluation as evidence.";
 
 export const canAwardTransfer = (status: TransferClaimStatus): boolean => status === "accepted" || status === "partially_accepted";
+
+export function transferAwardGate(c: ClaimLike, credits: string, evidenceId: string, docs: readonly EvidenceDoc[] | undefined | null): Gate {
+  const half = parseCreditInput(credits);
+  const cap = acceptedHalfUnitsOf(c);
+  if (half === null) return { enabled: false, reason: "Awarded credit must be a multiple of 0.5." };
+  if (half > cap) return { enabled: false, reason: `At most ${formatHalfUnits(cap)} credits were accepted for this claim.` };
+  return evidenceGate(evidenceId, docs, "transferAward");
+}
 
 export function priorEducationBody(f: { schoolName: string; country: string; gradeLevels: string; status: string; evidenceDocumentId: string; staffNote: string }) {
   return {
@@ -448,7 +497,50 @@ export function claimBody(f: { priorEducationId: string; courseTitle: string; ar
   return { priorEducationId: f.priorEducationId, courseTitle: f.courseTitle.trim(), areaKey: f.areaKey, claimedHalfUnits: parseCreditInput(f.credits) as number };
 }
 
-export const resolveClaimBody = (status: "submitted_to_school" | "accepted" | "partially_accepted" | "declined", note: string) => ({ status, note: note.trim() });
+export type ClaimDecision = "submitted_to_school" | "accepted" | "partially_accepted" | "declined";
+
+export function resolveClaimBody(status: ClaimDecision, note: string, acceptedHalfUnits?: number | null) {
+  return status === "partially_accepted" && acceptedHalfUnits ? { status, note: note.trim(), acceptedHalfUnits } : { status, note: note.trim() };
+}
+
+/** The select starts at the saved decision; a bare "claimed" claim moves to the next sensible step. */
+export const initialClaimDecision = (status: TransferClaimStatus): ClaimDecision => (status === "claimed" ? "submitted_to_school" : status);
+
+export interface ClaimLike {
+  readonly claimedHalfUnits: number;
+  readonly acceptedHalfUnits?: number | null;
+  readonly status: TransferClaimStatus;
+}
+
+/** Credit the school accepted: the claimed amount unless it accepted only part of it. */
+export const acceptedHalfUnitsOf = (c: ClaimLike): number => (c.status === "partially_accepted" ? c.acceptedHalfUnits ?? 0 : c.acceptedHalfUnits ?? c.claimedHalfUnits);
+
+/** 0.5-credit steps from 0.5 up to `max` half-units. */
+export const halfUnitSteps = (max: number): number[] => Array.from({ length: Math.max(0, max) }, (_, i) => i + 1);
+
+export function claimDecisionGate(c: ClaimLike, status: ClaimDecision, note: string, acceptedUnits: number): Gate {
+  if (status === "partially_accepted" && (acceptedUnits < 1 || acceptedUnits > c.claimedHalfUnits)) return { enabled: false, reason: `Choose how much the school accepted (up to ${formatHalfUnits(c.claimedHalfUnits)} credits).` };
+  const savedUnits = c.acceptedHalfUnits ?? 0;
+  const changed = status !== c.status || (status === "partially_accepted" && acceptedUnits !== savedUnits);
+  if (!changed) return { enabled: false, reason: "No change from the saved decision." };
+  return noteGate(note);
+}
+
+/** Badge for a claim; an existing award always wins over the "accepted" wording. */
+export function claimBadge(status: TransferClaimStatus, awarded: boolean): { label: string; tone: "good" | "warn" | "bad" | "neutral" } {
+  if (awarded) return { label: "Credit awarded", tone: "good" };
+  if (status === "declined") return { label: "Declined by school", tone: "bad" };
+  if (status === "accepted") return { label: "Accepted — credit not yet awarded", tone: "warn" };
+  if (status === "partially_accepted") return { label: "Partly accepted — credit not yet awarded", tone: "warn" };
+  if (status === "submitted_to_school") return { label: "Submitted to school — not credit", tone: "neutral" };
+  return { label: "Claimed — not credit", tone: "neutral" };
+}
+
+/** "Accepted 0.5 of 1 credits" once the school has decided; null before. */
+export function acceptedSummary(c: ClaimLike): string | null {
+  if (c.status !== "accepted" && c.status !== "partially_accepted") return null;
+  return `Accepted ${formatHalfUnits(acceptedHalfUnitsOf(c))} of ${formatHalfUnits(c.claimedHalfUnits)} credits`;
+}
 
 // ── evidence ─────────────────────────────────────────────────────────────────
 
@@ -460,13 +552,26 @@ export interface EvidenceDoc {
 }
 
 /** Only verified documents of this student may be evidence (the server enforces the same rule). */
-export const verifiedEvidenceDocs = <D extends EvidenceDoc>(docs: readonly D[] | undefined | null): D[] => (docs ?? []).filter((d) => d.status === "verified");
+export const verifiedEvidenceDocs = <D extends EvidenceDoc>(docs: readonly D[] | undefined | null, purpose?: HsEvidencePurpose): D[] => {
+  const allowed: readonly string[] | null = purpose ? HS_EVIDENCE_DOC_TYPES[purpose] : null;
+  return (docs ?? []).filter((d) => d.status === "verified" && (!allowed || allowed.includes(d.doc_type ?? "")));
+};
 
-export const evidenceLabel = (d: EvidenceDoc): string => `${d.file_name || "Document"} · ${(d.doc_type || "document").replace(/_/g, " ")}`;
+export const DOC_TYPE_LABEL: Record<string, string> = {
+  hs_transcript: "High school transcript", hs_diploma: "Diploma", foreign_eval: "Foreign credential evaluation", other: "Other document",
+};
+export const docTypeLabel = (t: string | null | undefined): string => DOC_TYPE_LABEL[t ?? ""] ?? (t || "Document").replace(/_/g, " ");
 
-export function evidenceGate(id: string, docs: readonly EvidenceDoc[] | undefined | null): Gate {
+export const evidenceLabel = (d: EvidenceDoc): string => `${d.file_name || "Document"} · ${docTypeLabel(d.doc_type)}`;
+
+/** What kinds of document a purpose accepts, in words ("High school transcript or Other document"). */
+export const evidenceTypesText = (purpose: HsEvidencePurpose): string => HS_EVIDENCE_DOC_TYPES[purpose].map((t) => docTypeLabel(t)).join(" or ");
+
+export function evidenceGate(id: string, docs: readonly EvidenceDoc[] | undefined | null, purpose?: HsEvidencePurpose): Gate {
   if (!id) return { enabled: false, reason: "Select a verified document as evidence." };
-  if (!verifiedEvidenceDocs(docs).some((d) => d.id === id)) return { enabled: false, reason: "The selected document is not verified. Verify it in Documents first." };
+  const all = (docs ?? []).find((d) => d.id === id);
+  if (!all || all.status !== "verified") return { enabled: false, reason: "The selected document is not verified. Verify it in Documents first." };
+  if (purpose && !verifiedEvidenceDocs(docs, purpose).some((d) => d.id === id)) return { enabled: false, reason: `This evidence must be a ${evidenceTypesText(purpose)}.` };
   return { enabled: true, reason: null };
 }
 
@@ -495,7 +600,7 @@ export const transferAwardBody = (f: { claimId: string; areaKey: string; credits
 export const voidAwardBody = (reason: string) => ({ reason: reason.trim() });
 
 export function planCourseOptions(state: StaffHighSchoolState): { key: string; title: string; halfUnits: number }[] {
-  const published = state.current?.published?.content ?? state.current?.draft?.content ?? null;
+  const published = state.current?.published?.content ?? null;
   return (published?.courses ?? []).filter((c) => c.status === "planned").map((c) => ({ key: c.key, title: c.title, halfUnits: c.halfUnits }));
 }
 
@@ -513,6 +618,8 @@ export function graduationGates(state: StaffHighSchoolState, isAdmin: boolean) {
     ? { enabled: false, reason: "No enrollment." }
     : g.status !== "in_progress"
       ? { enabled: false, reason: "Eligibility is already confirmed." }
+      : !isAdmin
+        ? { enabled: false, reason: "Admin only." }
       : blockers.length > 0
         ? { enabled: false, reason: `${blockers.length} ${blockers.length === 1 ? "blocker remains" : "blockers remain"}: resolve ${blockers.length === 1 ? "it" : "them"} first.` }
         : { enabled: true, reason: null };
@@ -534,6 +641,19 @@ export const conferDiplomaBody = (conferredOn: string, diplomaEvidenceDocumentId
 });
 export const financialClearanceBody = (value: "unknown" | "cleared" | "hold", note: string) => ({ action: "set_financial_clearance" as const, value, note: note.trim() });
 export const deliveryBody = (action: "set_transcript_status" | "set_diploma_delivery", value: string) => ({ action, value });
+
+/** Delivery statuses only move forward: the options start at the current one. */
+export const deliveryOptions = (current: string): string[] => {
+  const order = ["not_requested", "requested", "issued", "delivered"];
+  return order.slice(Math.max(0, order.indexOf(current)));
+};
+
+export function financialGate(state: StaffHighSchoolState, value: string, note: string): Gate {
+  const g = state.current?.graduation;
+  if (g?.status === "diploma_conferred") return { enabled: false, reason: "Financial clearance is locked once the diploma is conferred." };
+  if (value === (g?.financialClearance ?? "unknown")) return { enabled: false, reason: "No change from the current clearance." };
+  return noteGate(note);
+}
 
 export const FINANCIAL_LABEL: Record<string, string> = { unknown: "Unknown", cleared: "Cleared", hold: "Hold" };
 export const DELIVERY_LABEL: Record<string, string> = { not_requested: "Not requested", requested: "Requested", issued: "Issued by school", delivered: "Delivered" };
@@ -578,11 +698,43 @@ export function pathwayHeadline(state: StaffHighSchoolState): string {
   return `${formatHalfUnits(credits.earnedHalfUnits)} of ${formatHalfUnits(credits.requiredHalfUnits)} credits officially earned`;
 }
 
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] as const;
+
+/** "2026-10-26" or an ISO timestamp -> "Oct 26, 2026". Anything unparseable is shown as-is; blank is an em dash. */
 export function formatDate(value: string | null | undefined): string {
-  return value ? value.slice(0, 10) : "—";
+  if (!value) return "—";
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
+  if (!m) return value;
+  const month = MONTHS[Number(m[2]) - 1];
+  return month ? `${month} ${Number(m[3])}, ${m[1]}` : value;
 }
 
 export const humanize = (s: string): string => s.replace(/[._]/g, " ").replace(/^high school /, "").trim();
+
+/** "on_hold" -> "On hold", "transferred_out" -> "Transferred out". */
+export const statusLabel = (s: string): string => {
+  const t = s.replace(/[._]/g, " ").trim();
+  return t.charAt(0).toUpperCase() + t.slice(1);
+};
+
+/** Never show a raw id as a person: only a readable actor name is returned. */
+export const actorLabel = (id: string | null | undefined): string | null => (id && !/^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(id) ? id : null);
+
+/** Official remaining credit is never negative. */
+export const remainingHalfUnits = (required: number, earned: number): number => Math.max(0, required - earned);
+
+export interface CreditSlot { readonly key: string; readonly label: string; readonly kind: "core" | "elective"; readonly requiredHalfUnits: number; readonly countedHalfUnits: number }
+
+/** Segments for the official-credit bar, one slot per area in order (core first); counted credit never exceeds the slot. */
+export function creditSlots(credits: HsCreditSummary): CreditSlot[] {
+  const slots = credits.byArea.map((a) => ({ key: a.key, label: a.label, kind: a.kind, requiredHalfUnits: a.requiredHalfUnits, countedHalfUnits: Math.min(a.countedHalfUnits, a.requiredHalfUnits) }));
+  return [...slots.filter((s) => s.kind === "core"), ...slots.filter((s) => s.kind === "elective")];
+}
+
+export const isCompleted = (state: StaffHighSchoolState): boolean => {
+  const c = state.current;
+  return !!c && (c.enrollment.status === "completed" || c.graduation.status === "diploma_conferred");
+};
 
 /** Where the S09 authority verification lives (not duplicated here). */
 export const profileIdentityHref = (studentId: string): string => `/admin/students/${encodeURIComponent(studentId)}#workspace-profile`;

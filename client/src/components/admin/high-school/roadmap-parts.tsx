@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { formatHalfUnits, type HsPolicies, type HsRoadmapContent, type HsVersionStatus } from "@shared/high-school-contract";
 import {
-  NOT_CONFIGURED_TEXT, POLICY_LABELS, addMilestone, configuredPolicyCount, formatDate, policyDisplay, removeMilestone, setPacing, setPolicy,
+  NOT_CONFIGURED_TEXT, POLICY_LABELS, addMilestone, configuredPolicyCount, formatDate, policyDisplay, statusLabel, removeMilestone, setPacing, setPolicy,
 } from "@/lib/admin-high-school-logic";
 import { FIELD_CLASS, Field, Notice, Pill } from "./shared";
 
@@ -66,7 +66,7 @@ export function PoliciesCard({ content, onChange }: { content: HsRoadmapContent;
     <Card data-testid="policies-card">
       <CardHeader>
         <CardTitle className="text-base">Optional policies</CardTitle>
-        <CardDescription>Off by default. Nothing is enforced unless you set it here for this student; otherwise the school's own rules apply.</CardDescription>
+        <CardDescription>Off by default. Nothing is enforced unless you set it here for this student.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid gap-4 sm:grid-cols-2">
@@ -75,14 +75,14 @@ export function PoliciesCard({ content, onChange }: { content: HsRoadmapContent;
             const text = raw[k] ?? "";
             const invalid = text.trim() !== "" && content.policies[k] === null;
             return (
-              <Field key={k} id={`policy-${k}`} label={`${meta.label} (${meta.unit})`} hint={invalid ? "Enter a whole number (credits in steps of 0.5)." : content.policies[k] === null ? NOT_CONFIGURED_TEXT : meta.hint}>
-                <Input id={`policy-${k}`} inputMode="decimal" aria-describedby={`policy-${k}-hint`} aria-invalid={invalid} placeholder={NOT_CONFIGURED_TEXT} value={text}
+              <Field key={k} id={`policy-${k}`} label={`${meta.label} (${meta.unit})`} hint={invalid ? "Enter a whole number (credits in steps of 0.5)." : meta.hint}>
+                <Input id={`policy-${k}`} inputMode="decimal" aria-describedby={`policy-${k}-hint`} aria-invalid={invalid} placeholder="Not configured" value={text}
                   onChange={(e) => { setRaw({ ...raw, [k]: e.target.value }); onChange(setPolicy(content, k, e.target.value)); }} />
               </Field>
             );
           })}
         </div>
-        <Notice tone="info">{n === 0 ? "No policies are configured. Failed exam attempts are recorded without limit and no pace rule is enforced." : `${n} ${n === 1 ? "policy is" : "policies are"} configured for this student; the others stay unconfigured.`}</Notice>
+        <Notice tone="info"><span className="block font-medium">{NOT_CONFIGURED_TEXT}</span>{n === 0 ? "No policies are configured. Failed exam attempts are recorded without limit and no pace rule is enforced." : `${n} ${n === 1 ? "policy is" : "policies are"} configured for this student; the others stay unconfigured.`}</Notice>
       </CardContent>
     </Card>
   );
@@ -103,7 +103,7 @@ export function VersionHistory({ history }: { history: readonly { versionId: str
             {history.map((v) => (
               <li key={v.versionId} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2.5 text-sm">
                 <span className="font-medium">Version {v.versionNumber}</span>
-                <span className="flex items-center gap-2 text-muted-foreground">{v.publishedAt ? `Published ${formatDate(v.publishedAt)}` : "Not published"}<Pill tone={STATUS_TONE[v.status]}>{v.status}</Pill></span>
+                <span className="flex items-center gap-2 text-muted-foreground">{v.publishedAt ? `Published ${formatDate(v.publishedAt)}` : "Not published"}<Pill tone={STATUS_TONE[v.status]}>{statusLabel(v.status)}</Pill></span>
               </li>
             ))}
           </ol>

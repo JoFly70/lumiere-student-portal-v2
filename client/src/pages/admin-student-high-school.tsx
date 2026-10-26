@@ -8,11 +8,12 @@ import { Link, useParams } from "wouter";
 import { AlertCircle, ArrowLeft, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { formatHalfUnits, halfUnitPercent, type StaffHighSchoolState } from "@shared/high-school-contract";
+import { formatHalfUnits, type StaffHighSchoolState } from "@shared/high-school-contract";
 import { useAuth } from "@/lib/auth";
 import { useDocuments } from "@/hooks/use-documents";
 import { useHsState } from "@/lib/admin-high-school-api";
-import { formatDate } from "@/lib/admin-high-school-logic";
+import { formatDate, isCompleted, remainingHalfUnits, statusLabel } from "@/lib/admin-high-school-logic";
+import { CreditBar } from "@/components/admin/high-school/credit-bar";
 import { Notice, Pill, type SectionProps } from "@/components/admin/high-school/shared";
 import { ProgramSection } from "@/components/admin/high-school/program-section";
 import { PriorEducationSection } from "@/components/admin/high-school/prior-education-section";
@@ -47,25 +48,28 @@ export function SummaryStrip({ state }: { state: StaffHighSchoolState }) {
   const c = state.current;
   if (!c) return null;
   const credits = c.credits;
-  const pct = halfUnitPercent(credits.earnedHalfUnits, credits.requiredHalfUnits);
+  const done = isCompleted(state);
+  const conferred = c.graduation.diploma.conferredOn;
+  const remaining = remainingHalfUnits(credits.requiredHalfUnits, credits.earnedHalfUnits);
   return (
-    <div className="grid gap-4 rounded-lg border bg-card p-4 sm:grid-cols-2 lg:grid-cols-4" data-testid="hs-summary">
-      <div className="lg:col-span-2">
+    <div className="grid gap-5 rounded-lg border bg-card p-4 sm:p-5 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]" data-testid="hs-summary">
+      <div>
         <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Officially earned credit</p>
-        <p className="mt-1 text-2xl font-semibold tabular-nums">{formatHalfUnits(credits.earnedHalfUnits)} <span className="text-base font-normal text-muted-foreground">of {formatHalfUnits(credits.requiredHalfUnits)} credits</span></p>
-        <div role="progressbar" aria-label="Officially earned credit" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} className="mt-2 h-2 overflow-hidden rounded-full bg-muted"><div className="h-full bg-foreground" style={{ width: `${pct}%` }} /></div>
-        <p className="mt-1 text-xs text-muted-foreground">Core {formatHalfUnits(credits.core.earnedHalfUnits)}/{formatHalfUnits(credits.core.requiredHalfUnits)} · Electives {formatHalfUnits(credits.elective.earnedHalfUnits)}/{formatHalfUnits(credits.elective.requiredHalfUnits)} · {formatHalfUnits(credits.remainingHalfUnits)} remaining</p>
+        <p className="mt-1 text-2xl font-semibold tabular-nums">{formatHalfUnits(credits.earnedHalfUnits)} <span className="text-base font-normal text-muted-foreground">of {formatHalfUnits(credits.requiredHalfUnits)} credits{remaining === 0 ? " · requirement met" : ""}</span></p>
+        <div className="mt-3"><CreditBar credits={credits} /></div>
       </div>
-      <div>
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Waiting for review</p>
-        <p className="mt-1 text-2xl font-semibold tabular-nums">{c.reviewQueue.length}</p>
-        <p className="text-xs text-muted-foreground">student reports, not yet official</p>
-      </div>
-      <div>
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Target completion</p>
-        <p className="mt-1 text-2xl font-semibold tabular-nums">{formatDate(c.enrollment.targetCompletionDate)}</p>
-        <p className="text-xs text-muted-foreground">a target, not a guarantee</p>
-      </div>
+      <dl className="grid grid-cols-2 gap-4 border-t pt-4 lg:border-l lg:border-t-0 lg:pl-5 lg:pt-0">
+        <div>
+          <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{done ? "Completed on" : "Target completion"}</dt>
+          <dd className="mt-1 text-lg font-semibold">{done ? formatDate(conferred ?? c.enrollment.targetCompletionDate) : formatDate(c.enrollment.targetCompletionDate)}</dd>
+          {done ? null : <dd className="text-xs text-muted-foreground">a target, not a guarantee</dd>}
+        </div>
+        <div>
+          <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Roadmap</dt>
+          <dd className="mt-1 text-lg font-semibold">{c.published ? `Version ${c.published.versionNumber}` : "Not published"}</dd>
+          <dd className="text-xs text-muted-foreground">{c.draft ? `Draft v${c.draft.versionNumber} open` : c.published ? "No open draft" : "Draft not started"}</dd>
+        </div>
+      </dl>
     </div>
   );
 }
@@ -85,12 +89,12 @@ export function HighSchoolWorkspace({ state, studentId, isAdmin, docs, defaultTa
             <p className="mt-1 text-muted-foreground">{c ? c.enrollment.programTitle : "No high school program yet"}</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            {c ? <Pill tone={c.enrollment.status === "active" ? "good" : "neutral"}>{c.enrollment.status.replace(/_/g, " ")}</Pill> : null}
+            {c ? <Pill tone={c.enrollment.status === "active" ? "good" : "neutral"}>{statusLabel(c.enrollment.status)}</Pill> : null}
             {state.hasUniversityProgram ? <Pill>Also in a university program</Pill> : null}
-            {!isAdmin ? <Pill tone="warn">Staff view: publishing and conferral are admin-only</Pill> : null}
+            {!isAdmin ? <Pill tone="warn">Staff view: publishing, eligibility sign-off and conferral are admin-only</Pill> : null}
           </div>
         </div>
-        <Notice tone="official">Lumière plans and coordinates. The awarding school decides course completion, credit, grades and the diploma. A student's report is never official until you record the school's result with a verified document.</Notice>
+        {tab === "program" ? <Notice tone="official" testId="governance-banner">Lumière plans and coordinates. The awarding school decides course completion, credit, grades and the diploma. A student's report is never official until you record the school's result with a verified document.</Notice> : null}
       </header>
       <SummaryStrip state={state} />
       <Tabs value={tab} onValueChange={(v) => setTab(v as HsTabId)} className="space-y-5">

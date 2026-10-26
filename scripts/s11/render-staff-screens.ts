@@ -40,9 +40,9 @@ const SCREENS: Screen[] = [
   { name: "09-graduate-conferred", tab: "graduation", state: staffStateGraduate },
   { name: "10-guardians", tab: "guardians", state: staffStateRich },
   { name: "11-activity", tab: "activity", state: staffStateRich },
+  { name: "13-graduation-ready-staff", tab: "graduation", state: staffStateGraduationReady, role: "staff" },
   { name: "12-roadmap-dark", tab: "roadmap", state: staffStateRich, theme: "dark", widths: [1440] },
 ];
-void staffStateGraduationReady;
 
 function startVite(): Promise<ChildProcess> {
   const child = spawn(process.execPath, ["node_modules/vite/bin/vite.js", "--port", String(PORT), "--strictPort", "--host", "localhost"], {
@@ -67,6 +67,7 @@ async function newPage(browser: any, s: Screen, width: number) {
       session: { access_token: "stub", expires_at: Math.floor(Date.now() / 1000) + 3600 },
     }));
   }, [s.theme ?? "light", role]);
+  await ctx.addInitScript("window.__name = (f) => f;");
   const state = s.state();
   await ctx.route(/.*/, async (route: any) => {
     const url = new URL(route.request().url());
@@ -105,7 +106,14 @@ async function layoutAudit(page: any) {
       const r = e.getBoundingClientRect(); const st = getComputedStyle(e);
       return r.width > 0 && r.height > 0 && st.visibility !== "hidden" && r.height < 32 && !e.closest(".sr-only");
     }).length;
-    return { viewportWidth: vw, horizontalOverflowPx: overflow, offenders, interactiveUnder32pxHigh: small };
+    // Containers whose content is wider than the box (scrollWidth > clientWidth) that are not intended scroll regions.
+    const intended = (e: Element) => { for (let n: Element | null = e; n; n = n.parentElement) { const ox = getComputedStyle(n).overflowX; if (ox === "auto" || ox === "scroll") return true; } return false; };
+    const containerOverflow = [...main.querySelectorAll<HTMLElement>("*")].filter((e) => {
+      const st = getComputedStyle(e);
+      if (e.clientWidth === 0 || st.display === "inline" || st.visibility === "hidden" || e.closest(".sr-only") || ["svg", "path", "option"].includes(e.tagName.toLowerCase())) return false;
+      return e.scrollWidth > e.clientWidth + 1 && !intended(e);
+    }).slice(0, 12).map((e) => `${e.tagName.toLowerCase()}.${String(e.className).slice(0, 50)} scroll=${e.scrollWidth} client=${e.clientWidth}`);
+    return { viewportWidth: vw, horizontalOverflowPx: overflow, offenders, containerOverflow, interactiveUnder32pxHigh: small };
   });
 }
 
@@ -134,6 +142,7 @@ async function main() {
         const audit = await layoutAudit(page);
         axeSummary.push({ screen: file, violationCount: violations.length, seriousOrCritical: violations.filter((v: any) => v.impact === "serious" || v.impact === "critical").length, violations });
         layout.push({ screen: file, ...audit });
+        if (audit.containerOverflow.length) console.log("  container overflow:", audit.containerOverflow);
         console.log(file, "axe:", violations.map((v: any) => `${v.id}(${v.impact})x${v.nodes}`).join(", ") || "clean", "| overflow px:", audit.horizontalOverflowPx);
         await ctx.close();
       }
@@ -145,6 +154,6 @@ async function main() {
   fs.writeFileSync(path.join(OUT, "axe-summary.json"), JSON.stringify(axeSummary, null, 2));
   fs.writeFileSync(path.join(OUT, "layout-audit.json"), JSON.stringify(layout, null, 2));
   const bad = axeSummary.filter((a) => a.seriousOrCritical > 0);
-  console.log(`axe serious/critical screens: ${bad.length}; overflow screens: ${layout.filter((l) => l.horizontalOverflowPx > 0).length}`);
+  console.log(`axe serious/critical screens: ${bad.length}; overflow screens: ${layout.filter((l) => l.horizontalOverflowPx > 0).length}; container-overflow screens: ${layout.filter((l) => l.containerOverflow.length > 0).length}`);
 }
 main().then(() => process.exit(0), (e) => { console.error(e); process.exit(1); });

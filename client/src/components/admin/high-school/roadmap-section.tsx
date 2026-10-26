@@ -1,10 +1,12 @@
 /** Roadmap tab: configure the approved credits and electives in the draft, set the schedule, publish. */
 import { useMemo, useState } from "react";
-import { ArrowRightLeft, Plus, Trash2, Undo2 } from "lucide-react";
+import { ArrowRightLeft, MoreHorizontal, Plus, Trash2, Undo2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Textarea } from "@/components/ui/textarea";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -12,10 +14,10 @@ import {
 import { HS_TASK_KINDS, formatHalfUnits, type HsPlanCourse, type HsRoadmapContent, type HsTaskKind } from "@shared/high-school-contract";
 import { adminHighSchoolApi } from "@/lib/admin-high-school-api";
 import {
-  addCourse, addTask, areaPlanRows, blockingDraftIssues, formatDate, fromTemplateBody, plannedHalfUnits, publishBody, publishGate, removeCourse, removeTask,
+  addCourse, addTask, areaPlanRows, blockingDraftIssues, defaultOpenAreas, formatDate, statusLabel, fromTemplateBody, plannedHalfUnits, publishBody, publishGate, removeCourse, removeTask,
   replaceCourse, restoreCourse, saveDraftBody, setTaskDueDate, updateCourse, validateDraftContent, validateNewCourse, validateNewTask, type NewCourseForm,
 } from "@/lib/admin-high-school-logic";
-import { ActionMessage, FIELD_CLASS, Field, GatedButton, Notice, Pill, SectionHeading, type SectionProps } from "./shared";
+import { ActionMessage, DISABLED_CLASS, FIELD_CLASS, Field, GatedButton, MiniBar, Notice, Pill, SectionHeading, type SectionProps } from "./shared";
 import { useStaffAction } from "./use-staff-action";
 import { PacingCard, PoliciesCard, VersionHistory } from "./roadmap-parts";
 
@@ -57,7 +59,7 @@ function TaskEditor({ course, content, onChange }: { course: HsPlanCourse; conte
         <ul className="divide-y rounded-md border">
           {course.tasks.map((t) => (
             <li key={t.key} className="flex flex-wrap items-center gap-2 px-3 py-2 text-sm">
-              <Pill tone={t.kind === "lesson" ? "neutral" : "official"}>{t.kind}</Pill>
+              <Pill tone={t.kind === "lesson" ? "neutral" : "official"}>{statusLabel(t.kind)}</Pill>
               <span className="min-w-0 flex-1 basis-40 break-words">{t.title}</span>
               <label className="sr-only" htmlFor={`${id}-${t.key}-due`}>Due date for {t.title}</label>
               <Input id={`${id}-${t.key}-due`} type="date" className="h-9 w-40" value={t.dueDate ?? ""} onChange={(e) => onChange(setTaskDueDate(content, course.key, t.key, e.target.value))} />
@@ -67,10 +69,10 @@ function TaskEditor({ course, content, onChange }: { course: HsPlanCourse; conte
         </ul>
       )}
       <div className="grid items-end gap-3 sm:grid-cols-[8rem_1fr_10rem_auto]">
-        <Field id={`${id}-kind`} label="Type"><select id={`${id}-kind`} className={FIELD_CLASS} value={kind} onChange={(e) => setKind(e.target.value as HsTaskKind)}>{HS_TASK_KINDS.map((k) => <option key={k} value={k}>{k}</option>)}</select></Field>
+        <Field id={`${id}-kind`} label="Type"><select id={`${id}-kind`} className={FIELD_CLASS} value={kind} onChange={(e) => setKind(e.target.value as HsTaskKind)}>{HS_TASK_KINDS.map((k) => <option key={k} value={k}>{statusLabel(k)}</option>)}</select></Field>
         <Field id={`${id}-title`} label="Task title"><Input id={`${id}-title`} value={title} onChange={(e) => setTitle(e.target.value)} /></Field>
         <Field id={`${id}-due`} label="Due date"><Input id={`${id}-due`} type="date" value={due} onChange={(e) => setDue(e.target.value)} /></Field>
-        <Button type="button" variant="outline" className="min-h-10" disabled={problem !== null} aria-label={`Add task to ${course.title}`} onClick={() => { onChange(addTask(content, course.key, { kind, title, dueDate: due })); setTitle(""); setDue(""); }}><Plus className="mr-1 h-4 w-4" aria-hidden="true" />Add</Button>
+        <Button type="button" variant="outline" className={`min-h-10 ${DISABLED_CLASS}`} disabled={problem !== null} aria-label={`Add task to ${course.title}`} onClick={() => { onChange(addTask(content, course.key, { kind, title, dueDate: due })); setTitle(""); setDue(""); }}><Plus className="mr-1 h-4 w-4" aria-hidden="true" />Add</Button>
       </div>
     </div>
   );
@@ -87,7 +89,7 @@ function CourseCard({ course, content, onChange, replacedBy }: { course: HsPlanC
         <div className="min-w-0">
           <p className={`font-medium ${dim ? "text-muted-foreground line-through" : ""}`}>{course.title}</p>
           <p className="text-xs text-muted-foreground">
-            {formatHalfUnits(course.halfUnits)} {course.halfUnits === 2 ? "credit" : "credits"} · {formatDate(course.plannedStart)} to {formatDate(course.plannedEnd)}
+            {formatHalfUnits(course.halfUnits)} {course.halfUnits === 2 ? "credit" : "credits"} · {course.plannedStart || course.plannedEnd ? `${formatDate(course.plannedStart)} to ${formatDate(course.plannedEnd)}` : "Dates not set"}
             {course.replacesCourseKey ? ` · replaces ${content.courses.find((c) => c.key === course.replacesCourseKey)?.title ?? course.replacesCourseKey}` : ""}
           </p>
         </div>
@@ -95,10 +97,15 @@ function CourseCard({ course, content, onChange, replacedBy }: { course: HsPlanC
           {course.status === "replaced" ? <Pill tone="warn">Replaced{replacedBy ? ` by ${replacedBy}` : ""} — history kept</Pill> : null}
           {course.status === "removed" ? <Pill tone="bad">Removed from plan — history kept</Pill> : null}
           {course.status === "planned" ? (
-            <>
-              <Button type="button" variant="outline" size="sm" aria-expanded={replacing} onClick={() => setReplacing((v) => !v)}><ArrowRightLeft className="mr-1 h-4 w-4" aria-hidden="true" />Replace</Button>
-              <Button type="button" variant="outline" size="sm" aria-label={`Remove ${course.title} from the plan`} onClick={() => onChange(removeCourse(content, course.key))}><Trash2 className="mr-1 h-4 w-4" aria-hidden="true" />Remove</Button>
-            </>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button type="button" variant="ghost" size="icon" aria-label={`Actions for ${course.title}`}><MoreHorizontal className="h-4 w-4" aria-hidden="true" /></Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onSelect={() => setReplacing(true)}><ArrowRightLeft className="mr-2 h-4 w-4" aria-hidden="true" />Replace course…</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => onChange(removeCourse(content, course.key))}><Trash2 className="mr-2 h-4 w-4" aria-hidden="true" />Remove from plan</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           ) : null}
           {course.status === "removed" ? <Button type="button" variant="outline" size="sm" onClick={() => onChange(restoreCourse(content, course.key))}><Undo2 className="mr-1 h-4 w-4" aria-hidden="true" />Restore</Button> : null}
         </div>
@@ -107,7 +114,10 @@ function CourseCard({ course, content, onChange, replacedBy }: { course: HsPlanC
         <div className="space-y-3 rounded-md border border-dashed p-3" data-testid="replace-form">
           <p className="text-sm">The new course takes over from <span className="font-medium">{course.title}</span>. This course stays in the history; progress and results already recorded are kept.</p>
           <CourseForm idPrefix={`rep-${course.key}`} content={content} value={form} onChange={setForm} />
-          <GatedButton id={`rep-${course.key}-go`} size="sm" gate={problem ? { enabled: false, reason: problem } : { enabled: true, reason: null }} onClick={() => { onChange(replaceCourse(content, course.key, form)); setReplacing(false); }}>Replace course</GatedButton>
+          <div className="flex flex-wrap items-start gap-3">
+            <GatedButton id={`rep-${course.key}-go`} size="sm" gate={problem ? { enabled: false, reason: problem } : { enabled: true, reason: null }} onClick={() => { onChange(replaceCourse(content, course.key, form)); setReplacing(false); }}>Replace course</GatedButton>
+            <Button type="button" variant="ghost" size="sm" onClick={() => setReplacing(false)}>Cancel</Button>
+          </div>
         </div>
       ) : null}
       {course.status === "planned" ? (
@@ -140,17 +150,18 @@ function CreditPlan({ content }: { content: HsRoadmapContent }) {
         <CardDescription>Planned {formatHalfUnits(planned)} of {formatHalfUnits(content.totalRequiredHalfUnits)} required credits. Planned credit is not earned credit.</CardDescription>
       </CardHeader>
       <CardContent className="overflow-x-auto" tabIndex={0} role="region" aria-label="Credits by area">
-        <table className="w-full min-w-[30rem] text-sm">
+        <table className="w-full min-w-[34rem] text-sm">
           <caption className="sr-only">Required and planned credits by area</caption>
-          <thead><tr className="border-b text-left text-xs uppercase tracking-wide text-muted-foreground"><th scope="col" className="py-2 pr-3 font-medium">Area</th><th scope="col" className="py-2 pr-3 font-medium">Kind</th><th scope="col" className="py-2 pr-3 text-right font-medium">Required</th><th scope="col" className="py-2 pr-3 text-right font-medium">Planned</th><th scope="col" className="py-2 text-right font-medium">Still to plan</th></tr></thead>
+          <thead><tr className="border-b text-left text-xs uppercase tracking-wide text-muted-foreground"><th scope="col" className="py-2 pr-3 font-medium">Area</th><th scope="col" className="py-2 pr-3 font-medium">Kind</th><th scope="col" className="w-[26%] py-2 pr-3 font-medium"><span className="sr-only">Planned against required</span></th><th scope="col" className="py-2 pr-3 text-right font-medium">Required</th><th scope="col" className="py-2 pr-3 text-right font-medium">Planned</th><th scope="col" className="py-2 text-right font-medium">Still to plan</th></tr></thead>
           <tbody>
             {rows.map((r) => (
               <tr key={r.key} className="border-b last:border-0">
                 <th scope="row" className="py-2 pr-3 text-left font-medium">{r.label}</th>
                 <td className="py-2 pr-3 capitalize">{r.kind}</td>
+                <td className="py-2 pr-3"><MiniBar value={r.plannedHalfUnits} max={r.requiredHalfUnits} over={r.gapHalfUnits < 0} /></td>
                 <td className="py-2 pr-3 text-right tabular-nums">{formatHalfUnits(r.requiredHalfUnits)}</td>
                 <td className="py-2 pr-3 text-right tabular-nums">{formatHalfUnits(r.plannedHalfUnits)}</td>
-                <td className={`py-2 text-right tabular-nums ${r.gapHalfUnits !== 0 ? "font-medium" : "text-muted-foreground"}`}>{r.gapHalfUnits > 0 ? formatHalfUnits(r.gapHalfUnits) : r.gapHalfUnits < 0 ? `${formatHalfUnits(-r.gapHalfUnits)} over` : "—"}</td>
+                <td className={`py-2 text-right tabular-nums ${r.gapHalfUnits !== 0 ? "font-medium" : "text-muted-foreground"}`}>{r.gapHalfUnits > 0 ? formatHalfUnits(r.gapHalfUnits) : r.gapHalfUnits < 0 ? `${formatHalfUnits(-r.gapHalfUnits)} over` : "Complete"}</td>
               </tr>
             ))}
           </tbody>
@@ -176,7 +187,8 @@ export function RoadmapEditor({ state, studentId, isAdmin, eid }: Pick<SectionPr
   const gate = publishGate(state, isAdmin, dirty, publish.pending);
   const courseProblem = validateNewCourse(content, courseForm);
   const replacedBy = (key: string) => content.courses.find((c) => c.replacesCourseKey === key)?.title ?? null;
-  const areaGroups = content.areas.map((a) => ({ area: a, courses: content.courses.filter((c) => c.areaKey === a.key) })).filter((g) => g.courses.length > 0);
+  const areaGroups = areaPlanRows(content).map((r) => ({ row: r, courses: content.courses.filter((c) => c.areaKey === r.key) }));
+  const [openAreas, setOpenAreas] = useState<string[]>(() => defaultOpenAreas(draft!.content));
 
   return (
     <div className="space-y-5">
@@ -210,13 +222,27 @@ export function RoadmapEditor({ state, studentId, isAdmin, eid }: Pick<SectionPr
           <CardTitle className="text-base">Courses, electives and tasks</CardTitle>
           <CardDescription>Each course is 0.5, 1 or more credits. Replacing or removing a course keeps its history; official results stay attached to it.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-5 p-0">
-          {areaGroups.map(({ area, courses }) => (
-            <div key={area.key}>
-              <h3 className="flex items-center justify-between border-y bg-muted/50 px-4 py-2 text-sm font-semibold"><span>{area.label}</span><span className="text-xs font-normal text-muted-foreground">{area.kind} · {formatHalfUnits(area.requiredHalfUnits)} required</span></h3>
-              <ul className="divide-y">{courses.map((c) => <CourseCard key={c.key} course={c} content={content} onChange={setContent} replacedBy={replacedBy(c.key)} />)}</ul>
-            </div>
-          ))}
+        <CardContent className="space-y-0 p-0">
+          <Accordion type="multiple" value={openAreas} onValueChange={setOpenAreas} className="border-t">
+            {areaGroups.map(({ row, courses }) => (
+              <AccordionItem key={row.key} value={row.key} className="border-b" data-testid="area-group">
+                <AccordionTrigger className="gap-3 px-4 py-3 hover:no-underline">
+                  <span className="flex min-w-0 flex-1 flex-wrap items-center gap-x-4 gap-y-1 text-left">
+                    <span className="min-w-[10rem] text-sm font-semibold">{row.label}</span>
+                    <span className="flex min-w-[9rem] flex-1 items-center gap-3 text-xs font-normal text-muted-foreground">
+                      <MiniBar className="max-w-[10rem]" value={row.plannedHalfUnits} max={row.requiredHalfUnits} over={row.gapHalfUnits < 0} />
+                      <span className="whitespace-nowrap tabular-nums">{formatHalfUnits(row.plannedHalfUnits)} of {formatHalfUnits(row.requiredHalfUnits)} planned · {courses.filter((c) => c.status === "planned").length === 1 ? "1 course" : `${courses.filter((c) => c.status === "planned").length} courses`}</span>
+                    </span>
+                  </span>
+                </AccordionTrigger>
+                <AccordionContent className="p-0">
+                  {courses.length === 0 ? <p className="border-t px-4 py-3 text-sm text-muted-foreground">No courses planned in this area yet. Add one below.</p> : (
+                    <ul className="divide-y border-t">{courses.map((c) => <CourseCard key={c.key} course={c} content={content} onChange={setContent} replacedBy={replacedBy(c.key)} />)}</ul>
+                  )}
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
           <div className="space-y-3 border-t p-4">
             <h3 className="text-sm font-semibold">Add a course or elective</h3>
             <CourseForm idPrefix="new-course" content={content} value={courseForm} onChange={setCourseForm} />

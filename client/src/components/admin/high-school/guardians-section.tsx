@@ -35,8 +35,8 @@ function GuardianCard({ g, studentId, eid }: { g: Guardian; studentId: string; e
             <ul className="mt-1 divide-y rounded-md border">{g.notes.map((n) => <li key={`${n.createdAt}${n.note}`} className="px-3 py-2 text-sm"><p>{n.note}</p><p className="text-xs text-muted-foreground">{formatDate(n.createdAt)}</p></li>)}</ul>
           )}
         </div>
-        <div className="grid items-end gap-3 sm:grid-cols-[1fr_auto]">
-          <Field id={`gn-${g.contactId}`} label={`Add a note about ${g.fullName}`}><Input id={`gn-${g.contactId}`} value={note} onChange={(e) => setNote(e.target.value)} placeholder="What was discussed and with whom" /></Field>
+        <div className="space-y-3">
+          <Field id={`gn-${g.contactId}`} label={`Add a note about ${g.fullName}`}><Input id={`gn-${g.contactId}`} className="w-full" value={note} onChange={(e) => setNote(e.target.value)} placeholder="What was discussed and with whom" /></Field>
           <GatedButton id={`gn-${g.contactId}-save`} variant="outline" size="sm" gate={noteGate(note)} pending={a.pending} onClick={() => a.run(guardianNoteBody(g.contactId, note), () => setNote(""))}>Add note</GatedButton>
         </div>
         <ActionMessage message={a.message} />

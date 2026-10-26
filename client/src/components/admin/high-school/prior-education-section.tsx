@@ -2,11 +2,11 @@
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { PRIOR_EDUCATION_STATUSES, formatHalfUnits, type TransferClaimStatus } from "@shared/high-school-contract";
+import { PRIOR_EDUCATION_STATUSES, formatHalfUnits } from "@shared/high-school-contract";
 import { adminHighSchoolApi } from "@/lib/admin-high-school-api";
 import {
-  CLAIM_NOT_CREDIT_NOTICE, CLAIM_STATUS_LABEL, canAwardTransfer, creditsLabel, claimBody, evidenceGate, noteGate, parseCreditInput, priorEducationBody,
-  resolveClaimBody, transferAwardBody, validateClaim, validatePriorEducation,
+  CLAIM_NOT_CREDIT_NOTICE, acceptedHalfUnitsOf, acceptedSummary, canAwardTransfer, claimBadge, claimBody, claimDecisionGate, creditsLabel, halfUnitSteps, initialClaimDecision, priorEducationBody,
+  resolveClaimBody, statusLabel, transferAwardBody, transferAwardGate, validateClaim, validatePriorEducation, type ClaimDecision,
 } from "@/lib/admin-high-school-logic";
 import { ActionMessage, EvidenceSelect, FIELD_CLASS, Field, GatedButton, Notice, Pill, SectionHeading, type SectionProps } from "./shared";
 import { useStaffAction } from "./use-staff-action";
@@ -15,47 +15,61 @@ type PriorList = NonNullable<SectionProps["state"]["current"]>["priorEducation"]
 type Claim = PriorList[number]["claims"][number];
 
 function ClaimRow({ studentId, eid, claim, areaLabel, docs, awarded }: { studentId: string; eid: string; claim: Claim; areaLabel: string; docs: SectionProps["docs"]; awarded: boolean }) {
-  const [status, setStatus] = useState<"submitted_to_school" | "accepted" | "partially_accepted" | "declined">("submitted_to_school");
+  const [status, setStatus] = useState<ClaimDecision>(initialClaimDecision(claim.status));
   const [note, setNote] = useState("");
-  const [awardCredits, setAwardCredits] = useState(formatHalfUnits(claim.claimedHalfUnits));
+  const [accepted, setAccepted] = useState<number>(claim.acceptedHalfUnits ?? Math.max(1, claim.claimedHalfUnits - 1));
+  const cap = acceptedHalfUnitsOf(claim);
+  const [awardUnits, setAwardUnits] = useState<number>(Math.max(1, cap));
   const [evidence, setEvidence] = useState("");
   const resolve = useStaffAction(studentId, (body: unknown) => adminHighSchoolApi.resolveClaim(studentId, eid, claim.id, body), "Claim updated. No credit was awarded.");
   const award = useStaffAction(studentId, (body: unknown) => adminHighSchoolApi.transferAward(studentId, eid, body), "Official transfer credit recorded.");
   const rid = `claim-${claim.id}`;
-  const awardGate = awarded ? { enabled: false, reason: "Credit has already been awarded for this claim." }
-    : parseCreditInput(awardCredits) === null ? { enabled: false, reason: "Awarded credit must be a multiple of 0.5." }
-    : evidenceGate(evidence, docs);
+  const badge = claimBadge(claim.status, awarded);
+  const summary = acceptedSummary(claim);
+  const decisionGate = claimDecisionGate(claim, status, note, accepted);
+  const awardGate = awarded ? { enabled: false, reason: "Credit has already been awarded for this claim." } : transferAwardGate(claim, formatHalfUnits(awardUnits), evidence, docs);
   return (
-    <li className="space-y-3 px-3 py-3" data-testid="claim-row">
+    <li className="space-y-3 px-4 py-4" data-testid="claim-row">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="text-sm font-medium">{claim.courseTitle}</p>
-          <p className="text-xs text-muted-foreground">Claimed {creditsLabel(claim.claimedHalfUnits)} toward {areaLabel}</p>
+          <p className="text-xs text-muted-foreground">Claimed {creditsLabel(claim.claimedHalfUnits)} toward {areaLabel}{summary ? ` · ${summary}` : ""}</p>
           {claim.note ? <p className="mt-1 text-xs">{claim.note}</p> : null}
         </div>
-        <Pill tone={claim.status === "declined" ? "bad" : canAwardTransfer(claim.status) ? "warn" : "neutral"}>{CLAIM_STATUS_LABEL[claim.status as TransferClaimStatus]}</Pill>
+        <Pill tone={badge.tone}>{badge.label}</Pill>
       </div>
       {claim.status !== "declined" && !awarded ? (
-        <div className="grid gap-3 rounded-md bg-muted/40 p-3 md:grid-cols-[14rem_1fr_auto] md:items-end">
+        <div className="grid gap-3 rounded-md bg-muted/40 p-3 md:grid-cols-[13rem_9rem_1fr_auto] md:items-end">
           <Field id={`${rid}-status`} label="School's decision">
-            <select id={`${rid}-status`} className={FIELD_CLASS} value={status} onChange={(e) => setStatus(e.target.value as typeof status)}>
+            <select id={`${rid}-status`} className={FIELD_CLASS} value={status} onChange={(e) => setStatus(e.target.value as ClaimDecision)}>
               <option value="submitted_to_school">Submitted to school</option>
               <option value="accepted">Accepted</option>
               <option value="partially_accepted">Partially accepted</option>
               <option value="declined">Declined</option>
             </select>
           </Field>
+          {status === "partially_accepted" ? (
+            <Field id={`${rid}-accepted`} label="Credits accepted">
+              <select id={`${rid}-accepted`} className={FIELD_CLASS} value={accepted} onChange={(e) => setAccepted(Number(e.target.value))}>
+                {halfUnitSteps(claim.claimedHalfUnits).map((h) => <option key={h} value={h}>{formatHalfUnits(h)} of {formatHalfUnits(claim.claimedHalfUnits)}</option>)}
+              </select>
+            </Field>
+          ) : <div className="hidden md:block" />}
           <Field id={`${rid}-note`} label="Note (required)"><Input id={`${rid}-note`} value={note} onChange={(e) => setNote(e.target.value)} placeholder="What the school told us" /></Field>
-          <GatedButton id={`${rid}-resolve`} variant="outline" size="sm" gate={noteGate(note)} pending={resolve.pending} onClick={() => resolve.run(resolveClaimBody(status, note), () => setNote(""))}>Record decision</GatedButton>
+          <GatedButton id={`${rid}-resolve`} variant="outline" size="sm" gate={decisionGate} pending={resolve.pending} onClick={() => resolve.run(resolveClaimBody(status, note, accepted), () => setNote(""))}>Record decision</GatedButton>
         </div>
       ) : null}
       <ActionMessage message={resolve.message} />
       {canAwardTransfer(claim.status) && !awarded ? (
-        <div className="grid gap-3 rounded-md border border-dashed p-3 md:grid-cols-[8rem_1fr_auto] md:items-end" data-testid="transfer-award-form">
-          <Field id={`${rid}-credits`} label="Credits awarded"><Input id={`${rid}-credits`} inputMode="decimal" value={awardCredits} onChange={(e) => setAwardCredits(e.target.value)} /></Field>
-          <EvidenceSelect id={`${rid}-evidence`} label="School's evaluation (verified document)" value={evidence} onChange={setEvidence} docs={docs} />
+        <div className="grid gap-3 rounded-md border border-dashed p-3 md:grid-cols-[10rem_1fr_auto] md:items-end" data-testid="transfer-award-form">
+          <Field id={`${rid}-credits`} label="Credits awarded" hint={`Counts toward ${areaLabel}; at most ${formatHalfUnits(cap)}.`}>
+            <select id={`${rid}-credits`} className={FIELD_CLASS} value={awardUnits} aria-describedby={`${rid}-credits-hint`} onChange={(e) => setAwardUnits(Number(e.target.value))}>
+              {halfUnitSteps(cap).map((h) => <option key={h} value={h}>{formatHalfUnits(h)} {h === 2 ? "credit" : "credits"}</option>)}
+            </select>
+          </Field>
+          <EvidenceSelect id={`${rid}-evidence`} label="School's evaluation (verified document)" value={evidence} onChange={setEvidence} docs={docs} purpose="transferAward" />
           <GatedButton id={`${rid}-award`} size="sm" gate={awardGate} pending={award.pending}
-            onClick={() => award.run(transferAwardBody({ claimId: claim.id, areaKey: priorAreaKey(claim), credits: awardCredits, evidenceDocumentId: evidence }))}>Record transfer credit</GatedButton>
+            onClick={() => award.run(transferAwardBody({ claimId: claim.id, areaKey: claim.areaKey, credits: formatHalfUnits(awardUnits), evidenceDocumentId: evidence }))}>Record transfer credit</GatedButton>
         </div>
       ) : null}
       {awarded ? <p className="text-xs font-medium">Official transfer credit recorded for this claim.</p> : null}
@@ -63,8 +77,6 @@ function ClaimRow({ studentId, eid, claim, areaLabel, docs, awarded }: { student
     </li>
   );
 }
-
-const priorAreaKey = (c: Claim): string => c.areaKey;
 
 export function PriorEducationSection({ state, studentId, docs }: SectionProps) {
   const cur = state.current;
@@ -102,9 +114,9 @@ export function PriorEducationSection({ state, studentId, docs }: SectionProps) 
           <CardHeader className="space-y-1">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <CardTitle className="text-base">{p.schoolName}</CardTitle>
-              <Pill>{p.status.replace(/_/g, " ")}</Pill>
+              <Pill>{statusLabel(p.status)}</Pill>
             </div>
-            <CardDescription>{p.country}{p.gradeLevels ? ` · ${p.gradeLevels}` : ""}{p.evidenceDocumentId ? " · transcript on file (verified document)" : " · no evidence document linked"}</CardDescription>
+            <CardDescription>{p.country}{p.gradeLevels ? ` · ${p.gradeLevels}` : ""}{p.evidenceDocumentId ? " · evidence on file (verified document)" : " · no evidence document linked"}</CardDescription>
             {p.staffNote ? <p className="text-sm">{p.staffNote}</p> : null}
           </CardHeader>
           <CardContent className="p-0">
@@ -128,10 +140,10 @@ export function PriorEducationSection({ state, studentId, docs }: SectionProps) 
             </div>
             <Field id="pe-status" label="Evaluation status">
               <select id="pe-status" className={FIELD_CLASS} value={status} onChange={(e) => setStatus(e.target.value)}>
-                {PRIOR_EDUCATION_STATUSES.map((s) => <option key={s} value={s}>{s.replace(/_/g, " ")}</option>)}
+                {PRIOR_EDUCATION_STATUSES.map((s) => <option key={s} value={s}>{statusLabel(s)}</option>)}
               </select>
             </Field>
-            <EvidenceSelect id="pe-evidence" label="Transcript or evaluation (optional, verified)" value={evidence} onChange={setEvidence} docs={docs} />
+            <EvidenceSelect id="pe-evidence" label="Transcript or evaluation (optional, verified)" value={evidence} onChange={setEvidence} docs={docs} purpose="transferAward" />
             <Field id="pe-note" label="Staff note (optional)"><Input id="pe-note" value={staffNote} onChange={(e) => setStaffNote(e.target.value)} /></Field>
             <ActionMessage message={addPrior.message} />
             <GatedButton id="pe-save" variant="outline" gate={priorProblem ? { enabled: false, reason: priorProblem } : { enabled: true, reason: null }} pending={addPrior.pending}
