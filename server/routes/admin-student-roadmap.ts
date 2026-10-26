@@ -23,7 +23,7 @@ import type { ConversionResult } from "@shared/student-roadmap-contract";
 import { requireAuth } from "../middleware/auth";
 import { requireRole } from "../middleware/rbac";
 import type { StudentRoadmapService } from "../services/student-roadmap-service";
-import { convertImportPackage, convertWorkbook } from "../services/roadmap-import";
+import { convertImportPackage, convertWorkbook, convertWorkbookPair } from "../services/roadmap-import";
 import { canonicalJson, sendRoadmapError, validationFailure } from "./roadmap-http";
 import { roadmapAudit } from "./roadmap-audit";
 
@@ -41,6 +41,12 @@ export interface AdminStudentRoadmapRouterDeps {
   >;
   readonly convertWorkbook: (buffer: Buffer, opts: { fileName: string | null }) => Promise<ConversionResult>;
   readonly convertImportPackage: (json: unknown) => ConversionResult;
+  /** S07: master + companion execution workbook -> one conversion. Defaults to the real converter. */
+  readonly convertWorkbookPair?: (
+    master: Buffer,
+    companion: Buffer,
+    opts: { fileName: string | null; companionFileName: string | null },
+  ) => Promise<ConversionResult>;
 }
 
 const studentIdSchema = z.string().trim().min(1).max(128);
@@ -63,7 +69,7 @@ const MAX_WORKBOOK_BYTES = 5 * 1024 * 1024;
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: MAX_WORKBOOK_BYTES, files: 1 },
+  limits: { fileSize: MAX_WORKBOOK_BYTES, files: 2 },
 });
 
 function sha256(data: Buffer | string): string {
@@ -109,14 +115,14 @@ export function createAdminStudentRoadmapRouter(deps: AdminStudentRoadmapRouterD
 
   const acceptUpload = (req: Request, res: Response, next: NextFunction) => {
     if (!req.is("multipart/form-data")) return next();
-    upload.single("workbook")(req, res, (err: unknown) => {
+    upload.fields([{ name: "workbook", maxCount: 1 }, { name: "companion", maxCount: 1 }])(req, res, (err: unknown) => {
       if (!err) return next();
       if (err instanceof multer.MulterError) {
         const tooLarge = err.code === "LIMIT_FILE_SIZE";
         return res.status(tooLarge ? 413 : 400).json({
           error: {
             code: "ROADMAP_VALIDATION_ERROR",
-            message: tooLarge ? "The workbook must be 5 MB or smaller" : "Upload a single file in the \"workbook\" field",
+            message: tooLarge ? "Each workbook must be 5 MB or smaller" : "Upload the master in the \"workbook\" field and, optionally, the execution workbook in the \"companion\" field",
           },
         });
       }
@@ -135,18 +141,33 @@ export function createAdminStudentRoadmapRouter(deps: AdminStudentRoadmapRouterD
       let fileName: string | null = null;
 
       if (req.is("multipart/form-data")) {
-        const file = req.file;
+        const files = (req.files ?? {}) as Record<string, Express.Multer.File[] | undefined>;
+        const file = files.workbook?.[0];
+        const companion = files.companion?.[0];
         if (!file) return validationFailure(res, "Attach an .xlsx file in the \"workbook\" field");
-        if (!file.originalname.toLowerCase().endsWith(".xlsx")) {
-          return validationFailure(res, "Only .xlsx workbooks are accepted");
-        }
-        // .xlsx is a zip container.
-        if (file.buffer.length < 4 || file.buffer[0] !== 0x50 || file.buffer[1] !== 0x4b) {
-          return validationFailure(res, "The file is not a valid .xlsx workbook");
+        for (const f of companion ? [file, companion] : [file]) {
+          if (!f.originalname.toLowerCase().endsWith(".xlsx")) {
+            return validationFailure(res, "Only .xlsx workbooks are accepted");
+          }
+          // .xlsx is a zip container.
+          if (f.buffer.length < 4 || f.buffer[0] !== 0x50 || f.buffer[1] !== 0x4b) {
+            return validationFailure(res, "The file is not a valid .xlsx workbook");
+          }
         }
         fileName = file.originalname.slice(0, 255);
-        fileSha256 = sha256(file.buffer);
-        conversion = await deps.convertWorkbook(file.buffer, { fileName });
+        if (companion) {
+          const companionName = companion.originalname.slice(0, 255);
+          // Deterministic over both files so re-uploading the same pair is an idempotent replay.
+          fileSha256 = sha256(`lumiere-workbook-pair/1\n${sha256(file.buffer)}\n${sha256(companion.buffer)}`);
+          fileName = `${fileName} + ${companionName}`.slice(0, 255);
+          conversion = await (deps.convertWorkbookPair ?? convertWorkbookPair)(file.buffer, companion.buffer, {
+            fileName: file.originalname.slice(0, 255),
+            companionFileName: companionName,
+          });
+        } else {
+          fileSha256 = sha256(file.buffer);
+          conversion = await deps.convertWorkbook(file.buffer, { fileName });
+        }
       } else {
         const body: unknown = req.body;
         if (!body || typeof body !== "object" || Array.isArray(body) || Object.keys(body).length === 0) {

@@ -10,6 +10,9 @@
  */
 import type { ConversionResult } from "@shared/student-roadmap-contract";
 import { convertImportPackage } from "./ai-package";
+import { mergeCompanionConversion } from "./companion";
+import { degreeMasterV1Adapter } from "./degree-master-v1";
+import { executionV1Adapter } from "./execution-v1";
 import { lumiereRoadmapV1Adapter } from "./lumiere-v1";
 import { readWorkbook } from "./reader";
 import { ExceptionCollector, MIN_DETECT_SCORE, type WorkbookAdapter, type WorkbookData } from "./types";
@@ -17,9 +20,12 @@ import { ExceptionCollector, MIN_DETECT_SCORE, type WorkbookAdapter, type Workbo
 export { convertImportPackage, AI_PACKAGE_TEMPLATE_ID } from "./ai-package";
 export { finalizeContent } from "./finalize";
 export { lumiereRoadmapV1Adapter } from "./lumiere-v1";
+export { degreeMasterV1Adapter, DEGREE_MASTER_V1_ID } from "./degree-master-v1";
+export { executionV1Adapter, EXECUTION_V1_ID, parseExecution } from "./execution-v1";
+export { mergeCompanionConversion } from "./companion";
 export type { WorkbookAdapter, WorkbookData, SheetData, CellValue, AdapterContext } from "./types";
 
-const adapters: WorkbookAdapter[] = [lumiereRoadmapV1Adapter];
+const adapters: WorkbookAdapter[] = [lumiereRoadmapV1Adapter, degreeMasterV1Adapter, executionV1Adapter];
 
 export function registerWorkbookAdapter(adapter: WorkbookAdapter): void {
   const existing = adapters.findIndex((a) => a.id === adapter.id);
@@ -51,6 +57,32 @@ export async function convertWorkbook(buffer: Buffer, opts: { fileName: string |
     return unknown(opts.fileName, [], `The workbook could not be read: ${reason}`);
   }
   return convertWorkbookData(workbook, opts);
+}
+
+/**
+ * Master academic workbook + companion execution workbook -> ONE conversion.
+ * The master is converted with the best-matching adapter; the companion is
+ * merged by `mergeCompanionConversion` (never added as a second set of courses).
+ * An unreadable companion blocks the import (nothing is converted) so staff
+ * re-upload rather than silently getting a master-only draft.
+ */
+export async function convertWorkbookPair(
+  masterBuffer: Buffer,
+  companionBuffer: Buffer,
+  opts: { fileName: string | null; companionFileName: string | null },
+): Promise<ConversionResult> {
+  const master = await convertWorkbook(masterBuffer, { fileName: opts.fileName });
+  let companion: WorkbookData;
+  try {
+    companion = await readWorkbook(companionBuffer);
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : "unreadable";
+    const ex = new ExceptionCollector();
+    ex.addAll(master.exceptions);
+    ex.add("UNKNOWN_TEMPLATE", "blocking", `The companion execution workbook could not be read: ${reason}`, { sheet: "(companion workbook)" }, "companion");
+    return { ...master, content: null, exceptions: ex.list };
+  }
+  return mergeCompanionConversion(master, companion, { masterFileName: opts.fileName, companionFileName: opts.companionFileName });
 }
 
 function unknown(fileName: string | null, sheets: string[], message: string): ConversionResult {

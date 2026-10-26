@@ -44,9 +44,11 @@ const sendJson = <T>(method: string, url: string, data?: unknown) =>
 export const adminRoadmapApi = {
   get: (studentId: string) => send<AdminRoadmapState>("GET", roadmapEndpoint(studentId)),
   preview: (studentId: string) => send<StudentRoadmapView>("GET", roadmapEndpoint(studentId, "draft/preview")),
-  importWorkbook: (studentId: string, file: File, replaceDraft: boolean) => {
+  importWorkbook: (studentId: string, file: File, replaceDraft: boolean, companion?: File | null) => {
     const form = new FormData();
     form.append("workbook", file, file.name);
+    // S07: optional execution workbook merged into the same draft.
+    if (companion) form.append("companion", companion, companion.name);
     return send<AdminRoadmapState>("POST", roadmapEndpoint(studentId, "imports", { replaceDraft }), form);
   },
   importPackage: (studentId: string, pkg: unknown, replaceDraft: boolean) =>
