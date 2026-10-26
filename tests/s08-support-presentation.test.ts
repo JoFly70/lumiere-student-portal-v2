@@ -148,7 +148,7 @@ describe("S08 student components (SSR)", () => {
 
   it("shows academic context and attachments", () => {
     const m = html(React.createElement(ConversationThread, { ticket: TICKET_WITH_CONTEXT, now: NOW, onDownload() {} }));
-    expect(text(m)).toContain("Marketing Fundamentals (MKT 101)");
+    expect(text(m)).toContain("Principles of Marketing (MKT300)");
     expect(m).toContain("touchstone-2-feedback.pdf");
     expect(m).toContain('data-testid="attachment-chip"');
   });
@@ -166,10 +166,10 @@ describe("S08 student components (SSR)", () => {
   });
 
   it("offers every topic as a tile, no priority, and the context picker only when available", () => {
-    const m = html(React.createElement(NewRequestForm, { contextOptions: CONTEXT_OPTIONS, defaultItemKey: "course-mkt-101", onSubmit() {}, onCancel() {} }));
+    const m = html(React.createElement(NewRequestForm, { contextOptions: CONTEXT_OPTIONS, defaultItemKey: "course-mkt-300", onSubmit() {}, onCancel() {} }));
     for (const t of SUPPORT_TOPICS) expect(m).toContain(`data-testid="topic-tile-${t}"`);
     expect(m).toContain('data-testid="context-picker"');
-    expect(m).toMatch(/<option value="course-mkt-101" selected/);
+    expect(m).toMatch(/<option value="course-mkt-300" selected/);
     expect(text(m)).toContain("Related course or milestone");
     expect(text(m)).not.toMatch(/priority/i);
     const none = html(React.createElement(NewRequestForm, { contextOptions: { available: false, planVersion: null, items: [] }, onSubmit() {}, onCancel() {} }));

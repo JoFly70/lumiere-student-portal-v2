@@ -97,13 +97,43 @@
       "horizontalOverflow": []
     },
     {
-      "screen": "20-profile-nav-1440-light.png",
+      "screen": "20-profile-1440-light.png",
       "width": 1440,
       "horizontalOverflow": []
     },
     {
-      "screen": "21-profile-nav-menu-390-light.png",
+      "screen": "21-profile-390-light.png",
       "width": 390,
+      "horizontalOverflow": []
+    },
+    {
+      "screen": "23-profile-1440-dark.png",
+      "width": 1440,
+      "horizontalOverflow": []
+    },
+    {
+      "screen": "24-profile-390-dark.png",
+      "width": 390,
+      "horizontalOverflow": []
+    },
+    {
+      "screen": "25-profile-correction-dialog-390-light.png",
+      "width": 390,
+      "horizontalOverflow": []
+    },
+    {
+      "screen": "26-staff-profile-panel-1440-light.png",
+      "width": 1440,
+      "horizontalOverflow": []
+    },
+    {
+      "screen": "27-staff-profile-panel-1440-dark.png",
+      "width": 1440,
+      "horizontalOverflow": []
+    },
+    {
+      "screen": "28-staff-profile-panel-768-light.png",
+      "width": 768,
       "horizontalOverflow": []
     }
   ]

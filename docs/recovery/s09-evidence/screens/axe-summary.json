@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-10-26T20:22:59.375Z",
+  "generatedAt": "2026-10-26T20:41:59.719Z",
   "fixtures": "tests/helpers/s09-profile-ui-fixtures.ts",
-  "totalViolations": 1,
+  "totalViolations": 0,
   "results": [
     {
       "screen": "01-profile-1440-light.png",
@@ -49,7 +49,7 @@
       "violations": []
     },
     {
-      "screen": "10-mobile-jump-menu-390-light.png",
+      "screen": "10-profile-nav-390-light.png",
       "violationCount": 0,
       "violations": []
     },
@@ -65,24 +65,16 @@
     },
     {
       "screen": "12-staff-profile-review-1440-dark.png",
-      "violationCount": 1,
-      "violations": [
-        {
-          "id": "color-contrast",
-          "impact": "serious",
-          "help": "Elements must meet minimum color contrast ratio thresholds",
-          "nodes": 1,
-          "sample": [
-            {
-              "target": ".mb-2",
-              "summary": "Fix any of the following:   Element has insufficient color contrast of 3.92 (foreground color: #2374e7, background color: #181a1b, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1"
-            }
-          ]
-        }
-      ]
+      "violationCount": 0,
+      "violations": []
     },
     {
       "screen": "14-staff-profile-review-390-light.png",
+      "violationCount": 0,
+      "violations": []
+    },
+    {
+      "screen": "15-staff-profile-review-768-light.png",
       "violationCount": 0,
       "violations": []
     }

@@ -5,7 +5,7 @@ import { ProfileSection, Fact, FactGrid, SubCard, TextLink } from "./profile-ui"
 
 export function AccountSection({ account, email }: { account: StudentProfileView["account"]; email: string }) {
   return (
-    <ProfileSection id="account" eyebrow="Section 6" title="My Account" description="Sign-in and security. Sign out any time from the menu.">
+    <ProfileSection id="account" title="My Account" description="Sign-in and security. Sign out any time from the menu." collapsible={{ summary: `Signed in as ${email}` }}>
       <div className="grid gap-4 md:grid-cols-2">
         <SubCard title="Account" testId="account-card">
           <FactGrid className="sm:grid-cols-1">

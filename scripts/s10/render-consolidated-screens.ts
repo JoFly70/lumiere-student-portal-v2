@@ -8,8 +8,9 @@
  *   S10_SCREENS_OUT=docs/recovery/s10-evidence/screens npx tsx scripts/s10/render-consolidated-screens.ts
  *
  * Auth and every /api call are stubbed; external fonts are blocked. These are
- * renders of fixtures, not of a deployment. The profile page is NOT part of this
- * branch's acceptance (S09 pending): only its navigation state is captured.
+ * renders of fixtures, not of a deployment. One synthetic student (Amélie Laurent,
+ * LUM-0001) is used by every student screen; staff is Camille Moreau.
+ * Profile screens (20, 21, 23-25) and the staff Profile & identity panel (26-28) are included.
  */
 import { spawn, type ChildProcess } from "node:child_process";
 import fs from "node:fs";
@@ -18,6 +19,7 @@ import { createRequire } from "node:module";
 import { COMPOSED } from "../../tests/helpers/student-progress-ui-fixtures";
 import { RICH_MID_JOURNEY } from "../../tests/helpers/student-roadmap-ui-fixtures";
 import { ALL_DETAILS, ALL_SUMMARIES, CONTEXT_OPTIONS, INTERNAL_NOTE_TEXT, TICKET_AWAITING_STUDENT, TICKET_RESOLVED, toSummary } from "../../tests/helpers/support-ui-fixtures";
+import { CONSOLIDATED_PROFILE, CONSOLIDATED_STUDENT, STAFF_OLD_REJECTED_CORRECTION, STAFF_PENDING_CORRECTION, STAFF_STUDENT_ID, staffReviewProfile, staffWorkspacePayload } from "../../tests/helpers/s09-profile-ui-fixtures";
 import type { SupportComment, SupportTicketDetail, SupportTicketSummary } from "../../shared/support-contract";
 
 const require = createRequire(import.meta.url);
@@ -39,7 +41,7 @@ const staffComment = (id: string, ticket_id: string, content: string, hoursAgo: 
 const STAFF_DETAILS: SupportTicketDetail[] = ALL_DETAILS.filter((d) => d.id !== "t-leak").map((d, i) => ({
   ...d,
   permissions: { can_reply: true, can_attach: true, can_add_internal_note: true, can_assign: true, allowed_statuses: ["in_progress", "waiting_on_student", "resolved", "closed"], can_change_priority: true },
-  ticket_comments: i === 0 ? [...d.ticket_comments, staffComment("n1", d.id, "Checked her plan: MKT 101 still pending at the provider. Confirm with admissions before promising acceptance.", 2)] : d.ticket_comments,
+  ticket_comments: i === 0 ? [...d.ticket_comments, staffComment("n1", d.id, "Checked her plan: MKT300 still pending at the provider. Confirm with admissions before promising acceptance.", 2)] : d.ticket_comments,
 })) as SupportTicketDetail[];
 void INTERNAL_NOTE_TEXT;
 const STAFF_SUMMARIES = STAFF_DETAILS.map((d) => toSummary(d) as SupportTicketSummary);
@@ -51,7 +53,7 @@ const DOCS = [
   { id: "d2", student_id: "s1", doc_type: "id_gov", file_name: "government-id.png", file_size: 912344, mime_type: "image/png", status: "pending", verified_at: null, created_at: "2026-10-20T10:00:00Z", updated_at: "2026-10-20T10:00:00Z", notes: null },
   { id: "d3", student_id: "s1", doc_type: "college_transcript", file_name: "transfer-transcript.pdf", file_size: 733201, mime_type: "application/pdf", status: "pending", verified_at: null, created_at: "2026-10-22T10:00:00Z", updated_at: "2026-10-22T10:00:00Z", notes: null },
 ];
-const PROFILE = { id: "s1", user_id: "u1", student_code: "LUM-0001", first_name: "Amelia", last_name: "Hart", email: "amelia.hart@example.com", phone: "+1 555 0100", photo_url: null, residency: "us", status: "active" };
+const PROFILE = { id: "s1", user_id: "u1", student_code: CONSOLIDATED_STUDENT.studentCode, first_name: CONSOLIDATED_STUDENT.firstName, last_name: CONSOLIDATED_STUDENT.lastName, email: CONSOLIDATED_STUDENT.email, phone: CONSOLIDATED_STUDENT.phone, photo_url: null, residency: "foreign", status: "active" };
 
 function startVite(): Promise<ChildProcess> {
   const child = spawn(process.execPath, ["node_modules/vite/bin/vite.js", "--port", String(PORT), "--strictPort", "--host", "localhost"], {
@@ -65,15 +67,15 @@ function startVite(): Promise<ChildProcess> {
   });
 }
 
-type Mode = "student" | "staff";
+type Mode = "student" | "staff" | "admin";
 interface Opts { mode?: Mode; width: number; height: number; theme?: "light" | "dark" }
 
 async function newPage(browser: any, o: Opts) {
   const mode = o.mode ?? "student";
   const ctx = await browser.newContext({ viewport: { width: o.width, height: o.height }, deviceScaleFactor: 1 });
   const user = mode === "student"
-    ? { id: "u1", email: "amelia.hart@example.com", name: "Amelia Hart", role: "student" }
-    : { id: STAFF_ME.id, email: "camille.moreau@synthetic.example", name: STAFF_ME.name, role: "staff" };
+    ? { id: "u1", email: CONSOLIDATED_STUDENT.email, name: `${CONSOLIDATED_STUDENT.firstName} ${CONSOLIDATED_STUDENT.lastName}`, role: "student" }
+    : { id: STAFF_ME.id, email: "camille.moreau@synthetic.example", name: STAFF_ME.name, role: mode === "admin" ? "admin" : "staff" };
   await ctx.addInitScript(() => { (globalThis as any).__name = (f: unknown) => f; });
   await ctx.addInitScript(([theme, u]: [string, unknown]) => {
     localStorage.setItem("theme", theme);
@@ -89,6 +91,10 @@ async function newPage(browser: any, o: Opts) {
     const p = url.pathname;
     const method = route.request().method();
     if (p === "/api/students/me") return json(200, PROFILE);
+    if (p === "/api/students/me/profile") return json(200, CONSOLIDATED_PROFILE);
+    if (p === `/api/students/${STAFF_STUDENT_ID}/profile`) return json(200, staffReviewProfile());
+    if (p === `/api/students/${STAFF_STUDENT_ID}/identity-corrections`) return json(200, [STAFF_PENDING_CORRECTION, STAFF_OLD_REJECTED_CORRECTION]);
+    if (p === `/api/admin/students/${STAFF_STUDENT_ID}/workspace`) return json(200, staffWorkspacePayload());
     if (p === "/api/student/roadmap") return json(200, rich);
     if (p === "/api/student/roadmap/progress") return json(200, rich);
     if (p === "/api/student/degree-progress") return json(200, COMPOSED);
@@ -206,8 +212,19 @@ async function main() {
     sel("17-documents-1440-light.png", "/documents", { ...D }, '[data-testid="text-page-title"]'),
     sel("18-documents-390-light.png", "/documents", { ...M }, '[data-testid="text-page-title"]'),
     sel("19-documents-390-dark.png", "/documents", { ...M, theme: "dark" }, '[data-testid="text-page-title"]'),
-    sel("20-profile-nav-1440-light.png", "/profile", { ...D }, "main"),
-    sel("21-profile-nav-menu-390-light.png", "/profile", { ...M }, '[data-testid="bar-more"]', async (p) => { await p.locator('[data-testid="bar-more"]').click(); await p.waitForTimeout(600); }),
+    sel("20-profile-1440-light.png", "/profile", { ...D }, '[data-testid="profile-header"]'),
+    sel("21-profile-390-light.png", "/profile", { ...M }, '[data-testid="profile-header"]'),
+    sel("23-profile-1440-dark.png", "/profile", { ...D, theme: "dark" }, '[data-testid="profile-header"]'),
+    sel("24-profile-390-dark.png", "/profile", { ...M, theme: "dark" }, '[data-testid="profile-header"]'),
+    sel("25-profile-correction-dialog-390-light.png", "/profile", { ...M }, '[data-testid="button-request-correction"]', async (p) => {
+      await p.locator('[data-testid="button-request-correction"]').first().scrollIntoViewIfNeeded();
+      await p.locator('[data-testid="button-request-correction"]').first().click();
+      await p.waitForSelector('[role="dialog"]');
+      await p.waitForTimeout(400);
+    }),
+    sel("26-staff-profile-panel-1440-light.png", `/admin/students/${STAFF_STUDENT_ID}`, { ...D, mode: "admin" }, "#workspace-profile"),
+    sel("27-staff-profile-panel-1440-dark.png", `/admin/students/${STAFF_STUDENT_ID}`, { ...D, mode: "admin", theme: "dark" }, "#workspace-profile"),
+    sel("28-staff-profile-panel-768-light.png", `/admin/students/${STAFF_STUDENT_ID}`, { width: 768, height: 900, mode: "admin" }, "#workspace-profile"),
   ];
   try {
     for (const s of scenarios) {
@@ -216,9 +233,9 @@ async function main() {
         await page.goto(BASE + s.route);
         await settle(page, s.waitFor);
         if (s.act) await s.act(page);
-        const menuOpen = s.file.startsWith("21");
-        const h = menuOpen ? 0 : await shot(page, s.file);
-        if (menuOpen) await page.screenshot({ path: path.join(OUT, s.file) });
+        const dialogOpen = s.file.startsWith("25");
+        const h = dialogOpen ? 0 : await shot(page, s.file);
+        if (dialogOpen) await page.screenshot({ path: path.join(OUT, s.file) });
         metrics.pages[s.file] = { pageHeightPx: h };
         const ov = await overflow(page);
         overflowAudit.push({ screen: s.file, width: s.o.width, horizontalOverflow: ov });
@@ -230,6 +247,18 @@ async function main() {
       } finally {
         await ctx.close();
       }
+    }
+
+    // Staff panel: touch-target sizes of the decision buttons (1440) for the report.
+    {
+      const { page, ctx } = await newPage(browser, { ...D, mode: "admin" });
+      await page.goto(`${BASE}/admin/students/${STAFF_STUDENT_ID}`);
+      await settle(page, "#workspace-profile");
+      metrics.staffPanelButtons = await page.evaluate(() =>
+        Array.from(document.querySelectorAll<HTMLElement>('#workspace-profile button, #workspace-profile a[href]'))
+          .filter((el) => el.getBoundingClientRect().height > 0 && !el.closest("nav"))
+          .map((el) => ({ name: (el.textContent ?? "").replace(/\s+/g, " ").trim().slice(0, 40), height: Math.round(el.getBoundingClientRect().height), width: Math.round(el.getBoundingClientRect().width) })));
+      await ctx.close();
     }
 
     // Sticky chrome at 390 and the toast interaction on the Roadmap.

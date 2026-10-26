@@ -12,12 +12,20 @@ export function EligibilitySection({ eligibility }: { eligibility: ProfileEligib
   const engLabel =
     eng.meetsRequirement === true ? "Meets the requirement" : eng.meetsRequirement === false ? "Not yet met" : "Not recorded";
   const engTone = eng.meetsRequirement === true ? "verified" : eng.meetsRequirement === false ? "attention" : "missing";
+  // Low-frequency: closed by default. The page-level readiness panel is where actions are surfaced.
+  const redo = documents.filter((d) => d.status === "rejected" || d.status === "resubmit_requested").length;
+  const summary = [
+    eligibility.residency ? residencyLabel(eligibility.residency) : "Residency not recorded",
+    `English: ${engLabel.toLowerCase()}`,
+    documents.length ? `${documents.length} ${documents.length === 1 ? "document" : "documents"} tracked` : "no documents required",
+    ...(redo ? [`${redo} need${redo === 1 ? "s" : ""} a new copy`] : []),
+  ].join(" · ");
   return (
     <ProfileSection
       id="eligibility"
-      eyebrow="Section 5"
       title="Academic Eligibility & Documentation"
       description="Lumière confirms your eligibility from the documents you provide. You cannot mark anything verified yourself. Upload proof and our team does the rest."
+      collapsible={{ summary }}
     >
       <div className="grid gap-4 md:grid-cols-2">
         <SubCard title="Residency" testId="residency-card">

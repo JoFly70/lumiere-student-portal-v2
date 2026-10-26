@@ -393,7 +393,6 @@ export function ContactsSection({ contacts }: { contacts: readonly StudentContac
   return (
     <ProfileSection
       id="contacts"
-      eyebrow="Section 4"
       title="Authorized Contacts & Guardians"
       description="People Lumière can reach in an emergency, and family who may later be authorized to act for you."
     >

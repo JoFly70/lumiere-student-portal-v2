@@ -38,6 +38,8 @@ import {
   fetchDocumentWithDownloadUrl
 } from "@/hooks/use-documents";
 import type { StudentDocument } from "@shared/schema";
+import { Eyebrow, Pill, StudentSurface, buttonClass } from "@/components/student-progress/student-ui";
+import { cn } from "@/lib/utils";
 
 type DocumentCategory =
   | "academic"
@@ -48,31 +50,36 @@ type DocumentCategory =
 
 type DocumentStatus = "pending" | "verified" | "rejected";
 
-const categoryConfig: Record<DocumentCategory, { label: string; icon: typeof FileText; color: string }> = {
+const categoryConfig: Record<DocumentCategory, { label: string; short: string; icon: typeof FileText; color: string }> = {
   academic: { 
-    label: "Academic Records", 
+    label: "Academic Records",
+    short: "Academic", 
     icon: GraduationCap, 
-    color: "text-blue-600 dark:text-blue-400" 
+    color: "text-student-gold-ink" 
   },
   financial: { 
-    label: "Financial Documents", 
+    label: "Financial Documents",
+    short: "Financial", 
     icon: DollarSign, 
-    color: "text-green-600 dark:text-green-400" 
+    color: "text-student-gold-ink" 
   },
   identity: { 
-    label: "ID Verification", 
+    label: "ID Verification",
+    short: "ID", 
     icon: IdCard, 
-    color: "text-purple-600 dark:text-purple-400" 
+    color: "text-student-gold-ink" 
   },
   foreign_credentials: { 
-    label: "Foreign Credential Validation", 
+    label: "Foreign Credential Validation",
+    short: "Foreign credentials", 
     icon: Globe, 
-    color: "text-orange-600 dark:text-orange-400" 
+    color: "text-student-gold-ink" 
   },
   transfer_credits: { 
-    label: "Transfer Records", 
+    label: "Transfer Records",
+    short: "Transfer", 
     icon: BookOpen, 
-    color: "text-cyan-600 dark:text-cyan-400" 
+    color: "text-student-gold-ink" 
   },
 };
 
@@ -119,6 +126,42 @@ function mapDocTypeToCategory(docType: string): DocumentCategory {
   };
   return mapping[docType] || "academic";
 }
+
+/** Human names for the stored document type codes. */
+const DOC_TYPE_LABELS: Record<string, string> = {
+  hs_transcript: "High-school transcript",
+  hs_diploma: "High-school diploma",
+  id_gov: "Government ID",
+  college_transcript: "College transcript",
+  foreign_eval: "Foreign credential evaluation",
+  degree_certificate: "Degree certificate",
+  english_cert: "English proficiency proof",
+  residency_doc: "Proof of residency",
+  consent_form: "Consent form",
+  other: "Other document",
+};
+export function docTypeLabel(docType: string): string {
+  return DOC_TYPE_LABELS[docType] ?? docType.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
+}
+const formatDocDate = (value: string) => new Date(value).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+
+const STATUS_PILL: Record<DocumentStatus, string> = {
+  verified: "border-2 border-student-gold-ink bg-student-card text-student-gold-ink",
+  pending: "border-student-line-strong bg-student-card text-student-muted",
+  rejected: "border-st-attention bg-st-attention-soft text-st-attention",
+};
+function DocStatusPill({ status }: { status: DocumentStatus }) {
+  const cfg = statusConfig[status];
+  const Icon = cfg.icon;
+  return (
+    <Pill className={cn("font-semibold", STATUS_PILL[status])} icon={<Icon className="h-3.5 w-3.5" aria-hidden="true" />}>
+      {cfg.label}
+    </Pill>
+  );
+}
+
+const docMime = (fileName: string) =>
+  fileName.endsWith(".pdf") ? "application/pdf" : fileName.match(/\.(jpg|jpeg|png|gif)$/i) ? "image/jpeg" : "application/octet-stream";
 
 function getFileIcon(mimeType: string) {
   if (mimeType.startsWith("image/")) return FileImage;
@@ -364,13 +407,15 @@ export default function Documents() {
   const statusCounts = getStatusCounts();
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold" data-testid="text-page-title">Document Management System</h1>
-        <p className="text-muted-foreground mt-1">
-          Upload, organize, and manage your academic and administrative documents
+    <StudentSurface testId="page-documents">
+    <div className="mx-auto max-w-6xl space-y-6">
+      <header className="space-y-3">
+        <Eyebrow>Your file</Eyebrow>
+        <h1 className="font-serif text-3xl leading-tight tracking-tight text-student-ink sm:text-5xl" data-testid="text-page-title">Your documents</h1>
+        <p className="max-w-2xl text-sm leading-relaxed text-student-muted">
+          Upload proof here and Lumière reviews it. Each file shows whether it is verified, still waiting for review, or needs a new copy.
         </p>
-      </div>
+      </header>
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
         {isLoading ? (
@@ -393,19 +438,11 @@ export default function Documents() {
                 >
                   <CardContent className="p-4">
                     <div className="flex items-center gap-3">
-                      <div className={`p-2 rounded-lg ${
-                        status === "verified" ? "bg-green-100 dark:bg-green-900/30" :
-                        status === "pending" ? "bg-yellow-100 dark:bg-yellow-900/30" :
-                        "bg-red-100 dark:bg-red-900/30"
-                      }`}>
-                        <StatusIcon className={`h-5 w-5 ${
-                          status === "verified" ? "text-green-600 dark:text-green-400" :
-                          status === "pending" ? "text-yellow-600 dark:text-yellow-400" :
-                          "text-red-600 dark:text-red-400"
-                        }`} />
+                      <div className="p-2 rounded-lg bg-student-gold-soft">
+                        <StatusIcon className="h-5 w-5 text-student-gold-ink" aria-hidden="true" />
                       </div>
                       <div>
-                        <p className="text-2xl font-bold">{count}</p>
+                        <p className="font-serif text-3xl text-student-ink">{count}</p>
                         <p className="text-xs text-muted-foreground">{config.label}</p>
                       </div>
                     </div>
@@ -420,11 +457,11 @@ export default function Documents() {
             >
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
-                    <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                  <div className="p-2 rounded-lg bg-student-gold-soft">
+                    <FileText className="h-5 w-5 text-student-gold-ink" aria-hidden="true" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold">{documents.length}</p>
+                    <p className="font-serif text-3xl text-student-ink">{documents.length}</p>
                     <p className="text-xs text-muted-foreground">Total Documents</p>
                   </div>
                 </div>
@@ -436,7 +473,7 @@ export default function Documents() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Upload Documents</CardTitle>
+          <CardTitle className="font-serif text-2xl font-normal">Upload documents</CardTitle>
           <CardDescription>
             Drag and drop files or click to browse. Files are securely stored and can be accessed anytime.
           </CardDescription>
@@ -449,7 +486,7 @@ export default function Documents() {
             className={`
               border-2 border-dashed rounded-lg p-8 text-center transition-all duration-200
               ${isDragging 
-                ? "border-primary bg-primary/5 scale-[1.02]" 
+                ? "border-student-gold-ink bg-student-gold-soft" 
                 : "border-muted-foreground/25 hover:border-muted-foreground/50"}
             `}
             data-testid="upload-zone"
@@ -457,7 +494,7 @@ export default function Documents() {
             {uploadProgress !== null ? (
               <div className="space-y-4">
                 <div className="animate-pulse">
-                  <Upload className="h-12 w-12 mx-auto text-primary mb-4" />
+                  <Upload className="h-12 w-12 mx-auto text-student-gold-ink mb-4" />
                 </div>
                 <p className="font-medium">Uploading files...</p>
                 <Progress value={uploadProgress} className="max-w-xs mx-auto" />
@@ -478,11 +515,9 @@ export default function Documents() {
                   onChange={handleFileSelect}
                   data-testid="input-file-upload"
                 />
-                <Button asChild data-testid="button-browse" className="dark:bg-[hsl(215_80%_45%)]">
-                  <label htmlFor="file-upload" className="cursor-pointer">
-                    Browse Files
-                  </label>
-                </Button>
+                <label htmlFor="file-upload" className={cn(buttonClass.solid, "cursor-pointer")} data-testid="button-browse">
+                  Browse files
+                </label>
                 <p className="text-xs text-muted-foreground mt-4">
                   Accepted: PDF, PNG, JPG, DOC, DOCX, XLS, XLSX (Max 10MB per file)
                 </p>
@@ -496,7 +531,7 @@ export default function Documents() {
         <CardHeader>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <CardTitle>Document Library</CardTitle>
+              <CardTitle className="font-serif text-2xl font-normal">Your library</CardTitle>
               <CardDescription>Browse and manage your uploaded documents</CardDescription>
             </div>
             <div className="flex flex-col sm:flex-row gap-2">
@@ -541,7 +576,8 @@ export default function Documents() {
                     className="gap-2"
                     data-testid={`tab-${key}`}
                   >
-                    <Icon className={`h-4 w-4 ${config.color}`} />
+                    <Icon className={`h-4 w-4 ${config.color}`} aria-hidden="true" />
+                    <span className="sm:hidden">{config.short}</span>
                     <span className="hidden sm:inline">{config.label}</span>
                     <Badge variant="secondary" className="ml-1">{categoryCounts[key] || 0}</Badge>
                   </TabsTrigger>
@@ -557,29 +593,44 @@ export default function Documents() {
                   <p className="text-sm">Try adjusting your filters or upload new documents</p>
                 </div>
               ) : (
-                <div className="border rounded-lg overflow-hidden">
+                <>
+                <ul className="space-y-3 md:hidden" data-testid="document-cards">
+                  {filteredDocuments.map((doc) => {
+                    const FileIcon = getFileIcon(docMime(doc.file_name));
+                    return (
+                      <li key={doc.id} className="rounded-xl border border-student-line bg-student-card p-3" data-testid={`card-document-${doc.id}`}>
+                        <div className="flex items-start gap-3">
+                          <FileIcon className="mt-0.5 h-7 w-7 shrink-0 text-student-muted" aria-hidden="true" />
+                          <div className="min-w-0 flex-1">
+                            <p className="break-words font-medium text-student-ink">{doc.file_name}</p>
+                            <p className="text-sm text-student-muted">{docTypeLabel(doc.doc_type)} · {formatDocDate(doc.created_at)}</p>
+                            <div className="mt-2"><DocStatusPill status={doc.status as DocumentStatus} /></div>
+                          </div>
+                        </div>
+                        <div className="mt-2 flex gap-2 border-t border-student-line pt-2">
+                          <button type="button" className={cn(buttonClass.outline, "flex-1 px-2")} onClick={() => handlePreview(doc)} aria-label={`Preview ${doc.file_name}`} data-testid={`card-preview-${doc.id}`}><Eye className="h-4 w-4" aria-hidden="true" />View</button>
+                          <button type="button" className={cn(buttonClass.outline, "flex-1 px-2")} onClick={() => handleDownload(doc)} aria-label={`Download ${doc.file_name}`} data-testid={`card-download-${doc.id}`}><Download className="h-4 w-4" aria-hidden="true" />Download</button>
+                          <button type="button" className={cn(buttonClass.outline, "px-3")} onClick={() => handleDelete(doc.id, doc.file_name)} aria-label={`Delete ${doc.file_name}`} disabled={deleteDocument.isPending} data-testid={`card-delete-${doc.id}`}><Trash2 className="h-4 w-4" aria-hidden="true" /></button>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <div className="hidden overflow-hidden rounded-lg border md:block">
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead>
                         <tr className="border-b bg-muted/50">
                           <th className="text-left p-4 text-sm font-semibold">Name</th>
-                          <th className="text-left p-4 text-sm font-semibold hidden md:table-cell">Category</th>
-                          <th className="text-left p-4 text-sm font-semibold hidden lg:table-cell">Type</th>
-                          <th className="text-left p-4 text-sm font-semibold hidden sm:table-cell">Upload Date</th>
+                          <th className="text-left p-4 text-sm font-semibold">Type</th>
+                          <th className="text-left p-4 text-sm font-semibold hidden lg:table-cell">Uploaded</th>
                           <th className="text-left p-4 text-sm font-semibold">Status</th>
                           <th className="text-right p-4 text-sm font-semibold">Actions</th>
                         </tr>
                       </thead>
                       <tbody>
                         {filteredDocuments.map((doc) => {
-                          const mimeType = doc.file_name.endsWith('.pdf') ? 'application/pdf' :
-                            doc.file_name.match(/\.(jpg|jpeg|png|gif)$/i) ? 'image/jpeg' :
-                            'application/octet-stream';
-                          const FileIcon = getFileIcon(mimeType);
-                          const category = mapDocTypeToCategory(doc.doc_type);
-                          const catConfig = categoryConfig[category];
-                          const CatIcon = catConfig.icon;
-                          const statConfig = statusConfig[doc.status];
+                          const FileIcon = getFileIcon(docMime(doc.file_name));
                           const fileSize = getFileSizeFromName(doc.file_name);
 
                           return (
@@ -590,7 +641,7 @@ export default function Documents() {
                             >
                               <td className="p-4">
                                 <div className="flex items-center gap-3">
-                                  <FileIcon className="h-8 w-8 text-muted-foreground flex-shrink-0" />
+                                  <FileIcon className="h-8 w-8 text-muted-foreground flex-shrink-0" aria-hidden="true" />
                                   <div className="min-w-0">
                                     <p className="font-medium truncate max-w-[200px] lg:max-w-[300px]">
                                       {doc.file_name}
@@ -603,53 +654,24 @@ export default function Documents() {
                                   </div>
                                 </div>
                               </td>
-                              <td className="p-4 hidden md:table-cell">
-                                <div className="flex items-center gap-2">
-                                  <CatIcon className={`h-4 w-4 ${catConfig.color}`} />
-                                  <span className="text-sm">{catConfig.label}</span>
-                                </div>
+                              <td className="p-4">
+                                <span className="text-sm">{docTypeLabel(doc.doc_type)}</span>
                               </td>
                               <td className="p-4 hidden lg:table-cell">
-                                <span className="text-sm text-muted-foreground">{doc.doc_type}</span>
-                              </td>
-                              <td className="p-4 hidden sm:table-cell">
-                                <span className="text-sm text-muted-foreground">
-                                  {new Date(doc.created_at).toLocaleDateString()}
-                                </span>
+                                <span className="text-sm text-muted-foreground">{formatDocDate(doc.created_at)}</span>
                               </td>
                               <td className="p-4">
-                                <Badge variant={statConfig.variant}>
-                                  {statConfig.label}
-                                </Badge>
+                                <DocStatusPill status={doc.status as DocumentStatus} />
                               </td>
                               <td className="p-4">
                                 <div className="flex justify-end gap-1">
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handlePreview(doc)}
-                                    aria-label={`Preview ${doc.file_name}`}
-                                    data-testid={`button-preview-${doc.id}`}
-                                  >
+                                  <Button variant="ghost" size="icon" onClick={() => handlePreview(doc)} aria-label={`Preview ${doc.file_name}`} data-testid={`button-preview-${doc.id}`}>
                                     <Eye className="h-4 w-4" />
                                   </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleDownload(doc)}
-                                    aria-label={`Download ${doc.file_name}`}
-                                    data-testid={`button-download-${doc.id}`}
-                                  >
+                                  <Button variant="ghost" size="icon" onClick={() => handleDownload(doc)} aria-label={`Download ${doc.file_name}`} data-testid={`button-download-${doc.id}`}>
                                     <Download className="h-4 w-4" />
                                   </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleDelete(doc.id, doc.file_name)}
-                                    aria-label={`Delete ${doc.file_name}`}
-                                    data-testid={`button-delete-${doc.id}`}
-                                    disabled={deleteDocument.isPending}
-                                  >
+                                  <Button variant="ghost" size="icon" onClick={() => handleDelete(doc.id, doc.file_name)} aria-label={`Delete ${doc.file_name}`} data-testid={`button-delete-${doc.id}`} disabled={deleteDocument.isPending}>
                                     <Trash2 className="h-4 w-4" />
                                   </Button>
                                 </div>
@@ -661,6 +683,7 @@ export default function Documents() {
                     </table>
                   </div>
                 </div>
+                </>
               )}
             </TabsContent>
           </Tabs>
@@ -736,6 +759,7 @@ export default function Documents() {
         );
       })()}
     </div>
+    </StudentSurface>
   );
 }
 

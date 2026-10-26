@@ -13,61 +13,29 @@ import { spawn, type ChildProcess } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { createRequire } from "node:module";
-import type { IdentityCorrectionRequestView, StudentProfileView } from "../../shared/student-profile-contract";
+import {
+  STAFF_OLD_REJECTED_CORRECTION,
+  STAFF_PENDING_CORRECTION,
+  STAFF_STUDENT_ID,
+  staffReviewProfile,
+  staffWorkspacePayload,
+} from "../../tests/helpers/s09-profile-ui-fixtures";
+import type { StudentProfileView } from "../../shared/student-profile-contract";
 
 const require = createRequire(import.meta.url);
 const { chromium } = require("playwright");
 
 const ROOT = path.resolve(import.meta.dirname, "../..");
 const EVIDENCE = path.join(ROOT, "docs/recovery/s09-evidence");
-const OUT = path.join(EVIDENCE, "screens");
+const OUT = path.resolve(process.env.S09_SCREENS_OUT ?? path.join(EVIDENCE, "screens"));
 const PORT = Number(process.env.S09_PORT ?? 5193);
 const BASE = `http://localhost:${PORT}`;
 const AXE = fs.readFileSync(path.join(ROOT, "node_modules/axe-core/axe.min.js"), "utf8");
-const STAFF_STUDENT_ID = "11111111-aaaa-4bbb-8ccc-000000000009";
 
-// ── fixtures ────────────────────────────────────────────────────────────────
-const PENDING: IdentityCorrectionRequestView = {
-  id: "corr-0001", studentId: STAFF_STUDENT_ID, status: "pending", fields: ["last_name", "gov_id_number"],
-  currentDisplay: { last_name: "Hart", gov_id_number: "•••• 4421" },
-  requestedDisplay: { last_name: "Hart-Nguyen", gov_id_number: "•••• 8830" },
-  reason: "My legal surname changed after marriage; the new passport is attached.", evidenceDocumentId: "doc-id-1",
-  createdAt: "2026-10-22T14:05:00.000Z", reviewedAt: null, reviewNote: null, reviewerUserId: null,
-};
-const OLD_REJECTED: IdentityCorrectionRequestView = {
-  ...PENDING, id: "corr-0000", status: "rejected", fields: ["dob"], currentDisplay: { dob: "1994-03-02" }, requestedDisplay: { dob: "1994-03-12" },
-  reason: "Typo in date of birth.", evidenceDocumentId: null, createdAt: "2026-09-01T10:00:00.000Z", reviewedAt: "2026-09-02T09:00:00.000Z",
-  reviewNote: "The passport shows 2 March 1994; no change needed.", reviewerUserId: "staff-1",
-};
-
-function staffProfile(): StudentProfileView {
-  return {
-    identity: {
-      studentId: STAFF_STUDENT_ID, studentCode: "LUM-2026-0009", firstName: "Amelia", middleName: null, lastName: "Hart", preferredName: "Amy",
-      dob: "1994-03-02", sex: "Female", nationality: ["United States"], govIdType: "Passport", govIdNumberMasked: "•••• 4421", photoUrl: null,
-      verification: "pending", pendingCorrection: PENDING, lastResolvedCorrection: OLD_REJECTED,
-    },
-    contact: {
-      email: "amelia.hart@example.com", emailVerified: true, phonePrimary: "+1 512 555 0142", phoneSecondary: null, whatsappPrimary: true,
-      timezone: "America/Chicago", preferredContactChannel: "whatsapp", addressLine1: "14 Larkspur Lane", addressLine2: null, addressCity: "Austin",
-      addressState: "TX", addressPostal: "78701", addressCountry: "US", marketingOptIn: false, mediaRelease: false,
-    },
-    contacts: [
-      { id: "c1", type: "guardian", fullName: "Marta Hart", relationship: "Mother", phone: "+1 512 555 0110", email: "marta@example.com", language: "English",
-        requestedScopes: ["emergency", "academic", "financial"], effectiveScopes: ["emergency"], authorityStatus: "pending_verification",
-        authorityVerifiedAt: null, authorityNote: null, hasPortalAccess: false, createdAt: "2026-10-20T10:00:00.000Z" },
-      { id: "c2", type: "emergency", fullName: "Diego Ruiz", relationship: "Friend", phone: "+1 512 555 0177", email: null, language: null,
-        requestedScopes: ["emergency"], effectiveScopes: ["emergency"], authorityStatus: "listed", authorityVerifiedAt: null, authorityNote: null,
-        hasPortalAccess: false, createdAt: "2026-10-01T10:00:00.000Z" },
-    ],
-    academicBackground: {
-      highSchool: { completionRecorded: true, path: "local_diploma", school: "Westlake High", country: "US", year: 2012, evidence: "verified" },
-      priorCredentials: [], priorCreditsReported: false, foreignEvaluation: "not_submitted", collegeTranscripts: "not_submitted", degreeCertificate: "not_submitted",
-    },
-    eligibility: { residency: "us", residencyEvidence: "verified", englishProficiency: { meetsRequirement: true, proofType: "native", evidence: "not_submitted" }, documents: [] },
-    readiness: [], account: { role: "student", twoFactorAvailable: false }, generatedAt: "2026-10-26T12:00:00.000Z",
-  };
-}
+// ── fixtures (shared with the S10 consolidated renderer; one synthetic student: Amélie Laurent) ──
+const PENDING = STAFF_PENDING_CORRECTION;
+const OLD_REJECTED = STAFF_OLD_REJECTED_CORRECTION;
+const staffProfile = staffReviewProfile;
 
 async function loadStudentFixtures(): Promise<{ RICH: any; NEW: any; RESOLVED: any; source: string }> {
   try {
@@ -101,24 +69,18 @@ function startVite(): Promise<ChildProcess> {
 
 interface Opts { theme: "light" | "dark"; width: number; height: number; role?: "student" | "admin"; profile?: any; staff?: boolean }
 
-const workspacePayload = () => ({
-  student: { id: STAFF_STUDENT_ID, first_name: "Amelia", last_name: "Hart", email: "amelia.hart@example.com", student_code: "LUM-2026-0009" },
-  report: { status: "IN_PROGRESS" },
-  needsAttention: { groups: {}, diagnostics: [], integrationDiagnostics: [], reasons: [] },
-  academicDetail: { academicSources: [], creditRecords: [], placements: [] },
-  displayLabels: {}, program: null, snapshot: null,
-});
+const workspacePayload = staffWorkspacePayload;
 
 async function newPage(browser: any, o: Opts) {
   const ctx = await browser.newContext({ viewport: { width: o.width, height: o.height }, deviceScaleFactor: 1 });
   const role = o.role ?? "student";
   // The stubbed session user is the same person as the profile fixture, so the shell and page agree.
   const pid = o.profile?.identity;
-  const stuFirst: string = pid?.firstName ?? "Amelia";
-  const stuLast: string = pid?.lastName ?? "Hart";
-  const stuEmail: string = o.profile?.contact?.email ?? "amelia.hart@example.com";
-  const sessionName = role === "admin" ? "Synthetic Admin" : `${stuFirst} ${stuLast}`;
-  const sessionEmail = role === "admin" ? "admin.synthetic@example.com" : stuEmail;
+  const stuFirst: string = pid?.firstName ?? "Amélie";
+  const stuLast: string = pid?.lastName ?? "Laurent";
+  const stuEmail: string = o.profile?.contact?.email ?? "amelie.laurent@synthetic.example";
+  const sessionName = role === "admin" ? "Camille Moreau" : `${stuFirst} ${stuLast}`;
+  const sessionEmail = role === "admin" ? "camille.moreau@synthetic.example" : stuEmail;
   await ctx.addInitScript(([theme, r, name, email]: string[]) => {
     localStorage.setItem("theme", theme);
     localStorage.setItem("lumiere_auth", JSON.stringify({
@@ -317,15 +279,13 @@ async function main() {
       await ctx.close();
     }
 
-    // 4. Mobile jump menu.
+    // 4. The one in-page navigation at 390 (wraps; nothing cut off), with the Eligibility disclosure opened from it.
     {
       const { page, ctx } = await newPage(browser, { theme: "light", width: 390, height: 844, profile: fx.RICH });
       await page.goto(BASE + "/profile");
       await settle(page, STUDENT_READY);
-      await page.locator('[data-testid="jump-menu"] button').click();
-      await page.waitForTimeout(300);
-      await shot(page, "10-mobile-jump-menu-390-light.png", false);
-      await runAxe(page, "10-mobile-jump-menu-390-light.png", axeResults);
+      await shot(page, "10-profile-nav-390-light.png", false);
+      await runAxe(page, "10-profile-nav-390-light.png", axeResults);
       await ctx.close();
     }
 
@@ -353,6 +313,15 @@ async function main() {
       await settle(page, STAFF_READY);
       await shot(page, "14-staff-profile-review-390-light.png");
       await runAxe(page, "14-staff-profile-review-390-light.png", axeResults);
+      await ctx.close();
+    }
+
+    {
+      const { page, ctx } = await newPage(browser, { theme: "light", width: 768, height: 900, role: "admin" });
+      await page.goto(`${BASE}/admin/students/${STAFF_STUDENT_ID}`);
+      await settle(page, STAFF_READY);
+      await shot(page, "15-staff-profile-review-768-light.png");
+      await runAxe(page, "15-staff-profile-review-768-light.png", axeResults);
       await ctx.close();
     }
 

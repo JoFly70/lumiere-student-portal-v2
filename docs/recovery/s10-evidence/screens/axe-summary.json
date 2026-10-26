@@ -1,8 +1,8 @@
 {
   "note": "Renders of synthetic fixtures with stubbed auth and API; not a deployment.",
   "failures": [],
-  "screens": 21,
-  "totalViolations": 1,
+  "screens": 27,
+  "totalViolations": 0,
   "results": [
     {
       "screen": "01-flight-deck-1440-light.png",
@@ -81,24 +81,35 @@
       "violations": []
     },
     {
-      "screen": "20-profile-nav-1440-light.png",
-      "violations": [
-        {
-          "id": "heading-order",
-          "impact": "moderate",
-          "help": "Heading levels should only increase by one",
-          "nodes": 1,
-          "sample": [
-            {
-              "target": "div[data-testid=\"card-contact-section\"] > .pt-0.p-6 > .space-y-6 > div:nth-child(1) > h3",
-              "summary": "Fix any of the following:   Heading order invalid"
-            }
-          ]
-        }
-      ]
+      "screen": "20-profile-1440-light.png",
+      "violations": []
     },
     {
-      "screen": "21-profile-nav-menu-390-light.png",
+      "screen": "21-profile-390-light.png",
+      "violations": []
+    },
+    {
+      "screen": "23-profile-1440-dark.png",
+      "violations": []
+    },
+    {
+      "screen": "24-profile-390-dark.png",
+      "violations": []
+    },
+    {
+      "screen": "25-profile-correction-dialog-390-light.png",
+      "violations": []
+    },
+    {
+      "screen": "26-staff-profile-panel-1440-light.png",
+      "violations": []
+    },
+    {
+      "screen": "27-staff-profile-panel-1440-dark.png",
+      "violations": []
+    },
+    {
+      "screen": "28-staff-profile-panel-768-light.png",
       "violations": []
     }
   ]

@@ -121,7 +121,7 @@ export const TICKET_WITH_CONTEXT: SupportTicketDetail = {
   ...base,
   id: "t-5",
   ticket_number: "LP-1060",
-  subject: "Question about Marketing Fundamentals pacing",
+  subject: "Question about Principles of Marketing pacing",
   description: "I am behind on Touchstone 2 and want to know whether I should adjust my target date.",
   category: "academic",
   topic: "course_assistance",
@@ -131,9 +131,9 @@ export const TICKET_WITH_CONTEXT: SupportTicketDetail = {
   updated_at: "2026-10-26T14:30:00.000Z",
   context: {
     kind: "roadmap_item",
-    itemKey: "course-mkt-101",
-    title: "Marketing Fundamentals",
-    code: "MKT 101",
+    itemKey: "course-mkt-300",
+    title: "Principles of Marketing",
+    code: "MKT300",
     itemKind: "course",
     planVersion: 3,
     verifiedAt: "2026-10-26T14:30:00.000Z",
@@ -176,7 +176,7 @@ export const CONTEXT_OPTIONS = {
   available: true,
   planVersion: 3,
   items: [
-    { key: "course-mkt-101", title: "Marketing Fundamentals", code: "MKT 101", kind: "course", phaseTitle: "Foundation" },
+    { key: "course-mkt-300", title: "Principles of Marketing", code: "MKT300", kind: "course", phaseTitle: "Foundation" },
     { key: "milestone-transfer", title: "Transfer application", code: null, kind: "milestone", phaseTitle: "Horizon" },
   ],
 };
