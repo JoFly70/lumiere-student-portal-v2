@@ -102,7 +102,17 @@ export default {
           "attn-soft": "hsl(var(--s-attn-soft) / <alpha-value>)",
           seal: "hsl(var(--s-seal) / <alpha-value>)",
           "seal-ink": "hsl(var(--s-seal-ink) / <alpha-value>)",
+          "gold-bright": "hsl(var(--s-gold-bright) / <alpha-value>)",
+          "gold-bright-ink": "hsl(var(--s-gold-bright-ink) / <alpha-value>)",
         },
+        // S07 semantic status language (see index.css). Gold is brand, not a status.
+        "st-official": { DEFAULT: "hsl(var(--st-official) / <alpha-value>)", soft: "hsl(var(--st-official-soft) / <alpha-value>)" },
+        "st-applied": { DEFAULT: "hsl(var(--st-applied) / <alpha-value>)", soft: "hsl(var(--st-applied-soft) / <alpha-value>)" },
+        "st-provider": { DEFAULT: "hsl(var(--st-provider) / <alpha-value>)", soft: "hsl(var(--st-provider-soft) / <alpha-value>)" },
+        "st-progress": { DEFAULT: "hsl(var(--st-progress) / <alpha-value>)", soft: "hsl(var(--st-progress-soft) / <alpha-value>)" },
+        "st-submitted": { DEFAULT: "hsl(var(--st-submitted) / <alpha-value>)", soft: "hsl(var(--st-submitted-soft) / <alpha-value>)" },
+        "st-notstarted": { DEFAULT: "hsl(var(--st-notstarted) / <alpha-value>)", soft: "hsl(var(--st-notstarted-soft) / <alpha-value>)" },
+        "st-attention": { DEFAULT: "hsl(var(--st-attention) / <alpha-value>)", soft: "hsl(var(--st-attention-soft) / <alpha-value>)" },
         status: {
           online: "rgb(34 197 94)",
           away: "rgb(245 158 11)",

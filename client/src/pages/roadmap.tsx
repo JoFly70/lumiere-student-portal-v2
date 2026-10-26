@@ -12,7 +12,6 @@ import {
 } from "@/lib/student-roadmap-queries";
 import { RoadmapPageView } from "@/components/student-progress/student-roadmap-views";
 import { RoadmapActionsProvider } from "@/components/student-progress/roadmap-actions";
-import { RequirementDetails } from "@/components/student-progress/requirement-details";
 import { PlanNotReady, ProgressError, ProgressSkeleton } from "@/components/student-progress/states";
 import { StudentSurface } from "@/components/student-progress/student-ui";
 
@@ -35,7 +34,7 @@ export default function Roadmap() {
 
   return (
     <RoadmapActionsProvider>
-      <RoadmapPageView view={data} requirementDetails={<RequirementDetails />} />
+      <RoadmapPageView view={data} />
     </RoadmapActionsProvider>
   );
 }

@@ -111,7 +111,7 @@ export function RoadmapActionsProvider({ children }: { children: React.ReactNode
       </div>
       {message && (
         <div
-          className="student-surface fixed bottom-20 left-1/2 z-40 flex max-w-[92vw] -translate-x-1/2 items-center gap-3 rounded-full bg-student-seal py-1.5 pl-4 pr-2 text-sm font-medium text-student-seal-ink shadow-lg md:bottom-4"
+          className="student-surface fixed inset-x-3 bottom-[calc(4rem+env(safe-area-inset-bottom)+0.5rem)] z-40 mx-auto flex w-fit max-w-[calc(100vw-1.5rem)] items-center gap-3 rounded-full bg-student-seal py-1.5 pl-4 pr-2 text-sm font-medium text-student-seal-ink shadow-lg md:inset-x-auto md:bottom-4 md:left-1/2 md:-translate-x-1/2"
           data-testid="save-toast"
         >
           <span aria-hidden="true">{message}</span>

@@ -32,9 +32,11 @@ import {
   stageLabelFor,
   blockedReasonText,
   blockedReasonShort,
+  blockedReasonInline,
+  stageStatus,
   taskProgressPhrase,
 } from "@/pages/student-roadmap-presentation";
-import { Pill, buttonClass } from "./student-ui";
+import { Pill, StatusPill, buttonClass } from "./student-ui";
 import { StageTrack, TaskRing } from "./journey-graphics";
 import { TaskList } from "./task-controls";
 import { useRoadmapActions } from "./roadmap-actions";
@@ -59,7 +61,7 @@ function ItemBadges({ item }: { item: StudentRoadmapItemView }) {
     badges.push(
       <p
         key="blocked"
-        className="flex items-start gap-2 rounded-lg border border-student-attn bg-student-attn-soft px-3 py-2 text-sm text-student-attn"
+        className="flex items-start gap-2 rounded-lg border border-st-attention bg-st-attention-soft px-3 py-2 text-sm text-st-attention"
         data-testid={hold ? "badge-hold" : "badge-approval"}
       >
         {hold ? <PauseCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" /> : <UserCheck className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />}
@@ -84,7 +86,7 @@ function ItemActions({ item }: { item: StudentRoadmapItemView }) {
   if (!item.canReport && item.stage !== "officially_accepted") return null;
   if (item.stage === "officially_accepted") {
     return (
-      <p className="flex items-start gap-2 rounded-lg bg-student-seal px-3 py-2.5 text-sm text-student-seal-ink" data-testid="official-note">
+      <p className="flex items-start gap-2 rounded-lg bg-st-official px-3 py-2.5 text-sm text-student-seal-ink" data-testid="official-note">
         <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
         <span>
           <strong className="font-semibold">Officially accepted.</strong> Lumière verified this course on your record. Only Lumière staff can make this decision.
@@ -166,11 +168,12 @@ export function ItemCard({
   const stage = stagePresentation(item.stage);
   const stageLabel = stageLabelFor(item);
   const blockedShort = blockedReasonShort(item);
+  const blockedInline = blockedReasonInline(item);
 
   return (
     <article
       id={`item-${item.key}`}
-      className={cn("scroll-mt-28 rounded-xl border bg-student-card", official ? "border-student-seal" : "border-student-line")}
+      className={cn("scroll-mt-28 rounded-xl border bg-student-card", official ? "border-st-official" : "border-student-line")}
       data-testid="item-card"
       data-item-key={item.key}
       data-stage={item.stage}
@@ -191,10 +194,21 @@ export function ItemCard({
             {item.title}
           </span>
           <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-student-muted">
-            <Pill tone={official ? "seal" : item.stage === "provider_complete" ? "gold" : "neutral"} data-testid="stage-pill">{stageLabel}</Pill>
+            <StatusPill status={stageStatus(item.stage)} label={stageLabel} data-testid="stage-pill" />
             {phrase && <span data-testid="task-phrase">{phrase}</span>}
-            {blockedShort && <Pill tone="attn">{blockedShort}</Pill>}
+            {blockedShort && (
+              <StatusPill
+                status="attention"
+                label={blockedShort}
+                data-testid={item.reportBlockedReason === "on_hold" ? "pill-hold" : "pill-approval"}
+              />
+            )}
           </span>
+          {blockedInline && (
+            <span className="block text-sm text-st-attention" data-testid="blocked-inline">
+              {blockedInline}
+            </span>
+          )}
         </span>
         <ChevronDown className={cn("mt-1 h-5 w-5 shrink-0 text-student-gold-ink transition-transform", open && "rotate-180")} aria-hidden="true" />
         <span className="sr-only">{open ? "Hide" : "Show"} tasks and details for {item.title}</span>
@@ -202,7 +216,7 @@ export function ItemCard({
 
       <div id={panelId} hidden={!open} className="space-y-4 px-4 pb-4" data-testid="item-panel">
         {meta && <p className="text-sm text-student-muted" data-testid="item-credits">{meta}</p>}
-        <StageTrack stage={item.stage} label={stageLabel} />
+        <StageTrack stage={item.stage} />
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           {phrase && <TaskRing done={item.taskCounts.graded} total={item.taskCounts.total} size={36} />}
           {dates && (

@@ -1,11 +1,15 @@
 /**
  * YOUR FOUNDATION: prior credentials and the credit ladder. All credit numbers
- * come from view.foundation.ladder. Requirement-level detail is an optional,
- * lazily loaded expansion supplied by the page.
+ * come from view.foundation.ladder (the canonical record). The Flight Deck owns
+ * this section in full; the Roadmap links to it.
+ *
+ * Colour language (same everywhere): Verified = official charcoal, Applied =
+ * green, Waiting for verification = teal hatched, Planned = blue dashed. The
+ * Verified bar is ALWAYS charcoal; surplus is the hatched end of it, never a
+ * colour change.
  */
 import React from "react";
-import { Link } from "wouter";
-import { ArrowRight, GraduationCap } from "lucide-react";
+import { GraduationCap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { StudentFoundationView } from "@shared/student-roadmap-contract";
 import {
@@ -26,18 +30,18 @@ import {
   otherCreditNote,
 } from "@/pages/student-roadmap-presentation";
 import { formatAsOf, formatDecimal } from "@/pages/student-progress-presentation";
-import { Disclosure, Pill, SectionHeading, buttonClass, cardClass } from "./student-ui";
+import { Disclosure, SectionHeading, StatusPill, cardClass } from "./student-ui";
 
 type Ladder = StudentFoundationView["ladder"];
 
-const HATCH = (c: string) => `repeating-linear-gradient(135deg, transparent 0 4px, hsl(var(${c}) / 0.75) 4px 6px)`;
+const HATCH = (c: string) => `repeating-linear-gradient(135deg, transparent 0 4px, hsl(var(${c}) / 0.8) 4px 6px)`;
 const SEG: Record<string, React.CSSProperties> = {
   reported: { boxShadow: "inset 0 0 0 1.5px hsl(var(--s-line-strong))", background: "transparent" },
-  waiting: { background: HATCH("--s-gold-ink"), boxShadow: "inset 0 0 0 1.5px hsl(var(--s-gold-ink))" },
-  verified: { background: "hsl(var(--s-gold-fill))" },
-  applied: { background: "hsl(var(--s-seal))" },
-  surplus: { background: HATCH("--s-seal"), boxShadow: "inset 0 0 0 1.5px hsl(var(--s-seal))" },
-  planned: { border: "1.5px dashed hsl(var(--s-gold-ink))", background: "transparent" },
+  waiting: { background: HATCH("--st-submitted"), boxShadow: "inset 0 0 0 1.5px hsl(var(--st-submitted))" },
+  verified: { background: "hsl(var(--st-official))" },
+  applied: { background: "hsl(var(--st-applied))" },
+  surplus: { background: HATCH("--st-official"), boxShadow: "inset 0 0 0 1.5px hsl(var(--st-official))" },
+  planned: { border: "1.5px dashed hsl(var(--st-progress))", background: "transparent" },
   still: { border: "1.5px dotted hsl(var(--s-line-strong))", background: "transparent" },
 };
 
@@ -55,8 +59,9 @@ function barSegments(key: string, ladder: Ladder, scale: number): { style: strin
     ];
   }
   if (key === "verified" && hasPositive(ladder.applied) && hasPositive(ladder.surplus)) {
+    // Same charcoal hue either way: the solid part is applied, the hatched end is surplus.
     return [
-      { style: "applied", start: 0, width: applied },
+      { style: "verified", start: 0, width: applied },
       { style: "surplus", start: applied, width: surplus },
     ];
   }
@@ -79,17 +84,28 @@ function barSegments(key: string, ladder: Ladder, scale: number): { style: strin
   return [{ style, start: 0, width }];
 }
 
+function Swatch({ kind }: { kind: string }) {
+  return <span aria-hidden="true" className="inline-block h-3 w-4 shrink-0 rounded-sm" style={SEG[kind]} />;
+}
+
+const SWATCH_FOR: Record<string, string> = {
+  reported: "reported",
+  provisional: "waiting",
+  verified: "verified",
+  applied: "applied",
+  planned: "planned",
+  still: "still",
+};
+
 /** Credit ladder: cumulative. Bars share one scale; a tick marks what the degree requires. */
-export function CreditLadder({ ladder, compact = false }: { ladder: Ladder; compact?: boolean }) {
+export function CreditLadder({ ladder }: { ladder: Ladder }) {
   const scale = ladderScale(ladder);
-  const rungs = ladderRungs(ladder).filter((r) => !compact || r.key === "verified" || r.key === "applied");
+  const rungs = ladderRungs(ladder);
   const requiredAt = barFraction(ladder.required, scale);
   const rows = [
     ...rungs.map((r) => ({ ...r })),
-    ...(!compact
-      ? [{ key: "planned" as const, label: "Planned (not credit yet)", value: ladder.planned, help: "On your roadmap, not yet accepted. It starts where Applied ends and is not part of the total above." }]
-      : []),
-    ...(!compact && stillToPlan(ladder)
+    { key: "planned" as const, label: "Planned (not credit yet)", value: ladder.planned, help: "On your roadmap, not yet accepted. It starts where Applied ends and is not part of the total above." },
+    ...(stillToPlan(ladder)
       ? [{ key: "still" as const, label: "Still to plan", value: stillToPlan(ladder), help: "What your degree still needs that no roadmap item covers yet. Lumière may add items." }]
       : []),
   ];
@@ -100,7 +116,10 @@ export function CreditLadder({ ladder, compact = false }: { ladder: Ladder; comp
         {rows.map((r) => (
           <li key={r.key} data-rung={r.key}>
             <div className="flex items-baseline justify-between gap-3 text-sm">
-              <span className="font-medium text-student-ink">{r.label}</span>
+              <span className="flex items-center gap-2 font-medium text-student-ink">
+                <Swatch kind={SWATCH_FOR[r.key]} />
+                {r.label}
+              </span>
               <span className="font-serif text-lg text-student-ink" data-testid={`rung-${r.key}`}>
                 {r.value === null ? <span className="font-sans text-sm text-student-muted">Under review</span> : (formatDecimal(r.value) ?? r.value)}
               </span>
@@ -110,6 +129,8 @@ export function CreditLadder({ ladder, compact = false }: { ladder: Ladder; comp
                 <span
                   key={i}
                   className="absolute inset-y-0"
+                  data-bar={r.key}
+                  data-seg={seg.style}
                   style={{
                     left: `${Math.round(seg.start * 1000) / 10}%`,
                     width: `${Math.round(seg.width * 1000) / 10}%`,
@@ -125,7 +146,7 @@ export function CreditLadder({ ladder, compact = false }: { ladder: Ladder; comp
                 />
               )}
             </div>
-            {!compact && <p className="mt-1 text-xs text-student-muted">{r.help}</p>}
+            <p className="mt-1 text-xs text-student-muted">{r.help}</p>
             {r.key === "verified" && hasPositive(ladder.surplus) && hasPositive(ladder.applied) && (
               <p className="mt-0.5 text-xs font-medium text-student-ink" data-testid="verified-split">
                 {creditsText(ladder.applied)} applied (solid) + {creditsText(ladder.surplus)} surplus (hatched)
@@ -141,7 +162,7 @@ export function CreditLadder({ ladder, compact = false }: { ladder: Ladder; comp
         </p>
       )}
       {hasPositive(ladder.surplus) && (
-        <p className="mt-3 rounded-lg bg-student-gold-soft px-3 py-2.5 text-sm text-student-ink" data-testid="surplus-note">
+        <p className="mt-3 rounded-lg bg-st-official-soft px-3 py-2.5 text-sm text-student-ink" data-testid="surplus-note">
           <strong className="font-semibold">Surplus: {creditsText(ladder.surplus)}</strong> (the hatched end of the Verified bar). {SURPLUS_EXPLANATION}
         </p>
       )}
@@ -170,7 +191,7 @@ export function CredentialsList({ foundation }: { foundation: StudentFoundationV
             </div>
             <div className="flex items-center gap-2">
               {amount && <span className="text-sm text-student-muted">{creditsText(amount)}</span>}
-              <Pill tone={standing.verified ? "gold" : "dashed"}>{standing.label}</Pill>
+              <StatusPill status={standing.status} label={standing.label} />
             </div>
           </li>
         );
@@ -188,7 +209,7 @@ export function FoundationSection({
 }) {
   const note = foundationStateNote(foundation);
   return (
-    <section aria-labelledby="foundation-title" id="section-foundation" className="scroll-mt-28 space-y-4" data-testid="foundation-section">
+    <section aria-labelledby="foundation-title" id="section-foundation" className="scroll-mt-20 space-y-4" data-testid="foundation-section">
       <SectionHeading
         id="foundation-title"
         eyebrow="Your foundation"
@@ -226,22 +247,6 @@ export function FoundationSection({
           </Disclosure>
         </div>
       )}
-    </section>
-  );
-}
-
-/** Compact version for Flight Deck. */
-export function FoundationSummary({ foundation }: { foundation: StudentFoundationView }) {
-  return (
-    <section aria-labelledby="foundation-summary-title" className={cardClass} data-testid="foundation-summary">
-      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-student-gold-ink">Your foundation</p>
-      <h2 id="foundation-summary-title" className="font-serif text-xl text-student-ink">{foundationHeadline(foundation)}</h2>
-      <div className="mt-4">
-        <CreditLadder ladder={foundation.ladder} compact />
-      </div>
-      <Link href="/roadmap#section-foundation" className={`${buttonClass.link} mt-2`} data-testid="link-foundation">
-        See your full foundation <ArrowRight className="h-4 w-4" aria-hidden="true" />
-      </Link>
     </section>
   );
 }

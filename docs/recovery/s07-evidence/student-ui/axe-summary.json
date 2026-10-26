@@ -1,0 +1,62 @@
+{
+  "generatedAt": "2026-10-26T19:27:35.620Z",
+  "fixture": "built-in rich fixture + real-projection scenario R",
+  "results": [
+    {
+      "screen": "01-flight-deck-1440-light.png",
+      "violations": []
+    },
+    {
+      "screen": "02-flight-deck-390-light.png",
+      "violations": []
+    },
+    {
+      "screen": "03-flight-deck-1440-dark.png",
+      "violations": []
+    },
+    {
+      "screen": "04-flight-deck-390-dark.png",
+      "violations": []
+    },
+    {
+      "screen": "05-roadmap-1440-light.png",
+      "violations": []
+    },
+    {
+      "screen": "06-roadmap-390-light.png",
+      "violations": []
+    },
+    {
+      "screen": "07-roadmap-1440-dark.png",
+      "violations": []
+    },
+    {
+      "screen": "08-roadmap-390-dark.png",
+      "violations": []
+    },
+    {
+      "screen": "09-flight-deck-not-published-1440.png",
+      "violations": []
+    },
+    {
+      "screen": "10-roadmap-not-published-390.png",
+      "violations": []
+    },
+    {
+      "screen": "12-real-projection-flight-deck-1440-light.png",
+      "violations": []
+    },
+    {
+      "screen": "13-real-projection-roadmap-390-light.png",
+      "violations": []
+    },
+    {
+      "screen": "14-real-projection-flight-deck-390-dark.png",
+      "violations": []
+    },
+    {
+      "screen": "11-roadmap-390-task-interaction.png",
+      "violations": []
+    }
+  ]
+}

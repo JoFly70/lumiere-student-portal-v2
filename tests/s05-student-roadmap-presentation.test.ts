@@ -3,6 +3,7 @@ import {
   ALL_LANES,
   APPLIED_VS_VERIFIED,
   PROVIDER_COMPLETE_CONFIRM,
+  FLIGHT_DECK_SECTIONS,
   ROADMAP_SECTIONS,
   SURPLUS_EXPLANATION,
   canMarkProviderComplete,
@@ -82,6 +83,8 @@ describe("S05 roadmap presentation: tasks", () => {
 
   it("lists the next three tasks that are not graded, in plan order", () => {
     expect(nextTasks(item("bba-mkt300")).map((t) => t.key)).toEqual(["challenge-6", "challenge-7", "challenge-8"]);
+    // Submitted touchstone 2 is never "Next up"; touchstone 3 is the next actionable touchstone.
+    expect(nextTasks(item("bba-mkt300"), 10).map((t) => t.key)).not.toContain("touchstone-2");
   });
 
   it("toggles graded <-> not_started", () => {
@@ -123,9 +126,9 @@ describe("S05 roadmap presentation: reporting rules", () => {
 describe("S05 roadmap presentation: counts", () => {
   it("returns plain counts and no percentage", () => {
     const segs = countSegments(V.counts);
-    expect(segs.map((s) => s.label)).toEqual(["Officially accepted", "Complete at provider", "In progress", "Not started"]);
+    expect(segs.map((s) => s.label)).toEqual(["Roadmap courses officially accepted", "Complete at provider", "In progress", "Not started"]);
     expect(countsSentence(V.counts)).not.toMatch(/%/);
-    expect(countsSentence(V.counts)).toContain("Across your whole plan, 9 items");
+    expect(countsSentence(V.counts)).toContain("Your plan has 9 roadmap courses");
   });
 });
 
@@ -158,7 +161,8 @@ describe("S05 roadmap presentation: journey", () => {
     expect(dateRangeLabel(null, null)).toBeNull();
   });
   it("exposes the four sections in order", () => {
-    expect(ROADMAP_SECTIONS.map((s) => s.label)).toEqual(["Today", "Roadmap", "Foundation", "Horizon"]);
+    expect(FLIGHT_DECK_SECTIONS.map((s) => s.label)).toEqual(["Today", "Journey", "Progress", "Foundation", "Horizon"]);
+    expect(ROADMAP_SECTIONS.map((s) => s.label)).toEqual(["Now", "Journey"]);
   });
 });
 

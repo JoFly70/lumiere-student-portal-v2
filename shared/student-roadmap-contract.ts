@@ -609,7 +609,11 @@ export interface StudentRoadmapPhaseView {
   readonly items: readonly StudentRoadmapItemView[];
   /** Counts over active items only (planStatus planned or hold). */
   readonly counts: StudentRoadmapCounts;
-  readonly state: "complete" | "current" | "upcoming";
+  /**
+   * Exactly one phase is "current". Another unfinished phase in which the student
+   * has also reported activity is "also_active" (e.g. overlapping blocks).
+   */
+  readonly state: "complete" | "current" | "also_active" | "upcoming";
 }
 
 /** Plain counts. No weighted overall percentage anywhere. */

@@ -3,15 +3,22 @@
  * graduation. Phases are collapsible (current one open); items are cards.
  */
 import React, { useEffect, useId, useState } from "react";
+import { Link } from "wouter";
 import { Check, ChevronDown, GraduationCap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { StudentRoadmapPhaseView, StudentRoadmapView } from "@shared/student-roadmap-contract";
 import {
   ALL_LANES,
   alternativeTargetTitle,
+  FOUNDATION_HREF,
+  HORIZON_HREF,
+  PHASE_STATE_LABEL,
   dateRangeLabel,
   formatShortDate,
   horizonMilestones,
+  nextMilestone,
+  phaseStateHelp,
+  priorCreditBaseline,
   laneOptions,
   objectiveFor,
   objectiveKindHelp,
@@ -23,7 +30,6 @@ import { Pill, SectionHeading } from "./student-ui";
 import { PhaseMarker } from "./journey-graphics";
 import { AlternativeCard, ItemCard } from "./item-card";
 
-const STATE_LABEL = { complete: "Complete", current: "Current phase", upcoming: "Upcoming" } as const;
 
 function PhaseBlock({
   phase,
@@ -42,7 +48,7 @@ function PhaseBlock({
   defaultOpenKey: string | null;
   last: boolean;
 }) {
-  const [open, setOpen] = useState(phase.state === "current");
+  const [open, setOpen] = useState(phase.state === "current" || phase.state === "also_active");
   const panelId = useId();
   const { main, alternatives } = phaseItems(phase, lane);
   const showLane = view.objectives.length > 1;
@@ -61,7 +67,7 @@ function PhaseBlock({
           aria-hidden="true"
           className={cn(
             "absolute left-4 top-8 -bottom-2 w-0 -translate-x-px border-l-2",
-            phase.state === "complete" ? "border-student-gold" : "border-dashed border-student-line-strong",
+            phase.state === "complete" ? "border-student-ink" : "border-dashed border-student-line-strong",
           )}
         />
       )}
@@ -78,8 +84,8 @@ function PhaseBlock({
             <span className="min-w-0">
               <span className="flex flex-wrap items-center gap-2">
                 <span className="font-serif text-xl">{phase.title}</span>
-                <Pill tone={phase.state === "current" ? "gold" : phase.state === "complete" ? "neutral" : "dashed"}>
-                  {STATE_LABEL[phase.state]}
+                <Pill tone={phase.state === "current" ? "gold" : phase.state === "complete" ? "neutral" : "dashed"} data-testid="phase-state-pill">
+                  {PHASE_STATE_LABEL[phase.state]}
                 </Pill>
               </span>
               <span className="mt-1 block text-sm font-normal text-student-muted">
@@ -90,6 +96,7 @@ function PhaseBlock({
           </button>
         </h3>
         <div id={panelId} hidden={!isOpen} className="mt-2 space-y-3">
+          {phaseStateHelp(phase.state) && <p className="text-sm text-student-muted" data-testid="phase-state-help">{phaseStateHelp(phase.state)}</p>}
           {phase.description && <p className="text-sm text-student-muted">{phase.description}</p>}
           <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-3 xl:grid-cols-2">
           {main.map((item) => (
@@ -123,6 +130,8 @@ export function RoadmapJourney({ view, targetItemKey = null, defaultOpenKey = nu
   const lanes = laneOptions(view);
   const phases = sortedPhases(view).filter((p) => lane === ALL_LANES || phaseItems(p, lane).main.length + phaseItems(p, lane).alternatives.length > 0);
   const graduation = horizonMilestones(view).find((m) => m.kind === "graduation");
+  const baseline = priorCreditBaseline(view.foundation);
+  const upNext = nextMilestone(view);
   const activeObjective = lane === ALL_LANES ? undefined : objectiveFor(view, lane);
 
   useEffect(() => {
@@ -183,10 +192,10 @@ export function RoadmapJourney({ view, targetItemKey = null, defaultOpenKey = nu
           <span aria-hidden="true" className="absolute left-4 top-8 -bottom-2 w-0 -translate-x-px border-l-2 border-student-gold" />
           <p className="font-serif text-xl text-student-ink">Your starting point</p>
           <p className="text-sm text-student-muted">
-            {view.foundation.credentials.length > 0
-              ? `${view.foundation.credentials.length} prior ${view.foundation.credentials.length === 1 ? "credential" : "credentials"} on record. `
-              : "Where your journey begins. "}
-            <a href="#section-foundation" className="font-medium text-student-gold-ink underline underline-offset-4">See your foundation</a>
+            {baseline.applied ? `${baseline.applied} credits already applied to your degree. ` : "Where your journey begins. "}
+            <Link href={FOUNDATION_HREF} className="font-medium text-student-gold-ink underline underline-offset-4" data-testid="link-foundation">
+              See your foundation on the Flight Deck
+            </Link>
           </p>
         </li>
         {phases.map((p, i) => (
@@ -209,6 +218,12 @@ export function RoadmapJourney({ view, targetItemKey = null, defaultOpenKey = nu
           <p className="text-sm text-student-muted">
             {graduation?.targetDate ? `Target ${formatShortDate(graduation.targetDate)}` : "Date to be set by Lumière"}
             {graduation?.reached ? " · Reached" : ""}
+          </p>
+          <p className="text-sm text-student-muted">
+            {upNext ? `Next milestone: ${upNext.title}${formatShortDate(upNext.targetDate) ? `, target ${formatShortDate(upNext.targetDate)}` : ""}. ` : ""}
+            <Link href={HORIZON_HREF} className="font-medium text-student-gold-ink underline underline-offset-4" data-testid="link-horizon">
+              See the full horizon on the Flight Deck
+            </Link>
           </p>
         </li>
       </ol>

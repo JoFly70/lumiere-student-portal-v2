@@ -23,22 +23,31 @@ const count = (m: string, needle: string) => m.split(needle).length - 1;
 describe("S05 Roadmap page", () => {
   const markup = html(React.createElement(RoadmapPageView, { view: V }));
   const t = text(markup);
+  const fd = html(React.createElement(FlightDeckRoadmapView, { view: V }));
+  const fdt = text(fd);
 
-  it("shows the four sections with sticky navigation", () => {
+  it("owns the journey only: Now and Journey sections, with links to the Flight Deck for foundation and horizon", () => {
     expect(markup).toContain('data-testid="section-nav"');
-    for (const id of ["section-today", "section-roadmap", "section-foundation", "section-horizon"]) {
+    for (const id of ["section-today", "section-roadmap"]) {
       expect(markup).toContain(`id="${id}"`);
       expect(markup).toContain(`href="#${id}"`);
     }
+    expect(markup).not.toContain('id="section-foundation"');
+    expect(markup).not.toContain('id="section-horizon"');
+    expect(markup).not.toContain('data-testid="credit-ladder"');
+    expect(markup).not.toContain('data-testid="horizon-section"');
+    expect(markup).toContain('href="/flight-deck#section-foundation"');
+    expect(markup).toContain('href="/flight-deck#section-horizon"');
     expect(t).toContain("Lumière Higher-Ed Pathways");
   });
 
-  it("draws overall progress exactly once, as counts", () => {
-    expect(count(markup, 'data-testid="progress-summary"')).toBe(1);
-    expect(count(markup, 'data-testid="count-bar"')).toBe(1);
-    expect(t).toContain("Officially accepted");
-    expect(t).toContain("Complete at provider");
-    expect(t).not.toMatch(/\d\s?%/);
+  it("draws overall progress once, on the Flight Deck, as scoped counts", () => {
+    expect(count(markup, 'data-testid="progress-summary"')).toBe(0);
+    expect(count(fd, 'data-testid="progress-summary"')).toBe(1);
+    expect(count(fd, 'data-testid="count-bar"')).toBe(1);
+    expect(fdt).toContain("Roadmap courses officially accepted");
+    expect(fdt).toContain("Complete at provider");
+    expect(fdt).not.toMatch(/\d\s?%/);
   });
 
   it("keeps ONE compact Now strip on the roadmap; task lists live on the Flight Deck", () => {
@@ -50,13 +59,29 @@ describe("S05 Roadmap page", () => {
     expect(count(t.toLowerCase(), "your roadmap")).toBeLessThanOrEqual(3);
   });
   it("states the scope of every count and the cumulative ladder", () => {
-    expect(markup).toContain('data-testid="summary-scope"');
-    expect(t).toContain("Counts for your whole plan, all phases: 9 items");
-    expect(markup).not.toContain("Target Dec 11, 2027 · 7 items");
+    expect(fd).toContain('data-testid="summary-scope"');
+    expect(fdt).toContain("Roadmap courses across all phases: 9 roadmap courses");
+    expect(fdt).toContain("These counts cover roadmap courses only");
     expect(t).toContain("In this phase:");
-    expect(t).toContain("75 credits reported in total: 66 of them verified, 9 waiting for Lumière to verify.");
-    expect(t).not.toContain("Preliminary");
-    expect(t).toContain("Waiting for verification");
+    expect(fdt).toContain("75 credits reported in total: 66 of them verified, 9 waiting for Lumière to verify.");
+    expect(fdt).not.toContain("Preliminary");
+    expect(fdt).toContain("Waiting for verification");
+  });
+  it("shows the prior-credit baseline as a separate, labelled figure", () => {
+    expect(fd).toContain('data-testid="credit-baseline"');
+    expect(fdt).toContain("Prior-credit baseline");
+    expect(fdt).toContain("63 of 120 credits applied");
+    expect(fdt).toContain("separate from the roadmap courses");
+    // The baseline sits outside the count legend, so 0 accepted can never be read as 0 credit.
+    const legend = fd.slice(fd.indexOf('data-testid="count-legend"'), fd.indexOf('data-testid="credit-baseline"'));
+    expect(text(legend)).not.toContain("63");
+  });
+  it("shows exactly one 'Current phase' and labels the other active phase 'Also active'", () => {
+    expect(count(text(markup), "Current phase")).toBe(1);
+    expect(count(text(markup), "Also active")).toBeGreaterThanOrEqual(1);
+    expect(count(fdt, "Current phase")).toBe(1);
+    expect(fdt).toContain("Also active");
+    expect(markup).toContain('data-phase-state="also_active"');
   });
   it("titles the page by the primary program, not the staff plan title", () => {
     expect(text(markup)).toContain("Bachelor of Business Administration");
@@ -67,14 +92,23 @@ describe("S05 Roadmap page", () => {
     expect(markup).toContain('id="section-today"');
     expect(count(markup, 'id="section-today"')).toBe(1);
     expect(markup).not.toContain('data-testid="today-section"');
-    expect(markup).toContain('data-testid="jump-menu"');
+    expect(markup).not.toContain('data-testid="jump-menu"');
     expect(markup).not.toContain('data-testid="current-phase-line"');
   });
   it("accounts for credit outside listed credentials and shows still-to-plan", () => {
-    expect(markup).toContain('data-testid="other-credit-note"');
-    expect(t).toContain("Plus 6 more verified credits from other courses on your record.");
-    expect(markup).toContain('data-rung="still"');
-    expect(t).toContain("63 credits applied (solid) + 3 credits surplus (hatched)");
+    expect(fd).toContain('data-testid="other-credit-note"');
+    expect(fdt).toContain("Plus 6 more verified credits from other courses on your record.");
+    expect(fd).toContain('data-rung="still"');
+    expect(fdt).toContain("63 credits applied (solid) + 3 credits surplus (hatched)");
+  });
+  it("keeps the Verified bar one colour whether or not there is surplus", () => {
+    const withSurplus = html(React.createElement(CreditLadder, { ladder: V.foundation.ladder }));
+    const noSurplus = html(React.createElement(CreditLadder, { ladder: { ...V.foundation.ladder, surplus: "0.00", applied: "66.00" } }));
+    for (const m of [withSurplus, noSurplus]) {
+      const bar = m.slice(m.indexOf('data-bar="verified"'));
+      expect(bar.slice(0, 400)).toContain("--st-official");
+      expect(bar.slice(0, 400)).not.toContain("--st-applied");
+    }
   });
   it("never offers 'Graded' as a student action", () => {
     expect(t).not.toMatch(/\bGraded\b/);
@@ -114,17 +148,34 @@ describe("S05 Roadmap page", () => {
   });
 
   it("explains the foundation credit ladder in plain language", () => {
-    expect(markup).toContain('data-testid="credit-ladder"');
-    expect(t).toContain("Verified credits beyond what any requirement needs; they're on your record but don't move you closer to graduation.");
-    expect(t).toContain("Part of the reported total that Lumière has checked and accepted");
-    expect(t).toContain("Applied means that credit is counted toward a degree requirement");
-    for (const r of ["reported", "provisional", "verified", "applied", "planned"]) expect(markup).toContain(`data-rung="${r}"`);
+    expect(fd).toContain('data-testid="credit-ladder"');
+    expect(fdt).toContain("Verified credits beyond what any requirement needs; they're on your record but don't move you closer to graduation.");
+    expect(fdt).toContain("Part of the reported total that Lumière has checked and accepted");
+    expect(fdt).toContain("Applied means that credit is counted toward a degree requirement");
+    for (const r of ["reported", "provisional", "verified", "applied", "planned"]) expect(fd).toContain(`data-rung="${r}"`);
   });
 
-  it("lists upcoming phases and milestones with target dates on the horizon", () => {
-    expect(t).toContain("Nursing school application");
-    expect(t).toContain("Target May 15, 2027");
-    expect(markup).toContain('data-testid="upcoming-phases"');
+  it("lists upcoming phases and milestones with target dates on the Flight Deck horizon", () => {
+    expect(fdt).toContain("Nursing school application");
+    expect(fdt).toContain("Target May 15, 2027");
+    expect(fd).toContain('data-testid="upcoming-phases"');
+  });
+
+  it("explains 'Awaiting approval' and 'On hold' inline on collapsed rows, not only on hover", () => {
+    const collapsed = html(React.createElement(ItemCard, { item: itemsByKey(V).get("bba-mgmt320")! }));
+    const before = collapsed.slice(0, collapsed.indexOf('data-testid="item-panel"'));
+    expect(text(before)).toContain("Awaiting approval");
+    expect(text(before)).toContain("Your advisor must approve this course before you can start it.");
+    expect(before).not.toContain("title=");
+    const hold = html(React.createElement(ItemCard, { item: itemsByKey(V).get("bba-fin330")! }));
+    expect(text(hold.slice(0, hold.indexOf('data-testid="item-panel"')))).toContain("Lumière has paused this course.");
+  });
+
+  it("labels every step of the stage track with visible text", () => {
+    const m = html(React.createElement(StageTrack, { stage: "in_progress" }));
+    for (const short of ["Not started", "Started", "Submitted", "All done", "At provider", "Official"]) expect(m).toContain(`>${short}</span>`);
+    expect(count(m, "<li")).toBe(6);
+    expect(m).toContain('aria-current="step"');
   });
 
   it("offers no course add/edit/delete controls", () => {
@@ -147,12 +198,32 @@ describe("S05 Flight Deck", () => {
   it("puts Today first, then one progress presentation, foundation and horizon", () => {
     expect(markup.indexOf("today-section")).toBeLessThan(markup.indexOf("progress-summary"));
     expect(count(markup, 'data-testid="progress-summary"')).toBe(1);
-    expect(markup).toContain('data-testid="foundation-summary"');
-    expect(markup).toContain('data-testid="horizon-summary"');
-    expect(count(markup, 'data-testid="horizon-milestone"')).toBe(3);
+    expect(markup).toContain('data-testid="foundation-section"');
+    expect(markup).toContain('data-testid="horizon-section"');
+    expect(count(markup, 'data-testid="milestone"')).toBe(4);
     expect(count(markup, 'data-testid="now-strip"')).toBe(0);
     expect(markup).toContain('href="/roadmap"');
-    expect(t).toContain("Current phase: Business Core");
+    expect(markup).toContain('data-testid="journey-strip"');
+    expect(count(t, "Current phase")).toBe(1);
+  });
+  it("has one obvious primary action to the first focus course", () => {
+    expect(count(markup, 'data-testid="primary-cta"')).toBe(1);
+    expect(markup).toMatch(/data-testid="primary-cta"[^>]*>|href="\/roadmap#item-bba-mkt300"[^>]*data-testid="primary-cta"/);
+    expect(t).toContain("Continue Principles of Marketing");
+  });
+  it("Next up lists only actionable tasks; submitted tasks are listed as Awaiting grading", () => {
+    const hero = markup.slice(markup.indexOf('data-hero="true"'));
+    const nextUp = hero.slice(hero.indexOf("Next up"), hero.indexOf("Awaiting grading"));
+    expect(nextUp).not.toContain("Touchstone 2");
+    expect(nextUp).toContain("Challenge 6");
+    expect(text(hero)).toContain("Awaiting grading (1)");
+    expect(text(hero.slice(hero.indexOf("Awaiting grading")))).toContain("Touchstone 2");
+    expect(t).toContain("1 task submitted, awaiting grading");
+  });
+  it("shows task due dates and flags overdue ones in words", () => {
+    expect(markup).toContain('data-testid="task-due"');
+    // Wording depends on today's date; the exact rules are unit-tested in s07-student-ui-presentation.
+    expect(t).toMatch(/(Due |Overdue since )/);
   });
   it("takes credit numbers from the ladder only", () => {
     expect(markup).toContain('data-testid="rung-verified"');
@@ -170,7 +241,8 @@ describe("S05 states", () => {
     for (const el of [RoadmapPageView, FlightDeckRoadmapView]) {
       const m = html(React.createElement(el as any, { view: NOT_PUBLISHED }));
       expect(text(m)).toContain("Lumière is preparing your roadmap");
-      expect(m).toContain('data-testid="credit-ladder"');
+      if (el === FlightDeckRoadmapView) expect(m).toContain('data-testid="credit-ladder"');
+      else expect(m).toContain('href="/flight-deck#section-foundation"');
       expect(m).not.toContain('data-testid="journey"');
     }
   });

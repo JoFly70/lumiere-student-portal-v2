@@ -27,34 +27,95 @@ export const BRAND_NAME = "Lumière Higher-Ed Pathways";
 
 // ── Sections ────────────────────────────────────────────────────────────────
 
-export const ROADMAP_SECTIONS = [
+/**
+ * Page ownership (S07): the Flight Deck owns "where you stand" in full (progress,
+ * foundation, horizon); the Roadmap owns the journey. Each page links to the other
+ * instead of repeating its detail.
+ */
+export const FLIGHT_DECK_SECTIONS = [
   { id: "section-today", label: "Today" },
-  { id: "section-roadmap", label: "Roadmap" },
+  { id: "section-journey", label: "Journey" },
+  { id: "section-progress", label: "Progress" },
   { id: "section-foundation", label: "Foundation" },
   { id: "section-horizon", label: "Horizon" },
 ] as const;
+
+export const ROADMAP_SECTIONS = [
+  { id: "section-today", label: "Now" },
+  { id: "section-roadmap", label: "Journey" },
+] as const;
+
+export const FLIGHT_DECK_PATH = "/flight-deck";
+export const ROADMAP_PATH = "/roadmap";
+export const FOUNDATION_HREF = `${FLIGHT_DECK_PATH}#section-foundation`;
+export const HORIZON_HREF = `${FLIGHT_DECK_PATH}#section-horizon`;
+
+// ── Status language (S07) ───────────────────────────────────────────────────
+// Seven semantic statuses; colours live in index.css (--st-*). Gold is the brand
+// accent and is NOT a status. Every status is shown with an icon AND a label.
+
+export type StatusKey = "official" | "applied" | "provider" | "progress" | "submitted" | "notstarted" | "attention";
+
+export interface StatusMeta {
+  readonly key: StatusKey;
+  readonly label: string;
+  readonly help: string;
+}
+
+export const STATUS_META: Record<StatusKey, StatusMeta> = {
+  official: { key: "official", label: "Officially accepted", help: "Lumière verified it on your record." },
+  applied: { key: "applied", label: "Applied", help: "Verified credit counted toward a degree requirement." },
+  provider: { key: "provider", label: "Complete at provider", help: "You finished it at the provider; Lumière still reviews it." },
+  progress: { key: "progress", label: "In progress", help: "You have started the work." },
+  submitted: { key: "submitted", label: "Submitted", help: "Submitted and waiting to be graded." },
+  notstarted: { key: "notstarted", label: "Not started", help: "Nothing reported yet." },
+  attention: { key: "attention", label: "Needs attention", help: "On hold, waiting for approval, or overdue." },
+};
+
+/** Status colour for an item stage. "All tasks done" is still work in progress until it is complete at the provider. */
+export function stageStatus(stage: StudentItemStage): StatusKey {
+  switch (stage) {
+    case "officially_accepted": return "official";
+    case "provider_complete": return "provider";
+    case "submitted": return "submitted";
+    case "in_progress":
+    case "graded": return "progress";
+    default: return "notstarted";
+  }
+}
+
+export function taskStatusKey(status: StudentTaskStatus): StatusKey {
+  if (status === "graded") return "progress";
+  if (status === "submitted") return "submitted";
+  if (status === "in_progress") return "progress";
+  return "notstarted";
+}
 
 // ── Stages ──────────────────────────────────────────────────────────────────
 
 export interface StagePresentation {
   readonly stage: StudentItemStage;
   readonly label: string;
+  /** Short label printed under each step of the stage track. */
+  readonly short: string;
   readonly help: string;
 }
 
 export const STAGES: readonly StagePresentation[] = [
-  { stage: "not_started", label: "Not started", help: "Nothing has been reported on this yet." },
-  { stage: "in_progress", label: "In progress", help: "You have started the work." },
-  { stage: "submitted", label: "Submitted", help: "Every task is submitted or done." },
-  { stage: "graded", label: "All tasks done", help: "You have reported every task done." },
+  { stage: "not_started", label: "Not started", short: "Not started", help: "Nothing has been reported on this yet." },
+  { stage: "in_progress", label: "In progress", short: "Started", help: "You have started the work." },
+  { stage: "submitted", label: "Submitted", short: "Submitted", help: "Every task is submitted or done." },
+  { stage: "graded", label: "All tasks done", short: "All done", help: "You have reported every task done." },
   {
     stage: "provider_complete",
     label: "Complete at provider",
+    short: "At provider",
     help: "You reported this complete at the course provider. Lumière still has to review it.",
   },
   {
     stage: "officially_accepted",
     label: "Officially accepted",
+    short: "Official",
     help: "Lumière has verified this on your record. Only Lumière staff can make this decision.",
   },
 ];
@@ -136,9 +197,69 @@ export function taskProgressPhrase(item: StudentRoadmapItemView): string | null 
   return `${graded} of ${total} ${noun} done`;
 }
 
-/** The next tasks still to do, in plan order. */
+/**
+ * The next tasks the student can still ACT on, in plan order: not started or
+ * started. Submitted tasks need no more action until they are graded, so they
+ * are listed separately (awaitingGradingTasks), never as "Next up".
+ */
 export function nextTasks(item: StudentRoadmapItemView, limit = 3): StudentTaskView[] {
-  return item.tasks.filter((t) => t.status !== "graded").slice(0, limit);
+  return item.tasks.filter((t) => t.status === "not_started" || t.status === "in_progress").slice(0, limit);
+}
+
+/** Tasks submitted and waiting to be graded. */
+export function awaitingGradingTasks(item: StudentRoadmapItemView): StudentTaskView[] {
+  return item.tasks.filter((t) => t.status === "submitted");
+}
+
+/** "2 tasks submitted, awaiting grading" for the whole plan; null when none. */
+export function awaitingGradingSentence(view: StudentRoadmapView): string | null {
+  const n = view.counts.tasksSubmitted;
+  if (n <= 0) return null;
+  return `${n} ${n === 1 ? "task" : "tasks"} submitted, awaiting grading`;
+}
+
+// ── Due dates (S07) ─────────────────────────────────────────────────────────
+
+export type DueTone = "overdue" | "soon" | "later";
+
+export interface DueInfo {
+  readonly iso: string;
+  /** "Nov 3" (year only when it is not the current year). */
+  readonly dateText: string;
+  readonly tone: DueTone;
+  /** Visible words: "Due Nov 3", "Due in 3 days", "Overdue since Oct 20". */
+  readonly text: string;
+}
+
+const MS_DAY = 86_400_000;
+
+export function todayIso(now: Date = new Date()): string {
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+/** Due-date wording for a task that still needs the student; null for done tasks or no date. */
+export function dueInfo(task: StudentTaskView, today: string = todayIso()): DueInfo | null {
+  if (!task.dueDate || task.status === "graded" || task.status === "submitted") return null;
+  const due = Date.parse(`${task.dueDate}T00:00:00Z`);
+  const now = Date.parse(`${today}T00:00:00Z`);
+  if (Number.isNaN(due) || Number.isNaN(now)) return null;
+  const days = Math.round((due - now) / MS_DAY);
+  const sameYear = task.dueDate.slice(0, 4) === today.slice(0, 4);
+  const dateText = new Date(due).toLocaleDateString("en-US", { month: "short", day: "numeric", ...(sameYear ? {} : { year: "numeric" }), timeZone: "UTC" });
+  if (days < 0) return { iso: task.dueDate, dateText, tone: "overdue", text: `Overdue since ${dateText}` };
+  if (days === 0) return { iso: task.dueDate, dateText, tone: "soon", text: "Due today" };
+  if (days <= 7) return { iso: task.dueDate, dateText, tone: "soon", text: `Due in ${days} ${days === 1 ? "day" : "days"} (${dateText})` };
+  return { iso: task.dueDate, dateText, tone: "later", text: `Due ${dateText}` };
+}
+
+/** The earliest due date among an item's open tasks. */
+export function nextDue(item: StudentRoadmapItemView, today: string = todayIso()): DueInfo | null {
+  const infos = item.tasks.map((t) => dueInfo(t, today)).filter((d): d is DueInfo => d !== null);
+  infos.sort((a, b) => (a.iso < b.iso ? -1 : a.iso > b.iso ? 1 : 0));
+  return infos[0] ?? null;
 }
 
 /** Reporting is allowed unless the item is dropped/alternative or already officially accepted. */
@@ -161,6 +282,17 @@ export function blockedReasonShort(item: StudentRoadmapItemView): string | null 
   if (item.canReport || item.stage === "officially_accepted") return null;
   if (item.reportBlockedReason === "on_hold") return "On hold";
   if (item.reportBlockedReason === "approval_pending") return "Awaiting approval";
+  return null;
+}
+
+/**
+ * One visible sentence that explains the short pill on a COLLAPSED row, so the
+ * meaning never depends on hover or on opening the card.
+ */
+export function blockedReasonInline(item: StudentRoadmapItemView): string | null {
+  if (item.canReport || item.stage === "officially_accepted") return null;
+  if (item.reportBlockedReason === "on_hold") return "Lumière has paused this course. You can start again when the hold is lifted.";
+  if (item.reportBlockedReason === "approval_pending") return "Your advisor must approve this course before you can start it.";
   return null;
 }
 
@@ -221,16 +353,21 @@ export function taskSavedLabel(task: StudentTaskView, status: StudentTaskStatus)
 
 export interface CountSegment {
   readonly key: "accepted" | "provider" | "progress" | "not_started";
+  /** Scoped, student-facing label. "Officially accepted" always says it counts roadmap courses. */
   readonly label: string;
+  readonly status: StatusKey;
   readonly value: number;
 }
 
+export const COUNT_SCOPE_NOTE =
+  "These counts cover roadmap courses only. Credit you already hold is shown separately, below.";
+
 export function countSegments(counts: StudentRoadmapCounts): CountSegment[] {
   return [
-    { key: "accepted", label: "Officially accepted", value: counts.itemsOfficiallyAccepted },
-    { key: "provider", label: "Complete at provider", value: counts.itemsProviderComplete },
-    { key: "progress", label: "In progress", value: counts.itemsInProgress },
-    { key: "not_started", label: "Not started", value: counts.itemsNotStarted },
+    { key: "accepted", label: "Roadmap courses officially accepted", status: "official", value: counts.itemsOfficiallyAccepted },
+    { key: "provider", label: "Complete at provider", status: "provider", value: counts.itemsProviderComplete },
+    { key: "progress", label: "In progress", status: "progress", value: counts.itemsInProgress },
+    { key: "not_started", label: "Not started", status: "notstarted", value: counts.itemsNotStarted },
   ];
 }
 
@@ -241,10 +378,45 @@ export function segmentFraction(value: number, counts: StudentRoadmapCounts): nu
 }
 
 export function countsSentence(counts: StudentRoadmapCounts): string {
-  const noun = counts.itemsTotal === 1 ? "item" : "items";
-  return `Across your whole plan, ${counts.itemsTotal} ${noun}: ${countSegments(counts)
-    .map((s) => `${s.value} ${s.label.toLowerCase()}`)
-    .join(", ")}.`;
+  const noun = counts.itemsTotal === 1 ? "roadmap course" : "roadmap courses";
+  const parts = [
+    `${counts.itemsOfficiallyAccepted} officially accepted by Lumière`,
+    `${counts.itemsProviderComplete} complete at provider`,
+    `${counts.itemsInProgress} in progress`,
+    `${counts.itemsNotStarted} not started`,
+  ];
+  return `Your plan has ${counts.itemsTotal} ${noun}: ${parts.join(", ")}.`;
+}
+
+export interface PriorCreditBaseline {
+  /** Applied academic credits from the canonical record, or null while under review. */
+  readonly applied: string | null;
+  readonly required: string | null;
+  readonly headline: string;
+  readonly detail: string;
+}
+
+/**
+ * The prior-credit baseline: academic credit already APPLIED to the degree
+ * (canonical foundation). It is not a roadmap count and is never summed with one.
+ */
+export function priorCreditBaseline(f: StudentFoundationView): PriorCreditBaseline {
+  const applied = formatDecimal(f.ladder.applied);
+  const required = formatDecimal(f.ladder.required);
+  if (applied === null) {
+    return {
+      applied: null,
+      required,
+      headline: "Under review",
+      detail: "Lumière is still reviewing your record, so applied credit is not shown yet.",
+    };
+  }
+  return {
+    applied,
+    required,
+    headline: `${applied}${required ? ` of ${required}` : ""} ${required || applied !== "1" ? "credits" : "credit"} applied`,
+    detail: "Academic credit from your record that Lumière has already applied to your degree. It is separate from the roadmap courses above.",
+  };
 }
 
 /** Counts for ONE phase. Always scoped in the wording ("In this phase"). */
@@ -283,10 +455,28 @@ export function currentPhase(view: StudentRoadmapView): StudentRoadmapPhaseView 
   const phases = [...view.phases].sort((a, b) => a.sequence - b.sequence);
   return (
     phases.find((p) => p.state === "current") ??
+    phases.find((p) => p.state === "also_active") ??
     phases.find((p) => p.state === "upcoming") ??
     phases[phases.length - 1] ??
     null
   );
+}
+
+/** Other unfinished phases the student has also started (never labelled "current"). */
+export function alsoActivePhases(view: StudentRoadmapView): StudentRoadmapPhaseView[] {
+  return sortedPhases(view).filter((p) => p.state === "also_active");
+}
+
+export const PHASE_STATE_LABEL: Record<StudentRoadmapPhaseView["state"], string> = {
+  complete: "Complete",
+  current: "Current phase",
+  also_active: "Also active",
+  upcoming: "Upcoming",
+};
+
+export function phaseStateHelp(state: StudentRoadmapPhaseView["state"]): string | null {
+  if (state === "also_active") return "You have started work here too, alongside your current phase.";
+  return null;
 }
 
 export function sortedPhases(view: StudentRoadmapView): StudentRoadmapPhaseView[] {
@@ -443,6 +633,8 @@ export function itemCreditsLabel(item: StudentRoadmapItemView): string | null {
 
 export interface LadderRung {
   readonly key: "reported" | "provisional" | "verified" | "applied";
+  /** Status colour of the rung; null for the neutral "reported" total. */
+  readonly status: StatusKey | null;
   readonly label: string;
   readonly value: string | null;
   readonly help: string;
@@ -459,11 +651,12 @@ export const APPLIED_VS_VERIFIED =
 
 export function ladderRungs(ladder: Ladder): LadderRung[] {
   return [
-    { key: "reported", label: "Reported", value: ladder.reported, help: "Everything on the documents you provided. The two rows below split it into waiting and verified." },
-    { key: "provisional", label: "Waiting for verification", value: ladder.provisional, help: "Part of the reported total that Lumière has not verified yet." },
-    { key: "verified", label: "Verified", value: ladder.verified, help: "Part of the reported total that Lumière has checked and accepted." },
+    { key: "reported", status: null, label: "Reported", value: ladder.reported, help: "Everything on the documents you provided. The two rows below split it into waiting and verified." },
+    { key: "provisional", status: "submitted", label: "Waiting for verification", value: ladder.provisional, help: "Part of the reported total that Lumière has not verified yet." },
+    { key: "verified", status: "official", label: "Verified", value: ladder.verified, help: "Part of the reported total that Lumière has checked and accepted." },
     {
       key: "applied",
+      status: "applied",
       label: "Applied",
       value: ladder.applied,
       help: ladder.applied === null ? "Shown once Lumière finishes reviewing your record." : "Part of the verified total that counts toward your degree requirements.",
@@ -562,10 +755,11 @@ export function ladderTotalsSentence(ladder: Ladder): string {
 export function credentialStandingLabel(standing: StudentFoundationView["credentials"][number]["standing"]): {
   label: string;
   verified: boolean;
+  status: StatusKey;
 } {
-  if (standing === "VERIFIED_APPLIED" || standing === "VERIFIED_NOT_APPLIED") return { label: "Verified", verified: true };
-  if (standing === "NOT_ACCEPTED") return { label: "Not accepted", verified: false };
-  return { label: "Waiting for verification", verified: false };
+  if (standing === "VERIFIED_APPLIED" || standing === "VERIFIED_NOT_APPLIED") return { label: "Verified", verified: true, status: "official" };
+  if (standing === "NOT_ACCEPTED") return { label: "Not accepted", verified: false, status: "attention" };
+  return { label: "Waiting for verification", verified: false, status: "submitted" };
 }
 
 /** The reportable item to jump to from the "Now" strip: first focus item. */

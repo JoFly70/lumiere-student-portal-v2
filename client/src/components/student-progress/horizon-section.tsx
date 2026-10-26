@@ -1,7 +1,6 @@
 /** THE HORIZON: milestones with target dates and the phases still ahead. */
 import React from "react";
-import { Link } from "wouter";
-import { ArrowRight, Flag, GraduationCap } from "lucide-react";
+import { Flag, GraduationCap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { StudentRoadmapMilestoneView, StudentRoadmapView } from "@shared/student-roadmap-contract";
 import {
@@ -13,7 +12,7 @@ import {
   nextMilestone,
   upcomingPhases,
 } from "@/pages/student-roadmap-presentation";
-import { Pill, SectionHeading, buttonClass, cardClass } from "./student-ui";
+import { Pill, SectionHeading, cardClass } from "./student-ui";
 
 function MilestoneMarker({ m }: { m: StudentRoadmapMilestoneView }) {
   const Icon = m.kind === "graduation" ? GraduationCap : Flag;
@@ -21,7 +20,7 @@ function MilestoneMarker({ m }: { m: StudentRoadmapMilestoneView }) {
     <span
       className={cn(
         "flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2",
-        m.reached ? "border-student-gold bg-student-gold text-student-card" : "border-student-line-strong bg-student-card text-student-gold-ink",
+        m.reached ? "border-student-ink bg-student-ink text-student-card" : "border-student-line-strong bg-student-card text-student-gold-ink",
         m.kind === "graduation" && !m.reached && "border-student-gold-ink",
       )}
       aria-hidden="true"
@@ -37,7 +36,7 @@ export function HorizonSection({ view }: { view: StudentRoadmapView }) {
   const phases = upcomingPhases(view);
   if (milestones.length === 0 && phases.length === 0) return null;
   return (
-    <section aria-labelledby="horizon-title" id="section-horizon" className="scroll-mt-28 space-y-4" data-testid="horizon-section">
+    <section aria-labelledby="horizon-title" id="section-horizon" className="scroll-mt-20 space-y-4" data-testid="horizon-section">
       <SectionHeading
         id="horizon-title"
         eyebrow="The horizon"
@@ -85,38 +84,6 @@ export function HorizonSection({ view }: { view: StudentRoadmapView }) {
           </div>
         )}
       </div>
-    </section>
-  );
-}
-
-/** Flight Deck: the next few milestones. */
-export function HorizonSummary({ view }: { view: StudentRoadmapView }) {
-  const next = nextMilestone(view);
-  if (!next) return null;
-  const upcoming = horizonMilestones(view).filter((m) => !m.reached).slice(0, 3);
-  return (
-    <section aria-labelledby="horizon-summary-title" className={cardClass} data-testid="horizon-summary">
-      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-student-gold-ink">The horizon</p>
-      <h2 id="horizon-summary-title" className="font-serif text-xl text-student-ink">What is next</h2>
-      <ol className="mt-3 space-y-3">
-        {upcoming.map((m) => (
-          <li key={m.key} className="flex gap-3" data-testid="horizon-milestone">
-            <MilestoneMarker m={m} />
-            <div className="min-w-0">
-              <p className="flex flex-wrap items-center gap-2 text-sm font-semibold text-student-ink">
-                {m.title}
-                {m.key === next.key && <Pill tone="gold">Next</Pill>}
-              </p>
-              <p className="text-sm text-student-muted">
-                {[milestoneKindLabel(m.kind), formatShortDate(m.targetDate) ? `Target ${formatShortDate(m.targetDate)}` : "Date to be set", milestoneStatusLine(m, view)].filter(Boolean).join(" · ")}
-              </p>
-            </div>
-          </li>
-        ))}
-      </ol>
-      <Link href="/roadmap#section-horizon" className={`${buttonClass.link} mt-2`} data-testid="link-horizon">
-        See what is ahead <ArrowRight className="h-4 w-4" aria-hidden="true" />
-      </Link>
     </section>
   );
 }

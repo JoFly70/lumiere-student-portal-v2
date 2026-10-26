@@ -1,4 +1,5 @@
 import { BookOpen, FileText, CreditCard, HelpCircle, LogOut, User, Gauge, ShieldCheck } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -58,6 +59,10 @@ const studentMenuItems = [
   { title: "Support", url: "/support", icon: HelpCircle },
 ];
 
+// Student navigation is grouped: the journey first, then the student's file.
+const studentJourneyItems = studentMenuItems.filter((i) => ["/flight-deck", "/roadmap"].includes(i.url));
+const studentFileItems = studentMenuItems.filter((i) => !["/flight-deck", "/roadmap"].includes(i.url));
+
 const adminMenuItems = [
   { title: "Admin Dashboard", url: "/admin", icon: ShieldCheck },
   { title: "Support", url: "/support", icon: HelpCircle },
@@ -96,6 +101,88 @@ export function AppSidebar() {
     : user?.email || "";
 
   const portalLabel = user?.role === "admin" ? "Admin Portal" : "Student Portal";
+
+  if (isStudent) {
+    const renderItems = (items: typeof studentMenuItems) => (
+      <SidebarMenu>
+        {items.map((item) => {
+          const active = location === item.url;
+          return (
+            <SidebarMenuItem key={item.title}>
+              <SidebarMenuButton
+                asChild
+                isActive={active}
+                className={cn(
+                  "h-11 gap-3 rounded-lg px-3 text-[15px] font-medium",
+                  active && "relative bg-sidebar-accent text-sidebar-accent-foreground before:absolute before:inset-y-2 before:left-0 before:w-[3px] before:rounded-full before:bg-sidebar-primary",
+                )}
+                data-testid={`link-${item.title.toLowerCase().replace(/\s+/g, "-")}`}
+              >
+                <Link href={item.url} aria-current={active ? "page" : undefined}>
+                  <item.icon className="h-[18px] w-[18px]" aria-hidden="true" />
+                  <span>{item.title}</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          );
+        })}
+      </SidebarMenu>
+    );
+    return (
+      <Sidebar>
+        <SidebarHeader className="px-6 pb-4 pt-7">
+          <div className="flex items-center gap-3" role="region" aria-label="Lumière Higher-Ed Pathways">
+            <img src={lumiereLogo} alt="Lumière Higher-Ed Pathways" className="h-11 w-11 object-contain" data-testid="img-lumiere-logo" />
+            <div>
+              <p className="font-serif text-2xl leading-none tracking-tight text-sidebar-primary">Lumière</p>
+              <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-sidebar-foreground/70">Higher-Ed Pathways</p>
+              <p className="sr-only">{portalLabel}</p>
+            </div>
+          </div>
+          <div className="mt-5 h-px bg-gradient-to-r from-sidebar-primary/60 via-sidebar-primary/20 to-transparent" aria-hidden="true" />
+        </SidebarHeader>
+        <SidebarContent className="px-2">
+          <nav aria-label="Main">
+            <SidebarGroup>
+              <SidebarGroupLabel className="text-[11px] font-semibold uppercase tracking-[0.16em]">Your journey</SidebarGroupLabel>
+              <SidebarGroupContent>{renderItems(studentJourneyItems)}</SidebarGroupContent>
+            </SidebarGroup>
+            <SidebarGroup>
+              <SidebarGroupLabel className="text-[11px] font-semibold uppercase tracking-[0.16em]">Your file</SidebarGroupLabel>
+              <SidebarGroupContent>{renderItems(studentFileItems)}</SidebarGroupContent>
+            </SidebarGroup>
+          </nav>
+        </SidebarContent>
+        <SidebarFooter className="gap-3 px-4 pb-5 pt-3" role="contentinfo">
+          <div role="region" aria-label="Your account" className="space-y-2 rounded-xl border border-sidebar-border bg-sidebar-accent/40 p-3">
+            <div className="flex items-center gap-3" aria-label="User profile" data-testid="profile-user">
+              <ProfileAvatarUpload
+                photoUrl={profile?.photo_url}
+                firstName={profile?.first_name}
+                lastName={profile?.last_name}
+                size="md"
+                showUploadButton={false}
+              />
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-sm font-semibold" data-testid="text-username">{displayName}</div>
+                <div className="truncate text-xs text-sidebar-foreground/70" data-testid="text-email">{displayEmail}</div>
+              </div>
+            </div>
+            <button
+              onClick={() => void logout()}
+              className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-lg border border-sidebar-border bg-sidebar text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent"
+              data-testid="button-logout"
+              aria-label="Log out"
+            >
+              <LogOut className="h-4 w-4" aria-hidden="true" />
+              <span>Log out</span>
+            </button>
+          </div>
+          <p className="text-center text-[11px] text-sidebar-foreground">© 2026 Lumière Higher-Ed Pathways</p>
+        </SidebarFooter>
+      </Sidebar>
+    );
+  }
 
   return (
     <Sidebar>

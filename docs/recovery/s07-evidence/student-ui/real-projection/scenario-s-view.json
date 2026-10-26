@@ -1,0 +1,1126 @@
+{
+  "contractVersion": "student-roadmap/1",
+  "state": "PUBLISHED",
+  "preview": false,
+  "plan": {
+    "title": "Scenario S — multiple objectives with alternatives",
+    "summary": "Prior credits are under evaluation; some courses are alternatives or conditional on the evaluation outcome.",
+    "versionNumber": 1,
+    "publishedAt": "2026-10-01T09:00:00.000Z"
+  },
+  "objectives": [
+    {
+      "key": "bs-information-systems",
+      "title": "Bachelor of Science in Information Systems",
+      "kind": "primary",
+      "institution": "Pathways State University",
+      "credentialLabel": "BS",
+      "status": "active",
+      "note": null,
+      "canonicalProgramName": "Bachelor of Science in Information Systems",
+      "counts": {
+        "itemsTotal": 7,
+        "itemsOfficiallyAccepted": 0,
+        "itemsProviderComplete": 1,
+        "itemsInProgress": 2,
+        "itemsNotStarted": 4,
+        "tasksTotal": 33,
+        "tasksGraded": 15,
+        "tasksSubmitted": 1
+      }
+    },
+    {
+      "key": "minor-data-analytics",
+      "title": "Minor in Data Analytics",
+      "kind": "secondary",
+      "institution": "Pathways State University",
+      "credentialLabel": "Minor",
+      "status": "active",
+      "note": null,
+      "canonicalProgramName": null,
+      "counts": {
+        "itemsTotal": 2,
+        "itemsOfficiallyAccepted": 0,
+        "itemsProviderComplete": 0,
+        "itemsInProgress": 0,
+        "itemsNotStarted": 2,
+        "tasksTotal": 9,
+        "tasksGraded": 0,
+        "tasksSubmitted": 0
+      }
+    }
+  ],
+  "phases": [
+    {
+      "key": "core-foundations",
+      "title": "Core foundations",
+      "sequence": 1,
+      "objectiveKey": null,
+      "startDate": null,
+      "endDate": null,
+      "description": null,
+      "items": [
+        {
+          "key": "s-eng-101",
+          "phaseKey": "core-foundations",
+          "objectiveKey": "bs-information-systems",
+          "sequence": 1,
+          "kind": "course",
+          "code": "ENG-101",
+          "title": "English Composition",
+          "provider": "Sophia",
+          "institution": "Pathways State University",
+          "credits": "3",
+          "plannedStart": "2026-11-02",
+          "plannedEnd": "2026-11-29",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "provider_complete",
+          "itemRevision": 1,
+          "tasks": [
+            {
+              "key": "challenge-1",
+              "kind": "challenge",
+              "title": "Challenge 1",
+              "dueDate": null,
+              "status": "graded",
+              "revision": 1,
+              "updatedAt": "2026-10-20T12:00:00.000Z"
+            },
+            {
+              "key": "challenge-2",
+              "kind": "challenge",
+              "title": "Challenge 2",
+              "dueDate": null,
+              "status": "graded",
+              "revision": 1,
+              "updatedAt": "2026-10-20T12:00:00.000Z"
+            },
+            {
+              "key": "challenge-3",
+              "kind": "challenge",
+              "title": "Challenge 3",
+              "dueDate": null,
+              "status": "graded",
+              "revision": 1,
+              "updatedAt": "2026-10-20T12:00:00.000Z"
+            },
+            {
+              "key": "challenge-4",
+              "kind": "challenge",
+              "title": "Challenge 4",
+              "dueDate": null,
+              "status": "graded",
+              "revision": 1,
+              "updatedAt": "2026-10-20T12:00:00.000Z"
+            },
+            {
+              "key": "challenge-5",
+              "kind": "challenge",
+              "title": "Challenge 5",
+              "dueDate": null,
+              "status": "graded",
+              "revision": 1,
+              "updatedAt": "2026-10-20T12:00:00.000Z"
+            },
+            {
+              "key": "milestone-1",
+              "kind": "milestone",
+              "title": "Milestone 1",
+              "dueDate": null,
+              "status": "graded",
+              "revision": 1,
+              "updatedAt": "2026-10-20T12:00:00.000Z"
+            },
+            {
+              "key": "milestone-2",
+              "kind": "milestone",
+              "title": "Milestone 2",
+              "dueDate": null,
+              "status": "graded",
+              "revision": 1,
+              "updatedAt": "2026-10-20T12:00:00.000Z"
+            },
+            {
+              "key": "milestone-3",
+              "kind": "milestone",
+              "title": "Milestone 3",
+              "dueDate": null,
+              "status": "graded",
+              "revision": 1,
+              "updatedAt": "2026-10-20T12:00:00.000Z"
+            },
+            {
+              "key": "touchstone-1",
+              "kind": "touchstone",
+              "title": "Touchstone 1",
+              "dueDate": null,
+              "status": "graded",
+              "revision": 1,
+              "updatedAt": "2026-10-20T12:00:00.000Z"
+            }
+          ],
+          "taskCounts": {
+            "total": 9,
+            "graded": 9,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 0
+          },
+          "stage": "provider_complete",
+          "official": null,
+          "canReport": true,
+          "reportBlockedReason": null
+        },
+        {
+          "key": "s-math-120",
+          "phaseKey": "core-foundations",
+          "objectiveKey": "bs-information-systems",
+          "sequence": 2,
+          "kind": "course",
+          "code": "MATH-120",
+          "title": "College Algebra",
+          "provider": "Sophia",
+          "institution": "Pathways State University",
+          "credits": "3",
+          "plannedStart": "2026-11-02",
+          "plannedEnd": "2026-12-06",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "challenge-1",
+              "kind": "challenge",
+              "title": "Challenge 1",
+              "dueDate": null,
+              "status": "graded",
+              "revision": 1,
+              "updatedAt": "2026-10-20T12:00:00.000Z"
+            },
+            {
+              "key": "challenge-2",
+              "kind": "challenge",
+              "title": "Challenge 2",
+              "dueDate": null,
+              "status": "graded",
+              "revision": 1,
+              "updatedAt": "2026-10-20T12:00:00.000Z"
+            },
+            {
+              "key": "challenge-3",
+              "kind": "challenge",
+              "title": "Challenge 3",
+              "dueDate": null,
+              "status": "graded",
+              "revision": 1,
+              "updatedAt": "2026-10-20T12:00:00.000Z"
+            },
+            {
+              "key": "challenge-4",
+              "kind": "challenge",
+              "title": "Challenge 4",
+              "dueDate": null,
+              "status": "graded",
+              "revision": 1,
+              "updatedAt": "2026-10-20T12:00:00.000Z"
+            },
+            {
+              "key": "challenge-5",
+              "kind": "challenge",
+              "title": "Challenge 5",
+              "dueDate": null,
+              "status": "graded",
+              "revision": 1,
+              "updatedAt": "2026-10-20T12:00:00.000Z"
+            },
+            {
+              "key": "challenge-6",
+              "kind": "challenge",
+              "title": "Challenge 6",
+              "dueDate": null,
+              "status": "graded",
+              "revision": 1,
+              "updatedAt": "2026-10-20T12:00:00.000Z"
+            },
+            {
+              "key": "milestone-1",
+              "kind": "milestone",
+              "title": "Milestone 1",
+              "dueDate": null,
+              "status": "submitted",
+              "revision": 1,
+              "updatedAt": "2026-10-20T12:00:00.000Z"
+            },
+            {
+              "key": "milestone-2",
+              "kind": "milestone",
+              "title": "Milestone 2",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-3",
+              "kind": "milestone",
+              "title": "Milestone 3",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-4",
+              "kind": "milestone",
+              "title": "Milestone 4",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "touchstone-1",
+              "kind": "touchstone",
+              "title": "Touchstone 1",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "touchstone-2",
+              "kind": "touchstone",
+              "title": "Touchstone 2",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 12,
+            "graded": 6,
+            "submitted": 1,
+            "inProgress": 0,
+            "notStarted": 5
+          },
+          "stage": "in_progress",
+          "official": null,
+          "canReport": true,
+          "reportBlockedReason": null
+        },
+        {
+          "key": "s-math-alt",
+          "phaseKey": "core-foundations",
+          "objectiveKey": "bs-information-systems",
+          "sequence": 3,
+          "kind": "course",
+          "code": "MATH-130",
+          "title": "Quantitative Reasoning",
+          "provider": "Study.com",
+          "institution": "Pathways State University",
+          "credits": "3",
+          "plannedStart": null,
+          "plannedEnd": null,
+          "planStatus": "alternative",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": "s-math-120",
+          "studentNote": "Alternative route if College Algebra does not fit your schedule.",
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [],
+          "taskCounts": {
+            "total": 0,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 0
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": false,
+          "reportBlockedReason": "not_active"
+        },
+        {
+          "key": "s-stats-210",
+          "phaseKey": "core-foundations",
+          "objectiveKey": "bs-information-systems",
+          "sequence": 4,
+          "kind": "course",
+          "code": "STAT-210",
+          "title": "Introduction to Statistics",
+          "provider": "Sophia",
+          "institution": "Pathways State University",
+          "credits": "3",
+          "plannedStart": "2026-12-07",
+          "plannedEnd": "2027-01-10",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "challenge-1",
+              "kind": "challenge",
+              "title": "Challenge 1",
+              "dueDate": null,
+              "status": "in_progress",
+              "revision": 1,
+              "updatedAt": "2026-10-20T12:00:00.000Z"
+            },
+            {
+              "key": "challenge-2",
+              "kind": "challenge",
+              "title": "Challenge 2",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-3",
+              "kind": "challenge",
+              "title": "Challenge 3",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-4",
+              "kind": "challenge",
+              "title": "Challenge 4",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-5",
+              "kind": "challenge",
+              "title": "Challenge 5",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-6",
+              "kind": "challenge",
+              "title": "Challenge 6",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-1",
+              "kind": "milestone",
+              "title": "Milestone 1",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-2",
+              "kind": "milestone",
+              "title": "Milestone 2",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-3",
+              "kind": "milestone",
+              "title": "Milestone 3",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-4",
+              "kind": "milestone",
+              "title": "Milestone 4",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "touchstone-1",
+              "kind": "touchstone",
+              "title": "Touchstone 1",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "touchstone-2",
+              "kind": "touchstone",
+              "title": "Touchstone 2",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 12,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 1,
+            "notStarted": 11
+          },
+          "stage": "in_progress",
+          "official": null,
+          "canReport": true,
+          "reportBlockedReason": null
+        }
+      ],
+      "counts": {
+        "itemsTotal": 3,
+        "itemsOfficiallyAccepted": 0,
+        "itemsProviderComplete": 1,
+        "itemsInProgress": 2,
+        "itemsNotStarted": 0,
+        "tasksTotal": 33,
+        "tasksGraded": 15,
+        "tasksSubmitted": 1
+      },
+      "state": "current"
+    },
+    {
+      "key": "information-systems-major",
+      "title": "Information systems major",
+      "sequence": 2,
+      "objectiveKey": null,
+      "startDate": null,
+      "endDate": null,
+      "description": null,
+      "items": [
+        {
+          "key": "s-cs-101",
+          "phaseKey": "information-systems-major",
+          "objectiveKey": "bs-information-systems",
+          "sequence": 5,
+          "kind": "course",
+          "code": "CIS-101",
+          "title": "Introduction to Programming",
+          "provider": "Study.com",
+          "institution": "Pathways State University",
+          "credits": "3",
+          "plannedStart": "2027-01-11",
+          "plannedEnd": "2027-02-21",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [],
+          "taskCounts": {
+            "total": 0,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 0
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true,
+          "reportBlockedReason": null
+        },
+        {
+          "key": "s-cs-101-alt",
+          "phaseKey": "information-systems-major",
+          "objectiveKey": "bs-information-systems",
+          "sequence": 6,
+          "kind": "course",
+          "code": "CIS-101S",
+          "title": "Introduction to Programming (Sophia route)",
+          "provider": "Sophia",
+          "institution": "Pathways State University",
+          "credits": "3",
+          "plannedStart": null,
+          "plannedEnd": null,
+          "planStatus": "alternative",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": "s-cs-101",
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "challenge-1",
+              "kind": "challenge",
+              "title": "Challenge 1",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-2",
+              "kind": "challenge",
+              "title": "Challenge 2",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-3",
+              "kind": "challenge",
+              "title": "Challenge 3",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-4",
+              "kind": "challenge",
+              "title": "Challenge 4",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-5",
+              "kind": "challenge",
+              "title": "Challenge 5",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-1",
+              "kind": "milestone",
+              "title": "Milestone 1",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-2",
+              "kind": "milestone",
+              "title": "Milestone 2",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-3",
+              "kind": "milestone",
+              "title": "Milestone 3",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "touchstone-1",
+              "kind": "touchstone",
+              "title": "Touchstone 1",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "touchstone-2",
+              "kind": "touchstone",
+              "title": "Touchstone 2",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 10,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 10
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": false,
+          "reportBlockedReason": "not_active"
+        },
+        {
+          "key": "s-db-220",
+          "phaseKey": "information-systems-major",
+          "objectiveKey": "bs-information-systems",
+          "sequence": 7,
+          "kind": "course",
+          "code": "CIS-220",
+          "title": "Database Fundamentals",
+          "provider": "Study.com",
+          "institution": "Pathways State University",
+          "credits": "3",
+          "plannedStart": "2027-02-22",
+          "plannedEnd": "2027-04-04",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [
+            {
+              "itemKey": "s-cs-101",
+              "title": "Introduction to Programming"
+            }
+          ],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [],
+          "taskCounts": {
+            "total": 0,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 0
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true,
+          "reportBlockedReason": null
+        },
+        {
+          "key": "s-networks-240",
+          "phaseKey": "information-systems-major",
+          "objectiveKey": "bs-information-systems",
+          "sequence": 8,
+          "kind": "course",
+          "code": "CIS-240",
+          "title": "Computer Networks",
+          "provider": "Study.com",
+          "institution": "Pathways State University",
+          "credits": "3",
+          "plannedStart": "2027-04-05",
+          "plannedEnd": "2027-05-16",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [
+            {
+              "itemKey": "s-cs-101",
+              "title": "Introduction to Programming"
+            }
+          ],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [],
+          "taskCounts": {
+            "total": 0,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 0
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true,
+          "reportBlockedReason": null
+        },
+        {
+          "key": "s-tech-writing",
+          "phaseKey": "information-systems-major",
+          "objectiveKey": "bs-information-systems",
+          "sequence": 9,
+          "kind": "course",
+          "code": "ENG-210",
+          "title": "Technical Writing",
+          "provider": "Sophia",
+          "institution": "Pathways State University",
+          "credits": "3",
+          "plannedStart": null,
+          "plannedEnd": null,
+          "planStatus": "dropped",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [],
+          "taskCounts": {
+            "total": 0,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 0
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": false,
+          "reportBlockedReason": "not_active"
+        },
+        {
+          "key": "s-capstone",
+          "phaseKey": "information-systems-major",
+          "objectiveKey": "bs-information-systems",
+          "sequence": 10,
+          "kind": "course",
+          "code": "CIS-490",
+          "title": "Information Systems capstone",
+          "provider": null,
+          "institution": "Pathways State University",
+          "credits": "3",
+          "plannedStart": "2027-05-17",
+          "plannedEnd": "2027-07-11",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": {
+            "required": true,
+            "status": "pending"
+          },
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [
+            {
+              "itemKey": "s-db-220",
+              "title": "Database Fundamentals"
+            },
+            {
+              "itemKey": "s-networks-240",
+              "title": "Computer Networks"
+            },
+            {
+              "itemKey": "s-stats-210",
+              "title": "Introduction to Statistics"
+            }
+          ],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [],
+          "taskCounts": {
+            "total": 0,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 0
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": false,
+          "reportBlockedReason": "approval_pending"
+        }
+      ],
+      "counts": {
+        "itemsTotal": 4,
+        "itemsOfficiallyAccepted": 0,
+        "itemsProviderComplete": 0,
+        "itemsInProgress": 0,
+        "itemsNotStarted": 4,
+        "tasksTotal": 0,
+        "tasksGraded": 0,
+        "tasksSubmitted": 0
+      },
+      "state": "upcoming"
+    },
+    {
+      "key": "data-analytics-minor",
+      "title": "Data analytics minor",
+      "sequence": 3,
+      "objectiveKey": null,
+      "startDate": null,
+      "endDate": null,
+      "description": null,
+      "items": [
+        {
+          "key": "s-minor-da-1",
+          "phaseKey": "data-analytics-minor",
+          "objectiveKey": "minor-data-analytics",
+          "sequence": 11,
+          "kind": "course",
+          "code": "DATA-201",
+          "title": "Data Visualization",
+          "provider": "Sophia",
+          "institution": "Pathways State University",
+          "credits": "3",
+          "plannedStart": "2027-02-01",
+          "plannedEnd": "2027-03-07",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "challenge-1",
+              "kind": "challenge",
+              "title": "Challenge 1",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-2",
+              "kind": "challenge",
+              "title": "Challenge 2",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-3",
+              "kind": "challenge",
+              "title": "Challenge 3",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-4",
+              "kind": "challenge",
+              "title": "Challenge 4",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-5",
+              "kind": "challenge",
+              "title": "Challenge 5",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-1",
+              "kind": "milestone",
+              "title": "Milestone 1",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-2",
+              "kind": "milestone",
+              "title": "Milestone 2",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-3",
+              "kind": "milestone",
+              "title": "Milestone 3",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "touchstone-1",
+              "kind": "touchstone",
+              "title": "Touchstone 1",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 9,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 9
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true,
+          "reportBlockedReason": null
+        },
+        {
+          "key": "s-minor-da-2",
+          "phaseKey": "data-analytics-minor",
+          "objectiveKey": "minor-data-analytics",
+          "sequence": 12,
+          "kind": "course",
+          "code": "DATA-301",
+          "title": "Predictive Analytics",
+          "provider": "Study.com",
+          "institution": "Pathways State University",
+          "credits": "3",
+          "plannedStart": "2027-03-08",
+          "plannedEnd": "2027-04-18",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [
+            {
+              "itemKey": "s-minor-da-1",
+              "title": "Data Visualization"
+            },
+            {
+              "itemKey": "s-stats-210",
+              "title": "Introduction to Statistics"
+            }
+          ],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [],
+          "taskCounts": {
+            "total": 0,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 0
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true,
+          "reportBlockedReason": null
+        }
+      ],
+      "counts": {
+        "itemsTotal": 2,
+        "itemsOfficiallyAccepted": 0,
+        "itemsProviderComplete": 0,
+        "itemsInProgress": 0,
+        "itemsNotStarted": 2,
+        "tasksTotal": 9,
+        "tasksGraded": 0,
+        "tasksSubmitted": 0
+      },
+      "state": "upcoming"
+    }
+  ],
+  "milestones": [
+    {
+      "key": "s-eval-checkpoint",
+      "title": "Prior-credit evaluation checkpoint",
+      "kind": "checkpoint",
+      "targetDate": "2027-01-31",
+      "objectiveKey": "bs-information-systems",
+      "reached": false,
+      "remainingItems": 6
+    },
+    {
+      "key": "s-minor-complete",
+      "title": "Data analytics minor complete",
+      "kind": "objective_complete",
+      "targetDate": "2027-04-18",
+      "objectiveKey": "minor-data-analytics",
+      "reached": false,
+      "remainingItems": 2
+    },
+    {
+      "key": "s-degree-complete",
+      "title": "Information Systems degree complete",
+      "kind": "graduation",
+      "targetDate": "2027-07-31",
+      "objectiveKey": "bs-information-systems",
+      "reached": false,
+      "remainingItems": 6
+    }
+  ],
+  "counts": {
+    "itemsTotal": 9,
+    "itemsOfficiallyAccepted": 0,
+    "itemsProviderComplete": 1,
+    "itemsInProgress": 2,
+    "itemsNotStarted": 6,
+    "tasksTotal": 42,
+    "tasksGraded": 15,
+    "tasksSubmitted": 1
+  },
+  "today": {
+    "focusItemKeys": [
+      "s-math-120",
+      "s-stats-210",
+      "s-cs-101"
+    ],
+    "headline": "Continue College Algebra",
+    "detail": "5 tasks remaining, 1 submitted and awaiting grading.",
+    "nextMilestoneKey": "s-eval-checkpoint"
+  },
+  "foundation": {
+    "credentials": [],
+    "sources": [
+      {
+        "sourceId": "5a05f1c7-0000-4000-8000-000000001603",
+        "title": "Foreign coursework evaluation (requested, synthetic)",
+        "sourceType": "credential_evaluation",
+        "status": "received",
+        "creditRecordCount": 2
+      },
+      {
+        "sourceId": "5a05f1c7-0000-4000-8000-000000001601",
+        "title": "Greenfield College transcript (synthetic)",
+        "sourceType": "transcript",
+        "status": "verified",
+        "creditRecordCount": 2
+      },
+      {
+        "sourceId": "5a05f1c7-0000-4000-8000-000000001602",
+        "title": "Lakeview Community College transcript (synthetic)",
+        "sourceType": "transcript",
+        "status": "verified",
+        "creditRecordCount": 3
+      }
+    ],
+    "ladder": {
+      "reported": "84.00",
+      "provisional": "9.00",
+      "verified": "75.00",
+      "applied": "66.00",
+      "surplus": "9.00",
+      "planned": "27.00",
+      "required": "120.00"
+    },
+    "degreeState": "COMPOSED"
+  },
+  "history": {
+    "previousVersions": [],
+    "retiredProgress": []
+  }
+}

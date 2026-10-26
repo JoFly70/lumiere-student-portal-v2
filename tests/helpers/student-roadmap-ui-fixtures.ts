@@ -18,11 +18,13 @@ import type {
 
 const AT = "2026-10-20T15:00:00.000Z";
 
-function tasks(kind: RoadmapTaskKind, label: string, statuses: StudentTaskStatus[], offset = 0): StudentTaskView[] {
+/** `dues` maps a 0-based task index to an ISO due date. */
+function tasks(kind: RoadmapTaskKind, label: string, statuses: StudentTaskStatus[], offset = 0, dues: Record<number, string> = {}): StudentTaskView[] {
   return statuses.map((status, i) => ({
     key: `${kind}-${i + 1 + offset}`,
     kind,
     title: `${label} ${i + 1 + offset}`,
+    dueDate: dues[i] ?? null,
     status,
     revision: status === "not_started" ? 0 : 1 + (i % 2),
     updatedAt: status === "not_started" ? null : AT,
@@ -168,15 +170,15 @@ const p2Items = [
     stage: "in_progress", plannedStart: "2026-09-14", plannedEnd: "2026-11-27",
     studentNote: "Your advisor suggests finishing the remaining challenges before the touchstones.",
     tasks: [
-      ...tasks("challenge", "Challenge", ["graded", "graded", "graded", "graded", "graded", "in_progress", "not_started", "not_started"]),
-      ...tasks("touchstone", "Touchstone", ["graded", "submitted", "not_started"]),
+      ...tasks("challenge", "Challenge", ["graded", "graded", "graded", "graded", "graded", "in_progress", "not_started", "not_started"], 0, { 5: "2026-10-30", 6: "2026-11-09" }),
+      ...tasks("touchstone", "Touchstone", ["graded", "submitted", "not_started"], 0, { 1: "2026-10-23", 2: "2026-11-20" }),
       ...tasks("exam", "Final exam", ["not_started"]),
     ],
   }),
   item({
     key: "bba-acct210", phaseKey: "business-core", sequence: 2, code: "ACCT210", title: "Financial Accounting",
     stage: "in_progress", plannedStart: "2026-10-05", plannedEnd: "2026-12-18",
-    tasks: [...tasks("challenge", "Challenge", ["graded", "graded", "in_progress", "not_started", "not_started", "not_started"]), ...tasks("quiz", "Quiz", ["graded", "not_started"])],
+    tasks: [...tasks("challenge", "Challenge", ["graded", "graded", "in_progress", "not_started", "not_started", "not_started"], 0, { 2: "2026-10-22" }), ...tasks("quiz", "Quiz", ["graded", "not_started"])],
   }),
   item({
     key: "bba-mgmt320", phaseKey: "business-core", sequence: 3, code: "MGMT320", title: "Organizational Behavior",
@@ -226,7 +228,7 @@ export const RICH_MID_JOURNEY: StudentRoadmapView = (() => {
   const phases = [
     phase({ key: "foundation-courses", title: "Foundation Courses", sequence: 1, startDate: "2026-01-12", endDate: "2026-04-03", state: "complete", items: p1Items, description: "General education requirements that unlock the business core." }),
     phase({ key: "business-core", title: "Business Core", sequence: 2, startDate: "2026-09-14", endDate: "2027-04-30", state: "current", items: p2Items, description: "The courses at the heart of your degree." }),
-    phase({ key: "nursing-prerequisites", title: "Nursing Prerequisites", sequence: 3, objectiveKey: "rn-prereq", startDate: "2026-10-12", endDate: "2027-04-09", state: "current", items: p3Items }),
+    phase({ key: "nursing-prerequisites", title: "Nursing Prerequisites", sequence: 3, objectiveKey: "rn-prereq", startDate: "2026-10-12", endDate: "2027-04-09", state: "also_active", items: p3Items }),
     phase({ key: "capstone", title: "Capstone & Graduation", sequence: 4, startDate: "2027-05-03", endDate: "2027-08-27", state: "upcoming", items: p4Items }),
   ];
   const all = phases.flatMap((p) => [...p.items]);

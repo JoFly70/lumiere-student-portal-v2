@@ -15,6 +15,7 @@ import {
 } from "@/lib/student-roadmap-queries";
 import { FlightDeckRoadmapView } from "@/components/student-progress/student-roadmap-views";
 import { RoadmapActionsProvider } from "@/components/student-progress/roadmap-actions";
+import { RequirementDetails } from "@/components/student-progress/requirement-details";
 import { PlanNotReady, ProgressError, ProgressSkeleton } from "@/components/student-progress/states";
 import { StudentSurface } from "@/components/student-progress/student-ui";
 
@@ -73,7 +74,7 @@ export default function FlightDeck() {
 
   return (
     <RoadmapActionsProvider>
-      <FlightDeckRoadmapView view={data} />
+      <FlightDeckRoadmapView view={data} requirementDetails={<RequirementDetails />} />
     </RoadmapActionsProvider>
   );
 }
