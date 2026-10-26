@@ -132,6 +132,14 @@ describe("S11 pace and target wording", () => {
     expect(targetProgress(HS_AWAITING_REVIEW, HS_TODAY).headline).toBe("All required credits are official");
     expect(targetProgress({ ...HS_MID_WAY, enrollment: { ...HS_MID_WAY.enrollment, targetCompletionDate: null } }, HS_TODAY).headline).toBe("No completion target set yet");
   });
+  it("never contradicts a configured pace: behind plan is never worded as keeping pace", () => {
+    expect(HS_MID_WAY.pace.status).toBe("behind");
+    const t = targetProgress(HS_MID_WAY, HS_TODAY);
+    expect(t.detail).not.toMatch(/keeping (pace|up)/i);
+    expect(t.detail).toMatch(/behind/);
+    const onTrack = targetProgress({ ...HS_MID_WAY, pace: { ...HS_MID_WAY.pace, status: "on_track" } }, HS_TODAY);
+    expect(onTrack.detail).not.toMatch(/behind/);
+  });
   it("date helpers", () => {
     expect(daysUntil("2026-10-28", "2026-10-26")).toBe(2);
     expect(dueLabel("2026-10-19", HS_TODAY, formatShortDate)).toBe("Target was Oct 19, 2026");

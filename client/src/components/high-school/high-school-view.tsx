@@ -148,7 +148,15 @@ export function HighSchoolPageView({
                     )}
                     data-testid={`tab-${t.id}`}
                   >
-                    {t.label}
+                    {/* "My " is dropped below sm so "Graduation" never wraps at 390px. */}
+                    {t.label.startsWith("My ") ? (
+                      <>
+                        <span className="hidden sm:inline">My </span>
+                        {t.label.slice(3)}
+                      </>
+                    ) : (
+                      t.label
+                    )}
                   </button>
                 );
               })}

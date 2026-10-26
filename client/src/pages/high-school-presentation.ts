@@ -274,8 +274,15 @@ export interface TargetProgress {
   readonly detail: string;
 }
 
-/** Credit progress next to time passed toward the planned completion target. It is an estimate, not a promise. */
-export function targetProgress(view: Pick<StudentHighSchoolView, "enrollment" | "credits">, today: string): TargetProgress {
+/**
+ * Credit progress next to time passed toward the planned completion target. It is an estimate, not a promise.
+ * When staff configured a pace (milestones), that plan is the only judgement shown, so this card never says
+ * "keeping pace" next to a "Behind target" pill; the calendar comparison is used only without a configured pace.
+ */
+export function targetProgress(
+  view: Pick<StudentHighSchoolView, "enrollment" | "credits"> & { readonly pace?: Pick<StudentHighSchoolView["pace"], "status"> },
+  today: string,
+): TargetProgress {
   const { startedOn, targetCompletionDate } = view.enrollment;
   const creditPercent = view.credits.percentComplete;
   const start = parseDay(startedOn);
@@ -297,8 +304,11 @@ export function targetProgress(view: Pick<StudentHighSchoolView, "enrollment" | 
     : weeks !== null && weeks <= 1 ? "Your target date is this week"
     : `About ${weeks} weeks to your target date`;
   const gap = timePercent === null ? null : creditPercent - timePercent;
+  const planStatus = view.pace?.status ?? "not_configured";
   const detail =
-    gap === null ? "This date is a target, not a guarantee."
+    planStatus === "behind" ? "Your plan's milestones show you a little behind. The date is a target, not a guarantee, and your plan can be adjusted."
+    : planStatus === "on_track" || planStatus === "ahead" ? "You are keeping up with your plan's milestones. The date is a target, not a guarantee."
+    : gap === null ? "This date is a target, not a guarantee."
     : gap >= 0 ? "Credits are keeping pace with the calendar. The date is a target, not a guarantee."
     : "Credits are a little behind the calendar. The date is a target, not a guarantee, and your plan can be adjusted.";
   return { timePercent, creditPercent, daysLeft, headline, detail };
