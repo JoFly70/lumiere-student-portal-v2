@@ -133,7 +133,7 @@ export function PhaseMarker({ state }: { state: StudentRoadmapPhaseView["state"]
   return (
     <svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true" data-marker={state}>
       {state === "current" && (
-        <circle cx="16" cy="16" r="15" fill={GOLD} opacity="0.18" style={{ transformOrigin: "16px 16px", animation: "student-pulse 2.4s ease-in-out infinite" }} />
+        <circle cx="16" cy="16" r="15" fill={GOLD} opacity="0.18" />
       )}
       {state === "complete" && (
         <>

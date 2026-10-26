@@ -178,21 +178,6 @@ async function main() {
       await page.goto(BASE + s.route);
       await settle(page, s.sel);
       if (s.open) await openTasks(page);
-      if (s.o.width < 500) {
-        const over = await page.evaluate(() => {
-          const out: string[] = [];
-          const vw = document.documentElement.clientWidth;
-          const main = document.querySelector("main") as HTMLElement;
-          out.push(`main scrollWidth ${main?.scrollWidth} clientWidth ${main?.clientWidth} vw ${vw}`);
-          main?.querySelectorAll("*").forEach((el) => { const r = (el as HTMLElement).getBoundingClientRect(); if (false) out.push(`${el.tagName}.${(el as HTMLElement).className.toString().slice(0, 60)} right=${Math.round(r.right)}`); });
-          const kids = Array.from(document.querySelectorAll('.max-w-6xl > *')) as HTMLElement[];
-          for (const k of kids) { const d = k.style.display; k.style.display = "none"; out.push(`hide ${k.id || k.tagName + (k.getAttribute("data-testid") ?? "")} -> ${main.clientWidth}`); k.style.display = d; }
-          const jk = Array.from(document.querySelectorAll('[data-testid="journey"] > li, [data-testid="lane-filter"], [data-testid="roadmap-journey"] > *')) as HTMLElement[];
-          for (const k of jk) { const d = k.style.display; k.style.display = "none"; out.push(`hideJ ${k.getAttribute("data-testid") ?? k.tagName} -> ${main.clientWidth}`); k.style.display = d; }
-          return out;
-        });
-        console.log("OVERFLOW", s.file, over.join(" | "));
-      }
       await shot(page, s.file);
       if (s.axe) await runAxe(page, s.file, axeResults);
       await ctx.close();

@@ -19,7 +19,7 @@ export function StudentSurface({
   // The app shell pads <main>; negative margins let the ivory surface fill it.
   return (
     <div
-      className={cn("student-surface -m-6 min-h-full p-4 sm:p-6 md:-m-8 md:p-8", className)}
+      className={cn("student-surface -m-6 min-h-[calc(100vh-70px)] p-4 sm:p-6 md:-m-8 md:p-8", className)}
       data-testid={testId}
     >
       {children}

@@ -56,7 +56,7 @@ export function SectionNav({ sections }: { sections: readonly { id: string; labe
   return (
     <nav
       aria-label="Roadmap sections"
-      className="sticky top-2 z-30 rounded-full border border-student-line bg-student-card/95 px-2 shadow-sm backdrop-blur"
+      className="[contain:inline-size] sticky top-2 z-30 rounded-full border border-student-line bg-student-card/95 px-2 shadow-sm backdrop-blur"
       data-testid="section-nav"
     >
       <ul className="flex gap-1 overflow-x-auto py-1.5">
@@ -66,7 +66,7 @@ export function SectionNav({ sections }: { sections: readonly { id: string; labe
               href={`#${s.id}`}
               aria-current={active === s.id ? "location" : undefined}
               className={cn(
-                "inline-flex min-h-[44px] items-center rounded-full px-4 text-sm font-medium",
+                "inline-flex min-h-[44px] items-center rounded-full px-3 text-sm font-medium",
                 active === s.id ? "bg-student-gold-soft text-student-gold-ink ring-1 ring-student-gold" : "text-student-muted hover:text-student-ink",
               )}
             >
