@@ -1,0 +1,840 @@
+{
+  "generatedFor": "S12 graduate programmes acceptance journeys (synthetic data only; no tokens)",
+  "note": "Each row is one real HTTP call against the Express app and a disposable PostgreSQL. The assertion column states what the test asserted about it.",
+  "journeys": [
+    {
+      "name": "Journey A — ENEB-only graduate",
+      "steps": [
+        {
+          "step": "1. eligibility review",
+          "method": "POST",
+          "path": "/api/admin/students/:id/graduate/programs",
+          "actor": "staff",
+          "status": 201,
+          "assertion": ""
+        },
+        {
+          "step": "1. eligibility review",
+          "method": "GET",
+          "path": "/api/student/graduate",
+          "actor": "student",
+          "status": 200,
+          "assertion": ""
+        },
+        {
+          "step": "2. ENEB subjects: results with evidence",
+          "method": "POST",
+          "path": "/api/admin/graduate/programs/:id/subjects",
+          "actor": "staff",
+          "status": 201,
+          "assertion": ""
+        },
+        {
+          "step": "2. ENEB subjects: results with evidence",
+          "method": "POST",
+          "path": "/api/admin/graduate/programs/:id/subjects",
+          "actor": "staff",
+          "status": 201,
+          "assertion": ""
+        },
+        {
+          "step": "2. ENEB subjects: results with evidence",
+          "method": "POST",
+          "path": "/api/admin/graduate/programs/:id/subjects",
+          "actor": "staff",
+          "status": 201,
+          "assertion": ""
+        },
+        {
+          "step": "2. ENEB subjects: results with evidence",
+          "method": "POST",
+          "path": "/api/student/graduate/programs/:id/subjects/:id/progress",
+          "actor": "student",
+          "status": 200,
+          "assertion": "student progress reporting succeeds before any official evidence"
+        },
+        {
+          "step": "2. ENEB subjects: results with evidence",
+          "method": "POST",
+          "path": "/api/admin/graduate/subjects/:id/result",
+          "actor": "staff",
+          "status": 422,
+          "assertion": "verified result without a document reference is refused"
+        },
+        {
+          "step": "2. ENEB subjects: results with evidence",
+          "method": "POST",
+          "path": "/api/admin/graduate/subjects/:id/result",
+          "actor": "staff",
+          "status": 200,
+          "assertion": ""
+        },
+        {
+          "step": "2. ENEB subjects: results with evidence",
+          "method": "POST",
+          "path": "/api/admin/graduate/subjects/:id/result",
+          "actor": "staff",
+          "status": 200,
+          "assertion": ""
+        },
+        {
+          "step": "2. ENEB subjects: results with evidence",
+          "method": "POST",
+          "path": "/api/admin/graduate/subjects/:id/result",
+          "actor": "staff",
+          "status": 200,
+          "assertion": ""
+        },
+        {
+          "step": "3. ENEB completion and certificate (no university records)",
+          "method": "POST",
+          "path": "/api/admin/graduate/programs/:id/records",
+          "actor": "staff",
+          "status": 201,
+          "assertion": ""
+        },
+        {
+          "step": "3. ENEB completion and certificate (no university records)",
+          "method": "POST",
+          "path": "/api/admin/graduate/records/:id/verify",
+          "actor": "staff",
+          "status": 422,
+          "assertion": "ENEB completion without evidence returns 422 and writes nothing"
+        },
+        {
+          "step": "3. ENEB completion and certificate (no university records)",
+          "method": "PATCH",
+          "path": "/api/admin/graduate/records/:id",
+          "actor": "staff",
+          "status": 200,
+          "assertion": "tracking still succeeds at the same moment"
+        },
+        {
+          "step": "3. ENEB completion and certificate (no university records)",
+          "method": "POST",
+          "path": "/api/admin/graduate/records/:id/verify",
+          "actor": "staff",
+          "status": 200,
+          "assertion": "ENEB completion verified with ENEB's document"
+        },
+        {
+          "step": "3. ENEB completion and certificate (no university records)",
+          "method": "POST",
+          "path": "/api/admin/graduate/programs/:id/records",
+          "actor": "staff",
+          "status": 201,
+          "assertion": ""
+        },
+        {
+          "step": "3. ENEB completion and certificate (no university records)",
+          "method": "POST",
+          "path": "/api/admin/graduate/records/:id/verify",
+          "actor": "staff",
+          "status": 200,
+          "assertion": ""
+        },
+        {
+          "step": "3. ENEB completion and certificate (no university records)",
+          "method": "POST",
+          "path": "/api/admin/graduate/programs/:id/records",
+          "actor": "staff",
+          "status": 201,
+          "assertion": ""
+        },
+        {
+          "step": "3. ENEB completion and certificate (no university records)",
+          "method": "POST",
+          "path": "/api/admin/graduate/programs/:id/credits",
+          "actor": "staff",
+          "status": 201,
+          "assertion": ""
+        },
+        {
+          "step": "4. university steps are impossible",
+          "method": "POST",
+          "path": "/api/admin/graduate/programs/:id/records",
+          "actor": "staff",
+          "status": 422,
+          "assertion": "university_admission refused on an ENEB-only programme"
+        },
+        {
+          "step": "4. university steps are impossible",
+          "method": "POST",
+          "path": "/api/admin/graduate/programs/:id/records",
+          "actor": "staff",
+          "status": 422,
+          "assertion": "university_registration refused on an ENEB-only programme"
+        },
+        {
+          "step": "4. university steps are impossible",
+          "method": "POST",
+          "path": "/api/admin/graduate/programs/:id/records",
+          "actor": "staff",
+          "status": 422,
+          "assertion": "recognition_decision refused on an ENEB-only programme"
+        },
+        {
+          "step": "4. university steps are impossible",
+          "method": "POST",
+          "path": "/api/admin/graduate/programs/:id/records",
+          "actor": "staff",
+          "status": 422,
+          "assertion": "award_conferral refused on an ENEB-only programme"
+        },
+        {
+          "step": "4. university steps are impossible",
+          "method": "POST",
+          "path": "/api/admin/graduate/programs/:id/records",
+          "actor": "staff",
+          "status": 422,
+          "assertion": "official_transcript refused on an ENEB-only programme"
+        },
+        {
+          "step": "4. university steps are impossible",
+          "method": "POST",
+          "path": "/api/admin/graduate/programs/:id/credits",
+          "actor": "staff",
+          "status": 422,
+          "assertion": ""
+        },
+        {
+          "step": "5. student view",
+          "method": "GET",
+          "path": "/api/student/graduate",
+          "actor": "student",
+          "status": 200,
+          "assertion": ""
+        }
+      ]
+    },
+    {
+      "name": "Journey B — Unimarconi applicant through ENEB",
+      "steps": [
+        {
+          "step": "setup",
+          "method": "POST",
+          "path": "/api/admin/students/:id/graduate/programs",
+          "actor": "staff",
+          "status": 201,
+          "assertion": ""
+        },
+        {
+          "step": "setup",
+          "method": "POST",
+          "path": "/api/admin/graduate/programs/:id/subjects",
+          "actor": "staff",
+          "status": 201,
+          "assertion": ""
+        },
+        {
+          "step": "setup",
+          "method": "POST",
+          "path": "/api/admin/graduate/programs/:id/subjects",
+          "actor": "staff",
+          "status": 201,
+          "assertion": ""
+        },
+        {
+          "step": "1. eligibility review",
+          "method": "POST",
+          "path": "/api/admin/graduate/programs/:id/records",
+          "actor": "staff",
+          "status": 201,
+          "assertion": ""
+        },
+        {
+          "step": "1. eligibility review",
+          "method": "POST",
+          "path": "/api/admin/graduate/records/:id/verify",
+          "actor": "staff",
+          "status": 422,
+          "assertion": "eligibility verified without evidence returns 422"
+        },
+        {
+          "step": "1. eligibility review",
+          "method": "POST",
+          "path": "/api/student/graduate/programs/:id/subjects/:id/progress",
+          "actor": "student",
+          "status": 200,
+          "assertion": "student progress reporting still succeeds"
+        },
+        {
+          "step": "1. eligibility review",
+          "method": "PATCH",
+          "path": "/api/admin/graduate/records/:id",
+          "actor": "staff",
+          "status": 200,
+          "assertion": "tracking still succeeds"
+        },
+        {
+          "step": "1. eligibility review",
+          "method": "POST",
+          "path": "/api/admin/graduate/records/:id/verify",
+          "actor": "staff",
+          "status": 200,
+          "assertion": "eligibility verified with evidence"
+        },
+        {
+          "step": "2. undergraduate documents and apostille",
+          "method": "POST",
+          "path": "/api/admin/graduate/programs/:id/records",
+          "actor": "staff",
+          "status": 201,
+          "assertion": ""
+        },
+        {
+          "step": "2. undergraduate documents and apostille",
+          "method": "POST",
+          "path": "/api/student/graduate/programs/:id/records/:id/evidence",
+          "actor": "student",
+          "status": 200,
+          "assertion": "student attaches own document; it is only evidence received"
+        },
+        {
+          "step": "2. undergraduate documents and apostille",
+          "method": "POST",
+          "path": "/api/admin/graduate/records/:id/verify",
+          "actor": "staff",
+          "status": 422,
+          "assertion": "verified needs the student's own VERIFIED Documents row: 422"
+        },
+        {
+          "step": "2. undergraduate documents and apostille",
+          "method": "POST",
+          "path": "/api/admin/graduate/records/:id/verify",
+          "actor": "staff",
+          "status": 200,
+          "assertion": "verified with a verified document and issuing country"
+        },
+        {
+          "step": "2. undergraduate documents and apostille",
+          "method": "GET",
+          "path": "/api/student/graduate",
+          "actor": "student",
+          "status": 200,
+          "assertion": ""
+        },
+        {
+          "step": "2. undergraduate documents and apostille",
+          "method": "POST",
+          "path": "/api/admin/graduate/programs/:id/records",
+          "actor": "staff",
+          "status": 201,
+          "assertion": ""
+        },
+        {
+          "step": "2. undergraduate documents and apostille",
+          "method": "POST",
+          "path": "/api/admin/graduate/records/:id/verify",
+          "actor": "staff",
+          "status": 422,
+          "assertion": "apostille from the wrong issuer: 422"
+        },
+        {
+          "step": "2. undergraduate documents and apostille",
+          "method": "POST",
+          "path": "/api/admin/graduate/records/:id/verify",
+          "actor": "staff",
+          "status": 200,
+          "assertion": ""
+        },
+        {
+          "step": "3. university admission",
+          "method": "POST",
+          "path": "/api/admin/graduate/programs/:id/records",
+          "actor": "staff",
+          "status": 201,
+          "assertion": ""
+        },
+        {
+          "step": "3. university admission",
+          "method": "POST",
+          "path": "/api/admin/graduate/records/:id/verify",
+          "actor": "staff",
+          "status": 422,
+          "assertion": "registration cannot be verified before a verified admission: 422"
+        },
+        {
+          "step": "3. university admission",
+          "method": "POST",
+          "path": "/api/admin/graduate/programs/:id/records",
+          "actor": "staff",
+          "status": 201,
+          "assertion": ""
+        },
+        {
+          "step": "3. university admission",
+          "method": "POST",
+          "path": "/api/admin/graduate/programs/:id/records",
+          "actor": "staff",
+          "status": 201,
+          "assertion": ""
+        },
+        {
+          "step": "3. university admission",
+          "method": "POST",
+          "path": "/api/admin/graduate/records/:id/verify",
+          "actor": "staff",
+          "status": 422,
+          "assertion": "admission from ENEB is the wrong issuer: 422"
+        },
+        {
+          "step": "3. university admission",
+          "method": "POST",
+          "path": "/api/admin/graduate/records/:id/verify",
+          "actor": "staff",
+          "status": 200,
+          "assertion": "admission verified from the university's document"
+        },
+        {
+          "step": "4. university registration (matricola)",
+          "method": "PATCH",
+          "path": "/api/admin/graduate/records/:id",
+          "actor": "staff",
+          "status": 200,
+          "assertion": "a stated matricola is tracking, not verification"
+        },
+        {
+          "step": "4. university registration (matricola)",
+          "method": "GET",
+          "path": "/api/student/graduate",
+          "actor": "student",
+          "status": 200,
+          "assertion": ""
+        },
+        {
+          "step": "4. university registration (matricola)",
+          "method": "POST",
+          "path": "/api/admin/graduate/records/:id/verify",
+          "actor": "staff",
+          "status": 422,
+          "assertion": "verification without the matricola: 422"
+        },
+        {
+          "step": "4. university registration (matricola)",
+          "method": "POST",
+          "path": "/api/admin/graduate/records/:id/verify",
+          "actor": "staff",
+          "status": 200,
+          "assertion": "registration verified with matricola"
+        },
+        {
+          "step": "4. university registration (matricola)",
+          "method": "GET",
+          "path": "/api/student/graduate",
+          "actor": "student",
+          "status": 200,
+          "assertion": ""
+        },
+        {
+          "step": "5. recognition request is not approval",
+          "method": "POST",
+          "path": "/api/admin/graduate/programs/:id/records",
+          "actor": "staff",
+          "status": 201,
+          "assertion": ""
+        },
+        {
+          "step": "5. recognition request is not approval",
+          "method": "POST",
+          "path": "/api/admin/graduate/programs/:id/credits",
+          "actor": "staff",
+          "status": 201,
+          "assertion": ""
+        },
+        {
+          "step": "5. recognition request is not approval",
+          "method": "POST",
+          "path": "/api/admin/graduate/programs/:id/credits",
+          "actor": "staff",
+          "status": 422,
+          "assertion": "recognized credit backed only by a request: 422"
+        },
+        {
+          "step": "5. recognition request is not approval",
+          "method": "GET",
+          "path": "/api/student/graduate",
+          "actor": "student",
+          "status": 200,
+          "assertion": ""
+        },
+        {
+          "step": "6. authoritative partial decision with conditions",
+          "method": "POST",
+          "path": "/api/admin/graduate/programs/:id/records",
+          "actor": "staff",
+          "status": 201,
+          "assertion": ""
+        },
+        {
+          "step": "6. authoritative partial decision with conditions",
+          "method": "POST",
+          "path": "/api/admin/graduate/records/:id/verify",
+          "actor": "staff",
+          "status": 422,
+          "assertion": "decision without the university's document: 422"
+        },
+        {
+          "step": "6. authoritative partial decision with conditions",
+          "method": "GET",
+          "path": "/api/student/graduate",
+          "actor": "student",
+          "status": 200,
+          "assertion": ""
+        },
+        {
+          "step": "6. authoritative partial decision with conditions",
+          "method": "POST",
+          "path": "/api/admin/graduate/records/:id/verify",
+          "actor": "staff",
+          "status": 200,
+          "assertion": "partial decision verified"
+        },
+        {
+          "step": "6. authoritative partial decision with conditions",
+          "method": "POST",
+          "path": "/api/admin/graduate/programs/:id/credits",
+          "actor": "staff",
+          "status": 201,
+          "assertion": ""
+        },
+        {
+          "step": "6. authoritative partial decision with conditions",
+          "method": "POST",
+          "path": "/api/admin/graduate/programs/:id/credits",
+          "actor": "staff",
+          "status": 201,
+          "assertion": ""
+        },
+        {
+          "step": "6. authoritative partial decision with conditions",
+          "method": "POST",
+          "path": "/api/admin/graduate/programs/:id/credits",
+          "actor": "staff",
+          "status": 201,
+          "assertion": ""
+        },
+        {
+          "step": "6. authoritative partial decision with conditions",
+          "method": "GET",
+          "path": "/api/student/graduate",
+          "actor": "student",
+          "status": 200,
+          "assertion": ""
+        },
+        {
+          "step": "7. remaining assessments and thesis",
+          "method": "POST",
+          "path": "/api/admin/graduate/programs/:id/subjects",
+          "actor": "staff",
+          "status": 201,
+          "assertion": ""
+        },
+        {
+          "step": "7. remaining assessments and thesis",
+          "method": "POST",
+          "path": "/api/admin/graduate/programs/:id/subjects",
+          "actor": "staff",
+          "status": 201,
+          "assertion": ""
+        },
+        {
+          "step": "7. remaining assessments and thesis",
+          "method": "POST",
+          "path": "/api/student/graduate/programs/:id/subjects/:id/progress",
+          "actor": "student",
+          "status": 200,
+          "assertion": ""
+        },
+        {
+          "step": "7. remaining assessments and thesis",
+          "method": "POST",
+          "path": "/api/student/graduate/programs/:id/subjects/:id/progress",
+          "actor": "student",
+          "status": 200,
+          "assertion": ""
+        },
+        {
+          "step": "7. remaining assessments and thesis",
+          "method": "POST",
+          "path": "/api/admin/graduate/subjects/:id/result",
+          "actor": "staff",
+          "status": 422,
+          "assertion": "a university subject cannot be verified from an ENEB document: 422"
+        },
+        {
+          "step": "7. remaining assessments and thesis",
+          "method": "POST",
+          "path": "/api/admin/graduate/subjects/:id/result",
+          "actor": "staff",
+          "status": 200,
+          "assertion": ""
+        },
+        {
+          "step": "7. remaining assessments and thesis",
+          "method": "POST",
+          "path": "/api/admin/graduate/subjects/:id/result",
+          "actor": "staff",
+          "status": 200,
+          "assertion": ""
+        },
+        {
+          "step": "7. remaining assessments and thesis",
+          "method": "POST",
+          "path": "/api/admin/graduate/subjects/:id/result",
+          "actor": "staff",
+          "status": 200,
+          "assertion": ""
+        },
+        {
+          "step": "7. remaining assessments and thesis",
+          "method": "POST",
+          "path": "/api/admin/graduate/subjects/:id/result",
+          "actor": "staff",
+          "status": 200,
+          "assertion": ""
+        },
+        {
+          "step": "8. thesis submitted, then passed",
+          "method": "PUT",
+          "path": "/api/student/graduate/programs/:id/thesis",
+          "actor": "student",
+          "status": 200,
+          "assertion": "student plans the thesis"
+        },
+        {
+          "step": "8. thesis submitted, then passed",
+          "method": "POST",
+          "path": "/api/admin/graduate/programs/:id/records",
+          "actor": "staff",
+          "status": 201,
+          "assertion": ""
+        },
+        {
+          "step": "8. thesis submitted, then passed",
+          "method": "GET",
+          "path": "/api/student/graduate",
+          "actor": "student",
+          "status": 200,
+          "assertion": ""
+        },
+        {
+          "step": "8. thesis submitted, then passed",
+          "method": "POST",
+          "path": "/api/admin/graduate/records/:id/verify",
+          "actor": "staff",
+          "status": 422,
+          "assertion": "a submission is not an official kind: 422"
+        },
+        {
+          "step": "8. thesis submitted, then passed",
+          "method": "POST",
+          "path": "/api/admin/graduate/programs/:id/records",
+          "actor": "staff",
+          "status": 201,
+          "assertion": ""
+        },
+        {
+          "step": "8. thesis submitted, then passed",
+          "method": "POST",
+          "path": "/api/admin/graduate/records/:id/verify",
+          "actor": "staff",
+          "status": 422,
+          "assertion": "thesis pass without evidence: 422"
+        },
+        {
+          "step": "8. thesis submitted, then passed",
+          "method": "GET",
+          "path": "/api/student/graduate",
+          "actor": "student",
+          "status": 200,
+          "assertion": ""
+        },
+        {
+          "step": "8. thesis submitted, then passed",
+          "method": "POST",
+          "path": "/api/admin/graduate/records/:id/verify",
+          "actor": "staff",
+          "status": 200,
+          "assertion": "thesis pass verified"
+        },
+        {
+          "step": "8. thesis submitted, then passed",
+          "method": "GET",
+          "path": "/api/student/graduate",
+          "actor": "student",
+          "status": 200,
+          "assertion": ""
+        },
+        {
+          "step": "9. graduation formalities",
+          "method": "POST",
+          "path": "/api/admin/graduate/programs/:id/records",
+          "actor": "staff",
+          "status": 201,
+          "assertion": ""
+        },
+        {
+          "step": "9. graduation formalities",
+          "method": "POST",
+          "path": "/api/admin/graduate/programs/:id/records",
+          "actor": "staff",
+          "status": 201,
+          "assertion": ""
+        },
+        {
+          "step": "9. graduation formalities",
+          "method": "GET",
+          "path": "/api/student/graduate",
+          "actor": "student",
+          "status": 200,
+          "assertion": ""
+        },
+        {
+          "step": "10. formal conferral (admin only)",
+          "method": "POST",
+          "path": "/api/admin/graduate/programs/:id/records",
+          "actor": "staff",
+          "status": 201,
+          "assertion": ""
+        },
+        {
+          "step": "10. formal conferral (admin only)",
+          "method": "POST",
+          "path": "/api/admin/graduate/records/:id/verify",
+          "actor": "staff",
+          "status": 422,
+          "assertion": "staff cannot confirm conferral: 422 ADMIN_ONLY"
+        },
+        {
+          "step": "10. formal conferral (admin only)",
+          "method": "POST",
+          "path": "/api/admin/graduate/records/:id/verify",
+          "actor": "admin",
+          "status": 422,
+          "assertion": "admin without the conferral date: 422 (ceremony date does not count)"
+        },
+        {
+          "step": "10. formal conferral (admin only)",
+          "method": "GET",
+          "path": "/api/student/graduate",
+          "actor": "student",
+          "status": 200,
+          "assertion": ""
+        },
+        {
+          "step": "10. formal conferral (admin only)",
+          "method": "POST",
+          "path": "/api/admin/graduate/records/:id/verify",
+          "actor": "admin",
+          "status": 200,
+          "assertion": "admin confirms conferral with the document's date"
+        },
+        {
+          "step": "10. formal conferral (admin only)",
+          "method": "GET",
+          "path": "/api/student/graduate",
+          "actor": "student",
+          "status": 200,
+          "assertion": ""
+        },
+        {
+          "step": "11. official documents received and verified",
+          "method": "POST",
+          "path": "/api/admin/graduate/programs/:id/records",
+          "actor": "staff",
+          "status": 201,
+          "assertion": ""
+        },
+        {
+          "step": "11. official documents received and verified",
+          "method": "POST",
+          "path": "/api/admin/graduate/programs/:id/records",
+          "actor": "staff",
+          "status": 201,
+          "assertion": ""
+        },
+        {
+          "step": "11. official documents received and verified",
+          "method": "GET",
+          "path": "/api/student/graduate",
+          "actor": "student",
+          "status": 200,
+          "assertion": ""
+        },
+        {
+          "step": "11. official documents received and verified",
+          "method": "POST",
+          "path": "/api/admin/graduate/records/:id/verify",
+          "actor": "staff",
+          "status": 422,
+          "assertion": "diploma issued without evidence: 422"
+        },
+        {
+          "step": "11. official documents received and verified",
+          "method": "POST",
+          "path": "/api/admin/graduate/programs/:id/records",
+          "actor": "staff",
+          "status": 201,
+          "assertion": ""
+        },
+        {
+          "step": "11. official documents received and verified",
+          "method": "POST",
+          "path": "/api/admin/graduate/records/:id/verify",
+          "actor": "staff",
+          "status": 200,
+          "assertion": "transcript verified"
+        },
+        {
+          "step": "11. official documents received and verified",
+          "method": "POST",
+          "path": "/api/admin/graduate/programs/:id/credits",
+          "actor": "staff",
+          "status": 201,
+          "assertion": ""
+        },
+        {
+          "step": "11. official documents received and verified",
+          "method": "POST",
+          "path": "/api/admin/graduate/records/:id/verify",
+          "actor": "staff",
+          "status": 200,
+          "assertion": "diploma issued verified"
+        },
+        {
+          "step": "11. official documents received and verified",
+          "method": "POST",
+          "path": "/api/admin/graduate/programs/:id/records",
+          "actor": "staff",
+          "status": 201,
+          "assertion": ""
+        },
+        {
+          "step": "11. official documents received and verified",
+          "method": "POST",
+          "path": "/api/admin/graduate/programs/:id/records",
+          "actor": "staff",
+          "status": 201,
+          "assertion": ""
+        },
+        {
+          "step": "11. official documents received and verified",
+          "method": "POST",
+          "path": "/api/admin/graduate/records/:id/verify",
+          "actor": "staff",
+          "status": 200,
+          "assertion": "credential verification confirmed"
+        },
+        {
+          "step": "11. official documents received and verified",
+          "method": "GET",
+          "path": "/api/student/graduate",
+          "actor": "student",
+          "status": 200,
+          "assertion": ""
+        }
+      ]
+    }
+  ]
+}
