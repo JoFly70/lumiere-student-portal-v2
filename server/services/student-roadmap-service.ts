@@ -17,6 +17,7 @@ import {
   roadmapContentSchema,
   studentItemStatusSchema,
   studentProgressUpdateSchema,
+  roadmapReportBlockedReason,
   studentTaskStatusSchema,
   type AdminRoadmapDraftView,
   type AdminRoadmapState,
@@ -665,8 +666,11 @@ export function createStudentRoadmapService(deps: StudentRoadmapServiceDeps) {
       if (!item || (update.taskKey !== null && !item.tasks.some((t) => t.key === update.taskKey))) {
         throw new RoadmapError("ROADMAP_ITEM_NOT_FOUND", 404, "That item is not part of your current roadmap");
       }
-      if (item.planStatus !== "planned" && item.planStatus !== "hold") {
-        throw new RoadmapError("ROADMAP_ITEM_NOT_REPORTABLE", 422, "Progress cannot be reported on this item");
+      const blocked = roadmapReportBlockedReason(item);
+      if (blocked) {
+        throw new RoadmapError("ROADMAP_ITEM_NOT_REPORTABLE", 422, "Progress cannot be reported on this item", {
+          reason: blocked,
+        });
       }
       const levelSchema = update.taskKey === null ? studentItemStatusSchema : studentTaskStatusSchema;
       if (!levelSchema.safeParse(update.status).success) {

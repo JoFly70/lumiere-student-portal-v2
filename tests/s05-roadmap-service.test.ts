@@ -325,11 +325,24 @@ describe("roadmap service: student progress and plan changes", () => {
     await expectError(report("eng101", "ghost", "in_progress"), "ROADMAP_ITEM_NOT_FOUND", 404);
   });
 
-  it("rejects dropped and alternative items but accepts items on hold", async () => {
+  it("rejects dropped, alternative and on-hold items", async () => {
     await expectError(report("old101", null, "in_progress"), "ROADMAP_ITEM_NOT_REPORTABLE", 422);
     await expectError(report("alt101", null, "in_progress"), "ROADMAP_ITEM_NOT_REPORTABLE", 422);
-    const view = await report("his101", null, "in_progress");
-    expect(view.phases[0].items.find((i) => i.key === "his101")!.itemStatus).toBe("in_progress");
+    await expectError(report("his101", null, "in_progress"), "ROADMAP_ITEM_NOT_REPORTABLE", 422);
+    const view = await ctx.service.getStudentView(STUDENT);
+    const his = view.phases[0].items.find((i) => i.key === "his101")!;
+    expect(his).toMatchObject({ canReport: false, reportBlockedReason: "on_hold", itemStatus: "not_started" });
+  });
+
+  it("rejects reports while a required advisor approval is pending, and accepts them once approved", async () => {
+    const pending = { key: "app101", title: "Needs approval", approval: { required: true, status: "pending" as const } };
+    await ctx.importAndPublish(plan([ENG, MAT, pending]));
+    await expectError(report("app101", null, "in_progress"), "ROADMAP_ITEM_NOT_REPORTABLE", 422);
+    const blocked = (await ctx.service.getStudentView(STUDENT)).phases[0].items.find((i) => i.key === "app101")!;
+    expect(blocked).toMatchObject({ canReport: false, reportBlockedReason: "approval_pending" });
+    await ctx.importAndPublish(plan([ENG, MAT, { ...pending, approval: { required: true, status: "approved" as const } }]));
+    const view = await report("app101", null, "in_progress");
+    expect(view.phases[0].items.find((i) => i.key === "app101")!).toMatchObject({ canReport: true, reportBlockedReason: null, itemStatus: "in_progress" });
   });
 
   it("rejects statuses that do not match the level and never accepts official acceptance", async () => {

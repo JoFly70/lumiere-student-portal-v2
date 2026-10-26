@@ -27,6 +27,7 @@ import {
   type StudentTaskStatus,
   type StudentTaskView,
   type StudentTodayView,
+  roadmapReportBlockedReason,
 } from "./student-roadmap-contract";
 import type { StudentCreditStanding, StudentDegreeProgressView } from "./student-degree-progress-view";
 
@@ -316,7 +317,8 @@ export function projectStudentRoadmap(input: ProjectStudentRoadmapInput): Studen
       },
       stage: d.stage,
       official: d.official,
-      canReport: d.active,
+      canReport: roadmapReportBlockedReason(d.item) === null,
+      reportBlockedReason: roadmapReportBlockedReason(d.item),
     };
   };
 
@@ -333,8 +335,11 @@ export function projectStudentRoadmap(input: ProjectStudentRoadmapInput): Studen
     const active = members.filter((d) => d.active);
     const complete = active.length > 0 && active.every((d) => d.done);
     let state: StudentRoadmapPhaseView["state"];
+    const started = active.some((d) => d.stage !== "not_started");
     if (complete) state = "complete";
-    else if (!currentAssigned) {
+    // The first unfinished phase is current, and so is any later phase the
+    // student is already working in (e.g. a parallel prerequisite track).
+    else if (!currentAssigned || started) {
       state = "current";
       currentAssigned = true;
     } else state = "upcoming";
@@ -402,9 +407,10 @@ export function projectStudentRoadmap(input: ProjectStudentRoadmapInput): Studen
 
   // today
   const activeDerived = allDerived.filter((d) => d.active);
-  const working = activeDerived.filter((d) => d.stage === "in_progress" || d.stage === "submitted" || d.stage === "graded");
-  const startable = activeDerived.filter(
-    (d) => d.item.planStatus === "planned" && d.stage === "not_started"
+  const reportable = activeDerived.filter((d) => roadmapReportBlockedReason(d.item) === null);
+  const working = reportable.filter((d) => d.stage === "in_progress" || d.stage === "submitted" || d.stage === "graded");
+  const startable = reportable.filter(
+    (d) => d.stage === "not_started"
       && views.get(d.item.key)!.waitingOn.length === 0,
   );
   const focus = [...working, ...startable].slice(0, 3);

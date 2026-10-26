@@ -119,7 +119,8 @@ describe("projectStudentRoadmap", () => {
   it("computes waitingOn, canReport and counts over active items only", () => {
     const view = project();
     expect(item(view, "mat101").waitingOn).toEqual([{ itemKey: "eng101", title: "English" }]);
-    expect(item(view, "his101").canReport).toBe(true);
+    expect(item(view, "his101").canReport).toBe(false);
+    expect(item(view, "his101").reportBlockedReason).toBe("on_hold");
     expect(item(view, "alt101").canReport).toBe(false);
     expect(view.counts.itemsTotal).toBe(3);
     expect(view.counts.tasksTotal).toBe(2);

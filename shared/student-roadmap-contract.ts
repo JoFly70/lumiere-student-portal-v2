@@ -389,6 +389,28 @@ export interface StudentTaskView {
   readonly updatedAt: string | null;
 }
 
+export type RoadmapReportBlockedReason =
+  /** Dropped or alternative route: not part of the active plan. */
+  | "not_active"
+  /** Staff placed the course on hold. */
+  | "on_hold"
+  /** An advisor approval is required and still pending. */
+  | "approval_pending";
+
+/**
+ * Single rule, used by the projection and enforced by the server: students
+ * report only on planned items that are not on hold and not awaiting a
+ * required advisor approval.
+ */
+export function roadmapReportBlockedReason(
+  item: Pick<RoadmapItem, "planStatus" | "approval">,
+): RoadmapReportBlockedReason | null {
+  if (item.planStatus === "hold") return "on_hold";
+  if (item.planStatus !== "planned") return "not_active";
+  if (item.approval?.required && item.approval.status === "pending") return "approval_pending";
+  return null;
+}
+
 export interface StudentRoadmapItemView {
   readonly key: string;
   readonly phaseKey: string;
@@ -425,8 +447,13 @@ export interface StudentRoadmapItemView {
     readonly standing: StudentCreditStanding;
     readonly awardedCredits: string | null;
   } | null;
-  /** False for dropped/alternative items. Hold still allows reporting. */
+  /**
+   * False when the student may not report on this item right now. Recorded
+   * progress is kept either way; it is only frozen.
+   */
   readonly canReport: boolean;
+  /** Why reporting is closed, or null when canReport is true. */
+  readonly reportBlockedReason: RoadmapReportBlockedReason | null;
 }
 
 export interface StudentRoadmapPhaseView {
