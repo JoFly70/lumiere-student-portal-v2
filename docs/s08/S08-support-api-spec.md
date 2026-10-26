@@ -55,7 +55,7 @@ A ticket the caller may not see -> `404 NOT_FOUND` (no existence leak).
 
 | Method | Path | Who | Notes |
 |---|---|---|---|
-| GET | `/` | all | Student: own only. Coach: assigned to them only. Admin/staff: all. Query: `status`, `category`, `priority`, `search` (subject ilike), `view=active\|resolved`, `awaiting=staff\|student`, `assignedTo=me\|unassigned\|<userId>` (staff), `overdue=true` (staff), `studentId` (admin/staff; resolved server-side), `limit` (1-100, default 50), `offset`. Returns `SupportTicketListResponse`. |
+| GET | `/` | all | Student: own only. Coach: assigned to them only. Admin/staff: all. Query: `status`, `category`, `priority`, `search` (subject ilike), `view=active\|resolved`, `awaiting=staff\|student`, `assignedTo=me\|unassigned\|<userId>` (staff), `overdue=true` (staff), `studentId` (admin only, as in Phase 5D; resolved server-side), `limit` (1-100, default 50), `offset`. Returns `SupportTicketListResponse`. |
 | GET | `/stats/summary` | admin, staff, coach (coach: own assigned) | `SupportStatsResponse`. Registered BEFORE `/:id`. |
 | GET | `/staff-directory` | admin, staff | `{ staff: SupportPerson[] }` — users with role admin/staff/coach whose account is active. |
 | GET | `/context-options` | student | `{ available: boolean, planVersion: number \| null, items: { key, title, code, kind, phaseTitle }[] }` from the student's CURRENT PUBLISHED roadmap (active items only). `available:false` when no published plan. 503 CONTEXT_UNAVAILABLE if the roadmap service fails. |
