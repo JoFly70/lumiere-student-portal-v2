@@ -28,7 +28,11 @@ export function readinessAction(item: { key: string; kind: string; section: stri
     case "phone": return { label: "Add phone", href: `#${sectionDomId("contact")}`, external: false };
     case "address": return { label: "Add address", href: `#${sectionDomId("contact")}`, external: false };
     case "id_gov": return { label: "Upload government ID", href: "/documents", external: true };
-    default: return { label: item.kind === "missing" ? "Add" : "Fix", href: `#${sectionDomId(item.section)}`, external: false };
+    default:
+      // Anything that asks for a (new) file goes straight to Documents.
+      if (item.key.startsWith("contact_authority:")) return { label: "Upload signed consent", href: "/documents", external: true };
+      if (item.key.startsWith("document:") || item.key === "identity_document") return { label: "Upload new file", href: "/documents", external: true };
+      return { label: item.kind === "missing" ? "Add" : "Review", href: `#${sectionDomId(item.section)}`, external: false };
   }
 }
 export type ProfileSectionId = (typeof PROFILE_SECTIONS)[number]["id"];
@@ -122,7 +126,9 @@ export function needsUpload(status: EvidenceStatus): boolean {
 export function splitReadiness(items: readonly ProfileReadinessItem[]) {
   const attention = items.filter((i) => i.kind === "missing" || i.kind === "action_required");
   const waiting = items.filter((i) => i.kind === "pending_review" || i.kind === "unverified");
-  return { attention, waiting };
+  const external = items.filter((i) => i.kind === "waiting_external");
+  const completed = items.filter((i) => i.kind === "complete");
+  return { attention, waiting, external, completed };
 }
 
 export function readinessChip(kind: ProfileReadinessItem["kind"]): { label: string; tone: ChipTone } {
@@ -135,6 +141,8 @@ export function readinessChip(kind: ProfileReadinessItem["kind"]): { label: stri
       return { label: "Under review", tone: "waiting" };
     case "unverified":
       return { label: "Not yet verified", tone: "waiting" };
+    case "waiting_external":
+      return { label: "With an outside institution", tone: "waiting" };
     default:
       return { label: "Complete", tone: "verified" };
   }

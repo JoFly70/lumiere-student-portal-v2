@@ -311,3 +311,33 @@ export function resolveWorkspaceStudentIdentity(student: unknown): WorkspaceStud
 export function workspaceStudentIdFromData(data: unknown): string | undefined {
   return isRecord(data) ? resolveWorkspaceStudentIdentity(data.student).id : undefined;
 }
+
+// ---------------------------------------------------------------------------
+// Staff-facing formatting: never show raw enum tokens or ISO timestamps.
+// ---------------------------------------------------------------------------
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+/** "2026-10-25T09:00:00.000Z" to "Oct 25, 2026 \u00b7 9:00". Undefined when absent or unparseable. */
+export function formatWorkspaceDateTime(value: unknown, timeZone?: string): string | undefined {
+  const date = value instanceof Date ? value : typeof value === "string" && value.trim() ? new Date(value) : undefined;
+  if (!date || Number.isNaN(date.getTime())) return undefined;
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone, year: "numeric", month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit", hourCycle: "h23",
+  }).formatToParts(date);
+  const get = (type: string) => parts.find((part) => part.type === type)?.value ?? "";
+  const hour = String(Number(get("hour")) % 24);
+  return `${MONTHS[Number(get("month")) - 1]} ${Number(get("day"))}, ${get("year")} \u00b7 ${hour}:${get("minute")}`;
+}
+
+/** "IN_PROGRESS" or "waiting_on_student" to "In progress". */
+export function workspaceToken(raw: unknown): string | undefined {
+  if (typeof raw !== "string" || !raw.trim()) return undefined;
+  const spaced = raw.replace(/[_-]+/g, " ").trim().toLowerCase();
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+}
+
+/** Overall progress status tile text. */
+export function workspaceProgressStatusLabel(status: unknown): string {
+  return workspaceToken(status) ?? "Not yet reported";
+}

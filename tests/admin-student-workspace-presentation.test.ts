@@ -321,7 +321,7 @@ describe("admin student workspace presentation", () => {
     expect(markup).toContain("Historical placement records");
     expect(markup).toContain("Earlier recorded placement");
     expect(markup).toContain("Canonical view · controlled placement writes");
-    expect(markup).toContain("Placement controls are disabled until a fresh canonical snapshot");
+    expect(markup).toContain("Placement changes are paused: this student has no current academic snapshot");
     expect(markup).toContain("No academic values are recomputed here");
     expect(markup).toContain("Add placement");
     expect(markup).toContain("Replace this placement");

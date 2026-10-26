@@ -96,10 +96,16 @@ export const RICH_PROFILE: StudentProfileView = {
       { docType: "degree_certificate", label: "Degree certificate", status: "not_submitted", requiredForEnrollment: false, updatedAt: null },
     ],
   },
+  // Mirrors what buildStudentProfileView derives from the documents and contacts above:
+  // every rejected / resubmit-requested document and every contact still needing a consent is student action.
   readiness: [
-    { key: "english_proof", kind: "action_required", label: "English proficiency proof needs a new upload", detail: "Lumière could not accept the file you sent.", section: "eligibility" },
-    { key: "hs_transcript", kind: "pending_review", label: "High school transcript is being reviewed", detail: null, section: "background" },
-    { key: "guardian_auth", kind: "unverified", label: "Guardian authority is not yet verified", detail: "Ngozi Eze-Demo", section: "contacts" },
+    { key: "document:english_cert", kind: "action_required", label: "English proficiency proof needs to be resubmitted", detail: "Lumière could not accept the file you sent.", section: "eligibility" },
+    { key: "document:residency_doc", kind: "action_required", label: "Proof of residency needs to be resubmitted", detail: null, section: "eligibility" },
+    { key: "contact_authority:c-2", kind: "action_required", label: "Upload a signed consent for Ngozi Eze-Demo", detail: "Lumière verifies authority from a signed consent or legal document.", section: "contacts" },
+    { key: "contact_authority:c-4", kind: "action_required", label: "Jordan Lake-Demo: authority was not approved", detail: "The consent document was unsigned.", section: "contacts" },
+    { key: "document:hs_transcript", kind: "pending_review", label: "High school transcript under review", detail: null, section: "eligibility" },
+    { key: "contact_authority:c-1", kind: "complete", label: "Chidi Okafor-Demo: authority verified", detail: null, section: "contacts" },
+    { key: "identity_document", kind: "complete", label: "Identity document verified", detail: null, section: "identity" },
   ],
   account: { role: "student", twoFactorAvailable: true },
   generatedAt: NOW,

@@ -51,6 +51,9 @@ import {
   EditButton,
   TextLink,
   dialogClass,
+  dialogFormClass,
+  dialogHeaderClass,
+  DialogBody,
   inputClass,
   useEditableCard,
 } from "./profile-ui";
@@ -419,13 +422,14 @@ export function CorrectionDialog({ identity }: { identity: ProfileIdentity }) {
         </button>
       </DialogTrigger>
       <DialogContent className={dialogClass}>
-        <DialogHeader>
+        <DialogHeader className={dialogHeaderClass}>
           <DialogTitle className="font-serif text-2xl">Request a correction</DialogTitle>
           <DialogDescription className="text-student-muted">
             Choose what is wrong and enter the correct value. Lumière reviews every request, and your recorded details do not change until it is approved.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={onSubmit} className="space-y-4" noValidate>
+        <form onSubmit={onSubmit} className={dialogFormClass} noValidate>
+          <DialogBody>
           <fieldset className="space-y-2">
             <legend className="text-sm font-medium text-student-ink">What needs correcting?</legend>
             {errors._fields && (
@@ -493,6 +497,7 @@ export function CorrectionDialog({ identity }: { identity: ProfileIdentity }) {
           </p>
 
           <FormError message={serverError} />
+          </DialogBody>
           <FormActions saving={busy} onCancel={() => setOpen(false)} saveLabel="Send request" sticky />
         </form>
       </DialogContent>

@@ -82,13 +82,17 @@ describe("S09 profile: rich profile", () => {
   it("separates 'Needs your attention' from 'Waiting on Lumière'", () => {
     const attn = markup.slice(markup.indexOf('data-testid="readiness-attention"'), markup.indexOf('data-testid="readiness-waiting"'));
     const wait = markup.slice(markup.indexOf('data-testid="readiness-waiting"'), markup.indexOf('id="section-identity"'));
-    expect(text(attn)).toContain("English proficiency proof needs a new upload");
+    expect(text(attn)).toContain("English proficiency proof needs to be resubmitted");
+    expect(text(attn)).toContain("Proof of residency needs to be resubmitted");
+    expect(text(attn)).toContain("Upload a signed consent for Ngozi Eze-Demo");
+    expect(text(attn)).toContain("Jordan Lake-Demo: authority was not approved");
     // Emergency contacts are on file, so nothing about them is "missing".
     expect(text(markup)).not.toContain("Add an emergency contact");
     expect(text(attn)).not.toContain("being reviewed");
-    expect(text(wait)).toContain("High school transcript is being reviewed");
-    expect(text(wait)).toContain("Guardian authority is not yet verified");
-    expect(count(markup, 'data-testid="readiness-item"')).toBe(3);
+    expect(text(wait)).toContain("High school transcript under review");
+    expect(text(wait)).toContain("Completed");
+    expect(text(wait)).toContain("Identity document verified");
+    expect(count(markup, 'data-testid="readiness-item"')).toBe(7);
     expect(markup).toContain('href="#section-eligibility"');
   });
 
@@ -106,7 +110,7 @@ describe("S09 profile: rich profile", () => {
     const pending = text(cards[1]);
     expect(pending).toContain("In force today: Emergency contact");
     expect(pending).toContain("You asked for: Emergency contact, Financial matters, Release of information");
-    expect(pending).toContain("do not apply until Lumière verifies authority");
+    expect(pending).toContain("Not in force until Lumière verifies authority: ");
     // verified: lock, no remove, contact-lumiere message
     expect(cards[0]).toContain('data-testid="contact-locked"');
     expect(cards[0]).not.toContain('data-testid="button-delete-contact"');
@@ -196,7 +200,52 @@ describe("S09 profile: pieces and helpers", () => {
   it("ReadinessPanel says so when nothing is outstanding", () => {
     const m = html(React.createElement(ReadinessPanel, { items: [{ key: "x", kind: "complete", label: "Done", detail: null, section: "identity" }] }));
     expect(m).toContain('data-testid="readiness-clear"');
-    expect(text(m)).not.toContain("Done");
+    // Completed work is shown in its own group, never mixed into "needs your attention".
+    expect(m).toContain('data-testid="readiness-completed"');
+    expect(m).not.toContain('data-testid="readiness-attention"');
+    expect(text(m)).toContain("Done");
+  });
+  it("S10: the RICH fixture's readiness agrees with its own documents and contacts (nothing student-actionable is omitted)", () => {
+    const actions = RICH_PROFILE.readiness.filter((r) => r.kind === "action_required").map((r) => r.label).join(" | ");
+    for (const d of RICH_PROFILE.eligibility.documents) {
+      if (d.status === "rejected" || d.status === "resubmit_requested") expect(actions.toLowerCase()).toContain(d.label.toLowerCase().split(" ")[0]);
+    }
+    for (const c of RICH_PROFILE.contacts) {
+      if (c.authorityStatus === "pending_verification" || c.authorityStatus === "revoked") expect(actions).toContain(c.fullName);
+    }
+    // And the panel shows them, not "Nothing for you to do".
+    const m = html(React.createElement(ReadinessPanel, { items: RICH_PROFILE.readiness }));
+    expect(text(m)).not.toContain("Nothing for you to do");
+  });
+  it("S10: four groups, and requested documents (incl. guardian consent) are action required", () => {
+    const items = [
+      { key: "document:consent_form", kind: "action_required", label: "Consent form needs to be resubmitted", detail: null, section: "eligibility" },
+      { key: "contact_authority:c1", kind: "action_required", label: "Upload a signed consent for Odile", detail: null, section: "contacts" },
+      { key: "identity_correction", kind: "pending_review", label: "Identity correction under review", detail: null, section: "identity" },
+      { key: "document:foreign_eval", kind: "waiting_external", label: "Evaluation is with the evaluation service", detail: null, section: "eligibility" },
+      { key: "document:hs_transcript", kind: "complete", label: "High school transcript verified", detail: null, section: "eligibility" },
+    ] as const;
+    const g = splitReadiness(items);
+    expect(g.attention.map((i) => i.key)).toEqual(["document:consent_form", "contact_authority:c1"]);
+    expect(g.waiting.map((i) => i.key)).toEqual(["identity_correction"]);
+    expect(g.external).toHaveLength(1);
+    expect(g.completed).toHaveLength(1);
+    const m = html(React.createElement(ReadinessPanel, { items }));
+    const t = text(m.slice(m.indexOf('data-testid="readiness-attention"'), m.indexOf('data-testid="readiness-waiting"')));
+    expect(t).toContain("Needs your attention");
+    expect(t).toContain("Consent form needs to be resubmitted");
+    expect(t).not.toContain("Nothing for you to do");
+    expect(m).toContain("Waiting on an outside institution");
+    expect(m).toContain('data-testid="readiness-completed"');
+  });
+  it("S10: a pending authority card says Lumière is reviewing only when a consent is already on file", () => {
+    const pending = { ...RICH_PROFILE.contacts[1], authorityStatus: "pending_verification" as const };
+    const need = html(React.createElement(ContactsSection, { contacts: [pending], readiness: [{ key: `contact_authority:${pending.id}`, kind: "action_required", label: "x", detail: null, section: "contacts" }] }));
+    const hint = (m: string) => text(m.slice(m.indexOf('data-testid="pending-hint"'), m.indexOf('data-testid="pending-hint"') + 400));
+    expect(hint(need)).toContain("Upload it in Documents");
+    const rev = html(React.createElement(ContactsSection, { contacts: [pending], readiness: [{ key: `contact_authority:${pending.id}`, kind: "pending_review", label: "x", detail: null, section: "contacts" }] }));
+    expect(text(rev)).toContain("Lumière is reviewing the consent you sent");
+    expect(hint(rev)).not.toContain("Upload it in Documents");
   });
   it("splitReadiness groups by kind", () => {
     const g = splitReadiness(NEW_STUDENT_PROFILE.readiness);

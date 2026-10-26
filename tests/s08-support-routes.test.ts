@@ -1050,6 +1050,22 @@ describe("stats, overdue and filters", () => {
     expect(mine.body.tickets.every((t: any) => !("is_overdue" in t))).toBe(true);
   });
 
+  it("S10: every stats tile equals the list its queue filter opens (the 'Unassigned' tile counts only tickets awaiting staff)", async () => {
+    const h = build();
+    seedTicket(h, { subject: "Unassigned, needs reply" });
+    seedTicket(h, { subject: "Unassigned, waiting on student", status: "waiting_on_student" });
+    seedTicket(h, { subject: "Assigned, late", assignedTo: "staff", priority: "medium", metadata: { awaiting_since: day(3) } });
+    seedTicket(h, { subject: "Done", status: "resolved", resolvedAt: day(2) });
+    const stats = (await as(h, "staff").get("/api/tickets/stats/summary")).body.stats;
+    const n = async (qs: string) => (await as(h, "staff").get(`/api/tickets?${qs}`)).body.tickets.length;
+    expect(await n("view=active&awaiting=staff")).toBe(stats.awaitingStaff);
+    expect(await n("view=active&awaiting=student")).toBe(stats.awaitingStudent);
+    expect(await n("overdue=true")).toBe(stats.overdue);
+    // The desk's Unassigned queue (staffQueueFilters("unassigned")) must match the tile.
+    expect(await n("view=active&awaiting=staff&assignedTo=unassigned")).toBe(stats.unassigned);
+    expect(stats.unassigned).toBe(1);
+  });
+
   it("queue filters: view, awaiting, assignedTo, search, pagination", async () => {
     const h = build();
     const a = seedTicket(h, { subject: "Transcript upload problem", assignedTo: "staff" });

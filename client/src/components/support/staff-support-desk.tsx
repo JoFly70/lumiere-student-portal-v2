@@ -20,8 +20,10 @@ import {
   type SupportTicketSummary,
   type TicketPriority,
   type TicketStatus,
+  staffStatusLabel,
   topicForTicket,
 } from "@shared/support-contract";
+import { assigneeSelectValue, staffQueueFilters as queueFilters, type StaffQueueKey as QueueKey, staffRowAge } from "./support-presentation";
 import {
   useAttachmentDownload,
   useCreateComment,
@@ -37,12 +39,13 @@ import {
 // Local presentation (kept local so the desk does not depend on student UI)
 // ---------------------------------------------------------------------------
 
+// Staff wording comes from the one shared map (shared/support-contract.ts).
 const STATUS_LABEL: Record<TicketStatus, string> = {
-  open: "New",
-  in_progress: "In progress",
-  waiting_on_student: "Waiting on student",
-  resolved: "Resolved",
-  closed: "Closed",
+  open: staffStatusLabel("open"),
+  in_progress: staffStatusLabel("in_progress"),
+  waiting_on_student: staffStatusLabel("waiting_on_student"),
+  resolved: staffStatusLabel("resolved"),
+  closed: staffStatusLabel("closed"),
 };
 
 const STATUS_CLASS: Record<TicketStatus, string> = {
@@ -80,8 +83,6 @@ function errorText(e: unknown): string {
   return "Something went wrong. Please try again.";
 }
 
-type QueueKey = "needs" | "waiting" | "overdue" | "mine" | "unassigned" | "resolved" | "all";
-
 const QUEUES: { key: QueueKey; label: string }[] = [
   { key: "needs", label: "Needs response" },
   { key: "waiting", label: "Waiting on student" },
@@ -92,23 +93,11 @@ const QUEUES: { key: QueueKey; label: string }[] = [
   { key: "all", label: "All" },
 ];
 
-function queueFilters(key: QueueKey) {
-  switch (key) {
-    case "needs": return { view: "active" as const, awaiting: "staff" as const };
-    case "waiting": return { view: "active" as const, awaiting: "student" as const };
-    case "overdue": return { overdue: true };
-    case "mine": return { view: "active" as const, assignedTo: "me" };
-    case "unassigned": return { view: "active" as const, assignedTo: "unassigned" };
-    case "resolved": return { view: "resolved" as const };
-    default: return {};
-  }
-}
-
 // ---------------------------------------------------------------------------
 // Stats strip
 // ---------------------------------------------------------------------------
 
-function StatsStrip({ stats, onPick }: { stats?: SupportStatsResponse["stats"]; onPick: (q: QueueKey) => void }) {
+function StatsStrip({ stats, active, onPick }: { stats?: SupportStatsResponse["stats"]; active: QueueKey; onPick: (q: QueueKey) => void }) {
   const tiles: { label: string; value: number | undefined; queue: QueueKey; warn?: boolean }[] = [
     { label: "Awaiting staff", value: stats?.awaitingStaff, queue: "needs" },
     { label: "Awaiting student", value: stats?.awaitingStudent, queue: "waiting" },
@@ -122,7 +111,8 @@ function StatsStrip({ stats, onPick }: { stats?: SupportStatsResponse["stats"]; 
           key={t.label}
           type="button"
           onClick={() => onPick(t.queue)}
-          className="rounded-lg border bg-card p-3 text-left transition-colors hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
+          aria-pressed={active === t.queue}
+          className={`rounded-lg border p-3 text-left transition-colors hover:bg-accent ${active === t.queue ? "border-foreground bg-accent" : "bg-card"} focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring`}
         >
           <div className="text-xs text-muted-foreground">{t.label}</div>
           <div className={`text-2xl font-semibold tabular-nums ${t.warn && (t.value ?? 0) > 0 ? "text-red-700 dark:text-red-400" : ""}`}>
@@ -138,7 +128,7 @@ function StatsStrip({ stats, onPick }: { stats?: SupportStatsResponse["stats"]; 
 // Ticket list
 // ---------------------------------------------------------------------------
 
-function TicketRow({ ticket, selected, onSelect }: { ticket: SupportTicketSummary; selected: boolean; onSelect: () => void }) {
+export function TicketRow({ ticket, selected, onSelect }: { ticket: SupportTicketSummary; selected: boolean; onSelect: () => void }) {
   const topic = SUPPORT_TOPIC_INFO[ticket.topic ?? topicForTicket(null, ticket.category)];
   return (
     <li>
@@ -151,7 +141,7 @@ function TicketRow({ ticket, selected, onSelect }: { ticket: SupportTicketSummar
       >
         <div className="flex items-start justify-between gap-2">
           <span className="font-medium text-sm">{ticket.reporter_name}</span>
-          <span className="shrink-0 text-xs text-muted-foreground">{age(ticket.awaiting_since)}</span>
+          <span className="shrink-0 text-xs text-muted-foreground">{staffRowAge(ticket, new Date())}</span>
         </div>
         <div className="mt-0.5 line-clamp-2 text-sm">{ticket.subject}</div>
         <div className="mt-0.5 text-xs text-muted-foreground">{topic.label}</div>
@@ -340,14 +330,14 @@ function TicketDetailPane({ ticketId, staff, onBack }: { ticketId: string; staff
           {perms.can_assign ? (
             <select
               className={selectClass()}
-              value={ticket.assigned_to ?? ""}
+              value={assigneeSelectValue(ticket)}
               disabled={busy}
               onChange={(e) => void run(() => update.mutateAsync({ assignedTo: e.target.value || null }), e.target.value ? "Ticket reassigned." : "Ticket unassigned.")}
             >
               <option value="">Unassigned</option>
               {staff.map((p) => <option key={p.id} value={p.id}>{p.name} ({p.role})</option>)}
-              {ticket.assigned_to && !staff.some((p) => p.id === ticket.assigned_to) && ticket.assignee && (
-                <option value={ticket.assigned_to}>{ticket.assignee.name}</option>
+              {ticket.assignee && !staff.some((p) => p.id === ticket.assignee?.id) && (
+                <option value={ticket.assignee.id}>{ticket.assignee.name}</option>
               )}
             </select>
           ) : (
@@ -489,7 +479,7 @@ export function StaffSupportDesk() {
         <p className="text-sm text-muted-foreground">{isManager ? "All student requests." : "Requests assigned to you."}</p>
       </header>
 
-      <StatsStrip stats={(stats.data as SupportStatsResponse | undefined)?.stats} onPick={(q) => { setQueue(q); setSelectedId(null); }} />
+      <StatsStrip stats={(stats.data as SupportStatsResponse | undefined)?.stats} active={queue} onPick={(q) => { setQueue(q); setSelectedId(null); }} />
 
       <div className="grid gap-4 lg:grid-cols-[minmax(320px,400px)_1fr]">
         <section className={`${selectedId ? "hidden lg:block" : ""} space-y-3`} aria-label="Queue">

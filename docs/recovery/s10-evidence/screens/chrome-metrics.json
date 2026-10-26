@@ -40,46 +40,46 @@
       "pageHeightPx": 1566
     },
     "14-support-staff-1440-light.png": {
-      "pageHeightPx": 1276
+      "pageHeightPx": 1162
     },
     "15-support-staff-1440-dark.png": {
-      "pageHeightPx": 1276
+      "pageHeightPx": 1162
     },
     "16-support-staff-queue-390-light.png": {
-      "pageHeightPx": 1378
+      "pageHeightPx": 926
     },
     "17-documents-1440-light.png": {
       "pageHeightPx": 1413
     },
     "18-documents-390-light.png": {
-      "pageHeightPx": 2221
+      "pageHeightPx": 2241
     },
     "19-documents-390-dark.png": {
-      "pageHeightPx": 2221
+      "pageHeightPx": 2241
     },
     "20-profile-1440-light.png": {
-      "pageHeightPx": 3439
+      "pageHeightPx": 4003
     },
     "21-profile-390-light.png": {
-      "pageHeightPx": 5790
+      "pageHeightPx": 6756
     },
     "23-profile-1440-dark.png": {
-      "pageHeightPx": 3439
+      "pageHeightPx": 4003
     },
     "24-profile-390-dark.png": {
-      "pageHeightPx": 5790
+      "pageHeightPx": 6756
     },
     "25-profile-correction-dialog-390-light.png": {
       "pageHeightPx": 0
     },
     "26-staff-profile-panel-1440-light.png": {
-      "pageHeightPx": 3908
+      "pageHeightPx": 4460
     },
     "27-staff-profile-panel-1440-dark.png": {
-      "pageHeightPx": 3908
+      "pageHeightPx": 4460
     },
     "28-staff-profile-panel-768-light.png": {
-      "pageHeightPx": 5030
+      "pageHeightPx": 5834
     }
   },
   "chrome390": {
@@ -97,10 +97,10 @@
       "right": 374
     },
     "changedControl": {
-      "top": 0,
-      "bottom": 0,
-      "left": 0,
-      "right": 0
+      "top": -212,
+      "bottom": -96,
+      "left": 64,
+      "right": 374
     },
     "toastOverlapsChangedControl": false,
     "toastOverlapsChangedRow": false
@@ -141,5 +141,9 @@
       "height": 17,
       "width": 76
     }
-  ]
+  ],
+  "toastRowAgrees": {
+    "selectValueAfterSave": "graded",
+    "toastText": "Saved: you reported Challenge 3 done.Undo"
+  }
 }

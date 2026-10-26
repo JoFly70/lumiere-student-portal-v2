@@ -315,7 +315,16 @@ export interface ProfileEligibility {
   readonly documents: readonly ProfileEvidenceItem[];
 }
 
-export type ReadinessKind = "missing" | "unverified" | "pending_review" | "action_required" | "complete";
+/**
+ * The four groups the student sees (see splitReadiness):
+ *   action required from the student  = missing | action_required
+ *   waiting on Lumière                = pending_review | unverified
+ *   waiting on an external institution = waiting_external
+ *   completed                          = complete
+ * A requested or resubmit-requested document is ALWAYS action_required. A listed
+ * contact never implies authority: only a staff-verified status does.
+ */
+export type ReadinessKind = "missing" | "unverified" | "pending_review" | "action_required" | "waiting_external" | "complete";
 
 export interface ProfileReadinessItem {
   readonly key: string;
