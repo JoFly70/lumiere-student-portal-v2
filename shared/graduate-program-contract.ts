@@ -551,6 +551,11 @@ export const trackRecordSchema = z
   .object({
     kind: z.enum(RECORD_KINDS),
     trackingStatus: z.enum(TRACKING_STATUSES),
+    /**
+     * Outcome of a NON-official record (e.g. thesis topic approved). Official
+     * kinds take their outcome only through the verify endpoint.
+     */
+    outcome: z.string().trim().max(60).nullable(),
     issuingInstitution: z.enum(INSTITUTIONS).nullable(),
     documentTypeLabel: z.string().trim().max(200).nullable(),
     documentReference: z.string().trim().max(200).nullable(),

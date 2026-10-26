@@ -21,6 +21,7 @@ import {
   buildStudentGraduateProgramView,
   evaluateCreditEntry,
   evaluateOfficialChange,
+  isOfficialKind,
   type CohortRule,
   type CreateCreditEntry,
   type CreateOffering,
@@ -508,6 +509,9 @@ export function createGraduateProgramService(deps: GraduateServiceDeps) {
         }
         if (input.documentId) await requireOwnDocument(actor, program.studentId, programId, input.documentId, tx);
         // Verification and outcome can never be set here: the record starts `unknown`.
+        if (input.outcome !== undefined && input.outcome !== null) {
+          throw new GraduateError(400, "GRADUATE_VALIDATION_ERROR", "Set an outcome by updating or verifying the record, not on creation");
+        }
         const created = await repo.insertRecord(
           {
             programId, studentId: program.studentId, kind,
@@ -552,8 +556,18 @@ export function createGraduateProgramService(deps: GraduateServiceDeps) {
           }
         }
         if (input.documentId) await requireOwnDocument(actor, record.studentId, record.programId, input.documentId, tx);
+        if (input.outcome !== undefined && input.outcome !== null) {
+          if (isOfficialKind(record.kind)) {
+            throw new GraduateError(409, "GRADUATE_CONFLICT", "An official record's outcome is set only by verifying it with evidence");
+          }
+          const vocabulary = RECORD_OUTCOMES[record.kind];
+          if (!vocabulary || !vocabulary.includes(input.outcome)) {
+            throw new GraduateError(422, "GRADUATE_EVIDENCE_REQUIRED", "That outcome does not apply to this kind of record", ["OUTCOME_INVALID"]);
+          }
+        }
 
         const patch: RecordPatch = {
+          ...(input.outcome !== undefined ? { outcome: input.outcome } : {}),
           ...(input.trackingStatus !== undefined ? { trackingStatus: input.trackingStatus } : {}),
           ...(input.issuingInstitution !== undefined ? { issuingInstitution: input.issuingInstitution } : {}),
           ...(input.documentTypeLabel !== undefined ? { documentTypeLabel: input.documentTypeLabel } : {}),
