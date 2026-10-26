@@ -42,6 +42,17 @@ export function isInternalPath(href: string): boolean {
   return href.startsWith("/");
 }
 
+/** Short button wording for the next step; the step's own title is already the heading above it. */
+export function nextStepActionLabel(href: string): string {
+  if (href === "/documents") return "Go to Documents";
+  if (href === "/support") return "Contact Support";
+  if (href === "/profile") return "Open my profile";
+  if (href === `#${SECTION_IDS.modules}`) return "Go to my modules";
+  if (href === `#${SECTION_IDS.thesis}`) return "Go to my thesis";
+  if (href === `#${SECTION_IDS.graduation}`) return "See graduation steps";
+  return "Open";
+}
+
 /** Section pills shown under the header; only sections that exist for this programme. */
 export function sectionNav(p: Program): { id: string; label: string }[] {
   const items: { id: string; label: string }[] = [{ id: SECTION_IDS.modules, label: "Modules" }];

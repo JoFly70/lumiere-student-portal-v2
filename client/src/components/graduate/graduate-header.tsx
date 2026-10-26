@@ -9,7 +9,7 @@ import { ArrowRight, FileText, GraduationCap, Landmark } from "lucide-react";
 import type { StudentGraduateProgramView } from "@shared/graduate-program-contract";
 import { cn } from "@/lib/utils";
 import { Eyebrow, Pill, StatusGlyph, StatusPill, buttonClass, cardClass, STATUS_STYLE } from "@/components/student-progress/student-ui";
-import { SECTION_IDS, buildTrackModel, isInternalPath, sectionNav, type TrackNode } from "./graduate-presentation";
+import { SECTION_IDS, buildTrackModel, isInternalPath, nextStepActionLabel, sectionNav, type TrackNode } from "./graduate-presentation";
 
 type Program = StudentGraduateProgramView;
 
@@ -96,7 +96,7 @@ export function TwoTrackGraphic({ program }: { program: Program }) {
 function NextStepCard({ step }: { step: Program["nextStep"] }) {
   const body = (
     <>
-      <span>{step.title}</span>
+      <span>{step.href ? nextStepActionLabel(step.href) : ""}</span>
       <ArrowRight className="h-4 w-4 shrink-0" aria-hidden="true" />
     </>
   );

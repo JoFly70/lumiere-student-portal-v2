@@ -159,7 +159,7 @@ export function ThesisSection({ programId, thesis }: { programId: string; thesis
           <p className="text-sm text-student-muted" data-testid="thesis-supervisor">
             {thesis.supervisor ? `Supervisor: ${thesis.supervisor}` : "A supervisor has not been named yet."}
           </p>
-          {thesis.canEditPlan ? (
+          {thesis.canEditTopic ? (
             <TopicForm programId={programId} thesis={thesis} />
           ) : (
             thesis.topicApproval === "approved" && <p className="text-xs text-student-muted" data-testid="topic-locked">An approved topic can only be changed through your academic contact.</p>

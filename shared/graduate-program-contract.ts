@@ -1023,7 +1023,10 @@ export interface StudentGraduateProgramView {
     readonly gradingStatus: "not_submitted" | "submitted" | "graded";
     readonly result: null | { readonly outcome: string; readonly grade: string | null; readonly official: boolean };
     readonly resubmission: string | null;
+    /** Milestones stay tickable until the thesis is officially graded. */
     readonly canEditPlan: boolean;
+    /** The topic locks once approved (server returns 409 GRADUATE_THESIS_TOPIC_LOCKED). */
+    readonly canEditTopic: boolean;
   };
   readonly assessment: { readonly mode: string; readonly description: string; readonly basis: string; readonly passing: string | null };
   readonly enebQualification: { readonly state: "in_progress" | "completed_reported" | "completed_verified"; readonly label: string; readonly certificateIssued: boolean };
@@ -1178,7 +1181,8 @@ function thesisView(bundle: GraduateProgramBundle): StudentGraduateProgramView["
             .filter(Boolean)
             .join(" ")
         : null,
-    canEditPlan: approval !== "approved" && !resultOfficial,
+    canEditPlan: !resultOfficial,
+    canEditTopic: approval !== "approved" && !resultOfficial,
   };
 }
 

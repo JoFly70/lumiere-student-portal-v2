@@ -112,7 +112,7 @@ export function ModuleRow({ programId, module }: { programId: string; module: Mo
       {module.canReportProgress ? (
         <ProgressControl programId={programId} module={module} />
       ) : (
-        <p className="text-xs text-student-muted" data-testid="progress-readonly">Progress: {progress.label}. Passed modules are final.</p>
+        module.result !== "passed" && <p className="text-xs text-student-muted" data-testid="progress-readonly">Progress: {progress.label}.</p>
       )}
     </li>
   );
