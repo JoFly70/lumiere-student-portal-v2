@@ -365,6 +365,14 @@ async function main() {
           const main = document.querySelector("main") as HTMLElement | null;
           if (main && main.scrollWidth > main.clientWidth + 1) out.push(`main scrolls horizontally: ${main.scrollWidth} > ${main.clientWidth}`);
           if (out.length) {
+            const panel = document.getElementById("workspace-profile");
+            if (panel) {
+              const prev = panel.style.display;
+              panel.style.display = "none";
+              const without = doc.scrollWidth > doc.clientWidth + 1;
+              panel.style.display = prev;
+              out.push(without ? "overflow persists with the Profile & identity panel hidden (pre-existing shell/workspace)" : "overflow caused by the Profile & identity panel");
+            }
             const cw = doc.clientWidth;
             const beyond = Array.from(document.querySelectorAll<HTMLElement>("body *"))
               .filter((el) => { const r = el.getBoundingClientRect(); return r.width > 0 && r.right > cw + 1 && !el.closest("svg"); })

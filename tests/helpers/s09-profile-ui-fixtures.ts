@@ -98,7 +98,6 @@ export const RICH_PROFILE: StudentProfileView = {
   },
   readiness: [
     { key: "english_proof", kind: "action_required", label: "English proficiency proof needs a new upload", detail: "Lumière could not accept the file you sent.", section: "eligibility" },
-    { key: "phone_secondary_hint", kind: "missing", label: "Add an emergency contact", detail: null, section: "contacts" },
     { key: "hs_transcript", kind: "pending_review", label: "High school transcript is being reviewed", detail: null, section: "background" },
     { key: "guardian_auth", kind: "unverified", label: "Guardian authority is not yet verified", detail: "Ngozi Eze-Demo", section: "contacts" },
   ],

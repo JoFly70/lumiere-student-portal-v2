@@ -1,187 +1,37 @@
 {
-  "generatedAt": "2026-10-26T20:05:07.048Z",
+  "generatedAt": "2026-10-26T20:08:59.318Z",
   "fixtures": "tests/helpers/s09-profile-ui-fixtures.ts",
-  "totalViolations": 15,
+  "totalViolations": 1,
   "results": [
     {
       "screen": "01-profile-1440-light.png",
-      "violationCount": 2,
-      "violations": [
-        {
-          "id": "label-title-only",
-          "impact": "serious",
-          "help": "Form elements should have a visible label",
-          "nodes": 1,
-          "sample": [
-            {
-              "target": "#\\:r4\\:",
-              "summary": "Fix all of the following:   Only title used to generate label for form element"
-            }
-          ]
-        },
-        {
-          "id": "label",
-          "impact": "critical",
-          "help": "Form elements must have labels",
-          "nodes": 1,
-          "sample": [
-            {
-              "target": "#\\:r4\\:",
-              "summary": "Fix any of the following:   Element does not have an implicit (wrapped) <label>   Element does not have an explicit <label>"
-            }
-          ]
-        }
-      ]
+      "violationCount": 0,
+      "violations": []
     },
     {
       "screen": "02-profile-390-light.png",
-      "violationCount": 2,
-      "violations": [
-        {
-          "id": "label-title-only",
-          "impact": "serious",
-          "help": "Form elements should have a visible label",
-          "nodes": 1,
-          "sample": [
-            {
-              "target": "#\\:r7\\:",
-              "summary": "Fix all of the following:   Only title used to generate label for form element"
-            }
-          ]
-        },
-        {
-          "id": "label",
-          "impact": "critical",
-          "help": "Form elements must have labels",
-          "nodes": 1,
-          "sample": [
-            {
-              "target": "#\\:r7\\:",
-              "summary": "Fix any of the following:   Element does not have an implicit (wrapped) <label>   Element does not have an explicit <label>"
-            }
-          ]
-        }
-      ]
+      "violationCount": 0,
+      "violations": []
     },
     {
       "screen": "03-profile-1440-dark.png",
-      "violationCount": 2,
-      "violations": [
-        {
-          "id": "label-title-only",
-          "impact": "serious",
-          "help": "Form elements should have a visible label",
-          "nodes": 1,
-          "sample": [
-            {
-              "target": "#\\:r4\\:",
-              "summary": "Fix all of the following:   Only title used to generate label for form element"
-            }
-          ]
-        },
-        {
-          "id": "label",
-          "impact": "critical",
-          "help": "Form elements must have labels",
-          "nodes": 1,
-          "sample": [
-            {
-              "target": "#\\:r4\\:",
-              "summary": "Fix any of the following:   Element does not have an implicit (wrapped) <label>   Element does not have an explicit <label>"
-            }
-          ]
-        }
-      ]
+      "violationCount": 0,
+      "violations": []
     },
     {
       "screen": "04-profile-390-dark.png",
-      "violationCount": 2,
-      "violations": [
-        {
-          "id": "label-title-only",
-          "impact": "serious",
-          "help": "Form elements should have a visible label",
-          "nodes": 1,
-          "sample": [
-            {
-              "target": "#\\:r7\\:",
-              "summary": "Fix all of the following:   Only title used to generate label for form element"
-            }
-          ]
-        },
-        {
-          "id": "label",
-          "impact": "critical",
-          "help": "Form elements must have labels",
-          "nodes": 1,
-          "sample": [
-            {
-              "target": "#\\:r7\\:",
-              "summary": "Fix any of the following:   Element does not have an implicit (wrapped) <label>   Element does not have an explicit <label>"
-            }
-          ]
-        }
-      ]
+      "violationCount": 0,
+      "violations": []
     },
     {
       "screen": "05-profile-new-student-1440-light.png",
-      "violationCount": 2,
-      "violations": [
-        {
-          "id": "label-title-only",
-          "impact": "serious",
-          "help": "Form elements should have a visible label",
-          "nodes": 1,
-          "sample": [
-            {
-              "target": "#\\:r8\\:",
-              "summary": "Fix all of the following:   Only title used to generate label for form element"
-            }
-          ]
-        },
-        {
-          "id": "label",
-          "impact": "critical",
-          "help": "Form elements must have labels",
-          "nodes": 1,
-          "sample": [
-            {
-              "target": "#\\:r8\\:",
-              "summary": "Fix any of the following:   Element does not have an implicit (wrapped) <label>   Element does not have an explicit <label>"
-            }
-          ]
-        }
-      ]
+      "violationCount": 0,
+      "violations": []
     },
     {
       "screen": "06-profile-resolved-correction-1440-light.png",
-      "violationCount": 2,
-      "violations": [
-        {
-          "id": "label-title-only",
-          "impact": "serious",
-          "help": "Form elements should have a visible label",
-          "nodes": 1,
-          "sample": [
-            {
-              "target": "#\\:r8\\:",
-              "summary": "Fix all of the following:   Only title used to generate label for form element"
-            }
-          ]
-        },
-        {
-          "id": "label",
-          "impact": "critical",
-          "help": "Form elements must have labels",
-          "nodes": 1,
-          "sample": [
-            {
-              "target": "#\\:r8\\:",
-              "summary": "Fix any of the following:   Element does not have an implicit (wrapped) <label>   Element does not have an explicit <label>"
-            }
-          ]
-        }
-      ]
+      "violationCount": 0,
+      "violations": []
     },
     {
       "screen": "07-correction-dialog-1440-light.png",
@@ -200,33 +50,8 @@
     },
     {
       "screen": "10-mobile-jump-menu-390-light.png",
-      "violationCount": 2,
-      "violations": [
-        {
-          "id": "label-title-only",
-          "impact": "serious",
-          "help": "Form elements should have a visible label",
-          "nodes": 1,
-          "sample": [
-            {
-              "target": "#\\:r7\\:",
-              "summary": "Fix all of the following:   Only title used to generate label for form element"
-            }
-          ]
-        },
-        {
-          "id": "label",
-          "impact": "critical",
-          "help": "Form elements must have labels",
-          "nodes": 1,
-          "sample": [
-            {
-              "target": "#\\:r7\\:",
-              "summary": "Fix any of the following:   Element does not have an implicit (wrapped) <label>   Element does not have an explicit <label>"
-            }
-          ]
-        }
-      ]
+      "violationCount": 0,
+      "violations": []
     },
     {
       "screen": "11-staff-profile-review-1440-light.png",
@@ -246,19 +71,11 @@
           "id": "color-contrast",
           "impact": "serious",
           "help": "Elements must meet minimum color contrast ratio thresholds",
-          "nodes": 4,
+          "nodes": 1,
           "sample": [
             {
               "target": ".mb-2",
               "summary": "Fix any of the following:   Element has insufficient color contrast of 3.92 (foreground color: #2374e7, background color: #181a1b, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1"
-            },
-            {
-              "target": ".space-y-4.pt-0.p-6 > .flex-wrap.gap-2.flex > .bg-primary.text-primary-foreground.border-primary-border",
-              "summary": "Fix any of the following:   Element has insufficient color contrast of 4.25 (foreground color: #fafafa, background color: #2374e7, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1"
-            },
-            {
-              "target": ".space-y-2.py-3[data-testid=\"staff-contact\"]:nth-child(1) > .flex-wrap.gap-2.flex:nth-child(4) > .bg-primary.text-primary-foreground.border-primary-border",
-              "summary": "Fix any of the following:   Element has insufficient color contrast of 4.25 (foreground color: #fafafa, background color: #2374e7, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1"
             }
           ]
         }

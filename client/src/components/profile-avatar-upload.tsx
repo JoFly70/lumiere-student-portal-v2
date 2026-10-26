@@ -150,6 +150,7 @@ export function ProfileAvatarUpload({
             disabled={uploading}
             className="sr-only"
             tabIndex={-1}
+            aria-label="Upload profile photo"
             aria-describedby={statusId}
             data-testid="input-photo-upload"
           />

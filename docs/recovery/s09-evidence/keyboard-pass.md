@@ -1,6 +1,6 @@
 # S09 keyboard pass — student profile
 
-Generated 2026-10-26T20:05:07.047Z by `scripts/s09/render-profile-screens.ts` (Chromium, 1440x900, light theme, fixture data, real page code).
+Generated 2026-10-26T20:08:59.317Z by `scripts/s09/render-profile-screens.ts` (Chromium, 1440x900, light theme, fixture data, real page code).
 
 Method: focus is moved to the document start, then `Tab` is pressed repeatedly; after each press the active element, its accessible name and its focus indicator (computed outline or box-shadow ring) are recorded. Afterwards every visible focusable element on the page is compared with the set that Tab reached.
 

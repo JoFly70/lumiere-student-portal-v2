@@ -83,12 +83,12 @@ describe("S09 profile: rich profile", () => {
     const attn = markup.slice(markup.indexOf('data-testid="readiness-attention"'), markup.indexOf('data-testid="readiness-waiting"'));
     const wait = markup.slice(markup.indexOf('data-testid="readiness-waiting"'), markup.indexOf('id="section-identity"'));
     expect(text(attn)).toContain("English proficiency proof needs a new upload");
-    expect(text(attn)).toContain("Add an emergency contact");
+    // Emergency contacts are on file, so nothing about them is "missing".
+    expect(text(markup)).not.toContain("Add an emergency contact");
     expect(text(attn)).not.toContain("being reviewed");
     expect(text(wait)).toContain("High school transcript is being reviewed");
     expect(text(wait)).toContain("Guardian authority is not yet verified");
-    expect(text(wait)).not.toContain("Add an emergency contact");
-    expect(count(markup, 'data-testid="readiness-item"')).toBe(4);
+    expect(count(markup, 'data-testid="readiness-item"')).toBe(3);
     expect(markup).toContain('href="#section-eligibility"');
   });
 

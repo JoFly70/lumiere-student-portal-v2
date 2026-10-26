@@ -44,7 +44,7 @@ export function ProfileSectionNav() {
   return (
     <nav
       aria-label="Profile sections"
-      className="z-30 -mx-4 hidden border-b border-student-line bg-student-bg px-4 shadow-sm sm:-mx-6 sm:px-6 md:sticky md:top-0 md:-mx-8 md:block md:px-8"
+      className="z-30 -mx-8 hidden min-w-0 border-b border-student-line bg-student-bg px-8 shadow-sm lg:sticky lg:top-0 lg:block"
       data-testid="section-nav"
     >
       <ul className="mx-auto flex max-w-6xl gap-1 overflow-x-auto py-1.5">
@@ -73,7 +73,7 @@ export function ProfileSectionNav() {
 export function ProfileJumpMenu() {
   const [open, setOpen] = useState(false);
   return (
-    <div className="student-surface fixed bottom-4 right-4 z-40 !bg-transparent md:hidden" data-testid="jump-menu">
+    <div className="student-surface fixed bottom-4 right-4 z-40 !bg-transparent lg:hidden" data-testid="jump-menu">
       {open && (
         <ul className="mb-2 overflow-hidden rounded-xl border border-student-line bg-student-card shadow-lg" aria-label="Jump to section">
           {sections.map((s) => (

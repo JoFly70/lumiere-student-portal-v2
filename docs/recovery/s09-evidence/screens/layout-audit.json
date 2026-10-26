@@ -26,24 +26,8 @@
   {
     "width": 768,
     "screen": "student profile",
-    "overflow": true,
-    "problems": [
-      "page scrolls horizontally: 898 > 768",
-      "beyond viewport: div[flex flex-col flex-1] right=898",
-      "beyond viewport: header[flex items-center justify-between p-4 border-b] right=898",
-      "beyond viewport: div[flex items-center gap-2] right=882",
-      "beyond viewport: button[button-theme-toggle] right=838",
-      "wide: div[page-student-profile] 642px",
-      "wide: nav[section-nav] 642px",
-      "wide: ul[mx-auto flex max-w-6xl gap-1 overflow-x-] 578px",
-      "wide: div[mx-auto max-w-6xl space-y-10 pt-6] 578px",
-      "wide: header[profile-header] 578px",
-      "wide: section[readiness-panel] 578px",
-      "wide: section[profile-section-identity] 578px",
-      "wide: div[space-y-1] 578px",
-      "wide: p[text-xs font-semibold uppercase tracking] 578px",
-      "wide: h2[font-serif text-2xl tracking-tight text-] 578px"
-    ]
+    "overflow": false,
+    "problems": []
   },
   {
     "width": 768,
@@ -51,6 +35,7 @@
     "overflow": true,
     "problems": [
       "page scrolls horizontally: 840 > 768",
+      "overflow persists with the Profile & identity panel hidden (pre-existing shell/workspace)",
       "beyond viewport: div[flex flex-col flex-1] right=840",
       "beyond viewport: header[flex items-center justify-between p-4 border-b] right=840",
       "beyond viewport: div[flex items-center gap-2] right=824",
