@@ -511,7 +511,7 @@ export default function Documents() {
                 />
               </div>
               <Select value={selectedStatus} onValueChange={(v) => setSelectedStatus(v as DocumentStatus | "all")}>
-                <SelectTrigger className="w-full sm:w-40" data-testid="select-status-filter">
+                <SelectTrigger className="w-full sm:w-40" aria-label="Filter by status" data-testid="select-status-filter">
                   <Filter className="h-4 w-4 mr-2" />
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
@@ -628,6 +628,7 @@ export default function Documents() {
                                     variant="ghost"
                                     size="icon"
                                     onClick={() => handlePreview(doc)}
+                                    aria-label={`Preview ${doc.file_name}`}
                                     data-testid={`button-preview-${doc.id}`}
                                   >
                                     <Eye className="h-4 w-4" />
@@ -636,6 +637,7 @@ export default function Documents() {
                                     variant="ghost"
                                     size="icon"
                                     onClick={() => handleDownload(doc)}
+                                    aria-label={`Download ${doc.file_name}`}
                                     data-testid={`button-download-${doc.id}`}
                                   >
                                     <Download className="h-4 w-4" />
@@ -644,6 +646,7 @@ export default function Documents() {
                                     variant="ghost"
                                     size="icon"
                                     onClick={() => handleDelete(doc.id, doc.file_name)}
+                                    aria-label={`Delete ${doc.file_name}`}
                                     data-testid={`button-delete-${doc.id}`}
                                     disabled={deleteDocument.isPending}
                                   >
@@ -691,6 +694,7 @@ export default function Documents() {
                   variant="ghost"
                   size="icon"
                   onClick={() => { setPreviewDocument(null); setPreviewUrl(null); }}
+                  aria-label="Close preview"
                   data-testid="button-close-preview"
                 >
                   <X className="h-5 w-5" />

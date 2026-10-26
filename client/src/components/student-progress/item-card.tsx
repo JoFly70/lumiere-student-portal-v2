@@ -205,7 +205,7 @@ export function ItemCard({
               />
             )}
           </span>
-          {blockedInline && (
+          {blockedInline && !open && (
             <span className="block text-sm text-st-attention" data-testid="blocked-inline">
               {blockedInline}
             </span>

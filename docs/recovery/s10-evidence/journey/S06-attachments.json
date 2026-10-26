@@ -1,0 +1,19 @@
+{
+  "step": "S6 attachment path + ownership",
+  "ownUploadPathShape": "tickets/<ticket>/<uploader>/<stamp>.pdf",
+  "ownRegister": 201,
+  "rejectedPaths": [
+    400,
+    400,
+    400,
+    400,
+    400
+  ],
+  "disallowedFileType": 400,
+  "studentSeesStaffAttachment": false,
+  "studentDownloadOfInternalAttachment": 404,
+  "studentDownloadOwn": 200,
+  "otherStudentDownload": 404,
+  "staffDownloadInternal": 200,
+  "signedUrlSeconds": 300
+}

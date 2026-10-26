@@ -1,0 +1,7 @@
+{
+  "step": "S4 staff reply + internal note",
+  "publicReply": 201,
+  "internalNote": 201,
+  "statusAfterReply": "in_progress",
+  "staffSeesInternalNote": true
+}

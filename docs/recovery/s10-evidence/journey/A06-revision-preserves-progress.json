@@ -1,0 +1,18 @@
+{
+  "step": "A6 revision v2",
+  "added": [
+    "business-324",
+    "introduction-to-chemistry"
+  ],
+  "removedWithProgress": [
+    "business-308",
+    "opm-3010"
+  ],
+  "rescheduledItemKeepsProgress": true,
+  "replacementsStartEmpty": true,
+  "retiredProgress": [
+    "business-308",
+    "opm-3010"
+  ],
+  "publishedVersion": 2
+}

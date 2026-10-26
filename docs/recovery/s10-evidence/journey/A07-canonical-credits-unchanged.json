@@ -1,0 +1,14 @@
+{
+  "step": "A7 canonical credit tables unchanged by import/publish/student activity",
+  "tables": [
+    "student_credit_records",
+    "student_credit_decisions",
+    "student_credit_verification_events",
+    "student_program_assignments"
+  ],
+  "identical": true,
+  "foundationLadderUnchangedByStudentActivity": true,
+  "studentAdminEndpoints": 403,
+  "studentCreditOrPlanFields": 400,
+  "officiallyAcceptedAsStudentStatus": 400
+}

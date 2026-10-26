@@ -12,7 +12,7 @@ import {
   nextMilestone,
   upcomingPhases,
 } from "@/pages/student-roadmap-presentation";
-import { Pill, SectionHeading, cardClass } from "./student-ui";
+import { Disclosure, Pill, SectionHeading, cardClass } from "./student-ui";
 
 function MilestoneMarker({ m }: { m: StudentRoadmapMilestoneView }) {
   const Icon = m.kind === "graduation" ? GraduationCap : Flag;
@@ -27,6 +27,19 @@ function MilestoneMarker({ m }: { m: StudentRoadmapMilestoneView }) {
     >
       <Icon className="h-4 w-4" />
     </span>
+  );
+}
+
+const SHOWN_PHASES = 2;
+
+function PhaseRow({ p }: { p: StudentRoadmapView["phases"][number] }) {
+  return (
+    <li className="text-sm">
+      <p className="font-medium text-student-ink">{p.title}</p>
+      <p className="text-student-muted">
+        {[dateRangeLabel(p.startDate, p.endDate), `${p.counts.itemsTotal} ${p.counts.itemsTotal === 1 ? "item" : "items"}`].filter(Boolean).join(" · ")}
+      </p>
+    </li>
   );
 }
 
@@ -72,15 +85,19 @@ export function HorizonSection({ view }: { view: StudentRoadmapView }) {
           <div className={cn(cardClass, milestones.length > 0 ? "lg:col-span-2" : "lg:col-span-5")}>
             <h3 className="mb-3 text-sm font-semibold text-student-ink">Phases still to come</h3>
             <ul className="space-y-3" data-testid="upcoming-phases">
-              {phases.map((p) => (
-                <li key={p.key} className="text-sm">
-                  <p className="font-medium text-student-ink">{p.title}</p>
-                  <p className="text-student-muted">
-                    {[dateRangeLabel(p.startDate, p.endDate), `${p.counts.itemsTotal} ${p.counts.itemsTotal === 1 ? "item" : "items"}`].filter(Boolean).join(" · ")}
-                  </p>
-                </li>
+              {phases.slice(0, SHOWN_PHASES).map((p) => (
+                <PhaseRow key={p.key} p={p} />
               ))}
             </ul>
+            {phases.length > SHOWN_PHASES && (
+              <Disclosure label={`Show ${phases.length - SHOWN_PHASES} more phases`} className="mt-1 border-t border-student-line" testId="more-phases">
+                <ul className="space-y-3 pt-2" data-testid="upcoming-phases-rest">
+                  {phases.slice(SHOWN_PHASES).map((p) => (
+                    <PhaseRow key={p.key} p={p} />
+                  ))}
+                </ul>
+              </Disclosure>
+            )}
           </div>
         )}
       </div>

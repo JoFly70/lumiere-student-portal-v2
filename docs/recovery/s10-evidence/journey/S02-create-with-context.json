@@ -1,0 +1,30 @@
+{
+  "step": "S2 create with verified roadmap context",
+  "rejected": {
+    "staleRemovedInV2": {
+      "status": 400,
+      "code": "CONTEXT_NOT_IN_PLAN"
+    },
+    "foreignOtherStudentsPlan": {
+      "status": 400,
+      "code": "CONTEXT_NOT_IN_PLAN"
+    },
+    "invented": {
+      "status": 400,
+      "code": "CONTEXT_NOT_IN_PLAN"
+    }
+  },
+  "ticketsStoredAfterRejections": 0,
+  "created": {
+    "status": 201,
+    "context": {
+      "kind": "roadmap_item",
+      "itemKey": "business-103",
+      "title": "Business Law",
+      "code": "Business 103",
+      "itemKind": "course",
+      "planVersion": 2,
+      "verifiedAt": "<ts>"
+    }
+  }
+}

@@ -113,7 +113,7 @@ export function StageTrack({ stage }: { stage: StudentItemStage; label?: string 
               </span>
               <span
                 className={cn(
-                  "mt-1 block text-[10px] leading-tight tracking-tight sm:text-xs",
+                  "mt-1 block text-xs leading-tight tracking-tight [overflow-wrap:anywhere]",
                   i === current ? "font-semibold text-student-ink" : reached ? "text-student-ink" : "text-student-muted",
                 )}
               >
@@ -250,7 +250,12 @@ export function PhasePips({ phase }: { phase: StudentRoadmapPhaseView }) {
  * and graduation. Horizontal from md, a vertical rail on phones.
  */
 export function JourneyStrip({ view }: { view: StudentRoadmapView }) {
-  const phases = sortedPhases(view);
+  const allPhases = sortedPhases(view);
+  // Long journeys: show the next upcoming phase, then one grouped row for the rest (no wall of identical rows).
+  const upcomingAll = allPhases.filter((p) => p.state === "upcoming");
+  const grouped = upcomingAll.length > 2 ? upcomingAll.slice(1) : [];
+  const phases = allPhases.filter((p) => !grouped.includes(p));
+  const groupedCourses = grouped.reduce((n, p) => n + activeItems(p).length, 0);
   const grad = horizonMilestones(view).find((m) => m.kind === "graduation");
   const baseline = priorCreditBaseline(view.foundation);
   return (
@@ -296,6 +301,20 @@ export function JourneyStrip({ view }: { view: StudentRoadmapView }) {
             </li>
           );
         })}
+        {grouped.length > 0 && (
+          <li className="relative flex gap-3 pb-1 md:flex-col md:gap-2" data-strip="more" data-testid="strip-more-phases">
+            <Rail />
+            <span className="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-dashed border-student-line-strong bg-student-card text-xs font-semibold text-student-muted" aria-hidden="true">
+              +{grouped.length}
+            </span>
+            <div className="min-w-0 space-y-1">
+              <p className="font-serif text-base leading-snug text-student-ink">{grouped.length} more phases</p>
+              <p className="text-sm text-student-muted">
+                {groupedCourses} {groupedCourses === 1 ? "course" : "courses"}, not started. Details under The horizon.
+              </p>
+            </div>
+          </li>
+        )}
         <li className="relative flex gap-3 md:flex-col md:gap-2" data-strip="end">
           <span className="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-student-gold-ink bg-student-card text-student-gold-ink" aria-hidden="true">
             {grad ? <GraduationCap className="h-4 w-4" /> : <Flag className="h-4 w-4" />}

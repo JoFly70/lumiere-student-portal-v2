@@ -170,6 +170,27 @@ export function CreditLadder({ ladder }: { ladder: Ladder }) {
   );
 }
 
+/** One sentence and two numbers: applied of required, and what is still pending. The full ladder sits behind a disclosure. */
+function LadderLead({ ladder }: { ladder: Ladder }) {
+  const applied = formatDecimal(ladder.applied);
+  const required = formatDecimal(ladder.required);
+  const pending: string[] = [];
+  if (hasPositive(ladder.provisional)) pending.push(`${creditsText(ladder.provisional)} waiting for verification`);
+  if (hasPositive(ladder.planned)) pending.push(`${creditsText(ladder.planned)} planned on your roadmap (not credit yet)`);
+  const lead = applied !== null && required !== null ? `${applied} of ${required} credits applied to your degree` : ladderTotalsSentence(ladder);
+  return (
+    <div data-testid="ladder-lead">
+      <p className="font-serif text-xl text-student-ink" data-testid="ladder-lead-sentence">{lead}</p>
+      {applied !== null && required !== null && (
+        <div className="relative mt-2 h-2.5 w-full rounded-full bg-student-line/60" aria-hidden="true">
+          <span className="absolute inset-y-0 left-0 rounded-full" style={{ ...SEG.applied, width: `${Math.round(barFraction(ladder.applied, Math.max(Number(required), 1)) * 1000) / 10}%` }} />
+        </div>
+      )}
+      {pending.length > 0 && <p className="mt-2 text-sm text-student-muted" data-testid="ladder-pending">{pending.join(" · ")}</p>}
+    </div>
+  );
+}
+
 export function CredentialsList({ foundation }: { foundation: StudentFoundationView }) {
   if (foundation.credentials.length === 0) return null;
   return (
@@ -229,8 +250,13 @@ export function FoundationSection({
           </div>
         )}
         <div className={cn(cardClass, foundation.credentials.length > 0 ? "lg:col-span-2" : "lg:col-span-5")}>
-          <h3 className="mb-3 text-sm font-semibold text-student-ink">Your credit ladder</h3>
-          <CreditLadder ladder={foundation.ladder} />
+          <h3 className="mb-2 text-sm font-semibold text-student-ink">Your credits</h3>
+          <LadderLead ladder={foundation.ladder} />
+          <Disclosure label="See the full credit ladder" className="mt-1 border-t border-student-line" testId="ladder-full">
+            <div className="pt-2">
+              <CreditLadder ladder={foundation.ladder} />
+            </div>
+          </Disclosure>
           {note && <p className="mt-3 text-sm text-student-muted" data-testid="foundation-note">{note}</p>}
           <Disclosure label="What these words mean" className="mt-2 border-t border-student-line" testId="ladder-help">
             <div className="space-y-2 pb-2 text-sm text-student-muted">

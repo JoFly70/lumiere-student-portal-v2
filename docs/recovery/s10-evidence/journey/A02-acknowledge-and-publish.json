@@ -1,0 +1,22 @@
+{
+  "step": "A2 warnings need acknowledgement, then admin publishes",
+  "warningCodesAcknowledged": [
+    "COMPANION_ROW_UNMATCHED",
+    "CONDITIONAL_ALLOCATION",
+    "DEADLINE_CONFLICT",
+    "EQUIVALENCY_CONDITIONAL",
+    "EXAM_AFTER_TERM_DEADLINE",
+    "LICENSING_CREDIT_SEPARATE",
+    "REGISTRATION_AFTER_DEADLINE",
+    "REGISTRATION_GATE_UNDOCUMENTED",
+    "REPORTED_HISTORY_NOT_CREDIT",
+    "SCHEDULE_STALE",
+    "STARTING_CREDITS_UNVERIFIED"
+  ],
+  "staffPublish": 403,
+  "publishBeforeAcknowledge": 422,
+  "stalePublish": 409,
+  "adminPublish": 200,
+  "publishedVersion": 1,
+  "previewContainsStaffOnlyData": false
+}
