@@ -319,7 +319,10 @@ export interface PaceView {
 }
 
 export function paceView(pace: StudentHighSchoolView["pace"]): PaceView {
-  const weekly = pace.weeklyTargetHalfUnits !== null ? `Weekly target: ${creditsLabel(pace.weeklyTargetHalfUnits)}. ` : "";
+  // One pace measure only: the status is computed from the monthly milestones, so a weekly figure
+  // is shown only when the plan has no milestones (two measures can disagree on one card).
+  const usesMilestones = pace.expectedByNowHalfUnits !== null || pace.nextMilestone !== null;
+  const weekly = !usesMilestones && pace.weeklyTargetHalfUnits !== null ? `Weekly target: ${creditsLabel(pace.weeklyTargetHalfUnits)}. ` : "";
   switch (pace.status) {
     case "on_track":
       return { key: "progress", label: "On track", detail: `${weekly}You are keeping up with your plan.` };

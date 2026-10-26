@@ -160,6 +160,12 @@ describe("S11 pace and target wording", () => {
     expect(targetDateLine({ ...HS_MID_WAY, enrollment: { ...HS_MID_WAY.enrollment, targetCompletionDate: null } }, formatShortDate)).toMatch(/Lumière will set/);
     expect(targetDateLine(HS_AWAITING_REVIEW, formatShortDate)).toMatch(/All required credits are official/);
   });
+  it("shows one pace measure: no weekly figure next to milestones", () => {
+    const withMilestones = paceView({ weeklyTargetHalfUnits: 1, expectedByNowHalfUnits: 26, status: "behind", nextMilestone: { month: "2026-12", cumulativeHalfUnits: 28 } });
+    expect(withMilestones.detail).not.toMatch(/Weekly target/);
+    const weeklyOnly = paceView({ weeklyTargetHalfUnits: 1, expectedByNowHalfUnits: null, status: "on_track", nextMilestone: null });
+    expect(weeklyOnly.detail).toMatch(/Weekly target: 0.5 credits/);
+  });
   it("date helpers", () => {
     expect(daysUntil("2026-10-28", "2026-10-26")).toBe(2);
     expect(dueLabel("2026-10-19", HS_TODAY, formatShortDate)).toBe("Target was Oct 19, 2026");

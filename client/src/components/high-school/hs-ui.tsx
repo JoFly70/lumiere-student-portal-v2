@@ -86,6 +86,7 @@ export function CreditRing({
       <div className="absolute inset-0 flex flex-col items-center justify-center text-center" aria-hidden="true">
         <span className="font-serif text-4xl leading-none tracking-tight text-student-ink">{formatHalfUnits(earned)}</span>
         <span className="mt-1 text-xs text-student-muted">of {formatHalfUnits(required)} {required === 2 ? "credit" : "credits"}</span>
+        <span className="text-[11px] font-semibold uppercase tracking-wide text-student-gold-ink">earned</span>
       </div>
     </div>
   );
