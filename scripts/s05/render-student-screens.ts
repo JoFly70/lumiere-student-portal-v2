@@ -23,7 +23,9 @@ const require = createRequire(import.meta.url);
 const { chromium } = require("playwright");
 
 const ROOT = path.resolve(import.meta.dirname, "../..");
-const OUT = path.join(ROOT, "docs/recovery/s05-evidence/screens");
+const OUT = process.env.S05_SCREENS_OUT
+  ? path.resolve(process.env.S05_SCREENS_OUT)
+  : path.join(ROOT, "docs/recovery/s05-evidence/screens");
 const PORT = Number(process.env.S05_PORT ?? 5189);
 const BASE = `http://localhost:${PORT}`;
 const AXE = fs.readFileSync(path.join(ROOT, "node_modules/axe-core/axe.min.js"), "utf8");

@@ -1,0 +1,2117 @@
+{
+  "contractVersion": "student-roadmap/1",
+  "state": "PUBLISHED",
+  "preview": false,
+  "plan": {
+    "title": "Scenario R — intensive completion plan",
+    "summary": "Associate degree already completed. Sixteen Sophia courses in eight weekly blocks, two per week.",
+    "versionNumber": 1,
+    "publishedAt": "2026-10-01T09:00:00.000Z"
+  },
+  "objectives": [
+    {
+      "key": "primary",
+      "title": "Bachelor of Science in Business Studies",
+      "kind": "primary",
+      "institution": "Pathways State University",
+      "credentialLabel": "BS",
+      "status": "active",
+      "note": null,
+      "canonicalProgramName": "Bachelor of Science in Business Studies",
+      "counts": {
+        "itemsTotal": 16,
+        "itemsOfficiallyAccepted": 0,
+        "itemsProviderComplete": 1,
+        "itemsInProgress": 2,
+        "itemsNotStarted": 13,
+        "tasksTotal": 157,
+        "tasksGraded": 15,
+        "tasksSubmitted": 1
+      }
+    }
+  ],
+  "phases": [
+    {
+      "key": "week-1",
+      "title": "Week 1",
+      "sequence": 1,
+      "objectiveKey": null,
+      "startDate": null,
+      "endDate": null,
+      "description": null,
+      "items": [
+        {
+          "key": "r-acct-101",
+          "phaseKey": "week-1",
+          "objectiveKey": "primary",
+          "sequence": 1,
+          "kind": "course",
+          "code": "ACCT-101",
+          "title": "Financial Accounting",
+          "provider": "Sophia",
+          "institution": "Pathways State University",
+          "credits": "3",
+          "plannedStart": "2026-11-02",
+          "plannedEnd": "2026-11-08",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": "Finish challenges early in the week; touchstones last.",
+          "waitingOn": [],
+          "itemStatus": "provider_complete",
+          "itemRevision": 1,
+          "tasks": [
+            {
+              "key": "challenge-1",
+              "kind": "challenge",
+              "title": "Challenge 1",
+              "status": "graded",
+              "revision": 1,
+              "updatedAt": "2026-10-20T12:00:00.000Z"
+            },
+            {
+              "key": "challenge-2",
+              "kind": "challenge",
+              "title": "Challenge 2",
+              "status": "graded",
+              "revision": 1,
+              "updatedAt": "2026-10-20T12:00:00.000Z"
+            },
+            {
+              "key": "challenge-3",
+              "kind": "challenge",
+              "title": "Challenge 3",
+              "status": "graded",
+              "revision": 1,
+              "updatedAt": "2026-10-20T12:00:00.000Z"
+            },
+            {
+              "key": "challenge-4",
+              "kind": "challenge",
+              "title": "Challenge 4",
+              "status": "graded",
+              "revision": 1,
+              "updatedAt": "2026-10-20T12:00:00.000Z"
+            },
+            {
+              "key": "challenge-5",
+              "kind": "challenge",
+              "title": "Challenge 5",
+              "status": "graded",
+              "revision": 1,
+              "updatedAt": "2026-10-20T12:00:00.000Z"
+            },
+            {
+              "key": "milestone-1",
+              "kind": "milestone",
+              "title": "Milestone 1",
+              "status": "graded",
+              "revision": 1,
+              "updatedAt": "2026-10-20T12:00:00.000Z"
+            },
+            {
+              "key": "milestone-2",
+              "kind": "milestone",
+              "title": "Milestone 2",
+              "status": "graded",
+              "revision": 1,
+              "updatedAt": "2026-10-20T12:00:00.000Z"
+            },
+            {
+              "key": "milestone-3",
+              "kind": "milestone",
+              "title": "Milestone 3",
+              "status": "graded",
+              "revision": 1,
+              "updatedAt": "2026-10-20T12:00:00.000Z"
+            },
+            {
+              "key": "milestone-4",
+              "kind": "milestone",
+              "title": "Milestone 4",
+              "status": "graded",
+              "revision": 1,
+              "updatedAt": "2026-10-20T12:00:00.000Z"
+            },
+            {
+              "key": "touchstone-1",
+              "kind": "touchstone",
+              "title": "Touchstone 1",
+              "status": "graded",
+              "revision": 1,
+              "updatedAt": "2026-10-20T12:00:00.000Z"
+            },
+            {
+              "key": "touchstone-2",
+              "kind": "touchstone",
+              "title": "Touchstone 2",
+              "status": "graded",
+              "revision": 1,
+              "updatedAt": "2026-10-20T12:00:00.000Z"
+            }
+          ],
+          "taskCounts": {
+            "total": 11,
+            "graded": 11,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 0
+          },
+          "stage": "provider_complete",
+          "official": null,
+          "canReport": true
+        },
+        {
+          "key": "r-bus-110",
+          "phaseKey": "week-1",
+          "objectiveKey": "primary",
+          "sequence": 2,
+          "kind": "course",
+          "code": "BUS-110",
+          "title": "Introduction to Business",
+          "provider": "Sophia",
+          "institution": "Pathways State University",
+          "credits": "3",
+          "plannedStart": "2026-11-02",
+          "plannedEnd": "2026-11-08",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "challenge-1",
+              "kind": "challenge",
+              "title": "Challenge 1",
+              "status": "graded",
+              "revision": 1,
+              "updatedAt": "2026-10-20T12:00:00.000Z"
+            },
+            {
+              "key": "challenge-2",
+              "kind": "challenge",
+              "title": "Challenge 2",
+              "status": "graded",
+              "revision": 1,
+              "updatedAt": "2026-10-20T12:00:00.000Z"
+            },
+            {
+              "key": "challenge-3",
+              "kind": "challenge",
+              "title": "Challenge 3",
+              "status": "graded",
+              "revision": 1,
+              "updatedAt": "2026-10-20T12:00:00.000Z"
+            },
+            {
+              "key": "challenge-4",
+              "kind": "challenge",
+              "title": "Challenge 4",
+              "status": "graded",
+              "revision": 1,
+              "updatedAt": "2026-10-20T12:00:00.000Z"
+            },
+            {
+              "key": "milestone-1",
+              "kind": "milestone",
+              "title": "Milestone 1",
+              "status": "submitted",
+              "revision": 1,
+              "updatedAt": "2026-10-20T12:00:00.000Z"
+            },
+            {
+              "key": "milestone-2",
+              "kind": "milestone",
+              "title": "Milestone 2",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-3",
+              "kind": "milestone",
+              "title": "Milestone 3",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "touchstone-1",
+              "kind": "touchstone",
+              "title": "Touchstone 1",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 8,
+            "graded": 4,
+            "submitted": 1,
+            "inProgress": 0,
+            "notStarted": 3
+          },
+          "stage": "in_progress",
+          "official": null,
+          "canReport": true
+        }
+      ],
+      "counts": {
+        "itemsTotal": 2,
+        "itemsOfficiallyAccepted": 0,
+        "itemsProviderComplete": 1,
+        "itemsInProgress": 1,
+        "itemsNotStarted": 0,
+        "tasksTotal": 19,
+        "tasksGraded": 15,
+        "tasksSubmitted": 1
+      },
+      "state": "current"
+    },
+    {
+      "key": "week-2",
+      "title": "Week 2",
+      "sequence": 2,
+      "objectiveKey": null,
+      "startDate": null,
+      "endDate": null,
+      "description": null,
+      "items": [
+        {
+          "key": "r-econ-101",
+          "phaseKey": "week-2",
+          "objectiveKey": "primary",
+          "sequence": 3,
+          "kind": "course",
+          "code": "ECON-101",
+          "title": "Principles of Macroeconomics",
+          "provider": "Sophia",
+          "institution": "Pathways State University",
+          "credits": "3",
+          "plannedStart": "2026-11-09",
+          "plannedEnd": "2026-11-15",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": "Finish challenges early in the week; touchstones last.",
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "challenge-1",
+              "kind": "challenge",
+              "title": "Challenge 1",
+              "status": "in_progress",
+              "revision": 1,
+              "updatedAt": "2026-10-20T12:00:00.000Z"
+            },
+            {
+              "key": "challenge-2",
+              "kind": "challenge",
+              "title": "Challenge 2",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-3",
+              "kind": "challenge",
+              "title": "Challenge 3",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-4",
+              "kind": "challenge",
+              "title": "Challenge 4",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-5",
+              "kind": "challenge",
+              "title": "Challenge 5",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-1",
+              "kind": "milestone",
+              "title": "Milestone 1",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-2",
+              "kind": "milestone",
+              "title": "Milestone 2",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-3",
+              "kind": "milestone",
+              "title": "Milestone 3",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-4",
+              "kind": "milestone",
+              "title": "Milestone 4",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "touchstone-1",
+              "kind": "touchstone",
+              "title": "Touchstone 1",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "touchstone-2",
+              "kind": "touchstone",
+              "title": "Touchstone 2",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 11,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 1,
+            "notStarted": 10
+          },
+          "stage": "in_progress",
+          "official": null,
+          "canReport": true
+        },
+        {
+          "key": "r-econ-102",
+          "phaseKey": "week-2",
+          "objectiveKey": "primary",
+          "sequence": 4,
+          "kind": "course",
+          "code": "ECON-102",
+          "title": "Principles of Microeconomics",
+          "provider": "Sophia",
+          "institution": "Pathways State University",
+          "credits": "3",
+          "plannedStart": "2026-11-09",
+          "plannedEnd": "2026-11-15",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "challenge-1",
+              "kind": "challenge",
+              "title": "Challenge 1",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-2",
+              "kind": "challenge",
+              "title": "Challenge 2",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-3",
+              "kind": "challenge",
+              "title": "Challenge 3",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-4",
+              "kind": "challenge",
+              "title": "Challenge 4",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-5",
+              "kind": "challenge",
+              "title": "Challenge 5",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-1",
+              "kind": "milestone",
+              "title": "Milestone 1",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-2",
+              "kind": "milestone",
+              "title": "Milestone 2",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-3",
+              "kind": "milestone",
+              "title": "Milestone 3",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-4",
+              "kind": "milestone",
+              "title": "Milestone 4",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "touchstone-1",
+              "kind": "touchstone",
+              "title": "Touchstone 1",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "touchstone-2",
+              "kind": "touchstone",
+              "title": "Touchstone 2",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 11,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 11
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true
+        }
+      ],
+      "counts": {
+        "itemsTotal": 2,
+        "itemsOfficiallyAccepted": 0,
+        "itemsProviderComplete": 0,
+        "itemsInProgress": 1,
+        "itemsNotStarted": 1,
+        "tasksTotal": 22,
+        "tasksGraded": 0,
+        "tasksSubmitted": 0
+      },
+      "state": "upcoming"
+    },
+    {
+      "key": "week-3",
+      "title": "Week 3",
+      "sequence": 3,
+      "objectiveKey": null,
+      "startDate": null,
+      "endDate": null,
+      "description": null,
+      "items": [
+        {
+          "key": "r-mkt-201",
+          "phaseKey": "week-3",
+          "objectiveKey": "primary",
+          "sequence": 5,
+          "kind": "course",
+          "code": "MKT-201",
+          "title": "Principles of Marketing",
+          "provider": "Sophia",
+          "institution": "Pathways State University",
+          "credits": "3",
+          "plannedStart": "2026-11-16",
+          "plannedEnd": "2026-11-22",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": "Finish challenges early in the week; touchstones last.",
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "challenge-1",
+              "kind": "challenge",
+              "title": "Challenge 1",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-2",
+              "kind": "challenge",
+              "title": "Challenge 2",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-3",
+              "kind": "challenge",
+              "title": "Challenge 3",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-4",
+              "kind": "challenge",
+              "title": "Challenge 4",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-1",
+              "kind": "milestone",
+              "title": "Milestone 1",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-2",
+              "kind": "milestone",
+              "title": "Milestone 2",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-3",
+              "kind": "milestone",
+              "title": "Milestone 3",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "touchstone-1",
+              "kind": "touchstone",
+              "title": "Touchstone 1",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 8,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 8
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true
+        },
+        {
+          "key": "r-mgt-201",
+          "phaseKey": "week-3",
+          "objectiveKey": "primary",
+          "sequence": 6,
+          "kind": "course",
+          "code": "MGT-201",
+          "title": "Principles of Management",
+          "provider": "Sophia",
+          "institution": "Pathways State University",
+          "credits": "3",
+          "plannedStart": "2026-11-16",
+          "plannedEnd": "2026-11-22",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "challenge-1",
+              "kind": "challenge",
+              "title": "Challenge 1",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-2",
+              "kind": "challenge",
+              "title": "Challenge 2",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-3",
+              "kind": "challenge",
+              "title": "Challenge 3",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-4",
+              "kind": "challenge",
+              "title": "Challenge 4",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-1",
+              "kind": "milestone",
+              "title": "Milestone 1",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-2",
+              "kind": "milestone",
+              "title": "Milestone 2",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-3",
+              "kind": "milestone",
+              "title": "Milestone 3",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "touchstone-1",
+              "kind": "touchstone",
+              "title": "Touchstone 1",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 8,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 8
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true
+        }
+      ],
+      "counts": {
+        "itemsTotal": 2,
+        "itemsOfficiallyAccepted": 0,
+        "itemsProviderComplete": 0,
+        "itemsInProgress": 0,
+        "itemsNotStarted": 2,
+        "tasksTotal": 16,
+        "tasksGraded": 0,
+        "tasksSubmitted": 0
+      },
+      "state": "upcoming"
+    },
+    {
+      "key": "week-4",
+      "title": "Week 4",
+      "sequence": 4,
+      "objectiveKey": null,
+      "startDate": null,
+      "endDate": null,
+      "description": null,
+      "items": [
+        {
+          "key": "r-stat-210",
+          "phaseKey": "week-4",
+          "objectiveKey": "primary",
+          "sequence": 7,
+          "kind": "course",
+          "code": "STAT-210",
+          "title": "Introduction to Statistics",
+          "provider": "Sophia",
+          "institution": "Pathways State University",
+          "credits": "3",
+          "plannedStart": "2026-11-23",
+          "plannedEnd": "2026-11-29",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": "Finish challenges early in the week; touchstones last.",
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "challenge-1",
+              "kind": "challenge",
+              "title": "Challenge 1",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-2",
+              "kind": "challenge",
+              "title": "Challenge 2",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-3",
+              "kind": "challenge",
+              "title": "Challenge 3",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-4",
+              "kind": "challenge",
+              "title": "Challenge 4",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-5",
+              "kind": "challenge",
+              "title": "Challenge 5",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-6",
+              "kind": "challenge",
+              "title": "Challenge 6",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-1",
+              "kind": "milestone",
+              "title": "Milestone 1",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-2",
+              "kind": "milestone",
+              "title": "Milestone 2",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-3",
+              "kind": "milestone",
+              "title": "Milestone 3",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-4",
+              "kind": "milestone",
+              "title": "Milestone 4",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "touchstone-1",
+              "kind": "touchstone",
+              "title": "Touchstone 1",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "touchstone-2",
+              "kind": "touchstone",
+              "title": "Touchstone 2",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 12,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 12
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true
+        },
+        {
+          "key": "r-bus-220",
+          "phaseKey": "week-4",
+          "objectiveKey": "primary",
+          "sequence": 8,
+          "kind": "course",
+          "code": "BUS-220",
+          "title": "Business Law",
+          "provider": "Sophia",
+          "institution": "Pathways State University",
+          "credits": "3",
+          "plannedStart": "2026-11-23",
+          "plannedEnd": "2026-11-29",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "challenge-1",
+              "kind": "challenge",
+              "title": "Challenge 1",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-2",
+              "kind": "challenge",
+              "title": "Challenge 2",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-3",
+              "kind": "challenge",
+              "title": "Challenge 3",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-4",
+              "kind": "challenge",
+              "title": "Challenge 4",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-5",
+              "kind": "challenge",
+              "title": "Challenge 5",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-1",
+              "kind": "milestone",
+              "title": "Milestone 1",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-2",
+              "kind": "milestone",
+              "title": "Milestone 2",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-3",
+              "kind": "milestone",
+              "title": "Milestone 3",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "touchstone-1",
+              "kind": "touchstone",
+              "title": "Touchstone 1",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 9,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 9
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true
+        }
+      ],
+      "counts": {
+        "itemsTotal": 2,
+        "itemsOfficiallyAccepted": 0,
+        "itemsProviderComplete": 0,
+        "itemsInProgress": 0,
+        "itemsNotStarted": 2,
+        "tasksTotal": 21,
+        "tasksGraded": 0,
+        "tasksSubmitted": 0
+      },
+      "state": "upcoming"
+    },
+    {
+      "key": "week-5",
+      "title": "Week 5",
+      "sequence": 5,
+      "objectiveKey": null,
+      "startDate": null,
+      "endDate": null,
+      "description": null,
+      "items": [
+        {
+          "key": "r-fin-301",
+          "phaseKey": "week-5",
+          "objectiveKey": "primary",
+          "sequence": 9,
+          "kind": "course",
+          "code": "FIN-301",
+          "title": "Corporate Finance",
+          "provider": "Sophia",
+          "institution": "Pathways State University",
+          "credits": "3",
+          "plannedStart": "2026-11-30",
+          "plannedEnd": "2026-12-06",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": "Finish challenges early in the week; touchstones last.",
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "challenge-1",
+              "kind": "challenge",
+              "title": "Challenge 1",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-2",
+              "kind": "challenge",
+              "title": "Challenge 2",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-3",
+              "kind": "challenge",
+              "title": "Challenge 3",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-4",
+              "kind": "challenge",
+              "title": "Challenge 4",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-5",
+              "kind": "challenge",
+              "title": "Challenge 5",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-1",
+              "kind": "milestone",
+              "title": "Milestone 1",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-2",
+              "kind": "milestone",
+              "title": "Milestone 2",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-3",
+              "kind": "milestone",
+              "title": "Milestone 3",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-4",
+              "kind": "milestone",
+              "title": "Milestone 4",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "touchstone-1",
+              "kind": "touchstone",
+              "title": "Touchstone 1",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "touchstone-2",
+              "kind": "touchstone",
+              "title": "Touchstone 2",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 11,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 11
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true
+        },
+        {
+          "key": "r-bus-230",
+          "phaseKey": "week-5",
+          "objectiveKey": "primary",
+          "sequence": 10,
+          "kind": "course",
+          "code": "BUS-230",
+          "title": "Business Ethics",
+          "provider": "Sophia",
+          "institution": "Pathways State University",
+          "credits": "3",
+          "plannedStart": "2026-11-30",
+          "plannedEnd": "2026-12-06",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "challenge-1",
+              "kind": "challenge",
+              "title": "Challenge 1",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-2",
+              "kind": "challenge",
+              "title": "Challenge 2",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-3",
+              "kind": "challenge",
+              "title": "Challenge 3",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-4",
+              "kind": "challenge",
+              "title": "Challenge 4",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-1",
+              "kind": "milestone",
+              "title": "Milestone 1",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-2",
+              "kind": "milestone",
+              "title": "Milestone 2",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-3",
+              "kind": "milestone",
+              "title": "Milestone 3",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "touchstone-1",
+              "kind": "touchstone",
+              "title": "Touchstone 1",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 8,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 8
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true
+        }
+      ],
+      "counts": {
+        "itemsTotal": 2,
+        "itemsOfficiallyAccepted": 0,
+        "itemsProviderComplete": 0,
+        "itemsInProgress": 0,
+        "itemsNotStarted": 2,
+        "tasksTotal": 19,
+        "tasksGraded": 0,
+        "tasksSubmitted": 0
+      },
+      "state": "upcoming"
+    },
+    {
+      "key": "week-6",
+      "title": "Week 6",
+      "sequence": 6,
+      "objectiveKey": null,
+      "startDate": null,
+      "endDate": null,
+      "description": null,
+      "items": [
+        {
+          "key": "r-hrm-301",
+          "phaseKey": "week-6",
+          "objectiveKey": "primary",
+          "sequence": 11,
+          "kind": "course",
+          "code": "HRM-301",
+          "title": "Human Resource Management",
+          "provider": "Sophia",
+          "institution": "Pathways State University",
+          "credits": "3",
+          "plannedStart": "2026-12-07",
+          "plannedEnd": "2026-12-13",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": "Finish challenges early in the week; touchstones last.",
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "challenge-1",
+              "kind": "challenge",
+              "title": "Challenge 1",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-2",
+              "kind": "challenge",
+              "title": "Challenge 2",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-3",
+              "kind": "challenge",
+              "title": "Challenge 3",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-4",
+              "kind": "challenge",
+              "title": "Challenge 4",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-1",
+              "kind": "milestone",
+              "title": "Milestone 1",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-2",
+              "kind": "milestone",
+              "title": "Milestone 2",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-3",
+              "kind": "milestone",
+              "title": "Milestone 3",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "touchstone-1",
+              "kind": "touchstone",
+              "title": "Touchstone 1",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 8,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 8
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true
+        },
+        {
+          "key": "r-ops-301",
+          "phaseKey": "week-6",
+          "objectiveKey": "primary",
+          "sequence": 12,
+          "kind": "course",
+          "code": "OPS-301",
+          "title": "Operations Management",
+          "provider": "Sophia",
+          "institution": "Pathways State University",
+          "credits": "3",
+          "plannedStart": "2026-12-07",
+          "plannedEnd": "2026-12-13",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "challenge-1",
+              "kind": "challenge",
+              "title": "Challenge 1",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-2",
+              "kind": "challenge",
+              "title": "Challenge 2",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-3",
+              "kind": "challenge",
+              "title": "Challenge 3",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-4",
+              "kind": "challenge",
+              "title": "Challenge 4",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-5",
+              "kind": "challenge",
+              "title": "Challenge 5",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-1",
+              "kind": "milestone",
+              "title": "Milestone 1",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-2",
+              "kind": "milestone",
+              "title": "Milestone 2",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-3",
+              "kind": "milestone",
+              "title": "Milestone 3",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-4",
+              "kind": "milestone",
+              "title": "Milestone 4",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "touchstone-1",
+              "kind": "touchstone",
+              "title": "Touchstone 1",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "touchstone-2",
+              "kind": "touchstone",
+              "title": "Touchstone 2",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 11,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 11
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true
+        }
+      ],
+      "counts": {
+        "itemsTotal": 2,
+        "itemsOfficiallyAccepted": 0,
+        "itemsProviderComplete": 0,
+        "itemsInProgress": 0,
+        "itemsNotStarted": 2,
+        "tasksTotal": 19,
+        "tasksGraded": 0,
+        "tasksSubmitted": 0
+      },
+      "state": "upcoming"
+    },
+    {
+      "key": "week-7",
+      "title": "Week 7",
+      "sequence": 7,
+      "objectiveKey": null,
+      "startDate": null,
+      "endDate": null,
+      "description": null,
+      "items": [
+        {
+          "key": "r-bus-310",
+          "phaseKey": "week-7",
+          "objectiveKey": "primary",
+          "sequence": 13,
+          "kind": "course",
+          "code": "BUS-310",
+          "title": "Business Communication",
+          "provider": "Sophia",
+          "institution": "Pathways State University",
+          "credits": "3",
+          "plannedStart": "2026-12-14",
+          "plannedEnd": "2026-12-20",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": "Finish challenges early in the week; touchstones last.",
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "challenge-1",
+              "kind": "challenge",
+              "title": "Challenge 1",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-2",
+              "kind": "challenge",
+              "title": "Challenge 2",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-3",
+              "kind": "challenge",
+              "title": "Challenge 3",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-4",
+              "kind": "challenge",
+              "title": "Challenge 4",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-1",
+              "kind": "milestone",
+              "title": "Milestone 1",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-2",
+              "kind": "milestone",
+              "title": "Milestone 2",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-3",
+              "kind": "milestone",
+              "title": "Milestone 3",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "touchstone-1",
+              "kind": "touchstone",
+              "title": "Touchstone 1",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 8,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 8
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true
+        },
+        {
+          "key": "r-info-301",
+          "phaseKey": "week-7",
+          "objectiveKey": "primary",
+          "sequence": 14,
+          "kind": "course",
+          "code": "INFO-301",
+          "title": "Management Information Systems",
+          "provider": "Sophia",
+          "institution": "Pathways State University",
+          "credits": "3",
+          "plannedStart": "2026-12-14",
+          "plannedEnd": "2026-12-20",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "challenge-1",
+              "kind": "challenge",
+              "title": "Challenge 1",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-2",
+              "kind": "challenge",
+              "title": "Challenge 2",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-3",
+              "kind": "challenge",
+              "title": "Challenge 3",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-4",
+              "kind": "challenge",
+              "title": "Challenge 4",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-5",
+              "kind": "challenge",
+              "title": "Challenge 5",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-1",
+              "kind": "milestone",
+              "title": "Milestone 1",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-2",
+              "kind": "milestone",
+              "title": "Milestone 2",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-3",
+              "kind": "milestone",
+              "title": "Milestone 3",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "touchstone-1",
+              "kind": "touchstone",
+              "title": "Touchstone 1",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "touchstone-2",
+              "kind": "touchstone",
+              "title": "Touchstone 2",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 10,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 10
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true
+        }
+      ],
+      "counts": {
+        "itemsTotal": 2,
+        "itemsOfficiallyAccepted": 0,
+        "itemsProviderComplete": 0,
+        "itemsInProgress": 0,
+        "itemsNotStarted": 2,
+        "tasksTotal": 18,
+        "tasksGraded": 0,
+        "tasksSubmitted": 0
+      },
+      "state": "upcoming"
+    },
+    {
+      "key": "week-8",
+      "title": "Week 8",
+      "sequence": 8,
+      "objectiveKey": null,
+      "startDate": null,
+      "endDate": null,
+      "description": null,
+      "items": [
+        {
+          "key": "r-acct-201",
+          "phaseKey": "week-8",
+          "objectiveKey": "primary",
+          "sequence": 15,
+          "kind": "course",
+          "code": "ACCT-201",
+          "title": "Managerial Accounting",
+          "provider": "Sophia",
+          "institution": "Pathways State University",
+          "credits": "3",
+          "plannedStart": "2026-12-21",
+          "plannedEnd": "2026-12-27",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": "Finish challenges early in the week; touchstones last.",
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "challenge-1",
+              "kind": "challenge",
+              "title": "Challenge 1",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-2",
+              "kind": "challenge",
+              "title": "Challenge 2",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-3",
+              "kind": "challenge",
+              "title": "Challenge 3",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-4",
+              "kind": "challenge",
+              "title": "Challenge 4",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-5",
+              "kind": "challenge",
+              "title": "Challenge 5",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-1",
+              "kind": "milestone",
+              "title": "Milestone 1",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-2",
+              "kind": "milestone",
+              "title": "Milestone 2",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-3",
+              "kind": "milestone",
+              "title": "Milestone 3",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-4",
+              "kind": "milestone",
+              "title": "Milestone 4",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "touchstone-1",
+              "kind": "touchstone",
+              "title": "Touchstone 1",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "touchstone-2",
+              "kind": "touchstone",
+              "title": "Touchstone 2",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 11,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 11
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true
+        },
+        {
+          "key": "r-bus-490",
+          "phaseKey": "week-8",
+          "objectiveKey": "primary",
+          "sequence": 16,
+          "kind": "course",
+          "code": "BUS-490",
+          "title": "Strategic Management",
+          "provider": "Sophia",
+          "institution": "Pathways State University",
+          "credits": "3",
+          "plannedStart": "2026-12-21",
+          "plannedEnd": "2026-12-27",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [
+            {
+              "itemKey": "r-fin-301",
+              "title": "Corporate Finance"
+            },
+            {
+              "itemKey": "r-mgt-201",
+              "title": "Principles of Management"
+            },
+            {
+              "itemKey": "r-mkt-201",
+              "title": "Principles of Marketing"
+            }
+          ],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "challenge-1",
+              "kind": "challenge",
+              "title": "Challenge 1",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-2",
+              "kind": "challenge",
+              "title": "Challenge 2",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-3",
+              "kind": "challenge",
+              "title": "Challenge 3",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-4",
+              "kind": "challenge",
+              "title": "Challenge 4",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-5",
+              "kind": "challenge",
+              "title": "Challenge 5",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-6",
+              "kind": "challenge",
+              "title": "Challenge 6",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-1",
+              "kind": "milestone",
+              "title": "Milestone 1",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-2",
+              "kind": "milestone",
+              "title": "Milestone 2",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-3",
+              "kind": "milestone",
+              "title": "Milestone 3",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-4",
+              "kind": "milestone",
+              "title": "Milestone 4",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "touchstone-1",
+              "kind": "touchstone",
+              "title": "Touchstone 1",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "touchstone-2",
+              "kind": "touchstone",
+              "title": "Touchstone 2",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 12,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 12
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true
+        }
+      ],
+      "counts": {
+        "itemsTotal": 2,
+        "itemsOfficiallyAccepted": 0,
+        "itemsProviderComplete": 0,
+        "itemsInProgress": 0,
+        "itemsNotStarted": 2,
+        "tasksTotal": 23,
+        "tasksGraded": 0,
+        "tasksSubmitted": 0
+      },
+      "state": "upcoming"
+    }
+  ],
+  "milestones": [
+    {
+      "key": "r-block-complete",
+      "title": "Course block complete",
+      "kind": "checkpoint",
+      "targetDate": "2026-12-27",
+      "objectiveKey": null,
+      "reached": false,
+      "remainingItems": 15
+    },
+    {
+      "key": "r-grad-application",
+      "title": "Graduation application submitted",
+      "kind": "application",
+      "targetDate": "2027-01-04",
+      "objectiveKey": "primary",
+      "reached": false,
+      "remainingItems": 15
+    },
+    {
+      "key": "r-degree-complete",
+      "title": "Bachelor's degree complete",
+      "kind": "objective_complete",
+      "targetDate": "2027-02-15",
+      "objectiveKey": "primary",
+      "reached": false,
+      "remainingItems": 15
+    }
+  ],
+  "counts": {
+    "itemsTotal": 16,
+    "itemsOfficiallyAccepted": 0,
+    "itemsProviderComplete": 1,
+    "itemsInProgress": 2,
+    "itemsNotStarted": 13,
+    "tasksTotal": 157,
+    "tasksGraded": 15,
+    "tasksSubmitted": 1
+  },
+  "today": {
+    "focusItemKeys": [
+      "r-bus-110",
+      "r-econ-101",
+      "r-econ-102"
+    ],
+    "headline": "Continue Introduction to Business",
+    "detail": "4 tasks remaining.",
+    "nextMilestoneKey": "r-block-complete"
+  },
+  "foundation": {
+    "credentials": [
+      {
+        "creditRecordId": "5a05f1c7-0000-4000-8000-000000002001",
+        "title": "Associate of Arts (completed)",
+        "completedOn": "2026-05-20",
+        "reportedCredits": "60",
+        "awardedCredits": "60",
+        "standing": "VERIFIED_APPLIED",
+        "sourceTitle": "Eastfield Community College degree record (synthetic)",
+        "sourceType": "institution_record"
+      }
+    ],
+    "sources": [
+      {
+        "sourceId": "5a05f1c7-0000-4000-8000-000000001001",
+        "title": "Eastfield Community College degree record (synthetic)",
+        "sourceType": "institution_record",
+        "status": "verified",
+        "creditRecordCount": 2
+      },
+      {
+        "sourceId": "5a05f1c7-0000-4000-8000-000000001002",
+        "title": "Summer 2026 transcript (synthetic)",
+        "sourceType": "transcript",
+        "status": "extracted",
+        "creditRecordCount": 1
+      }
+    ],
+    "ladder": {
+      "reported": "66.00",
+      "provisional": "3.00",
+      "verified": "63.00",
+      "applied": "60.00",
+      "surplus": "3.00",
+      "planned": "48.00",
+      "required": "120.00"
+    },
+    "degreeState": "COMPOSED"
+  },
+  "history": {
+    "previousVersions": [],
+    "retiredProgress": []
+  }
+}
