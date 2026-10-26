@@ -258,6 +258,7 @@ export function projectStudentRoadmap(input: ProjectStudentRoadmapInput): Studen
           key: task.key,
           kind: task.kind,
           title: task.title,
+          dueDate: task.dueDate ?? null,
           status: parseTaskStatus(row?.status),
           revision: row?.revision ?? 0,
           updatedAt: row?.updatedAt ?? null,

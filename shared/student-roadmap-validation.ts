@@ -248,12 +248,25 @@ function findCycles(content: RoadmapContent): string[][] {
 
 // ── diffRoadmapContent ───────────────────────────────────────────────────────
 
-const RESCHEDULE_FIELDS = new Set(["plannedStart", "plannedEnd", "sequence", "phaseKey"]);
+const RESCHEDULE_FIELDS = new Set(["plannedStart", "plannedEnd", "sequence", "phaseKey", "taskSchedule"]);
+// S07 fields are compared too; `provenance` is deliberately not (it is not a plan change).
 const ITEM_FIELDS: readonly (keyof RoadmapItem)[] = [
   "phaseKey", "objectiveKey", "sequence", "kind", "code", "title", "provider", "institution", "credits",
   "plannedStart", "plannedEnd", "dependsOn", "planStatus", "hold", "approval", "alternativeOf",
-  "linkedCreditRecordId", "tasks", "studentNote", "staffNote",
+  "linkedCreditRecordId", "studentNote", "staffNote",
+  "condition", "registration", "registrationGate", "creditUse", "equivalency",
 ];
+
+/** Tasks compared without their schedule, so a due-date-only change counts as a reschedule. */
+const taskIdentity = (item: RoadmapItem) => item.tasks.map(({ dueDate: _d, week: _w, ...t }) => t);
+const taskSchedule = (item: RoadmapItem) => item.tasks.map((t) => [t.key, t.dueDate ?? null, t.week ?? null]);
+
+function changedItemFields(before: RoadmapItem, item: RoadmapItem): string[] {
+  const fields: string[] = ITEM_FIELDS.filter((f) => canonical(before[f]) !== canonical(item[f]));
+  if (canonical(taskIdentity(before)) !== canonical(taskIdentity(item))) fields.push("tasks");
+  else if (canonical(taskSchedule(before)) !== canonical(taskSchedule(item))) fields.push("taskSchedule");
+  return fields;
+}
 const OBJECTIVE_FIELDS = ["title", "kind", "institution", "credentialLabel", "linkedToProgramAssignment", "status", "note"] as const;
 
 export const diffRoadmapContent: DiffRoadmapContent = (previous, next, progressKeys, baseVersionNumber) => {
@@ -293,7 +306,7 @@ export const diffRoadmapContent: DiffRoadmapContent = (previous, next, progressK
       added.push({ itemKey: item.key, title: item.title });
       continue;
     }
-    const fields = ITEM_FIELDS.filter((f) => canonical(before[f]) !== canonical(item[f])) as string[];
+    const fields = changedItemFields(before, item);
     if (fields.length === 0) {
       unchangedCount++;
     } else {

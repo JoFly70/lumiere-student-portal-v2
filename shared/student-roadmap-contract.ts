@@ -92,6 +92,22 @@ export const roadmapTaskSchema = z.object({
   kind: roadmapTaskKindSchema,
   title: text(200),
   sequence: z.number().int().min(0).max(10_000),
+  /** S07: planned due date from an execution schedule (planning only). */
+  dueDate: isoDateSchema.nullable().optional(),
+  /** S07: 1-based schedule week from an execution workbook. */
+  week: z.number().int().min(1).max(520).nullable().optional(),
+});
+
+/**
+ * S07: where a planning fact came from (workbook provenance). Staff-only;
+ * never projected to the student.
+ */
+export const roadmapProvenanceSchema = z.object({
+  file: optText(200),
+  sheet: optText(120),
+  row: z.number().int().min(1).max(100_000).nullable().optional(),
+  /** "master" academic workbook or companion "execution" workbook. */
+  role: z.enum(["master", "execution", "package", "manual"]).nullable().optional(),
 });
 
 export const roadmapItemKindSchema = z.enum(["course", "exam", "application", "task"]);
@@ -128,6 +144,61 @@ export const roadmapItemSchema = z.object({
   /** For planStatus "alternative": the item key this is an alternative to. */
   alternativeOf: roadmapKeySchema.nullable().optional(),
   /**
+   * S07: conditional academic decision recorded by staff, verbatim
+   * ("If the TECEP is not passed by March, take ACC-301 at Study.com").
+   * Planning context only; never a decision.
+   */
+  condition: optText(500),
+  /**
+   * S07: registration window the item is booked under (e.g. a TESU term for a
+   * TECEP exam or a residency course). Dates come from the workbook / staff and
+   * are checked by plan review against the planned dates; they are not
+   * institutional facts until staff confirm them.
+   */
+  registration: z
+    .object({
+      termLabel: text(80),
+      termStart: isoDateSchema.nullable().optional(),
+      registrationDeadline: isoDateSchema.nullable().optional(),
+      /** Last date an exam / final assessment may be taken in this term. */
+      finalExamDate: isoDateSchema.nullable().optional(),
+    })
+    .nullable()
+    .optional(),
+  /**
+   * S07: an institutional gate that must be satisfied before registration
+   * (e.g. capstone: minimum applied credits, GPA, advisor approval).
+   * "documented" only when staff hold evidence that it is met.
+   */
+  registrationGate: z
+    .object({
+      requirement: text(500),
+      evidence: z.enum(["not_documented", "documented"]),
+    })
+    .nullable()
+    .optional(),
+  /**
+   * S07: what the planned credit is FOR. Default (absent) = "degree".
+   * Professional-licensing qualification (e.g. a state CPA board) is a separate
+   * determination by that board and is never inferred from degree credit.
+   */
+  creditUse: z.enum(["degree", "licensing", "degree_and_licensing"]).nullable().optional(),
+  /**
+   * S07: transfer-equivalency status of a provider course mapping.
+   * "conditional" = not yet confirmed (review warning). "staff_reviewed" = a
+   * Lumière staff member reviewed it; still not an institutional decision.
+   */
+  equivalency: z
+    .object({
+      status: z.enum(["conditional", "staff_reviewed"]),
+      mapsTo: optText(200),
+      note: optText(500),
+    })
+    .nullable()
+    .optional(),
+  /** S07: source rows this item was built from. Staff-only. */
+  provenance: z.array(roadmapProvenanceSchema).max(10).default([]),
+  /**
    * Staff link to a canonical credit record. Official acceptance is shown ONLY
    * through this link, read from the canonical record.
    */
@@ -149,6 +220,40 @@ export const roadmapMilestoneSchema = z.object({
   afterItemKeys: z.array(roadmapKeySchema).max(200).default([]),
 });
 
+/**
+ * S07: prior education and credit AS REPORTED by an imported workbook
+ * (conferred credentials, completed courses/exams, a stated credit baseline).
+ *
+ * This is NOT a credit ledger and never becomes credit. It is staff-only
+ * review context: the canonical student academic record (S02–S04) remains the
+ * only source of prior/earned credit. Plan review compares it with the
+ * canonical foundation and raises warnings where the canonical record does
+ * not (yet) support it.
+ */
+export const roadmapReportedHistorySchema = z.object({
+  key: roadmapKeySchema,
+  kind: z.enum(["credential", "course", "exam", "credit_baseline", "transfer"]),
+  title: text(200),
+  institution: optText(200),
+  provider: optText(120),
+  /** Credits AS REPORTED in the workbook (never awarded by this record). */
+  reportedCredits: creditAmountSchema.nullable().optional(),
+  reportedStatus: z.enum(["conferred", "completed", "in_progress", "reported"]),
+  completedOn: isoDateSchema.nullable().optional(),
+  note: optText(1000),
+  provenance: z.array(roadmapProvenanceSchema).max(10).default([]),
+});
+
+/** S07: execution-schedule metadata (used to detect stale schedules). */
+export const roadmapScheduleSchema = z.object({
+  /** Date the schedule was prepared / last rebaselined. */
+  preparedOn: isoDateSchema.nullable().optional(),
+  /** Week 1 start date. */
+  startsOn: isoDateSchema.nullable().optional(),
+  weeks: z.number().int().min(1).max(520).nullable().optional(),
+  label: optText(200),
+});
+
 export const roadmapContentSchema = z.object({
   contentVersion: z.literal(ROADMAP_CONTENT_VERSION),
   title: text(200),
@@ -158,6 +263,10 @@ export const roadmapContentSchema = z.object({
   phases: z.array(roadmapPhaseSchema).min(1).max(50),
   items: z.array(roadmapItemSchema).max(500),
   milestones: z.array(roadmapMilestoneSchema).max(100).default([]),
+  /** S07: staff-only reported history (not credit). Never sent to the student. */
+  reportedHistory: z.array(roadmapReportedHistorySchema).max(300).default([]),
+  /** S07: execution-schedule metadata. */
+  schedule: roadmapScheduleSchema.nullable().optional(),
 });
 
 export type RoadmapObjective = z.infer<typeof roadmapObjectiveSchema>;
@@ -167,6 +276,9 @@ export type RoadmapTaskKind = z.infer<typeof roadmapTaskKindSchema>;
 export type RoadmapItem = z.infer<typeof roadmapItemSchema>;
 export type RoadmapMilestone = z.infer<typeof roadmapMilestoneSchema>;
 export type RoadmapContent = z.infer<typeof roadmapContentSchema>;
+export type RoadmapProvenance = z.infer<typeof roadmapProvenanceSchema>;
+export type RoadmapReportedHistory = z.infer<typeof roadmapReportedHistorySchema>;
+export type RoadmapSchedule = z.infer<typeof roadmapScheduleSchema>;
 
 // ── Review exceptions ────────────────────────────────────────────────────────
 
@@ -212,7 +324,35 @@ export type RoadmapExceptionCode =
   // re-import / diff
   | "PROGRESS_ON_REMOVED_ITEM"
   | "PROGRESS_ON_REMOVED_TASK"
-  | "OBJECTIVE_CHANGED";
+  | "OBJECTIVE_CHANGED"
+  // S07 conversion: companion execution workbook + reported history
+  /** An execution-workbook row that matches no master course (not added as a course). */
+  | "COMPANION_ROW_UNMATCHED"
+  /** Execution-workbook schedule/tasks merged into a master course (info). */
+  | "COMPANION_ITEM_MERGED"
+  /** Master and execution workbooks (or two rows) give different dates for the same thing. */
+  | "DEADLINE_CONFLICT"
+  /** Workbook reports prior credit/credentials; recorded as reported history, not credit. */
+  | "REPORTED_HISTORY_NOT_CREDIT"
+  /** A sheet was read but not recognised as plan data (info, sheet discovery). */
+  | "SHEET_NOT_RECOGNISED"
+  // S07 plan review (re-derived on every evaluation; never institutional decisions)
+  /** An exam/assessment is planned after its registered term's final exam date. */
+  | "EXAM_AFTER_TERM_DEADLINE"
+  /** Planned start is after the registration deadline of the term it is booked under. */
+  | "REGISTRATION_AFTER_DEADLINE"
+  /** A gated registration (e.g. capstone) has no documented evidence that its prerequisites are met. */
+  | "REGISTRATION_GATE_UNDOCUMENTED"
+  /** Reported starting credits are not supported by the canonical verified record. */
+  | "STARTING_CREDITS_UNVERIFIED"
+  /** A provider-course equivalency is conditional. */
+  | "EQUIVALENCY_CONDITIONAL"
+  /** Licensing-credit use is planned; licensing qualification is a separate board determination. */
+  | "LICENSING_CREDIT_SEPARATE"
+  /** The execution schedule is old and no verified progress supports it; rebaseline. */
+  | "SCHEDULE_STALE"
+  /** Two active items (or an item and recorded prior work) look like the same credit. */
+  | "DUPLICATE_CREDIT_RISK";
 
 export interface RoadmapExceptionRef {
   readonly sheet?: string;
@@ -384,6 +524,8 @@ export interface StudentTaskView {
   readonly key: string;
   readonly kind: RoadmapTaskKind;
   readonly title: string;
+  /** S07: planned due date from the execution schedule, or null. */
+  readonly dueDate: string | null;
   readonly status: StudentTaskStatus;
   readonly revision: number;
   readonly updatedAt: string | null;
