@@ -40,7 +40,7 @@ function staffTicket(o: Partial<SupportTicketDetail> & Pick<SupportTicketDetail,
   return {
     ...base,
     description: "Synthetic description.",
-    reporter_email: `${o.reporter_name.toLowerCase().replace(/[^a-z]+/g, ".")}@synthetic.example`,
+    reporter_email: `${o.reporter_name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z]+/g, ".")}@synthetic.example`,
     assigned_to: o.assignee?.id ?? null,
     assignee: null,
     status: "open",

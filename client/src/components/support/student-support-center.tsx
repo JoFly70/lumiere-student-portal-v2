@@ -2,7 +2,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { MessageCircle, Plus } from "lucide-react";
 import { useCreateTicket, useSupportContextOptions, useTickets } from "@/hooks/use-tickets";
-import { StudentSurface, SectionHeading, buttonClass, cardClass } from "@/components/student-progress/student-ui";
+import { StudentSurface, buttonClass, cardClass } from "@/components/student-progress/student-ui";
 import { StudentTicketList } from "./student-ticket-list";
 import { NewRequestForm, type NewRequestValues } from "./student-request-form";
 import { StudentConversation } from "./student-conversation";
@@ -69,13 +69,16 @@ export function StudentSupportCenter() {
       <div className="mx-auto w-full max-w-6xl space-y-6">
         <header className="flex flex-wrap items-end justify-between gap-4">
           <div className="space-y-2">
-            <SectionHeading
-              id="support-title"
-              as="h2"
-              eyebrow="Support"
-              title="Support Center"
-              description="Ask your Lumière advisor anything about your courses, plan or account."
-            />
+            {/* Page-level h1 (SectionHeading only renders h2/h3 and is S07-owned). */}
+            <div className="space-y-1">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-student-gold-ink">Support</p>
+              <h1 id="support-title" className="font-serif text-2xl tracking-tight text-student-ink sm:text-3xl">
+                Support Center
+              </h1>
+              <p className="max-w-2xl text-sm leading-relaxed text-student-muted">
+                Ask your Lumière advisor anything about your courses, plan or account.
+              </p>
+            </div>
             <p className="text-sm font-medium text-student-ink" data-testid="outstanding-count" aria-live="polite">
               {tickets.isSuccess ? outstandingSummary(groups) : " "}
             </p>
@@ -91,7 +94,8 @@ export function StudentSupportCenter() {
         </header>
 
         <div className="grid gap-6 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
-          <nav aria-label="Your requests" className={detailOpen ? "hidden lg:block" : "block"} data-testid="request-list-pane">
+          <nav aria-labelledby="request-list-title" className={detailOpen ? "hidden lg:block" : "block"} data-testid="request-list-pane">
+            <h2 id="request-list-title" className="sr-only">Your requests</h2>
             {tickets.isLoading ? (
               <SupportLoading />
             ) : tickets.isError ? (
