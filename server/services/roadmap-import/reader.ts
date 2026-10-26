@@ -1,5 +1,6 @@
 import ExcelJS from "exceljs";
 import type { CellValue, SheetData, WorkbookData } from "./types";
+import { readWorkbookFallback } from "./reader-fallback";
 import { MAX_CELL_TEXT, MAX_COLUMNS, MAX_FILE_BYTES, MAX_ROWS } from "./util";
 
 const MAX_SHEETS = 30;
@@ -63,17 +64,33 @@ export async function readWorkbook(buffer: Buffer): Promise<WorkbookData> {
   checkZipBudget(buffer);
 
   const wb = new ExcelJS.Workbook();
-  await wb.xlsx.load(buffer as unknown as ExcelJS.Buffer);
+  try {
+    await wb.xlsx.load(buffer as unknown as ExcelJS.Buffer);
+  } catch (primary) {
+    // S10: some real packages (namespace-prefixed parts, unplaceable drawings) are rejected by ExcelJS.
+    try {
+      return readWorkbookFallback(buffer);
+    } catch {
+      throw primary;
+    }
+  }
 
   const sheets: SheetData[] = [];
   for (const ws of wb.worksheets.slice(0, MAX_SHEETS)) {
     const rows: CellValue[][] = [];
     const last = Math.min(ws.rowCount, MAX_ROWS);
     for (let r = 1; r <= last; r++) {
-      const values = ws.getRow(r).values as unknown[];
+      const row = ws.getRow(r);
+      const values = row.values as unknown[];
       const cells: CellValue[] = [];
       const limit = Math.min(values.length - 1, MAX_COLUMNS);
-      for (let c = 1; c <= limit; c++) cells.push(normalizeCell(values[c]));
+      for (let c = 1; c <= limit; c++) {
+        // ExcelJS repeats a merged range's value in every covered cell. Only the top-left cell holds
+        // data: reading the copies made note / total / footer rows look like full ledger rows (S10).
+        const cellObj = row.getCell(c);
+        if (cellObj.isMerged && cellObj.master && cellObj.master.address !== cellObj.address) cells.push(null);
+        else cells.push(normalizeCell(values[c]));
+      }
       rows.push(cells);
     }
     sheets.push({ name: ws.name, rows, truncatedRows: ws.rowCount > MAX_ROWS });

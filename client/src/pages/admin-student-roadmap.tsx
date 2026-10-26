@@ -16,6 +16,9 @@ import {
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  buildReviewPlan, groupAckState, groupSelectionState, toggleGroupSelection, REVIEW_CATEGORY_LABEL, type ReviewGroup,
+} from "@shared/student-roadmap-review-groups";
 import { useAuth } from "@/lib/auth";
 import { adminRoadmapApi, RoadmapApiError } from "@/lib/admin-roadmap-api";
 import {
@@ -403,14 +406,8 @@ interface DraftReviewProps {
 }
 
 function DraftReview(props: DraftReviewProps) {
-  const { draft, grouped, acked, selectedKeys, setSelectedKeys, ackNote, setAckNote, busy, itemIssues } = props;
-  const openWarnings = grouped.warning.filter((w) => !acked.has(w.key));
+  const { draft, acked, selectedKeys, setSelectedKeys, ackNote, setAckNote, busy, itemIssues } = props;
   const src = draft.import;
-  const toggle = (key: string, on: boolean) => {
-    const next = new Set(selectedKeys);
-    if (on) next.add(key); else next.delete(key);
-    setSelectedKeys(next);
-  };
   const removedProgress = new Set(draft.diff.removed.filter((r) => r.hasProgress).map((r) => r.itemKey));
 
   return (
@@ -432,56 +429,16 @@ function DraftReview(props: DraftReviewProps) {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader><CardTitle className="text-base">Exceptions</CardTitle></CardHeader>
-        <CardContent className="space-y-6">
-          {draft.exceptions.length === 0 && <p className="text-sm text-muted-foreground">No exceptions. Everything converted cleanly.</p>}
-          {grouped.blocking.length > 0 && (
-            <div role="group" aria-label={SEVERITY_LABEL.blocking}>
-              <h3 className="mb-2 text-sm font-semibold text-destructive">{SEVERITY_LABEL.blocking} ({grouped.blocking.length})</h3>
-              <ul className="divide-y rounded-md border">
-                {grouped.blocking.map((e) => <ExceptionRow key={e.key} e={e} />)}
-              </ul>
-            </div>
-          )}
-          {grouped.warning.length > 0 && (
-            <div role="group" aria-label={SEVERITY_LABEL.warning}>
-              <h3 className="mb-2 text-sm font-semibold">{SEVERITY_LABEL.warning} ({openWarnings.length} open of {grouped.warning.length})</h3>
-              <ul className="divide-y rounded-md border">
-                {grouped.warning.map((e) => {
-                  const done = acked.has(e.key);
-                  const id = `ack-${e.key}`;
-                  return (
-                    <li key={e.key} className="flex items-start gap-3 p-3">
-                      <Checkbox id={id} checked={done || selectedKeys.has(e.key)} disabled={done || busy !== null} onCheckedChange={(v) => toggle(e.key, v === true)} aria-label={`Acknowledge: ${e.message}`} className="mt-1" />
-                      <label htmlFor={id} className="min-w-0 flex-1 cursor-pointer text-sm">
-                        <span className="block">{e.message}</span>
-                        <span className="block text-xs text-muted-foreground"><span className="font-mono">{e.code}</span> {exceptionLocation(e) && `· ${exceptionLocation(e)}`}{done ? " · acknowledged" : ""}</span>
-                      </label>
-                    </li>
-                  );
-                })}
-              </ul>
-              {openWarnings.length > 0 && (
-                <div className="mt-3 space-y-2">
-                  <Label htmlFor="ack-note">Note for the selected warnings (optional)</Label>
-                  <Input id="ack-note" value={ackNote} maxLength={500} onChange={(e) => setAckNote(e.target.value)} />
-                  <div className="flex flex-wrap gap-2">
-                    <Button type="button" size="sm" disabled={selectedKeys.size === 0 || busy !== null} onClick={props.onAcknowledge}>Acknowledge selected ({selectedKeys.size})</Button>
-                    <Button type="button" size="sm" variant="outline" disabled={busy !== null} onClick={() => setSelectedKeys(new Set(openWarnings.map((w) => w.key)))}>Select all open</Button>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-          {grouped.info.length > 0 && (
-            <details>
-              <summary className="cursor-pointer text-sm font-semibold">{SEVERITY_LABEL.info} ({grouped.info.length})</summary>
-              <ul className="mt-2 divide-y rounded-md border">{grouped.info.map((e) => <ExceptionRow key={e.key} e={e} />)}</ul>
-            </details>
-          )}
-        </CardContent>
-      </Card>
+      <ReviewPanel
+        draft={draft}
+        acked={acked}
+        selectedKeys={selectedKeys}
+        setSelectedKeys={setSelectedKeys}
+        ackNote={ackNote}
+        setAckNote={setAckNote}
+        busy={busy}
+        onAcknowledge={props.onAcknowledge}
+      />
 
       {draft.content.reportedHistory.length > 0 && (
         <Card>
@@ -586,12 +543,193 @@ function phaseTitle(draft: AdminRoadmapDraftView, item: RoadmapItem): string {
   return draft.content.phases.find((p) => p.key === item.phaseKey)?.title ?? item.phaseKey;
 }
 
-function ExceptionRow({ e }: { e: RoadmapException }) {
+
+/**
+ * Review findings grouped for reading (S10): by issue type (severity order; academic uncertainty before operational
+ * scheduling) or by course. Grouping only changes what staff read and click: every member keeps its own exception key and
+ * acknowledging a group submits all of its open warning keys, so each warning is still recorded as acknowledged.
+ */
+export function ReviewPanel(props: {
+  draft: AdminRoadmapDraftView;
+  acked: Set<string>;
+  selectedKeys: Set<string>;
+  setSelectedKeys: (s: Set<string>) => void;
+  ackNote: string;
+  setAckNote: (s: string) => void;
+  busy: string | null;
+  onAcknowledge: () => void;
+}) {
+  const { draft, acked, selectedKeys, setSelectedKeys, ackNote, setAckNote, busy } = props;
+  const [view, setView] = useState<"issue" | "course">("issue");
+  const review = useMemo(() => buildReviewPlan(draft.exceptions, draft.content.items), [draft.exceptions, draft.content.items]);
+  const warningKeys = useMemo(() => draft.exceptions.filter((e) => e.severity === "warning").map((e) => e.key), [draft.exceptions]);
+  const openWarningKeys = warningKeys.filter((k) => !acked.has(k));
+  const { raw, groups } = review.counts;
+  const toggleKeys = (keys: readonly string[], on: boolean) => {
+    const next = new Set(selectedKeys);
+    for (const k of keys) {
+      if (on && !acked.has(k)) next.add(k);
+      else if (!on) next.delete(k);
+    }
+    setSelectedKeys(next);
+  };
+
+  const GroupRow = ({ g, selectable }: { g: ReviewGroup; selectable: boolean }) => {
+    const ack = groupAckState(g, acked);
+    const sel = groupSelectionState(g, selectedKeys, acked);
+    const id = `grp-${g.id}`;
+    return (
+      <li className="p-3">
+        <div className="flex items-start gap-3">
+          {selectable && (
+            <Checkbox
+              id={id}
+              checked={ack.state === "all" || sel === "all"}
+              disabled={ack.state === "all" || busy !== null}
+              onCheckedChange={(v) => setSelectedKeys(toggleGroupSelection(selectedKeys, g, acked, v === true))}
+              aria-label={`Acknowledge ${g.title}${g.count > 1 ? `, ${g.count} findings` : ""}`}
+              className="mt-1"
+            />
+          )}
+          <div className="min-w-0 flex-1 text-sm">
+            <label htmlFor={selectable ? id : undefined} className={selectable ? "cursor-pointer" : undefined}>
+              <span className="font-medium">{g.title}</span>
+              {g.count > 1 && <Badge variant="secondary" className="ml-2">×{g.count}</Badge>}
+              {ack.state === "all" && <span className="ml-2 text-xs text-muted-foreground">acknowledged</span>}
+              {ack.state === "partial" && <span className="ml-2 text-xs text-muted-foreground">{ack.acknowledged} of {g.count} acknowledged</span>}
+              {sel === "some" && <span className="ml-2 text-xs text-muted-foreground">some selected</span>}
+              <span className="mt-0.5 block">{g.count === 1 ? g.example : g.hint || g.example}</span>
+            </label>
+            <details className="mt-1">
+              <summary className="cursor-pointer text-xs text-muted-foreground">
+                {g.count === 1 ? "Source" : `Show all ${g.count} (${g.courses.length > 0 ? `${plural(g.courses.length, "course")}` : "rows"}) with their sources`}
+              </summary>
+              <ul className="mt-1 space-y-1 border-l pl-3">
+                {g.evidence.map((ev) => (
+                  <li key={ev.key} className="text-xs">
+                    {g.count > 1 && <span className="block">{ev.message}</span>}
+                    <span className="block text-muted-foreground"><span className="font-mono">{g.code}</span>{ev.location && ` · ${ev.location}`}{acked.has(ev.key) ? " · acknowledged" : ""}</span>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          </div>
+        </div>
+      </li>
+    );
+  };
+
+  const section = (severity: "blocking" | "warning") => {
+    const sec = review.sections[severity];
+    if (sec.groupCount === 0) return null;
+    const open = severity === "warning" ? openWarningKeys.length : 0;
+    return (
+      <div role="group" aria-label={SEVERITY_LABEL[severity]}>
+        <h3 className={`mb-2 text-sm font-semibold ${severity === "blocking" ? "text-destructive" : ""}`}>
+          {SEVERITY_LABEL[severity]} ({severity === "warning" ? `${plural(sec.groupCount, "group")} · ${open} of ${sec.exceptionCount} findings open` : `${plural(sec.groupCount, "group")} · ${sec.exceptionCount} findings`})
+        </h3>
+        <div className="space-y-4">
+          {sec.categories.map((c) => (
+            <div key={c.category}>
+              <h4 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{REVIEW_CATEGORY_LABEL[c.category]} · {plural(c.groups.length, "group")}</h4>
+              <ul className="divide-y rounded-md border">
+                {c.groups.map((g) => <GroupRow key={g.id} g={g} selectable={severity === "warning"} />)}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <li className="p-3 text-sm">
-      <span className="block">{e.message}</span>
-      <span className="block text-xs text-muted-foreground"><span className="font-mono">{e.code}</span> {exceptionLocation(e) && `· ${exceptionLocation(e)}`}</span>
-    </li>
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Review findings</CardTitle>
+        <CardDescription>
+          {raw.total === 0
+            ? "Nothing to review."
+            : `${plural(raw.total, "finding")} in ${plural(groups.total, "group")}: ${groups.blocking} blocking, ${groups.warning} to acknowledge, ${groups.info} for information. Findings of the same kind are grouped; acknowledging a group acknowledges each finding in it.`}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {draft.exceptions.length === 0 && <p className="text-sm text-muted-foreground">No exceptions. Everything converted cleanly.</p>}
+        {draft.exceptions.length > 0 && (
+          <div role="group" aria-label="Group findings by" className="flex flex-wrap gap-2">
+            <Button type="button" size="sm" variant={view === "issue" ? "default" : "outline"} aria-pressed={view === "issue"} onClick={() => setView("issue")}>By issue type</Button>
+            <Button type="button" size="sm" variant={view === "course" ? "default" : "outline"} aria-pressed={view === "course"} onClick={() => setView("course")}>By course</Button>
+          </div>
+        )}
+        {view === "issue" && (
+          <>
+            {section("blocking")}
+            {section("warning")}
+            {review.sections.info.groupCount > 0 && (
+              <details>
+                <summary className="cursor-pointer text-sm font-semibold">{SEVERITY_LABEL.info} ({plural(review.sections.info.groupCount, "group")} · {review.sections.info.exceptionCount} findings)</summary>
+                <ul className="mt-2 divide-y rounded-md border">
+                  {review.sections.info.categories.flatMap((c) => c.groups).map((g) => <GroupRow key={g.id} g={g} selectable={false} />)}
+                </ul>
+              </details>
+            )}
+          </>
+        )}
+        {view === "course" && (
+          <ul className="space-y-2">
+            {review.byCourse.map((c) => {
+              const warnKeys = c.exceptions.filter((e) => e.severity === "warning").map((e) => e.key);
+              const openKeys = warnKeys.filter((k) => !acked.has(k));
+              return (
+                <li key={c.itemKey ?? "__plan__"} className="rounded-md border">
+                  <details open={c.severity !== "info"}>
+                    <summary className="cursor-pointer p-3 text-sm font-medium">
+                      {c.title}
+                      <span className="ml-2 text-xs font-normal text-muted-foreground">{plural(c.exceptions.length, "finding")} · {c.severity === "blocking" ? "blocking" : c.severity === "warning" ? `${openKeys.length} open warning${openKeys.length === 1 ? "" : "s"}` : "information only"}</span>
+                    </summary>
+                    <ul className="divide-y border-t">
+                      {c.exceptions.map((e) => (
+                        <li key={e.key} className="flex items-start gap-3 p-3 text-sm">
+                          {e.severity === "warning" && (
+                            <Checkbox
+                              id={`ack-${e.key}`}
+                              checked={acked.has(e.key) || selectedKeys.has(e.key)}
+                              disabled={acked.has(e.key) || busy !== null}
+                              onCheckedChange={(v) => toggleKeys([e.key], v === true)}
+                              aria-label={`Acknowledge: ${e.message}`}
+                              className="mt-1"
+                            />
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <span className="block">{e.message}</span>
+                            <span className="block text-xs text-muted-foreground"><span className="font-mono">{e.code}</span> {exceptionLocation(e) && `· ${exceptionLocation(e)}`}{acked.has(e.key) ? " · acknowledged" : ""}</span>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                    {openKeys.length > 0 && (
+                      <div className="border-t p-2">
+                        <Button type="button" size="sm" variant="outline" disabled={busy !== null} onClick={() => toggleKeys(openKeys, true)}>Select this course's {openKeys.length} open warning{openKeys.length === 1 ? "" : "s"}</Button>
+                      </div>
+                    )}
+                  </details>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        {openWarningKeys.length > 0 && (
+          <div className="space-y-2">
+            <Label htmlFor="ack-note">Note for the selected warnings (optional)</Label>
+            <Input id="ack-note" value={ackNote} maxLength={500} onChange={(e) => setAckNote(e.target.value)} />
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" size="sm" disabled={selectedKeys.size === 0 || busy !== null} onClick={props.onAcknowledge}>Acknowledge selected ({selectedKeys.size} finding{selectedKeys.size === 1 ? "" : "s"})</Button>
+              <Button type="button" size="sm" variant="outline" disabled={busy !== null} onClick={() => setSelectedKeys(new Set(openWarningKeys))}>Select all open ({openWarningKeys.length})</Button>
+              {selectedKeys.size > 0 && <Button type="button" size="sm" variant="ghost" disabled={busy !== null} onClick={() => setSelectedKeys(new Set())}>Clear selection</Button>}
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 

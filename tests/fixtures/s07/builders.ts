@@ -17,13 +17,13 @@ import ExcelJS from "exceljs";
 const d = (iso: string): Date => new Date(`${iso}T00:00:00Z`);
 export const addDays = (iso: string, n: number): string => new Date(d(iso).getTime() + n * 86_400_000).toISOString().slice(0, 10);
 
-function newWorkbook(): ExcelJS.Workbook {
+export function newWorkbook(): ExcelJS.Workbook {
   const wb = new ExcelJS.Workbook();
   wb.created = new Date(Date.UTC(2026, 9, 26));
   wb.modified = new Date(Date.UTC(2026, 9, 26));
   return wb;
 }
-async function toBuffer(wb: ExcelJS.Workbook): Promise<Buffer> {
+export async function toBuffer(wb: ExcelJS.Workbook): Promise<Buffer> {
   return Buffer.from(await wb.xlsx.writeBuffer());
 }
 

@@ -212,6 +212,8 @@ interface Cand {
   watch: boolean;
   status: PlanStatus;
   statusUnmapped: string | null;
+  /** Status wording that marks the placement as unconfirmed ("Working", "Provisional"). */
+  statusConditional: string | null;
   notes: string[];
   seqNote: string;
   burden: string;
@@ -233,12 +235,13 @@ interface Cand {
 
 const yes = (v: CellValue | undefined): boolean => /^(y|yes|true|1)$/i.test(cellText(v));
 
-function statusOf(text: string, doneRem: string): { completed: boolean; watch: boolean; status: PlanStatus; unmapped: string | null } {
+function statusOf(text: string, doneRem: string): { completed: boolean; watch: boolean; status: PlanStatus; unmapped: string | null; conditional?: string } {
   const s = norm(text);
   const dr = norm(doneRem);
   const completedByCol = dr === "completed" || dr === "complete";
   if (s === "done" || s === "complete" || s === "completed") return { completed: true, watch: false, status: "planned", unmapped: null };
   if (s === "watch") return { completed: true, watch: true, status: "planned", unmapped: null };
+  if (s === "working" || s === "provisional" || s === "conditional") return { completed: false, watch: false, status: "planned", unmapped: null, conditional: text.trim() };
   if (s === "hold" || s === "onhold") return { completed: false, watch: false, status: "hold", unmapped: null };
   if (s === "donottake" || s === "dropped" || s === "drop" || s === "removed") return { completed: false, watch: false, status: "dropped", unmapped: null };
   if (s === "alternative" || s === "fallback" || s === "backup") return { completed: false, watch: false, status: "alternative", unmapped: null };
@@ -296,6 +299,7 @@ function newCand(args: {
     watch: false,
     status: parsed.qualifier && /^(HOLD|DO NOT BUY)/.test(parsed.qualifier) ? "hold" : "planned",
     statusUnmapped: null,
+    statusConditional: null,
     notes: qualifierNote,
     seqNote: "",
     burden: "",
@@ -375,6 +379,7 @@ function convert(wb: WorkbookData, ctx: AdapterContext): ConversionResult {
     target.gateDocumented = target.gateDocumented || incoming.gateDocumented;
     target.alternativeFor ??= incoming.alternativeFor;
     target.statusUnmapped ??= incoming.statusUnmapped;
+    target.statusConditional ??= incoming.statusConditional;
     if (target.tasksFromCounts.length === 0) target.tasksFromCounts = incoming.tasksFromCounts;
     target.trackerProvider ??= incoming.trackerProvider;
     if (!target.provider.provider && incoming.provider.provider) target.provider = incoming.provider;
@@ -425,6 +430,7 @@ function convert(wb: WorkbookData, ctx: AdapterContext): ConversionResult {
       const g = (f: LedgerField) => cell(c.loc, cells, f);
       const courseText = cellText(g("course"));
       if (!courseText) continue; // totals, notes, footers
+      if (/\btotal\b/i.test(courseText) && !cellText(g("provider"))) continue; // a TOTAL label spread across columns
       rowsRead++;
       const src: Src = { sheet: sheet.name, row: r + 1 };
       const cand = newCand({ src, courseText, providerText: cellText(g("provider")), ledgerOrder: ledgerCounter++ });
@@ -433,6 +439,7 @@ function convert(wb: WorkbookData, ctx: AdapterContext): ConversionResult {
       cand.watch = st.watch;
       cand.status = st.status;
       cand.statusUnmapped = st.unmapped;
+      cand.statusConditional = st.conditional ?? null;
       if (cand.provider.dropped && cand.status === "planned") cand.status = "dropped";
       if (cand.provider.hold && cand.status === "planned") cand.status = "hold";
       const credits = parseCredits(g("credits"));
@@ -513,12 +520,17 @@ function convert(wb: WorkbookData, ctx: AdapterContext): ConversionResult {
   for (const c of classified) {
     if (c.kind !== "tracker") continue;
     sheetsRead.push(c.sheet.name);
+    let trackerStarted = false;
     for (let r = c.loc.headerRow + 1; r < c.sheet.rows.length; r++) {
       const cells = c.sheet.rows[r] ?? [];
-      if (rowIsBlank(cells)) continue;
+      if (rowIsBlank(cells)) {
+        if (trackerStarted) break; // a second table below (e.g. a dated assignment list) is not course rows
+        continue;
+      }
       const g = (f: TrackerField) => cell(c.loc, cells, f);
       const courseText = cellText(g("course"));
       if (!courseText || /total|^course$/i.test(courseText)) continue;
+      trackerStarted = true;
       rowsRead++;
       const src: Src = { sheet: c.sheet.name, row: r + 1 };
       const cand = newCand({ src, courseText, providerText: c.provider ?? "", ledgerOrder: ledgerCounter++ });
@@ -849,7 +861,10 @@ function convert(wb: WorkbookData, ctx: AdapterContext): ConversionResult {
     }
 
     // condition / equivalency / approval
-    const condition = CONDITION_TEXT.test(noteText) || planStatus === "hold" ? clipText(sentenceMatching(noteText, CONDITION_TEXT) || noteText, 500) : null;
+    const condition =
+      CONDITION_TEXT.test(noteText) || planStatus === "hold" || cd.statusConditional
+        ? clipText(sentenceMatching(noteText, CONDITION_TEXT) || noteText || `Marked "${cd.statusConditional}" in the source plan.`, 500)
+        : null;
     const conditionalMap = family !== "tecep" && family !== "tesu" && CONDITIONAL_MAPPING.test(`${noteText} ${cd.burden}`);
     const equivalency = conditionalMap
       ? {
