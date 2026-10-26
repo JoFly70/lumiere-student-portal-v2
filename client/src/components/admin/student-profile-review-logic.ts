@@ -13,6 +13,7 @@ import type {
   IdentityCorrectionRequestView,
   StudentContactView,
 } from "@shared/student-profile-contract";
+import { contactRequestsAuthority } from "@shared/student-profile-contract";
 
 export const STAFF_PROFILE_PATHS = {
   profile: (studentId: string) => `/api/students/${encodeURIComponent(studentId)}/profile`,
@@ -154,4 +155,36 @@ export function normalizeHistory(payload: unknown): IdentityCorrectionRequestVie
     }
   }
   return [];
+}
+
+const SPECIAL_WORDS: Readonly<Record<string, string>> = {
+  whatsapp: "WhatsApp",
+  sms: "SMS",
+  id: "ID",
+};
+
+/** Turns enum-like values ("IN_PROGRESS", "whatsapp", "pending_verification") into sentence-case words. */
+export function humanize(value: string | null | undefined): string {
+  if (value === null || value === undefined || value === "") return "Not provided";
+  const words = value.replace(/[_-]+/g, " ").trim().toLowerCase().split(/\s+/);
+  const out = words.map((w) => SPECIAL_WORDS[w] ?? w);
+  const first = out[0];
+  if (!SPECIAL_WORDS[words[0]]) out[0] = first.charAt(0).toUpperCase() + first.slice(1);
+  return out.join(" ");
+}
+
+export function humanizeList(values: readonly string[], empty = "None"): string {
+  return values.length ? values.map((v) => humanize(v)).join(", ") : empty;
+}
+
+/** "Verify authority" is only a decision when authority was requested, never for an emergency-only listing. */
+export function showVerifyAction(contact: Pick<StudentContactView, "authorityStatus" | "type" | "requestedScopes">): boolean {
+  if (contact.authorityStatus === "pending_verification") return true;
+  if (contact.authorityStatus === "revoked") return contactRequestsAuthority(contact.type, contact.requestedScopes);
+  return false;
+}
+
+/** A contact whose authority request is waiting for a staff decision. */
+export function contactNeedsDecision(contact: Pick<StudentContactView, "authorityStatus">): boolean {
+  return contact.authorityStatus === "pending_verification";
 }
