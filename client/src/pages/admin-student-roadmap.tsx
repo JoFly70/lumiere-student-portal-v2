@@ -1,0 +1,600 @@
+import { useMemo, useRef, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link, useParams } from "wouter";
+import { AlertCircle, ArrowLeft, CheckCircle2, FileSpreadsheet, Loader2, RefreshCw } from "lucide-react";
+import type { AdminRoadmapDraftView, AdminRoadmapState, RoadmapException, RoadmapItem } from "@shared/student-roadmap-contract";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useAuth } from "@/lib/auth";
+import { adminRoadmapApi, RoadmapApiError } from "@/lib/admin-roadmap-api";
+import {
+  ADMIN_ROADMAP_QUERY_KEY, acknowledgeBody, acknowledgedKeys, applyItemForm, diffHeadline, discardBody,
+  exceptionLocation, exceptionsByItem, groupExceptions, itemToForm, parsePastedPackage, publishBody, publishGate,
+  removeItemFromContent, saveDraftBody, type ItemFormValues,
+} from "@/lib/admin-roadmap-logic";
+
+type PendingImport = { kind: "file"; file: File } | { kind: "package"; pkg: unknown };
+
+const SEVERITY_LABEL = { blocking: "Blocking — must be fixed", warning: "Warnings — acknowledge before publishing", info: "Information" } as const;
+
+function formatDate(value: string | null | undefined): string {
+  return value ? value.slice(0, 10) : "—";
+}
+
+export default function AdminStudentRoadmap() {
+  const { studentId = "" } = useParams<{ studentId: string }>();
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
+  const queryClient = useQueryClient();
+  const queryKey = ADMIN_ROADMAP_QUERY_KEY(studentId);
+
+  const query = useQuery<AdminRoadmapState>({ queryKey, queryFn: () => adminRoadmapApi.get(studentId), staleTime: Infinity });
+  const state = query.data ?? null;
+  const draft = state?.draft ?? null;
+
+  const [busy, setBusy] = useState<string | null>(null);
+  const [message, setMessage] = useState<{ tone: "error" | "success" | "info"; text: string } | null>(null);
+  const [packageText, setPackageText] = useState("");
+  const [pendingImport, setPendingImport] = useState<PendingImport | null>(null);
+  const [confirm, setConfirm] = useState<null | "publish" | "discard">(null);
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
+  const [ackNote, setAckNote] = useState("");
+  const [editingKey, setEditingKey] = useState<string | null>(null);
+  const [form, setForm] = useState<ItemFormValues | null>(null);
+  const [removeKey, setRemoveKey] = useState<string | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const apply = (next: AdminRoadmapState) => {
+    queryClient.setQueryData(queryKey, next);
+    setSelectedKeys(new Set());
+  };
+
+  async function run(label: string, action: () => Promise<AdminRoadmapState>, success?: string): Promise<boolean> {
+    setBusy(label);
+    setMessage(null);
+    try {
+      apply(await action());
+      if (success) setMessage({ tone: "success", text: success });
+      return true;
+    } catch (err) {
+      if (err instanceof RoadmapApiError) {
+        if (err.failure.kind === "stale" || err.failure.kind === "not_publishable") {
+          await query.refetch(); // authoritative state replaces anything stale
+        }
+        setMessage({ tone: "error", text: err.failure.message });
+      } else {
+        setMessage({ tone: "error", text: "Something went wrong. Check your connection and try again." });
+      }
+      return false;
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function startImport(pending: PendingImport, replaceDraft: boolean) {
+    setBusy("import");
+    setMessage(null);
+    try {
+      const next = pending.kind === "file"
+        ? await adminRoadmapApi.importWorkbook(studentId, pending.file, replaceDraft)
+        : await adminRoadmapApi.importPackage(studentId, pending.pkg, replaceDraft);
+      apply(next);
+      setPendingImport(null);
+      setShowPreview(false);
+      if (fileRef.current) fileRef.current.value = "";
+      setMessage({ tone: "success", text: "Import converted into a draft. Review the exceptions below before publishing." });
+    } catch (err) {
+      if (err instanceof RoadmapApiError && err.failure.kind === "draft_exists") {
+        setPendingImport(pending); // ask before replacing
+      } else {
+        setPendingImport(null);
+        setMessage({ tone: "error", text: err instanceof RoadmapApiError ? err.failure.message : "The import failed. Try again." });
+      }
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  const onUploadFile = () => {
+    const file = fileRef.current?.files?.[0];
+    if (!file) return setMessage({ tone: "error", text: "Choose an .xlsx workbook first." });
+    void startImport({ kind: "file", file }, false);
+  };
+  const onImportPackage = () => {
+    try {
+      void startImport({ kind: "package", pkg: parsePastedPackage(packageText) }, false);
+    } catch (err) {
+      setMessage({ tone: "error", text: err instanceof Error ? err.message : "Invalid package." });
+    }
+  };
+
+  const grouped = useMemo(() => groupExceptions(draft?.exceptions ?? []), [draft]);
+  const acked = useMemo(() => acknowledgedKeys(draft?.acknowledgements ?? []), [draft]);
+  const itemIssues = useMemo(() => exceptionsByItem(draft?.exceptions ?? []), [draft]);
+  const gate = publishGate(draft, isAdmin, busy !== null);
+
+  const editingItem: RoadmapItem | undefined = draft?.content.items.find((i) => i.key === editingKey);
+
+  function openEditor(item: RoadmapItem) {
+    setEditingKey(item.key);
+    setForm(itemToForm(item));
+  }
+  async function saveEditor() {
+    if (!draft || !editingKey || !form) return;
+    const ok = await run("save", () => adminRoadmapApi.saveDraft(studentId, saveDraftBody(draft.draftRevision, applyItemForm(draft.content, editingKey, form))), "Draft saved and re-validated.");
+    if (ok) {
+      setEditingKey(null);
+      setForm(null);
+    }
+  }
+
+  if (query.isLoading) {
+    return <div className="flex items-center gap-2 py-16 text-sm text-muted-foreground" role="status"><Loader2 className="h-4 w-4 animate-spin" />Loading roadmap…</div>;
+  }
+  if (query.isError || !state) {
+    return (
+      <div className="mx-auto max-w-3xl space-y-4">
+        <Link href={`/admin/students/${encodeURIComponent(studentId)}`} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" />Back to student</Link>
+        <div role="alert" className="rounded-md border border-destructive/40 bg-destructive/5 p-6 text-center text-sm">
+          <p>The roadmap could not be loaded.</p>
+          <Button className="mt-3" type="button" size="sm" variant="outline" onClick={() => void query.refetch()}><RefreshCw className="mr-2 h-4 w-4" />Retry</Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mx-auto max-w-6xl space-y-6">
+      <Link href={`/admin/students/${encodeURIComponent(studentId)}`} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" />Back to student</Link>
+      <header className="border-b border-border/70 pb-6">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary">Lumière / student roadmap</p>
+        <h1 className="text-3xl font-semibold tracking-tight">Roadmap</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Upload Excel, convert, review exceptions, preview, then publish. Nothing imported is an institutional decision; credit comes only from the verified academic record.</p>
+      </header>
+
+      <div aria-live="polite">
+        {message && (
+          <div role={message.tone === "error" ? "alert" : "status"} className={`flex items-start gap-2 rounded-md border px-4 py-3 text-sm ${message.tone === "error" ? "border-destructive/40 bg-destructive/5" : "border-border bg-muted/40"}`}>
+            {message.tone === "error" ? <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" /> : <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />}
+            <span>{message.text}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Published + history */}
+      <section aria-labelledby="published-heading" className="grid gap-4 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle id="published-heading" className="text-base">Current published version</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            {state.published ? (
+              <>
+                <p className="text-lg font-semibold">{state.published.title}</p>
+                <p className="text-muted-foreground">Version {state.published.versionNumber} · published {formatDate(state.published.publishedAt)}{state.published.publishedBy ? ` by ${state.published.publishedBy}` : ""}</p>
+                <p className="text-muted-foreground">{state.published.content.items.length} items in {state.published.content.phases.length} phases</p>
+                {!draft && (
+                  <Button type="button" size="sm" variant="outline" disabled={busy !== null} onClick={() => void run("from-published", () => adminRoadmapApi.fromPublished(studentId), "Opened a draft copied from the published version.")}>
+                    Edit published as new draft
+                  </Button>
+                )}
+              </>
+            ) : <p className="text-muted-foreground">Nothing is published yet. The student sees no roadmap until you publish a draft.</p>}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader><CardTitle className="text-base">Version history</CardTitle></CardHeader>
+          <CardContent>
+            {state.versions.length === 0 ? <p className="text-sm text-muted-foreground">No versions yet.</p> : (
+              <ul className="divide-y text-sm">
+                {state.versions.map((v) => (
+                  <li key={v.versionId} className="flex items-center justify-between gap-2 py-2">
+                    <span>v{v.versionNumber} · {v.title}</span>
+                    <span className="flex items-center gap-2 text-muted-foreground"><Badge variant="outline">{v.status}</Badge>{formatDate(v.publishedAt ?? v.createdAt)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+      </section>
+
+      {/* Import */}
+      <section aria-labelledby="import-heading">
+        <Card>
+          <CardHeader>
+            <CardTitle id="import-heading" className="flex items-center gap-2 text-base"><FileSpreadsheet className="h-4 w-4" />Import</CardTitle>
+            <CardDescription>Creates a draft only. Start from the lumiere-roadmap-v1 template (docs/templates).</CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-6 md:grid-cols-2">
+            <div className="space-y-3">
+              <Label htmlFor="roadmap-workbook">Excel workbook (.xlsx)</Label>
+              <Input id="roadmap-workbook" ref={fileRef} type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+              <Button type="button" disabled={busy !== null} onClick={onUploadFile}>{busy === "import" ? "Converting…" : "Upload and convert"}</Button>
+            </div>
+            <div className="space-y-3">
+              <Label htmlFor="roadmap-package">AI package (JSON from ChatGPT, Claude, …)</Label>
+              <Textarea id="roadmap-package" rows={5} value={packageText} onChange={(e) => setPackageText(e.target.value)} placeholder='{"format":"lumiere-roadmap-package/1", …}' className="font-mono text-xs" />
+              <Button type="button" variant="outline" disabled={busy !== null} onClick={onImportPackage}>Convert package</Button>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
+
+      {/* Draft review */}
+      {draft && (
+        <DraftReview
+          draft={draft}
+          grouped={grouped}
+          acked={acked}
+          selectedKeys={selectedKeys}
+          setSelectedKeys={setSelectedKeys}
+          ackNote={ackNote}
+          setAckNote={setAckNote}
+          busy={busy}
+          itemIssues={itemIssues}
+          onAcknowledge={() => void run("ack", () => adminRoadmapApi.acknowledge(studentId, acknowledgeBody(draft.draftRevision, [...selectedKeys], ackNote)), "Warnings acknowledged.").then((ok) => ok && setAckNote(""))}
+          onEdit={openEditor}
+          onRemove={setRemoveKey}
+        />
+      )}
+
+      {draft && (
+        <section aria-labelledby="actions-heading">
+          <Card>
+            <CardHeader><CardTitle id="actions-heading" className="text-base">Preview and publish</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex flex-wrap gap-2">
+                <Button type="button" variant="outline" aria-pressed={showPreview} onClick={() => setShowPreview((v) => !v)}>{showPreview ? "Hide preview" : "Preview as student"}</Button>
+                <Button type="button" disabled={!gate.enabled} aria-describedby="publish-reason" onClick={() => setConfirm("publish")}>Publish</Button>
+                <Button type="button" variant="outline" disabled={busy !== null} onClick={() => setConfirm("discard")}>Discard draft</Button>
+              </div>
+              <p id="publish-reason" className="text-sm text-muted-foreground">{gate.reason ?? "Ready to publish. Publishing creates a new immutable version; student progress is kept."}</p>
+              {showPreview && <PreviewPanel studentId={studentId} draftRevision={draft.draftRevision} />}
+            </CardContent>
+          </Card>
+        </section>
+      )}
+
+      {/* Replace draft confirmation (409 ROADMAP_DRAFT_EXISTS) */}
+      <AlertDialog open={pendingImport !== null} onOpenChange={(o) => !o && setPendingImport(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Replace the open draft?</AlertDialogTitle>
+            <AlertDialogDescription>A draft already exists for this student. Importing again discards that draft, including any edits and acknowledgements. The published version is not affected.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep current draft</AlertDialogCancel>
+            <AlertDialogAction onClick={() => pendingImport && void startImport(pendingImport, true)}>Replace draft</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={confirm === "publish"} onOpenChange={(o) => !o && setConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Publish this roadmap?</AlertDialogTitle>
+            <AlertDialogDescription>The student will immediately follow this version. Existing progress stays attached to items with the same key; progress on removed items is preserved in history only.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => draft && void run("publish", () => adminRoadmapApi.publish(studentId, publishBody(draft.draftRevision, state.published?.versionId ?? null)), "Roadmap published.").then(() => setShowPreview(false))}>Publish</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={confirm === "discard"} onOpenChange={(o) => !o && setConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Discard this draft?</AlertDialogTitle>
+            <AlertDialogDescription>The draft, its edits and acknowledgements are removed. The published version is unchanged.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => draft && void run("discard", () => adminRoadmapApi.discard(studentId, discardBody(draft.draftRevision)), "Draft discarded.").then(() => setShowPreview(false))}>Discard draft</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={removeKey !== null} onOpenChange={(o) => !o && setRemoveKey(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove "{draft?.content.items.find((i) => i.key === removeKey)?.title}" from the draft?</AlertDialogTitle>
+            <AlertDialogDescription>Other items that depend on it will show a blocking exception until fixed. Any student progress on it is preserved in history and is not transferred to another item.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { const key = removeKey; setRemoveKey(null); if (draft && key) void run("save", () => adminRoadmapApi.saveDraft(studentId, saveDraftBody(draft.draftRevision, removeItemFromContent(draft.content, key))), "Item removed from the draft."); }}>Remove item</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <Dialog open={editingItem !== undefined && form !== null} onOpenChange={(o) => { if (!o) { setEditingKey(null); setForm(null); } }}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit item</DialogTitle>
+            <DialogDescription>Key <span className="font-mono">{editingItem?.key}</span> stays the same so student progress is kept.</DialogDescription>
+          </DialogHeader>
+          {form && draft && (
+            <div className="grid gap-4">
+              <Field id="edit-title" label="Title"><Input id="edit-title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></Field>
+              <Field id="edit-code" label="Code"><Input id="edit-code" value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} /></Field>
+              <Field id="edit-phase" label="Phase">
+                <Select value={form.phaseKey} onValueChange={(v) => setForm({ ...form, phaseKey: v })}>
+                  <SelectTrigger id="edit-phase"><SelectValue /></SelectTrigger>
+                  <SelectContent>{draft.content.phases.map((p) => <SelectItem key={p.key} value={p.key}>{p.title}</SelectItem>)}</SelectContent>
+                </Select>
+              </Field>
+              <Field id="edit-objective" label="Objective">
+                <Select value={form.objectiveKey} onValueChange={(v) => setForm({ ...form, objectiveKey: v })}>
+                  <SelectTrigger id="edit-objective"><SelectValue /></SelectTrigger>
+                  <SelectContent>{draft.content.objectives.map((o) => <SelectItem key={o.key} value={o.key}>{o.title}</SelectItem>)}</SelectContent>
+                </Select>
+              </Field>
+              <div className="grid grid-cols-2 gap-3">
+                <Field id="edit-start" label="Planned start"><Input id="edit-start" type="date" value={form.plannedStart} onChange={(e) => setForm({ ...form, plannedStart: e.target.value })} /></Field>
+                <Field id="edit-end" label="Planned end"><Input id="edit-end" type="date" value={form.plannedEnd} onChange={(e) => setForm({ ...form, plannedEnd: e.target.value })} /></Field>
+              </div>
+              <Field id="edit-status" label="Plan status">
+                <Select value={form.planStatus} onValueChange={(v) => setForm({ ...form, planStatus: v as ItemFormValues["planStatus"] })}>
+                  <SelectTrigger id="edit-status"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {(["planned", "hold", "alternative", "dropped"] as const).map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </Field>
+              {form.planStatus === "hold" && (
+                <Field id="edit-hold" label="Hold reason (shown to the student)"><Input id="edit-hold" value={form.holdReason} onChange={(e) => setForm({ ...form, holdReason: e.target.value })} /></Field>
+              )}
+              <Field id="edit-depends" label="Depends on (item keys, comma separated)"><Input id="edit-depends" value={form.dependsOn} onChange={(e) => setForm({ ...form, dependsOn: e.target.value })} className="font-mono" /></Field>
+            </div>
+          )}
+          <DialogFooter className="gap-2 sm:justify-between">
+            <Button type="button" variant="outline" className="text-destructive" onClick={() => { setRemoveKey(editingKey); setEditingKey(null); setForm(null); }}>Remove item</Button>
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" onClick={() => { setEditingKey(null); setForm(null); }}>Cancel</Button>
+              <Button type="button" disabled={busy !== null} onClick={() => void saveEditor()}>Save changes</Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+function Field({ id, label, children }: { id: string; label: string; children: React.ReactNode }) {
+  return <div className="space-y-1.5"><Label htmlFor={id}>{label}</Label>{children}</div>;
+}
+
+interface DraftReviewProps {
+  draft: AdminRoadmapDraftView;
+  grouped: ReturnType<typeof groupExceptions>;
+  acked: Set<string>;
+  selectedKeys: Set<string>;
+  setSelectedKeys: (s: Set<string>) => void;
+  ackNote: string;
+  setAckNote: (s: string) => void;
+  busy: string | null;
+  itemIssues: Map<string, RoadmapException[]>;
+  onAcknowledge: () => void;
+  onEdit: (item: RoadmapItem) => void;
+  onRemove: (key: string) => void;
+}
+
+function DraftReview(props: DraftReviewProps) {
+  const { draft, grouped, acked, selectedKeys, setSelectedKeys, ackNote, setAckNote, busy, itemIssues } = props;
+  const openWarnings = grouped.warning.filter((w) => !acked.has(w.key));
+  const src = draft.import;
+  const toggle = (key: string, on: boolean) => {
+    const next = new Set(selectedKeys);
+    if (on) next.add(key); else next.delete(key);
+    setSelectedKeys(next);
+  };
+  const removedProgress = new Set(draft.diff.removed.filter((r) => r.hasProgress).map((r) => r.itemKey));
+
+  return (
+    <section aria-labelledby="draft-heading" className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle id="draft-heading" className="flex flex-wrap items-center gap-2 text-base">
+            Draft v{draft.versionNumber} · {draft.content.title}
+            <Badge variant={draft.publishable ? "secondary" : "outline"}>{draft.publishable ? "Publishable" : "Not publishable yet"}</Badge>
+          </CardTitle>
+          <CardDescription>
+            {src
+              ? `Imported from ${src.fileName ?? src.summary.generator ?? "package"} (${src.templateId}): ${src.summary.rowsRead} rows read, ${src.summary.rowsConverted} converted, ${src.summary.rowsSkipped} skipped.`
+              : "Opened from the published version for manual edits."}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="text-sm text-muted-foreground">
+          {draft.content.objectives.length} objectives · {draft.content.phases.length} phases · {draft.content.items.length} items · {draft.content.milestones.length} milestones
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle className="text-base">Exceptions</CardTitle></CardHeader>
+        <CardContent className="space-y-6">
+          {draft.exceptions.length === 0 && <p className="text-sm text-muted-foreground">No exceptions. Everything converted cleanly.</p>}
+          {grouped.blocking.length > 0 && (
+            <div role="group" aria-label={SEVERITY_LABEL.blocking}>
+              <h3 className="mb-2 text-sm font-semibold text-destructive">{SEVERITY_LABEL.blocking} ({grouped.blocking.length})</h3>
+              <ul className="divide-y rounded-md border">
+                {grouped.blocking.map((e) => <ExceptionRow key={e.key} e={e} />)}
+              </ul>
+            </div>
+          )}
+          {grouped.warning.length > 0 && (
+            <div role="group" aria-label={SEVERITY_LABEL.warning}>
+              <h3 className="mb-2 text-sm font-semibold">{SEVERITY_LABEL.warning} ({openWarnings.length} open of {grouped.warning.length})</h3>
+              <ul className="divide-y rounded-md border">
+                {grouped.warning.map((e) => {
+                  const done = acked.has(e.key);
+                  const id = `ack-${e.key}`;
+                  return (
+                    <li key={e.key} className="flex items-start gap-3 p-3">
+                      <Checkbox id={id} checked={done || selectedKeys.has(e.key)} disabled={done || busy !== null} onCheckedChange={(v) => toggle(e.key, v === true)} aria-label={`Acknowledge: ${e.message}`} className="mt-1" />
+                      <label htmlFor={id} className="min-w-0 flex-1 cursor-pointer text-sm">
+                        <span className="block">{e.message}</span>
+                        <span className="block text-xs text-muted-foreground"><span className="font-mono">{e.code}</span> {exceptionLocation(e) && `· ${exceptionLocation(e)}`}{done ? " · acknowledged" : ""}</span>
+                      </label>
+                    </li>
+                  );
+                })}
+              </ul>
+              {openWarnings.length > 0 && (
+                <div className="mt-3 space-y-2">
+                  <Label htmlFor="ack-note">Note for the selected warnings (optional)</Label>
+                  <Input id="ack-note" value={ackNote} maxLength={500} onChange={(e) => setAckNote(e.target.value)} />
+                  <div className="flex flex-wrap gap-2">
+                    <Button type="button" size="sm" disabled={selectedKeys.size === 0 || busy !== null} onClick={props.onAcknowledge}>Acknowledge selected ({selectedKeys.size})</Button>
+                    <Button type="button" size="sm" variant="outline" disabled={busy !== null} onClick={() => setSelectedKeys(new Set(openWarnings.map((w) => w.key)))}>Select all open</Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          {grouped.info.length > 0 && (
+            <details>
+              <summary className="cursor-pointer text-sm font-semibold">{SEVERITY_LABEL.info} ({grouped.info.length})</summary>
+              <ul className="mt-2 divide-y rounded-md border">{grouped.info.map((e) => <ExceptionRow key={e.key} e={e} />)}</ul>
+            </details>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Changes compared with the published plan</CardTitle>
+          <CardDescription>{diffHeadline(draft.diff)}</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4 text-sm">
+          {draft.diff.added.length > 0 && <DiffList title="Added" rows={draft.diff.added.map((a) => `${a.title} (${a.itemKey})`)} />}
+          {draft.diff.removed.length > 0 && (
+            <div>
+              <h3 className="mb-1 font-semibold">Removed</h3>
+              <ul className="space-y-1">
+                {draft.diff.removed.map((r) => (
+                  <li key={r.itemKey} className={r.hasProgress ? "rounded-md border border-amber-500/50 bg-amber-500/10 px-3 py-2" : ""}>
+                    {r.title} <span className="font-mono text-xs text-muted-foreground">({r.itemKey})</span>
+                    {r.hasProgress && <span className="ml-2 font-medium">Student has progress here. It is kept in history and is not moved to any replacement.</span>}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {draft.diff.changed.length > 0 && (
+            <div>
+              <h3 className="mb-1 font-semibold">Changed</h3>
+              <ul className="space-y-1">
+                {draft.diff.changed.map((c) => (
+                  <li key={c.itemKey}>
+                    {c.title} <span className="font-mono text-xs text-muted-foreground">{c.fields.join(", ")}</span>
+                    {c.rescheduleOnly && <Badge variant="secondary" className="ml-2">reschedule only — harmless</Badge>}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {(draft.diff.objectivesAdded.length > 0 || draft.diff.objectivesRemoved.length > 0 || draft.diff.objectivesChanged.length > 0 || draft.diff.phasesChanged || draft.diff.milestonesChanged) && (
+            <ul className="list-disc space-y-0.5 pl-5 text-muted-foreground">
+              {draft.diff.objectivesAdded.length > 0 && <li>Objectives added: {draft.diff.objectivesAdded.join(", ")}</li>}
+              {draft.diff.objectivesRemoved.length > 0 && <li>Objectives removed: {draft.diff.objectivesRemoved.join(", ")}</li>}
+              {draft.diff.objectivesChanged.length > 0 && <li>Objectives changed: {draft.diff.objectivesChanged.join(", ")}</li>}
+              {draft.diff.phasesChanged && <li>Phases changed</li>}
+              {draft.diff.milestonesChanged && <li>Milestones changed</li>}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle className="text-base">Items</CardTitle><CardDescription>Edit the most common fixes here; use a new import for larger changes.</CardDescription></CardHeader>
+        <CardContent>
+          {draft.content.items.length === 0 ? <p className="text-sm text-muted-foreground">The draft has no items.</p> : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <caption className="sr-only">Draft roadmap items</caption>
+                <thead className="text-xs uppercase tracking-wide text-muted-foreground">
+                  <tr><th scope="col" className="py-2 pr-3">Item</th><th scope="col" className="py-2 pr-3">Phase</th><th scope="col" className="py-2 pr-3">Dates</th><th scope="col" className="py-2 pr-3">Status</th><th scope="col" className="py-2"><span className="sr-only">Actions</span></th></tr>
+                </thead>
+                <tbody className="divide-y">
+                  {draft.content.items.map((item) => {
+                    const issues = itemIssues.get(item.key) ?? [];
+                    return (
+                      <tr key={item.key} className={removedProgress.has(item.key) ? "bg-amber-500/10" : ""}>
+                        <td className="py-2 pr-3"><span className="font-medium">{item.title}</span>{item.code && <span className="text-muted-foreground"> · {item.code}</span>}<span className="block font-mono text-xs text-muted-foreground">{item.key}</span></td>
+                        <td className="py-2 pr-3">{draft.content.phases.find((p) => p.key === item.phaseKey)?.title ?? item.phaseKey}</td>
+                        <td className="py-2 pr-3 whitespace-nowrap">{formatDate(item.plannedStart)} → {formatDate(item.plannedEnd)}</td>
+                        <td className="py-2 pr-3"><Badge variant="outline">{item.planStatus}</Badge>{issues.length > 0 && <Badge variant={issues.some((i) => i.severity === "blocking") ? "destructive" : "secondary"} className="ml-1">{issues.length} issue{issues.length === 1 ? "" : "s"}</Badge>}</td>
+                        <td className="py-2 text-right"><Button type="button" size="sm" variant="outline" disabled={busy !== null} onClick={() => props.onEdit(item)} aria-label={`Edit ${item.title}`}>Edit</Button></td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </section>
+  );
+}
+
+function ExceptionRow({ e }: { e: RoadmapException }) {
+  return (
+    <li className="p-3 text-sm">
+      <span className="block">{e.message}</span>
+      <span className="block text-xs text-muted-foreground"><span className="font-mono">{e.code}</span> {exceptionLocation(e) && `· ${exceptionLocation(e)}`}</span>
+    </li>
+  );
+}
+
+function DiffList({ title, rows }: { title: string; rows: string[] }) {
+  return <div><h3 className="mb-1 font-semibold">{title}</h3><ul className="list-disc space-y-0.5 pl-5">{rows.map((r) => <li key={r}>{r}</li>)}</ul></div>;
+}
+
+/** Deliberately compact, read-only: phases -> items with stage. The polished student UI lives elsewhere. */
+function PreviewPanel({ studentId, draftRevision }: { studentId: string; draftRevision: number }) {
+  const preview = useQuery({
+    queryKey: ["admin-roadmap-preview", studentId, draftRevision],
+    queryFn: () => adminRoadmapApi.preview(studentId),
+    staleTime: Infinity,
+  });
+  if (preview.isLoading) return <p className="text-sm text-muted-foreground" role="status">Loading preview…</p>;
+  if (preview.isError || !preview.data) {
+    return <div role="alert" className="text-sm text-destructive">The preview could not be loaded. <Button type="button" size="sm" variant="outline" onClick={() => void preview.refetch()}>Retry</Button></div>;
+  }
+  const view = preview.data;
+  return (
+    <div className="space-y-4 rounded-md border bg-muted/30 p-4" aria-label="Student preview">
+      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Preview — what the student would see (not published)</p>
+      <h3 className="text-lg font-semibold">{view.plan?.title}</h3>
+      {view.plan?.summary && <p className="text-sm text-muted-foreground">{view.plan.summary}</p>}
+      {view.phases.map((phase) => (
+        <div key={phase.key}>
+          <h4 className="text-sm font-semibold">{phase.title} <span className="font-normal text-muted-foreground">· {phase.items.length} items</span></h4>
+          <ul className="mt-1 divide-y rounded-md border bg-background text-sm">
+            {phase.items.map((item) => (
+              <li key={item.key} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
+                <span>{item.title}{item.code && <span className="text-muted-foreground"> · {item.code}</span>}{item.planStatus === "hold" && item.holdReason && <span className="block text-xs text-muted-foreground">On hold: {item.holdReason}</span>}</span>
+                <span className="flex items-center gap-2 text-xs text-muted-foreground">{formatDate(item.plannedStart)} → {formatDate(item.plannedEnd)}<Badge variant="outline">{item.stage.replace(/_/g, " ")}</Badge></span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </div>
+  );
+}

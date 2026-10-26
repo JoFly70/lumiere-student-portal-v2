@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
 import Admin from "@/pages/admin";
 import AdminStudentWorkspace from "@/pages/admin-student-workspace";
+import AdminStudentRoadmap from "@/pages/admin-student-roadmap";
 
 function RoleLanding() {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -59,6 +60,13 @@ function Router() {
         {() => (
           <ProtectedRoute requireRole="admin">
             <Admin />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/admin/students/:studentId/roadmap">
+        {() => (
+          <ProtectedRoute requireRole="admin">
+            <AdminStudentRoadmap />
           </ProtectedRoute>
         )}
       </Route>

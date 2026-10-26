@@ -170,6 +170,7 @@ export default function AdminStudentWorkspace() {
        <a href="#workspace-overview" className="rounded-md border px-3 py-2 text-sm font-medium hover:bg-muted">Overview</a>
        <a href="#workspace-documents" className="rounded-md border px-3 py-2 text-sm font-medium hover:bg-muted"><FileText className="mr-2 inline h-4 w-4" />Documents</a>
        <a href="#workspace-support" className="rounded-md border px-3 py-2 text-sm font-medium hover:bg-muted"><LifeBuoy className="mr-2 inline h-4 w-4" />Support</a>
+       <Link href={`/admin/students/${encodeURIComponent(studentId)}/roadmap`} className="rounded-md border px-3 py-2 text-sm font-medium hover:bg-muted">Roadmap</Link>
      </nav>
      <div id="workspace-overview" aria-label="Overview">
     <section className="grid gap-4 md:grid-cols-3">
