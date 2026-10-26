@@ -21,10 +21,10 @@ import { adminRoadmapApi, RoadmapApiError } from "@/lib/admin-roadmap-api";
 import {
   ADMIN_ROADMAP_QUERY_KEY, acknowledgeBody, acknowledgedKeys, applyItemForm, diffHeadline, discardBody,
   exceptionLocation, exceptionsByItem, groupExceptions, itemToForm, parsePastedPackage, publishBody, publishGate,
-  removeItemFromContent, saveDraftBody, type ItemFormValues,
+  itemFacts, removeItemFromContent, reportedHistoryLine, saveDraftBody, type ItemFormValues,
 } from "@/lib/admin-roadmap-logic";
 
-type PendingImport = { kind: "file"; file: File } | { kind: "package"; pkg: unknown };
+type PendingImport = { kind: "file"; file: File; companion?: File | null } | { kind: "package"; pkg: unknown };
 
 const SEVERITY_LABEL = { blocking: "Blocking — must be fixed", warning: "Warnings — acknowledge before publishing", info: "Information" } as const;
 
@@ -59,6 +59,7 @@ export default function AdminStudentRoadmap() {
   const [removeKey, setRemoveKey] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const companionRef = useRef<HTMLInputElement>(null);
 
   const apply = (next: AdminRoadmapState) => {
     queryClient.setQueryData(queryKey, next);
@@ -92,12 +93,13 @@ export default function AdminStudentRoadmap() {
     setMessage(null);
     try {
       const next = pending.kind === "file"
-        ? await adminRoadmapApi.importWorkbook(studentId, pending.file, replaceDraft)
+        ? await adminRoadmapApi.importWorkbook(studentId, pending.file, replaceDraft, pending.companion)
         : await adminRoadmapApi.importPackage(studentId, pending.pkg, replaceDraft);
       apply(next);
       setPendingImport(null);
       setShowPreview(false);
       if (fileRef.current) fileRef.current.value = "";
+      if (companionRef.current) companionRef.current.value = "";
       setMessage({ tone: "success", text: "Import converted into a draft. Review the exceptions below before publishing." });
     } catch (err) {
       if (err instanceof RoadmapApiError && err.failure.kind === "draft_exists") {
@@ -114,7 +116,7 @@ export default function AdminStudentRoadmap() {
   const onUploadFile = () => {
     const file = fileRef.current?.files?.[0];
     if (!file) return setMessage({ tone: "error", text: "Choose an .xlsx workbook first." });
-    void startImport({ kind: "file", file }, false);
+    void startImport({ kind: "file", file, companion: companionRef.current?.files?.[0] ?? null }, false);
   };
   const onImportPackage = () => {
     try {
@@ -226,6 +228,9 @@ export default function AdminStudentRoadmap() {
             <div className="space-y-3">
               <Label htmlFor="roadmap-workbook">Excel workbook (.xlsx)</Label>
               <Input id="roadmap-workbook" ref={fileRef} type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+              <Label htmlFor="roadmap-companion">Execution workbook (companion, optional)</Label>
+              <Input id="roadmap-companion" ref={companionRef} type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+              <p className="text-xs text-muted-foreground">Add the weekly execution schedule next to the master academic workbook to get ONE draft. Execution rows are matched to master courses and never added as new courses.</p>
               <Button type="button" disabled={busy !== null} onClick={onUploadFile}>{busy === "import" ? "Converting…" : "Upload and convert"}</Button>
             </div>
             <div className="space-y-3">
@@ -478,6 +483,27 @@ function DraftReview(props: DraftReviewProps) {
         </CardContent>
       </Card>
 
+      {draft.content.reportedHistory.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Reported history (not credit)</CardTitle>
+            <CardDescription>Staff only. Prior education and completed work as REPORTED by the workbook. It is unverified, is never shown to the student and never counts as credit; the verified academic record is the only credit authority.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ul className="divide-y rounded-md border text-sm">
+              {draft.content.reportedHistory.map((h) => (
+                <li key={h.key} className="p-3">
+                  <span className="font-medium">{h.title}</span>
+                  <Badge variant="outline" className="ml-2">unverified</Badge>
+                  <span className="block text-xs text-muted-foreground">{reportedHistoryLine(h)}</span>
+                  {h.note && <span className="block text-xs text-muted-foreground">{h.note}</span>}
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Changes compared with the published plan</CardTitle>
@@ -538,7 +564,7 @@ function DraftReview(props: DraftReviewProps) {
                     const issues = itemIssues.get(item.key) ?? [];
                     return (
                       <tr key={item.key} className={removedProgress.has(item.key) ? "bg-amber-500/10" : ""}>
-                        <td className="py-2 pr-3"><span className="font-medium">{item.title}</span>{item.code && <span className="text-muted-foreground"> · {item.code}</span>}<span className="block break-all font-mono text-xs text-muted-foreground">{item.key}</span><span className="block text-xs text-muted-foreground sm:hidden">{phaseTitle(draft, item)} · {formatDate(item.plannedStart)} → {formatDate(item.plannedEnd)}</span></td>
+                        <td className="py-2 pr-3"><span className="font-medium">{item.title}</span>{item.code && <span className="text-muted-foreground"> · {item.code}</span>}<span className="block break-all font-mono text-xs text-muted-foreground">{item.key}</span>{itemFacts(item).map((f) => <span key={f} className="block text-xs text-muted-foreground">{f}</span>)}<span className="block text-xs text-muted-foreground sm:hidden">{phaseTitle(draft, item)} · {formatDate(item.plannedStart)} → {formatDate(item.plannedEnd)}</span></td>
                         <td className="hidden py-2 pr-3 sm:table-cell">{phaseTitle(draft, item)}<span className="block text-xs text-muted-foreground md:hidden">{formatDate(item.plannedStart)} → {formatDate(item.plannedEnd)}</span></td>
                         <td className="hidden whitespace-nowrap py-2 pr-3 md:table-cell">{formatDate(item.plannedStart)} → {formatDate(item.plannedEnd)}</td>
                         <td className="py-2 pr-3"><Badge variant="outline">{item.planStatus}</Badge>{issues.length > 0 && <Badge variant={issues.some((i) => i.severity === "blocking") ? "destructive" : "secondary"} className="ml-1">{issues.length} issue{issues.length === 1 ? "" : "s"}</Badge>}</td>

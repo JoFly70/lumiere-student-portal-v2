@@ -104,6 +104,11 @@ const CONVERSION_CODES: ReadonlySet<RoadmapExceptionCode> = new Set<RoadmapExcep
   "AI_CREDIT_CLAIM_IGNORED",
   "CONDITIONAL_ALLOCATION",
   "PACKAGE_INVALID",
+  "COMPANION_ROW_UNMATCHED",
+  "COMPANION_ITEM_MERGED",
+  "DEADLINE_CONFLICT",
+  "REPORTED_HISTORY_NOT_CREDIT",
+  "SHEET_NOT_RECOGNISED",
 ]);
 
 function dedupe(exceptions: readonly RoadmapException[]): RoadmapException[] {

@@ -4,6 +4,7 @@
  * replace their state with the returned AdminRoadmapState.
  */
 import type {
+  RoadmapReportedHistory,
   AdminRoadmapDraftView,
   RoadmapContent,
   RoadmapException,
@@ -220,4 +221,38 @@ export function exceptionsByItem(exceptions: readonly RoadmapException[]): Map<s
     map.set(e.ref.itemKey, list);
   }
   return map;
+}
+
+// ── S07: draft review facts (provenance, condition, registration, equivalency, credit use) ──
+
+/** Short, staff-only facts about an imported item, shown under its title in the draft review. */
+export function itemFacts(item: RoadmapItem): string[] {
+  const facts: string[] = [];
+  if (item.provider) facts.push(item.provider);
+  if (item.condition) facts.push(`Condition: ${item.condition}`);
+  if (item.equivalency) facts.push(`Equivalency ${item.equivalency.status === "conditional" ? "conditional (not confirmed)" : "reviewed by staff"}${item.equivalency.mapsTo ? ` → ${item.equivalency.mapsTo}` : ""}`);
+  if (item.registration) {
+    const r = item.registration;
+    const parts = [r.termLabel, r.registrationDeadline ? `register by ${r.registrationDeadline}` : null, r.finalExamDate ? `last exam ${r.finalExamDate}` : null].filter(Boolean);
+    facts.push(`Term: ${parts.join(", ")}`);
+  }
+  if (item.registrationGate) facts.push(`Gate: ${item.registrationGate.requirement} (${item.registrationGate.evidence === "documented" ? "evidence documented" : "evidence not documented"})`);
+  if (item.creditUse && item.creditUse !== "degree") facts.push(item.creditUse === "licensing" ? "Licensing planning only" : "Degree and licensing planning");
+  if (item.provenance.length > 0) {
+    facts.push(`Source: ${item.provenance.map((p) => [p.role, p.sheet, p.row ? `row ${p.row}` : null].filter(Boolean).join(" ")).join("; ")}`);
+  }
+  return facts;
+}
+
+const HISTORY_KIND_LABEL: Record<RoadmapReportedHistory["kind"], string> = {
+  credential: "Credential",
+  course: "Course",
+  exam: "Exam",
+  credit_baseline: "Stated credit total",
+  transfer: "Transfer / other institution",
+};
+
+export function reportedHistoryLine(h: RoadmapReportedHistory): string {
+  const bits = [HISTORY_KIND_LABEL[h.kind], h.institution ?? h.provider, h.reportedCredits ? `${h.reportedCredits} credits as reported` : null, h.reportedStatus.replace("_", " "), h.completedOn];
+  return bits.filter(Boolean).join(" · ");
 }
