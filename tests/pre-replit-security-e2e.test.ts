@@ -310,6 +310,7 @@ describe_sec('Pre-Replit Security Sweep — real access tests', () => {
         const restored = await admin.from('knowledge_institutions')
           .update({ name: canonicalName }).eq('slug', slug).select('name').single();
         if (restored.error || restored.data?.name !== canonicalName) {
+          // eslint-disable-next-line no-unsafe-finally -- intentional: fail the test if the seed restore fails
           throw new Error(`seed restore failed for ${slug}: ${restored.error?.message ?? restored.data?.name}`);
         }
       }
