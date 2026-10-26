@@ -236,6 +236,14 @@ export function createHighSchoolService(deps: HighSchoolServiceDeps) {
     return row;
   }
 
+  /** The template title with the credit count of THIS enrollment (an approved 22-credit exception never reads "(21 credits)"). */
+  function programTitleOf(template: HsCurriculumTemplate, totalRequiredHalfUnits: number): string {
+    const label = `(${formatHalfUnits(totalRequiredHalfUnits)} credits)`;
+    return /\(\d+(?:\.5)? credits\)/.test(template.title)
+      ? template.title.replace(/\(\d+(?:\.5)? credits\)/, label)
+      : `${template.title} ${label}`;
+  }
+
   function assertOpen(e: HsEnrollmentRow): void {
     if (!isOpen(e.status)) {
       throw new HsError(E.OFFICIAL_RECORD_LOCKED, 409, `This enrollment is ${e.status.replace(/_/g, " ")} and its records are locked`);
@@ -379,7 +387,7 @@ export function createHighSchoolService(deps: HighSchoolServiceDeps) {
       enrollment: {
         id: b.enrollment.id,
         status: b.enrollment.status as HsEnrollmentStatus,
-        programTitle: b.template.title,
+        programTitle: programTitleOf(b.template, b.enrollment.totalRequiredHalfUnits),
         startedOn: b.enrollment.startedOn,
         targetCompletionDate: b.enrollment.targetCompletionDate,
         institutionDisclosed: b.enrollment.institutionDisclosed,
@@ -590,7 +598,7 @@ export function createHighSchoolService(deps: HighSchoolServiceDeps) {
       status: e.status as HsEnrollmentStatus,
       templateKey: e.templateKey,
       templateVersion: e.templateVersion,
-      programTitle: template.title,
+      programTitle: programTitleOf(template, e.totalRequiredHalfUnits),
       jurisdiction: template.jurisdiction,
       totalRequiredHalfUnits: e.totalRequiredHalfUnits,
       requiredOverrideReason: e.requiredOverrideReason,
@@ -868,6 +876,9 @@ export function createHighSchoolService(deps: HighSchoolServiceDeps) {
       if (input.expectedRevision !== enrollment.revision) {
         throw new HsError(E.REVISION_CONFLICT, 409, "This enrollment changed since you loaded it", { currentRevision: enrollment.revision });
       }
+      // A completed, withdrawn or transferred-out enrollment is an official record: no field
+      // (school name, disclosure, dates, reference) changes after it closes.
+      assertOpen(enrollment);
       const patch: Parameters<HighSchoolRepository["updateEnrollment"]>[1] = { revision: enrollment.revision + 1 };
       const changed: string[] = [];
       if (input.status !== undefined && input.status !== enrollment.status) {
@@ -1462,6 +1473,7 @@ export function createHighSchoolService(deps: HighSchoolServiceDeps) {
           return [meta({ status: "diploma_conferred" })];
         }
         case "set_financial_clearance": {
+          assertOpen(enrollment);
           if (graduation.status === "diploma_conferred") {
             throw new HsError(E.OFFICIAL_RECORD_LOCKED, 409, "Financial clearance can no longer change after the diploma was conferred");
           }
@@ -1471,6 +1483,9 @@ export function createHighSchoolService(deps: HighSchoolServiceDeps) {
         }
         case "set_transcript_status":
         case "set_diploma_delivery": {
+          // Delivery may still move forward after conferral (enrollment "completed"), never on a
+          // withdrawn or transferred-out enrollment.
+          if (enrollment.status === "withdrawn" || enrollment.status === "transferred_out") assertOpen(enrollment);
           const isTranscript = input.action === "set_transcript_status";
           const evidence = isTranscript ? graduation.transcriptEvidenceDocumentId : graduation.diplomaEvidenceDocumentId;
           const from = (isTranscript ? graduation.transcriptStatus : graduation.diplomaDeliveryStatus) as HsDeliveryStatus;

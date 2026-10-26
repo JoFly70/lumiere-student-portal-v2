@@ -232,6 +232,9 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("S11 high school pathway — service on 
       const ovState = await state(ov);
       expect(ovState.current!.enrollment.totalRequiredHalfUnits).toBe(44);
       expect(ovState.current!.enrollment.requiredOverrideReason).toMatch(/State exception/);
+      // The title never contradicts the approved total ("(21 credits)" next to "of 22").
+      expect(ovState.current!.enrollment.programTitle).toBe("Accredited U.S. High School Diploma (22 credits)");
+      expect(ovState.current!.studentPreview?.enrollment.programTitle ?? "Accredited U.S. High School Diploma (22 credits)").toBe("Accredited U.S. High School Diploma (22 credits)");
       const ovDraft = (await svc().draftFromTemplate(ov.st.studentId, ov.eid, staff.userId, undefined)).result.current!.draft!;
       expect(ovDraft.content.totalRequiredHalfUnits).toBe(44);
       expect(ovDraft.content.areas.find((a) => a.key === "electives")!.requiredHalfUnits).toBe(12);
@@ -712,11 +715,17 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("S11 high school pathway — service on 
       expect(await codeOf(svc().updateEnrollment(s.st.studentId, s.eid, staff.userId, updateEnrollmentSchema.parse({ expectedRevision: 7, status: "on_hold", note: "stale write" })))).toMatchObject({ code: "HS_REVISION_CONFLICT", status: 409 });
       expect(await codeOf(svc().updateEnrollment(s.st.studentId, s.eid, staff.userId, updateEnrollmentSchema.parse({ expectedRevision: 0, status: "completed", note: "try to skip" })))).toMatchObject({ code: "HS_VALIDATION_FAILED", status: 422 });
       await svc().updateEnrollment(s.st.studentId, s.eid, staff.userId, updateEnrollmentSchema.parse({ expectedRevision: 0, status: "withdrawn", note: "student left" }));
-      expect(await codeOf(svc().updateEnrollment(s.st.studentId, s.eid, staff.userId, updateEnrollmentSchema.parse({ expectedRevision: 1, status: "active", note: "reopen" })))).toMatchObject({ code: "HS_INVALID_TRANSITION", status: 409 });
+      expect(await codeOf(svc().updateEnrollment(s.st.studentId, s.eid, staff.userId, updateEnrollmentSchema.parse({ expectedRevision: 1, status: "active", note: "reopen" })))).toMatchObject({ code: "HS_OFFICIAL_RECORD_LOCKED", status: 409 });
+      // A closed enrollment is an official record: no field changes (school name, disclosure, dates).
+      for (const patch of [{ awardingSchoolName: "Another School" }, { institutionDisclosed: true }, { startedOn: "2026-01-01" }, { schoolStudentRef: "X-1" }]) {
+        expect(await codeOf(svc().updateEnrollment(s.st.studentId, s.eid, staff.userId, updateEnrollmentSchema.parse({ expectedRevision: 1, note: "late edit", ...patch }))), JSON.stringify(patch)).toMatchObject({ code: "HS_OFFICIAL_RECORD_LOCKED", status: 409 });
+      }
+      expect(await codeOf(svc().graduationAction(s.st.studentId, s.eid, staff.userId, graduationActionSchema.parse({ action: "set_financial_clearance", value: "cleared", note: "late" })))).toMatchObject({ code: "HS_OFFICIAL_RECORD_LOCKED", status: 409 });
       const next = await svc().createEnrollment(s.st.studentId, staff.userId, createEnrollmentSchema.parse({ ...TN }));
       expect(next.result.enrollments).toHaveLength(2);
       expect(next.result.enrollments.map((e) => e.status)).toEqual(["planned", "withdrawn"]);
       expect(next.result.current!.enrollment.templateKey).toBe("us-hs-diploma-tn-22");
+      expect(next.result.current!.enrollment.programTitle).toMatch(/\(22 credits\)$/);
     });
 
     it("every mutation writes hs_events and returns audit records without notes or PII", async () => {
@@ -927,7 +936,7 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("S11 high school pathway — service on 
       const s = await enroll("Closed Cleo");
       await grad(s, { action: "set_transcript_status", value: "requested" });
       await svc().updateEnrollment(s.st.studentId, s.eid, staff.userId, updateEnrollmentSchema.parse({ expectedRevision: 0, status: "withdrawn", note: "student left" }));
-      expect(await codeOf(grad(s, { action: "set_transcript_status", value: "not_requested" }))).toMatchObject({ code: "HS_INVALID_TRANSITION", status: 409 });
+      expect(await codeOf(grad(s, { action: "set_transcript_status", value: "not_requested" }))).toMatchObject({ code: "HS_OFFICIAL_RECORD_LOCKED", status: 409 });
     });
 
     // 4. partial acceptance of transfer claims
