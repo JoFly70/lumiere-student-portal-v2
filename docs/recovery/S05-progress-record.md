@@ -33,6 +33,7 @@
    - The student reports activity only:
      - Tasks: Not started / Started / Submitted / Done.
      - Courses: "I finished this at the provider".
+   - Courses on hold, or awaiting a required advisor approval, cannot be reported on. The server enforces this; progress already recorded is kept and frozen.
    - Writes use optimistic revisions in one transaction that locks the plan row, append an event, and return the authoritative view. The client adopts it, so the Flight Deck and Roadmap stay consistent.
    - Stages are kept distinct: started, submitted, all tasks done, complete at provider, and **officially accepted**. Officially accepted is shown only from the canonical credit record that staff link to the item.
    - Only counts are shown; there is no weighted overall percentage.
@@ -88,7 +89,7 @@
 ## Tests (final run on this branch)
 
 - `tsc --noEmit`: clean.
-- `vitest run`: 66 files and 1550 tests passed; 8 files and 192 tests skipped. The skips are the pre-existing hosted-project-gated suites, unchanged from S04.
+- `vitest run`: 66 files and 1561 tests passed; 8 files and 192 tests skipped. The skips are the pre-existing hosted-project-gated suites, unchanged from S04.
 - `npm run build`: succeeds.
 - **Real integration, not fixtures.** These run automatically when PostgreSQL 16 binaries are present (they are in this container): `tests/helpers/s05-local-pg.ts` starts a disposable cluster and applies the repository's real migrations unmodified, behind a Supabase shim.
   - `tests/s05-roadmap-db-integration.test.ts` (35 tests) uses the real repository, service, importer and projection on Postgres.
@@ -127,7 +128,10 @@ Independent reviews were done by fresh agents, each seeing only the screens and 
 | Round | Beauty | Graphics | Organization | Clarity | Usability |
 |---|---|---|---|---|---|
 | 1 | 7 | 6 | 5 | 5 | 5 |
-| 2 | _see below_ | | | | |
+| 2 | 7 | 6 | 6 | 6 | 5 |
+| 3 (final) | 7 | 6 | 7 | 6 | 7 |
+
+**The 9/10 target is not met on any pillar.**
 
 Round 1's must-fix findings were all applied:
 - Wording that implied self-grading.
@@ -138,6 +142,24 @@ Round 1's must-fix findings were all applied:
 - Dark-mode non-text contrast.
 - Missing landmarks.
 - A sticky navigation bar that overlaid content.
+
+Round 2's must-fix findings were also applied:
+- Held and approval-pending courses are no longer reportable. This is enforced by the server.
+- One labelled status control per task, with Undo.
+- Copy and the credit ladder reconcile; "still to plan" was added.
+- No repeated figures.
+- Headings use the degree name, not the staff plan title.
+- Shorter mobile pages with a jump menu.
+
+Open round-3 findings:
+1. **Gold means two things.** It encodes "verified" in the credit ladder and "complete at provider" in the plan summary. The colour of the Verified bar also changes with surplus.
+2. **"0 officially accepted" can be misread.** It counts roadmap courses only, and sits beside 60 applied prior credits. The summary needs a "roadmap courses" scope label and a prior-credit baseline.
+3. **Two phases can show "Current phase" at once.** This is a side effect of marking any phase with activity as current, which happens when weekly blocks overlap. Rename it "Active", or keep one current phase.
+4. **"Next up" still lists tasks already Submitted.**
+5. **On mobile, the save toast and Jump-to button can cover content** near the bottom of the screen.
+6. **The Roadmap page still carries a full Foundation and Horizon.** It could link to them instead.
+7. **The course stepper labels only the current dot.** The "Awaiting approval" pill on a collapsed row needs its explanation.
+8. **The app shell is still generic grey.** The sidebar and header have not taken on the student theme, and Log out appears twice.
 
 ## Not done / open
 
