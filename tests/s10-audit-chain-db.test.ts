@@ -88,12 +88,18 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("full migration chain on disposable Post
     await pg?.stop();
   }, 60_000);
 
-  it("applied the migrations in filename order (S10 index last)", () => {
+  it("applied the migrations in filename order (S07 → S08 → S10 audit/support migrations included)", () => {
     const applied = pg.appliedFiles.filter((f) => f.startsWith("supabase/migrations/"));
     const sorted = [...applied].sort();
     // The harness moves the 011 course migration first by design; everything else is sorted.
     expect(applied.slice(1)).toEqual(sorted.filter((f) => !f.endsWith("20251217230356_011_degree_programs_courses.sql")));
-    expect(applied[applied.length - 1]).toBe("supabase/migrations/20261028100000_s10_support_idempotency_index.sql");
+    const order = [
+      "supabase/migrations/20261026110000_s07_roadmap_audit_event_types.sql",
+      "supabase/migrations/20261027100000_s08_support_audit_events.sql",
+      "supabase/migrations/20261028100000_s10_support_idempotency_index.sql",
+    ].map((f) => applied.indexOf(f));
+    expect(order.every((i) => i >= 0)).toBe(true);
+    expect([...order].sort((a, b) => a - b)).toEqual(order);
   });
 
   it("the enum has no duplicate labels and contains every event type the code can emit", async () => {
