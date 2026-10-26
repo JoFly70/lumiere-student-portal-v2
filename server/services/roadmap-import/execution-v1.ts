@@ -327,7 +327,7 @@ function aliasSeqs(c: ExecCourse): string[][] {
       add([subjectKey(w), num]);
     } else if (subj.length > 1) add([subj.map((w) => w[0]).join(""), num]);
   }
-  for (const part of c.title.split(/\s*[\/—–:]\s*/)) {
+  for (const part of c.title.split(/\s*[/—–:]\s*/)) {
     let words = wordsOf(part.replace(/\([^)]*\)/g, " "));
     if (words.length === 0) continue;
     add(words);

@@ -20,6 +20,7 @@ import { readWorkbook } from "../../server/services/roadmap-import/reader";
 import { roadmapContentSchema, type RoadmapException } from "../../shared/student-roadmap-contract";
 import { diffRoadmapContent, validateRoadmapContent } from "../../shared/student-roadmap-validation";
 import { reviewRoadmapPlan } from "../../shared/student-roadmap-plan-review";
+import { buildReviewPlan } from "../../shared/student-roadmap-review-groups";
 
 const args = process.argv.slice(2);
 const opt = (n: string): string | undefined => {
@@ -117,6 +118,17 @@ const summary = {
     unmatchedRows: exceptions.filter((e) => e.code === "COMPANION_ROW_UNMATCHED").map((e) => ({ sheet: e.ref.sheet ?? null, row: e.ref.row ?? null })),
   },
   diffAgainstEmptyKeys: diffKeys,
+  // staff review load: the flat list the page used to render vs the grouped panel (shared/student-roadmap-review-groups.ts)
+  review: (() => {
+    const rp = buildReviewPlan(exceptions, c?.items ?? []);
+    return {
+      flat: rp.counts.raw,
+      grouped: rp.counts.groups,
+      toRead: rp.counts.toRead,
+      courseEntries: rp.byCourse.length,
+      largestGroups: rp.groups.filter((g) => g.count > 1).slice(0, 6).map((g) => ({ code: g.code, severity: g.severity, count: g.count })),
+    };
+  })(),
 };
 fs.mkdirSync(out, { recursive: true });
 fs.writeFileSync(path.join(out, `${label}.raw.json`), JSON.stringify({ summary, conversion, exceptions }, null, 2));

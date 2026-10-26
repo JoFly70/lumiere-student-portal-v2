@@ -38,6 +38,7 @@ Unresolved after the fixes: see `reconciliation-EPH.md` and `reconciliation-RUT.
 - schema valid: true
 - review exceptions: 3 (info 1, warning 2)
 - by code: `COMPANION_ROW_UNMATCHED [info]` 1, `SCHEDULE_STALE [warning]` 1, `UNKNOWN_TEMPLATE [warning]` 1
+- **staff review load**: before (flat list) 0 blocking + 2 warnings to read and tick one by one (+ 1 information) = 2; after (grouped) 0 blocking + 2 warning groups (+ 1 information groups) = 2; by-course view: 1 entries; largest groups: none
 - unmatched execution rows (COMPANION_ROW_UNMATCHED): 1 (WEEK BY WEEK#16)
 - blocking errors: none
 
@@ -52,6 +53,7 @@ Unresolved after the fixes: see `reconciliation-EPH.md` and `reconciliation-RUT.
 - schema valid: true
 - review exceptions: 43 (info 5, warning 38)
 - by code: `CONDITIONAL_ALLOCATION [warning]` 1, `EQUIVALENCY_CONDITIONAL [warning]` 1, `LICENSING_CREDIT_SEPARATE [warning]` 17, `OBJECTIVE_CREATED_FROM_ROW [info]` 1, `REGISTRATION_GATE_UNDOCUMENTED [warning]` 1, `REPORTED_HISTORY_NOT_CREDIT [info]` 1, `REPORTED_HISTORY_NOT_CREDIT [warning]` 1, `SHEET_NOT_RECOGNISED [info]` 3, `STARTING_CREDITS_UNVERIFIED [warning]` 17
+- **staff review load**: before (flat list) 0 blocking + 38 warnings to read and tick one by one (+ 5 information) = 38; after (grouped) 0 blocking + 7 warning groups (+ 4 information groups) = 7; by-course view: 17 entries; largest groups: STARTING_CREDITS_UNVERIFIED ×17, LICENSING_CREDIT_SEPARATE ×16, SHEET_NOT_RECOGNISED ×2
 - unmatched execution rows (COMPANION_ROW_UNMATCHED): 0
 - blocking errors: none
 
@@ -68,6 +70,7 @@ Unresolved after the fixes: see `reconciliation-EPH.md` and `reconciliation-RUT.
 - schema valid: true
 - review exceptions: 68 (info 16, warning 52)
 - by code: `COMPANION_ITEM_MERGED [info]` 10, `COMPANION_ROW_UNMATCHED [info]` 1, `COMPANION_ROW_UNMATCHED [warning]` 13, `CONDITIONAL_ALLOCATION [warning]` 1, `EQUIVALENCY_CONDITIONAL [warning]` 1, `LICENSING_CREDIT_SEPARATE [warning]` 17, `OBJECTIVE_CREATED_FROM_ROW [info]` 1, `REGISTRATION_GATE_UNDOCUMENTED [warning]` 1, `REPORTED_HISTORY_NOT_CREDIT [info]` 1, `REPORTED_HISTORY_NOT_CREDIT [warning]` 1, `SCHEDULE_STALE [warning]` 1, `SHEET_NOT_RECOGNISED [info]` 3, `STARTING_CREDITS_UNVERIFIED [warning]` 17
+- **staff review load**: before (flat list) 0 blocking + 52 warnings to read and tick one by one (+ 16 information) = 52; after (grouped) 0 blocking + 9 warning groups (+ 6 information groups) = 9; by-course view: 23 entries; largest groups: STARTING_CREDITS_UNVERIFIED ×17, LICENSING_CREDIT_SEPARATE ×16, COMPANION_ROW_UNMATCHED ×13, COMPANION_ITEM_MERGED ×10, SHEET_NOT_RECOGNISED ×2
 - unmatched execution rows (COMPANION_ROW_UNMATCHED): 14 (WEEK BY WEEK#16, EXTERNAL TRACKER#10, EXTERNAL TRACKER#11, EXTERNAL TRACKER#19, EXTERNAL TRACKER#21, EXTERNAL TRACKER#22, EXTERNAL TRACKER#23, EXTERNAL TRACKER#24, TECEP TRACKER#7, TECEP TRACKER#8, TECEP TRACKER#9, TESU RESIDENCY#6, TESU RESIDENCY#7, TESU RESIDENCY#8)
 - blocking errors: none
 
@@ -82,6 +85,7 @@ Unresolved after the fixes: see `reconciliation-EPH.md` and `reconciliation-RUT.
 - schema valid: true
 - review exceptions: 47 (info 6, warning 41)
 - by code: `CONDITIONAL_ALLOCATION [warning]` 3, `EQUIVALENCY_CONDITIONAL [warning]` 2, `LICENSING_CREDIT_SEPARATE [warning]` 17, `OBJECTIVE_CREATED_FROM_ROW [info]` 1, `REGISTRATION_GATE_UNDOCUMENTED [warning]` 1, `REPORTED_HISTORY_NOT_CREDIT [info]` 1, `REPORTED_HISTORY_NOT_CREDIT [warning]` 1, `SHEET_NOT_RECOGNISED [info]` 4, `STARTING_CREDITS_UNVERIFIED [warning]` 17
+- **staff review load**: before (flat list) 0 blocking + 41 warnings to read and tick one by one (+ 6 information) = 41; after (grouped) 0 blocking + 9 warning groups (+ 4 information groups) = 9; by-course view: 17 entries; largest groups: STARTING_CREDITS_UNVERIFIED ×17, LICENSING_CREDIT_SEPARATE ×16, EQUIVALENCY_CONDITIONAL ×2, SHEET_NOT_RECOGNISED ×3
 - unmatched execution rows (COMPANION_ROW_UNMATCHED): 0
 - blocking errors: none
 
@@ -98,6 +102,7 @@ Unresolved after the fixes: see `reconciliation-EPH.md` and `reconciliation-RUT.
 - schema valid: true
 - review exceptions: 72 (info 30, warning 42)
 - by code: `COMPANION_ITEM_MERGED [info]` 23, `COMPANION_ROW_UNMATCHED [info]` 1, `CONDITIONAL_ALLOCATION [warning]` 3, `EQUIVALENCY_CONDITIONAL [warning]` 2, `LICENSING_CREDIT_SEPARATE [warning]` 17, `OBJECTIVE_CREATED_FROM_ROW [info]` 1, `REGISTRATION_GATE_UNDOCUMENTED [warning]` 1, `REPORTED_HISTORY_NOT_CREDIT [info]` 1, `REPORTED_HISTORY_NOT_CREDIT [warning]` 1, `SCHEDULE_STALE [warning]` 1, `SHEET_NOT_RECOGNISED [info]` 4, `STARTING_CREDITS_UNVERIFIED [warning]` 17
+- **staff review load**: before (flat list) 0 blocking + 42 warnings to read and tick one by one (+ 30 information) = 42; after (grouped) 0 blocking + 10 warning groups (+ 6 information groups) = 10; by-course view: 24 entries; largest groups: STARTING_CREDITS_UNVERIFIED ×17, LICENSING_CREDIT_SEPARATE ×16, EQUIVALENCY_CONDITIONAL ×2, COMPANION_ITEM_MERGED ×23, SHEET_NOT_RECOGNISED ×3
 - unmatched execution rows (COMPANION_ROW_UNMATCHED): 1 (WEEK BY WEEK#16)
 - blocking errors: none
 
@@ -113,6 +118,7 @@ Unresolved after the fixes: see `reconciliation-EPH.md` and `reconciliation-RUT.
 - schema valid: true
 - review exceptions: 2 (warning 2)
 - by code: `SCHEDULE_STALE [warning]` 1, `UNKNOWN_TEMPLATE [warning]` 1
+- **staff review load**: before (flat list) 0 blocking + 2 warnings to read and tick one by one (+ 0 information) = 2; after (grouped) 0 blocking + 2 warning groups (+ 0 information groups) = 2; by-course view: 1 entries; largest groups: none
 - unmatched execution rows (COMPANION_ROW_UNMATCHED): 0
 - blocking errors: none
 
@@ -129,6 +135,7 @@ Unresolved after the fixes: see `reconciliation-EPH.md` and `reconciliation-RUT.
 - schema valid: true
 - review exceptions: 20 (info 18, warning 2)
 - by code: `COMPANION_ITEM_MERGED [info]` 18, `SCHEDULE_STALE [warning]` 1, `UNKNOWN_TEMPLATE [warning]` 1
+- **staff review load**: before (flat list) 0 blocking + 2 warnings to read and tick one by one (+ 18 information) = 2; after (grouped) 0 blocking + 2 warning groups (+ 1 information groups) = 2; by-course view: 19 entries; largest groups: COMPANION_ITEM_MERGED ×18
 - unmatched execution rows (COMPANION_ROW_UNMATCHED): 0
 - blocking errors: none
 
@@ -144,6 +151,7 @@ Unresolved after the fixes: see `reconciliation-EPH.md` and `reconciliation-RUT.
 - schema valid: true
 - review exceptions: 2 (warning 2)
 - by code: `SCHEDULE_STALE [warning]` 1, `UNKNOWN_TEMPLATE [warning]` 1
+- **staff review load**: before (flat list) 0 blocking + 2 warnings to read and tick one by one (+ 0 information) = 2; after (grouped) 0 blocking + 2 warning groups (+ 0 information groups) = 2; by-course view: 1 entries; largest groups: none
 - unmatched execution rows (COMPANION_ROW_UNMATCHED): 0
 - blocking errors: none
 
@@ -160,6 +168,7 @@ Unresolved after the fixes: see `reconciliation-EPH.md` and `reconciliation-RUT.
 - schema valid: true
 - review exceptions: 20 (info 18, warning 2)
 - by code: `COMPANION_ITEM_MERGED [info]` 18, `SCHEDULE_STALE [warning]` 1, `UNKNOWN_TEMPLATE [warning]` 1
+- **staff review load**: before (flat list) 0 blocking + 2 warnings to read and tick one by one (+ 18 information) = 2; after (grouped) 0 blocking + 2 warning groups (+ 1 information groups) = 2; by-course view: 19 entries; largest groups: COMPANION_ITEM_MERGED ×18
 - unmatched execution rows (COMPANION_ROW_UNMATCHED): 0
 - blocking errors: none
 

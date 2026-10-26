@@ -37,6 +37,12 @@ for (const f of files) {
   const e = s.exceptions;
   lines.push(`- review exceptions: ${e.total} (${Object.entries(e.bySeverity).map(([k, v]) => `${k} ${v}`).join(", ")})`);
   lines.push(`- by code: ${Object.entries(e.byCode).map(([k, v]) => `\`${k}\` ${v}`).join(", ") || "none"}`);
+  if (s.review) {
+    const r = s.review;
+    lines.push(
+      `- **staff review load**: before (flat list) ${r.flat.blocking} blocking + ${r.flat.warning} warnings to read and tick one by one (+ ${r.flat.info} information) = ${r.flat.blocking + r.flat.warning}; after (grouped) ${r.grouped.blocking} blocking + ${r.grouped.warning} warning groups (+ ${r.grouped.info} information groups) = ${r.toRead}; by-course view: ${r.courseEntries} entries; largest groups: ${r.largestGroups.map((g: any) => `${g.code} ×${g.count}`).join(", ") || "none"}`,
+    );
+  }
   lines.push(`- unmatched execution rows (COMPANION_ROW_UNMATCHED): ${e.unmatchedRows.length}${e.unmatchedRows.length ? " (" + e.unmatchedRows.map((u: any) => `${u.sheet}#${u.row}`).join(", ") + ")" : ""}`);
   lines.push(`- blocking errors: ${e.blocking.length ? e.blocking.map((b: any) => `${b.code} @ ${b.sheet ?? "?"}${b.row ? "#" + b.row : ""}`).join("; ") : "none"}`, "");
 }

@@ -379,7 +379,7 @@ export function wordsOf(text: string): string[] {
  */
 export function titleAliasKeys(title: string): string[] {
   const out = new Set<string>();
-  const parts = [title, ...title.split(/\s*[\/—–:]\s*/), title.split(/\s+for\s+/i)[0] ?? title];
+  const parts = [title, ...title.split(/\s*[/—–:]\s*/), title.split(/\s+for\s+/i)[0] ?? title];
   for (const part of parts) {
     const clean = part.replace(/\([^)]*\)/g, " ");
     let words = wordsOf(clean);
