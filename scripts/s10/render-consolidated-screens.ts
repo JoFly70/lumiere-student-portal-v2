@@ -30,7 +30,24 @@ const OUT = path.resolve(process.env.S10_SCREENS_OUT ?? path.join(ROOT, "docs/re
 const PORT = Number(process.env.S10_PORT ?? 5210);
 const BASE = `http://localhost:${PORT}`;
 const AXE = fs.readFileSync(path.join(ROOT, "node_modules/axe-core/axe.min.js"), "utf8");
-const rich: any = RICH_MID_JOURNEY;
+let rich: any = RICH_MID_JOURNEY;
+
+/** Applies one StudentProgressUpdate (task level) to the fixture view, like the server projection does. */
+function applyProgress(view: any, update: { itemKey?: string; taskKey?: string | null; status?: string }): any {
+  const next = structuredClone(view);
+  for (const phase of next.phases) {
+    for (const item of phase.items) {
+      if (item.key !== update.itemKey || !update.taskKey || !update.status) continue;
+      const task = item.tasks.find((t: any) => t.key === update.taskKey);
+      if (!task) continue;
+      task.status = update.status;
+      task.revision += 1;
+      const count = (st: string) => item.tasks.filter((t: any) => t.status === st).length;
+      item.taskCounts = { total: item.tasks.length, graded: count("graded"), submitted: count("submitted"), inProgress: count("in_progress"), notStarted: count("not_started") };
+    }
+  }
+  return next;
+}
 
 // ---- staff fixtures (derived from the S08 student fixtures + an internal note) ----
 const STAFF_ME = { id: "staff-1", name: "Camille Moreau", role: "staff" as const };
@@ -96,7 +113,13 @@ async function newPage(browser: any, o: Opts) {
     if (p === `/api/students/${STAFF_STUDENT_ID}/identity-corrections`) return json(200, [STAFF_PENDING_CORRECTION, STAFF_OLD_REJECTED_CORRECTION]);
     if (p === `/api/admin/students/${STAFF_STUDENT_ID}/workspace`) return json(200, staffWorkspacePayload());
     if (p === "/api/student/roadmap") return json(200, rich);
-    if (p === "/api/student/roadmap/progress") return json(200, rich);
+    if (p === "/api/student/roadmap/progress") {
+      // Mirror the real contract: POST returns the authoritative view AFTER the
+      // write (proven on real Postgres by tests/s10-consolidated-journey.test.ts),
+      // so the row, counts and toast must agree in the screenshot.
+      if (method === "POST") rich = applyProgress(rich, JSON.parse(route.request().postData() ?? "{}"));
+      return json(200, rich);
+    }
     if (p === "/api/student/degree-progress") return json(200, COMPOSED);
     if (p.startsWith("/api/documents/student/")) return json(200, DOCS);
     if (p.includes("/contacts")) return json(200, []);
@@ -298,12 +321,21 @@ async function main() {
         metrics.toast = await page.evaluate((changedId: string | null) => {
           const r = (el: Element | null) => (el ? (({ top, bottom, left, right }) => ({ top: Math.round(top), bottom: Math.round(bottom), left: Math.round(left), right: Math.round(right) }))(el.getBoundingClientRect()) : null);
           const toast = r(document.querySelector('[data-testid="save-toast"]'));
-          const ctl = changedId ? r(document.querySelector(`[data-testid="${changedId}"]`)) : null;
+          // The native select can be visually replaced (0x0 rect); measure its visible wrapper instead.
+          const sel = changedId ? document.querySelector(`[data-testid="${changedId}"]`) : null;
+          let vis: Element | null = sel;
+          while (vis && vis.getBoundingClientRect().height === 0) vis = vis.parentElement;
+          const ctl = r(vis);
           const row = changedId ? r(document.querySelector(`[data-testid="${changedId}"]`)?.closest("li, article, [data-testid^='task-row']") ?? null) : null;
           const overlap = (a: any, b: any) => !!a && !!b && a.top < b.bottom && a.bottom > b.top && a.left < b.right && a.right > b.left;
           return { toast, changedControl: ctl, toastOverlapsChangedControl: overlap(toast, ctl), toastOverlapsChangedRow: overlap(toast, row) };
         }, menuId);
+        metrics.toastRowAgrees = await page.evaluate((changedId: string | null) => {
+          const sel = changedId ? (document.querySelector(`[data-testid="${changedId}"]`) as HTMLSelectElement | null) : null;
+          return { selectValueAfterSave: sel?.value ?? null, toastText: document.querySelector('[data-testid="save-toast"]')?.textContent ?? null };
+        }, menuId);
         await page.screenshot({ path: path.join(OUT, "22-roadmap-390-task-saved-toast.png") });
+        rich = RICH_MID_JOURNEY; // later scenarios start from the published fixture again
       }
       await ctx.close();
     }
