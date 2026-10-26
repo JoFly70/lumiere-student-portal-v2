@@ -1,4 +1,4 @@
-import { BookOpen, FileText, CreditCard, HelpCircle, LogOut, User, Gauge, ShieldCheck } from "lucide-react";
+import { BookOpen, FileText, CreditCard, HelpCircle, LogOut, User, Gauge, ShieldCheck, GraduationCap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -14,6 +14,7 @@ import {
   SidebarHeader,
   SidebarFooter,
 } from "@/components/ui/sidebar";
+import { useHasGraduatePrograms } from "@/hooks/use-graduate-program";
 import { ProfileAvatarUpload } from "@/components/profile-avatar-upload";
 import { useAuth, useAuthToken } from "@/lib/auth";
 import lumiereLogo from "@assets/Lumiere Logo_1762534146530.webp";
@@ -85,6 +86,10 @@ export function AppSidebar() {
     enabled: isStudent,
   });
 
+  // "My Master's" appears only for students with a graduate programme (hidden while loading or on error).
+  const hasGraduate = useHasGraduatePrograms(isStudent);
+  const journeyItems = hasGraduate ? [...studentJourneyItems, { title: "My Master's", url: "/graduate", icon: GraduationCap }] : studentJourneyItems;
+
   const menuItems =
     user?.role === "admin"
       ? adminMenuItems
@@ -145,7 +150,7 @@ export function AppSidebar() {
           <nav aria-label="Main">
             <SidebarGroup>
               <SidebarGroupLabel className="text-[11px] font-semibold uppercase tracking-[0.16em]">Your journey</SidebarGroupLabel>
-              <SidebarGroupContent>{renderItems(studentJourneyItems)}</SidebarGroupContent>
+              <SidebarGroupContent>{renderItems(journeyItems)}</SidebarGroupContent>
             </SidebarGroup>
             <SidebarGroup>
               <SidebarGroupLabel className="text-[11px] font-semibold uppercase tracking-[0.16em]">Your file</SidebarGroupLabel>

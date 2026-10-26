@@ -14,6 +14,7 @@ import Login from "@/pages/login";
 import ResetPassword from "@/pages/reset-password";
 import VerifyEmail from "@/pages/verify-email";
 import StudentProfile from "@/pages/student-profile";
+import Graduate from "@/pages/graduate";
 import FlightDeck from "@/pages/flight-deck";
 import Roadmap from "@/pages/roadmap";
 import Documents from "@/pages/documents";
@@ -93,6 +94,14 @@ function Router() {
         {() => (
           <ProtectedRoute requireRole="student">
             <StudentProfile />
+          </ProtectedRoute>
+        )}
+      </Route>
+
+      <Route path="/graduate">
+        {() => (
+          <ProtectedRoute requireRole="student">
+            <Graduate />
           </ProtectedRoute>
         )}
       </Route>

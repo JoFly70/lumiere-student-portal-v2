@@ -87,7 +87,23 @@ export type AuditEventType =
   | 'support.internal_note_added'
   | 'support.attachment_added'
   | 'support.attachment_downloaded'
-  | 'support.access_denied';
+  | 'support.access_denied'
+  // Graduate programme events (S12). Must also exist in the Postgres audit_event_type enum
+  // (supabase/migrations/20261029100000_s12_graduate_audit_events.sql).
+  | 'graduate.offering_created'
+  | 'graduate.rule_set_created'
+  | 'graduate.program_enrolled'
+  | 'graduate.program_updated'
+  | 'graduate.subject_created'
+  | 'graduate.result_recorded'
+  | 'graduate.student_progress_reported'
+  | 'graduate.record_created'
+  | 'graduate.record_updated'
+  | 'graduate.record_verified'
+  | 'graduate.record_rejected'
+  | 'graduate.official_change_blocked'
+  | 'graduate.credit_recorded'
+  | 'graduate.access_denied';
 
 export type AuditSeverity = 'info' | 'warning' | 'error' | 'critical';
 
