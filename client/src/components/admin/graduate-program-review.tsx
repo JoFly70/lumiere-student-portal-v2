@@ -47,6 +47,17 @@ import {
   EVALUATION_DECISION_LABEL,
   EVALUATION_NOTE,
   EVALUATION_OPTIONS,
+  DATE_HINT,
+  TRACK_EVIDENCE_LABEL,
+  TRACK_LEGEND,
+  buildTidyUp,
+  evaluationFraming,
+  evaluatorWithCountry,
+  formatDisplayDate,
+  hasUniversityProgramme,
+  isResolvedQuestion,
+  isTidyItem,
+  type TrackEvidence,
   EVIDENCE_LEVEL_LABEL,
   RESULT_KIND_LABEL,
   RESULT_LABEL,
@@ -102,8 +113,7 @@ import {
   subjectResultText,
   titleLines,
   trackFormFromRecord,
-  trackNodeTone,
-  trackSummary,
+    trackSummary,
   trackingLabel,
   trustBadge,
   unlinkedEvaluationQueue,
@@ -171,14 +181,16 @@ function TrustPill({ badge }: { badge: TrustBadge }) {
 
 const FieldErrorsContext = createContext<Record<string, string[]>>({});
 
-function Field({ id, label, hint, children }: { id: string; label: string; hint?: string; children: ReactNode }) {
+function Field({ id, label, hint, extra, children }: { id: string; label: string; hint?: string; extra?: ReactNode; children: ReactNode }) {
   const errors = useContext(FieldErrorsContext)[id];
   const only = Children.count(children) === 1 && isValidElement(children) ? (children as ReactElement<Record<string, unknown>>) : null;
-  const child = errors && only ? cloneElement(only, { "aria-invalid": true, "aria-describedby": `${id}-error` }) : children;
+  const describedBy = [hint ? `${id}-hint` : null, extra ? `${id}-extra` : null, errors ? `${id}-error` : null].filter(Boolean).join(" ");
+  const child = only && describedBy ? cloneElement(only, { ...(errors ? { "aria-invalid": true } : {}), "aria-describedby": describedBy }) : children;
   return <div className="space-y-1">
     <Label htmlFor={id}>{label}</Label>
     {child}
-    {hint ? <p className="text-xs text-student-muted">{hint}</p> : null}
+    {extra ? <p id={`${id}-extra`} className="text-sm font-medium text-student-ink" data-testid="date-display">{extra}</p> : null}
+    {hint ? <p id={`${id}-hint`} className="text-xs text-student-muted">{hint}</p> : null}
     {errors ? <p id={`${id}-error`} className="text-xs font-medium text-student-attn" data-testid="field-error">{errors.join(" ")}</p> : null}
   </div>;
 }
@@ -202,14 +214,21 @@ const labelled = (xs: readonly string[], map: Record<string, string>): Option[] 
 // Read-only view (pure; rendered in tests)
 // ---------------------------------------------------------------------------
 
+const QUIET_ACTION = "min-h-11 px-2 text-student-muted underline-offset-4 hover:bg-transparent hover:text-student-ink hover:underline";
+
 function RecordActions({ program, rec, role, onDialog, canEdit }: { program: StaffGraduateProgramView; rec: StaffRecordView; role: Role; onDialog?: (d: PanelDialog) => void; canEdit: boolean }) {
   const gate = verifyGate(rec, role);
   if (!canEdit) return null;
-  return <div className="flex flex-wrap items-center gap-2">
-    {canOfferVerify(rec) ? <Button type="button" size="sm" className={PRIMARY_ACTION} disabled={!gate.enabled} onClick={() => onDialog?.({ t: "verify", program, record: rec })}>Verify…</Button> : null}
-    <Button type="button" size="sm" variant="outline" className={OUTLINE_ACTION} onClick={() => onDialog?.({ t: "track", program, record: rec })}>Update tracking…</Button>
-    {canDecideTopic(rec) && rec.details.topic ? (Object.keys(TOPIC_DECISIONS) as Array<keyof typeof TOPIC_DECISIONS>).map((o) => <Button key={o} type="button" size="sm" variant="outline" className={OUTLINE_ACTION} disabled={rec.outcome === o} onClick={() => onDialog?.({ t: "topic", record: rec, outcome: o })}>{TOPIC_DECISIONS[o]}…</Button>) : null}
-    {!gate.enabled && canOfferVerify(rec) ? <p className="text-xs text-student-muted">{gate.reason}</p> : null}
+  const whyId = `${rec.id}-verify-why`;
+  const topics = canDecideTopic(rec) && rec.details.topic ? (Object.keys(TOPIC_DECISIONS) as Array<keyof typeof TOPIC_DECISIONS>) : [];
+  return <div className="space-y-1">
+    <div className="flex flex-wrap items-center gap-2">
+      {canOfferVerify(rec) ? <Button type="button" size="sm" className={PRIMARY_ACTION} disabled={!gate.enabled} aria-describedby={!gate.enabled ? whyId : undefined} onClick={() => onDialog?.({ t: "verify", program, record: rec })}>Verify…</Button> : null}
+      {topics.map((o) => <Button key={o} type="button" size="sm" variant="outline" className={OUTLINE_ACTION} disabled={rec.outcome === o} aria-describedby={rec.outcome === o ? `${rec.id}-${o}-why` : undefined} onClick={() => onDialog?.({ t: "topic", record: rec, outcome: o })}>{TOPIC_DECISIONS[o]}…</Button>)}
+      <Button type="button" size="sm" variant="ghost" className={QUIET_ACTION} onClick={() => onDialog?.({ t: "track", program, record: rec })}>Update tracking…</Button>
+    </div>
+    {!gate.enabled && canOfferVerify(rec) ? <p id={whyId} className="text-xs text-student-muted" data-testid="disabled-reason">{`Verify is unavailable: ${gate.reason}`}</p> : null}
+    {topics.filter((o) => rec.outcome === o).map((o) => <p key={o} id={`${rec.id}-${o}-why`} className="text-xs text-student-muted" data-testid="disabled-reason">{`${TOPIC_DECISIONS[o]}… is unavailable: this topic is already ${o === "approved" ? "approved" : "marked as needing changes"}.`}</p>)}
   </div>;
 }
 
@@ -257,48 +276,84 @@ function RecordCard({ program, rec, role, onDialog, canEdit }: { program: StaffG
   </li>;
 }
 
+const EVIDENCE_ICON: Record<TrackEvidence, typeof CheckCircle2> = { verified: CheckCircle2, claimed: Clock, none: CircleDashed };
+const HATCH = "repeating-linear-gradient(135deg, currentColor 0 2px, transparent 2px 5px)";
+
+/** Filled = verified, outlined with a hatched edge = stated or claimed, dashed = not started. */
+function tileClass(evidence: TrackEvidence, state: string): string {
+  if (state === "attention") return "border-2 border-student-attn bg-student-attn-soft text-student-attn";
+  if (evidence === "verified") return "border-2 border-student-seal bg-student-seal text-student-seal-ink";
+  if (evidence === "claimed") return "border border-st-attention bg-st-attention-soft text-st-attention";
+  return "border border-dashed border-student-line-strong bg-transparent text-student-muted";
+}
+
+function TrackLegend() {
+  return <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-student-muted" data-testid="track-legend" aria-label="How to read the tiles">
+    {TRACK_LEGEND.map((l) => <li key={l.evidence} className="flex items-center gap-1.5"><span aria-hidden="true" className={`inline-block h-3 w-5 rounded-sm ${l.evidence === "verified" ? "bg-student-seal" : l.evidence === "claimed" ? "border border-st-attention text-st-attention" : "border border-dashed border-student-line-strong"}`} style={l.evidence === "claimed" ? { backgroundImage: HATCH } : undefined} />{l.text}</li>)}
+  </ul>;
+}
+
 function TrackStrip({ p }: { p: StaffGraduateProgramView }) {
   const t = trackSummary(p);
   const row = (name: string, nodes: NonNullable<typeof t.university>, testid: string) => <div data-testid={testid}>
     <p className={EYEBROW}>{name}</p>
     <ol className="mt-1 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7 [&>*]:min-w-0">
       {nodes.map((n) => {
-        const tone = trackNodeTone(n.state);
-        const Icon = TONE_ICON[tone];
-        return <li key={n.key} className={`rounded-md border p-2 text-xs ${TONE_CLASS[tone]}`} data-state={n.state}>
+        const Icon = n.state === "attention" ? AlertCircle : EVIDENCE_ICON[n.evidence];
+        return <li key={n.key} className={`rounded-md p-2 text-xs ${tileClass(n.evidence, n.state)}`} data-state={n.state} data-evidence={n.evidence}>
+          {n.evidence === "claimed" && n.state !== "attention" ? <span aria-hidden="true" className="mb-1 block h-1 rounded-sm opacity-60" style={{ backgroundImage: HATCH }} /> : null}
           <p className="flex items-center gap-1 font-semibold"><Icon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /><span className="break-words">{n.label}</span></p>
-          <p className="mt-0.5 break-words"><span className="sr-only">{TRACK_STATE_LABEL[n.state]}. </span>{n.detail}</p>
+          <p className="mt-0.5 break-words"><span className="sr-only">{TRACK_EVIDENCE_LABEL[n.evidence]}. {TRACK_STATE_LABEL[n.state]}. </span>{n.detail}</p>
         </li>;
       })}
     </ol>
   </div>;
   return <div className="space-y-3" data-testid="track-summary">
+    <TrackLegend />
     {row("ENEB track", t.eneb, "track-eneb")}
-    {t.university ? row("University track (Unimarconi)", t.university, "track-university") : <div data-testid="track-university"><p className={EYEBROW}>University track (Unimarconi)</p><p className="mt-1 rounded-md border border-student-line p-2 text-xs text-student-muted">Not applicable. This ENEB-only programme has no university registration, recognition or award.</p></div>}
+    {t.university ? row("University track (Unimarconi)", t.university, "track-university") : <div data-testid="track-university"><p className={EYEBROW}>University track (Unimarconi)</p><p className="mt-1 rounded-md border border-dashed border-student-line-strong p-2 text-xs text-student-muted">Not applicable. This ENEB-only programme has no university registration, recognition or award.</p></div>}
   </div>;
 }
 
-function NeedsDecision({ id, items, onRun }: { id: string; items: readonly QueueItem[]; onRun: (t: QueueTarget) => void }) {
-  if (!items.length) return <p className="rounded-md border border-student-line px-3 py-2 text-sm text-student-muted" data-testid="needs-decision-empty">Nothing is waiting for a decision on this programme.</p>;
-  return <div className="space-y-3 rounded-xl border-2 border-student-gold-ink bg-student-gold-soft p-3 sm:p-4" data-testid="needs-decision" role="group" aria-labelledby={`${id}-nd`}>
-    <h4 id={`${id}-nd`} className="flex items-center gap-2 text-base font-semibold"><AlertCircle className="h-4 w-4 text-student-gold-ink" aria-hidden="true" />Needs a decision<Badge className="ml-1 bg-student-seal text-student-seal-ink hover:bg-student-seal">{items.length}</Badge></h4>
-    <ol className="space-y-2">
-      {items.map((it) => <li key={it.key} className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-student-line bg-student-card p-3 text-student-ink" data-testid="queue-item" data-category={it.category}>
-        <div className="min-w-0 flex-1 basis-60"><p className="text-sm font-medium">{it.title}</p><p className="text-xs text-student-muted">{it.detail}</p>{it.disabledReason ? <p className="mt-1 text-xs text-student-muted">{it.disabledReason}</p> : null}</div>
-        {it.target.t === "anchor"
-          ? <Button asChild variant="outline" className={OUTLINE_ACTION}><a href={`#${it.target.anchor}-${id}`}>{it.actionLabel}</a></Button>
-          : <Button type="button" variant={it.category === "tracking" || it.category === "question" || it.category === "record_claimed" ? "outline" : "default"} className={it.category === "tracking" || it.category === "question" || it.category === "record_claimed" ? OUTLINE_ACTION : PRIMARY_ACTION} disabled={!!it.disabledReason} onClick={() => onRun(it.target)}>{it.actionLabel}</Button>}
+function QueueButton({ it, id, onRun }: { it: QueueItem; id: string; onRun: (t: QueueTarget) => void }) {
+  const quiet = it.category === "tracking" || it.category === "question" || it.category === "record_claimed" || it.category === "evaluation_preliminary";
+  if (it.target.t === "anchor") return <Button asChild variant="outline" className={OUTLINE_ACTION}><a href={`#${it.target.anchor}-${id}`}>{it.actionLabel}</a></Button>;
+  return <Button type="button" variant={quiet ? "outline" : "default"} className={quiet ? OUTLINE_ACTION : PRIMARY_ACTION} disabled={!!it.disabledReason} aria-describedby={it.disabledReason ? `${it.key}-why` : undefined} onClick={() => onRun(it.target)}>{it.actionLabel}</Button>;
+}
+
+function NeedsDecision({ id, items, onRun, tidy = [] }: { id: string; items: readonly QueueItem[]; onRun: (t: QueueTarget) => void; tidy?: readonly QueueItem[] }) {
+  const tidyBlock = tidy.length ? <details className="group rounded-md border border-student-line bg-student-card" data-testid="tidy-up">
+    <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 px-3 py-2 text-sm font-medium [&::-webkit-details-marker]:hidden"><ChevronDown className="h-4 w-4 shrink-0 text-student-muted transition-transform group-open:rotate-180" aria-hidden="true" />Tidy up<span className="font-normal text-student-muted">· {tidy.length} low-priority item{tidy.length === 1 ? "" : "s"}, no decision needed</span></summary>
+    <ol className="space-y-2 border-t border-student-line p-3">
+      {tidy.map((it) => <li key={it.key} className="flex flex-wrap items-center justify-between gap-2 text-sm" data-testid="tidy-item" data-category={it.category}>
+        <div className="min-w-0 flex-1 basis-60"><p className="font-medium">{it.title}</p><p className="text-xs text-student-muted">{it.detail}</p></div>
+        <QueueButton it={it} id={id} onRun={onRun} />
       </li>)}
     </ol>
+  </details> : null;
+  if (!items.length) return <div className="space-y-2"><p className="rounded-md border border-student-line px-3 py-2 text-sm text-student-muted" data-testid="needs-decision-empty">Nothing is waiting for a decision on this programme.</p>{tidyBlock}</div>;
+  return <div className="space-y-2">
+    <div className="space-y-3 rounded-xl border-2 border-student-gold-ink bg-student-gold-soft p-3 sm:p-4" data-testid="needs-decision" role="group" aria-labelledby={`${id}-nd`}>
+      <h4 id={`${id}-nd`} className="flex items-center gap-2 text-base font-semibold"><AlertCircle className="h-4 w-4 text-student-gold-ink" aria-hidden="true" />Needs a decision<Badge className="ml-1 bg-student-seal text-student-seal-ink hover:bg-student-seal">{items.length}</Badge></h4>
+      <ol className="space-y-2">
+        {items.map((it) => <li key={it.key} className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-student-line bg-student-card p-3 text-student-ink" data-testid="queue-item" data-category={it.category}>
+          <div className="min-w-0 flex-1 basis-60"><p className="text-sm font-medium">{it.title}</p><p className="text-xs text-student-muted">{it.detail}</p>{it.disabledReason ? <p id={`${it.key}-why`} className="mt-1 text-xs text-student-muted" data-testid="disabled-reason">Unavailable: {it.disabledReason}</p> : null}</div>
+          <QueueButton it={it} id={id} onRun={onRun} />
+        </li>)}
+      </ol>
+    </div>
+    {tidyBlock}
   </div>;
 }
 
 function SubjectsSection({ p, onDialog, canEdit }: { p: StaffGraduateProgramView; onDialog?: (d: PanelDialog) => void; canEdit: boolean }) {
   const groups = subjectGroups(p);
   const awaiting = p.subjects.filter(subjectNeedsVerification).length;
-  return <details id={`subjects-${p.program.id}`} className="rounded-md border border-student-line bg-student-card" open={awaiting > 0} data-testid="subjects-section">
-    <summary className="flex min-h-11 cursor-pointer flex-wrap items-center justify-between gap-2 px-3 py-2">
+  return <details id={`subjects-${p.program.id}`} className="group rounded-md border border-student-line bg-student-card" open={awaiting > 0} data-testid="subjects-section">
+    <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 px-3 py-2 [&::-webkit-details-marker]:hidden">
+      <ChevronDown className="h-4 w-4 shrink-0 text-student-muted transition-transform group-open:rotate-180" aria-hidden="true" data-testid="subjects-chevron" />
       <span className="text-sm font-semibold">Subjects <span className="font-normal text-student-muted">· {p.subjects.length} recorded{awaiting ? ` · ${awaiting} result${awaiting === 1 ? "" : "s"} not yet verified` : ""}</span></span>
+      <span className="ml-auto text-xs text-student-muted"><span className="group-open:hidden">Show</span><span className="hidden group-open:inline">Hide</span></span>
     </summary>
     <div className="space-y-4 border-t border-student-line p-3">
       <p className="text-xs text-student-muted">Subjects are tracked separately from the thesis. A student's own progress report never makes a result official.</p>
@@ -342,6 +397,7 @@ function ProgramCard({ p, role, onDialog, canEdit, evaluations }: { p: StaffGrad
   const sum = programSummary(p);
   const sv = p.studentView;
   const queue = buildActionQueue(p, evaluations, role);
+  const tidy = buildTidyUp(p, evaluations, role);
   const run = (t: QueueTarget) => {
     if (t.t === "verify-record") { const r = p.records.find((x) => x.id === t.recordId); if (r) onDialog?.({ t: "verify", program: p, record: r }); }
     else if (t.t === "track-record") { const r = p.records.find((x) => x.id === t.recordId); if (r) onDialog?.({ t: "track", program: p, record: r }); }
@@ -367,15 +423,21 @@ function ProgramCard({ p, role, onDialog, canEdit, evaluations }: { p: StaffGrad
       {!rs.current ? <p className="flex items-center gap-1 text-xs font-medium text-st-attention"><ShieldAlert className="h-3.5 w-3.5" aria-hidden="true" />A newer rule set exists. This enrollment keeps its pinned terms.</p> : null}
     </CardHeader>
     <CardContent className="space-y-5">
-      <NeedsDecision id={p.program.id} items={queue} onRun={run} />
+      <NeedsDecision id={p.program.id} items={queue} tidy={tidy} onRun={run} />
       <TrackStrip p={p} />
       {leg ? <p className="rounded-md border border-student-line bg-student-gold-soft/40 p-2 text-sm" data-testid="legalization-line">{leg.text}</p> : null}
 
       {sectionsForRoute(p.program.route).map((s) => {
-        const recs = recordsOfSection(p, s);
+        const all = recordsOfSection(p, s);
+        const resolved = all.filter(isResolvedQuestion);
+        const recs = all.filter((r) => !isResolvedQuestion(r));
         return <section key={s.key} aria-labelledby={`sec-${p.program.id}-${s.key}`} className="space-y-2">
           <h4 id={`sec-${p.program.id}-${s.key}`} className="text-sm font-semibold">{s.title}</h4>
-          {recs.length ? <ul className="space-y-2">{recs.map((r) => <RecordCard key={r.id} program={p} rec={r} role={role} onDialog={onDialog} canEdit={canEdit} />)}</ul> : <p className="text-sm text-student-muted">No record yet.</p>}
+          {recs.length ? <ul className="space-y-2">{recs.map((r) => <RecordCard key={r.id} program={p} rec={r} role={role} onDialog={onDialog} canEdit={canEdit} />)}</ul> : <p className="text-sm text-student-muted">{resolved.length ? "No open questions." : "No record yet."}</p>}
+          {resolved.length ? <details className="group rounded-md border border-student-line bg-student-card" data-testid="resolved-questions">
+            <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 px-3 py-2 text-sm [&::-webkit-details-marker]:hidden"><ChevronDown className="h-4 w-4 shrink-0 text-student-muted transition-transform group-open:rotate-180" aria-hidden="true" /><span className="font-medium">Resolved</span><span className="text-student-muted">· {resolved.length} question{resolved.length === 1 ? "" : "s"} answered</span></summary>
+            <ul className="space-y-1 border-t border-student-line p-3 text-sm">{resolved.map((r) => <li key={r.id} data-testid="resolved-question"><span className="font-medium">{r.details.question ?? "No wording recorded"}</span>{r.details.owner ? <span className="text-student-muted"> · with {r.details.owner}</span> : null}{r.note ? <span className="block text-xs text-student-muted">Note: {r.note}</span> : null}</li>)}</ul>
+          </details> : null}
         </section>;
       })}
       {canEdit && addableKinds(p).length ? <Button type="button" size="sm" variant="outline" className={OUTLINE_ACTION} onClick={() => onDialog?.({ t: "track", program: p, record: null })}>Add record…</Button> : null}
@@ -411,19 +473,21 @@ function EvaluationCard({ e, onDialog, canEdit }: { e: EvaluationRow; onDialog?:
     <dl className="grid gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
       <div><dt className="inline text-student-muted">Qualification evaluated: </dt><dd className="inline">{v.qualification}</dd></div>
       <div><dt className="inline text-student-muted">Intended use: </dt><dd className="inline">{v.use}</dd></div>
-      <div><dt className="inline text-student-muted">Status: </dt><dd className="inline">{v.status}</dd></div>
+      <div data-testid="evaluation-status"><dt className="inline text-student-muted">Status: </dt><dd className="inline">{v.status}</dd></div>
       <div><dt className="inline text-student-muted">Report date: </dt><dd className="inline">{v.reportDate ?? "Not recorded"}</dd></div>
     </dl>
     <div className="text-sm" data-testid="evaluation-conclusion"><p><span className="text-student-muted">Conclusion: </span><span className="font-medium">{v.conclusionLabel}</span></p>
       {v.conclusionText ? <blockquote className="mt-1 border-l-2 border-student-line-strong pl-3 text-student-muted">In the evaluator's words: “{v.conclusionText}”</blockquote> : null}
-      <p className="mt-1 text-xs text-student-muted">{e.view.caveat}</p></div>
+      <p className="mt-1 text-xs text-student-muted">{e.view.caveat}</p>
+      {v.nextStep ? <p className="mt-1 font-medium" data-testid="evaluation-next-step">{v.nextStep}</p> : null}</div>
     <div className="grid gap-3 text-sm md:grid-cols-3">
       <div data-testid="triad-verified"><p className={EYEBROW}>Verified</p>{v.verified ? <p className="mt-1">Checked against {v.verified.reference}. Reviewed by {v.verified.reviewer ?? "unknown"}{v.verified.reviewedAt ? ` on ${v.verified.reviewedAt}` : ""}.</p> : <p className="mt-1 text-student-muted">Nothing verified yet.</p>}</div>
       <div data-testid="triad-claimed"><p className={EYEBROW}>Claimed / reported</p>{v.claimed.length ? <ul className="mt-1 space-y-0.5">{v.claimed.map((c) => <li key={c}>{c}</li>)}</ul> : <p className="mt-1 text-student-muted">{v.verified ? "Nothing outstanding." : "Nothing reported."}</p>}</div>
       <div data-testid="triad-action"><p className={EYEBROW}>Action required</p>{v.action.length ? <ul className="mt-1 list-disc space-y-0.5 pl-4">{v.action.map((a) => <li key={a}>{a}</li>)}</ul> : <p className="mt-1 text-student-muted">Nothing to do.</p>}</div>
     </div>
     {canEdit ? <div className="flex flex-wrap gap-2">
-      {v.canVerify ? <Button type="button" size="sm" className={PRIMARY_ACTION} onClick={() => onDialog?.({ t: "evaluation-verify", evaluation: e })}>Verify…</Button> : null}
+      {v.verifyKind === "full" ? <Button type="button" size="sm" className={PRIMARY_ACTION} onClick={() => onDialog?.({ t: "evaluation-verify", evaluation: e })}>Verify…</Button> : null}
+      {v.verifyKind === "tool_result" ? <Button type="button" size="sm" variant="outline" className={OUTLINE_ACTION} onClick={() => onDialog?.({ t: "evaluation-verify", evaluation: e })}>Confirm the tool result is genuine…</Button> : null}
       <Button type="button" size="sm" variant="outline" className={OUTLINE_ACTION} onClick={() => onDialog?.({ t: "evaluation-update", evaluation: e })}>Update…</Button>
     </div> : null}
   </li>;
@@ -431,13 +495,14 @@ function EvaluationCard({ e, onDialog, canEdit }: { e: EvaluationRow; onDialog?:
 
 function EvaluationsBlock({ workspace, onDialog, canEdit }: { workspace: StaffGraduateWorkspace; onDialog?: (d: PanelDialog) => void; canEdit: boolean }) {
   const evaluations = evaluationsOf(workspace);
-  const unlinked = unlinkedEvaluationQueue(evaluations, workspace.programs.map((x) => x.program.id));
+  const unlinked = unlinkedEvaluationQueue(evaluations, workspace.programs.map((x) => x.program.id)).filter((i) => !isTidyItem(i));
+  const uni = hasUniversityProgramme(workspace);
   return <section id="workspace-evaluations" aria-labelledby="workspace-evaluations-heading" className="space-y-3 scroll-mt-4" data-testid="evaluations-block">
     <div className="flex flex-wrap items-center justify-between gap-2 border-b border-student-line pb-2">
       <h3 id="workspace-evaluations-heading" className="flex items-center gap-2 text-lg font-semibold"><Globe2 className="h-5 w-5 text-student-gold-ink" aria-hidden="true" />International credential evaluations</h3>
       {canEdit ? <Button type="button" className={PRIMARY_ACTION} onClick={() => onDialog?.({ t: "evaluation" })}>Record evaluation…</Button> : null}
     </div>
-    <p className="text-sm text-student-muted" data-testid="evaluation-framing">{EVALUATION_FRAMING}</p>
+    <p className="text-sm text-student-muted" data-testid="evaluation-framing">{evaluationFraming(EVALUATION_FRAMING, uni)}</p>
     <p className="rounded-md border border-student-line bg-student-gold-soft/40 px-3 py-2 text-sm" data-testid="evaluation-note">{EVALUATION_NOTE}</p>
     {unlinked.length ? <NeedsDecision id="evaluations" items={unlinked} onRun={(t) => { if (t.t === "verify-evaluation") { const e = evaluations.find((x) => x.id === t.evaluationId); if (e) onDialog?.({ t: "evaluation-verify", evaluation: e }); } }} /> : null}
     {evaluations.length === 0 ? <p className="rounded-md border border-student-line p-3 text-sm text-student-muted" data-testid="evaluations-empty">No foreign credential evaluation recorded for this student.</p>
@@ -489,15 +554,22 @@ function FormDialog({ title, description, children, submitLabel, gate, onSubmit,
           {summary ? <div ref={errorRef} tabIndex={-1} role="alert" className="rounded-md border border-student-attn bg-student-attn-soft p-3 text-sm text-student-attn outline-none" data-testid="dialog-error"><p className="font-medium">{summary.headline}</p>
             {summary.items.length ? <ul className="mt-1 list-disc pl-5" data-testid="dialog-missing">{summary.items.map((i) => <li key={i}>{i}</li>)}</ul> : null}</div> : null}
           {children}
-          {!gate.ok && gate.reason ? <p className="text-xs text-student-muted">{gate.reason}</p> : null}
+          {!gate.ok && gate.reason ? <p id="form-submit-why" className="text-xs text-student-muted" data-testid="disabled-reason">Cannot submit yet: {gate.reason}</p> : null}
           <DialogFooter>
             <Button type="button" variant="outline" className={OUTLINE_ACTION} disabled={mutation.isPending} onClick={onClose}>Cancel</Button>
-            <Button type="submit" className={PRIMARY_ACTION} disabled={!gate.ok || mutation.isPending}>{mutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" /> : null}{submitLabel}</Button>
+            <Button type="submit" className={PRIMARY_ACTION} disabled={!gate.ok || mutation.isPending} aria-describedby={!gate.ok && gate.reason ? "form-submit-why" : undefined}>{mutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" /> : null}{submitLabel}</Button>
           </DialogFooter>
         </form>
       </FieldErrorsContext.Provider>
     </DialogContent>
   </Dialog>;
+}
+
+/** A date input with the format hint and the chosen date spelled out ("18 Oct 2026"). */
+function DateField({ id, label, value, onChange, hint }: { id: string; label: string; value: string; onChange: (v: string) => void; hint: string }) {
+  return <Field id={id} label={label} hint={hint} extra={formatDisplayDate(value) ? `Chosen: ${formatDisplayDate(value)}` : "No date chosen"}>
+    <Input id={id} type="date" className={INPUT} value={value} onChange={(e) => onChange(e.target.value)} />
+  </Field>;
 }
 
 function TextField({ id, label, value, onChange, type = "text", hint, readOnly }: { id: string; label: string; value: string; onChange: (v: string) => void; type?: string; hint?: string; readOnly?: boolean }) {
@@ -534,11 +606,11 @@ function VerifyDialog({ record, role, send, onClose, documents }: { record: Staf
     <TextField id="v-doctype" label="Document type" value={f.documentTypeLabel} onChange={(v) => set("documentTypeLabel", v)} />
     <TextField id="v-docref" label="Document reference" value={f.documentReference} onChange={(v) => set("documentReference", v)} hint="Or attach a verified document below." />
     <DocumentField id="v-docid" value={f.documentId} onChange={(v) => set("documentId", v)} documents={documents} />
-    <TextField id="v-date" label="Date printed on the document" type="date" value={f.decisionDate} onChange={(v) => set("decisionDate", v)} />
+    <DateField id="v-date" label="Date printed on the document" value={f.decisionDate} onChange={(v) => set("decisionDate", v)} hint={`Date on the document, ${DATE_HINT}`} />
     {fields.outcomes.length ? <Field id="v-outcome" label="Outcome stated by the document"><Pick id="v-outcome" value={f.outcome} onChange={(v) => set("outcome", v)} options={fields.outcomes.map((o) => ({ value: o, label: outcomeLabel(o) }))} allowNone /></Field> : null}
     {fields.matricola ? <TextField id="v-matricola" label="Matricola" value={f.matricola} onChange={(v) => set("matricola", v)} /> : null}
     {fields.issuingCountry ? <TextField id="v-country" label="Issuing country (ISO code, for example NG)" value={f.issuingCountry} onChange={(v) => set("issuingCountry", v)} hint="Where the degree was issued, not where the student lives." /> : null}
-    {fields.effectiveDate ? <TextField id="v-effective" label="Conferral date on the university's document" type="date" value={f.effectiveDate} onChange={(v) => set("effectiveDate", v)} hint="Never the ceremony date." /> : null}
+    {fields.effectiveDate ? <DateField id="v-effective" label="Conferral date on the university's document" value={f.effectiveDate} onChange={(v) => set("effectiveDate", v)} hint={`Date on the university's document, ${DATE_HINT}. Never the ceremony date.`} /> : null}
     <TextArea id="v-consequence" label="Academic consequence (optional)" value={f.academicConsequence} onChange={(v) => set("academicConsequence", v)} />
     {f.decision === "conflicting" ? <TextArea id="v-conflict" label="Conflicting evidence" value={f.conflictingEvidence} onChange={(v) => set("conflictingEvidence", v)} /> : null}
     <TextArea id="v-note" label="Note (required)" value={f.note} onChange={(v) => set("note", v)} />
@@ -567,7 +639,7 @@ function TrackDialog({ program, record, kind, send, onClose, documents }: { prog
     {f.kind === "university_registration" ? <TextField id="t-matricola" label="Matricola (stated, not yet verified)" value={f.matricola} onChange={(v) => set("matricola", v)} /> : null}
     {f.kind === "undergraduate_documents" ? <TextField id="t-country" label="Issuing country (ISO code)" value={f.issuingCountry} onChange={(v) => set("issuingCountry", v)} hint="Drives the apostille requirement. Residence does not." /> : null}
     {f.kind === "thesis_topic" ? <TextField id="t-topic" label="Topic" value={f.topic} onChange={(v) => set("topic", v)} /> : null}
-    {f.kind === "graduation_procedure" ? <TextField id="t-ceremony" label="Ceremony date (does not set the conferral date)" type="date" value={f.ceremonyDate} onChange={(v) => set("ceremonyDate", v)} /> : null}
+    {f.kind === "graduation_procedure" ? <DateField id="t-ceremony" label="Ceremony date (does not set the conferral date)" value={f.ceremonyDate} onChange={(v) => set("ceremonyDate", v)} hint={`Date of the ceremony, ${DATE_HINT}`} /> : null}
     {f.kind === "institutional_question" ? <TextArea id="t-question" label="Open question or exception" rows={3} value={f.question} onChange={(v) => set("question", v)} /> : null}
     <TextArea id="t-note" label="Note" value={f.note} onChange={(v) => set("note", v)} />
   </FormDialog>;
@@ -633,7 +705,7 @@ function EnrollDialog({ workspace, send, onClose }: { workspace: StaffGraduateWo
     <Field id="e-off" label="Offering"><Pick id="e-off" value={f.offeringId} onChange={(v) => setF((s) => ({ ...s, offeringId: v, ruleSetId: "" }))} options={workspace.offerings.map((o) => ({ value: o.id, label: `${o.marketingTitle} (${o.route === "eneb_only" ? "ENEB only" : "university route"})` }))} /></Field>
     <Field id="e-rs" label="Cohort rule set"><Pick id="e-rs" value={f.ruleSetId} onChange={(v) => set("ruleSetId", v)} options={sets.map((r) => ({ value: r.id, label: `${r.cohortLabel}, version ${r.version}` }))} /></Field>
     <TextField id="e-title" label="Contract title (if different)" value={f.enrollmentContractTitle} onChange={(v) => set("enrollmentContractTitle", v)} />
-    <TextField id="e-date" label="Enrollment date" type="date" value={f.enrolledAt} onChange={(v) => set("enrolledAt", v)} />
+    <DateField id="e-date" label="Enrollment date" value={f.enrolledAt} onChange={(v) => set("enrolledAt", v)} hint={`Date on the enrollment contract, ${DATE_HINT}`} />
     <Field id="e-bach" label="Prior bachelor's degree"><Pick id="e-bach" value={f.priorBachelorSource} onChange={(v) => set("priorBachelorSource", v)} options={PRIOR_BACHELOR_SOURCES.map((s) => ({ value: s, label: s === "lumiere" ? "Lumière bachelor" : s === "external" ? "Other institution" : "Not known" }))} /></Field>
   </FormDialog>;
 }
@@ -650,7 +722,7 @@ export function EvaluationFields({ f, set, setEval, programs, documents, status 
     <Field id="ev-use" label="Intended use"><Pick id="ev-use" value={f.intendedUse} onChange={(v) => set("intendedUse", v)} options={EVALUATION_OPTIONS.uses} /></Field>
     <Field id="ev-type" label="Type of result"><Pick id="ev-type" value={f.evaluationType} onChange={(v) => set("evaluationType", v)} options={EVALUATION_OPTIONS.types} /></Field>
     {status ? <Field id="ev-status" label="Status"><Pick id="ev-status" value={f.status} onChange={(v) => set("status", v)} options={EVALUATION_OPTIONS.statuses} /></Field> : null}
-    <TextField id="ev-date" label="Date on the evaluation or tool result" type="date" value={f.reportDate} onChange={(v) => set("reportDate", v)} />
+    <DateField id="ev-date" label="Date on the evaluation or tool result" value={f.reportDate} onChange={(v) => set("reportDate", v)} hint={`Date on the document, ${DATE_HINT}`} />
     <TextField id="ev-ref" label="Report reference" value={f.reportReference} onChange={(v) => set("reportReference", v)} />
     <DocumentField id="ev-docid" value={f.documentId} onChange={(v) => set("documentId", v)} documents={documents} />
     <Field id="ev-conclusion" label="Evaluator's conclusion"><Pick id="ev-conclusion" value={f.conclusion} onChange={(v) => set("conclusion", v)} options={EVALUATION_OPTIONS.conclusions} /></Field>
@@ -673,12 +745,12 @@ function EvaluationUpdateDialog({ evaluation, send, onClose, documents }: { eval
   const [f, setF] = useState<EvaluationUpdateForm>(() => evaluationUpdateDefaults(evaluation));
   const set = <K extends keyof EvaluationUpdateForm>(k: K, v: EvaluationUpdateForm[K]) => setF((s) => ({ ...s, [k]: v }));
   const v = evaluationRow(evaluation);
-  return <FormDialog scope="evaluation" title={`Update: ${v.evaluator} · ${evaluation.destinationCountry}`} description={verified ? "This evaluation is verified. Only its status and note can change." : "Update what the evaluator has returned. Nothing is verified until you verify it."} submitLabel="Save" gate={{ ok: true, reason: null }}
+  return <FormDialog scope="evaluation" title={`Update: ${evaluatorWithCountry(evaluation)}`} description={verified ? "This evaluation is verified. Only its status and note can change." : "Update what the evaluator has returned. Nothing is verified until you verify it."} submitLabel="Save" gate={{ ok: true, reason: null }}
     onSubmit={() => send("PATCH", STAFF_GRADUATE_PATHS.updateEvaluation(evaluation.id), buildEvaluationUpdateBody(f, verified))} onClose={onClose}>
     <p className="rounded-md border border-student-line p-2 text-sm">{v.qualification}</p>
     <Field id="ev-status" label="Status"><Pick id="ev-status" value={f.status} onChange={(x) => set("status", x)} options={EVALUATION_OPTIONS.statuses} /></Field>
     {!verified ? <>
-      <TextField id="ev-date" label="Date on the evaluation or tool result" type="date" value={f.reportDate} onChange={(x) => set("reportDate", x)} />
+      <DateField id="ev-date" label="Date on the evaluation or tool result" value={f.reportDate} onChange={(x) => set("reportDate", x)} hint={`Date on the document, ${DATE_HINT}`} />
       <TextField id="ev-ref" label="Report reference" value={f.reportReference} onChange={(x) => set("reportReference", x)} />
       <DocumentField id="ev-docid" value={f.documentId} onChange={(x) => set("documentId", x)} documents={documents} />
       <Field id="ev-conclusion" label="Evaluator's conclusion"><Pick id="ev-conclusion" value={f.conclusion} onChange={(x) => set("conclusion", x)} options={EVALUATION_OPTIONS.conclusions} /></Field>
@@ -700,7 +772,7 @@ function EvaluationVerifyDialog({ evaluation, send, onClose, onEdit }: { evaluat
   const [f, setF] = useState<EvaluationVerifyForm>(emptyEvaluationVerifyForm);
   const set = <K extends keyof EvaluationVerifyForm>(k: K, v: EvaluationVerifyForm[K]) => setF((s) => ({ ...s, [k]: v }));
   const v = evaluationRow(evaluation);
-  return <FormDialog scope="evaluation" title={`Verify: ${v.evaluator} · ${evaluation.destinationCountry}`} description="Compare what is recorded with the evaluator's own report. Nothing is verified unless the server accepts the evidence." submitLabel={f.decision === "verified" ? "Verify" : "Save decision"} gate={evaluationVerifyGate(f)}
+  return <FormDialog scope="evaluation" title={`${v.verifyKind === "tool_result" ? "Confirm tool result" : "Verify"}: ${evaluatorWithCountry(evaluation)}`} description={v.verifyKind === "tool_result" ? "This is a preliminary tool result, not an evaluation report. Confirm only that the result is genuine. It does not become an evaluation outcome." : "Compare what is recorded with the evaluator's own report. Nothing is verified unless the server accepts the evidence."} submitLabel={f.decision === "verified" ? (v.verifyKind === "tool_result" ? "Confirm tool result" : "Verify") : "Save decision"} gate={evaluationVerifyGate(f)}
     onSubmit={() => send("POST", STAFF_GRADUATE_PATHS.verifyEvaluation(evaluation.id), buildEvaluationVerifyBody(f))} onClose={onClose}>
     <div className="space-y-2" data-testid="evidence-checklist">
       <EvidenceRow id="ev-status" label="Status" value={v.status} />
@@ -711,7 +783,7 @@ function EvaluationVerifyDialog({ evaluation, send, onClose, onEdit }: { evaluat
       <EvidenceRow id="ev-conclusion-text" label="Evaluator's wording" value={v.conclusionText ?? "Not recorded"} />
       <Button type="button" variant="outline" size="sm" className={OUTLINE_ACTION} onClick={onEdit}>Fix these details…</Button>
     </div>
-    <Field id="evv-decision" label="Decision"><Pick id="evv-decision" value={f.decision} onChange={(x) => set("decision", x as EvaluationVerifyForm["decision"])} options={labelled(["verified", "conflicting", "rejected"], EVALUATION_DECISION_LABEL)} /></Field>
+    <Field id="evv-decision" label="Decision"><Pick id="evv-decision" value={f.decision} onChange={(x) => set("decision", x as EvaluationVerifyForm["decision"])} options={labelled(["verified", "conflicting", "rejected"], v.verifyKind === "tool_result" ? { ...EVALUATION_DECISION_LABEL, verified: "Confirmed: this is the tool's genuine result" } : EVALUATION_DECISION_LABEL)} /></Field>
     {f.decision === "conflicting" ? <TextArea id="ev-conflict" label="Conflicting evidence" value={f.conflictingEvidence} onChange={(x) => set("conflictingEvidence", x)} /> : null}
     <TextArea id="evv-note" label="Note (required)" value={f.note} onChange={(x) => set("note", x)} />
   </FormDialog>;

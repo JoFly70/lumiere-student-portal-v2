@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import {
   EVALUATION_FRAMING,
+  EVALUATOR_LABEL,
   buildEvaluationView,
   buildStaffGraduateProgramView,
   evaluationConsistency,
@@ -48,6 +49,12 @@ import {
   activeRuleSets,
   sectionsForRoute,
   buildActionQueue,
+  buildTidyUp,
+  evaluationFraming,
+  formatDisplayDate,
+  isResolvedTracking,
+  isResolvedQuestion,
+  evaluatorWithCountry,
   buildEvaluationBody,
   buildEvaluationUpdateBody,
   buildEvaluationVerifyBody,
@@ -322,8 +329,8 @@ describe("S12 staff action queue (Needs a decision)", () => {
     const order = cats(q);
     const idx = (c: string) => order.indexOf(c as never);
     expect(idx("subjects_unverified")).toBeGreaterThan(-1);
-    expect(idx("tracking")).toBeGreaterThan(idx("subjects_unverified"));
-    expect(idx("conditional_credit")).toBeGreaterThan(idx("tracking"));
+    expect(idx("tracking")).toBe(-1); // tracking-only items live in "Tidy up", not the decision queue
+    expect(idx("conditional_credit")).toBeGreaterThan(idx("subjects_unverified"));
     expect(idx("question")).toBeGreaterThan(idx("conditional_credit"));
     expect(idx("evaluation")).toBe(order.length - 1);
     const rank = ["record_blocked", "record_ready", "record_claimed", "subjects_unverified", "tracking", "conditional_credit", "question", "evaluation"];
@@ -529,13 +536,15 @@ describe("S12 staff international credential evaluations block", () => {
     expect(out).toContain("Preliminary — not an evaluation report");
     expect(out).toContain("Completed evaluation report");
     expect(out).toContain("Advisory statement — not an evaluation report");
-    expect(out).toContain("WES U.S. (World Education Services, United States)");
-    expect(out).toContain("WES Canada (World Education Services, Canada)");
+    expect(out).toContain("WES (United States)");
+    expect(out).toContain("WES Canada");
+    expect(out).not.toContain("WES (United States) (US)");
+    expect(out).not.toContain("World Education Services");
     expect(out).toContain("Synthetic Advisers");
     expect(out).toMatch(/data-evaluator="wes_us"[^>]*data-preliminary="false"/);
     expect(out).toMatch(/data-evaluator="wes_canada"[^>]*data-preliminary="true"/);
-    expect(out).toContain("United States (US)");
-    expect(out).toContain("Canada (CA)");
+    expect(out).toContain("For United States<");
+    expect(out).toContain("For Canada<");
     expect(evaluationRow(wes).evaluator).not.toBe(evaluationRow(can).evaluator);
   });
 
@@ -593,5 +602,235 @@ describe("S12 staff international credential evaluations block", () => {
   it("paths for the evaluation endpoints are encoded", () => {
     expect(STAFF_GRADUATE_PATHS.recordEvaluation("a/b")).toBe("/api/admin/students/a%2Fb/graduate/evaluations");
     expect(STAFF_GRADUATE_PATHS.verifyEvaluation("e 1")).toBe("/api/admin/graduate/evaluations/e%201/verify");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Staff panel polish (independent review follow-up)
+// ---------------------------------------------------------------------------
+
+describe("S12 staff panel: resolved tracking is not queued, Tidy up is collapsed", () => {
+  const withRecords = (extra: Array<ReturnType<typeof record>>) => {
+    const b = journeyB("partial_recognition");
+    b.records.push(...extra);
+    return staffView(b);
+  };
+  const keysOf = (v: ReturnType<typeof staffView>) => [...buildActionQueue(v), ...buildTidyUp(v)].map((i) => i.key);
+
+  it("does not queue a tracking record whose downstream official record is verified", () => {
+    const base = journeyB("partial_recognition");
+    expect(base.records.some((r) => r.kind === "recognition_decision" && r.verificationStatus === "verified")).toBe(true);
+    const req = record("prog-b", "stu-syn-b", "recognition_request", { trackingStatus: "submitted" });
+    const v = withRecords([req]);
+    expect(keysOf(v).some((k) => k.endsWith(req.id))).toBe(false);
+    expect(isResolvedTracking(rec(v, "recognition_request"), v.records)).toBe(true);
+  });
+
+  it("resolves thesis_submission, university_application, thesis_topic (approved), diploma_ordered and completed tracking", () => {
+    const stage = staffView(journeyB("complete"));
+    const mk = (kind: string, over: Record<string, unknown> = {}) => ({ ...(record("prog-b", "stu-syn-b", kind as never, { trackingStatus: "in_progress", ...over }) as object) });
+    const records = stage.records;
+    const resolvedOf = (kind: string, over: Record<string, unknown> = {}) => {
+      const r = { ...stage.records[0], ...mk(kind, over), id: `x-${kind}`, official: false } as unknown as StaffRecordView;
+      return isResolvedTracking(r, records);
+    };
+    expect(records.some((r) => r.kind === "thesis_result" && r.verificationStatus === "verified")).toBe(true);
+    expect(resolvedOf("thesis_submission")).toBe(true);
+    expect(resolvedOf("university_application")).toBe(true);
+    expect(resolvedOf("thesis_topic", { outcome: "approved" })).toBe(true);
+    expect(resolvedOf("thesis_topic", { outcome: null })).toBe(false);
+    expect(resolvedOf("time_requirement", { trackingStatus: "completed" })).toBe(true);
+    expect(resolvedOf("graduation_procedure", { trackingStatus: "completed" })).toBe(true);
+    expect(resolvedOf("time_requirement", { trackingStatus: "in_progress" })).toBe(false);
+  });
+
+  it("an unresolved tracking record goes to Tidy up, not the main queue, and the group is collapsed", () => {
+    const t = record("prog-b", "stu-syn-b", "time_requirement", { trackingStatus: "in_progress" });
+    const v = withRecords([t]);
+    expect(buildActionQueue(v).some((i) => i.key === `trk-${t.id}`)).toBe(false);
+    expect(buildTidyUp(v).some((i) => i.key === `trk-${t.id}`)).toBe(true);
+    const out = html(workspace([v]));
+    const tidy = out.slice(out.indexOf('data-testid="tidy-up"') - 80);
+    expect(out).toContain('data-testid="tidy-up"');
+    expect(tidy.slice(0, 120)).not.toMatch(/<details[^>]*\sopen/);
+    expect(out).toContain("Tidy up");
+    expect(out.indexOf('data-testid="needs-decision"')).toBeLessThan(out.indexOf('data-testid="tidy-up"'));
+    const queueHtml = out.slice(out.indexOf('data-testid="needs-decision"'), out.indexOf('data-testid="tidy-up"'));
+    expect(queueHtml).not.toContain('data-category="tracking"');
+  });
+
+  it("verifies nothing is left in the decision queue for a fully resolved journey", () => {
+    const v = staffView(journeyB("complete"));
+    expect(buildActionQueue(v).filter((i) => i.category === "tracking")).toEqual([]);
+  });
+});
+
+describe("S12 staff panel: preliminary evaluations", () => {
+  const pre = evaluation({ id: "ev-pre", evaluationType: "preliminary_tool", status: "completed" });
+  const preCa = evaluation({ id: "ev-pre-ca", evaluator: "wes_canada", destinationCountry: "CA", evaluationType: "preliminary_tool", status: "completed" });
+  const preEce = evaluation({ id: "ev-pre-ece", evaluator: "ece", destinationCountry: "GB", evaluationType: "preliminary_tool", status: "completed" });
+  const full = evaluation({ id: "ev-full" });
+
+  it("offers a secondary 'Confirm the tool result is genuine…' instead of the primary Verify…", () => {
+    expect(evaluationRow(pre).verifyKind).toBe("tool_result");
+    expect(evaluationRow(full).verifyKind).toBe("full");
+    const out = html(wsWith([staffView()], [pre]));
+    expect(out).toContain("Confirm the tool result is genuine…");
+    const card = out.slice(out.indexOf('data-testid="graduate-evaluation"'));
+    expect(card).not.toContain(">Verify…<");
+    const fullOut = html(wsWith([staffView()], [full]));
+    expect(fullOut.slice(fullOut.indexOf('data-testid="graduate-evaluation"'))).toContain(">Verify…<");
+  });
+
+  it("shows 'Preliminary — not an evaluation report' as status, never 'Completed', plus the next step", () => {
+    const r = evaluationRow(pre);
+    expect(r.status).toBe("Preliminary — not an evaluation report");
+    expect(r.nextStep).toBe("Next step: request the official WES report for this country and purpose");
+    expect(evaluationRow(preCa).nextStep).toMatch(/official WES report/);
+    expect(evaluationRow(preEce).nextStep).toMatch(/official evaluation report from the evaluator/);
+    expect(evaluationRow(full).nextStep).toBeNull();
+    expect(evaluationRow(full).status).toBe("Completed");
+    const out = html(wsWith([staffView()], [pre]));
+    expect(out).toContain('<dt class="inline text-student-muted">Status: </dt><dd class="inline">Preliminary — not an evaluation report</dd>');
+    expect(out).toContain("Next step: request the official WES report for this country and purpose");
+  });
+
+  it("a preliminary result is Tidy up, not a decision, and a full report stays a decision", () => {
+    const v = staffView(journeyB("registered"));
+    expect(buildActionQueue(v, [pre]).some((i) => i.key === "ev-ev-pre")).toBe(false);
+    const tidy = buildTidyUp(v, [pre]).find((i) => i.key === "ev-ev-pre")!;
+    expect(tidy.actionLabel).toBe("Confirm tool result…");
+    expect(tidy.target).toEqual({ t: "verify-evaluation", evaluationId: "ev-pre" });
+    expect(buildActionQueue(v, [full]).some((i) => i.key === "ev-ev-full")).toBe(true);
+  });
+});
+
+describe("S12 staff panel: two-track tiles show verified vs claimed", () => {
+  it("every tile carries an evidence state; verified is filled, stated is hatched, empty is dashed", () => {
+    const t = trackSummary(staffView(journeyB("registered")));
+    const all = [...t.eneb, ...(t.university ?? [])];
+    expect(all.every((n) => ["verified", "claimed", "none"].includes(n.evidence))).toBe(true);
+    expect(t.university!.find((n) => n.key === "admission")!.evidence).toBe("verified");
+    expect(t.eneb.find((n) => n.key === "subjects")!.evidence).toBe("claimed");
+    expect(t.university!.find((n) => n.key === "thesis")!.evidence).toBe("none");
+    const out = html(workspace([staffView(journeyB("registered"))]));
+    expect(out).toContain('data-evidence="verified"');
+    expect(out).toContain('data-evidence="claimed"');
+    expect(out).toContain('data-evidence="none"');
+    expect(out).toMatch(/data-evidence="verified"/);
+    expect(out).toContain("border-dashed");
+    expect(out).toContain('data-testid="track-legend"');
+    expect(out).toContain("Filled: verified");
+    expect(out).toContain("Hatched: stated or claimed");
+    expect(out).toContain("Dashed: not started");
+  });
+
+  it("the ENEB status tile is named after the status and never says 'Studying' once coursework is complete", () => {
+    for (const status of ["enrolled", "in_progress", "coursework_complete", "completed"] as const) {
+      const b = journeyB("registered");
+      b.program = { ...b.program, enebStatus: status };
+      const v = staffView(b);
+      const node = trackSummary(v).eneb.find((n) => n.key === "status")!;
+      expect(node.label).toBe(v.studentView.enebStatusLabel);
+      if (status === "coursework_complete" || status === "completed") expect(node.label).not.toMatch(/Studying/);
+    }
+    const b = journeyB("registered");
+    b.program = { ...b.program, enebStatus: "coursework_complete" };
+    const out = html(workspace([staffView(b)]));
+    expect(out).toContain("ENEB coursework complete");
+    expect(out).not.toContain(">Studying<");
+    expect(trackSummary(staffView(b)).eneb.find((n) => n.key === "status")!.evidence).toBe("claimed");
+  });
+});
+
+describe("S12 staff panel: ENEB-only wording and resolved questions", () => {
+  const enebOnly = () => staffView(journeyA(), "rs-eneb");
+
+  it("uses 'the qualification' in the evaluations framing when the student has no university programme", () => {
+    expect(evaluationFraming(EVALUATION_FRAMING, false)).toContain("separate from the qualification");
+    expect(evaluationFraming(EVALUATION_FRAMING, false)).not.toContain("Italian award");
+    expect(evaluationFraming(EVALUATION_FRAMING, true)).toBe(EVALUATION_FRAMING);
+    const out = html(wsWith([enebOnly()], [evaluation({ programId: "prog-a" })]));
+    expect(out).not.toContain("Italian award");
+    expect(out).toContain("separate from the qualification");
+    expect(html(wsWith([staffView()], []))).toContain("Italian award");
+  });
+
+  it("completed institutional questions are Resolved (collapsed) and not listed as open", () => {
+    const b = journeyB("registered");
+    const done = record("prog-b", "stu-syn-b", "institutional_question", { trackingStatus: "completed", details: { question: "Is the thesis fee waived?", owner: "Admissions" } });
+    const open = record("prog-b", "stu-syn-b", "institutional_question", { trackingStatus: "in_progress", details: { question: "Which exam session?", owner: "Admissions" } });
+    b.records.push(done, open);
+    const v = staffView(b);
+    expect(isResolvedQuestion(rec(v, "institutional_question"))).toBe(rec(v, "institutional_question").trackingStatus === "completed");
+    const q = buildActionQueue(v);
+    expect(q.some((i) => i.key === `q-${done.id}`)).toBe(false);
+    expect(q.some((i) => i.key === `q-${open.id}`)).toBe(true);
+    const out = html(workspace([v]));
+    expect(out).toContain('data-testid="resolved-questions"');
+    expect(out).toContain("Resolved");
+    const resolved = out.slice(out.indexOf('data-testid="resolved-questions"'));
+    expect(resolved.slice(0, 100)).not.toMatch(/<details[^>]*\sopen/);
+    expect(resolved).toContain("Is the thesis fee waived?");
+    const openPart = out.slice(0, out.indexOf('data-testid="resolved-questions"'));
+    expect(openPart).toContain("Which exam session?");
+    expect(openPart.split("Is the thesis fee waived?").length).toBe(1);
+  });
+
+  it("the Subjects summary has a visible chevron and Show/Hide affordance", () => {
+    const out = html(workspace([staffView()]));
+    const summary = out.slice(out.indexOf('data-testid="subjects-section"'));
+    expect(summary).toContain('data-testid="subjects-chevron"');
+    expect(summary).toContain("recorded");
+    expect(summary).toContain(">Show<");
+  });
+});
+
+describe("S12 staff panel: form details, disabled reasons, evaluator labels", () => {
+  it("formats dates the way the hint shows them", () => {
+    expect(formatDisplayDate("2026-10-18")).toBe("18 Oct 2026");
+    expect(formatDisplayDate("2026-01-05")).toBe("5 Jan 2026");
+    expect(formatDisplayDate("")).toBeNull();
+    expect(formatDisplayDate("nope")).toBeNull();
+  });
+
+  it("a disabled conferral Verify exposes its reason as visible text wired by aria-describedby", () => {
+    const bundle = journeyB("procedure_done");
+    bundle.records.push(record("prog-b", "stu-syn-b", "award_conferral", { trackingStatus: "in_progress" }));
+    const out = html(workspace([buildStaffGraduateProgramView(bundle, "rs-2026", "staff")]));
+    const m = /<button[^>]*disabled=""[^>]*aria-describedby="([^"]+)"[^>]*>Verify…/.exec(out) ?? /<button[^>]*aria-describedby="([^"]+)"[^>]*disabled=""[^>]*>Verify…/.exec(out);
+    expect(m).not.toBeNull();
+    const why = new RegExp(`id="${m![1]}"[^>]*>([^<]+)<`).exec(out);
+    expect(why![1]).toMatch(/administrator/);
+  });
+
+  it("a disabled topic decision exposes why it is disabled", () => {
+    const b = journeyB("registered");
+    const topic = record("prog-b", "stu-syn-b", "thesis_topic", { trackingStatus: "in_progress", outcome: "approved", details: { topic: "Synthetic topic" } });
+    b.records.push(topic);
+    const out = html(workspace([staffView(b)]));
+    const m = /<button[^>]*aria-describedby="([^"]+-approved-why)"[^>]*>Approve topic…/.exec(out) ?? /<button[^>]*disabled=""[^>]*aria-describedby="([^"]+-approved-why)"/.exec(out);
+    expect(m).not.toBeNull();
+    expect(out).toMatch(new RegExp(`id="${m![1]}"[^>]*>Approve topic… is unavailable: this topic is already approved`));
+  });
+
+  it("evaluator names equal the contract's EVALUATOR_LABEL (what the student sees), with no doubled country code", () => {
+    const wes = evaluation({ id: "a" });
+    const ca = evaluation({ id: "b", evaluator: "wes_canada", destinationCountry: "CA" });
+    const nuffic = evaluation({ id: "c", evaluator: "nuffic", destinationCountry: "NL" });
+    const ece = evaluation({ id: "d", evaluator: "ece", destinationCountry: "GB" });
+    for (const e of [wes, ca, nuffic, ece]) {
+      expect(evaluationRow(e).evaluator).toBe(EVALUATOR_LABEL[e.evaluator]);
+      expect(evaluationRow(e).evaluator).toBe(e.view.evaluatorLabel);
+    }
+    expect(evaluatorWithCountry(wes)).toBe("WES (United States)");
+    expect(evaluatorWithCountry(nuffic)).toBe("Nuffic (Netherlands)");
+    expect(evaluatorWithCountry(ece)).toBe("Educational Credential Evaluators (ECE) (GB)");
+    const out = html(wsWith([staffView()], [wes, ca, nuffic, ece]));
+    expect(out).not.toContain("(United States) (US)");
+    expect(out).not.toContain("(Netherlands) (NL)");
+    for (const l of [EVALUATOR_LABEL.wes_us, EVALUATOR_LABEL.wes_canada, EVALUATOR_LABEL.nuffic, EVALUATOR_LABEL.ece]) expect(out).toContain(l);
+    const q = buildActionQueue(staffView(), [wes]).find((i) => i.category === "evaluation")!;
+    expect(q.title).toBe("WES (United States) evaluation awaiting verification");
   });
 });

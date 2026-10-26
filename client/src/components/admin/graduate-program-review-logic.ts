@@ -33,7 +33,6 @@ import {
   type CreditAuthority,
   type CredentialEvaluationRecord,
   type EvaluationGuardCode,
-  type Evaluator,
   type GraduateRoute,
   type GuardCode,
   type StaffGraduateWorkspace,
@@ -813,12 +812,21 @@ export function creditGroups(p: StaffGraduateProgramView): CreditGroup[] {
 // ---------------------------------------------------------------------------
 
 export type TrackState = "done" | "active" | "attention" | "todo" | "na";
+/** verified = checked against the issuer's document; claimed = stated, reported or tracked only; none = not started. */
+export type TrackEvidence = "verified" | "claimed" | "none";
 export interface TrackNode {
   readonly key: string;
   readonly label: string;
   readonly state: TrackState;
+  readonly evidence: TrackEvidence;
   readonly detail: string;
 }
+export const TRACK_EVIDENCE_LABEL: Record<TrackEvidence, string> = { verified: "Verified", claimed: "Stated or claimed, not verified", none: "Not started" };
+export const TRACK_LEGEND: readonly { readonly evidence: TrackEvidence; readonly text: string }[] = [
+  { evidence: "verified", text: "Filled: verified" },
+  { evidence: "claimed", text: "Hatched: stated or claimed" },
+  { evidence: "none", text: "Dashed: not started" },
+];
 export interface TrackSummary {
   readonly eneb: readonly TrackNode[];
   /** null on an ENEB-only programme. */
@@ -826,13 +834,24 @@ export interface TrackSummary {
 }
 
 function recNode(key: string, label: string, rec: StaffRecordView | undefined): TrackNode {
-  if (!rec) return { key, label, state: "todo", detail: "No record yet" };
-  if (rec.verificationStatus === "verified") return { key, label, state: "done", detail: rec.outcome ? `Verified · ${outcomeLabel(rec.outcome)}` : "Verified" };
-  if (rec.verificationStatus === "rejected" || rec.verificationStatus === "conflicting") return { key, label, state: "attention", detail: trustBadge(rec.verificationStatus).label };
+  if (!rec) return { key, label, state: "todo", evidence: "none", detail: "No record yet" };
+  if (rec.verificationStatus === "verified") return { key, label, state: "done", evidence: "verified", detail: rec.outcome ? `Verified · ${outcomeLabel(rec.outcome)}` : "Verified" };
+  if (rec.verificationStatus === "rejected" || rec.verificationStatus === "conflicting") return { key, label, state: "attention", evidence: "claimed", detail: trustBadge(rec.verificationStatus).label };
   if (isClaimedStatus(rec.verificationStatus) || rec.trackingStatus === "in_progress" || rec.trackingStatus === "submitted" || rec.trackingStatus === "completed") {
-    return { key, label, state: "active", detail: rec.trackingStatus === "completed" ? "Completed, not verified" : isClaimedStatus(rec.verificationStatus) ? trustBadge(rec.verificationStatus).label : `${trackingLabel(rec.trackingStatus)}, not verified` };
+    return { key, label, state: "active", evidence: "claimed", detail: rec.trackingStatus === "completed" ? "Completed, not verified" : isClaimedStatus(rec.verificationStatus) ? trustBadge(rec.verificationStatus).label : `${trackingLabel(rec.trackingStatus)}, not verified` };
   }
-  return { key, label, state: "todo", detail: trackingLabel(rec.trackingStatus) };
+  return { key, label, state: "todo", evidence: "none", detail: trackingLabel(rec.trackingStatus) };
+}
+
+/** The ENEB status tile is named after the status itself ("ENEB coursework complete"), never a fixed "Studying". */
+function enebStatusNode(p: StaffGraduateProgramView, completion: StaffRecordView | undefined): TrackNode {
+  const s = p.program.enebStatus;
+  const label = p.studentView.enebStatusLabel;
+  if (s === "withdrawn") return { key: "status", label, state: "attention", evidence: "claimed", detail: "Programme closed" };
+  if (s === "enrolled") return { key: "status", label, state: "todo", evidence: "none", detail: "Enrolled, not started" };
+  if (s === "in_progress") return { key: "status", label, state: "active", evidence: "claimed", detail: "Set by staff, in progress" };
+  const checked = s === "completed" && completion?.verificationStatus === "verified";
+  return { key: "status", label, state: "done", evidence: checked ? "verified" : "claimed", detail: checked ? "Completion verified" : s === "completed" ? "Completion not yet verified" : "Coursework finished, not yet certified" };
 }
 
 export function trackSummary(p: StaffGraduateProgramView): TrackSummary {
@@ -840,11 +859,12 @@ export function trackSummary(p: StaffGraduateProgramView): TrackSummary {
   const eneb = p.subjects.filter((s) => s.authority === "eneb");
   const enebPassed = eneb.filter((s) => s.resultStatus === "passed");
   const enebChecked = enebPassed.filter((s) => s.verificationStatus === "verified");
+  const subjectsDone = eneb.length > 0 && enebPassed.length === eneb.length && enebChecked.length === eneb.length;
   const subjectsNode: TrackNode = !eneb.length
-    ? { key: "subjects", label: "Subjects", state: "todo", detail: "No subjects recorded" }
-    : { key: "subjects", label: "Subjects", state: enebPassed.length === eneb.length && enebChecked.length === eneb.length ? "done" : enebPassed.length ? "active" : "todo", detail: `${enebPassed.length} of ${eneb.length} passed · ${enebChecked.length} checked` };
+    ? { key: "subjects", label: "Subjects", state: "todo", evidence: "none", detail: "No subjects recorded" }
+    : { key: "subjects", label: "Subjects", state: subjectsDone ? "done" : enebPassed.length ? "active" : "todo", evidence: subjectsDone ? "verified" : eneb.some((s) => s.resultStatus !== "none") ? "claimed" : "none", detail: `${enebPassed.length} of ${eneb.length} passed · ${enebChecked.length} checked` };
   const enebNodes: TrackNode[] = [
-    { key: "status", label: "Studying", state: p.program.enebStatus === "withdrawn" ? "attention" : p.program.enebStatus === "enrolled" ? "todo" : "done", detail: p.studentView.enebStatusLabel },
+    enebStatusNode(p, rec("eneb_completion")),
     subjectsNode,
     recNode("completion", "Completion", rec("eneb_completion")),
     recNode("certificate", "Certificate", rec("eneb_certificate")),
@@ -852,12 +872,13 @@ export function trackSummary(p: StaffGraduateProgramView): TrackSummary {
   if (p.program.route !== "eneb_unimarconi") return { eneb: enebNodes, university: null };
   const uni = p.subjects.filter((s) => s.authority === "unimarconi");
   const uniPassed = uni.filter((s) => s.resultStatus === "passed");
+  const uniAllChecked = uni.length > 0 && uniPassed.length === uni.length && uni.every((s) => s.verificationStatus === "verified");
   const uniNodes: TrackNode[] = [
     recNode("eligibility", "Eligibility", rec("eligibility_review")),
     recNode("admission", "Admission", rec("university_admission")),
     recNode("registration", "Registration", rec("university_registration")),
     recNode("recognition", "Recognition", rec("recognition_decision") ?? (rec("recognition_request") ? { ...rec("recognition_request")!, kind: "recognition_decision", verificationStatus: "unknown", outcome: null, trackingStatus: "submitted" } : undefined)),
-    uni.length ? { key: "uni-subjects", label: "University subjects", state: uniPassed.length === uni.length && uni.every((s) => s.verificationStatus === "verified") ? "done" : uniPassed.length ? "active" : "todo", detail: `${uniPassed.length} of ${uni.length} passed` } : { key: "uni-subjects", label: "University subjects", state: "todo", detail: "None recorded" },
+    uni.length ? { key: "uni-subjects", label: "University subjects", state: uniAllChecked ? "done" : uniPassed.length ? "active" : "todo", evidence: uniAllChecked ? "verified" : uni.some((s) => s.resultStatus !== "none") ? "claimed" : "none", detail: `${uniPassed.length} of ${uni.length} passed` } : { key: "uni-subjects", label: "University subjects", state: "todo", evidence: "none", detail: "None recorded" },
     recNode("thesis", "Thesis", rec("thesis_result")),
     recNode("conferral", "Conferral", rec("award_conferral")),
   ];
@@ -868,8 +889,8 @@ export function trackSummary(p: StaffGraduateProgramView): TrackSummary {
 // Action queue ("Needs a decision")
 // ---------------------------------------------------------------------------
 
-export type QueueCategory = "record_blocked" | "record_ready" | "record_claimed" | "subjects_unverified" | "tracking" | "conditional_credit" | "question" | "evaluation";
-export const QUEUE_ORDER: readonly QueueCategory[] = ["record_blocked", "record_ready", "record_claimed", "subjects_unverified", "tracking", "conditional_credit", "question", "evaluation"];
+export type QueueCategory = "record_blocked" | "record_ready" | "record_claimed" | "subjects_unverified" | "tracking" | "conditional_credit" | "question" | "evaluation" | "evaluation_preliminary";
+export const QUEUE_ORDER: readonly QueueCategory[] = ["record_blocked", "record_ready", "record_claimed", "subjects_unverified", "tracking", "conditional_credit", "question", "evaluation", "evaluation_preliminary"];
 
 export type QueueTarget =
   | { readonly t: "verify-record"; readonly recordId: string }
@@ -894,12 +915,38 @@ export function evaluationAwaitingVerification(e: Pick<CredentialEvaluationRecor
   return e.status === "completed" && e.verificationStatus !== "verified" && e.verificationStatus !== "rejected";
 }
 
+/** Tracking kinds whose job is done once the official record that follows them is verified. */
+const DOWNSTREAM_RECORD: Partial<Record<RecordKind, RecordKind>> = {
+  recognition_request: "recognition_decision",
+  thesis_submission: "thesis_result",
+  university_application: "university_admission",
+  diploma_ordered: "diploma_issued",
+  graduation_procedure: "award_conferral",
+};
+
+/**
+ * A tracking record is resolved (never queued) when its downstream official record is verified,
+ * when a thesis topic is approved, or when staff marked tracking completed. A completed tracking
+ * status never resolves a record that still carries an unverified claim.
+ */
+export function isResolvedTracking(r: StaffRecordView, records: readonly StaffRecordView[]): boolean {
+  if (r.official) return false;
+  const next = DOWNSTREAM_RECORD[r.kind];
+  if (next && records.some((x) => x.kind === next && x.verificationStatus === "verified")) return true;
+  if (r.kind === "thesis_topic" && r.outcome === "approved") return true;
+  return r.trackingStatus === "completed" && !isClaimedStatus(r.verificationStatus);
+}
+
+/** Institutional questions marked completed are Resolved, not open. */
+export const isResolvedQuestion = (r: Pick<StaffRecordView, "kind" | "trackingStatus">) => r.kind === "institutional_question" && r.trackingStatus === "completed";
+
 const shortList = (xs: readonly string[], n = 2) => (xs.length <= n ? xs.join(" ") : `${xs.slice(0, n).join(" ")} +${xs.length - n} more`);
 
-export function buildActionQueue(p: StaffGraduateProgramView, evaluations: readonly EvaluationRow[] = [], role: "staff" | "admin" = "staff"): QueueItem[] {
+function queueItems(p: StaffGraduateProgramView, evaluations: readonly EvaluationRow[], role: "staff" | "admin"): QueueItem[] {
   const items: QueueItem[] = [];
   for (const r of p.records) {
     if (r.verificationStatus === "verified" || r.trackingStatus === "withdrawn") continue;
+    if (isResolvedTracking(r, p.records)) continue;
     const claimed = isClaimedStatus(r.verificationStatus);
     if (r.official) {
       const started = (r.trackingStatus !== "not_started" && r.trackingStatus !== "not_applicable") || claimed || r.verificationStatus === "rejected" || r.verificationStatus === "conflicting";
@@ -941,20 +988,39 @@ export function buildActionQueue(p: StaffGraduateProgramView, evaluations: reado
     if (c.recognitionOutcome !== "recognized_with_conditions") continue;
     items.push({ key: `cond-${c.id}`, category: "conditional_credit", title: `${c.label}, ${c.amount} ${c.unit}: recognised with a condition`, detail: `Waiting on: ${c.conditions ?? "condition not stated"}`, actionLabel: "See credits", target: { t: "anchor", anchor: "credits" }, disabledReason: null });
   }
-  for (const q of p.openQuestions) {
+  for (const q of p.openQuestions.filter((x) => !isResolvedQuestion(x))) {
     items.push({ key: `q-${q.id}`, category: "question", title: `Open question: ${q.details.question ?? "no wording recorded"}`, detail: q.details.owner ? `With ${q.details.owner}.` : "No owner recorded.", actionLabel: "Update…", target: { t: "track-record", recordId: q.id }, disabledReason: null });
   }
   for (const e of evaluations.filter((x) => x.programId === p.program.id && evaluationAwaitingVerification(x))) items.push(evaluationQueueItem(e));
   return items.sort((x, y) => QUEUE_ORDER.indexOf(x.category) - QUEUE_ORDER.indexOf(y.category));
 }
 
+/** Low-value items live in the collapsed "Tidy up" group, not in the decision queue. */
+export const isTidyItem = (i: QueueItem) => i.category === "tracking" || i.category === "evaluation_preliminary";
+
+/** "Needs a decision": real decisions only. */
+export function buildActionQueue(p: StaffGraduateProgramView, evaluations: readonly EvaluationRow[] = [], role: "staff" | "admin" = "staff"): QueueItem[] {
+  return queueItems(p, evaluations, role).filter((i) => !isTidyItem(i));
+}
+
+/** "Tidy up": tracking-only items still in flight and preliminary tool results. Never counted as decisions. */
+export function buildTidyUp(p: StaffGraduateProgramView, evaluations: readonly EvaluationRow[] = [], role: "staff" | "admin" = "staff"): QueueItem[] {
+  return queueItems(p, evaluations, role).filter(isTidyItem);
+}
+
+/** "WES (United States)" already names its country; other evaluators get the country code appended. */
+export function evaluatorWithCountry(e: Pick<EvaluationRow, "evaluator" | "destinationCountry" | "view">): string {
+  return evaluatorCountryLock(e.evaluator) ? e.view.evaluatorLabel : `${e.view.evaluatorLabel} (${e.destinationCountry})`;
+}
+
 export function evaluationQueueItem(e: EvaluationRow): QueueItem {
+  const pre = e.evaluationType === "preliminary_tool";
   return {
     key: `ev-${e.id}`,
-    category: "evaluation",
-    title: `${e.view.evaluatorLabel} (${e.destinationCountry}) evaluation awaiting verification`,
-    detail: e.blockers.length ? `Missing: ${shortList(missingMessages(e.blockers, "evaluation"))}` : "Compare with the evaluator's own report, then verify.",
-    actionLabel: "Verify…",
+    category: pre ? "evaluation_preliminary" : "evaluation",
+    title: pre ? `${evaluatorWithCountry(e)} tool result, preliminary` : `${evaluatorWithCountry(e)} evaluation awaiting verification`,
+    detail: pre ? "Not an evaluation report. Confirm the tool result is genuine, then request the official report." : e.blockers.length ? `Missing: ${shortList(missingMessages(e.blockers, "evaluation"))}` : "Compare with the evaluator's own report, then verify.",
+    actionLabel: pre ? "Confirm tool result…" : "Verify…",
     target: { t: "verify-evaluation", evaluationId: e.id },
     disabledReason: null,
   };
@@ -1012,12 +1078,24 @@ export function fieldErrors(codes: readonly AnyGuardCode[], scope: GuardScope = 
 
 export const EVALUATION_NOTE = "An evaluation outcome never changes ENEB or university rules, credits, recognition or graduation. It is evidence about how another country reads the award.";
 
-/** WES U.S. and WES Canada are different services; each label names its country. */
-export const EVALUATOR_DISTINCT_LABEL: Record<Evaluator, string> = {
-  ...EVALUATOR_LABEL,
-  wes_us: "WES U.S. (World Education Services, United States)",
-  wes_canada: "WES Canada (World Education Services, Canada)",
-};
+// Evaluator names are the contract's EVALUATOR_LABEL, exactly as the student sees them.
+
+/** "18 Oct 2026" for a yyyy-mm-dd value; null when it is not a real date. */
+export function formatDisplayDate(iso: string | null | undefined): string | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso ?? "");
+  if (!m) return null;
+  const mon = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][Number(m[2]) - 1];
+  const day = Number(m[3]);
+  if (!mon || day < 1 || day > 31) return null;
+  return `${day} ${mon} ${m[1]}`;
+}
+export const DATE_HINT = "e.g. 18 Oct 2026";
+
+/** Where the framing text says "the Italian award" and the student has no university programme, say "the qualification". */
+export function evaluationFraming(framing: string, hasUniversityProgramme: boolean): string {
+  return hasUniversityProgramme ? framing : framing.replace(/the Italian award/g, "the qualification");
+}
+export const hasUniversityProgramme = (w: Pick<StaffGraduateWorkspace, "programs">) => w.programs.some((p) => p.program.route === "eneb_unimarconi");
 
 export const EVALUATION_TYPE_SHORT: Record<string, string> = {
   preliminary_tool: "Preliminary — not an evaluation report",
@@ -1044,6 +1122,8 @@ export interface EvaluationRowView {
   readonly typeLabel: string;
   readonly preliminary: boolean;
   readonly status: string;
+  /** The completed-but-preliminary state reads "Preliminary", never "Completed". */
+  readonly nextStep: string | null;
   readonly reportDate: string | null;
   readonly conclusionLabel: string;
   readonly conclusionText: string | null;
@@ -1052,11 +1132,14 @@ export interface EvaluationRowView {
   readonly claimed: readonly string[];
   readonly action: readonly string[];
   readonly canVerify: boolean;
+  /** Preliminary tool results cannot become an evaluation outcome: the action is a lighter "confirm the tool result". */
+  readonly verifyKind: "full" | "tool_result" | null;
 }
 
 export function evaluationRow(e: EvaluationRow): EvaluationRowView {
   const verified = e.verificationStatus === "verified";
-  const evaluator = e.evaluator === "other" || e.evaluator === "enic_naric_other" ? e.evaluatorName ?? EVALUATOR_DISTINCT_LABEL[e.evaluator] : EVALUATOR_DISTINCT_LABEL[e.evaluator];
+  const evaluator = e.view.evaluatorLabel;
+  const preliminary = e.evaluationType === "preliminary_tool";
   const claimed: string[] = [];
   if (!verified) {
     if (e.verificationStatus !== "unknown") claimed.push(trustBadge(e.verificationStatus).label);
@@ -1068,18 +1151,20 @@ export function evaluationRow(e: EvaluationRow): EvaluationRowView {
   const action: string[] = [];
   if (!verified) {
     if (e.status !== "completed") action.push(e.status === "withdrawn" ? "Withdrawn. Nothing to verify." : "Waiting for the evaluator. Update the status when the result arrives.");
+    else if (preliminary) action.push("Confirm the tool result is genuine. It stays preliminary and is not an evaluation report.");
     else if (e.blockers.length) action.push(...missingMessages(e.blockers, "evaluation"));
     else action.push("Compare with the evaluator's own report, then verify.");
   }
   return {
     id: e.id,
     evaluator,
-    country: `${countryName(e.destinationCountry)} (${e.destinationCountry})`,
+    country: evaluatorCountryLock(e.evaluator) ? countryName(e.destinationCountry) : `${countryName(e.destinationCountry)} (${e.destinationCountry})`,
     qualification: e.qualificationEvaluated,
     use: EVALUATION_USE_LABEL[e.intendedUse] ?? humanize(e.intendedUse),
     typeLabel: EVALUATION_TYPE_SHORT[e.evaluationType] ?? e.view.typeLabel,
     preliminary: e.evaluationType === "preliminary_tool",
-    status: EVALUATION_STATUS_LABEL[e.status] ?? humanize(e.status),
+    status: preliminary && e.status === "completed" ? EVALUATION_TYPE_SHORT.preliminary_tool : EVALUATION_STATUS_LABEL[e.status] ?? humanize(e.status),
+    nextStep: preliminary && !verified ? (e.evaluator === "wes_us" || e.evaluator === "wes_canada" ? "Next step: request the official WES report for this country and purpose" : "Next step: request the official evaluation report from the evaluator for this country and purpose") : null,
     reportDate: e.reportDate,
     conclusionLabel: EVALUATION_CONCLUSION_LABEL[e.conclusion],
     conclusionText: e.conclusionText,
@@ -1088,6 +1173,7 @@ export function evaluationRow(e: EvaluationRow): EvaluationRowView {
     claimed,
     action,
     canVerify: !verified && e.status === "completed",
+    verifyKind: verified || e.status !== "completed" ? null : preliminary ? "tool_result" : "full",
   };
 }
 
@@ -1217,7 +1303,7 @@ export function evaluationVerifyGate(f: EvaluationVerifyForm): { ok: boolean; re
 }
 
 export const EVALUATION_OPTIONS = {
-  evaluators: EVALUATORS.map((x) => ({ value: x, label: EVALUATOR_DISTINCT_LABEL[x] })),
+  evaluators: EVALUATORS.map((x) => ({ value: x, label: EVALUATOR_LABEL[x] })),
   types: EVALUATION_TYPES.map((x) => ({ value: x, label: EVALUATION_TYPE_SHORT[x] })),
   uses: EVALUATION_USES.map((x) => ({ value: x, label: EVALUATION_USE_LABEL[x] })),
   statuses: EVALUATION_STATUSES.map((x) => ({ value: x, label: EVALUATION_STATUS_LABEL[x] })),

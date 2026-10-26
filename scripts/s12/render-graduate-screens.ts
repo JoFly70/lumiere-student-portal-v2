@@ -160,7 +160,7 @@ async function main() {
         await settle(page, '[data-testid="graduate-program"]');
         await overflow(page, `student/${name}-${tag}`);
         await shot(page, `student/${name}-${tag}.png`);
-        if (tag === "1440" && (name === "b-partial-recognition" || name === "a-eneb-only" || name === "b-procedure-done")) await runAxe(page, `student/${name}`);
+        await runAxe(page, `student/${name}-${tag}`);
         await ctx.close();
       }
     }
@@ -197,8 +197,8 @@ async function main() {
       await section.screenshot({ path: path.join(OUT, `staff/${name}.png`) });
       await page.setViewportSize({ width: vp.w, height: vp.h });
       console.log("wrote", `staff/${name}.png`);
+      await runAxe(page, `staff/${name}`);
       if (name === "admitted-staff") {
-        await runAxe(page, "staff/admitted");
         // Verify registration without evidence: the server's 422 reasons stay in the dialog.
         const reg = page.locator('[data-testid="graduate-record"]', { hasText: "University registration" }).first();
         await reg.getByRole("button", { name: "Verify…" }).click();
