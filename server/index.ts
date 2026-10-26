@@ -231,6 +231,9 @@ app.use('/api/admin', adminLimiter);
 app.use('/api', apiLimiter);
 
 // Body parsing middleware
+// Roadmap import packages (structured AI/script output) can exceed the default
+// 100 KB; the larger limit applies only to the staff roadmap endpoints.
+app.use(/^\/api\/admin\/students\/[^/]+\/roadmap(\/|$)/, express.json({ limit: '2mb' }));
 app.use(express.json({
   verify: (req, _res, buf) => {
     req.rawBody = buf;

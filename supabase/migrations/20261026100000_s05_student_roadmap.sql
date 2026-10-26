@@ -158,17 +158,10 @@ CREATE POLICY "student_roadmap_plans_select" ON student_roadmap_plans FOR SELECT
   USING (is_staff_or_admin() OR student_owns_record(student_id));
 
 DROP POLICY IF EXISTS "student_roadmap_versions_select" ON student_roadmap_versions;
+-- Staff and admin only: version content carries staff notes and credit-record
+-- links. Students read their published plan through the server projection.
 CREATE POLICY "student_roadmap_versions_select" ON student_roadmap_versions FOR SELECT TO authenticated
-  USING (
-    is_staff_or_admin()
-    OR (
-      status = 'published'
-      AND EXISTS (
-        SELECT 1 FROM student_roadmap_plans p
-        WHERE p.id = student_roadmap_versions.plan_id AND student_owns_record(p.student_id)
-      )
-    )
-  );
+  USING (is_staff_or_admin());
 
 DROP POLICY IF EXISTS "student_roadmap_imports_select" ON student_roadmap_imports;
 CREATE POLICY "student_roadmap_imports_select" ON student_roadmap_imports FOR SELECT TO authenticated

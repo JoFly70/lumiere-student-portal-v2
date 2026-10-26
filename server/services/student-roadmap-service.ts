@@ -208,6 +208,17 @@ export function createStudentRoadmapService(deps: StudentRoadmapServiceDeps) {
   const conversionPart = (stored: unknown): RoadmapException[] =>
     asExceptions(stored).filter((e) => CONVERSION_CODES.has(e.code));
 
+  /**
+   * After a staff edit, a blocking conversion finding can no longer be proven
+   * open (the edited content is re-validated on its own), but it must not
+   * silently disappear: it becomes a warning that staff acknowledge once the
+   * draft reflects the workbook correctly.
+   */
+  const editedConversionPart = (stored: unknown): RoadmapException[] =>
+    conversionPart(stored).map((e) => (e.severity === "blocking"
+      ? { ...e, severity: "warning" as const, message: `${e.message} (draft edited by staff after import: acknowledge once corrected)` }
+      : e));
+
   async function buildState(studentId: string, plan: PlanRow | null, tx: Tx): Promise<AdminRoadmapState> {
     if (!plan) return { studentId, planId: null, published: null, draft: null, versions: [] };
     const versions = await repo.listVersions(plan.id, tx);
@@ -459,7 +470,7 @@ export function createStudentRoadmapService(deps: StudentRoadmapServiceDeps) {
       const draft = await requireDraft(plan, tx, expectedDraftRevision);
       const published = await publishedOf(plan, tx);
       const progress = await repo.listProgress(studentId, tx);
-      const { exceptions } = evaluate(content, conversionPart(draft.exceptions), published, progress);
+      const { exceptions } = evaluate(content, editedConversionPart(draft.exceptions), published, progress);
       const keys = new Set(exceptions.map((e) => e.key));
       await repo.updateVersion(
         draft.id,

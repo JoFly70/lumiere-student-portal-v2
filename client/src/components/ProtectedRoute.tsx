@@ -2,9 +2,11 @@ import { ReactNode } from 'react';
 import { useAuth } from '@/lib/auth';
 import { Redirect } from 'wouter';
 
+type Role = 'admin' | 'coach' | 'staff' | 'student';
+
 interface ProtectedRouteProps {
   children: ReactNode;
-  requireRole?: 'admin' | 'coach' | 'staff' | 'student';
+  requireRole?: Role | readonly Role[];
 }
 
 export function ProtectedRoute({ children, requireRole }: ProtectedRouteProps) {
@@ -25,7 +27,10 @@ export function ProtectedRoute({ children, requireRole }: ProtectedRouteProps) {
   }
 
   // Check role requirement if specified
-  if (requireRole && user?.role !== requireRole) {
+  const allowedRoles: readonly string[] | null = requireRole
+    ? (typeof requireRole === 'string' ? [requireRole] : requireRole)
+    : null;
+  if (allowedRoles && !allowedRoles.includes(user?.role ?? '')) {
     // If role doesn't match, redirect to appropriate page
     if (user?.role === 'student') {
       return <Redirect to="/flight-deck" />;

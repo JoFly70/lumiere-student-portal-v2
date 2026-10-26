@@ -65,7 +65,7 @@ function Router() {
       </Route>
       <Route path="/admin/students/:studentId/roadmap">
         {() => (
-          <ProtectedRoute requireRole="admin">
+          <ProtectedRoute requireRole={["admin", "staff"]}>
             <AdminStudentRoadmap />
           </ProtectedRoute>
         )}
