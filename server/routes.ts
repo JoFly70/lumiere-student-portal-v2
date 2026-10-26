@@ -1343,6 +1343,9 @@ window.ENV = {
   // of the workspace / placement / generic admin routers below.
   const adminStudentRoadmapRouter = (await import('./routes/admin-student-roadmap')).default;
   app.use('/api/admin', adminStudentRoadmapRouter);
+  // S12 staff graduate programmes API (per-route staff/admin guards; offerings and rule sets are admin-only).
+  const { staffGraduateRouter } = await import('./routes/graduate-programs');
+  app.use('/api/admin', staffGraduateRouter);
   app.use('/api/admin', adminStudentWorkspaceRouter);
   app.use('/api/admin', adminStudentCreditPlacementRouter);
 
@@ -1353,6 +1356,10 @@ window.ENV = {
   // S05 student roadmap (published version + coursework activity reporting)
   const studentRoadmapRouter = (await import('./routes/student-roadmap')).default;
   app.use('/api/student', studentRoadmapRouter);
+
+  // S12 student graduate programmes (own programmes only; progress, thesis plan and evidence attachment)
+  const { studentGraduateRouter } = await import('./routes/graduate-programs');
+  app.use('/api/student', studentGraduateRouter);
 
   app.use('/api/admin', adminRouter);
   app.use('/api', programsRouter);
