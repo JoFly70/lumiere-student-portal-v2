@@ -1,0 +1,9 @@
+PASS stored hash only, normalized email
+PASS wrong email rejected
+PASS wrong token rejected
+PASS concurrent claims: exactly one succeeds
+PASS released invitation reclaimable
+PASS consume
+PASS consumed invitation cannot be reused
+PASS revoked invitation rejected
+PASS expired invitation rejected

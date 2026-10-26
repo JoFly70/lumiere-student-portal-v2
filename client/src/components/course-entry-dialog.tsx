@@ -20,7 +20,8 @@ const courseFormSchema = z.object({
   credits: z.coerce.number().min(1).max(6),
   courseUrl: z.string().url().optional().or(z.literal("")),
   notes: z.string().optional(),
-  status: z.enum(["todo", "in_progress", "completed", "dropped"]).default("todo"),
+  // "completed" is recorded by staff, not self-reported.
+  status: z.enum(["todo", "in_progress", "dropped"]).default("todo"),
 });
 
 type CourseFormData = z.infer<typeof courseFormSchema>;
@@ -171,7 +172,6 @@ export function CourseEntryDialog() {
                       <SelectContent>
                         <SelectItem value="todo">To Do</SelectItem>
                         <SelectItem value="in_progress">In Progress</SelectItem>
-                        <SelectItem value="completed">Completed</SelectItem>
                         <SelectItem value="dropped">Dropped</SelectItem>
                       </SelectContent>
                     </Select>

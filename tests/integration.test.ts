@@ -309,19 +309,24 @@ describe('DOCUMENTS — real router from server/routes/documents.ts', () => {
   it('POST /api/documents/:id/verify → 200 when staff verifies a document', async () => {
     setupAuthUser({ id: 'staff-1', email: 'staff@test.com', role: 'staff' });
 
-    // Mock the document-service verifyDocument via supabaseAdmin.from
+    // First student_documents query reads the current (pending) row; the
+    // second is the conditional update returning the verified row.
+    const verifiedRow = {
+      id: 'doc-1',
+      student_id: 'student-1',
+      doc_type: 'transcript',
+      status: 'verified',
+      verified: true,
+      verified_by: 'staff-1',
+      verified_at: new Date().toISOString(),
+      admin_notes: null,
+    };
+    let documentQueries = 0;
     setupSupabaseFrom({
-      student_documents: (q: any) => makeQueryChain({
-        data: {
-          id: 'doc-1',
-          student_id: 'student-1',
-          doc_type: 'transcript',
-          status: 'verified',
-          verified: true,
-          verified_by: 'staff-1',
-          verified_at: new Date().toISOString(),
-          admin_notes: null,
-        },
+      student_documents: () => makeQueryChain({
+        data: documentQueries++ === 0
+          ? { ...verifiedRow, status: 'pending', verified: false, verified_by: null, verified_at: null }
+          : verifiedRow,
         error: null,
       }),
     });

@@ -182,7 +182,10 @@ export function CourseEditDialog({ enrollment, open, onOpenChange }: CourseEditD
                       <SelectContent>
                         <SelectItem value="todo">To Do</SelectItem>
                         <SelectItem value="in_progress">In Progress</SelectItem>
-                        <SelectItem value="completed">Completed</SelectItem>
+                        {/* "completed" is recorded by staff; shown only for an already-completed course. */}
+                        {enrollment.status === "completed" && (
+                          <SelectItem value="completed" disabled>Completed</SelectItem>
+                        )}
                         <SelectItem value="dropped">Dropped</SelectItem>
                       </SelectContent>
                     </Select>

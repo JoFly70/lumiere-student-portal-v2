@@ -761,6 +761,10 @@ window.ENV = {
       if (error instanceof Error && error.name === 'ZodError') {
         return res.status(400).json({ error: "Invalid enrollment data" });
       }
+      if (error instanceof Error && error.name === 'EnrollmentPolicyError') {
+        const policyError = error as Error & { statusCode?: number; fields?: string[] };
+        return res.status(policyError.statusCode ?? 400).json({ error: policyError.message, fields: policyError.fields });
+      }
       logger.error("Enrollment creation error", { 
         error: error instanceof Error ? error.message : String(error) 
       });
@@ -796,6 +800,10 @@ window.ENV = {
       return res.json(enrollment);
 
     } catch (error) {
+      if (error instanceof Error && error.name === 'EnrollmentPolicyError') {
+        const policyError = error as Error & { statusCode?: number; fields?: string[] };
+        return res.status(policyError.statusCode ?? 400).json({ error: policyError.message, fields: policyError.fields });
+      }
       logger.error("Enrollment update error", { 
         error: error instanceof Error ? error.message : String(error) 
       });

@@ -3,15 +3,112 @@
  * Business logic for student document operations
  */
 
+import { z } from 'zod';
 import { supabaseAdmin } from '../lib/supabase';
 import { documentStorage } from '../lib/document-storage';
 import {
   type StudentDocument,
-  type InsertStudentDocument,
-  insertStudentDocumentSchema,
+  docTypeEnum,
+  visibilityEnum,
 } from '@shared/schema';
 import { logger } from '../lib/logger';
 import { auditDocument, writeAuditLog } from '../lib/audit';
+import { getStudent } from './student-service';
+
+type DocStatus = StudentDocument['status'];
+
+/** Raised when a document does not exist or is soft-deleted (maps to 404). */
+export class DocumentNotFoundError extends Error {
+  readonly statusCode = 404;
+  constructor(message = 'Document not found') {
+    super(message);
+    this.name = 'DocumentNotFoundError';
+  }
+}
+
+/** Raised when a requested verification/delete transition is not allowed (maps to 409). */
+export class DocumentTransitionError extends Error {
+  readonly statusCode = 409;
+  constructor(message: string) {
+    super(message);
+    this.name = 'DocumentTransitionError';
+  }
+}
+
+/** Raised when submitted document input is rejected by server policy (maps to 400). */
+export class DocumentInputError extends Error {
+  readonly statusCode = 400;
+  constructor(message: string) {
+    super(message);
+    this.name = 'DocumentInputError';
+  }
+}
+
+/** Raised when the caller may not perform the action on this document (maps to 403). */
+export class DocumentForbiddenError extends Error {
+  readonly statusCode = 403;
+  constructor(message: string) {
+    super(message);
+    this.name = 'DocumentForbiddenError';
+  }
+}
+
+/**
+ * Staff verification state machine. Verified documents are final; rejected
+ * documents may only be reopened by requesting a resubmission.
+ */
+export const DOCUMENT_STATUS_TRANSITIONS: Readonly<Record<DocStatus, readonly DocStatus[]>> = {
+  pending: ['verified', 'rejected', 'resubmit_requested'],
+  resubmit_requested: ['verified', 'rejected'],
+  rejected: ['resubmit_requested'],
+  verified: [],
+};
+
+export function canTransitionDocument(from: DocStatus, to: DocStatus): boolean {
+  return (DOCUMENT_STATUS_TRANSITIONS[from] ?? []).includes(to);
+}
+
+const optionalText = (max: number) => z.string().max(max).nullable().optional();
+
+/**
+ * Fields a caller may supply when recording an uploaded document. Status,
+ * verification, URL, OCR and soft-delete fields are server-controlled.
+ * Built lazily so importing this module does not require the schema enums.
+ */
+function buildCreateDocumentInputSchema() {
+  return z.object({
+    doc_type: docTypeEnum,
+    file_name: z.string().min(1).max(255),
+    storage_path: z.string().min(1).max(1024),
+    issuer: optionalText(255),
+    doc_date: optionalText(32),
+    score: optionalText(64),
+    country: optionalText(100),
+    notes: optionalText(2000),
+  }).strict();
+}
+
+/** Staff may additionally set access/requirement flags. */
+function buildStaffCreateDocumentInputSchema() {
+  return buildCreateDocumentInputSchema().extend({
+    visibility: visibilityEnum.optional(),
+    required_for_enrollment: z.boolean().optional(),
+  }).strict();
+}
+
+let createSchemas:
+  | { student: ReturnType<typeof buildCreateDocumentInputSchema>; staff: ReturnType<typeof buildStaffCreateDocumentInputSchema> }
+  | null = null;
+
+export function getCreateDocumentInputSchema(staff: boolean) {
+  createSchemas ??= {
+    student: buildCreateDocumentInputSchema(),
+    staff: buildStaffCreateDocumentInputSchema(),
+  };
+  return staff ? createSchemas.staff : createSchemas.student;
+}
+
+export type CreateDocumentInput = z.infer<ReturnType<typeof buildStaffCreateDocumentInputSchema>>;
 
 /**
  * Get document by ID
@@ -124,23 +221,58 @@ export async function generateDocumentUpload(
 }
 
 /**
- * Create document record after successful upload
+ * Create document record after successful upload.
+ * The storage path must be one this server issues for the stored student
+ * (students/{stored student_code}/...); url and verification state are set here.
  * @param actorId - ID of user creating the document (for audit logging)
  */
 export async function createDocumentRecord(
   studentId: string,
-  documentData: Omit<InsertStudentDocument, 'student_id'>,
-  actorId?: string | null
+  documentData: CreateDocumentInput,
+  actorId?: string | null,
+  options: { staff?: boolean } = {}
 ): Promise<StudentDocument> {
   try {
-    const validated = insertStudentDocumentSchema.omit({ student_id: true }).parse(documentData);
+    const validated: CreateDocumentInput = getCreateDocumentInputSchema(!!options.staff).parse(documentData);
+
+    const student = await getStudent(studentId);
+    if (!student) {
+      throw new DocumentInputError('Student not found');
+    }
+
+    if (!documentStorage.isStoragePathForStudent(
+      validated.storage_path,
+      student.student_code,
+      docTypeEnum.options,
+    )) {
+      throw new DocumentInputError('storage_path was not issued for this student');
+    }
+
+    const record = {
+      student_id: studentId,
+      doc_type: validated.doc_type,
+      file_name: validated.file_name,
+      issuer: validated.issuer ?? null,
+      doc_date: validated.doc_date ?? null,
+      score: validated.score ?? null,
+      country: validated.country ?? null,
+      notes: validated.notes ?? null,
+      storage_path: validated.storage_path,
+      url: documentStorage.storedObjectUrl(validated.storage_path),
+      visibility: options.staff ? validated.visibility ?? 'student_staff' : 'student_staff',
+      required_for_enrollment: options.staff ? validated.required_for_enrollment ?? false : false,
+      status: 'pending' as const,
+      verified: false,
+      verified_by: null,
+      verified_at: null,
+      admin_notes: null,
+      ocr_text: null,
+      soft_deleted: false,
+    };
 
     const { data, error } = await supabaseAdmin
       .from('student_documents')
-      .insert({
-        ...validated,
-        student_id: studentId,
-      })
+      .insert(record)
       .select()
       .single();
 
@@ -182,7 +314,11 @@ export async function generateDocumentDownload(documentId: string) {
     const document = await getDocument(documentId);
 
     if (!document) {
-      throw new Error('Document not found');
+      throw new DocumentNotFoundError();
+    }
+
+    if (!documentStorage.isSafeStoragePath(document.storage_path)) {
+      throw new DocumentInputError('Stored document path is invalid');
     }
 
     const downloadResult = await documentStorage.generatePresignedDownload(
@@ -202,6 +338,51 @@ export async function generateDocumentDownload(documentId: string) {
 }
 
 /**
+ * Apply a staff verification transition. The current row is re-read, the
+ * transition is checked against DOCUMENT_STATUS_TRANSITIONS, and the update is
+ * conditioned on the status that was checked so concurrent changes fail.
+ */
+async function transitionDocument(
+  documentId: string,
+  to: DocStatus,
+  actorId: string,
+  changes: Record<string, unknown>,
+): Promise<{ before: StudentDocument; after: StudentDocument }> {
+  const before = await getDocument(documentId);
+  if (!before) {
+    throw new DocumentNotFoundError();
+  }
+  if (!canTransitionDocument(before.status, to)) {
+    throw new DocumentTransitionError(
+      `Cannot change document status from ${before.status} to ${to}`,
+    );
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from('student_documents')
+    .update({
+      ...changes,
+      status: to,
+      verified_by: actorId,
+      verified_at: new Date().toISOString(),
+    })
+    .eq('id', documentId)
+    .eq('status', before.status)
+    .eq('soft_deleted', false)
+    .select()
+    .single();
+
+  if (error) {
+    if (error.code === 'PGRST116') {
+      throw new DocumentTransitionError('Document changed concurrently; reload and retry');
+    }
+    throw error;
+  }
+
+  return { before, after: data as StudentDocument };
+}
+
+/**
  * Verify document (admin action)
  */
 export async function verifyDocument(
@@ -210,22 +391,10 @@ export async function verifyDocument(
   adminNotes?: string
 ): Promise<StudentDocument> {
   try {
-    const { data, error } = await supabaseAdmin
-      .from('student_documents')
-      .update({
-        status: 'verified',
-        verified: true,
-        verified_by: verifiedBy,
-        verified_at: new Date().toISOString(),
-        admin_notes: adminNotes || null,
-      })
-      .eq('id', documentId)
-      .select()
-      .single();
-
-    if (error) {
-      throw error;
-    }
+    const { before, after: data } = await transitionDocument(documentId, 'verified', verifiedBy, {
+      verified: true,
+      admin_notes: adminNotes || null,
+    });
 
     logger.info('Document verified', {
       documentId,
@@ -240,8 +409,9 @@ export async function verifyDocument(
       action: 'verified',
       entityType: 'document',
       entityId: documentId,
+      oldValue: before,
       newValue: data,
-      metadata: { doc_type: data.doc_type, admin_notes: adminNotes },
+      metadata: { doc_type: data.doc_type, admin_notes: adminNotes, from_status: before.status },
     }).catch(err => logger.warn('Audit log failed', { err }));
 
     // If this is an English cert, update student_english_proof
@@ -265,22 +435,10 @@ export async function rejectDocument(
   reason: string
 ): Promise<StudentDocument> {
   try {
-    const { data, error } = await supabaseAdmin
-      .from('student_documents')
-      .update({
-        status: 'rejected',
-        verified: false,
-        verified_by: verifiedBy,
-        verified_at: new Date().toISOString(),
-        admin_notes: reason,
-      })
-      .eq('id', documentId)
-      .select()
-      .single();
-
-    if (error) {
-      throw error;
-    }
+    const { before, after: data } = await transitionDocument(documentId, 'rejected', verifiedBy, {
+      verified: false,
+      admin_notes: reason,
+    });
 
     logger.info('Document rejected', {
       documentId,
@@ -295,8 +453,9 @@ export async function rejectDocument(
       action: 'rejected',
       entityType: 'document',
       entityId: documentId,
+      oldValue: before,
       newValue: data,
-      metadata: { doc_type: data.doc_type, reason },
+      metadata: { doc_type: data.doc_type, reason, from_status: before.status },
     }).catch(err => logger.warn('Audit log failed', { err }));
 
     return data as StudentDocument;
@@ -315,21 +474,10 @@ export async function requestResubmit(
   reason: string
 ): Promise<StudentDocument> {
   try {
-    const { data, error } = await supabaseAdmin
-      .from('student_documents')
-      .update({
-        status: 'resubmit_requested',
-        admin_notes: reason,
-        verified_by: requestedBy,
-        verified_at: new Date().toISOString(),
-      })
-      .eq('id', documentId)
-      .select()
-      .single();
-
-    if (error) {
-      throw error;
-    }
+    const { before, after: data } = await transitionDocument(documentId, 'resubmit_requested', requestedBy, {
+      verified: false,
+      admin_notes: reason,
+    });
 
     logger.info('Document resubmit requested', {
       documentId,
@@ -344,8 +492,9 @@ export async function requestResubmit(
       action: 'resubmit_requested',
       entityType: 'document',
       entityId: documentId,
+      oldValue: before,
       newValue: data,
-      metadata: { doc_type: data.doc_type, reason },
+      metadata: { doc_type: data.doc_type, reason, from_status: before.status },
     }).catch(err => logger.warn('Audit log failed', { err }));
 
     // TODO: Send notification to student
@@ -362,17 +511,28 @@ export async function requestResubmit(
  * Soft delete document
  * @param actorId - ID of user deleting the document (for audit logging)
  */
-export async function softDeleteDocument(documentId: string, actorId?: string | null): Promise<void> {
+export async function softDeleteDocument(
+  documentId: string,
+  actorId?: string | null,
+  options: { allowVerified?: boolean } = {}
+): Promise<void> {
   try {
-    // Fetch document for audit log
-    const doc = actorId ? await getDocument(documentId) : null;
+    const doc = await getDocument(documentId);
+    if (!doc) {
+      throw new DocumentNotFoundError();
+    }
+    // Verified documents are part of the student's record; only staff remove them.
+    if (doc.status === 'verified' && options.allowVerified !== true) {
+      throw new DocumentForbiddenError('Verified documents can only be removed by staff');
+    }
 
     const { error } = await supabaseAdmin
       .from('student_documents')
       .update({
         soft_deleted: true,
       })
-      .eq('id', documentId);
+      .eq('id', documentId)
+      .eq('soft_deleted', false);
 
     if (error) {
       throw error;
@@ -406,7 +566,7 @@ export async function hardDeleteDocument(documentId: string): Promise<void> {
     const document = await getDocument(documentId);
 
     if (!document) {
-      throw new Error('Document not found');
+      throw new DocumentNotFoundError();
     }
 
     // Delete from storage
@@ -517,10 +677,12 @@ async function syncEnglishProofFromDocument(document: StudentDocument) {
 export async function bulkVerifyDocuments(
   documentIds: string[],
   verifiedBy: string
-): Promise<{ verified: number; failed: number }> {
+): Promise<{ verified: number; failed: number; errors: Array<{ document_id: string; error: string }> }> {
   let verified = 0;
   let failed = 0;
+  const errors: Array<{ document_id: string; error: string }> = [];
 
+  // Each document goes through the same transition rules as single verify.
   for (const id of documentIds) {
     try {
       await verifyDocument(id, verifiedBy);
@@ -528,12 +690,17 @@ export async function bulkVerifyDocuments(
     } catch (error) {
       logger.error('Error in bulk verify', { documentId: id, error });
       failed++;
+      const known = error instanceof DocumentNotFoundError || error instanceof DocumentTransitionError;
+      errors.push({
+        document_id: id,
+        error: known ? (error as Error).message : 'Verification failed',
+      });
     }
   }
 
   logger.info('Bulk verify completed', { verified, failed, total: documentIds.length });
 
-  return { verified, failed };
+  return { verified, failed, errors };
 }
 
 // ✅ All mutation functions now have audit logging integrated with actorId parameter

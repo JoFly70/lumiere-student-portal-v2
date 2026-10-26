@@ -247,9 +247,10 @@ export function requireRole(...allowedRoles: string[]) {
 export const requireAdmin = requireRole('admin');
 
 /**
- * Require staff role (admin, coach, or staff)
+ * Require staff role (admin or staff). Coach is excluded: there is no
+ * coach-to-student assignment data to scope organisation-wide student access.
  */
-export const requireStaff = requireRole('admin', 'coach', 'staff');
+export const requireStaff = requireRole('admin', 'staff');
 
 /**
  * Optional auth - attach user if token provided, but don't fail if missing

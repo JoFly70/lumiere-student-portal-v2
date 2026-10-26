@@ -94,6 +94,24 @@ export function sanitizeFileName(fileName: string): string {
   return sanitized;
 }
 
+// Allowed characters for a single path segment derived from stored values.
+const SAFE_SEGMENT = /^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/;
+
+function assertSafeSegment(value: string, label: string): void {
+  if (typeof value !== 'string' || !SAFE_SEGMENT.test(value)) {
+    throw new Error(`Invalid ${label} for storage path`);
+  }
+}
+
+/**
+ * Server-derived storage prefix for a student. The student code must come
+ * from the stored student row, never from the request.
+ */
+export function studentStoragePrefix(studentCode: string): string {
+  assertSafeSegment(studentCode, 'student code');
+  return `students/${studentCode}/`;
+}
+
 /**
  * Generate storage path for student document
  * Format: students/{student_code}/{doc_type}/{timestamp}_{filename}
@@ -103,9 +121,65 @@ export function generateStoragePath(
   docType: string,
   fileName: string
 ): string {
+  assertSafeSegment(docType, 'document type');
   const timestamp = Date.now();
   const sanitized = sanitizeFileName(fileName);
-  return `students/${studentCode}/${docType}/${timestamp}_${sanitized}`;
+  if (!sanitized || sanitized === '.' || sanitized === '..') {
+    throw new Error('Invalid filename');
+  }
+  return `${studentStoragePrefix(studentCode)}${docType}/${timestamp}_${sanitized}`;
+}
+
+/**
+ * Structural safety check for any stored or submitted storage path:
+ * relative, no traversal segments, no backslashes or control characters.
+ */
+export function isSafeStoragePath(storagePath: unknown): storagePath is string {
+  if (typeof storagePath !== 'string' || storagePath.length === 0 || storagePath.length > 1024) {
+    return false;
+  }
+  if (storagePath.startsWith('/') || storagePath.includes('\\') || /[\x00-\x1F\x7F]/.test(storagePath)) {
+    return false;
+  }
+  const segments = storagePath.split('/');
+  return segments.every((segment) => segment !== '' && segment !== '.' && segment !== '..');
+}
+
+/**
+ * True only when the path has the exact shape produced by generateStoragePath
+ * for this student: students/{student_code}/{doc_type}/{timestamp}_{filename}.
+ */
+export function isStoragePathForStudent(
+  storagePath: unknown,
+  studentCode: string,
+  allowedDocTypes?: readonly string[],
+): boolean {
+  if (!isSafeStoragePath(storagePath)) return false;
+  let prefix: string;
+  try {
+    prefix = studentStoragePrefix(studentCode);
+  } catch {
+    return false;
+  }
+  if (!storagePath.startsWith(prefix)) return false;
+  const rest = storagePath.slice(prefix.length).split('/');
+  if (rest.length !== 2) return false;
+  const [docType, objectName] = rest;
+  if (!SAFE_SEGMENT.test(docType)) return false;
+  if (allowedDocTypes && !allowedDocTypes.includes(docType)) return false;
+  return /^\d{10,16}_.+/.test(objectName);
+}
+
+/**
+ * URL recorded on the document row, derived from the stored storage path.
+ * getPublicUrl is computed locally by the client library (no network call);
+ * the bucket is private, so downloads still require a signed URL.
+ */
+export function storedObjectUrl(storagePath: string): string {
+  const { data } = supabaseAdmin.storage
+    .from(STUDENT_DOCS_BUCKET)
+    .getPublicUrl(storagePath);
+  return data.publicUrl;
 }
 
 /**
@@ -167,6 +241,9 @@ export async function generatePresignedDownload(
   storagePath: string,
   expiresIn: number = 3600 // 1 hour default
 ): Promise<PresignedDownloadResult> {
+  if (!isSafeStoragePath(storagePath)) {
+    throw new Error('Invalid storage path');
+  }
   try {
     const { data, error } = await supabaseAdmin.storage
       .from(STUDENT_DOCS_BUCKET)
@@ -194,6 +271,9 @@ export async function generatePresignedDownload(
  * Delete document from storage
  */
 export async function deleteDocument(storagePath: string): Promise<void> {
+  if (!isSafeStoragePath(storagePath)) {
+    throw new Error('Invalid storage path');
+  }
   try {
     const { error } = await supabaseAdmin.storage
       .from(STUDENT_DOCS_BUCKET)
@@ -269,6 +349,10 @@ export const documentStorage = {
   validateFile,
   sanitizeFileName,
   generateStoragePath,
+  studentStoragePrefix,
+  isSafeStoragePath,
+  isStoragePathForStudent,
+  storedObjectUrl,
   generatePresignedUpload,
   generatePresignedDownload,
   deleteDocument,

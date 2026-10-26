@@ -17,9 +17,10 @@ any non-empty `public` schema.
 5. `migrations/004_financial_timeline.sql`
 6. `migrations/007_course_roadmap_tables.sql`
 7. `ALTER TABLE pricing_rules ADD COLUMN IF NOT EXISTS per_credit_price INTEGER`
-8. `scripts/disposable-env/90_storage_buckets.sql`
+8. `scripts/disposable-env/60_s03_security_remediation.sql` (S03; disposable only, not a production migration)
+9. `scripts/disposable-env/90_storage_buckets.sql`
 
-Expected result: 63 public tables, 0 errors. The `public`-schema dump md5 is
+Expected result: 64 public tables, 0 errors (63 before S03 added `account_invitations`). Read-only configuration gates: `psql "$DISPOSABLE_DB_URL" -X -A -f scripts/disposable-env/audit-config.sql`. The md5 below is the S02 hash, taken before S03. The `public`-schema dump md5 is
 `8f5b93ffb0550ade9dbd313f394ed9af`, computed from `pg_dump --schema-only --schema=public`
 with comment and blank lines removed. That hash was observed on three clean
 builds across two containers.
@@ -69,4 +70,4 @@ Two consecutive clean builds produce byte-identical `public` schema dumps.
 ## Not included (known gaps)
 - The roadmap-generator tables from `migrations/003`: no UI calls `generate-plan`.
 - `payment_records`, `student_enrollments` and `student_emergency_contacts`: no SQL exists anywhere for them.
-- RLS for the supplement tables: none is defined in the repository. That is a recovery-backlog item, not something to paper over here.
+- RLS for the supplement tables: S03 enables RLS on them with no client grants (service role only). See `docs/recovery/S03-remediation-record.md`.

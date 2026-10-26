@@ -39,6 +39,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { api, getAuthToken } from "@/lib/api";
 import { ProfileAvatarUpload } from "@/components/profile-avatar-upload";
+import { useAuth } from "@/lib/auth";
 import type { Student, StudentContact, InsertStudentContact } from "@shared/schema";
 import {
   residencyEnum,
@@ -891,6 +892,10 @@ function EligibilitySection({
   onSave: () => void;
 }) {
   const { toast } = useToast();
+  const { user } = useAuth();
+  // Residency and high-school completion are eligibility determinations;
+  // the server only lets staff change them.
+  const canEdit = !!user && user.role !== "student";
 
   const form = useForm<z.infer<typeof eligibilityFormSchema>>({
     resolver: zodResolver(eligibilityFormSchema),
@@ -949,9 +954,12 @@ function EligibilitySection({
             <GraduationCap className="h-5 w-5" />
             Eligibility
           </CardTitle>
-          <CardDescription>Residency status and high school completion</CardDescription>
+          <CardDescription>
+            Residency status and high school completion
+            {!canEdit && " — contact your advisor to request a change"}
+          </CardDescription>
         </div>
-        {!isEditing && (
+        {!isEditing && canEdit && (
           <Button 
             variant="outline" 
             size="sm"

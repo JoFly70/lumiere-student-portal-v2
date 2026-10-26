@@ -487,7 +487,10 @@ export async function upsertEnglishProof(
 
     // Use Drizzle repository in demo mode
     if (isDemoMode) {
-      englishProof = await englishProofRepo.upsertEnglishProof(studentId, proofData);
+      // Use the validated payload so verification outcomes such as
+      // meets_requirement are never passed through from the caller.
+      const { student_id: _studentId, ...validatedProof } = validated;
+      englishProof = await englishProofRepo.upsertEnglishProof(studentId, validatedProof);
     } else {
       // Use Supabase in production - upsert to handle create/update
       const { data, error } = await supabaseAdmin

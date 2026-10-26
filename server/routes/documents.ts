@@ -17,9 +17,49 @@ import {
   softDeleteDocument,
   bulkVerifyDocuments,
 } from '../services/document-service';
-import { studentOwnsProfile } from "../lib/resource-ownership";
-import { insertStudentDocumentSchema } from '@shared/schema';
+import { studentOwnsProfile, isAdminOrStaff } from "../lib/resource-ownership";
+import { getStudent } from '../services/student-service';
+import { docTypeEnum } from '@shared/schema';
 import { logger } from '../lib/logger';
+
+/**
+ * Map document-service policy errors (identified by name so this module does
+ * not depend on the error classes at runtime) to HTTP responses.
+ */
+function sendDocumentPolicyError(res: import('express').Response, error: unknown): boolean {
+  const name = (error as { name?: unknown } | null)?.name;
+  const statusByName: Record<string, number> = {
+    DocumentNotFoundError: 404,
+    DocumentTransitionError: 409,
+    DocumentInputError: 400,
+    DocumentForbiddenError: 403,
+  };
+  if (typeof name === 'string' && name in statusByName) {
+    res.status(statusByName[name]).json({ error: (error as Error).message });
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Verification decisions are limited to admin and staff. requireStaff also
+ * admits coach, and coaches have no assignment scope to a student.
+ */
+function requireVerifier(
+  req: import('express').Request,
+  res: import('express').Response,
+  next: import('express').NextFunction,
+) {
+  if (!isAdminOrStaff(req.user)) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+  return next();
+}
+
+/** Students never see staff-only documents. */
+function visibleToCaller(user: { role?: string } | undefined, doc: { visibility?: string }): boolean {
+  return isAdminOrStaff(user) || doc.visibility !== 'staff_only';
+}
 
 const router = Router();
 
@@ -40,7 +80,7 @@ router.get('/student/:studentId', async (req, res) => {
     const { studentId } = req.params;
 
     // Check authorization
-    if (req.user && !(await studentOwnsProfile(req.user, studentId))) {
+    if (!req.user || !(await studentOwnsProfile(req.user, studentId))) {
         return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -52,7 +92,7 @@ router.get('/student/:studentId', async (req, res) => {
 
     const documents = await listStudentDocuments(studentId, filters);
 
-    return res.json(documents);
+    return res.json(documents.filter((doc) => visibleToCaller(req.user, doc)));
   } catch (error) {
     logger.error('List documents error', { studentId: req.params.studentId, error });
     return res.status(500).json({ error: 'Failed to list documents' });
@@ -68,24 +108,31 @@ router.post('/student/:studentId/upload-url', async (req, res) => {
     const { studentId } = req.params;
 
     // Check authorization
-    if (req.user && !(await studentOwnsProfile(req.user, studentId))) {
+    if (!req.user || !(await studentOwnsProfile(req.user, studentId))) {
         return res.status(403).json({ error: 'Access denied' });
     }
 
     // Validate request body
+    // student_code is accepted for client compatibility but ignored: the
+    // storage prefix is derived from the stored student row.
     const schema = z.object({
-      doc_type: z.string(),
-      file_name: z.string(),
+      doc_type: docTypeEnum,
+      file_name: z.string().min(1).max(255),
       file_size: z.number().int().positive(),
       mime_type: z.string(),
-      student_code: z.string(),
+      student_code: z.string().optional(),
     });
 
     const validated = schema.parse(req.body);
 
+    const student = await getStudent(studentId);
+    if (!student?.student_code) {
+      return res.status(404).json({ error: 'Student not found' });
+    }
+
     const uploadResult = await generateDocumentUpload(
       studentId,
-      validated.student_code,
+      student.student_code,
       validated.doc_type,
       validated.file_name,
       validated.file_size,
@@ -110,7 +157,11 @@ router.post('/student/:studentId/upload-url', async (req, res) => {
 
     if (error instanceof Error) {
       // File validation errors
-      if (error.message.includes('File size') || error.message.includes('File type')) {
+      if (
+        error.message.includes('File size') ||
+        error.message.includes('File type') ||
+        error.message.includes('Invalid filename')
+      ) {
         return res.status(400).json({ error: error.message });
       }
     }
@@ -132,17 +183,18 @@ router.post('/student/:studentId', async (req, res) => {
     const { studentId } = req.params;
 
     // Check authorization
-    if (req.user && !(await studentOwnsProfile(req.user, studentId))) {
+    if (!req.user || !(await studentOwnsProfile(req.user, studentId))) {
         return res.status(403).json({ error: 'Access denied' });
     }
 
-    // Validate (exclude student_id as it comes from URL)
-    const schema = insertStudentDocumentSchema.omit({ student_id: true });
-    const validated = schema.parse(req.body);
+    // The service applies a strict metadata-only schema (status, verification,
+    // url and other server-controlled fields are rejected) and checks
+    // storage_path against the stored student's prefix.
+    const staff = isAdminOrStaff(req.user);
 
     // Pass actor ID for audit logging
     const actorId = req.audit?.actorId || req.user?.id || null;
-    const document = await createDocumentRecord(studentId, validated, actorId);
+    const document = await createDocumentRecord(studentId, req.body, actorId, { staff });
 
     logger.info('Document created', {
       studentId,
@@ -160,6 +212,8 @@ router.post('/student/:studentId', async (req, res) => {
       });
     }
 
+    if (sendDocumentPolicyError(res, error)) return;
+
     logger.error('Create document error', {
       studentId: req.params.studentId,
       error,
@@ -172,7 +226,7 @@ router.post('/student/:studentId', async (req, res) => {
  * POST /api/documents/:id/verify
  * Verify document (admin/staff only)
  */
-router.post('/:id/verify', requireStaff, async (req, res) => {
+router.post('/:id/verify', requireStaff, requireVerifier, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -202,6 +256,8 @@ router.post('/:id/verify', requireStaff, async (req, res) => {
       });
     }
 
+    if (sendDocumentPolicyError(res, error)) return;
+
     logger.error('Verify document error', { documentId: req.params.id, error });
     return res.status(500).json({ error: 'Failed to verify document' });
   }
@@ -211,7 +267,7 @@ router.post('/:id/verify', requireStaff, async (req, res) => {
  * POST /api/documents/:id/reject
  * Reject document (admin/staff only)
  */
-router.post('/:id/reject', requireStaff, async (req, res) => {
+router.post('/:id/reject', requireStaff, requireVerifier, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -242,6 +298,8 @@ router.post('/:id/reject', requireStaff, async (req, res) => {
       });
     }
 
+    if (sendDocumentPolicyError(res, error)) return;
+
     logger.error('Reject document error', { documentId: req.params.id, error });
     return res.status(500).json({ error: 'Failed to reject document' });
   }
@@ -251,7 +309,7 @@ router.post('/:id/reject', requireStaff, async (req, res) => {
  * POST /api/documents/:id/request-resubmit
  * Request document resubmit (admin/staff only)
  */
-router.post('/:id/request-resubmit', requireStaff, async (req, res) => {
+router.post('/:id/request-resubmit', requireStaff, requireVerifier, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -282,6 +340,8 @@ router.post('/:id/request-resubmit', requireStaff, async (req, res) => {
       });
     }
 
+    if (sendDocumentPolicyError(res, error)) return;
+
     logger.error('Request resubmit error', { documentId: req.params.id, error });
     return res.status(500).json({ error: 'Failed to request resubmit' });
   }
@@ -302,13 +362,22 @@ router.delete('/:id', async (req, res) => {
     }
 
     // Check authorization
-    if (req.user && !(await studentOwnsProfile(req.user, document.student_id))) {
+    if (!req.user || !(await studentOwnsProfile(req.user, document.student_id))) {
         return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const staff = isAdminOrStaff(req.user);
+    if (!staff && !visibleToCaller(req.user, document)) {
+      return res.status(404).json({ error: 'Document not found' });
+    }
+    // Verified documents can only be removed by staff.
+    if (!staff && document.status === 'verified') {
+      return res.status(403).json({ error: 'Verified documents can only be removed by staff' });
     }
 
     // Pass actor ID for audit logging
     const actorId = req.audit?.actorId || req.user?.id || null;
-    await softDeleteDocument(id, actorId);
+    await softDeleteDocument(id, actorId, { allowVerified: staff });
 
     logger.info('Document deleted', {
       documentId: id,
@@ -317,6 +386,8 @@ router.delete('/:id', async (req, res) => {
 
     return res.status(204).send();
   } catch (error) {
+    if (sendDocumentPolicyError(res, error)) return;
+
     logger.error('Delete document error', { documentId: req.params.id, error });
     return res.status(500).json({ error: 'Failed to delete document' });
   }
@@ -326,11 +397,10 @@ router.delete('/:id', async (req, res) => {
  * POST /api/documents/bulk-verify
  * Bulk verify documents (admin/coach/staff)
  * 
- * Authorization: requireStaff middleware allows admin, coach, and staff roles.
- * This is intentional - all staff members should be able to bulk verify documents
- * for operational efficiency during intake periods.
+ * Authorization: requireStaff middleware. Each document is verified through
+ * the same transition rules as POST /:id/verify.
  */
-router.post('/bulk-verify', requireStaff, async (req, res) => {
+router.post('/bulk-verify', requireStaff, requireVerifier, async (req, res) => {
   try {
     const schema = z.object({
       document_ids: z.array(z.string().uuid()).min(1, 'At least one document ID required'),
@@ -381,11 +451,15 @@ router.get('/:id', async (req, res) => {
     }
 
     // Check authorization
-    if (req.user && !(await studentOwnsProfile(req.user, document.student_id))) {
+    if (!req.user || !(await studentOwnsProfile(req.user, document.student_id))) {
         return res.status(403).json({ error: 'Access denied' });
     }
 
-    // Generate download URL
+    if (!visibleToCaller(req.user, document)) {
+      return res.status(404).json({ error: 'Document not found' });
+    }
+
+    // Signed URL is generated from the stored row's storage_path only.
     const downloadUrl = await generateDocumentDownload(id);
 
     return res.json({
@@ -394,6 +468,8 @@ router.get('/:id', async (req, res) => {
       download_expires_in: downloadUrl.expires_in,
     });
   } catch (error) {
+    if (sendDocumentPolicyError(res, error)) return;
+
     logger.error('Get document error', { documentId: req.params.id, error });
     return res.status(500).json({ error: 'Failed to get document' });
   }

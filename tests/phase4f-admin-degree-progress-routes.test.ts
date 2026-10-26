@@ -45,6 +45,13 @@ vi.mock('../server/services/degree-progress-service', () => ({
   getDegreeProgress: mockService.getDegreeProgress,
 }));
 
+// Account lifecycle gate (S03) is covered in tests/s03-invitations-account-status.test.ts.
+vi.mock('../server/lib/account-status', () => ({
+  ACCOUNT_INACTIVE_RESPONSE: { error: 'Account is not active', code: 'ACCOUNT_INACTIVE' },
+  getAccountStatus: vi.fn(async () => 'active'),
+  isAccountActive: vi.fn(async () => true),
+}));
+
 vi.mock('../server/lib/supabase', () => ({
   supabaseAdmin: {
     auth: {
