@@ -54,7 +54,7 @@ describe("S05 Roadmap page", () => {
     expect(count(markup, 'data-testid="now-strip"')).toBe(1);
     expect(count(markup, 'data-testid="focus-item"')).toBe(0);
     expect(count(markup, 'data-testid="now-jump"')).toBe(1);
-    expect(count(t, "Finish your Marketing challenges, then submit Touchstone 3")).toBe(1);
+    expect(count(t, "Next: Challenge 3 in Financial Accounting")).toBe(1);
     expect(count(t, "Next up")).toBe(0);
     expect(count(t.toLowerCase(), "your roadmap")).toBeLessThanOrEqual(3);
   });
@@ -209,7 +209,7 @@ describe("S05 Flight Deck", () => {
   it("has one obvious primary action to the first focus course", () => {
     expect(count(markup, 'data-testid="primary-cta"')).toBe(1);
     expect(markup).toMatch(/data-testid="primary-cta"[^>]*>|href="\/roadmap#item-bba-mkt300"[^>]*data-testid="primary-cta"/);
-    expect(t).toContain("Continue Principles of Marketing");
+    expect(t).toContain("Continue Financial Accounting");
   });
   it("Next up lists only actionable tasks; submitted tasks are listed as Awaiting grading", () => {
     const hero = markup.slice(markup.indexOf('data-hero="true"'));
@@ -232,7 +232,7 @@ describe("S05 Flight Deck", () => {
     expect(t).toContain("Surplus: 3 credits");
   });
   it("does not repeat the headline", () => {
-    expect(count(t, "Finish your Marketing challenges")).toBe(1);
+    expect(count(t, "Next: Challenge 3 in Financial Accounting")).toBe(1);
   });
 });
 

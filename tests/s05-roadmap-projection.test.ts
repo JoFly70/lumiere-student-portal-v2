@@ -165,11 +165,28 @@ describe("projectStudentRoadmap", () => {
   it("builds a Today focus: working items first, then available starts", () => {
     const view = project({ progress: [progress("eng101", "t1", "in_progress")] });
     expect(view.today.focusItemKeys).toEqual(["eng101"]);
-    expect(view.today.headline).toBe("Continue English");
+    expect(view.today.headline).toBe("Next: Paper in English");
     expect(view.today.detail).toBe("2 tasks remaining.");
     const fresh = project();
     expect(fresh.today.focusItemKeys).toEqual(["eng101"]);
-    expect(fresh.today.headline).toBe("Start English");
+    expect(fresh.today.headline).toBe("Next: Paper in English");
+  });
+
+  it("leads Today with the most urgent course (earliest open task due date or planned end)", () => {
+    const c = content({
+      items: [
+        { key: "late", phaseKey: "p1", objectiveKey: "ba", sequence: 1, title: "Later course", plannedEnd: "2027-03-01",
+          tasks: [{ key: "t1", kind: "challenge", title: "Challenge 1", sequence: 1, dueDate: "2027-02-01" }] },
+        { key: "urgent", phaseKey: "p1", objectiveKey: "ba", sequence: 2, title: "Urgent course", plannedEnd: "2027-04-01",
+          tasks: [
+            { key: "t1", kind: "challenge", title: "Challenge 1", sequence: 1, dueDate: "2026-10-22" },
+            { key: "t2", kind: "challenge", title: "Challenge 2", sequence: 2, dueDate: "2026-11-05" },
+          ] },
+      ],
+    });
+    const view = project({ content: c, progress: [progress("late", "t1", "in_progress"), progress("urgent", "t2", "in_progress")] });
+    expect(view.today.focusItemKeys).toEqual(["urgent", "late"]);
+    expect(view.today.headline).toBe("Next: Challenge 1 in Urgent course");
   });
 
   it("states completion while awaiting official acceptance", () => {

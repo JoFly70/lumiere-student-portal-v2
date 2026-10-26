@@ -19,6 +19,7 @@ import {
   stageIndex,
   stageStatus,
   priorCreditBaseline,
+  STATUS_META,
   type StatusKey,
 } from "@/pages/student-roadmap-presentation";
 import { STATUS_STYLE } from "./student-ui";
@@ -307,7 +308,25 @@ export function JourneyStrip({ view }: { view: StudentRoadmapView }) {
           </div>
         </li>
       </ol>
+      <PipLegend />
     </div>
+  );
+}
+
+/** Visible key for the course pips, so their colours never carry meaning alone. */
+function PipLegend() {
+  return (
+    <ul className="mt-4 flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-student-muted" aria-label="Key to the course markers" data-testid="pip-legend">
+      {PIP_ORDER.map((st) => (
+        <li key={st} className="flex items-center gap-1.5">
+          <span
+            aria-hidden="true"
+            className={cn("h-2 w-5 rounded-full border", st === "notstarted" ? "border-dashed bg-transparent" : STATUS_STYLE[st].fill, STATUS_STYLE[st].border)}
+          />
+          {STATUS_META[st].label}
+        </li>
+      ))}
+    </ul>
   );
 }
 

@@ -258,9 +258,9 @@ export const RICH_MID_JOURNEY: StudentRoadmapView = (() => {
     ],
     counts: c,
     today: {
-      focusItemKeys: ["bba-mkt300", "bba-acct210", "rn-anat"],
-      headline: "Finish your Marketing challenges, then submit Touchstone 3",
-      detail: "Principles of Marketing is due to finish on Nov 27, 2026.",
+      focusItemKeys: ["bba-acct210", "bba-mkt300", "rn-anat"],
+      headline: "Next: Challenge 3 in Financial Accounting",
+      detail: "Challenge 3 was due Oct 22. Catch up first, then continue Principles of Marketing.",
       nextMilestoneKey: "ms-core",
     },
     foundation: FOUNDATION,

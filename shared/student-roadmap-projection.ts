@@ -423,7 +423,18 @@ export function projectStudentRoadmap(input: ProjectStudentRoadmapInput): Studen
       && views.get(d.item.key)!.waitingOn.length === 0,
   );
   const awaitingGrading = reportable.filter((d) => d.stage === "submitted");
-  const focus = [...working, ...startable].slice(0, 3);
+  // Most urgent first: the earliest open task due date (or planned end). A course with an overdue
+  // task therefore leads Today. No clock is needed: earlier dates are always more urgent.
+  const urgency = (d: DerivedItem): string => {
+    const open = d.tasks
+      .filter((t) => (t.status === "not_started" || t.status === "in_progress") && t.dueDate)
+      .map((t) => t.dueDate as string);
+    const candidates = [...open, ...(d.item.plannedEnd ? [d.item.plannedEnd] : [])].sort();
+    return candidates[0] ?? "9999-12-31";
+  };
+  const byUrgency = (list: DerivedItem[]) =>
+    list.map((d, i) => ({ d, i, u: urgency(d) })).sort((a, b) => cmp(a.u, b.u) || a.i - b.i).map((x) => x.d);
+  const focus = [...byUrgency(working), ...byUrgency(startable)].slice(0, 3);
   const nextMilestone = milestones.find((m) => !m.reached) ?? null;
   // Tasks the student can still act on (not yet submitted or done).
   const tasksRemaining = (d: DerivedItem) => d.tasks.filter((t) => t.status === "not_started" || t.status === "in_progress").length;
@@ -446,7 +457,14 @@ export function projectStudentRoadmap(input: ProjectStudentRoadmapInput): Studen
     const remaining = tasksRemaining(first);
     const submitted = tasksSubmittedIn(first);
     const isWorking = first.stage !== "not_started";
-    headline = `${isWorking ? "Continue" : "Start"} ${first.item.title}`;
+    // Name the next task (earliest due first) so the headline adds to, not repeats, the call to action.
+    const open = first.tasks.filter((t) => t.status === "not_started" || t.status === "in_progress");
+    const nextTask = [...open].sort((a, b) => cmp(a.dueDate ?? "9999-12-31", b.dueDate ?? "9999-12-31"))[0];
+    headline = nextTask
+      ? `Next: ${nextTask.title} in ${first.item.title}`
+      : first.tasks.length > 0
+        ? `${first.item.title}: all tasks done`
+        : isWorking ? `Keep going with ${first.item.title}` : `${first.item.title} is ready to start`;
     if (first.tasks.length === 0) {
       detail = isWorking ? "Keep going and mark the course complete when you finish it." : "Begin when you are ready.";
     } else if (remaining === 0) {

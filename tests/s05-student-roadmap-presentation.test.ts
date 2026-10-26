@@ -135,7 +135,7 @@ describe("S05 roadmap presentation: counts", () => {
 describe("S05 roadmap presentation: journey", () => {
   it("finds the current phase, focus items and next milestone", () => {
     expect(currentPhase(V)!.key).toBe("business-core");
-    expect(focusItems(V).map((i) => i.key)).toEqual(["bba-mkt300", "bba-acct210", "rn-anat"]);
+    expect(focusItems(V).map((i) => i.key)).toEqual(["bba-acct210", "bba-mkt300", "rn-anat"]);
     expect(nextMilestone(V)!.key).toBe("ms-core");
     expect(horizonMilestones(V).map((m) => m.key)).toEqual(["ms-core", "ms-app", "ms-bba", "ms-grad"]);
   });
@@ -237,7 +237,7 @@ describe("S05 student wording: the student never grades", () => {
     expect(credentialStandingLabel("VERIFIED_APPLIED").label).toBe("Verified");
   });
   it("jumps to the first focus item from the Now strip", () => {
-    expect(nowTarget(V)!.key).toBe("bba-mkt300");
+    expect(nowTarget(V)!.key).toBe("bba-acct210");
     expect(nowTarget(NOT_PUBLISHED)).toBeNull();
   });
 });

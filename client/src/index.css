@@ -444,8 +444,9 @@
   --s-seal: 43 60% 80%;
   --s-seal-ink: 30 10% 12%;
 
-  --st-official: 43 60% 80%;
-  --st-official-soft: 40 12% 20%;
+  /* Official is ivory-white in dark mode (never gold, which is the brand/CTA accent). */
+  --st-official: 40 30% 94%;
+  --st-official-soft: 40 6% 24%;
   --st-applied: 152 48% 62%;
   --st-applied-soft: 152 25% 16%;
   --st-provider: 280 55% 80%;
