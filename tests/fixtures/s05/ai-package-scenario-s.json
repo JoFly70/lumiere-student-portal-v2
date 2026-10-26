@@ -1,0 +1,746 @@
+{
+  "format": "lumiere-roadmap-package/1",
+  "generator": {
+    "name": "Synthetic Planning Assistant",
+    "model": "synthetic-model-1",
+    "preparedAt": "2026-10-20"
+  },
+  "content": {
+    "contentVersion": "roadmap-content/1",
+    "title": "Scenario S — multiple objectives with alternatives",
+    "summary": "Prior credits are under evaluation; some courses are alternatives or conditional on the evaluation outcome.",
+    "objectives": [
+      {
+        "key": "bs-information-systems",
+        "title": "Bachelor of Science in Information Systems",
+        "kind": "primary",
+        "institution": "Pathways State University",
+        "credentialLabel": "BS",
+        "linkedToProgramAssignment": true,
+        "status": "active",
+        "note": null
+      },
+      {
+        "key": "minor-data-analytics",
+        "title": "Minor in Data Analytics",
+        "kind": "secondary",
+        "institution": "Pathways State University",
+        "credentialLabel": "Minor",
+        "linkedToProgramAssignment": false,
+        "status": "active",
+        "note": null
+      }
+    ],
+    "phases": [
+      {
+        "key": "core-foundations",
+        "title": "Core foundations",
+        "sequence": 1,
+        "objectiveKey": null,
+        "startDate": null,
+        "endDate": null,
+        "description": null
+      },
+      {
+        "key": "information-systems-major",
+        "title": "Information systems major",
+        "sequence": 2,
+        "objectiveKey": null,
+        "startDate": null,
+        "endDate": null,
+        "description": null
+      },
+      {
+        "key": "data-analytics-minor",
+        "title": "Data analytics minor",
+        "sequence": 3,
+        "objectiveKey": null,
+        "startDate": null,
+        "endDate": null,
+        "description": null
+      }
+    ],
+    "items": [
+      {
+        "key": "s-eng-101",
+        "phaseKey": "core-foundations",
+        "objectiveKey": "bs-information-systems",
+        "sequence": 1,
+        "kind": "course",
+        "code": "ENG-101",
+        "title": "English Composition",
+        "provider": "Sophia",
+        "institution": "Pathways State University",
+        "credits": "3",
+        "plannedStart": "2026-11-02",
+        "plannedEnd": "2026-11-29",
+        "dependsOn": [],
+        "planStatus": "planned",
+        "hold": null,
+        "approval": null,
+        "alternativeOf": null,
+        "linkedCreditRecordId": null,
+        "tasks": [
+          {
+            "key": "challenge-1",
+            "kind": "challenge",
+            "title": "Challenge 1",
+            "sequence": 1
+          },
+          {
+            "key": "challenge-2",
+            "kind": "challenge",
+            "title": "Challenge 2",
+            "sequence": 2
+          },
+          {
+            "key": "challenge-3",
+            "kind": "challenge",
+            "title": "Challenge 3",
+            "sequence": 3
+          },
+          {
+            "key": "challenge-4",
+            "kind": "challenge",
+            "title": "Challenge 4",
+            "sequence": 4
+          },
+          {
+            "key": "challenge-5",
+            "kind": "challenge",
+            "title": "Challenge 5",
+            "sequence": 5
+          },
+          {
+            "key": "milestone-1",
+            "kind": "milestone",
+            "title": "Milestone 1",
+            "sequence": 6
+          },
+          {
+            "key": "milestone-2",
+            "kind": "milestone",
+            "title": "Milestone 2",
+            "sequence": 7
+          },
+          {
+            "key": "milestone-3",
+            "kind": "milestone",
+            "title": "Milestone 3",
+            "sequence": 8
+          },
+          {
+            "key": "touchstone-1",
+            "kind": "touchstone",
+            "title": "Touchstone 1",
+            "sequence": 9
+          }
+        ],
+        "studentNote": null,
+        "staffNote": null
+      },
+      {
+        "key": "s-math-120",
+        "phaseKey": "core-foundations",
+        "objectiveKey": "bs-information-systems",
+        "sequence": 2,
+        "kind": "course",
+        "code": "MATH-120",
+        "title": "College Algebra",
+        "provider": "Sophia",
+        "institution": "Pathways State University",
+        "credits": "3",
+        "plannedStart": "2026-11-02",
+        "plannedEnd": "2026-12-06",
+        "dependsOn": [],
+        "planStatus": "planned",
+        "hold": null,
+        "approval": null,
+        "alternativeOf": null,
+        "linkedCreditRecordId": null,
+        "tasks": [
+          {
+            "key": "challenge-1",
+            "kind": "challenge",
+            "title": "Challenge 1",
+            "sequence": 1
+          },
+          {
+            "key": "challenge-2",
+            "kind": "challenge",
+            "title": "Challenge 2",
+            "sequence": 2
+          },
+          {
+            "key": "challenge-3",
+            "kind": "challenge",
+            "title": "Challenge 3",
+            "sequence": 3
+          },
+          {
+            "key": "challenge-4",
+            "kind": "challenge",
+            "title": "Challenge 4",
+            "sequence": 4
+          },
+          {
+            "key": "challenge-5",
+            "kind": "challenge",
+            "title": "Challenge 5",
+            "sequence": 5
+          },
+          {
+            "key": "challenge-6",
+            "kind": "challenge",
+            "title": "Challenge 6",
+            "sequence": 6
+          },
+          {
+            "key": "milestone-1",
+            "kind": "milestone",
+            "title": "Milestone 1",
+            "sequence": 7
+          },
+          {
+            "key": "milestone-2",
+            "kind": "milestone",
+            "title": "Milestone 2",
+            "sequence": 8
+          },
+          {
+            "key": "milestone-3",
+            "kind": "milestone",
+            "title": "Milestone 3",
+            "sequence": 9
+          },
+          {
+            "key": "milestone-4",
+            "kind": "milestone",
+            "title": "Milestone 4",
+            "sequence": 10
+          },
+          {
+            "key": "touchstone-1",
+            "kind": "touchstone",
+            "title": "Touchstone 1",
+            "sequence": 11
+          },
+          {
+            "key": "touchstone-2",
+            "kind": "touchstone",
+            "title": "Touchstone 2",
+            "sequence": 12
+          }
+        ],
+        "studentNote": null,
+        "staffNote": null
+      },
+      {
+        "key": "s-math-alt",
+        "phaseKey": "core-foundations",
+        "objectiveKey": "bs-information-systems",
+        "sequence": 3,
+        "kind": "course",
+        "code": "MATH-130",
+        "title": "Quantitative Reasoning",
+        "provider": "Study.com",
+        "institution": "Pathways State University",
+        "credits": "3",
+        "plannedStart": null,
+        "plannedEnd": null,
+        "dependsOn": [],
+        "planStatus": "alternative",
+        "hold": null,
+        "approval": null,
+        "alternativeOf": "s-math-120",
+        "linkedCreditRecordId": null,
+        "tasks": [],
+        "studentNote": "Alternative route if College Algebra does not fit your schedule.",
+        "staffNote": null
+      },
+      {
+        "key": "s-stats-210",
+        "phaseKey": "core-foundations",
+        "objectiveKey": "bs-information-systems",
+        "sequence": 4,
+        "kind": "course",
+        "code": "STAT-210",
+        "title": "Introduction to Statistics",
+        "provider": "Sophia",
+        "institution": "Pathways State University",
+        "credits": "3",
+        "plannedStart": "2026-12-07",
+        "plannedEnd": "2027-01-10",
+        "dependsOn": [],
+        "planStatus": "planned",
+        "hold": null,
+        "approval": null,
+        "alternativeOf": null,
+        "linkedCreditRecordId": null,
+        "tasks": [
+          {
+            "key": "challenge-1",
+            "kind": "challenge",
+            "title": "Challenge 1",
+            "sequence": 1
+          },
+          {
+            "key": "challenge-2",
+            "kind": "challenge",
+            "title": "Challenge 2",
+            "sequence": 2
+          },
+          {
+            "key": "challenge-3",
+            "kind": "challenge",
+            "title": "Challenge 3",
+            "sequence": 3
+          },
+          {
+            "key": "challenge-4",
+            "kind": "challenge",
+            "title": "Challenge 4",
+            "sequence": 4
+          },
+          {
+            "key": "challenge-5",
+            "kind": "challenge",
+            "title": "Challenge 5",
+            "sequence": 5
+          },
+          {
+            "key": "challenge-6",
+            "kind": "challenge",
+            "title": "Challenge 6",
+            "sequence": 6
+          },
+          {
+            "key": "milestone-1",
+            "kind": "milestone",
+            "title": "Milestone 1",
+            "sequence": 7
+          },
+          {
+            "key": "milestone-2",
+            "kind": "milestone",
+            "title": "Milestone 2",
+            "sequence": 8
+          },
+          {
+            "key": "milestone-3",
+            "kind": "milestone",
+            "title": "Milestone 3",
+            "sequence": 9
+          },
+          {
+            "key": "milestone-4",
+            "kind": "milestone",
+            "title": "Milestone 4",
+            "sequence": 10
+          },
+          {
+            "key": "touchstone-1",
+            "kind": "touchstone",
+            "title": "Touchstone 1",
+            "sequence": 11
+          },
+          {
+            "key": "touchstone-2",
+            "kind": "touchstone",
+            "title": "Touchstone 2",
+            "sequence": 12
+          }
+        ],
+        "studentNote": null,
+        "staffNote": null
+      },
+      {
+        "key": "s-cs-101",
+        "phaseKey": "information-systems-major",
+        "objectiveKey": "bs-information-systems",
+        "sequence": 5,
+        "kind": "course",
+        "code": "CIS-101",
+        "title": "Introduction to Programming",
+        "provider": "Study.com",
+        "institution": "Pathways State University",
+        "credits": "3",
+        "plannedStart": "2027-01-11",
+        "plannedEnd": "2027-02-21",
+        "dependsOn": [],
+        "planStatus": "planned",
+        "hold": null,
+        "approval": null,
+        "alternativeOf": null,
+        "linkedCreditRecordId": null,
+        "tasks": [],
+        "studentNote": null,
+        "staffNote": null
+      },
+      {
+        "key": "s-cs-101-alt",
+        "phaseKey": "information-systems-major",
+        "objectiveKey": "bs-information-systems",
+        "sequence": 6,
+        "kind": "course",
+        "code": "CIS-101S",
+        "title": "Introduction to Programming (Sophia route)",
+        "provider": "Sophia",
+        "institution": "Pathways State University",
+        "credits": "3",
+        "plannedStart": null,
+        "plannedEnd": null,
+        "dependsOn": [],
+        "planStatus": "alternative",
+        "hold": null,
+        "approval": null,
+        "alternativeOf": "s-cs-101",
+        "linkedCreditRecordId": null,
+        "tasks": [
+          {
+            "key": "challenge-1",
+            "kind": "challenge",
+            "title": "Challenge 1",
+            "sequence": 1
+          },
+          {
+            "key": "challenge-2",
+            "kind": "challenge",
+            "title": "Challenge 2",
+            "sequence": 2
+          },
+          {
+            "key": "challenge-3",
+            "kind": "challenge",
+            "title": "Challenge 3",
+            "sequence": 3
+          },
+          {
+            "key": "challenge-4",
+            "kind": "challenge",
+            "title": "Challenge 4",
+            "sequence": 4
+          },
+          {
+            "key": "challenge-5",
+            "kind": "challenge",
+            "title": "Challenge 5",
+            "sequence": 5
+          },
+          {
+            "key": "milestone-1",
+            "kind": "milestone",
+            "title": "Milestone 1",
+            "sequence": 6
+          },
+          {
+            "key": "milestone-2",
+            "kind": "milestone",
+            "title": "Milestone 2",
+            "sequence": 7
+          },
+          {
+            "key": "milestone-3",
+            "kind": "milestone",
+            "title": "Milestone 3",
+            "sequence": 8
+          },
+          {
+            "key": "touchstone-1",
+            "kind": "touchstone",
+            "title": "Touchstone 1",
+            "sequence": 9
+          },
+          {
+            "key": "touchstone-2",
+            "kind": "touchstone",
+            "title": "Touchstone 2",
+            "sequence": 10
+          }
+        ],
+        "studentNote": null,
+        "staffNote": null
+      },
+      {
+        "key": "s-db-220",
+        "phaseKey": "information-systems-major",
+        "objectiveKey": "bs-information-systems",
+        "sequence": 7,
+        "kind": "course",
+        "code": "CIS-220",
+        "title": "Database Fundamentals",
+        "provider": "Study.com",
+        "institution": "Pathways State University",
+        "credits": "3",
+        "plannedStart": "2027-02-22",
+        "plannedEnd": "2027-04-04",
+        "dependsOn": [
+          "s-cs-101"
+        ],
+        "planStatus": "planned",
+        "hold": null,
+        "approval": null,
+        "alternativeOf": null,
+        "linkedCreditRecordId": null,
+        "tasks": [],
+        "studentNote": null,
+        "staffNote": null
+      },
+      {
+        "key": "s-networks-240",
+        "phaseKey": "information-systems-major",
+        "objectiveKey": "bs-information-systems",
+        "sequence": 8,
+        "kind": "course",
+        "code": "CIS-240",
+        "title": "Computer Networks",
+        "provider": "Study.com",
+        "institution": "Pathways State University",
+        "credits": "3",
+        "plannedStart": "2027-04-05",
+        "plannedEnd": "2027-05-16",
+        "dependsOn": [
+          "s-cs-101"
+        ],
+        "planStatus": "planned",
+        "hold": null,
+        "approval": null,
+        "alternativeOf": null,
+        "linkedCreditRecordId": null,
+        "tasks": [],
+        "studentNote": null,
+        "staffNote": null
+      },
+      {
+        "key": "s-tech-writing",
+        "phaseKey": "information-systems-major",
+        "objectiveKey": "bs-information-systems",
+        "sequence": 9,
+        "kind": "course",
+        "code": "ENG-210",
+        "title": "Technical Writing",
+        "provider": "Sophia",
+        "institution": "Pathways State University",
+        "credits": "3",
+        "plannedStart": null,
+        "plannedEnd": null,
+        "dependsOn": [],
+        "planStatus": "dropped",
+        "hold": null,
+        "approval": null,
+        "alternativeOf": null,
+        "linkedCreditRecordId": null,
+        "tasks": [],
+        "studentNote": null,
+        "staffNote": "Dropped: prior credit accepted in the evaluation."
+      },
+      {
+        "key": "s-capstone",
+        "phaseKey": "information-systems-major",
+        "objectiveKey": "bs-information-systems",
+        "sequence": 10,
+        "kind": "course",
+        "code": "CIS-490",
+        "title": "Information Systems capstone",
+        "provider": null,
+        "institution": "Pathways State University",
+        "credits": "3",
+        "plannedStart": "2027-05-17",
+        "plannedEnd": "2027-07-11",
+        "dependsOn": [
+          "s-db-220",
+          "s-networks-240",
+          "s-stats-210"
+        ],
+        "planStatus": "planned",
+        "hold": null,
+        "approval": {
+          "required": true,
+          "status": "pending",
+          "note": null
+        },
+        "alternativeOf": null,
+        "linkedCreditRecordId": null,
+        "tasks": [],
+        "studentNote": null,
+        "staffNote": null
+      },
+      {
+        "key": "s-minor-da-1",
+        "phaseKey": "data-analytics-minor",
+        "objectiveKey": "minor-data-analytics",
+        "sequence": 11,
+        "kind": "course",
+        "code": "DATA-201",
+        "title": "Data Visualization",
+        "provider": "Sophia",
+        "institution": "Pathways State University",
+        "credits": "3",
+        "plannedStart": "2027-02-01",
+        "plannedEnd": "2027-03-07",
+        "dependsOn": [],
+        "planStatus": "planned",
+        "hold": null,
+        "approval": null,
+        "alternativeOf": null,
+        "linkedCreditRecordId": null,
+        "tasks": [
+          {
+            "key": "challenge-1",
+            "kind": "challenge",
+            "title": "Challenge 1",
+            "sequence": 1
+          },
+          {
+            "key": "challenge-2",
+            "kind": "challenge",
+            "title": "Challenge 2",
+            "sequence": 2
+          },
+          {
+            "key": "challenge-3",
+            "kind": "challenge",
+            "title": "Challenge 3",
+            "sequence": 3
+          },
+          {
+            "key": "challenge-4",
+            "kind": "challenge",
+            "title": "Challenge 4",
+            "sequence": 4
+          },
+          {
+            "key": "challenge-5",
+            "kind": "challenge",
+            "title": "Challenge 5",
+            "sequence": 5
+          },
+          {
+            "key": "milestone-1",
+            "kind": "milestone",
+            "title": "Milestone 1",
+            "sequence": 6
+          },
+          {
+            "key": "milestone-2",
+            "kind": "milestone",
+            "title": "Milestone 2",
+            "sequence": 7
+          },
+          {
+            "key": "milestone-3",
+            "kind": "milestone",
+            "title": "Milestone 3",
+            "sequence": 8
+          },
+          {
+            "key": "touchstone-1",
+            "kind": "touchstone",
+            "title": "Touchstone 1",
+            "sequence": 9
+          }
+        ],
+        "studentNote": null,
+        "staffNote": null
+      },
+      {
+        "key": "s-minor-da-2",
+        "phaseKey": "data-analytics-minor",
+        "objectiveKey": "minor-data-analytics",
+        "sequence": 12,
+        "kind": "course",
+        "code": "DATA-301",
+        "title": "Predictive Analytics",
+        "provider": "Study.com",
+        "institution": "Pathways State University",
+        "credits": "3",
+        "plannedStart": "2027-03-08",
+        "plannedEnd": "2027-04-18",
+        "dependsOn": [
+          "s-minor-da-1",
+          "s-stats-210"
+        ],
+        "planStatus": "planned",
+        "hold": null,
+        "approval": null,
+        "alternativeOf": null,
+        "linkedCreditRecordId": null,
+        "tasks": [],
+        "studentNote": null,
+        "staffNote": null
+      }
+    ],
+    "milestones": [
+      {
+        "key": "s-eval-checkpoint",
+        "title": "Prior-credit evaluation checkpoint",
+        "kind": "checkpoint",
+        "targetDate": "2027-01-31",
+        "objectiveKey": "bs-information-systems",
+        "afterItemKeys": []
+      },
+      {
+        "key": "s-minor-complete",
+        "title": "Data analytics minor complete",
+        "kind": "objective_complete",
+        "targetDate": "2027-04-18",
+        "objectiveKey": "minor-data-analytics",
+        "afterItemKeys": [
+          "s-minor-da-1",
+          "s-minor-da-2"
+        ]
+      },
+      {
+        "key": "s-degree-complete",
+        "title": "Information Systems degree complete",
+        "kind": "graduation",
+        "targetDate": "2027-07-31",
+        "objectiveKey": "bs-information-systems",
+        "afterItemKeys": [
+          "s-eng-101",
+          "s-math-120",
+          "s-stats-210",
+          "s-cs-101",
+          "s-db-220",
+          "s-networks-240",
+          "s-capstone"
+        ]
+      }
+    ]
+  },
+  "itemAnnotations": [
+    {
+      "itemKey": "s-eng-101",
+      "confidence": "high",
+      "needsReview": false
+    },
+    {
+      "itemKey": "s-cs-101-alt",
+      "confidence": "medium",
+      "needsReview": true,
+      "rationale": "Provider equivalence was inferred from the course title only.",
+      "conditionalAllocation": "Applies only if CIS-110 is not accepted toward the programming requirement."
+    },
+    {
+      "itemKey": "s-db-220",
+      "confidence": "medium",
+      "needsReview": false,
+      "rationale": "Assumed the foreign database course will not be accepted.",
+      "conditionalAllocation": "Needed only if the prior database credit is not accepted."
+    },
+    {
+      "itemKey": "s-networks-240",
+      "confidence": "low",
+      "needsReview": true,
+      "rationale": "Course code was read from a low-quality screenshot."
+    }
+  ],
+  "creditClaims": [
+    {
+      "description": "Student reportedly has 30 credits accepted from Greenfield College; apply them to general education."
+    },
+    {
+      "description": "Associate degree awarded in 2019 (stated in an email, not documented)."
+    }
+  ]
+}
