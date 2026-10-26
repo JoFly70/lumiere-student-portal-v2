@@ -1,0 +1,90 @@
+{
+  "pages": {
+    "01-flight-deck-1440-light.png": {
+      "pageHeightPx": 3167
+    },
+    "02-flight-deck-390-light.png": {
+      "pageHeightPx": 5150
+    },
+    "03-flight-deck-1440-dark.png": {
+      "pageHeightPx": 3167
+    },
+    "04-flight-deck-390-dark.png": {
+      "pageHeightPx": 5150
+    },
+    "05-roadmap-1440-light.png": {
+      "pageHeightPx": 3064
+    },
+    "06-roadmap-390-light.png": {
+      "pageHeightPx": 5539
+    },
+    "07-roadmap-1440-dark.png": {
+      "pageHeightPx": 3064
+    },
+    "08-roadmap-390-dark.png": {
+      "pageHeightPx": 5539
+    },
+    "09-support-student-1440-light.png": {
+      "pageHeightPx": 994
+    },
+    "10-support-student-conversation-1440-light.png": {
+      "pageHeightPx": 1243
+    },
+    "11-support-student-resolved-1440-dark.png": {
+      "pageHeightPx": 1350
+    },
+    "12-support-student-390-light.png": {
+      "pageHeightPx": 1048
+    },
+    "13-support-student-conversation-390-light.png": {
+      "pageHeightPx": 1566
+    },
+    "14-support-staff-1440-light.png": {
+      "pageHeightPx": 1276
+    },
+    "15-support-staff-1440-dark.png": {
+      "pageHeightPx": 1276
+    },
+    "16-support-staff-queue-390-light.png": {
+      "pageHeightPx": 1378
+    },
+    "17-documents-1440-light.png": {
+      "pageHeightPx": 1301
+    },
+    "18-documents-390-light.png": {
+      "pageHeightPx": 1729
+    },
+    "19-documents-390-dark.png": {
+      "pageHeightPx": 1729
+    },
+    "20-profile-nav-1440-light.png": {
+      "pageHeightPx": 1458
+    },
+    "21-profile-nav-menu-390-light.png": {
+      "pageHeightPx": 0
+    }
+  },
+  "chrome390": {
+    "viewportHeight": 844,
+    "headerHeight": 56,
+    "stickyInMain": [],
+    "bottomNavHeight": 57,
+    "topChromeWhileScrolledPx": 56
+  },
+  "toast": {
+    "toast": {
+      "top": 724,
+      "bottom": 772,
+      "left": 16,
+      "right": 374
+    },
+    "changedControl": {
+      "top": 0,
+      "bottom": 0,
+      "left": 0,
+      "right": 0
+    },
+    "toastOverlapsChangedControl": false,
+    "toastOverlapsChangedRow": false
+  }
+}

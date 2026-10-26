@@ -78,7 +78,7 @@ export function SectionNav({ sections, label = "Page sections" }: { sections: re
   return (
     <nav
       aria-label={label}
-      className="[contain:inline-size] sticky top-0 z-30 -mx-4 border-b border-student-line bg-student-bg/95 px-4 backdrop-blur sm:-mx-6 sm:px-6 md:-mx-8 md:px-8"
+      className="[contain:inline-size] relative z-30 md:sticky md:top-0 -mx-4 border-b border-student-line bg-student-bg/95 px-4 backdrop-blur sm:-mx-6 sm:px-6 md:-mx-8 md:px-8"
       data-testid="section-nav"
     >
       <ul className="mx-auto flex max-w-6xl gap-1 overflow-x-auto py-1.5">

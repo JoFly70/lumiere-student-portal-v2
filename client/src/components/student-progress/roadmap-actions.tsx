@@ -57,7 +57,7 @@ export function RoadmapActionsProvider({ children }: { children: React.ReactNode
     const t = setTimeout(() => {
       setMessage("");
       setUndo(null);
-    }, 8000);
+    }, 5000);
     return () => clearTimeout(t);
   }, [message]);
 
@@ -111,7 +111,7 @@ export function RoadmapActionsProvider({ children }: { children: React.ReactNode
       </div>
       {message && (
         <div
-          className="student-surface fixed inset-x-3 bottom-[calc(4rem+env(safe-area-inset-bottom)+0.5rem)] z-40 mx-auto flex w-fit max-w-[calc(100vw-1.5rem)] items-center gap-3 rounded-full bg-student-seal py-1.5 pl-4 pr-2 text-sm font-medium text-student-seal-ink shadow-lg md:inset-x-auto md:bottom-4 md:left-1/2 md:-translate-x-1/2"
+          className="student-surface pointer-events-none fixed inset-x-3 bottom-[calc(4rem+env(safe-area-inset-bottom)+0.5rem)] z-40 mx-auto flex w-fit max-w-[calc(100vw-1.5rem)] items-center gap-3 rounded-full bg-student-seal py-1.5 pl-4 pr-2 text-sm font-medium text-student-seal-ink shadow-lg md:inset-x-auto md:bottom-4 md:left-1/2 md:-translate-x-1/2"
           data-testid="save-toast"
         >
           <span aria-hidden="true">{message}</span>
@@ -124,7 +124,7 @@ export function RoadmapActionsProvider({ children }: { children: React.ReactNode
                 setMessage("");
                 void report(u.update, u.label);
               }}
-              className="min-h-[36px] rounded-full border border-student-seal-ink px-3 text-sm font-semibold hover:opacity-80"
+              className="pointer-events-auto min-h-[36px] rounded-full border border-student-seal-ink px-3 text-sm font-semibold hover:opacity-80"
               data-testid="button-undo"
             >
               Undo

@@ -1,0 +1,156 @@
+{
+  "note": "Renders of synthetic fixtures with stubbed auth and API; not a deployment.",
+  "failures": [],
+  "screens": 21,
+  "totalViolations": 5,
+  "results": [
+    {
+      "screen": "01-flight-deck-1440-light.png",
+      "violations": []
+    },
+    {
+      "screen": "02-flight-deck-390-light.png",
+      "violations": []
+    },
+    {
+      "screen": "03-flight-deck-1440-dark.png",
+      "violations": []
+    },
+    {
+      "screen": "04-flight-deck-390-dark.png",
+      "violations": []
+    },
+    {
+      "screen": "05-roadmap-1440-light.png",
+      "violations": []
+    },
+    {
+      "screen": "06-roadmap-390-light.png",
+      "violations": []
+    },
+    {
+      "screen": "07-roadmap-1440-dark.png",
+      "violations": []
+    },
+    {
+      "screen": "08-roadmap-390-dark.png",
+      "violations": []
+    },
+    {
+      "screen": "09-support-student-1440-light.png",
+      "violations": []
+    },
+    {
+      "screen": "10-support-student-conversation-1440-light.png",
+      "violations": []
+    },
+    {
+      "screen": "11-support-student-resolved-1440-dark.png",
+      "violations": []
+    },
+    {
+      "screen": "12-support-student-390-light.png",
+      "violations": []
+    },
+    {
+      "screen": "13-support-student-conversation-390-light.png",
+      "violations": []
+    },
+    {
+      "screen": "14-support-staff-1440-light.png",
+      "violations": []
+    },
+    {
+      "screen": "15-support-staff-1440-dark.png",
+      "violations": []
+    },
+    {
+      "screen": "16-support-staff-queue-390-light.png",
+      "violations": []
+    },
+    {
+      "screen": "17-documents-1440-light.png",
+      "violations": [
+        {
+          "id": "heading-order",
+          "impact": "moderate",
+          "help": "Heading levels should only increase by one",
+          "nodes": 1,
+          "sample": [
+            {
+              "target": "h3",
+              "summary": "Fix any of the following:   Heading order invalid"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "screen": "18-documents-390-light.png",
+      "violations": [
+        {
+          "id": "heading-order",
+          "impact": "moderate",
+          "help": "Heading levels should only increase by one",
+          "nodes": 1,
+          "sample": [
+            {
+              "target": "h3",
+              "summary": "Fix any of the following:   Heading order invalid"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "screen": "19-documents-390-dark.png",
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "nodes": 1,
+          "sample": [
+            {
+              "target": "label",
+              "summary": "Fix any of the following:   Element has insufficient color contrast of 4.25 (foreground color: #fafafa, background color: #2374e7, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+            }
+          ]
+        },
+        {
+          "id": "heading-order",
+          "impact": "moderate",
+          "help": "Heading levels should only increase by one",
+          "nodes": 1,
+          "sample": [
+            {
+              "target": "h3",
+              "summary": "Fix any of the following:   Heading order invalid"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "screen": "20-profile-nav-1440-light.png",
+      "violations": [
+        {
+          "id": "heading-order",
+          "impact": "moderate",
+          "help": "Heading levels should only increase by one",
+          "nodes": 1,
+          "sample": [
+            {
+              "target": "div[data-testid=\"card-contact-section\"] > .pt-0.p-6 > .space-y-6 > div:nth-child(1) > h3",
+              "summary": "Fix any of the following:   Heading order invalid"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "screen": "21-profile-nav-menu-390-light.png",
+      "violations": []
+    }
+  ]
+}
