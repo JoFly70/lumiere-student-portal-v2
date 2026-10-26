@@ -61,6 +61,16 @@ export type AuditEventType =
   | 'admin.user_impersonation'
   | 'admin.bulk_operation'
   | 'admin.data_export'
+  // Roadmap events (S07). Must also exist in the Postgres audit_event_type enum
+  // (supabase/migrations/20261026110000_s07_roadmap_audit_event_types.sql).
+  | 'roadmap.import_created'
+  | 'roadmap.import_replayed'
+  | 'roadmap.draft_updated'
+  | 'roadmap.exceptions_acknowledged'
+  | 'roadmap.draft_discarded'
+  | 'roadmap.draft_opened_from_published'
+  | 'roadmap.published'
+  | 'roadmap.publish_rejected'
   // System events
   | 'system.migration_applied'
   | 'system.backup_created'
@@ -69,6 +79,26 @@ export type AuditEventType =
   | 'system.error';
 
 export type AuditSeverity = 'info' | 'warning' | 'error' | 'critical';
+
+/**
+ * Closed metadata shape for roadmap audit events: identifiers and counts only.
+ * No workbook content, file names, notes or student personal data.
+ */
+export interface RoadmapAuditMetadata {
+  studentId: string;
+  versionId?: string | null;
+  versionNumber?: number | null;
+  baseVersionId?: string | null;
+  draftRevision?: number | null;
+  importId?: string | null;
+  importSha256?: string | null;
+  templateId?: string | null;
+  replacedDraft?: boolean;
+  acknowledgedCount?: number;
+  exceptionCounts?: { blocking: number; warning: number; info: number };
+  rejectionCode?: string;
+  httpStatus?: number;
+}
 
 export interface AuditLogEntry {
   eventType: AuditEventType;

@@ -25,6 +25,7 @@ import { requireRole } from "../middleware/rbac";
 import type { StudentRoadmapService } from "../services/student-roadmap-service";
 import { convertImportPackage, convertWorkbook } from "../services/roadmap-import";
 import { canonicalJson, sendRoadmapError, validationFailure } from "./roadmap-http";
+import { roadmapAudit } from "./roadmap-audit";
 
 export interface AdminStudentRoadmapRouterDeps {
   readonly service: Pick<
@@ -161,6 +162,7 @@ export function createAdminStudentRoadmapRouter(deps: AdminStudentRoadmapRouterD
         { conversion, fileSha256, fileName },
         { replaceDraft },
       );
+      roadmapAudit.imported(req, studentId, outcome, replaceDraft);
       return res.status(outcome.replay ? 200 : 201).json(outcome.state);
     }, "import"),
   );
@@ -171,7 +173,9 @@ export function createAdminStudentRoadmapRouter(deps: AdminStudentRoadmapRouterD
     withStudent(async (req, res, studentId) => {
       const body = parseBody(updateDraftBody, req, res);
       if (!body) return;
-      return res.json(await deps.service.updateDraft(studentId, req.user!.id, body.expectedDraftRevision, body.content));
+      const state = await deps.service.updateDraft(studentId, req.user!.id, body.expectedDraftRevision, body.content);
+      roadmapAudit.draftUpdated(req, studentId, state);
+      return res.json(state);
     }, "draft update"),
   );
 
@@ -181,9 +185,9 @@ export function createAdminStudentRoadmapRouter(deps: AdminStudentRoadmapRouterD
     withStudent(async (req, res, studentId) => {
       const body = parseBody(acknowledgeBody, req, res);
       if (!body) return;
-      return res.json(
-        await deps.service.acknowledge(studentId, req.user!.id, body.expectedDraftRevision, body.exceptionKeys, body.note ?? null),
-      );
+      const state = await deps.service.acknowledge(studentId, req.user!.id, body.expectedDraftRevision, body.exceptionKeys, body.note ?? null);
+      roadmapAudit.acknowledged(req, studentId, state, body.exceptionKeys.length);
+      return res.json(state);
     }, "acknowledge"),
   );
 
@@ -199,9 +203,14 @@ export function createAdminStudentRoadmapRouter(deps: AdminStudentRoadmapRouterD
     withStudent(async (req, res, studentId) => {
       const body = parseBody(publishBody, req, res);
       if (!body) return;
-      return res.json(
-        await deps.service.publish(studentId, req.user!.id, body.expectedDraftRevision, body.expectedPublishedVersionId),
-      );
+      const state = await deps.service
+        .publish(studentId, req.user!.id, body.expectedDraftRevision, body.expectedPublishedVersionId)
+        .catch((error: unknown) => {
+          roadmapAudit.publishRejected(req, studentId, body.expectedDraftRevision, error);
+          throw error;
+        });
+      roadmapAudit.published(req, studentId, state, body.expectedDraftRevision);
+      return res.json(state);
     }, "publish"),
   );
 
@@ -211,17 +220,20 @@ export function createAdminStudentRoadmapRouter(deps: AdminStudentRoadmapRouterD
     withStudent(async (req, res, studentId) => {
       const body = parseBody(discardBody, req, res);
       if (!body) return;
-      return res.json(await deps.service.discardDraft(studentId, req.user!.id, body.expectedDraftRevision));
+      const state = await deps.service.discardDraft(studentId, req.user!.id, body.expectedDraftRevision);
+      roadmapAudit.discarded(req, studentId, body.expectedDraftRevision);
+      return res.json(state);
     }, "discard"),
   );
 
   router.post(
     "/students/:studentId/roadmap/draft/from-published",
     ...staffOrAdmin,
-    withStudent(
-      async (req, res, studentId) => res.json(await deps.service.draftFromPublished(studentId, req.user!.id)),
-      "from-published",
-    ),
+    withStudent(async (req, res, studentId) => {
+      const state = await deps.service.draftFromPublished(studentId, req.user!.id);
+      roadmapAudit.openedFromPublished(req, studentId, state);
+      return res.json(state);
+    }, "from-published"),
   );
 
   return router;

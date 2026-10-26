@@ -43,3 +43,21 @@ Top files (warnings): tests/knowledge-service.test.ts 127, tests/student-academi
 - `client/src/components/student-progress/roadmap-view.tsx`: unused `attentionOwnerLabel`, `safeInternalHref`.
 - `client/src/components/student-progress/parts.tsx`: one `react-refresh/only-export-components` warning.
 - Academic history, degree planning, Excel import and roadmap authoring code were not touched.
+
+## S07 integration
+
+Measured on the S05 + S06 integrated tree (merge 903b0c7, lint fixes 64903c3, plus S07 audit work): `npx eslint .` exits 0 with **0 errors, 981 warnings across 361 linted files** (S06 measured 0 errors, 939 warnings across 289 files).
+
+Delta of +42 warnings:
+
+| Source | Warnings |
+| --- | --- |
+| 76 `.ts`/`.tsx` files added or changed by S05 (mostly not present when S06 measured): `no-explicit-any` 31, `no-unused-vars` 12, `react-refresh/only-export-components` 3 | +46 |
+| All other files (S05 edits to files that already carried S06 baseline warnings) | -4 |
+| Net | +42 |
+
+Rule totals now: `no-explicit-any` 634 (S06: 599), `no-unused-vars` 262 (258), `no-empty` 38, `react-refresh/only-export-components` 20 (17), `prefer-const` 9, `no-require-imports` 9, others unchanged. The 289 -> 361 file count is the S05 server, shared, client and test files.
+
+The two S05-introduced errors (an irregular-whitespace character and a `@ts-ignore` directive) were fixed at source in 64903c3, with no rule changes. The S07 files added here (`server/routes/roadmap-audit.ts`, `tests/s07-*.test.ts`) add no warnings.
+
+Policy is unchanged: no repo-wide warning refactor. Baseline-debt rules stay at `warn`, errors must stay at 0, and new code should not add warnings.
