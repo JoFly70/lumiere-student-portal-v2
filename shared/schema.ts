@@ -24,7 +24,7 @@ export const studentStatusDbEnum = pgEnum("student_status_enum", ["lead", "activ
 export const residencyDbEnum = pgEnum("residency_enum", ["us", "foreign"]);
 export const hsPathDbEnum = pgEnum("hs_path_enum", ["local_diploma", "ged", "foreign"]);
 export const targetPaceDbEnum = pgEnum("target_pace_enum", ["fast", "standard", "extended"]);
-export const contactTypeDbEnum = pgEnum("contact_type_enum", ["parent", "spouse", "guardian", "other"]);
+export const contactTypeDbEnum = pgEnum("contact_type_enum", ["parent", "spouse", "guardian", "other", "emergency", "representative"]);
 export const docTypeDbEnum = pgEnum("doc_type_enum", ["id_gov", "hs_diploma", "hs_transcript", "degree_certificate", "college_transcript", "foreign_eval", "english_cert", "residency_doc", "consent_form", "other"]);
 export const docStatusDbEnum = pgEnum("doc_status_enum", ["pending", "verified", "rejected", "resubmit_requested"]);
 export const visibilityDbEnum = pgEnum("visibility_enum", ["student_staff", "staff_only", "public"]);
@@ -153,6 +153,10 @@ export const studentContactsTable = pgTable("student_contacts", {
   language: text("language"),
   scopes: text("scopes").array().notNull().default(sql`'{}'::text[]`),
   consent_doc_url: text("consent_doc_url"),
+  authority_status: text("authority_status").notNull().default("listed"),
+  authority_verified_by: text("authority_verified_by"),
+  authority_verified_at: timestamp("authority_verified_at"),
+  authority_note: text("authority_note"),
   created_at: timestamp("created_at").notNull().defaultNow(),
 }, (table) => ({
   studentIdIdx: index("idx_student_contacts_student_id").on(table.student_id),
@@ -162,6 +166,27 @@ export const studentContactsTable = pgTable("student_contacts", {
 export const insertStudentContactsTableSchema = createInsertSchema(studentContactsTable);
 export type StudentContactsTableInsert = Omit<typeof studentContactsTable.$inferInsert, 'id' | 'created_at'>;
 export type StudentContactsTableSelect = typeof studentContactsTable.$inferSelect;
+
+// S09: student-requested legal identity corrections (staff approve/reject)
+export const studentIdentityCorrectionsTable = pgTable("student_identity_corrections", {
+  id: text("id").primaryKey().default(sql`gen_random_uuid()::text`),
+  student_id: text("student_id").notNull().references(() => studentsTable.id, { onDelete: "cascade" }),
+  requested_by: text("requested_by").notNull(),
+  requested_changes: jsonb("requested_changes").notNull(),
+  current_snapshot: jsonb("current_snapshot").notNull(),
+  reason: text("reason").notNull(),
+  evidence_document_id: text("evidence_document_id"),
+  status: text("status").notNull().default("pending"),
+  reviewer_user_id: text("reviewer_user_id"),
+  reviewed_at: timestamp("reviewed_at"),
+  review_note: text("review_note"),
+  applied_previous: jsonb("applied_previous"),
+  created_at: timestamp("created_at").notNull().defaultNow(),
+  updated_at: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => ({
+  studentIdx: index("student_identity_corrections_student_idx").on(table.student_id),
+}));
+export type StudentIdentityCorrectionRow = typeof studentIdentityCorrectionsTable.$inferSelect;
 
 // Student English proof table (Drizzle ORM definition)
 export const studentEnglishProofTable = pgTable("student_english_proof", {
@@ -542,7 +567,7 @@ export const studentStatusEnum = z.enum(['lead', 'active', 'paused', 'graduated'
 export const residencyEnum = z.enum(['us', 'foreign']);
 export const hsPathEnum = z.enum(['local_diploma', 'ged', 'foreign']);
 export const targetPaceEnum = z.enum(['fast', 'standard', 'extended']);
-export const contactTypeEnum = z.enum(['parent', 'spouse', 'guardian', 'other']);
+export const contactTypeEnum = z.enum(['parent', 'spouse', 'guardian', 'other', 'emergency', 'representative']);
 export const docTypeEnum = z.enum([
   'id_gov',
   'hs_diploma',
@@ -674,6 +699,10 @@ export const studentContactSchema = z.object({
   language: z.string().nullable(),
   scopes: z.array(z.enum(['academic', 'financial', 'emergency', 'release'])).default([]),
   consent_doc_url: z.string().nullable(),
+  authority_status: z.enum(['listed', 'pending_verification', 'verified', 'revoked']).default('listed'),
+  authority_verified_by: z.string().nullable().optional(),
+  authority_verified_at: z.string().nullable().optional(),
+  authority_note: z.string().nullable().optional(),
   created_at: z.string(),
 });
 

@@ -1,0 +1,346 @@
+/**
+ * Shared building blocks for the profile sections. Local Tailwind classes on
+ * top of the S05 `.student-surface` tokens; nothing global.
+ */
+import React, { useId, useRef, useState } from "react";
+import { Link } from "wouter";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  CircleDashed,
+  Clock,
+  Lock,
+  ArrowRight,
+  Pencil,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { Pill, cardClass } from "@/components/student-progress/student-ui";
+import { sectionDomId, type ChipTone } from "./profile-presentation";
+
+export const inputClass =
+  "h-11 border-student-line-strong bg-student-card text-student-ink placeholder:text-student-muted focus-visible:ring-student-gold-ink";
+
+export const dialogClass = "student-surface border-student-line bg-student-card text-student-ink max-h-[92vh] overflow-y-auto sm:max-w-lg";
+
+const TONE_TO_PILL = {
+  verified: "gold",
+  waiting: "neutral",
+  missing: "dashed",
+  attention: "attn",
+  neutral: "neutral",
+} as const;
+
+export function StatusChip({
+  label,
+  tone,
+  className,
+  testId,
+}: {
+  label: string;
+  tone: ChipTone;
+  className?: string;
+  testId?: string;
+}) {
+  const icon =
+    tone === "verified" ? (
+      <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
+    ) : tone === "waiting" ? (
+      <Clock className="h-3.5 w-3.5" aria-hidden="true" />
+    ) : tone === "attention" ? (
+      <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />
+    ) : tone === "missing" ? (
+      <CircleDashed className="h-3.5 w-3.5" aria-hidden="true" />
+    ) : null;
+  return (
+    <Pill tone={TONE_TO_PILL[tone]} icon={icon} className={className} data-testid={testId}>
+      {label}
+    </Pill>
+  );
+}
+
+/** A titled profile section with a scroll target id. */
+export function ProfileSection({
+  id,
+  eyebrow,
+  title,
+  description,
+  children,
+  testId,
+}: {
+  id: string;
+  eyebrow?: string;
+  title: string;
+  description?: React.ReactNode;
+  children: React.ReactNode;
+  testId?: string;
+}) {
+  const headingId = `${sectionDomId(id)}-title`;
+  return (
+    <section
+      id={sectionDomId(id)}
+      aria-labelledby={headingId}
+      className="scroll-mt-20 space-y-4"
+      data-testid={testId ?? `profile-section-${id}`}
+    >
+      <div className="space-y-1">
+        {eyebrow && <p className="text-xs font-semibold uppercase tracking-[0.14em] text-student-gold-ink">{eyebrow}</p>}
+        <h2 id={headingId} className="font-serif text-2xl tracking-tight text-student-ink sm:text-3xl">
+          {title}
+        </h2>
+        {description && <p className="max-w-2xl text-sm leading-relaxed text-student-muted">{description}</p>}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+export function SubCard({
+  title,
+  action,
+  children,
+  className,
+  testId,
+}: {
+  title?: React.ReactNode;
+  action?: React.ReactNode;
+  children: React.ReactNode;
+  className?: string;
+  testId?: string;
+}) {
+  return (
+    <div className={cn(cardClass, "min-w-0", className)} data-testid={testId}>
+      {(title || action) && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+          {title && <h3 className="text-base font-semibold text-student-ink">{title}</h3>}
+          {action}
+        </div>
+      )}
+      {children}
+    </div>
+  );
+}
+
+/** Read-only label/value pair. */
+export function Fact({
+  label,
+  children,
+  empty = "Not provided",
+  testId,
+}: {
+  label: string;
+  children?: React.ReactNode;
+  empty?: string;
+  testId?: string;
+}) {
+  const has = children !== null && children !== undefined && children !== "" && children !== false;
+  return (
+    <div className="min-w-0" data-testid={testId}>
+      <dt className="text-xs font-medium uppercase tracking-wide text-student-muted">{label}</dt>
+      <dd className={cn("mt-0.5 break-words text-sm", has ? "text-student-ink" : "italic text-student-muted")}>
+        {has ? children : empty}
+      </dd>
+    </div>
+  );
+}
+
+export function FactGrid({ children, className }: { children: React.ReactNode; className?: string }) {
+  return <dl className={cn("grid gap-x-6 gap-y-4 sm:grid-cols-2", className)}>{children}</dl>;
+}
+
+export function TextLink({ href, children, testId }: { href: string; children: React.ReactNode; testId?: string }) {
+  return (
+    <Link href={href} className="inline-flex min-h-[44px] items-center gap-1.5 rounded-md text-sm font-medium text-student-gold-ink underline-offset-4 hover:underline" data-testid={testId}>
+      {children}
+      <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+    </Link>
+  );
+}
+
+export function ReadOnlyNote({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="flex items-start gap-2 rounded-lg bg-student-gold-soft px-3 py-2 text-sm text-student-gold-ink">
+      <Lock className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+      <span>{children}</span>
+    </p>
+  );
+}
+
+/** Labelled input with hint and inline error wired for assistive tech. */
+export function TextField({
+  label,
+  value,
+  onChange,
+  error,
+  hint,
+  required,
+  type = "text",
+  inputMode,
+  autoComplete,
+  maxLength,
+  placeholder,
+  disabled,
+  testId,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  error?: string | null;
+  hint?: string;
+  required?: boolean;
+  type?: string;
+  inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
+  autoComplete?: string;
+  maxLength?: number;
+  placeholder?: string;
+  disabled?: boolean;
+  testId?: string;
+}) {
+  const id = useId();
+  const hintId = `${id}-hint`;
+  const errId = `${id}-err`;
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor={id} className="text-sm font-medium text-student-ink">
+        {label}
+        {required && <span aria-hidden="true" className="text-student-attn"> *</span>}
+        {required && <span className="sr-only"> (required)</span>}
+      </Label>
+      <Input
+        id={id}
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        inputMode={inputMode}
+        autoComplete={autoComplete}
+        maxLength={maxLength}
+        placeholder={placeholder}
+        disabled={disabled}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={[hint ? hintId : null, error ? errId : null].filter(Boolean).join(" ") || undefined}
+        className={cn(inputClass, error && "border-student-attn")}
+        data-testid={testId}
+      />
+      {hint && (
+        <p id={hintId} className="text-xs text-student-muted">
+          {hint}
+        </p>
+      )}
+      {error && (
+        <p id={errId} role="alert" className="text-xs font-medium text-student-attn">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Save / cancel row with a polite live region that confirms a save for
+ * screen-reader and sighted users alike.
+ */
+export function FormActions({
+  saving,
+  onCancel,
+  saveLabel = "Save changes",
+  disabled,
+}: {
+  saving: boolean;
+  onCancel: () => void;
+  saveLabel?: string;
+  disabled?: boolean;
+}) {
+  return (
+    <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
+      <button
+        type="button"
+        onClick={onCancel}
+        disabled={saving}
+        className="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-student-line-strong bg-student-card px-4 text-sm font-medium text-student-ink hover:bg-student-gold-soft disabled:opacity-60"
+      >
+        Cancel
+      </button>
+      <button
+        type="submit"
+        disabled={saving || disabled}
+        className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-lg bg-student-seal px-5 text-sm font-medium text-student-seal-ink hover:opacity-90 disabled:opacity-60"
+      >
+        {saving ? "Saving…" : saveLabel}
+      </button>
+    </div>
+  );
+}
+
+export function FormError({ message }: { message: string | null }) {
+  return (
+    <div aria-live="assertive" role="status">
+      {message && (
+        <p role="alert" className="flex items-start gap-2 rounded-lg border border-student-attn bg-student-attn-soft px-3 py-2 text-sm text-student-attn" data-testid="form-error">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+          <span>{message}</span>
+        </p>
+      )}
+    </div>
+  );
+}
+
+export function EditButton({ onClick, label, testId }: { onClick: () => void; label: string; testId?: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      data-testid={testId}
+      className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-student-line-strong bg-student-card px-3 text-sm font-medium text-student-ink hover:bg-student-gold-soft"
+    >
+      <Pencil className="h-4 w-4" aria-hidden="true" />
+      Edit
+    </button>
+  );
+}
+
+/**
+ * Edit-in-place card controller: tracks edit mode, saving state, the server
+ * error and a transient "Saved" confirmation announced politely.
+ */
+export function useEditableCard(onSave: () => Promise<void>, savedTitle: string) {
+  const { toast } = useToast();
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  async function submit(describe: (e: unknown) => string) {
+    setSaving(true);
+    setError(null);
+    try {
+      await onSave();
+      setEditing(false);
+      setSaved(true);
+      toast({ title: savedTitle, description: "Your changes were saved." });
+      if (timer.current) clearTimeout(timer.current);
+      timer.current = setTimeout(() => setSaved(false), 4000);
+    } catch (e) {
+      setError(describe(e));
+    } finally {
+      setSaving(false);
+    }
+  }
+  return { editing, setEditing, saving, error, setError, saved, submit };
+}
+
+export function SavedIndicator({ saved }: { saved: boolean }) {
+  return (
+    <span aria-live="polite" role="status" className="inline-flex min-h-[24px] items-center">
+      {saved && (
+        <span className="inline-flex items-center gap-1.5 text-sm font-medium text-student-gold-ink" data-testid="saved-indicator">
+          <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+          Saved
+        </span>
+      )}
+    </span>
+  );
+}

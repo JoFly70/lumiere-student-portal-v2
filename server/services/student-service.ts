@@ -17,41 +17,21 @@ import {
   insertStudentContactSchema,
 } from '@shared/schema';
 import { logger } from '../lib/logger';
-import { auditProfile, writeAuditLog } from '../lib/audit';
+import { writeAuditLog } from '../lib/audit';
 import * as studentRepo from '../repositories/student-repo';
 import * as contactRepo from '../repositories/student-repo'; // Re-export for clarity
 import * as englishProofRepo from '../repositories/student-repo'; // Re-export for clarity
+import * as profileRepo from '../repositories/student-profile-repo';
 
 // Check for demo mode (takes precedence over Supabase configuration)
 const isDemoMode = process.env.ALLOW_DEMO_MODE === 'true';
 
 /**
- * Get student by ID
- * Uses Drizzle in demo mode, Supabase when in production
+ * Get student by ID (Drizzle: same canonical database the profile paths use)
  */
 export async function getStudent(studentId: string): Promise<Student | null> {
   try {
-    // Use Drizzle repository in demo mode
-    if (isDemoMode) {
-      return await studentRepo.getStudentById(studentId);
-    }
-
-    // Use Supabase in production
-    const { data, error } = await supabaseAdmin
-      .from('students')
-      .select('*')
-      .eq('id', studentId)
-      .single();
-
-    if (error) {
-      if (error.code === 'PGRST116') {
-        // Not found
-        return null;
-      }
-      throw error;
-    }
-
-    return data as Student;
+    return await studentRepo.getStudentById(studentId);
   } catch (error) {
     logger.error('Error getting student', { studentId, error });
     throw error;
@@ -161,43 +141,22 @@ export async function createStudent(studentData: InsertStudent, actorId?: string
 }
 
 /**
- * Update student profile
- * Uses Drizzle in demo mode, Supabase when in production
+ * Update student profile (Drizzle)
  * @param actorId - ID of user performing the update (for audit logging)
+ * @param options.auditMetadata - extra audit context (e.g. material identity change by staff)
  */
 export async function updateStudent(
-  studentId: string, 
+  studentId: string,
   updates: Partial<InsertStudent>,
-  actorId?: string | null
+  actorId?: string | null,
+  options?: { auditMetadata?: Record<string, unknown> },
 ): Promise<Student> {
   try {
-    // Fetch old value for audit log
     const oldStudent = actorId ? await getStudent(studentId) : null;
+    const updatedStudent = await studentRepo.updateStudent(studentId, updates);
 
-    let updatedStudent: Student;
+    logger.info('Student profile updated', { studentId, fields: Object.keys(updates) });
 
-    // Use Drizzle repository in demo mode
-    if (isDemoMode) {
-      updatedStudent = await studentRepo.updateStudent(studentId, updates);
-    } else {
-      // Use Supabase in production
-      const { data, error } = await supabaseAdmin
-        .from('students')
-        .update(updates)
-        .eq('id', studentId)
-        .select()
-        .single();
-
-      if (error) {
-        throw error;
-      }
-
-      updatedStudent = data as Student;
-    }
-
-    logger.info('Student profile updated', { studentId });
-
-    // Write audit log with actor attribution
     if (actorId && updatedStudent) {
       writeAuditLog({
         studentId: updatedStudent.id,
@@ -207,6 +166,7 @@ export async function updateStudent(
         entityId: updatedStudent.id,
         oldValue: oldStudent,
         newValue: updatedStudent,
+        metadata: options?.auditMetadata,
       }).catch(err => logger.warn('Audit log failed', { err }));
     }
 
@@ -246,28 +206,12 @@ export async function getStudentWithRelations(studentId: string) {
 }
 
 /**
- * Get student contacts
- * Uses Drizzle in demo mode, Supabase in production
+ * Get student contacts (Drizzle)
  */
 export async function getStudentContacts(studentId: string): Promise<StudentContact[]> {
   try {
-    // Use Drizzle repository in demo mode
-    if (isDemoMode) {
-      return await contactRepo.getStudentContacts(studentId);
-    }
-
-    // Use Supabase in production
-    const { data, error } = await supabaseAdmin
-      .from('student_contacts')
-      .select('*')
-      .eq('student_id', studentId)
-      .order('created_at', { ascending: true });
-
-    if (error) {
-      throw error;
-    }
-
-    return (data as StudentContact[]) || [];
+    const contacts = await contactRepo.getStudentContacts(studentId);
+    return contacts.sort((x, y) => x.created_at.localeCompare(y.created_at));
   } catch (error) {
     logger.error('Error getting student contacts', { studentId, error });
     throw error;
@@ -275,8 +219,25 @@ export async function getStudentContacts(studentId: string): Promise<StudentCont
 }
 
 /**
- * Add student contact
- * Uses Drizzle in demo mode, Supabase in production
+ * Get one contact by id (ownership is resolved from the stored row's student_id)
+ */
+export async function getStudentContact(contactId: string): Promise<StudentContact | null> {
+  try {
+    const row = await profileRepo.getContactById(contactId);
+    if (!row) return null;
+    return {
+      ...row,
+      authority_verified_at: row.authority_verified_at?.toISOString() ?? null,
+      created_at: row.created_at.toISOString(),
+    } as unknown as StudentContact;
+  } catch (error) {
+    logger.error('Error getting student contact', { contactId, error });
+    throw error;
+  }
+}
+
+/**
+ * Add student contact (Drizzle)
  * @param actorId - ID of user adding the contact (for audit logging)
  */
 export async function addStudentContact(
@@ -285,34 +246,11 @@ export async function addStudentContact(
   actorId?: string | null
 ): Promise<StudentContact> {
   try {
-    const validated = insertStudentContactSchema.parse({
-      ...contactData,
-      student_id: studentId,
-    });
-
-    let newContact: StudentContact;
-
-    // Use Drizzle repository in demo mode
-    if (isDemoMode) {
-      newContact = await contactRepo.addStudentContact(studentId, contactData);
-    } else {
-      // Use Supabase in production
-      const { data, error } = await supabaseAdmin
-        .from('student_contacts')
-        .insert(validated)
-        .select()
-        .single();
-
-      if (error) {
-        throw error;
-      }
-
-      newContact = data as StudentContact;
-    }
+    insertStudentContactSchema.parse({ ...contactData, student_id: studentId });
+    const newContact = await contactRepo.addStudentContact(studentId, contactData);
 
     logger.info('Student contact added', { studentId, contactId: newContact.id });
 
-    // Write audit log
     if (actorId && newContact) {
       writeAuditLog({
         studentId,
@@ -332,8 +270,7 @@ export async function addStudentContact(
 }
 
 /**
- * Update student contact
- * Uses Drizzle in demo mode, Supabase in production
+ * Update student contact (Drizzle)
  * @param actorId - ID of user updating the contact (for audit logging)
  */
 export async function updateStudentContact(
@@ -342,30 +279,10 @@ export async function updateStudentContact(
   actorId?: string | null
 ): Promise<StudentContact> {
   try {
-    let updatedContact: StudentContact;
-
-    // Use Drizzle repository in demo mode
-    if (isDemoMode) {
-      updatedContact = await contactRepo.updateStudentContact(contactId, updates);
-    } else {
-      // Use Supabase in production
-      const { data, error } = await supabaseAdmin
-        .from('student_contacts')
-        .update(updates)
-        .eq('id', contactId)
-        .select()
-        .single();
-
-      if (error) {
-        throw error;
-      }
-
-      updatedContact = data as StudentContact;
-    }
+    const updatedContact = await contactRepo.updateStudentContact(contactId, updates);
 
     logger.info('Student contact updated', { contactId });
 
-    // Write audit log
     if (actorId && updatedContact) {
       writeAuditLog({
         studentId: updatedContact.student_id,
@@ -385,48 +302,23 @@ export async function updateStudentContact(
 }
 
 /**
- * Delete student contact
- * Uses Drizzle in demo mode, Supabase in production
+ * Delete student contact (Drizzle)
  * @param actorId - ID of user deleting the contact (for audit logging)
  */
 export async function deleteStudentContact(contactId: string, actorId?: string | null): Promise<void> {
   try {
-    // Use Drizzle repository in demo mode
-    if (isDemoMode) {
-      await contactRepo.deleteStudentContact(contactId);
-      logger.info('Student contact deleted', { contactId });
-      
-      // Audit logging is skipped in demo mode
-      return;
-    }
-
-    // Fetch old value for audit log (Supabase only)
-    const oldContact = actorId ? await supabaseAdmin
-      .from('student_contacts')
-      .select('*')
-      .eq('id', contactId)
-      .single() : null;
-
-    const { error } = await supabaseAdmin
-      .from('student_contacts')
-      .delete()
-      .eq('id', contactId);
-
-    if (error) {
-      throw error;
-    }
-
+    const old = actorId ? await getStudentContact(contactId) : null;
+    await contactRepo.deleteStudentContact(contactId);
     logger.info('Student contact deleted', { contactId });
 
-    // Write audit log
-    if (actorId && oldContact?.data) {
+    if (actorId && old) {
       writeAuditLog({
-        studentId: oldContact.data.student_id,
+        studentId: old.student_id,
         actorId,
         action: 'deleted',
         entityType: 'contact',
         entityId: contactId,
-        oldValue: oldContact.data,
+        oldValue: old,
       }).catch(err => logger.warn('Audit log failed', { err }));
     }
   } catch (error) {
@@ -436,31 +328,11 @@ export async function deleteStudentContact(contactId: string, actorId?: string |
 }
 
 /**
- * Get English proficiency proof
- * Uses Drizzle in demo mode, Supabase in production
+ * Get English proficiency proof (Drizzle)
  */
 export async function getEnglishProof(studentId: string): Promise<EnglishProof | null> {
   try {
-    // Use Drizzle repository in demo mode
-    if (isDemoMode) {
-      return await englishProofRepo.getEnglishProof(studentId);
-    }
-
-    // Use Supabase in production
-    const { data, error } = await supabaseAdmin
-      .from('student_english_proof')
-      .select('*')
-      .eq('student_id', studentId)
-      .single();
-
-    if (error) {
-      if (error.code === 'PGRST116') {
-        return null;
-      }
-      throw error;
-    }
-
-    return data as EnglishProof;
+    return await englishProofRepo.getEnglishProof(studentId);
   } catch (error) {
     logger.error('Error getting English proof', { studentId, error });
     throw error;
@@ -468,8 +340,7 @@ export async function getEnglishProof(studentId: string): Promise<EnglishProof |
 }
 
 /**
- * Create or update English proficiency proof
- * Uses Drizzle in demo mode, Supabase in production
+ * Create or update English proficiency proof (Drizzle)
  * @param actorId - ID of user upserting the proof (for audit logging)
  */
 export async function upsertEnglishProof(
@@ -482,39 +353,17 @@ export async function upsertEnglishProof(
       ...proofData,
       student_id: studentId,
     });
+    // Use the validated payload so verification outcomes such as
+    // meets_requirement are never passed through from the caller.
+    const { student_id: _studentId, ...validatedProof } = validated;
+    const englishProof = await englishProofRepo.upsertEnglishProof(studentId, validatedProof);
 
-    let englishProof: EnglishProof;
-
-    // Use Drizzle repository in demo mode
-    if (isDemoMode) {
-      // Use the validated payload so verification outcomes such as
-      // meets_requirement are never passed through from the caller.
-      const { student_id: _studentId, ...validatedProof } = validated;
-      englishProof = await englishProofRepo.upsertEnglishProof(studentId, validatedProof);
-    } else {
-      // Use Supabase in production - upsert to handle create/update
-      const { data, error } = await supabaseAdmin
-        .from('student_english_proof')
-        .upsert(validated, {
-          onConflict: 'student_id',
-        })
-        .select()
-        .single();
-
-      if (error) {
-        throw error;
-      }
-
-      englishProof = data as EnglishProof;
-    }
-
-    logger.info('English proof upserted', { 
-      studentId, 
+    logger.info('English proof upserted', {
+      studentId,
       proofType: englishProof.proof_type,
-      meetsRequirement: englishProof.meets_requirement 
+      meetsRequirement: englishProof.meets_requirement
     });
 
-    // Write audit log
     if (actorId && englishProof) {
       writeAuditLog({
         studentId,

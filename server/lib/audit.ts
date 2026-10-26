@@ -334,6 +334,21 @@ export async function auditSystem(
   });
 }
 
+const REDACTED_AUDIT_KEYS = new Set(['gov_id_number', 'govIdNumber']);
+
+/** Deep copy with government identifier values replaced; audit rows never carry them. */
+export function redactAuditPayload<T>(value: T): T {
+  if (Array.isArray(value)) return value.map((v) => redactAuditPayload(v)) as unknown as T;
+  if (value && typeof value === 'object' && !(value instanceof Date)) {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      out[k] = REDACTED_AUDIT_KEYS.has(k) && v !== null && v !== undefined ? '[redacted]' : redactAuditPayload(v);
+    }
+    return out as T;
+  }
+  return value;
+}
+
 /**
  * Write a student-scoped audit log entry.
  *
@@ -360,12 +375,13 @@ export async function writeAuditLog(entry: {
     targetResourceId: entry.entityId,
     actionDescription: `${entry.action} ${entry.entityType} ${entry.entityId}`,
     metadata: {
-      ...entry.metadata,
+      ...redactAuditPayload(entry.metadata),
       action: entry.action,
-      oldValue: entry.oldValue,
-      newValue: entry.newValue,
+      oldValue: redactAuditPayload(entry.oldValue),
+      newValue: redactAuditPayload(entry.newValue),
     },
-    isEducationalRecord: entry.entityType === 'student' || entry.entityType === 'document',
+    isEducationalRecord:
+      entry.entityType === 'student' || entry.entityType === 'document' || entry.entityType === 'identity_correction',
   });
 }
 
