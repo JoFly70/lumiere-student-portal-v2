@@ -26,7 +26,7 @@ export function SectionHeading({
   return (
     <div className={cn("space-y-1", className)}>
       {eyebrow && (
-        <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-gold-strong">
+        <p className="text-xs font-medium uppercase tracking-[0.14em] text-gold-strong">
           {eyebrow}
         </p>
       )}
@@ -45,7 +45,7 @@ export function VerifiedMark({ className }: { className?: string }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full bg-gold-soft px-2.5 py-1 text-xs font-medium text-gold-strong ring-1 ring-inset ring-gold/40",
+        "inline-flex w-fit items-center gap-1.5 rounded-full bg-gold-soft px-2.5 py-1 text-xs font-medium text-gold-strong ring-1 ring-inset ring-gold/40",
         className,
       )}
       data-testid="mark-verified"
@@ -69,7 +69,7 @@ export function PreliminaryMark({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border border-dashed border-muted-foreground/60 px-2.5 py-1 text-xs font-medium text-muted-foreground",
+        "inline-flex w-fit items-center gap-1.5 rounded-full border border-dashed border-muted-foreground/60 px-2.5 py-1 text-xs font-medium text-muted-foreground",
         className,
       )}
       data-testid="mark-preliminary"
@@ -101,7 +101,7 @@ export function StatusChip({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset whitespace-nowrap",
+        "inline-flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset whitespace-nowrap",
         TONE_CHIP[tone],
         className,
       )}
@@ -211,9 +211,23 @@ export function ProgressRing({
           {appliedLabel}
         </span>
         <span className="mt-2 text-xs uppercase tracking-[0.14em] text-muted-foreground">
-          of {requiredLabel} credits
+          of {requiredLabel} credits applied
         </span>
       </div>
     </div>
   );
+}
+
+/** Swatch classes matching the status chips (gold / gold-soft / neutral / amber outline). */
+export function toneSwatchClass(tone: StatusTone): string {
+  switch (tone) {
+    case "satisfied":
+      return "bg-gold";
+    case "progress":
+      return "bg-gold/40 ring-1 ring-inset ring-gold/60";
+    case "outstanding":
+      return "bg-muted ring-1 ring-inset ring-border";
+    default:
+      return "bg-attention-soft ring-1 ring-inset ring-attention";
+  }
 }

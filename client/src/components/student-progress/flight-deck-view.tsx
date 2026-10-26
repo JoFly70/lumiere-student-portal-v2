@@ -4,7 +4,7 @@
  */
 import React from "react";
 import { Link } from "wouter";
-import { ArrowRight, Compass, Hourglass, UserRound } from "lucide-react";
+import { ArrowRight, ChevronRight, Compass, Hourglass, UserRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type {
   StudentAttentionItem,
@@ -14,6 +14,7 @@ import type {
   StudentRequirementView,
 } from "@shared/student-degree-progress-view";
 import {
+  attentionHref,
   attentionOwnerLabel,
   countRequirementsByTone,
   formatAsOf,
@@ -26,6 +27,9 @@ import {
   primaryNextStep,
   progressMode,
   requirementAmounts,
+  requirementLegend,
+  milestoneSegmentFills,
+  visibleAttention,
   requirementStatusPresentation,
   ringAltText,
   safeInternalHref,
@@ -33,7 +37,7 @@ import {
   UNDER_REVIEW_COPY,
   visibleTotals,
 } from "@/pages/student-progress-presentation";
-import { ProgressRing, SectionHeading, SlimBar, StatusChip } from "./parts";
+import { ProgressRing, SectionHeading, SlimBar, StatusChip, toneSwatchClass } from "./parts";
 
 export interface FlightDeckViewProps {
   view: StudentDegreeProgressView;
@@ -54,7 +58,7 @@ export function FlightDeckView({ view }: FlightDeckViewProps) {
   return (
     <div className="mx-auto w-full max-w-6xl space-y-10 px-4 py-6 sm:px-6 sm:py-10" data-testid="flight-deck" data-mode={mode}>
       <header className="space-y-3">
-        <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-gold-strong">
+        <p className="text-xs font-medium uppercase tracking-[0.14em] text-gold-strong">
           Flight Deck
         </p>
         <h1
@@ -101,7 +105,7 @@ export function FlightDeckView({ view }: FlightDeckViewProps) {
               </div>
             )}
           </div>
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-3 [&>section]:h-full">
             <NextStepPanel step={nextStep} />
           </div>
         </section>
@@ -110,7 +114,7 @@ export function FlightDeckView({ view }: FlightDeckViewProps) {
       {totals && (
         <section aria-labelledby="fd-figures" className="space-y-4">
           <SectionHeading id="fd-figures" eyebrow="At a glance" title="Key figures" />
-          <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-card-border bg-border lg:grid-cols-4">
+          <dl className="grid grid-cols-1 gap-px overflow-hidden rounded-2xl border border-card-border bg-border sm:grid-cols-3">
             {keyFigures(view).map((figure) => (
               <div key={figure.id} className="bg-card p-5 sm:p-6" data-testid={`figure-${figure.id}`}>
                 <dt className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">
@@ -126,10 +130,10 @@ export function FlightDeckView({ view }: FlightDeckViewProps) {
         </section>
       )}
 
-      <AttentionSection items={view.attention} />
+      <AttentionSection items={visibleAttention(view)} view={view} />
 
-      {mode !== "under-review" && mode !== "no-program" && view.milestones.length > 0 && (
-        <MilestoneTrack milestones={view.milestones} />
+      {mode === "composed" && view.state === "COMPOSED" && totals && view.milestones.length > 0 && (
+        <MilestoneTrack milestones={view.milestones} appliedCredits={totals.appliedCredits} />
       )}
 
       {(mode === "composed" || mode === "composed-without-totals") && (
@@ -163,11 +167,11 @@ export function NextStepPanel({ step }: { step: StudentNextStep | null }) {
   return (
     <section
       aria-labelledby="fd-next-step"
-      className="flex h-full flex-col justify-between gap-6 rounded-2xl border border-gold/40 bg-gold-soft p-6 sm:p-8"
+      className="flex flex-col justify-start gap-6 rounded-2xl border border-gold/40 bg-gold-soft p-6 sm:p-8"
       data-testid="next-step-panel"
     >
       <div className="space-y-3">
-        <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-gold-strong">
+        <p className="text-xs font-medium uppercase tracking-[0.14em] text-gold-strong">
           Your next step
         </p>
         <h2 id="fd-next-step" className="font-serif text-2xl leading-snug tracking-tight text-foreground sm:text-3xl">
@@ -230,7 +234,13 @@ function NoProgramHero({ nextStep }: { nextStep: StudentNextStep | null }) {
   );
 }
 
-export function AttentionSection({ items }: { items: readonly StudentAttentionItem[] }) {
+export function AttentionSection({
+  items,
+  view,
+}: {
+  items: readonly StudentAttentionItem[];
+  view?: StudentDegreeProgressView;
+}) {
   if (items.length === 0) return null;
   return (
     <section aria-labelledby="fd-attention" className="space-y-4" data-testid="attention-section">
@@ -238,22 +248,14 @@ export function AttentionSection({ items }: { items: readonly StudentAttentionIt
         id="fd-attention"
         eyebrow="Worth a look"
         title="Needs attention"
-        description="Each item says who acts next. Verified academic facts are only ever changed by Lumière staff."
+        description={"Each item says who acts next. Verified academic facts are only ever changed by Lumi\u00e8re staff."}
       />
       <ul className="space-y-3">
         {items.map((item, index) => {
           const staff = item.owner === "staff";
-          return (
-            <li
-              key={`${item.kind}-${item.requirementId ?? item.creditRecordId ?? item.sourceId ?? index}`}
-              className={cn(
-                "flex gap-4 rounded-xl border p-4 sm:p-5",
-                staff
-                  ? "border-card-border bg-card"
-                  : "border-attention/40 bg-attention-soft",
-              )}
-              data-owner={item.owner}
-            >
+          const href = attentionHref(item, view);
+          const body = (
+            <>
               <span
                 className={cn(
                   "mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full",
@@ -263,18 +265,46 @@ export function AttentionSection({ items }: { items: readonly StudentAttentionIt
               >
                 {staff ? <Hourglass className="h-4 w-4" /> : <UserRound className="h-4 w-4" />}
               </span>
-              <div className="min-w-0 space-y-1">
+              <div className="min-w-0 flex-1 space-y-1">
                 <p
                   className={cn(
-                    "text-[11px] font-medium uppercase tracking-[0.14em]",
+                    "text-xs font-medium uppercase tracking-[0.12em]",
                     staff ? "text-muted-foreground" : "text-attention",
                   )}
                 >
-                  {attentionOwnerLabel(item.owner)}
+                  {attentionOwnerLabel(item.owner, item.kind)}
                 </p>
                 <p className="font-medium text-foreground">{item.title}</p>
                 <p className="text-sm leading-relaxed text-muted-foreground">{item.detail}</p>
               </div>
+              {href && (
+                <ChevronRight className="self-center h-5 w-5 shrink-0 text-attention" aria-hidden="true" />
+              )}
+            </>
+          );
+          const boxClass = cn(
+            "flex gap-4 rounded-xl border p-4 sm:p-5",
+            staff ? "border-card-border bg-card" : "border-attention/40 bg-attention-soft",
+          );
+          return (
+            <li
+              key={`${item.kind}-${item.requirementId ?? item.creditRecordId ?? item.sourceId ?? index}`}
+              data-owner={item.owner}
+            >
+              {href ? (
+                <Link
+                  href={href}
+                  className={cn(
+                    boxClass,
+                    "min-h-[44px] transition-colors hover:border-attention hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                  )}
+                  data-testid="attention-link"
+                >
+                  {body}
+                </Link>
+              ) : (
+                <div className={boxClass}>{body}</div>
+              )}
             </li>
           );
         })}
@@ -283,7 +313,14 @@ export function AttentionSection({ items }: { items: readonly StudentAttentionIt
   );
 }
 
-export function MilestoneTrack({ milestones }: { milestones: readonly StudentMilestone[] }) {
+export function MilestoneTrack({
+  milestones,
+  appliedCredits,
+}: {
+  milestones: readonly StudentMilestone[];
+  appliedCredits: string | null;
+}) {
+  const fills = milestoneSegmentFills(milestones, appliedCredits);
   return (
     <section aria-labelledby="fd-milestones" className="space-y-5" data-testid="milestone-track">
       <SectionHeading id="fd-milestones" eyebrow="The journey" title="Milestones" />
@@ -291,6 +328,7 @@ export function MilestoneTrack({ milestones }: { milestones: readonly StudentMil
         {milestones.map((milestone, index) => {
           const threshold = milestoneThresholdLabel(milestone.thresholdCredits);
           const last = index === milestones.length - 1;
+          const fill = Math.round(fills[index] * 1000) / 10;
           return (
             <li
               key={milestone.id}
@@ -303,25 +341,33 @@ export function MilestoneTrack({ milestones }: { milestones: readonly StudentMil
                     "relative z-10 h-4 w-4 rounded-full",
                     milestone.reached
                       ? "bg-gold ring-4 ring-gold/20"
-                      : "border-2 border-dashed border-muted-foreground/50 bg-background",
+                      : "border-2 border-muted-foreground/60 bg-background",
                   )}
                   aria-hidden="true"
                 />
                 {!last && (
                   <span
-                    className={cn(
-                      "absolute left-1/2 top-4 h-[calc(100%+1.5rem)] w-px -translate-x-1/2 sm:left-4 sm:top-1/2 sm:h-px sm:w-[calc(100%+1rem)] sm:translate-x-0 sm:-translate-y-1/2",
-                      milestone.reached ? "bg-gold/60" : "bg-border",
-                    )}
+                    className="absolute left-1/2 top-4 h-[calc(100%+1.5rem)] w-px -translate-x-1/2 overflow-hidden bg-border sm:left-4 sm:top-1/2 sm:h-px sm:w-[calc(100%+1rem)] sm:translate-x-0 sm:-translate-y-1/2"
                     aria-hidden="true"
-                  />
+                    data-testid="milestone-segment"
+                    data-fill={fill}
+                  >
+                    <span
+                      className="absolute inset-0 hidden bg-gold sm:block origin-left"
+                      style={{ transform: `scaleX(${fill / 100})` }}
+                    />
+                    <span
+                      className="absolute inset-0 bg-gold sm:hidden origin-top"
+                      style={{ transform: `scaleY(${fill / 100})` }}
+                    />
+                  </span>
                 )}
               </div>
               <div className="min-w-0">
                 <p className="font-medium text-foreground">{milestone.label}</p>
                 <p className="text-xs text-muted-foreground">
                   {milestone.reached ? "Reached" : "Ahead"}
-                  {threshold ? ` · ${threshold}` : ""}
+                  {threshold ? ` \u00b7 ${threshold}` : ""}
                 </p>
               </div>
             </li>
@@ -338,16 +384,14 @@ export function RequirementsGlance({
   requirements: readonly StudentRequirementView[];
 }) {
   const ordered = sortRequirements(requirements);
-  const counts = countRequirementsByTone(ordered);
-  const open = ordered.filter((r) => r.status !== "SATISFIED");
-  const shown = open.slice(0, 5);
+  const legend = requirementLegend(ordered);
   return (
     <section aria-labelledby="fd-requirements" className="space-y-5" data-testid="requirements-glance">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <SectionHeading id="fd-requirements" eyebrow="Your degree" title="Requirements at a glance" />
         <Link
           href="/roadmap"
-          className="inline-flex min-h-[44px] items-center gap-2 text-sm font-medium text-gold-strong underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold rounded-md"
+          className="inline-flex min-h-[44px] items-center gap-2 rounded-md text-sm font-medium text-gold-strong underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
           data-testid="link-roadmap"
         >
           Open your full roadmap
@@ -361,38 +405,47 @@ export function RequirementsGlance({
         </p>
       ) : (
         <>
-          <div
-            className="flex h-2 gap-1"
-            role="img"
-            aria-label={`${counts.satisfied} satisfied, ${counts.progress} in progress, ${counts.outstanding} outstanding, ${counts.review} under staff review, out of ${ordered.length} requirements`}
-          >
+          <div className="flex h-2 gap-1" aria-hidden="true" data-testid="requirements-strip">
             {ordered.map((req) => {
               const tone = requirementStatusPresentation(req.status).tone;
               return (
                 <span
                   key={req.requirementId}
-                  className={cn(
-                    "h-full flex-1 rounded-full",
-                    tone === "satisfied" && "bg-gold",
-                    tone === "progress" && "bg-gold/40",
-                    tone === "outstanding" && "bg-muted",
-                    tone === "review" && "bg-attention/50",
-                  )}
+                  className={cn("h-full flex-1 rounded-full", toneSwatchClass(tone))}
                 />
               );
             })}
           </div>
-          <ul className="divide-y divide-border rounded-2xl border border-card-border bg-card">
-            {shown.map((req) => {
+          <ul
+            className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-muted-foreground"
+            aria-label={`${ordered.length} requirements by status`}
+            data-testid="requirements-legend"
+          >
+            {legend.map((entry) => (
+              <li key={entry.tone} className="inline-flex items-center gap-2">
+                <span className={cn("h-3 w-3 rounded-full", toneSwatchClass(entry.tone))} aria-hidden="true" />
+                {entry.count} {entry.label}
+              </li>
+            ))}
+          </ul>
+          <ol className="divide-y divide-border rounded-2xl border border-card-border bg-card">
+            {ordered.map((req) => {
               const status = requirementStatusPresentation(req.status);
               const amounts = requirementAmounts(req);
+              const compact = req.status === "SATISFIED";
               return (
-                <li key={req.requirementId} className="space-y-2 p-4 sm:px-6">
+                <li
+                  key={req.requirementId}
+                  className={cn("space-y-2 px-4 sm:px-6", compact ? "py-3" : "py-4")}
+                  data-testid={`glance-row-${req.requirementId}`}
+                >
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className="font-medium text-foreground">{req.title}</p>
+                    <p className={cn("font-medium", compact ? "text-muted-foreground" : "text-foreground")}>
+                      {req.title}
+                    </p>
                     <StatusChip tone={status.tone} label={status.label} />
                   </div>
-                  {amounts.required && amounts.applied && (
+                  {!compact && amounts.required && amounts.applied && (
                     <>
                       <SlimBar
                         applied={req.appliedAmount}
@@ -408,18 +461,7 @@ export function RequirementsGlance({
                 </li>
               );
             })}
-            {shown.length === 0 && (
-              <li className="p-4 text-sm text-muted-foreground sm:px-6">
-                Every requirement is satisfied.
-              </li>
-            )}
-          </ul>
-          {open.length > shown.length && (
-            <p className="text-sm text-muted-foreground">
-              And {open.length - shown.length} more open{" "}
-              {open.length - shown.length === 1 ? "requirement" : "requirements"} in your roadmap.
-            </p>
-          )}
+          </ol>
         </>
       )}
     </section>

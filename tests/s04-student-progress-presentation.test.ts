@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  attentionHref,
   attentionOwnerLabel,
+  milestoneSegmentFills,
+  requirementLegend,
+  visibleAttention,
   creditAmountDisplay,
   creditsAppliedToRequirement,
   formatDecimal,
@@ -71,7 +75,7 @@ describe("S04 student progress presentation", () => {
     expect(progressMode(COMPOSED_NO_TOTALS)).toBe("composed-without-totals");
     expect(progressMode(UNDER_REVIEW)).toBe("under-review");
     expect(progressMode(NO_ACTIVE_PROGRAM)).toBe("no-program");
-    expect(keyFigures(COMPOSED).map((f) => f.value)).toEqual(["36.5", "120", "83.5", "1 of 4"]);
+    expect(keyFigures(COMPOSED).map((f) => f.value)).toEqual(["1 of 4", "39.5", "2"]);
     expect(keyFigures(UNDER_REVIEW)).toEqual([]);
     expect(keyFigures(COMPOSED_NO_TOTALS)).toEqual([]);
     expect(visibleTotals(UNDER_REVIEW)).toBeNull();
@@ -93,5 +97,33 @@ describe("S04 student progress presentation", () => {
     expect(safeInternalHref(null)).toBeNull();
     expect(isMissingRecordError(new Error("404: not found"))).toBe(true);
     expect(isMissingRecordError(new Error("500: boom"))).toBe(false);
+  });
+
+  it("labels the no-program attention item as the advisor's turn", () => {
+    expect(attentionOwnerLabel("staff", "NO_ACTIVE_PROGRAM")).toBe("Your advisor acts next");
+    expect(attentionOwnerLabel("staff", "NO_ACTIVE_PROGRAM")).not.toContain("reviewing");
+  });
+
+  it("links student-owned attention items and de-duplicates the hero next step", () => {
+    const items = COMPOSED.attention;
+    expect(attentionHref(items[0], COMPOSED)).toBeNull();
+    expect(attentionHref(items[1], COMPOSED)).toBe("/documents");
+    expect(attentionHref(items[2], COMPOSED)).toBe("/documents");
+    expect(visibleAttention(COMPOSED).map((i) => i.title)).toEqual([
+      "Credit awaiting verification",
+      "Send your Sophia transcript",
+    ]);
+  });
+
+  it("builds a legend with counts in the same tones as the strip", () => {
+    expect(requirementLegend(COMPOSED.requirements).map((e) => `${e.count} ${e.label}`)).toEqual([
+      "1 satisfied", "1 in progress", "1 outstanding", "1 under review",
+    ]);
+  });
+
+  it("fills milestone segments proportionally to applied credits", () => {
+    expect(milestoneSegmentFills(COMPOSED.milestones, "36.50")[0]).toBeCloseTo(6.5 / 30);
+    expect(milestoneSegmentFills(COMPOSED.milestones, "36.50")[1]).toBe(0);
+    expect(milestoneSegmentFills(COMPOSED.milestones, "100")[0]).toBe(1);
   });
 });

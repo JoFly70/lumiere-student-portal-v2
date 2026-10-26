@@ -65,7 +65,7 @@ export function RoadmapHeader({ view }: { view: StudentDegreeProgressView | null
   const asOf = view ? formatAsOf(view.asOf) : null;
   return (
     <header className="space-y-3">
-      <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-gold-strong">
+      <p className="text-xs font-medium uppercase tracking-[0.14em] text-gold-strong">
         Academic progress
       </p>
       <h1
@@ -117,7 +117,7 @@ export function RoadmapView({
         </section>
       )}
 
-      {mode !== "no-program" && <AttentionSection items={view.attention} />}
+      {mode !== "no-program" && <AttentionSection items={view.attention} view={view} />}
 
       {composed && (
         <RequirementRoadmap
@@ -221,18 +221,18 @@ function RequirementCard({
             tone={status.tone}
             label={`${amounts.applied} of ${amounts.required} applied`}
           />
-          <dl className="flex flex-wrap gap-x-6 gap-y-1 text-sm">
-            <div className="flex gap-1.5">
-              <dt className="text-muted-foreground">Required</dt>
+          <dl className="grid grid-cols-3 gap-3 text-sm sm:flex sm:flex-wrap sm:gap-x-8">
+            <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-1.5">
+              <dt className="text-xs text-muted-foreground sm:text-sm">Required</dt>
               <dd className="font-medium">{amounts.required}</dd>
             </div>
-            <div className="flex gap-1.5">
-              <dt className="text-muted-foreground">Applied</dt>
+            <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-1.5">
+              <dt className="text-xs text-muted-foreground sm:text-sm">Applied</dt>
               <dd className="font-medium">{amounts.applied}</dd>
             </div>
             {amounts.remaining && (
-              <div className="flex gap-1.5">
-                <dt className="text-muted-foreground">Remaining</dt>
+              <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-1.5">
+                <dt className="text-xs text-muted-foreground sm:text-sm">Remaining</dt>
                 <dd className="font-medium">{amounts.remaining}</dd>
               </div>
             )}
@@ -298,7 +298,7 @@ function CreditRow({ credit }: { credit: StudentCreditView }) {
         {standing.verified ? (
           <VerifiedMark />
         ) : credit.standing === "NOT_ACCEPTED" ? (
-          <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+          <span className="w-fit rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
             Not accepted
           </span>
         ) : (
@@ -391,11 +391,11 @@ function SourceRow({ source }: { source: StudentCreditSourceView }) {
         </p>
       </div>
       {status.tone === "verified" ? (
-        <VerifiedMark />
+        <VerifiedMark className="self-start sm:self-center" />
       ) : status.tone === "preliminary" ? (
-        <PreliminaryMark label={status.label} />
+        <PreliminaryMark label={status.label} className="self-start sm:self-center" />
       ) : (
-        <span className="w-fit rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+        <span className="w-fit self-start rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground sm:self-center">
           {status.label}
         </span>
       )}
@@ -459,11 +459,9 @@ export function PlannedCoursesSection({
         <div className="space-y-2">
           <PreliminaryMark label="Self-reported" />
           <h2 id="rm-planned" className="font-serif text-xl tracking-tight sm:text-2xl">
-            {PLANNED_COURSES_COPY.title}{" "}
-            <span className="block text-base font-normal text-muted-foreground sm:inline">
-              ({PLANNED_COURSES_COPY.qualifier})
-            </span>
+            {PLANNED_COURSES_COPY.title}
           </h2>
+          <p className="text-sm text-muted-foreground">({PLANNED_COURSES_COPY.qualifier})</p>
           <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
             Use this list to plan your own study. It does not change your verified credits or your
             requirements above; staff record completed courses once documents are verified.
@@ -487,10 +485,15 @@ export function PlannedCoursesSection({
               data-testid={`card-course-${course.id}`}
             >
               <div className="min-w-0 flex-1 space-y-1">
+                <h3 className="font-medium" data-testid={`text-course-title-${course.id}`}>
+                  {course.title}
+                </h3>
                 <div className="flex flex-wrap items-center gap-2">
-                  <code className="text-sm font-semibold" data-testid={`text-course-code-${course.id}`}>
-                    {course.courseCode || "N/A"}
-                  </code>
+                  {course.courseCode && (
+                    <code className="text-sm font-semibold" data-testid={`text-course-code-${course.id}`}>
+                      {course.courseCode}
+                    </code>
+                  )}
                   <span className="rounded-full border border-dashed border-muted-foreground/50 px-2 py-0.5 text-xs text-muted-foreground">
                     {ENROLLMENT_STATUS_LABEL[course.status] ?? course.status}
                   </span>
@@ -498,9 +501,6 @@ export function PlannedCoursesSection({
                     <span className="text-xs text-muted-foreground">{course.provider.name}</span>
                   )}
                 </div>
-                <h3 className="font-medium" data-testid={`text-course-title-${course.id}`}>
-                  {course.title}
-                </h3>
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
                   <span data-testid={`text-credits-${course.id}`}>{course.credits} credits (self-reported)</span>
                   {course.courseUrl && (
@@ -540,7 +540,7 @@ export function PlannedCoursesSection({
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-11 w-11 text-destructive hover:bg-destructive/10"
+                      className="h-11 w-11 text-muted-foreground hover:bg-destructive/10 hover:text-destructive focus-visible:text-destructive"
                       onClick={() => onDelete(course)}
                       disabled={deleting}
                       aria-label={`Delete ${course.title}`}

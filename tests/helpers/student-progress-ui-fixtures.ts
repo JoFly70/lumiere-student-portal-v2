@@ -67,10 +67,12 @@ export const COMPOSED: StudentDegreeProgressView = {
   attention: [
     { kind: "CREDIT_PENDING_VERIFICATION", owner: "staff", title: "Credit awaiting verification", detail: "Staff will verify College Algebra." },
     { kind: "REQUIREMENT_REVIEW", owner: "student", title: "Upload your capstone plan", detail: "We need a document from you.", requirementId: "r4" },
+    { kind: "SOURCE_PENDING_REVIEW", owner: "student", title: "Send your Sophia transcript", detail: "Upload the full transcript." },
   ],
   milestones: [
     { id: "m1", label: "Foundations", thresholdCredits: "30.00", reached: true },
     { id: "m2", label: "Halfway", thresholdCredits: "60.00", reached: false },
+    { id: "m3", label: "Final stretch", thresholdCredits: "90.00", reached: false },
   ],
   nextSteps: [
     { kind: "UPLOAD_DOCUMENTS", title: "Upload your capstone plan", detail: "Add the document so staff can finish review.", href: "/documents" },

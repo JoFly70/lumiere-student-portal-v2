@@ -10,6 +10,7 @@ import type {
   StudentCreditSourceView,
   StudentCreditStanding,
   StudentCreditView,
+  StudentMilestone,
   StudentDegreeProgressView,
   StudentNextStep,
   StudentProgressTotals,
@@ -291,8 +292,37 @@ export function sourceTypeLabel(sourceType: string): string {
 // Attention, next steps, totals
 // ---------------------------------------------------------------------------
 
-export function attentionOwnerLabel(owner: StudentAttentionItem["owner"]): string {
+export function attentionOwnerLabel(
+  owner: StudentAttentionItem["owner"],
+  kind?: StudentAttentionItem["kind"],
+): string {
+  if (kind === "NO_ACTIVE_PROGRAM") return "Your advisor acts next";
   return owner === "staff" ? "Lumière staff is reviewing" : "Action for you";
+}
+
+/** In-app route for an attention item the student can act on; null when there is none. */
+export function attentionHref(item: StudentAttentionItem, view?: StudentDegreeProgressView): string | null {
+  if (item.owner !== "student") return null;
+  const step = view?.nextSteps.find((s) => s.title === item.title && safeInternalHref(s.href));
+  if (step) return safeInternalHref(step.href);
+  switch (item.kind) {
+    case "CREDIT_PENDING_VERIFICATION":
+    case "SOURCE_PENDING_REVIEW":
+      return "/documents";
+    case "REQUIREMENT_REVIEW":
+    case "CREDIT_NEEDS_REVIEW":
+    case "NO_ACTIVE_PROGRAM":
+      return "/support";
+    default:
+      return null;
+  }
+}
+
+/** Attention items minus the one the hero "next step" panel already shows. */
+export function visibleAttention(view: StudentDegreeProgressView): StudentAttentionItem[] {
+  const step = primaryNextStep(view);
+  const norm = (t: string) => t.trim().toLowerCase();
+  return view.attention.filter((item) => !step || norm(item.title) !== norm(step.title));
 }
 
 /** Staff-owned items are calm/neutral; student-owned items use the amber tone. */
@@ -326,7 +356,7 @@ export function nextStepActionLabel(step: StudentNextStep): string {
 }
 
 export interface KeyFigure {
-  readonly id: "applied" | "required" | "remaining" | "requirements";
+  readonly id: "requirements" | "verified" | "awaiting";
   readonly label: string;
   readonly value: string;
   readonly caption: string;
@@ -337,35 +367,72 @@ export function visibleTotals(view: StudentDegreeProgressView): StudentProgressT
   return progressMode(view) === "composed" ? view.totals : null;
 }
 
+export function awaitingVerificationCount(credits: readonly StudentCreditView[]): number {
+  return credits.filter(
+    (c) => c.standing === "PENDING_VERIFICATION" || c.standing === "NEEDS_REVIEW",
+  ).length;
+}
+
+/** Figures that add to the ring (which already shows applied, required and remaining). */
 export function keyFigures(view: StudentDegreeProgressView): KeyFigure[] {
   const totals = visibleTotals(view);
   if (!totals) return [];
+  const awaiting = awaitingVerificationCount(view.credits);
   return [
-    {
-      id: "applied",
-      label: "Verified credits applied",
-      value: formatDecimal(totals.appliedCredits) ?? "",
-      caption: "Counted toward your requirements",
-    },
-    {
-      id: "required",
-      label: "Total credits required",
-      value: formatDecimal(totals.requiredCredits) ?? "",
-      caption: "Across your credit requirements",
-    },
-    {
-      id: "remaining",
-      label: "Remaining",
-      value: formatDecimal(totals.remainingCredits) ?? "",
-      caption: "Still to be applied",
-    },
     {
       id: "requirements",
       label: "Requirements satisfied",
       value: `${totals.requirementsSatisfied} of ${totals.requirementsTotal}`,
       caption: "Complete requirements",
     },
+    {
+      id: "verified",
+      label: "Verified credits on record",
+      value: formatDecimal(totals.verifiedCreditsOnRecord) ?? "",
+      caption: "Verified by Lumi\u00e8re staff",
+    },
+    {
+      id: "awaiting",
+      label: "Awaiting verification",
+      value: String(awaiting),
+      caption: awaiting === 1 ? "Preliminary record" : "Preliminary records",
+    },
   ];
+}
+
+export interface LegendEntry {
+  readonly tone: StatusTone;
+  readonly label: string;
+  readonly count: number;
+}
+
+/** Legend entries in a fixed order; zero-count tones are omitted. */
+export function requirementLegend(requirements: readonly StudentRequirementView[]): LegendEntry[] {
+  const c = countRequirementsByTone(requirements);
+  return ([
+    { tone: "satisfied", label: "satisfied", count: c.satisfied },
+    { tone: "progress", label: "in progress", count: c.progress },
+    { tone: "outstanding", label: "outstanding", count: c.outstanding },
+    { tone: "review", label: "under review", count: c.review },
+  ] as LegendEntry[]).filter((e) => e.count > 0);
+}
+
+/** Fill (0..1) of the line segment after each milestone, proportional to applied credits. */
+export function milestoneSegmentFills(
+  milestones: readonly StudentMilestone[],
+  appliedCredits: string | null,
+): number[] {
+  const applied = appliedCredits === null ? NaN : Number.parseFloat(appliedCredits);
+  return milestones.map((m, i) => {
+    const next = milestones[i + 1];
+    const a = m.thresholdCredits === null ? NaN : Number.parseFloat(m.thresholdCredits);
+    const b = next?.thresholdCredits == null ? NaN : Number.parseFloat(next.thresholdCredits);
+    if (!next) return 0;
+    if (!Number.isFinite(applied) || !Number.isFinite(a) || !Number.isFinite(b) || b <= a) {
+      return m.reached ? (next.reached ? 1 : 0.5) : 0;
+    }
+    return Math.max(0, Math.min(1, (applied - a) / (b - a)));
+  });
 }
 
 export function ringAltText(totals: StudentProgressTotals): string {

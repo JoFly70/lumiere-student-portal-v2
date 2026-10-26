@@ -36,8 +36,8 @@ describe("S04 Flight Deck view", () => {
     expect(t).toContain("Bachelor of Business Administration");
     expect(t).toContain("October 26, 2026");
     expect(markup).toContain('aria-label="36.5 of 120 required credits applied; 83.5 remaining."');
-    expect(t).toContain("Verified credits applied");
-    expect(t).toContain("Total credits required");
+    expect(t).toContain("Verified credits on record");
+    expect(t).toContain("Awaiting verification");
     expect(t).toContain("1 of 4");
     expect(t).toContain("Your next step");
     expect(markup).toContain('href="/documents"');
@@ -45,6 +45,35 @@ describe("S04 Flight Deck view", () => {
     expect(t).toContain("Action for you");
     expect(markup).toContain('href="/roadmap"');
     expect(markup).toContain('data-testid="milestone-track"');
+    expect((markup.match(/data-testid="milestone-segment"/g) ?? []).length).toBe(2);
+    expect(markup).toContain('data-reached="true"');
+    // Hero next step is not repeated in the attention list; the other student item is a link.
+    expect(markup).toContain('data-testid="attention-link"');
+    expect(t.match(/Upload your capstone plan/g)?.length).toBe(1);
+  });
+
+  it("shows every requirement as a row in strip order with a matching legend", () => {
+    const markup = html(React.createElement(FlightDeckView, { view: COMPOSED }));
+    const t = text(markup);
+    for (const id of ["r1", "r2", "r3", "r4"]) expect(markup).toContain(`glance-row-${id}`);
+    expect(markup.indexOf("glance-row-r1")).toBeLessThan(markup.indexOf("glance-row-r2"));
+    expect((markup.match(/<span class="h-full flex-1 rounded-full/g) ?? []).length).toBe(4);
+    expect(t).toContain("1 satisfied");
+    expect(t).toContain("1 in progress");
+    expect(t).toContain("1 outstanding");
+    expect(t).toContain("1 under review");
+  });
+
+  it("hides milestones when totals are null or state is not COMPOSED", () => {
+    for (const v of [COMPOSED_NO_TOTALS, UNDER_REVIEW, NO_ACTIVE_PROGRAM]) {
+      expect(html(React.createElement(FlightDeckView, { view: v }))).not.toContain("milestone-track");
+    }
+  });
+
+  it("does not say staff is reviewing for a missing program", () => {
+    const t = text(html(React.createElement(FlightDeckView, { view: NO_ACTIVE_PROGRAM })));
+    expect(t).toContain("Your advisor acts next");
+    expect(t).not.toContain("Lumi\u00e8re staff is reviewing Program not assigned");
   });
 
   it("does not render legacy estimates", () => {
@@ -126,6 +155,11 @@ describe("S04 Roadmap view", () => {
     expect(t).toContain("Your planned & in-progress courses");
     expect(t).toContain("self-reported — not yet part of your verified record");
     expect(markup).not.toContain("button-edit-");
+    expect(t).not.toContain("N/A");
+    const noCode = html(React.createElement(RoadmapView, { view: COMPOSED, enrollments: [{ id: "e2", title: "Public Speaking", credits: 3, status: "todo" }] }));
+    expect(noCode).not.toContain("N/A");
+    expect(noCode).not.toContain("text-course-code-e2");
+    expect(noCode).toContain("Public Speaking");
     const withHandlers = html(
       React.createElement(RoadmapView, {
         view: COMPOSED,

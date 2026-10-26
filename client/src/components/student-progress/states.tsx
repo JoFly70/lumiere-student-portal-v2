@@ -66,7 +66,7 @@ export function PlanNotReady() {
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-10 sm:px-6" data-testid="flight-deck-incomplete-state">
       <div className="space-y-4 rounded-2xl border border-card-border bg-card p-6 shadow-sm sm:p-8">
-        <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-gold-strong">
+        <p className="text-xs font-medium uppercase tracking-[0.14em] text-gold-strong">
           Almost there
         </p>
         <h2 className="font-serif text-2xl tracking-tight sm:text-3xl">
