@@ -471,6 +471,8 @@ export interface GraduateRepository {
   /** The student's own, not soft-deleted document with this id; null otherwise. */
   getStudentDocument(documentId: string, tx: Tx): Promise<StudentDocumentRow | null>;
   listDocumentSummaries(ids: readonly string[], tx: Tx): Promise<{ id: string; fileName: string; status: string }[]>;
+  /** Every non-deleted document of one student (id, file name, status only), newest first. */
+  listStudentDocumentSummaries(studentId: string, tx: Tx): Promise<{ id: string; fileName: string; status: string }[]>;
 
   loadBundle(programId: string, tx: Tx): Promise<GraduateProgramBundle | null>;
 }
@@ -817,6 +819,17 @@ export const graduateRepository: GraduateRepository = {
         SELECT id::text AS id, file_name, status::text AS status
         FROM student_documents
         WHERE soft_deleted = false AND id IN (${sql.join(ids.map((id) => sql`${id}`), sql`, `)})`),
+    );
+    return rows.map((r) => ({ id: String(r.id), fileName: String(r.file_name), status: String(r.status) }));
+  },
+
+  async listStudentDocumentSummaries(studentId, tx = db) {
+    const rows = rowsOf(
+      await tx.execute(sql`
+        SELECT id::text AS id, file_name, status::text AS status
+        FROM student_documents
+        WHERE soft_deleted = false AND student_id = ${studentId}
+        ORDER BY uploaded_at DESC`),
     );
     return rows.map((r) => ({ id: String(r.id), fileName: String(r.file_name), status: String(r.status) }));
   },

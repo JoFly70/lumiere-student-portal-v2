@@ -213,7 +213,8 @@ export function createGraduateProgramService(deps: GraduateServiceDeps) {
     const views: StaffGraduateProgramView[] = [];
     for (const p of programs) views.push(await staffView(p.id, actorRole, tx));
     const evaluations = await staffEvaluations(studentId, actorRole, tx);
-    return { studentId, viewerRole: actorRole === "admin" ? "admin" : "staff", programs: views, offerings, ruleSets, evaluations };
+    const documents = await repo.listStudentDocumentSummaries(studentId, tx);
+    return { studentId, viewerRole: actorRole === "admin" ? "admin" : "staff", programs: views, offerings, ruleSets, evaluations, documents };
   }
 
   /** The student's own programme, locked. Another student's programme reads as not found. */

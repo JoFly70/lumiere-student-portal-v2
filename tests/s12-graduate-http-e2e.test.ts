@@ -958,6 +958,10 @@ describe.skipIf(!ready)("S12 graduate programmes — real HTTP end to end", () =
     // The workspace states the viewer's role (the panel explains admin-only conferral from it).
     expect((await call("get", wsPath(student.id), staff)).body.viewerRole).toBe("staff");
     expect((await call("get", wsPath(student.id), admin)).body.viewerRole).toBe("admin");
+    // The workspace lists the student's own documents (for the evidence picker), never another student's.
+    const docId = await seedDoc(student.id, { status: "verified", country: "IT" });
+    const ws = (await call("get", wsPath(student.id), staff)).body;
+    expect(ws.documents.map((d: { id: string }) => d.id)).toContain(docId);
     expect((await call("post", "/api/admin/graduate/offerings", staff, { key: "staff-offering", category: "mba", route: "eneb_only", marketingTitle: "x", awardingInstitution: "eneb", programVersion: "1" })).status).toBe(403);
     expect((await call("post", `/api/admin/graduate/offerings/${uniOffering.id}/rule-sets`, staff, ruleBody(RULE_SET_2026, { cohortLabel: "staff set" }))).status).toBe(403);
     expect((await call("get", wsPath(student.id), null)).status).toBe(401);
@@ -1363,7 +1367,7 @@ describe.skipIf(!ready)("S12 graduate programmes — real HTTP end to end", () =
       expect((await verifyEval(report)).status).toBe(200);
       const official = (await studentEvals(user)).find((e) => e.id === report);
       expect(official).toMatchObject({ isOfficialOutcome: true, isPreliminary: false });
-      expect(official.caveat).toMatch(/for US and this purpose only/);
+      expect(official.caveat).toMatch(/for United States and this purpose only/);
       // the stored type never changes by verification
       expect((await dbEval(tool)).evaluation_type).toBe("preliminary_tool");
     });

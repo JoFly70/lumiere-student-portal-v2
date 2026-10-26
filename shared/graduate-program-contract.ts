@@ -1776,6 +1776,8 @@ export interface StaffGraduateWorkspace {
   readonly offerings: readonly OfferingRecord[];
   readonly ruleSets: readonly RuleSetRecord[];
   readonly evaluations: readonly (CredentialEvaluationRecord & { readonly view: EvaluationView; readonly blockers: readonly EvaluationGuardCode[] })[];
+  /** The student's Documents (not soft-deleted), so staff pick evidence instead of typing ids. Always sent by the server. */
+  readonly documents?: readonly { readonly id: string; readonly fileName: string; readonly status: string }[];
 }
 
 export function buildStaffGraduateProgramView(bundle: GraduateProgramBundle, currentRuleSetId: string | null, actorRole: GuardActorRole): StaffGraduateProgramView {

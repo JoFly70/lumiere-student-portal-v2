@@ -129,8 +129,8 @@ import {
 type Role = "staff" | "admin";
 type EvaluationRow = StaffGraduateWorkspace["evaluations"][number];
 type DocumentOption = { readonly id: string; readonly fileName: string; readonly status: string };
-/** The workspace may carry the student's documents so dialogs can offer a select (optional contract field). */
-type WorkspaceWithDocuments = StaffGraduateWorkspace & { readonly documents?: readonly DocumentOption[] };
+/** Fixtures may omit documents; dialogs then fall back to a labelled free field. */
+type WorkspaceWithDocuments = StaffGraduateWorkspace;
 
 export type PanelDialog =
   | { t: "enroll" }
@@ -310,7 +310,7 @@ function SubjectsSection({ p, onDialog, canEdit }: { p: StaffGraduateProgramView
             return <li key={s.id} className="flex flex-wrap items-center justify-between gap-2 p-2 text-sm" data-testid="graduate-subject" data-needs-verification={action ? "true" : "false"}>
               <div className="min-w-0 flex-1 basis-56"><p className="font-medium">{s.title}</p><p className="text-xs text-student-muted">{AUTHORITY_NAME[s.authority]} · {studentProgressText(s.studentProgress)}</p>{action ? <p className="text-xs font-medium text-st-attention">Action: {action}</p> : null}</div>
               <div className="flex flex-wrap items-center gap-2"><span>{subjectResultText(s)}</span><TrustPill badge={s.resultStatus === "none" ? { label: "No result yet", tone: "reported" } : trustBadge(s.verificationStatus)} />
-                {canEdit ? <Button type="button" size="sm" variant={action ? "default" : "outline"} className={action ? PRIMARY_ACTION : OUTLINE_ACTION} onClick={() => onDialog?.({ t: "result", program: p, subject: s, verify: !!action })}>{action ? "Verify result…" : s.resultStatus === "none" ? "Record result…" : "Update result…"}</Button> : null}</div>
+                {canEdit ? <Button type="button" size="sm" variant="outline" className={OUTLINE_ACTION} onClick={() => onDialog?.({ t: "result", program: p, subject: s, verify: !!action })}>{action ? "Verify result…" : s.resultStatus === "none" ? "Record result…" : "Update result…"}</Button> : null}</div>
             </li>;
           })}
         </ul>
