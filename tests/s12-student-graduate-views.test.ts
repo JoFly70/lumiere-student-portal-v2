@@ -3,9 +3,10 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Router } from "wouter";
 import { describe, expect, it } from "vitest";
-import { buildStudentGraduateProgramView, type StudentGraduateView } from "../shared/graduate-program-contract";
+import { EVALUATION_FRAMING, buildEvaluationView, buildStudentGraduateProgramView, type CredentialEvaluationRecord, type StudentGraduateView } from "../shared/graduate-program-contract";
 import { GraduateEmptyState, GraduateErrorState, GraduatePageView, GraduateSkeleton } from "../client/src/components/graduate/graduate-page-view";
 import { buildTrackModel, creditAmountLabel, formatDate, isUnconfirmedBasis, validateTopic, visibleCreditLayers } from "../client/src/components/graduate/graduate-presentation";
+import { conditionalLabel, studentBasis, waitingHint } from "../client/src/components/graduate/graduate-presentation";
 import { JOURNEY_B_STAGES, RULE_SET_2025, journeyA, journeyB } from "./helpers/s12-graduate-fixtures";
 
 (globalThis as any).React = React;
@@ -14,9 +15,11 @@ const html = (el: React.ReactElement) =>
   renderToStaticMarkup(React.createElement(QueryClientProvider, { client: new QueryClient() }, React.createElement(Router, { ssrPath: "/graduate" }, el)));
 const text = (m: string) => m.replace(/<[^>]+>/g, " ").replace(/&amp;/g, "&").replace(/&#x27;/g, "'").replace(/&quot;/g, '"').replace(/\s+/g, " ");
 const count = (m: string, needle: string) => m.split(needle).length - 1;
-const viewOf = (...bundles: Parameters<typeof buildStudentGraduateProgramView>[0][]): StudentGraduateView => ({ programs: bundles.map(buildStudentGraduateProgramView) });
-const render = (...bundles: Parameters<typeof buildStudentGraduateProgramView>[0][]) => {
-  const markup = html(React.createElement(GraduatePageView, { view: viewOf(...bundles) }));
+type Bundle = Parameters<typeof buildStudentGraduateProgramView>[0];
+const viewOf = (bundles: Bundle[], evaluations: StudentGraduateView["evaluations"] = []): StudentGraduateView => ({ programs: bundles.map(buildStudentGraduateProgramView), evaluations });
+const render = (...bundles: Bundle[]) => renderWith([], ...bundles);
+const renderWith = (evaluations: StudentGraduateView["evaluations"], ...bundles: Bundle[]) => {
+  const markup = html(React.createElement(GraduatePageView, { view: viewOf(bundles, evaluations) }));
   return { markup, t: text(markup) };
 };
 
@@ -51,6 +54,7 @@ describe("S12 student graduate: Journey A (ENEB-only)", () => {
     expect(count(markup, "<h1")).toBe(1);
     expect(markup).not.toContain('data-testid="progress-control"');
     expect(count(markup, 'data-testid="module-row"')).toBe(18);
+    expect(markup).toContain('data-testid="passed-eneb-summary"');
   });
 });
 
@@ -169,6 +173,7 @@ describe("S12 student graduate: cohort rule sets", () => {
     expect(assess(a.markup)).toContain("Comprehensive final exam");
     expect(assess(a.markup)).toContain("roughly 135 questions");
     expect(assess(b.markup)).toContain("An exam for each subject");
+    expect(count(assess(b.markup), "An exam for each subject")).toBe(1);
     expect(assess(a.markup)).not.toEqual(assess(b.markup));
     expect(a.t).not.toContain("12,000");
     expect(b.t).toContain("12,000 words");
@@ -212,7 +217,7 @@ describe("S12 student graduate: multiple programmes, states, helpers", () => {
   });
 
   it("empty, loading and error states have one h1 or a status and a Support link / retry", () => {
-    const empty = html(React.createElement(GraduatePageView, { view: { programs: [] } }));
+    const empty = html(React.createElement(GraduatePageView, { view: { programs: [], evaluations: [] } }));
     expect(empty).toContain("No graduate programme on record");
     expect(empty).toContain('href="/support"');
     expect(count(html(React.createElement(GraduateEmptyState)), "<h1")).toBe(1);
@@ -242,5 +247,185 @@ describe("S12 student graduate: multiple programmes, states, helpers", () => {
     const nodes = buildTrackModel(buildStudentGraduateProgramView(journeyB("conferred"))).university!;
     expect(nodes.find((n) => n.key === "uni-conferral")!.status).toBe("official");
     expect(nodes.find((n) => n.key === "uni-documents")!.status).toBe("progress") // diploma ordered;
+  });
+});
+
+const ev = (o: Partial<CredentialEvaluationRecord>): CredentialEvaluationRecord => ({
+  id: "ev1", studentId: "s1", programId: null, evaluator: "wes_us", evaluatorName: null, destinationCountry: "US",
+  qualificationEvaluated: "Synthetic Master universitario di primo livello", awardingInstitution: "unimarconi",
+  intendedUse: "further_study", evaluationType: "completed_report", status: "completed", reportDate: "2026-10-20",
+  reportReference: null, documentId: null, conclusion: "masters_equivalent", conclusionText: "Equivalent to a U.S. master's degree (synthetic).",
+  verificationStatus: "verified", conflictingEvidence: null, reviewerUserId: null, reviewedAt: null, note: null, createdBy: null, createdAt: "2026-10-20", updatedAt: "2026-10-20", ...o,
+} as CredentialEvaluationRecord);
+
+describe("S12 student graduate: review fixes", () => {
+  it("unverified passes are not shown as verified", () => {
+    const { markup, t } = render(journeyB("complete"));
+    const summary = markup.slice(markup.indexOf('data-testid="passed-eneb-summary"'));
+    expect(text(summary.slice(0, 600))).toContain("8 of 8 passed");
+    expect(text(summary.slice(0, 900))).toContain("stated by ENEB, not yet checked");
+    expect(t).toContain("Progress on your requirements");
+    expect(t).not.toContain("Progress within verified requirements");
+    expect(markup).toContain('data-testid="progress-legend"');
+    expect(markup).toContain('data-segment="stated"');
+    const eneb = markup.split('data-testid="progress-bar"').find((c) => c.includes("ENEB subjects passed"))!;
+    expect(text(eneb)).toContain("0 checked");
+    expect(text(eneb)).toContain("8 stated, not yet checked");
+    // ENEB subjects node must not use the "applied" (verified) status
+    const nodes = buildTrackModel(buildStudentGraduateProgramView(journeyB("complete"))).eneb;
+    expect(nodes[0].status).toBe("provider");
+    expect(nodes[0].glyph).toBe("stated");
+  });
+
+  it("ENEB passed subjects are collapsed by default with an accessible disclosure", () => {
+    const { markup } = render(journeyB("complete"));
+    const i = markup.indexOf('data-testid="passed-eneb-summary"');
+    const chunk = markup.slice(i, i + 1500);
+    expect(chunk).toContain('aria-expanded="false"');
+    expect(chunk).toMatch(/aria-controls="[^"]+"/);
+    expect(chunk).toMatch(/<div id="[^"]+" hidden/);
+  });
+
+  it("conferred header chip states the outcome with 18 Oct 2026 and does not lead with registration", () => {
+    const { markup, t } = render(journeyB("conferred"));
+    const chip = markup.slice(markup.indexOf('data-testid="degree-conferred-chip"'));
+    expect(text(chip.slice(0, 1500))).toContain("University degree conferred · 18 Oct 2026");
+    expect(t).not.toContain("Registered with the university");
+    expect(markup.indexOf('data-testid="degree-conferred-chip"')).toBeLessThan(markup.indexOf('data-testid="graduate-relationship"'));
+    expect(render(journeyB("registered")).markup).not.toContain('data-testid="degree-conferred-chip"');
+  });
+
+  it("b-complete: ENEB record is presented as separate, not as a blocker", () => {
+    const { markup, t } = render(journeyB("complete"));
+    expect(t).toContain("Your university degree is complete");
+    expect(markup).toContain('data-testid="eneb-record"');
+    expect(t).toContain("Separate ENEB record:");
+    expect(t).toContain("It does not hold up your university degree.");
+  });
+
+  it("Recognition node names the outcome", () => {
+    const model = buildTrackModel(buildStudentGraduateProgramView(journeyB("partial_recognition")));
+    expect(model.university!.find((n) => n.key === "uni-recognition")!.stateLabel).toBe("Partly recognized");
+    const { markup } = render(journeyB("partial_recognition"));
+    expect(text(markup.slice(markup.indexOf('data-testid="track-university"'), markup.indexOf('data-testid="graduate-section-nav"')))).toContain("Partly recognized");
+  });
+
+  it("recognized credits show the conditional part and link to Previous learning", () => {
+    const { markup, t } = render(journeyB("partial_recognition"));
+    expect(t).toContain("24 ECTS · 6 conditional");
+    expect(markup).toContain('data-testid="credit-conditions-link"');
+    expect(markup).toContain('href="#graduate-learning"');
+    const view = buildStudentGraduateProgramView(journeyB("partial_recognition"));
+    expect(conditionalLabel(view.credits.find((c) => c.authority === "university_recognized")!)).toBe("6 conditional");
+  });
+
+  it("no internal provenance reaches the student", () => {
+    for (const stage of JOURNEY_B_STAGES) {
+      for (const opts of [{}, { ruleSet: RULE_SET_2025 }]) {
+        const { t } = render(journeyB(stage, opts));
+        expect(t).not.toMatch(/owner's research audit/i);
+        expect(t).not.toMatch(/as summarized in/i);
+      }
+    }
+    expect(studentBasis("Term in the enrollment contract · ENEB Terms, August 2026 (as summarized in the owner's research audit)")).toBe("Term in the enrollment contract · ENEB Terms, August 2026");
+    expect(studentBasis("Not yet verified · Plain title")).toBe("Not yet verified · Plain title");
+  });
+
+  it("later milestones read After conferral, neutral and dashed", () => {
+    const { markup, t } = render(journeyB("procedure_done"));
+    const early = render(journeyB("registered")).t;
+    const later = markup.split('data-testid="milestone"').filter((c) => c.includes('data-state="later"'));
+    expect(later.length).toBeGreaterThan(0);
+    for (const c of later) {
+      expect(text(c)).toContain("After conferral");
+      expect(c).toContain('data-status="notstarted"');
+      expect(c).not.toContain("Waiting for the university");
+    }
+    expect(early).toContain("Counting from your university registration");
+    expect(t).not.toContain("Waiting for the university conferral");
+  });
+
+  it("no check icon on unknown or unchecked states; only completed recognition steps are ticked", () => {
+    const eligibility = render(journeyB("eligibility"));
+    const rec = eligibility.markup.split('data-testid="credit-layer"').find((c) => c.includes("Recognized by the university"))!;
+    expect(rec).toContain("lucide-circle-help");
+    expect(rec).not.toContain("lucide-check");
+    const row = render(journeyB("complete")).markup.split('data-testid="module-row"').find((c) => c.includes('data-result="passed"'))!;
+    const pill = row.slice(row.indexOf('data-testid="module-result"') - 300, row.indexOf('data-testid="module-result"') + 700);
+    expect(pill).toContain("lucide-circle");
+    expect(pill).not.toContain("lucide-clipboard-check");
+    // not_requested: no tick at all, nothing marked current
+    const steps = (m: string) => m.slice(m.indexOf('data-testid="request-steps"'), m.indexOf('data-testid="request-state-label"'));
+    const none = steps(eligibility.markup);
+    expect(none).not.toContain("lucide-check");
+    expect(none).not.toContain("aria-current");
+    const mid = steps(render(journeyB("recognition_requested")).markup);
+    expect(mid).toContain("aria-current");
+    const decided = steps(render(journeyB("partial_recognition")).markup);
+    expect((decided.match(/lucide-check/g) ?? []).length).toBe(3);
+  });
+
+  it("repeats the MY MASTER'S eyebrow only once", () => {
+    const { t } = render(journeyB("complete"));
+    expect((t.match(/My Master's/g) ?? []).filter(() => true).length).toBeGreaterThan(0);
+    const { markup } = render(journeyB("complete"));
+    expect(count(markup, "uppercase tracking-[0.16em]")).toBe(2); // header eyebrow + "Your next step"
+  });
+
+  it("waiting steps give a what-you-can-do-now hint; done steps do not", () => {
+    expect(render(journeyB("admitted")).markup).toContain('data-testid="next-step-hint"');
+    expect(render(journeyB("complete")).markup).not.toContain('data-testid="next-step-hint"');
+    expect(waitingHint({ title: "Your university degree is complete", detail: "", href: null })).toBeNull();
+  });
+});
+
+describe("S12 student graduate: international recognition", () => {
+  const prelim = buildEvaluationView(ev({ id: "p1", evaluationType: "preliminary_tool", status: "completed", verificationStatus: "unverified", conclusion: "masters_equivalent", conclusionText: "Tool says: master's equivalent (synthetic).", reportDate: null }));
+  const wesUs = buildEvaluationView(ev({ id: "w1" }));
+  const wesCa = buildEvaluationView(ev({ id: "w2", evaluator: "wes_canada", destinationCountry: "CA", conclusion: "bachelors_equivalent", conclusionText: "Bachelor's-level (synthetic).", intendedUse: "immigration" }));
+
+  it("shows framing once, with preliminary vs verified treatments", () => {
+    const { markup, t } = renderWith([prelim, wesUs], journeyB("complete"));
+    expect(markup).toContain('id="graduate-evaluations"');
+    expect(count(t, EVALUATION_FRAMING)).toBe(1);
+    const cards = markup.split('data-testid="evaluation"').slice(1);
+    const p = cards.find((c) => c.includes('data-kind="preliminary"'))!;
+    const v = cards.find((c) => c.includes('data-kind="confirmed"'))!;
+    expect(text(p)).toContain("Preliminary — not an evaluation report");
+    expect(text(p)).not.toContain("Verified evaluation report");
+    expect(text(v)).toContain("Verified evaluation report");
+    expect(text(v)).toContain("20 Oct 2026");
+    expect(text(v)).toContain("“Equivalent to a U.S. master's degree (synthetic).”");
+    expect(text(v)).toContain("only"); // caveat is scoped to evaluator, country and purpose
+    expect(count(markup, 'data-kind="confirmed"')).toBe(1);
+    expect(t).not.toMatch(/guarantee/i);
+  });
+
+  it("renders WES U.S. and WES Canada as distinct evaluators", () => {
+    const { t, markup } = renderWith([wesUs, wesCa], journeyB("complete"));
+    expect(t).toContain("WES (United States)");
+    expect(t).toContain("WES Canada");
+    expect(text(markup.split('data-testid="evaluation"').find((c) => c.includes("WES Canada"))!)).toContain("Canada");
+    expect(text(markup.split('data-testid="evaluation"').find((c) => c.includes("WES Canada"))!)).toContain("Bachelor's-level equivalent");
+  });
+
+  it("university route with none: calm empty state linking to Support; ENEB-only with none: no section", () => {
+    const uni = render(journeyB("complete"));
+    expect(uni.markup).toContain('data-testid="evaluations-empty"');
+    expect(uni.markup).toContain('data-testid="evaluations-support-link"');
+    expect(uni.t).toContain("Results differ by evaluator and country");
+    const only = render(journeyA());
+    expect(only.markup).not.toContain('id="graduate-evaluations"');
+    expect(only.t).not.toContain("International recognition");
+    expect(renderWith([wesUs], journeyA()).markup).toContain('id="graduate-evaluations"');
+  });
+
+  it("sits after Graduation and before Credits; missing evaluations default to none", () => {
+    const { markup } = render(journeyB("complete"));
+    const i = (id: string) => markup.indexOf(`id="${id}"`);
+    expect(i("graduate-graduation")).toBeLessThan(i("graduate-evaluations"));
+    expect(i("graduate-evaluations")).toBeLessThan(i("graduate-credits"));
+    const legacy = html(React.createElement(GraduatePageView, { view: { programs: [buildStudentGraduateProgramView(journeyB("complete"))] } as unknown as StudentGraduateView }));
+    expect(legacy).toContain('data-testid="evaluations-empty"');
   });
 });

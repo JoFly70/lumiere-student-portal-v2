@@ -8,6 +8,9 @@
  *   POST /graduate/programs/:programId/records/:recordId/evidence
  *
  * Staff (mounted at /api/admin, BEFORE the admin-only router-wide guards):
+ *   POST  /students/:studentId/graduate/evaluations
+ *   PATCH /graduate/evaluations/:evaluationId
+ *   POST  /graduate/evaluations/:evaluationId/verify
  *   GET   /graduate/offerings
  *   POST  /graduate/offerings                                (admin)
  *   POST  /graduate/offerings/:offeringId/rule-sets          (admin)
@@ -35,12 +38,15 @@ import {
   createRuleSetSchema,
   createSubjectSchema,
   enrollProgramSchema,
+  recordEvaluationSchema,
   recordSubjectResultSchema,
   studentAttachEvidenceSchema,
   studentSubjectProgressSchema,
   studentThesisPlanSchema,
   trackRecordSchema,
+  updateEvaluationSchema,
   updateProgramSchema,
+  verifyEvaluationSchema,
   verifyRecordSchema,
   type GraduateErrorBody,
   type GuardActorRole,
@@ -59,7 +65,7 @@ function sendGraduateError(res: Response, error: unknown, context: string) {
       error: {
         code: error.code,
         message: error.message,
-        ...(error.missing ? { missing: error.missing } : {}),
+        ...(error.missing ? { missing: error.missing as GraduateErrorBody["error"]["missing"] } : {}),
         ...(error.details !== undefined ? { details: error.details } : {}),
       },
     };
@@ -200,6 +206,9 @@ export interface StaffGraduateRouterDeps {
     | "trackRecord"
     | "verifyRecord"
     | "createCreditEntry"
+    | "recordEvaluation"
+    | "updateEvaluation"
+    | "verifyEvaluation"
     | "listEvents"
   >;
 }
@@ -356,6 +365,42 @@ export function createStaffGraduateRouter(deps: StaffGraduateRouterDeps) {
     }, "create credit"),
   );
 
+  router.post(
+    "/students/:studentId/graduate/evaluations",
+    ...staffOrAdmin,
+    guarded(async (req, res) => {
+      const params = parseParams(req, res, ["studentId"] as const);
+      if (!params) return;
+      const body = parseBody(recordEvaluationSchema, req, res);
+      if (!body) return;
+      return res.status(201).json(await deps.service.recordEvaluation(actorOf(req), params.studentId, body));
+    }, "record evaluation"),
+  );
+
+  router.patch(
+    "/graduate/evaluations/:evaluationId",
+    ...staffOrAdmin,
+    guarded(async (req, res) => {
+      const params = parseParams(req, res, ["evaluationId"] as const);
+      if (!params) return;
+      const body = parseBody(updateEvaluationSchema, req, res);
+      if (!body) return;
+      return res.json({ workspace: await deps.service.updateEvaluation(actorOf(req), params.evaluationId, body) });
+    }, "update evaluation"),
+  );
+
+  router.post(
+    "/graduate/evaluations/:evaluationId/verify",
+    ...staffOrAdmin,
+    guarded(async (req, res) => {
+      const params = parseParams(req, res, ["evaluationId"] as const);
+      if (!params) return;
+      const body = parseBody(verifyEvaluationSchema, req, res);
+      if (!body) return;
+      return res.json({ workspace: await deps.service.verifyEvaluation(actorOf(req), params.evaluationId, body) });
+    }, "verify evaluation"),
+  );
+
   router.get(
     "/graduate/programs/:programId/events",
     ...staffOrAdmin,
@@ -408,6 +453,9 @@ export function createDefaultStaffGraduateRouter() {
       trackRecord: lazy("trackRecord"),
       verifyRecord: lazy("verifyRecord"),
       createCreditEntry: lazy("createCreditEntry"),
+      recordEvaluation: lazy("recordEvaluation"),
+      updateEvaluation: lazy("updateEvaluation"),
+      verifyEvaluation: lazy("verifyEvaluation"),
       listEvents: lazy("listEvents"),
     },
   });

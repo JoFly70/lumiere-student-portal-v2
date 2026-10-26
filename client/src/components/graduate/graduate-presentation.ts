@@ -22,6 +22,7 @@ export const SECTION_IDS = {
   thesis: "graduate-thesis",
   assessment: "graduate-assessment",
   graduation: "graduate-graduation",
+  evaluations: "graduate-evaluations",
   credits: "graduate-credits",
 } as const;
 
@@ -54,22 +55,55 @@ export function nextStepActionLabel(href: string): string {
 }
 
 /** Section pills shown under the header; only sections that exist for this programme. */
-export function sectionNav(p: Program): { id: string; label: string }[] {
+export function sectionNav(p: Program, evaluationsShown = false): { id: string; label: string }[] {
   const items: { id: string; label: string }[] = [{ id: SECTION_IDS.modules, label: "Modules" }];
   if (p.previousLearning) items.push({ id: SECTION_IDS.learning, label: "Previous learning" });
   if (p.thesis) items.push({ id: SECTION_IDS.thesis, label: "Thesis" });
   items.push({ id: SECTION_IDS.assessment, label: "Assessments" });
   if (p.graduation) items.push({ id: SECTION_IDS.graduation, label: "Graduation" });
+  if (evaluationsShown) items.push({ id: SECTION_IDS.evaluations, label: "International recognition" });
   items.push({ id: SECTION_IDS.credits, label: "Credits" });
   return items;
 }
 
 // ── Status mapping ──────────────────────────────────────────────────────────
 
+/** Icon override so "unknown", "stated, unchecked" and "later" never borrow a check mark. */
+export type GlyphKind = "stated" | "unknown" | "later";
+
 export interface StateDisplay {
   readonly status: StatusKey;
   readonly label: string;
+  readonly glyph?: GlyphKind;
 }
+
+/** The evaluations section appears when there is something to show, or on the university route (empty state). */
+export function showEvaluations(p: Program, evaluations: readonly unknown[]): boolean {
+  return evaluations.length > 0 || p.route === "eneb_unimarconi";
+}
+
+/** Students see the basis label and the source title only: parenthetical provenance is internal. */
+export function studentBasis(basis: string): string {
+  const i = basis.indexOf(" (");
+  return (i > 0 ? basis.slice(0, i) : basis).trim();
+}
+
+export function conditionalLabel(c: CreditLayerView): string | null {
+  return c.conditionalAmount && c.conditionalAmount > 0 ? `${formatCount(c.conditionalAmount)} conditional` : null;
+}
+
+/** A "what you can do now" hint for steps where only someone else can act. */
+export function waitingHint(step: Program["nextStep"]): string | null {
+  if (step.href) return null;
+  if (/^Waiting/i.test(step.title)) return "Nothing is needed from you right now. You can check that your documents are up to date, or ask Support if something looks wrong.";
+  if (/being graded/i.test(step.title)) return "Nothing is needed from you right now. You can look over your thesis details below while you wait.";
+  return null;
+}
+
+export const PROVENANCE_PLAIN = {
+  verified: "Checked by Lumière against the institution's document",
+  stated: "Stated by the institution, not yet checked",
+} as const;
 
 export function milestoneDisplay(m: Pick<MilestoneView, "state" | "official">): StateDisplay {
   switch (m.state) {
@@ -83,13 +117,15 @@ export function milestoneDisplay(m: Pick<MilestoneView, "state" | "official">): 
       return { status: "attention", label: "Needs attention" };
     case "not_applicable":
       return { status: "notstarted", label: "Not applicable" };
+    case "later":
+      return { status: "notstarted", label: "After conferral", glyph: "later" };
     default:
       return { status: "notstarted", label: "Not started" };
   }
 }
 
 export function resultDisplay(m: Pick<ModuleView, "result" | "resultLabel" | "verification" | "progress">): StateDisplay {
-  if (m.result === "passed") return { status: m.verification === "verified" ? "official" : "provider", label: m.resultLabel };
+  if (m.result === "passed") return m.verification === "verified" ? { status: "official", label: m.resultLabel } : { status: "provider", label: m.resultLabel, glyph: "stated" };
   if (m.result === "failed" || m.result === "reassessment_required") return { status: "attention", label: m.resultLabel };
   if (m.progress === "submitted") return { status: "submitted", label: "Submitted, no result yet" };
   return { status: "notstarted", label: m.resultLabel };
@@ -135,6 +171,7 @@ export interface TrackNode {
   readonly label: string;
   readonly status: StatusKey;
   readonly stateLabel: string;
+  readonly glyph?: GlyphKind;
 }
 
 export interface TrackModel {
@@ -143,11 +180,11 @@ export interface TrackModel {
   readonly university: readonly TrackNode[] | null;
 }
 
-const node = (key: string, label: string, d: StateDisplay): TrackNode => ({ key, label, status: d.status, stateLabel: d.label });
+const node = (key: string, label: string, d: StateDisplay): TrackNode => ({ key, label, status: d.status, stateLabel: d.label, glyph: d.glyph });
 
-function subjectsNode(passed: number, total: number): StateDisplay {
+function subjectsNode(passed: number, total: number, verified: number): StateDisplay {
   if (total === 0) return { status: "notstarted", label: "Not started" };
-  if (passed === total) return { status: "applied", label: "All passed" };
+  if (passed === total) return verified === total ? { status: "applied", label: "All passed" } : { status: "provider", label: verified === 0 ? "All passed, not yet checked" : "All passed, some not yet checked", glyph: "stated" };
   return passed > 0 ? { status: "progress", label: `${passed} of ${total} passed` } : { status: "progress", label: "In progress" };
 }
 
@@ -160,7 +197,7 @@ export function buildTrackModel(p: Program): TrackModel {
         ? { status: "provider", label: "Awaiting confirmation" }
         : { status: "notstarted", label: "Not yet" };
   const eneb = [
-    node("eneb-subjects", "ENEB subjects", subjectsNode(p.progress.enebSubjectsPassed, p.progress.enebSubjectsTotal)),
+    node("eneb-subjects", "ENEB subjects", subjectsNode(p.progress.enebSubjectsPassed, p.progress.enebSubjectsTotal, p.progress.enebSubjectsVerified)),
     node("eneb-qualification", "ENEB qualification", qualification),
   ];
   if (p.route !== "eneb_unimarconi") return { eneb, university: null };
@@ -172,7 +209,7 @@ export function buildTrackModel(p: Program): TrackModel {
   const recognition: StateDisplay = !rl
     ? { status: "notstarted", label: "Not yet" }
     : rl.requestState === "decided"
-      ? { status: "official", label: "Decided" }
+      ? { status: rl.decision?.outcome === "none" ? "attention" : rl.decision?.outcome === "partial" ? "provider" : "official", label: rl.decision?.outcomeLabel ?? "Decided" }
       : rl.requestState === "under_review"
         ? { status: "submitted", label: "With the university" }
         : rl.requestState === "requested"
@@ -184,7 +221,7 @@ export function buildTrackModel(p: Program): TrackModel {
     uniModules.length === 0
       ? { status: "notstarted", label: "Not listed yet" }
       : uniPassed.length === uniModules.length
-        ? { status: uniPassed.every((m) => m.verification === "verified") ? "official" : "provider", label: "All passed" }
+        ? uniPassed.every((m) => m.verification === "verified") ? { status: "official", label: "All passed" } : { status: "provider", label: "All passed, not yet checked", glyph: "stated" }
         : { status: uniPassed.length || uniModules.some((m) => m.progress !== "not_started") ? "progress" : "notstarted", label: `${uniPassed.length} of ${uniModules.length} passed` };
   const t = p.thesis;
   const thesis: StateDisplay | null = !t
@@ -244,6 +281,10 @@ export function milestoneDatePrefix(key: string): string {
 /** Credit layers worth showing: not_applicable layers are hidden; an empty Isabel I layer is noise. */
 export function visibleCreditLayers(p: Program): CreditLayerView[] {
   return p.credits.filter((c) => c.state !== "not_applicable" && !(c.authority === "ui1_certified" && c.state === "unknown"));
+}
+
+export function creditIsUnknown(c: CreditLayerView): boolean {
+  return c.amount === null || c.state === "unknown";
 }
 
 export function creditAmountLabel(c: CreditLayerView): string {

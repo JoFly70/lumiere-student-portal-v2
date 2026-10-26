@@ -1230,6 +1230,362 @@ describe.skipIf(!ready)("S12 graduate programmes — real HTTP end to end", () =
     expect(JSON.stringify(ws)).not.toMatch(/degree-progress|creditsAwarded|total_credits/i);
   });
 
+  // =========================================================================
+  // S12 addendum — foreign credential evaluations (runs after R18 by definition order)
+  // =========================================================================
+  describe("S12 addendum — credential evaluations", () => {
+    const evalPath = (studentId: string) => `${wsPath(studentId)}/evaluations`;
+    const evalBody = (over: Record<string, unknown> = {}) => ({
+      evaluator: "wes_us",
+      destinationCountry: "US",
+      qualificationEvaluated: "Master universitario di primo livello in Big Data and Business Intelligence (synthetic)",
+      awardingInstitution: "unimarconi",
+      intendedUse: "further_study",
+      evaluationType: "completed_report",
+      status: "completed",
+      reportDate: "2026-10-01",
+      reportReference: "WES-SYN-0001",
+      conclusion: "masters_equivalent",
+      conclusionText: "Equivalent to a U.S. master's degree (synthetic wording).",
+      ...over,
+    });
+    const recordEval = (studentId: string, over: Record<string, unknown> = {}, actor: SeededUser | null = staff, assertion = "") =>
+      call("post", evalPath(studentId), actor, evalBody(over), assertion);
+    const mustRecord = async (studentId: string, over: Record<string, unknown> = {}) => {
+      const res = await recordEval(studentId, over);
+      expect(res.status, JSON.stringify(res.body)).toBe(201);
+      expect(res.body.id).toBeTruthy();
+      return res.body.id as string;
+    };
+    const verifyEvalBody = (over: Record<string, unknown> = {}) => ({ decision: "verified", note: "Checked against the evaluator's report", ...over });
+    const verifyEval = (id: string, body: Record<string, unknown> = verifyEvalBody(), actor: SeededUser | null = staff, assertion = "") =>
+      call("post", `/api/admin/graduate/evaluations/${id}/verify`, actor, body, assertion);
+    const patchEval = (id: string, body: Record<string, unknown>, actor: SeededUser | null = staff) => call("patch", `/api/admin/graduate/evaluations/${id}`, actor, body);
+    const dbEval = async (id: string) => (await rowsOf(`select * from graduate_credential_evaluations where id = ${q(id)}`))[0];
+    const studentEvals = async (user: SeededUser) => {
+      const res = await call("get", "/api/student/graduate", user);
+      expect(res.status).toBe(200);
+      return res.body.evaluations as any[];
+    };
+    const ACADEMIC_TABLES = [
+      "graduate_program_offerings",
+      "graduate_cohort_rule_sets",
+      "student_graduate_programs",
+      "graduate_subjects",
+      "graduate_records",
+      "graduate_credit_entries",
+    ] as const;
+
+    it("E01 International Italian status and foreign evaluation outcomes are stored separately", async () => {
+      const { user, student } = await newStudent("e01");
+      const programId = await mustEnroll(student.id, uniOffering, rs2026);
+      const before = await snapshotTables(pg, ACADEMIC_TABLES);
+      const classificationBefore = (await staffProgram(student.id, programId)).offering;
+      expect(classificationBefore.qualificationClassification).toBe("university_first_level_master");
+
+      const id = await mustRecord(student.id, { programId });
+      const prelim = await mustRecord(student.id, { programId, evaluationType: "preliminary_tool", reportReference: "tool-capture-1" });
+      expect((await verifyEval(id)).status).toBe(200);
+      expect((await verifyEval(prelim)).status).toBe(200);
+      const rejected = await mustRecord(student.id, { programId, evaluator: "ece", conclusion: "bachelors_equivalent", conclusionText: "Bachelor's level (synthetic)" });
+      expect((await verifyEval(rejected, verifyEvalBody({ decision: "rejected", note: "Does not match the report" }))).status).toBe(200);
+
+      expect(await snapshotTables(pg, ACADEMIC_TABLES)).toEqual(before);
+      const after = await staffProgram(student.id, programId);
+      expect(after.offering.qualificationClassification).toBe(classificationBefore.qualificationClassification);
+      expect(after.offering.classificationStatus).toBe(classificationBefore.classificationStatus);
+      expect(after.offering).toEqual(classificationBefore);
+      const ws = await workspace(student.id);
+      expect(ws.evaluations).toHaveLength(3);
+      expect(ws.offerings.find((o: any) => o.id === uniOffering.id)).toMatchObject({ qualificationClassification: "university_first_level_master", classificationStatus: "institution_stated" });
+      // the programme the student sees carries no evaluation data; evaluations come as their own list
+      const view = await studentView(user, programId);
+      expect(JSON.stringify(view)).not.toMatch(/WES|equivalent/i);
+      expect((await studentEvals(user)).length).toBe(3);
+    });
+
+    it("E02 Evaluations are tracked by evaluator, destination country, exact qualification, intended use, report date and actual conclusion", async () => {
+      const { user, student } = await newStudent("e02");
+      const programId = await mustEnroll(student.id, uniOffering, rs2026);
+      const title = "Master universitario di primo livello in Sales Management and Marketing (exact title as issued, synthetic)";
+      const us = await mustRecord(student.id, { programId, qualificationEvaluated: title, intendedUse: "further_study", reportDate: "2026-09-15", reportReference: "WES-SYN-E02" });
+      const nl = await mustRecord(student.id, {
+        evaluator: "nuffic", destinationCountry: "NL", qualificationEvaluated: title, intendedUse: "employment", reportDate: "2026-10-05", reportReference: "NUF-SYN-E02",
+        conclusion: "professional_masters_equivalent", conclusionText: "Comparable to a Dutch professional (HBO) master's (synthetic wording).",
+      });
+      const ws = await workspace(student.id);
+      expect(ws.evaluations.map((e: any) => e.id)).toEqual([nl, us]); // newest first
+      const row = ws.evaluations.find((e: any) => e.id === us);
+      expect(row).toMatchObject({
+        studentId: student.id, programId, evaluator: "wes_us", destinationCountry: "US", qualificationEvaluated: title, awardingInstitution: "unimarconi",
+        intendedUse: "further_study", evaluationType: "completed_report", status: "completed", reportDate: "2026-09-15", reportReference: "WES-SYN-E02",
+        conclusion: "masters_equivalent", verificationStatus: "unknown", reviewerUserId: null,
+      });
+      expect(row.conclusionText).toMatch(/U\.S\. master's degree/);
+      expect(row.view).toMatchObject({ evaluatorLabel: "WES (United States)", destinationCountry: "US", intendedUse: "further study", reportDate: "2026-09-15" });
+      expect(row.blockers).toEqual([]); // record is complete; verification itself is the staff decision
+      const nlRow = ws.evaluations.find((e: any) => e.id === nl);
+      expect(nlRow).toMatchObject({ evaluator: "nuffic", destinationCountry: "NL", intendedUse: "employment", conclusion: "professional_masters_equivalent", reportDate: "2026-10-05" });
+
+      const mine = await studentEvals(user);
+      expect(mine.map((e) => e.id)).toEqual([nl, us]);
+      expect(mine[1]).toMatchObject({
+        evaluatorLabel: "WES (United States)", destinationCountry: "US", qualificationEvaluated: title, intendedUse: "further study", reportDate: "2026-09-15",
+        conclusionLabel: "Master's-level equivalent", status: "completed",
+      });
+      expect(mine[0]).toMatchObject({ evaluatorLabel: "Nuffic (Netherlands)", destinationCountry: "NL", conclusionLabel: expect.stringMatching(/Professional master/) });
+      expect(mine[0].conclusionText).toMatch(/HBO/);
+      // an incomplete record is tracked with what is still missing
+      const planned = await mustRecord(student.id, { evaluator: "ece", destinationCountry: "CA", status: "planned", reportDate: null, reportReference: null, conclusion: "not_yet_known", conclusionText: null });
+      const planRow = (await workspace(student.id)).evaluations.find((e: any) => e.id === planned);
+      expect(planRow.blockers).toEqual(expect.arrayContaining(["NOT_COMPLETED", "REPORT_DATE_REQUIRED", "REPORT_REFERENCE_REQUIRED", "CONCLUSION_REQUIRED", "CONCLUSION_TEXT_REQUIRED"]));
+      expect((await studentEvals(user)).find((e) => e.id === planned).conclusionLabel).toBe("Not yet known");
+    });
+
+    it("E03 A preliminary equivalency-tool result is never presented as an official evaluation", async () => {
+      const { user, student } = await newStudent("e03");
+      const tool = await mustRecord(student.id, { evaluationType: "preliminary_tool", reportReference: "tool-capture-2026-10-01", conclusionText: "Tool suggests master's equivalence (synthetic)." });
+      let mine = await studentEvals(user);
+      expect(mine.find((e) => e.id === tool)).toMatchObject({ isPreliminary: true, isOfficialOutcome: false });
+      expect((await verifyEval(tool)).status).toBe(200);
+      mine = await studentEvals(user);
+      const toolView = mine.find((e) => e.id === tool);
+      expect(toolView).toMatchObject({ isPreliminary: true, isOfficialOutcome: false, verificationLabel: expect.any(String) });
+      expect(toolView.typeLabel).toMatch(/not an official evaluation/i);
+      expect(toolView.caveat).toMatch(/indication only/);
+
+      const advisory = await mustRecord(student.id, { evaluationType: "advisory_statement", evaluator: "other", evaluatorName: "Synthetic Advisory Service", reportReference: "ADV-1" });
+      expect((await verifyEval(advisory)).status).toBe(200);
+      expect((await studentEvals(user)).find((e) => e.id === advisory)).toMatchObject({ isPreliminary: false, isOfficialOutcome: false, evaluatorLabel: "Synthetic Advisory Service" });
+
+      const report = await mustRecord(student.id, { evaluationType: "completed_report", reportReference: "WES-SYN-E03" });
+      expect((await studentEvals(user)).find((e) => e.id === report)).toMatchObject({ isOfficialOutcome: false, isPreliminary: false });
+      expect((await verifyEval(report)).status).toBe(200);
+      const official = (await studentEvals(user)).find((e) => e.id === report);
+      expect(official).toMatchObject({ isOfficialOutcome: true, isPreliminary: false });
+      expect(official.caveat).toMatch(/for US and this purpose only/);
+      // the stored type never changes by verification
+      expect((await dbEval(tool)).evaluation_type).toBe("preliminary_tool");
+    });
+
+    it("E04 WES Canada outcomes are not confused with WES U.S. outcomes", async () => {
+      const { user, student } = await newStudent("e04");
+      const before = Number((await rowsOf(`select count(*)::int as n from graduate_credential_evaluations where student_id = ${q(student.id)}`))[0].n);
+      const a = await recordEval(student.id, { evaluator: "wes_canada", destinationCountry: "US" });
+      const b = await recordEval(student.id, { evaluator: "wes_us", destinationCountry: "CA" });
+      const c = await recordEval(student.id, { evaluator: "nuffic", destinationCountry: "US" });
+      for (const res of [a, b, c]) {
+        expect(res.status).toBe(422);
+        expect(code(res)).toBe("GRADUATE_EVIDENCE_REQUIRED");
+        expect(res.body.error.missing).toEqual(["EVALUATOR_COUNTRY_MISMATCH"]);
+        expect(res.body.workspace).toBeUndefined();
+      }
+      expect(Number((await rowsOf(`select count(*)::int as n from graduate_credential_evaluations where student_id = ${q(student.id)}`))[0].n)).toBe(before);
+
+      const us = await mustRecord(student.id, { evaluator: "wes_us", destinationCountry: "US", reportReference: "WES-US-1", conclusion: "masters_equivalent", conclusionText: "U.S. master's equivalent (synthetic)" });
+      const ca = await mustRecord(student.id, {
+        evaluator: "wes_canada", destinationCountry: "CA", reportReference: "WES-CA-1", conclusion: "graduate_certificate_or_diploma",
+        conclusionText: "Canadian graduate diploma equivalent (synthetic)",
+      });
+      expect(us).not.toBe(ca);
+      expect((await verifyEval(us)).status).toBe(200);
+      expect((await verifyEval(ca)).status).toBe(200);
+      const mine = await studentEvals(user);
+      expect(mine).toHaveLength(2);
+      expect(mine.find((e) => e.id === us)).toMatchObject({ evaluatorLabel: "WES (United States)", destinationCountry: "US", conclusionLabel: "Master's-level equivalent" });
+      expect(mine.find((e) => e.id === ca)).toMatchObject({ evaluatorLabel: "WES Canada", destinationCountry: "CA", conclusionLabel: "Graduate certificate or diploma equivalent" });
+      // a verified row cannot be re-pointed at the other country or evaluator (not even by a patch body)
+      expect((await patchEval(ca, { destinationCountry: "US" })).status).toBe(400);
+      expect((await patchEval(ca, { evaluator: "wes_us" })).status).toBe(400);
+      expect((await dbEval(ca)).destination_country).toBe("CA");
+    });
+
+    it("E05 Credential-evaluation evidence does not change ENEB transfer-credit, examination or graduation rules", async () => {
+      const { user, student } = await newStudent("e05");
+      const programId = await mustEnroll(student.id, uniOffering, rs2026);
+      await verifiedRegistration(programId);
+      const decision = await addRecord(programId, "recognition_decision");
+      expect((await verify(decision, verifyBody(unimarconiEvidence({ outcome: "partial", decisionDate: "2026-05-02" })))).status).toBe(200);
+      expect((await call("post", `/api/admin/graduate/programs/${programId}/credits`, staff, { authority: "university_recognized", recordId: decision, unit: "ECTS", label: "Analytics block", amount: 9, recognitionOutcome: "recognized" })).status).toBe(201);
+      const sub = await addSubject(programId, "unimarconi", "Data Governance");
+      await call("post", `/api/admin/graduate/subjects/${sub}/result`, staff, { resultStatus: "passed", gradeValue: 28, gradeScale: 30, gradeDisplay: "28/30", issuingInstitution: "unimarconi", verificationStatus: "verified", documentReference: "SYN-E05" });
+      await addRecord(programId, "time_requirement", { trackingStatus: "completed" });
+      await addRecord(programId, "graduation_procedure", { trackingStatus: "completed", details: { ceremonyDate: "2026-10-15" } });
+
+      const snap = async () => {
+        const ws = await workspace(student.id);
+        const { evaluations, ...rest } = ws;
+        const sv = await call("get", "/api/student/graduate", user);
+        return { tables: await snapshotTables(pg, ACADEMIC_TABLES), staff: stable(200, rest), student: stable(200, sv.body.programs), evaluations };
+      };
+      const before = await snap();
+      expect(before.evaluations).toHaveLength(0);
+
+      const id = await mustRecord(student.id, { programId, evaluator: "wes_us", conclusion: "masters_equivalent" });
+      expect((await verifyEval(id)).status).toBe(200);
+      const after = await snap();
+      expect(after.tables).toEqual(before.tables);
+      expect(after.staff).toBe(before.staff);
+      expect(after.student).toBe(before.student);
+      expect(after.evaluations).toHaveLength(1);
+      // the pinned rule set, credit layers and graduation milestones are exactly as before
+      const view = await studentView(user, programId);
+      expect(view.graduation.awardConferred).toBe(false);
+      expect(view.previousLearning.decision.outcome).toBe("partial");
+      expect((await staffProgram(student.id, programId)).program.ruleSetId).toBe(rs2026.id);
+      expect(JSON.stringify(view)).not.toMatch(/WES|evaluat/i);
+    });
+
+    it("E06 Verification requires a completed report with date, reference, conclusion and the evaluator's wording; verified evidence cannot be silently edited", async () => {
+      const { user, student } = await newStudent("e06");
+      const id = await mustRecord(student.id, { status: "in_progress", reportDate: null, reportReference: null, conclusion: "not_yet_known", conclusionText: null });
+      const blocked = await verifyEval(id);
+      expect(blocked.status).toBe(422);
+      expect(code(blocked)).toBe("GRADUATE_EVIDENCE_REQUIRED");
+      expect(blocked.body.error.missing).toEqual(
+        expect.arrayContaining(["NOT_COMPLETED", "REPORT_DATE_REQUIRED", "REPORT_REFERENCE_REQUIRED", "CONCLUSION_REQUIRED", "CONCLUSION_TEXT_REQUIRED"]),
+      );
+      expect(blocked.body.workspace).toBeUndefined();
+      let row = await dbEval(id);
+      expect(row).toMatchObject({ verification_status: "unknown", reviewer_user_id: null, reviewed_at: null });
+      expect(await rowsOf(`select 1 from graduate_events where entity_id = ${q(id)} and action like 'evaluation_verified'`)).toHaveLength(0);
+
+      // conflicting needs its detail
+      const noDetail = await verifyEval(id, verifyEvalBody({ decision: "conflicting" }));
+      expect(noDetail.status).toBe(422);
+      expect(noDetail.body.error.missing).toContain("CONFLICT_DETAIL_REQUIRED");
+
+      // one missing item at a time
+      expect((await patchEval(id, { status: "completed", reportDate: "2026-10-02", reportReference: "WES-SYN-E06", conclusion: "masters_equivalent" })).status).toBe(200);
+      const noWording = await verifyEval(id);
+      expect(noWording.status).toBe(422);
+      expect(noWording.body.error.missing).toEqual(["CONCLUSION_TEXT_REQUIRED"]);
+      expect((await patchEval(id, { conclusionText: "Equivalent to a U.S. master's degree (synthetic)." })).status).toBe(200);
+      const ok = await verifyEval(id);
+      expect(ok.status).toBe(200);
+      const wsRow = ok.body.workspace.evaluations.find((e: any) => e.id === id);
+      expect(wsRow).toMatchObject({ verificationStatus: "verified", reviewerUserId: staff.id, blockers: [] });
+      row = await dbEval(id);
+      expect(row).toMatchObject({ verification_status: "verified", reviewer_user_id: staff.id });
+      expect(row.reviewed_at).toBeTruthy();
+
+      // a verified evaluation's evidence cannot be silently edited
+      const snapshot = JSON.stringify(row);
+      for (const body of [{ conclusion: "bachelors_equivalent" }, { conclusionText: "Edited wording" }, { reportDate: "2025-01-01" }, { reportReference: "OTHER" }, { documentId: null }, { conclusion: "other", note: "mixed" }]) {
+        const res = await patchEval(id, body);
+        expect(res.status, JSON.stringify(body)).toBe(409);
+        expect(code(res)).toBe("GRADUATE_CONFLICT");
+        expect(res.body.error.message).toMatch(/re-verify/);
+      }
+      const unchanged = await dbEval(id);
+      expect(JSON.stringify(unchanged)).toBe(snapshot);
+      // a note may change; verification and evidence stay
+      expect((await patchEval(id, { note: "Follow-up with the graduate" })).status).toBe(200);
+      row = await dbEval(id);
+      expect(row).toMatchObject({ note: "Follow-up with the graduate", verification_status: "verified", conclusion: "masters_equivalent" });
+      // a status change away from "completed" can no longer stand as verified
+      const second = await mustRecord(student.id, { reportReference: "WES-SYN-E06-B" });
+      expect((await verifyEval(second)).status).toBe(200);
+      expect((await patchEval(second, { status: "withdrawn" })).status).toBe(200);
+      expect(await dbEval(second)).toMatchObject({ status: "withdrawn", verification_status: "unknown", reviewer_user_id: null });
+      expect((await studentEvals(user)).find((e) => e.id === second)).toMatchObject({ isOfficialOutcome: false });
+
+      // ownership of the attached document
+      const other = await newStudent("e06b");
+      const foreignDoc = await seedDoc(other.student.id);
+      const denied = await recordEval(student.id, { reportReference: null, documentId: foreignDoc });
+      expect(denied.status).toBe(403);
+      expect(code(denied)).toBe("GRADUATE_FORBIDDEN");
+      expect((await patchEval(id, { documentId: foreignDoc })).status).toBe(409); // verified: evidence edit
+      const ownDoc = await seedDoc(student.id);
+      const byDoc = await mustRecord(student.id, { reportReference: null, documentId: ownDoc });
+      expect((await verifyEval(byDoc)).status).toBe(200);
+      // a programme of someone else is not found
+      const otherProgram = await mustEnroll(other.student.id, uniOffering, rs2026);
+      expect((await recordEval(student.id, { programId: otherProgram })).status).toBe(404);
+      expect((await recordEval("no-such-student")).status).toBe(404);
+      expect((await verifyEval("no-such-evaluation")).status).toBe(404);
+      expect((await patchEval("no-such-evaluation", { note: "x" })).status).toBe(404);
+      // validation
+      expect((await recordEval(student.id, { evaluator: "other", evaluatorName: null })).status).toBe(400);
+      expect((await recordEval(student.id, { destinationCountry: "usa" })).status).toBe(400);
+      expect((await patchEval(id, {})).status).toBe(400);
+    });
+
+    it("E07 Students cannot record or verify evaluations, cannot see another student's, and staff actions are audited", async () => {
+      const a = await newStudent("e07a");
+      const b = await newStudent("e07b");
+      const programId = await mustEnroll(a.student.id, uniOffering, rs2026);
+      const bEval = await mustRecord(b.student.id, { reportReference: "WES-SYN-E07-B", conclusionText: "Secret wording of student B (synthetic)." });
+
+      // no write path for students, coaches or anonymous callers
+      for (const actor of [a.user, b.user, coach]) {
+        expect((await recordEval(a.student.id, {}, actor)).status).toBe(403);
+        expect((await patchEval(bEval, { note: "x" }, actor)).status).toBe(403);
+        expect((await verifyEval(bEval, verifyEvalBody(), actor)).status).toBe(403);
+        expect((await call("get", wsPath(a.student.id), actor)).status).toBe(403);
+      }
+      expect((await recordEval(a.student.id, {}, null)).status).toBe(401);
+      expect((await verifyEval(bEval, verifyEvalBody(), null)).status).toBe(401);
+      expect(await rowsOf(`select 1 from graduate_credential_evaluations where student_id = ${q(a.student.id)}`)).toHaveLength(0);
+      expect((await dbEval(bEval)).verification_status).toBe("unknown");
+      // a student cannot even smuggle an evaluation through the student routes
+      expect((await call("post", "/api/student/graduate/evaluations", a.user, evalBody())).status).toBe(404);
+
+      // student A sees none of B's evaluations
+      expect(await studentEvals(a.user)).toEqual([]);
+      const aView = await call("get", "/api/student/graduate", a.user);
+      expect(JSON.stringify(aView.body)).not.toMatch(/Secret wording|WES-SYN-E07-B/);
+      const bMine = await studentEvals(b.user);
+      expect(bMine.map((e) => e.id)).toEqual([bEval]);
+
+      // staff actions are audited: history rows (same transaction) + captured audit sink
+      mocks.audit.length = 0;
+      const rec = await recordEval(a.student.id, { programId, reportReference: null, conclusionText: null, status: "submitted", reportDate: null, conclusion: "not_yet_known" }, staff);
+      expect(rec.status).toBe(201);
+      const id = rec.body.id as string;
+      expect((await verifyEval(id, verifyEvalBody(), staff)).status).toBe(422); // blocked
+      expect((await patchEval(id, { status: "completed", reportDate: "2026-10-03", reportReference: "WES-SYN-E07", conclusion: "masters_equivalent", conclusionText: "Master's equivalent (synthetic)." }, admin)).status).toBe(200);
+      expect((await verifyEval(id, verifyEvalBody(), staff)).status).toBe(200);
+      expect((await patchEval(id, { note: "Filed" }, staff)).status).toBe(200);
+
+      const events = (await rowsOf(`select * from graduate_events where entity_type = 'evaluation' and entity_id = ${q(id)} order by created_at, id`));
+      expect(events.map((e) => e.action)).toEqual(["evaluation_recorded", "evaluation_updated", "evaluation_verified", "evaluation_updated"]);
+      for (const e of events) {
+        expect(e.program_id).toBe(programId);
+        expect(e.student_id).toBe(a.student.id);
+        expect(e.actor_user_id).toBeTruthy();
+      }
+      expect(events[0]).toMatchObject({ actor_user_id: staff.id, actor_role: "staff", before: null });
+      expect(events[0].after).toMatchObject({ id, evaluator: "wes_us" });
+      expect(events[1]).toMatchObject({ actor_user_id: admin.id, actor_role: "admin" });
+      expect(events[1].before.status).toBe("submitted");
+      expect(events[1].after.status).toBe("completed");
+      expect(events[2].before.verificationStatus ?? events[2].before.verification_status).toBe("unknown");
+      expect(events[2].after.verificationStatus ?? events[2].after.verification_status).toBe("verified");
+      // the blocked attempt wrote nothing to the history
+      expect(events.some((e) => e.after?.verificationStatus === "verified" && e.before?.verificationStatus === "unknown" && e.action !== "evaluation_verified")).toBe(false);
+
+      const types = mocks.audit.map((x) => x.eventType);
+      for (const t of ["graduate.evaluation_recorded", "graduate.evaluation_updated", "graduate.evaluation_verified", "graduate.official_change_blocked"]) {
+        expect(types, t).toContain(t);
+      }
+      expect(types.every((t) => String(t).startsWith("graduate."))).toBe(true);
+      const recorded = mocks.audit.find((x) => x.eventType === "graduate.evaluation_recorded")!;
+      expect(recorded).toMatchObject({ actorUserId: staff.id, actorRole: "staff", targetResourceId: programId });
+      expect(recorded.metadata).toMatchObject({ entityType: "evaluation", entityId: id, studentId: a.student.id });
+      const blockedAudit = mocks.audit.find((x) => x.eventType === "graduate.official_change_blocked")!;
+      expect(blockedAudit.metadata.missing).toEqual(expect.arrayContaining(["NOT_COMPLETED"]));
+      const verifiedAudit = mocks.audit.find((x) => x.eventType === "graduate.evaluation_verified")!;
+      expect(verifiedAudit.actorUserId).toBe(staff.id);
+      expect(JSON.stringify(mocks.audit)).not.toMatch(/Bearer|eyJ|Master's equivalent \(synthetic\)/);
+      // the history stays append-only
+      await expect(pg.sql(`update graduate_events set action = 'tampered' where entity_id = ${q(id)}`)).rejects.toThrow(/append-only/);
+      // admins and staff both read the same evaluations
+      expect((await workspace(a.student.id, admin)).evaluations).toHaveLength(1);
+    });
+  });
+
   /** Verified admission + registration so later university steps can be tested. */
   async function verifiedRegistration(programId: string): Promise<string> {
     const admission = await addRecord(programId, "university_admission");

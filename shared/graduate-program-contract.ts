@@ -1064,6 +1064,14 @@ export interface EvaluationView {
 export const EVALUATION_FRAMING =
   "Foreign credential evaluations are separate from the Italian award and do not change it. Results depend on the evaluator, the country and the purpose, so one result does not predict another.";
 
+function countryName(code: string): string {
+  try {
+    return new Intl.DisplayNames(["en"], { type: "region" }).of(code) ?? code;
+  } catch {
+    return code;
+  }
+}
+
 export function buildEvaluationView(e: CredentialEvaluationRecord): EvaluationView {
   const preliminary = e.evaluationType === "preliminary_tool";
   const official = e.evaluationType === "completed_report" && e.status === "completed" && e.verificationStatus === "verified";
@@ -1084,7 +1092,7 @@ export function buildEvaluationView(e: CredentialEvaluationRecord): EvaluationVi
     caveat: preliminary
       ? "A preliminary tool result is an indication only. It is not an evaluation report."
       : official
-        ? `The conclusion of ${EVALUATOR_LABEL[e.evaluator]} for ${e.destinationCountry} and this purpose only.`
+        ? `The conclusion of ${EVALUATOR_LABEL[e.evaluator]} for ${countryName(e.destinationCountry)} and this purpose only.`
         : "Not yet confirmed from the evaluator's report.",
   };
 }

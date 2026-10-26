@@ -1,6 +1,6 @@
 /** Section C: previous learning. Requested credits are never shown as recognized. */
 import React from "react";
-import { Check } from "lucide-react";
+import { Check, Circle, CircleDot } from "lucide-react";
 import type { StudentGraduateProgramView } from "@shared/graduate-program-contract";
 import { cn } from "@/lib/utils";
 import { SectionHeading, StatusPill, cardClass } from "@/components/student-progress/student-ui";
@@ -9,26 +9,28 @@ import { SECTION_IDS, formatCount, formatDate, recognitionItemStatus } from "./g
 type Learning = NonNullable<StudentGraduateProgramView["previousLearning"]>;
 
 const STEPS: { key: Learning["requestState"]; label: string }[] = [
-  { key: "not_requested", label: "Not requested" },
   { key: "requested", label: "Requested" },
   { key: "under_review", label: "Under review" },
   { key: "decided", label: "Decided" },
 ];
 
+/** Only completed steps get a tick. Before any request there is no current step at all. */
 export function RequestSteps({ state }: { state: Learning["requestState"] }) {
   const current = STEPS.findIndex((s) => s.key === state);
   return (
-    <ol className="grid grid-cols-2 gap-3 sm:grid-cols-4" aria-label="Recognition request steps" data-testid="request-steps">
+    <ol className="grid grid-cols-3 gap-3" aria-label="Recognition request steps" data-testid="request-steps">
       {STEPS.map((s, i) => {
+        const done = current >= 0 && (i < current || (state === "decided" && i === current));
+        const isCurrent = i === current && !done;
         const reached = i <= current;
-        const isCurrent = i === current;
         return (
-          <li key={s.key} className="min-w-0" aria-current={isCurrent ? "step" : undefined} data-reached={reached}>
+          <li key={s.key} className="min-w-0" aria-current={isCurrent ? "step" : undefined} data-reached={reached} data-done={done}>
             <span aria-hidden="true" className={cn("mb-2 block h-1.5 rounded-full", reached ? "bg-student-gold" : "border border-dashed border-student-line-strong")} />
-            <p className={cn("flex items-center gap-1.5 text-sm", isCurrent ? "font-semibold text-student-ink" : reached ? "text-student-ink" : "text-student-muted")}>
-              {reached && !isCurrent ? <Check className="h-3.5 w-3.5 text-student-gold-ink" aria-hidden="true" /> : <span className="text-xs">{i + 1}</span>}
+            <p className={cn("flex items-center gap-1.5 text-sm", isCurrent ? "font-semibold text-student-ink" : done ? "text-student-ink" : "text-student-muted")}>
+              {done ? <Check className="h-3.5 w-3.5 text-student-gold-ink" aria-hidden="true" /> : isCurrent ? <CircleDot className="h-3.5 w-3.5 text-student-gold-ink" aria-hidden="true" /> : <Circle className="h-3.5 w-3.5" aria-hidden="true" />}
               {s.label}
               {isCurrent && <span className="sr-only"> (current step)</span>}
+              {done && <span className="sr-only"> (done)</span>}
             </p>
           </li>
         );
@@ -43,7 +45,6 @@ export function PreviousLearningSection({ learning }: { learning: Learning }) {
     <section aria-labelledby="graduate-learning-title" id={SECTION_IDS.learning} className="scroll-mt-24 space-y-4" data-testid="graduate-learning">
       <SectionHeading
         id="graduate-learning-title"
-        eyebrow="My Master's"
         title="Previous learning"
         description="Whether the university recognizes your completed ENEB subjects is the university's decision, not ENEB's and not ours."
       />

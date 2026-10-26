@@ -5,7 +5,7 @@ import type { StudentGraduateProgramView } from "@shared/graduate-program-contra
 import { cn } from "@/lib/utils";
 import { Pill, SectionHeading, StatusPill, buttonClass, cardClass } from "@/components/student-progress/student-ui";
 import { useGraduateActions } from "./graduate-actions";
-import { SECTION_IDS, TOPIC_APPROVAL_LABEL, formatCount, formatDate, thesisOutcomeDisplay, thesisStrip, validateTopic } from "./graduate-presentation";
+import { SECTION_IDS, TOPIC_APPROVAL_LABEL, studentBasis, formatCount, formatDate, thesisOutcomeDisplay, thesisStrip, validateTopic } from "./graduate-presentation";
 
 type Thesis = NonNullable<StudentGraduateProgramView["thesis"]>;
 
@@ -147,7 +147,7 @@ export function ThesisSection({ programId, thesis }: { programId: string; thesis
   const result = thesis.result ? thesisOutcomeDisplay(thesis.result.outcome) : null;
   return (
     <section aria-labelledby="graduate-thesis-title" id={SECTION_IDS.thesis} className="scroll-mt-24 space-y-4" data-testid="graduate-thesis">
-      <SectionHeading id="graduate-thesis-title" eyebrow="My Master's" title="My thesis" description="The terms below are your cohort's terms, not a rule for every student." />
+      <SectionHeading id="graduate-thesis-title" title="My thesis" description="The terms below are your cohort's terms, not a rule for every student." />
       <div className={cn(cardClass, "space-y-5")}>
         <ThesisStatusStrip thesis={thesis} />
 
@@ -172,7 +172,7 @@ export function ThesisSection({ programId, thesis }: { programId: string; thesis
             <dd className="font-medium text-student-ink">
               {thesis.minWords ? `${formatCount(thesis.minWords)} words` : "To be confirmed for your cohort"}
             </dd>
-            {thesis.minWordsBasis && <dd className="text-xs text-student-muted" data-testid="thesis-basis">Basis: {thesis.minWordsBasis}</dd>}
+            {thesis.minWordsBasis && <dd className="text-xs text-student-muted" data-testid="thesis-basis">Basis: {studentBasis(thesis.minWordsBasis)}</dd>}
           </div>
           <div data-testid="thesis-deadline">
             <dt className="text-student-muted">Deadline</dt>

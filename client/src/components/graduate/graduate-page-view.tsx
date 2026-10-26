@@ -5,7 +5,7 @@
 import React, { useState } from "react";
 import { Link } from "wouter";
 import { AlertCircle, GraduationCap, LifeBuoy } from "lucide-react";
-import type { StudentGraduateProgramView, StudentGraduateView } from "@shared/graduate-program-contract";
+import type { EvaluationView, StudentGraduateProgramView, StudentGraduateView } from "@shared/graduate-program-contract";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { StudentSurface, buttonClass, cardClass } from "@/components/student-progress/student-ui";
@@ -15,6 +15,8 @@ import { PreviousLearningSection } from "./graduate-learning";
 import { ThesisSection } from "./graduate-thesis";
 import { AssessmentSection, CreditsSection } from "./graduate-assessment-credits";
 import { GraduationSection } from "./graduate-graduation";
+import { EvaluationsSection } from "./graduate-evaluations";
+import { showEvaluations } from "./graduate-presentation";
 
 export function ProgramSwitcher({ programs, selectedId, onSelect }: { programs: readonly StudentGraduateProgramView[]; selectedId: string; onSelect: (id: string) => void }) {
   return (
@@ -44,16 +46,18 @@ export function ProgramSwitcher({ programs, selectedId, onSelect }: { programs: 
   );
 }
 
-export function GraduateProgramPanel({ program }: { program: StudentGraduateProgramView }) {
+export function GraduateProgramPanel({ program, evaluations = [] }: { program: StudentGraduateProgramView; evaluations?: readonly EvaluationView[] }) {
+  const evals = showEvaluations(program, evaluations);
   return (
     <div className="space-y-8 sm:space-y-10" data-testid="graduate-program" data-route={program.route}>
       <GraduateHeader program={program} />
-      <GraduateSectionNav program={program} />
+      <GraduateSectionNav program={program} evaluationsShown={evals} />
       <ModulesSection program={program} />
       {program.previousLearning && <PreviousLearningSection learning={program.previousLearning} />}
       {program.thesis && <ThesisSection programId={program.programId} thesis={program.thesis} />}
       <AssessmentSection assessment={program.assessment} />
       {program.graduation && <GraduationSection graduation={program.graduation} />}
+      {evals && <EvaluationsSection evaluations={evaluations} university={program.route === "eneb_unimarconi"} />}
       <CreditsSection program={program} />
       <aside className={cn(cardClass, "flex flex-wrap items-center justify-between gap-3")} data-testid="graduate-help">
         <p className="flex items-center gap-2 text-sm text-student-ink">
@@ -79,7 +83,7 @@ export function GraduatePageView({ view }: { view: StudentGraduateView }) {
       <div className="mx-auto max-w-5xl space-y-6 pb-6 pt-2 sm:pt-4">
         {view.programs.length > 1 && <ProgramSwitcher programs={view.programs} selectedId={program.programId} onSelect={setSelected} />}
         <div role={view.programs.length > 1 ? "tabpanel" : undefined} id={`panel-${program.programId}`} aria-labelledby={view.programs.length > 1 ? `tab-${program.programId}` : undefined}>
-          <GraduateProgramPanel key={program.programId} program={program} />
+          <GraduateProgramPanel key={program.programId} program={program} evaluations={view.evaluations ?? []} />
         </div>
       </div>
     </StudentSurface>

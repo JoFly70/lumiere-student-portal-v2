@@ -6,8 +6,9 @@ import React, { useState } from "react";
 import { BadgeCheck, FileCheck2, RotateCcw, PencilLine } from "lucide-react";
 import type { ModuleView, StudentGraduateProgramView, StudentProgress } from "@shared/graduate-program-contract";
 import { cn } from "@/lib/utils";
-import { Pill, SectionHeading, StatusPill, cardClass } from "@/components/student-progress/student-ui";
+import { Disclosure, Pill, SectionHeading, cardClass } from "@/components/student-progress/student-ui";
 import { useGraduateActions } from "./graduate-actions";
+import { StatePill } from "./graduate-ui";
 import { PROGRESS_OPTIONS, SECTION_IDS, progressDisplay, resultDisplay } from "./graduate-presentation";
 
 type Program = StudentGraduateProgramView;
@@ -96,7 +97,7 @@ export function ModuleRow({ programId, module }: { programId: string; module: Mo
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <StatusPill status={result.status} label={result.label} data-testid="module-result" />
+          <StatePill status={result.status} label={result.label} glyph={result.glyph} data-testid="module-result" />
           {module.grade && <span className="text-sm font-semibold text-student-ink" data-testid="module-grade">{module.grade}</span>}
         </div>
       </div>
@@ -118,18 +119,43 @@ export function ModuleRow({ programId, module }: { programId: string; module: Mo
   );
 }
 
-function Group({ title, note, programId, modules }: { title: string; note: string; programId: string; modules: readonly ModuleView[] }) {
+function Group({ title, note, programId, modules, collapsePassed = false }: { title: string; note: string; programId: string; modules: readonly ModuleView[]; collapsePassed?: boolean }) {
   if (!modules.length) return null;
   const headingId = `modules-${title.replace(/\W+/g, "-").toLowerCase()}`;
+  const passed = collapsePassed ? modules.filter((m) => m.result === "passed") : [];
+  const rest = collapsePassed ? modules.filter((m) => m.result !== "passed") : modules;
+  const verified = passed.filter((m) => m.verification === "verified").length;
+  const provenance =
+    verified === passed.length ? "checked by Lumière against ENEB documents" : verified === 0 ? "stated by ENEB, not yet checked" : `${verified} checked, ${passed.length - verified} stated by ENEB and not yet checked`;
   return (
     <section aria-labelledby={headingId} className={cn(cardClass, "space-y-3")} data-testid="module-group">
       <div>
         <h3 id={headingId} className="font-serif text-lg text-student-ink">{title}</h3>
         <p className="text-xs text-student-muted">{note}</p>
       </div>
-      <ul className="divide-y divide-student-line">
-        {modules.map((m) => <ModuleRow key={m.id} programId={programId} module={m} />)}
-      </ul>
+      {rest.length > 0 && (
+        <ul className="divide-y divide-student-line">
+          {rest.map((m) => <ModuleRow key={m.id} programId={programId} module={m} />)}
+        </ul>
+      )}
+      {passed.length > 0 && (
+        <Disclosure
+          testId="passed-eneb-summary"
+          className="rounded-xl border border-student-line bg-student-bg px-3"
+          buttonClassName="text-student-ink"
+          label={
+            <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+              <span className="font-semibold">{passed.length} of {modules.length} passed</span>
+              <span className="text-student-muted">&middot; {provenance}</span>
+              <span className="text-xs font-medium text-student-gold-ink">Show subjects</span>
+            </span>
+          }
+        >
+          <ul className="divide-y divide-student-line pb-2">
+            {passed.map((m) => <ModuleRow key={m.id} programId={programId} module={m} />)}
+          </ul>
+        </Disclosure>
+      )}
     </section>
   );
 }
@@ -141,7 +167,6 @@ export function ModulesSection({ program }: { program: Program }) {
     <section aria-labelledby="graduate-modules-title" id={SECTION_IDS.modules} className="scroll-mt-24 space-y-4" data-testid="graduate-modules">
       <SectionHeading
         id="graduate-modules-title"
-        eyebrow="My Master's"
         title="My modules"
         description="You can mark your own progress. Results and grades are recorded by Lumière from official documents and cannot be edited here."
       />
@@ -149,7 +174,7 @@ export function ModulesSection({ program }: { program: Program }) {
         <p className={cn(cardClass, "text-sm text-student-muted")}>No modules are listed for this programme yet.</p>
       ) : (
         <div className="space-y-4">
-          <Group title="ENEB subjects" note="Assessed by ENEB. These count toward your ENEB qualification." programId={program.programId} modules={eneb} />
+          <Group title="ENEB subjects" note="Assessed by ENEB. These count toward your ENEB qualification." programId={program.programId} modules={eneb} collapsePassed />
           <Group title="University subjects" note="Assessed by the university. Only the university's results count toward the university degree." programId={program.programId} modules={uni} />
         </div>
       )}

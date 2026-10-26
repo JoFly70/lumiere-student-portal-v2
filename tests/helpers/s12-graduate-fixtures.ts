@@ -372,3 +372,60 @@ export function journeyB(stage: JourneyBStage, opts: { ruleSet?: RuleSetRecord }
     ],
   };
 }
+
+// ---------------------------------------------------------------- foreign credential evaluations (synthetic)
+import type { CredentialEvaluationRecord } from "../../shared/graduate-program-contract";
+
+/**
+ * SYNTHETIC evaluations for screens and tests. The wording says so explicitly: these are
+ * not real evaluator outcomes and must never be read as evidence about the pathway.
+ */
+export function syntheticEvaluations(studentId = "stu-syn-b", programId: string | null = "prog-b"): CredentialEvaluationRecord[] {
+  const base = {
+    studentId,
+    programId,
+    evaluatorName: null,
+    qualificationEvaluated: "Master universitario di primo livello in Big Data and Business Intelligence (synthetic)",
+    awardingInstitution: "unimarconi" as const,
+    documentId: null,
+    conflictingEvidence: null,
+    note: null,
+    createdBy: "staff-1",
+    createdAt: T0,
+    updatedAt: T0,
+  };
+  return [
+    {
+      ...base,
+      id: "ev-wes-us-tool",
+      evaluator: "wes_us",
+      destinationCountry: "US",
+      intendedUse: "employment",
+      evaluationType: "preliminary_tool",
+      status: "completed",
+      reportDate: "2026-10-20",
+      reportReference: "Tool screenshot (synthetic)",
+      conclusion: "masters_equivalent",
+      conclusionText: "SYNTHETIC FIXTURE: tool indicated a master's-level equivalent. Not a real result.",
+      verificationStatus: "evidence_received",
+      reviewerUserId: null,
+      reviewedAt: null,
+    },
+    {
+      ...base,
+      id: "ev-wes-ca-report",
+      evaluator: "wes_canada",
+      destinationCountry: "CA",
+      intendedUse: "immigration",
+      evaluationType: "completed_report",
+      status: "in_progress",
+      reportDate: null,
+      reportReference: null,
+      conclusion: "not_yet_known",
+      conclusionText: null,
+      verificationStatus: "unknown",
+      reviewerUserId: null,
+      reviewedAt: null,
+    },
+  ];
+}

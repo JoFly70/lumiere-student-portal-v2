@@ -4,21 +4,26 @@ import { HelpCircle } from "lucide-react";
 import type { StudentGraduateProgramView } from "@shared/graduate-program-contract";
 import { cn } from "@/lib/utils";
 import { Pill, SectionHeading, cardClass } from "@/components/student-progress/student-ui";
-import { SECTION_IDS, creditAmountLabel, isUnconfirmedBasis, visibleCreditLayers } from "./graduate-presentation";
+import { SECTION_IDS, conditionalLabel, creditAmountLabel, creditIsUnknown, isUnconfirmedBasis, studentBasis, visibleCreditLayers } from "./graduate-presentation";
 
 type Program = StudentGraduateProgramView;
+
+const norm = (v: string) => v.trim().replace(/[.\s]+$/, "").toLowerCase();
+const sameText = (a: string, b: string) => norm(a) === norm(b);
 
 export function AssessmentSection({ assessment }: { assessment: Program["assessment"] }) {
   const unconfirmed = isUnconfirmedBasis(assessment.basis);
   return (
     <section aria-labelledby="graduate-assessment-title" id={SECTION_IDS.assessment} className="scroll-mt-24 space-y-4" data-testid="graduate-assessment">
-      <SectionHeading id="graduate-assessment-title" eyebrow="My Master's" title="How you are assessed" description="This is the rule for your own cohort only." />
+      <SectionHeading id="graduate-assessment-title" title="How you are assessed" description="This is the rule for your own cohort only." />
       <div className={cn(cardClass, "space-y-3")}>
         <div className="flex flex-wrap items-center gap-2">
           <h3 className="font-serif text-lg text-student-ink" data-testid="assessment-mode">{assessment.mode}</h3>
           {unconfirmed && <Pill tone="attn" icon={<HelpCircle className="h-3 w-3" aria-hidden="true" />} data-testid="assessment-unconfirmed">Not confirmed by the university</Pill>}
         </div>
-        <p className="text-sm leading-relaxed text-student-ink" data-testid="assessment-description">{assessment.description}</p>
+        {!sameText(assessment.description, assessment.mode) && (
+          <p className="text-sm leading-relaxed text-student-ink" data-testid="assessment-description">{assessment.description}</p>
+        )}
         <dl className="grid gap-3 text-sm sm:grid-cols-2">
           <div>
             <dt className="text-student-muted">Passing mark</dt>
@@ -26,7 +31,7 @@ export function AssessmentSection({ assessment }: { assessment: Program["assessm
           </div>
           <div>
             <dt className="text-student-muted">Where this rule comes from</dt>
-            <dd className="text-student-ink" data-testid="assessment-basis">{assessment.basis}</dd>
+            <dd className="text-student-ink" data-testid="assessment-basis">{studentBasis(assessment.basis)}</dd>
           </div>
         </dl>
       </div>
@@ -40,7 +45,6 @@ export function CreditsSection({ program }: { program: Program }) {
     <section aria-labelledby="graduate-credits-title" id={SECTION_IDS.credits} className="scroll-mt-24 space-y-4" data-testid="graduate-credits">
       <SectionHeading
         id="graduate-credits-title"
-        eyebrow="My Master's"
         title="Where your credits stand"
         description="Each line comes from a different institution. They are never added together, because they do not mean the same thing."
       />
@@ -51,9 +55,16 @@ export function CreditsSection({ program }: { program: Program }) {
               <p className="font-medium text-student-ink">{c.label}</p>
               <p className="text-xs leading-relaxed text-student-muted">{c.explanation}</p>
             </div>
-            <p className={cn("shrink-0 text-base font-semibold sm:text-right", c.state === "unknown" ? "text-student-muted" : "text-student-ink")} data-testid="credit-amount">
-              {creditAmountLabel(c)}
-            </p>
+            <div className="shrink-0 sm:text-right">
+              <p className={cn("flex items-center gap-1.5 text-base font-semibold sm:justify-end", creditIsUnknown(c) ? "text-student-muted" : "text-student-ink")} data-testid="credit-amount">
+                {creditIsUnknown(c) && <HelpCircle className="h-4 w-4" aria-hidden="true" />}
+                <span>{creditAmountLabel(c)}</span>
+                {conditionalLabel(c) && <span className="text-sm font-medium text-st-attention" data-testid="credit-conditional">&middot; {conditionalLabel(c)}</span>}
+              </p>
+              {conditionalLabel(c) && (
+                <a href={`#${SECTION_IDS.learning}`} className="text-xs font-medium text-student-gold-ink underline underline-offset-4" data-testid="credit-conditions-link">See the conditions in Previous learning</a>
+              )}
+            </div>
           </li>
         ))}
       </ul>

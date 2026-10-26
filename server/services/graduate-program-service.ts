@@ -15,6 +15,9 @@
  */
 import {
   UNIVERSITY_RECORD_KINDS,
+  buildEvaluationView,
+  evaluateEvaluationVerification,
+  evaluationConsistency,
   RECORD_OUTCOMES,
   STUDENT_EVIDENCE_KINDS,
   buildStaffGraduateProgramView,
@@ -23,6 +26,11 @@ import {
   evaluateOfficialChange,
   isOfficialKind,
   type CohortRule,
+  type CredentialEvaluationRecord,
+  type EvaluationGuardCode,
+  type RecordEvaluation,
+  type UpdateEvaluation,
+  type VerifyEvaluation,
   type CreateCreditEntry,
   type CreateOffering,
   type CreateRuleSet,
@@ -48,14 +56,14 @@ import {
 } from "@shared/graduate-program-contract";
 import { createAuditLog, type AuditEventType, type AuditLogEntry } from "../lib/audit";
 import { logger } from "../lib/logger";
-import type { GraduateEventRecord, GraduateRepository, RecordPatch, Tx } from "../repositories/graduate-program-repo";
+import type { EvaluationPatch, GraduateEventRecord, GraduateRepository, RecordPatch, Tx } from "../repositories/graduate-program-repo";
 
 export class GraduateError extends Error {
   constructor(
     readonly status: number,
     readonly code: GraduateErrorCode,
     message: string,
-    readonly missing?: readonly GuardCode[],
+    readonly missing?: readonly (GuardCode | EvaluationGuardCode)[],
     readonly details?: unknown,
   ) {
     super(message);
@@ -182,7 +190,30 @@ export function createGraduateProgramService(deps: GraduateServiceDeps) {
 
   async function studentView(studentId: string, tx: Tx = deps.readTx): Promise<StudentGraduateView> {
     const bundles = await loadBundles(studentId, tx);
-    return { programs: bundles.map(buildStudentGraduateProgramView) };
+    const evaluations = await repo.listEvaluationsForStudent(studentId, tx);
+    return { programs: bundles.map(buildStudentGraduateProgramView), evaluations: evaluations.map(buildEvaluationView) };
+  }
+
+  /** Staff projection of the student's evaluations: the view plus what still blocks verification. */
+  async function staffEvaluations(studentId: string, role: GuardActorRole, tx: Tx): Promise<StaffGraduateWorkspace["evaluations"]> {
+    const rows = await repo.listEvaluationsForStudent(studentId, tx);
+    return rows.map((e) => ({
+      ...e,
+      view: buildEvaluationView(e),
+      blockers:
+        e.verificationStatus === "verified"
+          ? []
+          : evaluateEvaluationVerification(e, { decision: "verified", conflictingEvidence: null, note: "guidance" }, role).missing,
+    }));
+  }
+
+  async function workspaceFor(actorRole: GuardActorRole, studentId: string, tx: Tx): Promise<StaffGraduateWorkspace> {
+    if (!(await repo.studentExists(studentId, tx))) throw notFound("Student not found");
+    const [offerings, ruleSets, programs] = await Promise.all([repo.listOfferings(tx), repo.listRuleSets(tx), repo.listProgramsForStudent(studentId, tx)]);
+    const views: StaffGraduateProgramView[] = [];
+    for (const p of programs) views.push(await staffView(p.id, actorRole, tx));
+    const evaluations = await staffEvaluations(studentId, actorRole, tx);
+    return { studentId, viewerRole: actorRole === "admin" ? "admin" : "staff", programs: views, offerings, ruleSets, evaluations };
   }
 
   /** The student's own programme, locked. Another student's programme reads as not found. */
@@ -193,7 +224,7 @@ export function createGraduateProgramService(deps: GraduateServiceDeps) {
   }
 
   /** A document the student owns (existing, not soft-deleted). Anything else is a denial. */
-  async function requireOwnDocument(actor: GraduateActor, studentId: string, programId: string, documentId: string, tx: Tx) {
+  async function requireOwnDocument(actor: GraduateActor, studentId: string, programId: string | null, documentId: string, tx: Tx) {
     const doc = await repo.getStudentDocument(documentId, tx);
     if (!doc || doc.studentId !== studentId) {
       emitAudit(actor, {
@@ -372,12 +403,7 @@ export function createGraduateProgramService(deps: GraduateServiceDeps) {
     // =======================================================================
 
     async getWorkspace(actorRole: GuardActorRole, studentId: string): Promise<StaffGraduateWorkspace> {
-      const tx = deps.readTx;
-      if (!(await repo.studentExists(studentId, tx))) throw notFound("Student not found");
-      const [offerings, ruleSets, programs] = await Promise.all([repo.listOfferings(tx), repo.listRuleSets(tx), repo.listProgramsForStudent(studentId, tx)]);
-      const views: StaffGraduateProgramView[] = [];
-      for (const p of programs) views.push(await staffView(p.id, actorRole, tx));
-      return { studentId, viewerRole: actorRole === "admin" ? "admin" : "staff", programs: views, offerings, ruleSets };
+      return workspaceFor(actorRole, studentId, deps.readTx);
     },
 
     async enroll(actor: GraduateActor, studentId: string, input: EnrollProgram): Promise<{ program: StaffGraduateProgramView; id: string }> {
@@ -653,6 +679,118 @@ export function createGraduateProgramService(deps: GraduateServiceDeps) {
         entityType: "record", entityId: recordId, extra: { kind: outcome.record.kind, decision: input.decision },
       });
       return outcome.program;
+    },
+
+    // =======================================================================
+    // Staff: foreign credential evaluations (separate from the Italian award)
+    // =======================================================================
+
+    /** Records a foreign evaluator's opinion. Never touches offerings, rules, records, credits or subjects. Starts `unknown`. */
+    async recordEvaluation(actor: GraduateActor, studentId: string, input: RecordEvaluation): Promise<{ workspace: StaffGraduateWorkspace; id: string }> {
+      return mutate(actor, async (tx) => {
+        if (!(await repo.studentExists(studentId, tx))) throw notFound("Student not found");
+        const mismatch = evaluationConsistency({ evaluator: input.evaluator, destinationCountry: input.destinationCountry });
+        if (mismatch.length) {
+          throw new GraduateError(422, "GRADUATE_EVIDENCE_REQUIRED", "This evaluator does not report for that country", mismatch);
+        }
+        if (input.programId) {
+          const program = await repo.getProgram(input.programId, tx);
+          if (!program || program.studentId !== studentId) throw notFound("Programme not found");
+        }
+        if (input.documentId) await requireOwnDocument(actor, studentId, input.programId, input.documentId, tx);
+        const created = await repo.insertEvaluation({ ...input, studentId, createdBy: actor.id }, tx);
+        await history(tx, actor, {
+          programId: created.programId, studentId, action: "evaluation_recorded", entityType: "evaluation", entityId: created.id, before: null, after: created,
+        });
+        return {
+          result: { workspace: await workspaceFor(actor.role, studentId, tx), id: created.id },
+          audit: {
+            eventType: "graduate.evaluation_recorded", action: "evaluation_recorded", programId: created.programId, studentId, entityType: "evaluation", entityId: created.id,
+            extra: { evaluator: created.evaluator, destinationCountry: created.destinationCountry, evaluationType: created.evaluationType },
+          },
+        };
+      });
+    },
+
+    /** A verified evaluation only takes a note or a status change; anything else must be re-verified. */
+    async updateEvaluation(actor: GraduateActor, evaluationId: string, input: UpdateEvaluation): Promise<StaffGraduateWorkspace> {
+      return mutate(actor, async (tx) => {
+        const before = await repo.lockEvaluation(evaluationId, tx);
+        if (!before) throw notFound("Evaluation not found");
+        const given = (Object.keys(input) as (keyof UpdateEvaluation)[]).filter((k) => input[k] !== undefined);
+        if (before.verificationStatus === "verified") {
+          const allowed: (keyof UpdateEvaluation)[] = ["note", "status"];
+          const blocked = given.filter((k) => !allowed.includes(k));
+          if (blocked.length) {
+            throw new GraduateError(409, "GRADUATE_CONFLICT", "This evaluation is verified; re-verify instead of editing its evidence", undefined, { fields: blocked });
+          }
+        }
+        if (input.documentId) await requireOwnDocument(actor, before.studentId, before.programId, input.documentId, tx);
+        // A verified evaluation that is no longer completed can no longer stand as verified.
+        const demote = before.verificationStatus === "verified" && input.status !== undefined && input.status !== "completed";
+        const patch: EvaluationPatch = {
+          ...(input.status !== undefined ? { status: input.status } : {}),
+          ...(input.reportDate !== undefined ? { reportDate: input.reportDate } : {}),
+          ...(input.reportReference !== undefined ? { reportReference: input.reportReference } : {}),
+          ...(input.documentId !== undefined ? { documentId: input.documentId } : {}),
+          ...(input.conclusion !== undefined ? { conclusion: input.conclusion } : {}),
+          ...(input.conclusionText !== undefined ? { conclusionText: input.conclusionText } : {}),
+          ...(input.note !== undefined ? { note: input.note } : {}),
+          ...(demote ? { verificationStatus: "unknown" as const, reviewerUserId: null, reviewedAt: null } : {}),
+        };
+        const after = await repo.updateEvaluation(evaluationId, patch, tx);
+        await history(tx, actor, {
+          programId: before.programId, studentId: before.studentId, action: "evaluation_updated", entityType: "evaluation", entityId: evaluationId, before, after,
+        });
+        return {
+          result: await workspaceFor(actor.role, before.studentId, tx),
+          audit: {
+            eventType: "graduate.evaluation_updated", action: "evaluation_updated", programId: before.programId, studentId: before.studentId, entityType: "evaluation", entityId: evaluationId,
+            extra: { fields: given },
+          },
+        };
+      });
+    },
+
+    /** The only way to set an evaluation's verification status; gated by evaluateEvaluationVerification(). */
+    async verifyEvaluation(actor: GraduateActor, evaluationId: string, input: VerifyEvaluation): Promise<StaffGraduateWorkspace> {
+      type Outcome = { blocked: readonly EvaluationGuardCode[]; workspace: StaffGraduateWorkspace | null; evaluation: CredentialEvaluationRecord };
+      const outcome = await deps.transaction<Outcome>(async (tx) => {
+        const evaluation = await repo.lockEvaluation(evaluationId, tx);
+        if (!evaluation) throw notFound("Evaluation not found");
+        const guard = evaluateEvaluationVerification(evaluation, input, actor.role);
+        if (!guard.allowed) return { blocked: guard.missing, workspace: null, evaluation };
+        const updated = await repo.updateEvaluation(
+          evaluationId,
+          {
+            verificationStatus: input.decision,
+            conflictingEvidence: input.decision === "verified" ? null : input.conflictingEvidence ?? evaluation.conflictingEvidence,
+            reviewerUserId: actor.id,
+            reviewedAt: now(),
+            note: input.note,
+          },
+          tx,
+        );
+        await history(tx, actor, {
+          programId: evaluation.programId, studentId: evaluation.studentId, action: `evaluation_${input.decision}`, entityType: "evaluation", entityId: evaluationId,
+          before: evaluation, after: updated,
+        });
+        return { blocked: [], workspace: await workspaceFor(actor.role, evaluation.studentId, tx), evaluation };
+      });
+
+      if (outcome.blocked.length || !outcome.workspace) {
+        emitAudit(actor, {
+          eventType: "graduate.official_change_blocked", action: "evaluation_verification_blocked", programId: outcome.evaluation.programId, studentId: outcome.evaluation.studentId,
+          entityType: "evaluation", entityId: evaluationId, severity: "warning", extra: { decision: input.decision, missing: outcome.blocked },
+        });
+        throw new GraduateError(422, "GRADUATE_EVIDENCE_REQUIRED", "The evidence required to verify this evaluation is incomplete", outcome.blocked);
+      }
+      emitAudit(actor, {
+        eventType: input.decision === "verified" ? "graduate.evaluation_verified" : "graduate.evaluation_updated",
+        action: `evaluation_${input.decision}`, programId: outcome.evaluation.programId, studentId: outcome.evaluation.studentId,
+        entityType: "evaluation", entityId: evaluationId, extra: { decision: input.decision },
+      });
+      return outcome.workspace;
     },
 
     // =======================================================================

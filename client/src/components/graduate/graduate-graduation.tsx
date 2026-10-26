@@ -8,7 +8,8 @@ import { Link } from "wouter";
 import { Landmark, Hourglass, PenLine, ShieldCheck } from "lucide-react";
 import type { MilestoneView, StudentGraduateProgramView } from "@shared/graduate-program-contract";
 import { cn } from "@/lib/utils";
-import { Pill, SectionHeading, StatusGlyph, StatusPill, STATUS_STYLE, cardClass } from "@/components/student-progress/student-ui";
+import { Pill, SectionHeading, StatusPill, STATUS_STYLE, cardClass } from "@/components/student-progress/student-ui";
+import { GlyphIcon, StatePill } from "./graduate-ui";
 import { SECTION_IDS, formatDate, milestoneDatePrefix, milestoneDisplay, splitGraduation } from "./graduate-presentation";
 
 type Graduation = NonNullable<StudentGraduateProgramView["graduation"]>;
@@ -20,14 +21,14 @@ function MilestoneItem({ m, last }: { m: MilestoneView; last: boolean }) {
     <li className="relative flex gap-3 pb-5 last:pb-0" data-testid="milestone" data-key={m.key} data-state={m.state} data-official={m.official}>
       <div className="relative flex w-6 shrink-0 justify-center" aria-hidden="true">
         {!last && <span className="absolute left-1/2 top-6 -bottom-5 w-px -translate-x-1/2 bg-student-line-strong" />}
-        <span className={cn("z-10 mt-0.5 flex h-6 w-6 items-center justify-center rounded-full border-2 bg-student-card", STATUS_STYLE[d.status].border)}>
-          <StatusGlyph status={d.status} />
+        <span className={cn("z-10 mt-0.5 flex h-6 w-6 items-center justify-center rounded-full border-2 bg-student-card", STATUS_STYLE[d.status].border, m.state === "later" && "border-dashed")}>
+          <GlyphIcon status={d.status} glyph={d.glyph} />
         </span>
       </div>
       <div className="min-w-0 flex-1 space-y-1">
         <p className="font-medium text-student-ink">{m.label}</p>
         <div className="flex flex-wrap items-center gap-2">
-          <StatusPill status={d.status} label={d.label} />
+          <StatePill status={d.status} label={d.label} glyph={d.glyph} />
           {m.official && (
             <Pill tone="gold" icon={<ShieldCheck className="h-3 w-3" aria-hidden="true" />} data-testid="official-marker">Confirmed from university document</Pill>
           )}
@@ -88,7 +89,6 @@ export function GraduationSection({ graduation }: { graduation: Graduation }) {
     <section aria-labelledby="graduate-graduation-title" id={SECTION_IDS.graduation} className="scroll-mt-24 space-y-4" data-testid="graduate-graduation">
       <SectionHeading
         id="graduate-graduation-title"
-        eyebrow="My Master's"
         title="Graduation and official documents"
         description="Finishing your work and receiving your degree are two separate moments."
       />

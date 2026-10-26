@@ -103,7 +103,10 @@ export type AuditEventType =
   | 'graduate.record_rejected'
   | 'graduate.official_change_blocked'
   | 'graduate.credit_recorded'
-  | 'graduate.access_denied';
+  | 'graduate.access_denied'
+  | 'graduate.evaluation_recorded'
+  | 'graduate.evaluation_updated'
+  | 'graduate.evaluation_verified';
 
 export type AuditSeverity = 'info' | 'warning' | 'error' | 'critical';
 

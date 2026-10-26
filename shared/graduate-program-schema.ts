@@ -191,3 +191,40 @@ export type GraduateSubjectRow = typeof graduateSubjects.$inferSelect;
 export type GraduateRecordRow = typeof graduateRecords.$inferSelect;
 export type GraduateCreditRow = typeof graduateCreditEntries.$inferSelect;
 export type GraduateEventRow = typeof graduateEvents.$inferSelect;
+
+/** Mirrors supabase/migrations/20261029120000_s12_credential_evaluations.sql. */
+export const graduateCredentialEvaluations = pgTable(
+  "graduate_credential_evaluations",
+  {
+    id: text("id").primaryKey().default(sql`gen_random_uuid()::text`),
+    studentId: text("student_id").notNull().references(() => studentsTable.id, { onDelete: "cascade" }),
+    programId: text("program_id").references(() => studentGraduatePrograms.id, { onDelete: "set null" }),
+    evaluator: text("evaluator").notNull(),
+    evaluatorName: text("evaluator_name"),
+    destinationCountry: text("destination_country").notNull(),
+    qualificationEvaluated: text("qualification_evaluated").notNull(),
+    awardingInstitution: text("awarding_institution").notNull(),
+    intendedUse: text("intended_use").notNull(),
+    evaluationType: text("evaluation_type").notNull(),
+    status: text("status").notNull().default("planned"),
+    reportDate: date("report_date", { mode: "string" }),
+    reportReference: text("report_reference"),
+    documentId: text("document_id"),
+    conclusion: text("conclusion").notNull().default("not_yet_known"),
+    conclusionText: text("conclusion_text"),
+    verificationStatus: text("verification_status").notNull().default("unknown"),
+    conflictingEvidence: text("conflicting_evidence"),
+    reviewerUserId: text("reviewer_user_id"),
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+    note: text("note"),
+    createdBy: text("created_by"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    studentIdx: index("graduate_evaluations_student_idx").on(table.studentId, table.createdAt),
+    programIdx: index("graduate_evaluations_program_idx").on(table.programId),
+  }),
+);
+
+export type GraduateEvaluationRow = typeof graduateCredentialEvaluations.$inferSelect;

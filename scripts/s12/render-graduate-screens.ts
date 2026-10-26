@@ -16,8 +16,8 @@ import { spawn, type ChildProcess } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { createRequire } from "node:module";
-import { buildStaffGraduateProgramView, buildStudentGraduateProgramView, type GraduateProgramBundle, type StaffGraduateWorkspace } from "../../shared/graduate-program-contract";
-import { OFFERINGS, RULE_SETS, RULE_SET_2025, journeyA, journeyB, type JourneyBStage } from "../../tests/helpers/s12-graduate-fixtures";
+import { buildEvaluationView, buildStaffGraduateProgramView, buildStudentGraduateProgramView, evaluateEvaluationVerification, type CredentialEvaluationRecord, type GraduateProgramBundle, type StaffGraduateWorkspace } from "../../shared/graduate-program-contract";
+import { OFFERINGS, RULE_SETS, RULE_SET_2025, journeyA, journeyB, syntheticEvaluations, type JourneyBStage } from "../../tests/helpers/s12-graduate-fixtures";
 import { STAFF_STUDENT_ID, staffReviewProfile, staffWorkspacePayload } from "../../tests/helpers/s09-profile-ui-fixtures";
 
 const require = createRequire(import.meta.url);
@@ -41,14 +41,19 @@ function startVite(): Promise<ChildProcess> {
   });
 }
 
-interface Opts { role: "student" | "staff" | "admin"; width: number; height: number; theme?: "light" | "dark"; studentBundles?: GraduateProgramBundle[]; staffBundles?: GraduateProgramBundle[] }
+interface Opts { role: "student" | "staff" | "admin"; width: number; height: number; theme?: "light" | "dark"; studentBundles?: GraduateProgramBundle[]; staffBundles?: GraduateProgramBundle[]; evaluations?: CredentialEvaluationRecord[] }
 
-const staffWorkspace = (bundles: GraduateProgramBundle[], role: "staff" | "admin"): StaffGraduateWorkspace => ({
+const staffWorkspace = (bundles: GraduateProgramBundle[], role: "staff" | "admin", evaluations: CredentialEvaluationRecord[] = []): StaffGraduateWorkspace => ({
   studentId: STAFF_STUDENT_ID,
   viewerRole: role,
   programs: bundles.map((b) => buildStaffGraduateProgramView(b, b.ruleSet.id, role)),
   offerings: OFFERINGS,
   ruleSets: RULE_SETS,
+  evaluations: evaluations.map((e) => ({
+    ...e,
+    view: buildEvaluationView(e),
+    blockers: e.verificationStatus === "verified" ? [] : evaluateEvaluationVerification(e, { decision: "verified", conflictingEvidence: null, note: "guidance" }, role).missing,
+  })),
 });
 
 async function newPage(browser: any, o: Opts) {
@@ -61,8 +66,8 @@ async function newPage(browser: any, o: Opts) {
     localStorage.setItem("theme", theme);
     localStorage.setItem("lumiere_auth", JSON.stringify({ user: u, session: { access_token: "stub", expires_at: Math.floor(Date.now() / 1000) + 3600 } }));
   }, [o.theme ?? "light", user] as [string, unknown]);
-  const studentView = { programs: (o.studentBundles ?? []).map(buildStudentGraduateProgramView) };
-  const ws = staffWorkspace(o.staffBundles ?? [], o.role === "admin" ? "admin" : "staff");
+  const studentView = { programs: (o.studentBundles ?? []).map(buildStudentGraduateProgramView), evaluations: (o.evaluations ?? []).map(buildEvaluationView) };
+  const ws = staffWorkspace(o.staffBundles ?? [], o.role === "admin" ? "admin" : "staff", o.evaluations ?? []);
   await ctx.route(/.*/, async (route: any) => {
     const url = new URL(route.request().url());
     if (url.hostname !== "localhost") return route.abort();
@@ -149,7 +154,8 @@ async function main() {
     ];
     for (const [name, bundles] of studentScreens) {
       for (const [vp, tag] of [[D, "1440"], [M, "390"]] as const) {
-        const { page, ctx } = await newPage(browser, { role: "student", ...vp, studentBundles: bundles });
+        const evaluations = name === "b-conferred" || name === "b-complete" ? syntheticEvaluations() : [];
+        const { page, ctx } = await newPage(browser, { role: "student", ...vp, studentBundles: bundles, evaluations });
         await page.goto(`${BASE}/graduate`);
         await settle(page, '[data-testid="graduate-program"]');
         await overflow(page, `student/${name}-${tag}`);
@@ -177,7 +183,8 @@ async function main() {
       ["admitted-staff-390", "staff", [journeyB("admitted")], { w: M.width, h: M.height }],
     ];
     for (const [name, role, bundles, vp] of staffScreens) {
-      const { page, ctx } = await newPage(browser, { role, width: vp.w, height: vp.h, staffBundles: bundles });
+      const evaluations = name === "procedure-done-admin" ? syntheticEvaluations() : [];
+      const { page, ctx } = await newPage(browser, { role, width: vp.w, height: vp.h, staffBundles: bundles, evaluations });
       // Admins see the panel inside the workspace; staff use the staff+admin graduate page.
       await page.goto(role === "admin" ? `${BASE}/admin/students/${STAFF_STUDENT_ID}` : `${BASE}/admin/students/${STAFF_STUDENT_ID}/graduate`);
       await settle(page, '[data-testid="graduate-program"]');

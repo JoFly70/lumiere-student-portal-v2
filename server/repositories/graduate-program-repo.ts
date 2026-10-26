@@ -16,12 +16,14 @@ import { studentsTable } from "@shared/schema";
 import {
   graduateCohortRuleSets,
   graduateCreditEntries,
+  graduateCredentialEvaluations,
   graduateEvents,
   graduateProgramOfferings,
   graduateRecords,
   graduateSubjects,
   studentGraduatePrograms,
   type GraduateCreditRow,
+  type GraduateEvaluationRow,
   type GraduateEventRow,
   type GraduateOfferingRow,
   type GraduateProgramRow,
@@ -32,6 +34,7 @@ import {
 import type {
   CohortRule,
   CreditEntryRecord,
+  CredentialEvaluationRecord,
   GraduateProgramBundle,
   GraduateProgramRecord,
   GraduateRecord,
@@ -174,6 +177,35 @@ export function toCredit(r: GraduateCreditRow): CreditEntryRecord {
     conditions: r.conditions,
     createdBy: r.createdBy,
     createdAt: iso(r.createdAt)!,
+  };
+}
+
+export function toEvaluation(r: GraduateEvaluationRow): CredentialEvaluationRecord {
+  return {
+    id: r.id,
+    studentId: r.studentId,
+    programId: r.programId,
+    evaluator: r.evaluator as CredentialEvaluationRecord["evaluator"],
+    evaluatorName: r.evaluatorName,
+    destinationCountry: r.destinationCountry,
+    qualificationEvaluated: r.qualificationEvaluated,
+    awardingInstitution: r.awardingInstitution as CredentialEvaluationRecord["awardingInstitution"],
+    intendedUse: r.intendedUse as CredentialEvaluationRecord["intendedUse"],
+    evaluationType: r.evaluationType as CredentialEvaluationRecord["evaluationType"],
+    status: r.status as CredentialEvaluationRecord["status"],
+    reportDate: r.reportDate,
+    reportReference: r.reportReference,
+    documentId: r.documentId,
+    conclusion: r.conclusion as CredentialEvaluationRecord["conclusion"],
+    conclusionText: r.conclusionText,
+    verificationStatus: r.verificationStatus as CredentialEvaluationRecord["verificationStatus"],
+    conflictingEvidence: r.conflictingEvidence,
+    reviewerUserId: r.reviewerUserId,
+    reviewedAt: iso(r.reviewedAt),
+    note: r.note,
+    createdBy: r.createdBy,
+    createdAt: iso(r.createdAt)!,
+    updatedAt: iso(r.updatedAt)!,
   };
 }
 
@@ -326,6 +358,42 @@ export interface NewCredit {
   readonly createdBy: string | null;
 }
 
+export interface NewEvaluation {
+  readonly studentId: string;
+  readonly programId: string | null;
+  readonly evaluator: CredentialEvaluationRecord["evaluator"];
+  readonly evaluatorName: string | null;
+  readonly destinationCountry: string;
+  readonly qualificationEvaluated: string;
+  readonly awardingInstitution: CredentialEvaluationRecord["awardingInstitution"];
+  readonly intendedUse: CredentialEvaluationRecord["intendedUse"];
+  readonly evaluationType: CredentialEvaluationRecord["evaluationType"];
+  readonly status: CredentialEvaluationRecord["status"];
+  readonly reportDate: string | null;
+  readonly reportReference: string | null;
+  readonly documentId: string | null;
+  readonly conclusion: CredentialEvaluationRecord["conclusion"];
+  readonly conclusionText: string | null;
+  readonly note: string | null;
+  readonly createdBy: string | null;
+}
+
+export type EvaluationPatch = Partial<
+  Pick<
+    CredentialEvaluationRecord,
+    | "status"
+    | "reportDate"
+    | "reportReference"
+    | "documentId"
+    | "conclusion"
+    | "conclusionText"
+    | "verificationStatus"
+    | "conflictingEvidence"
+    | "reviewerUserId"
+    | "note"
+  >
+> & { readonly reviewedAt?: Date | null };
+
 export interface NewEvent {
   readonly programId: string | null;
   readonly studentId: string | null;
@@ -388,6 +456,14 @@ export interface GraduateRepository {
 
   listCredits(programId: string, tx: Tx): Promise<CreditEntryRecord[]>;
   insertCredit(input: NewCredit, tx: Tx): Promise<CreditEntryRecord>;
+
+  /** The student's evaluations, newest first. */
+  listEvaluationsForStudent(studentId: string, tx: Tx): Promise<CredentialEvaluationRecord[]>;
+  getEvaluation(id: string, tx: Tx): Promise<CredentialEvaluationRecord | null>;
+  /** SELECT ... FOR UPDATE on the evaluation row. */
+  lockEvaluation(id: string, tx: Tx): Promise<CredentialEvaluationRecord | null>;
+  insertEvaluation(input: NewEvaluation, tx: Tx): Promise<CredentialEvaluationRecord>;
+  updateEvaluation(id: string, patch: EvaluationPatch, tx: Tx): Promise<CredentialEvaluationRecord>;
 
   appendEvent(input: NewEvent, tx: Tx): Promise<void>;
   listEvents(programId: string, tx: Tx): Promise<GraduateEventRecord[]>;
@@ -663,6 +739,35 @@ export const graduateRepository: GraduateRepository = {
       })
       .returning();
     return toCredit(row);
+  },
+
+  async listEvaluationsForStudent(studentId, tx = db) {
+    const rows = await tx
+      .select()
+      .from(graduateCredentialEvaluations)
+      .where(eq(graduateCredentialEvaluations.studentId, studentId))
+      .orderBy(desc(graduateCredentialEvaluations.createdAt), desc(graduateCredentialEvaluations.id));
+    return rows.map(toEvaluation);
+  },
+  async getEvaluation(id, tx = db) {
+    const [row] = await tx.select().from(graduateCredentialEvaluations).where(eq(graduateCredentialEvaluations.id, id)).limit(1);
+    return row ? toEvaluation(row) : null;
+  },
+  async lockEvaluation(id, tx = db) {
+    const [row] = await tx.select().from(graduateCredentialEvaluations).where(eq(graduateCredentialEvaluations.id, id)).limit(1).for("update");
+    return row ? toEvaluation(row) : null;
+  },
+  async insertEvaluation(input, tx = db) {
+    const [row] = await tx.insert(graduateCredentialEvaluations).values({ ...input }).returning();
+    return toEvaluation(row);
+  },
+  async updateEvaluation(id, patch, tx = db) {
+    const [row] = await tx
+      .update(graduateCredentialEvaluations)
+      .set({ ...patch, updatedAt: new Date() })
+      .where(eq(graduateCredentialEvaluations.id, id))
+      .returning();
+    return toEvaluation(row);
   },
 
   async appendEvent(input, tx = db) {

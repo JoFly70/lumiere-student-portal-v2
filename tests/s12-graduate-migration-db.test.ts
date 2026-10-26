@@ -14,6 +14,7 @@ if (!PG_BINARIES_AVAILABLE) console.warn(S05_PG_SKIP_MESSAGE);
 const ROOT = path.resolve(import.meta.dirname, "..");
 const ENUM_FILE = "20261029100000_s12_graduate_audit_events.sql";
 const TABLES_FILE = "20261029110000_s12_graduate_programs.sql";
+const EVAL_FILE = "20261029120000_s12_credential_evaluations.sql";
 const read = (f: string) => fs.readFileSync(path.join(ROOT, "supabase", "migrations", f), "utf8");
 
 const GRADUATE_EVENT_TYPES = [
@@ -21,6 +22,7 @@ const GRADUATE_EVENT_TYPES = [
   "graduate.subject_created", "graduate.result_recorded", "graduate.student_progress_reported", "graduate.record_created",
   "graduate.record_updated", "graduate.record_verified", "graduate.record_rejected", "graduate.official_change_blocked",
   "graduate.credit_recorded", "graduate.access_denied",
+  "graduate.evaluation_recorded", "graduate.evaluation_updated", "graduate.evaluation_verified",
 ];
 const TABLES = [
   "graduate_program_offerings", "graduate_cohort_rule_sets", "student_graduate_programs", "graduate_subjects",
@@ -30,7 +32,7 @@ const TABLES = [
 describe("S12 enum migration, static", () => {
   const sql = read(ENUM_FILE).replace(/\/\*[\s\S]*?\*\//g, "");
 
-  it("adds exactly the 14 graduate.* values, IF NOT EXISTS, with no transaction wrapper or data statements", () => {
+  it("adds exactly the 17 graduate.* values, IF NOT EXISTS, with no transaction wrapper or data statements", () => {
     const adds = [...sql.matchAll(/ALTER TYPE\s+(?:public\.)?audit_event_type\s+ADD VALUE\s+(IF NOT EXISTS\s+)?'([^']+)'/gi)];
     expect(adds.map((a) => a[2]).sort()).toEqual([...GRADUATE_EVENT_TYPES].sort());
     expect(adds.every((a) => !!a[1])).toBe(true);
@@ -293,6 +295,117 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("S12 graduate migrations on disposable P
       await rejects(`update graduate_events set action = 'x' where id = '${e.id}'`, /append-only/);
       await rejects(`delete from graduate_events where id = '${e.id}'`, /append-only/);
       await rejects(`delete from graduate_events`, /append-only/);
+    });
+  });
+
+  describe("S12 addendum: credential evaluations table", () => {
+    const EVAL = "graduate_credential_evaluations";
+    const insert = (cols: Record<string, string | null>) => {
+      const all: Record<string, string | null> = {
+        student_id: student.id, evaluator: "wes_us", destination_country: "US", qualification_evaluated: "Master universitario di primo livello (synthetic)",
+        awarding_institution: "unimarconi", intended_use: "further_study", evaluation_type: "completed_report", ...cols,
+      };
+      const keys = Object.keys(all);
+      const vals = keys.map((k) => (all[k] === null ? "null" : `'${all[k]}'`));
+      return `insert into ${EVAL} (${keys.join(", ")}) values (${vals.join(", ")}) returning id`;
+    };
+    const verifiedBase = { verification_status: "verified", status: "completed", report_date: "2026-09-01", report_reference: "SYN-1", conclusion: "masters_equivalent", conclusion_text: "Equivalent (synthetic)", reviewer_user_id: "u1" };
+
+    it("applied in filename order after the programmes migration, and re-applying is a no-op", async () => {
+      const applied = pg.appliedFiles;
+      expect(applied.indexOf(`supabase/migrations/${EVAL_FILE}`)).toBeGreaterThan(applied.indexOf(`supabase/migrations/${TABLES_FILE}`));
+      const snap = async () =>
+        (await pg.sql(
+          `select (select count(*)::int from pg_constraint where conrelid = 'public.${EVAL}'::regclass) as c,
+                  (select count(*)::int from pg_indexes where tablename = '${EVAL}') as i,
+                  (select count(*)::int from pg_policies where tablename = '${EVAL}') as p`,
+        ))[0];
+      await pg.sql(insert({}));
+      const before = await snap();
+      await pg.client.unsafe(read(EVAL_FILE)).simple();
+      expect(await snap()).toEqual(before);
+      const [n] = await pg.sql(`select count(*)::int as n from ${EVAL}`);
+      expect(n.n).toBeGreaterThanOrEqual(1);
+    });
+
+    it("defaults to an unverified, not-yet-known planned row", async () => {
+      const [r] = await pg.sql(`select status, conclusion, verification_status from ${EVAL} where student_id = '${student.id}' limit 1`);
+      expect(r).toMatchObject({ status: "planned", conclusion: "not_yet_known", verification_status: "unknown" });
+    });
+
+    it("rejects WES U.S. with a non-US country, WES Canada with a non-CA country and Nuffic with a non-NL country", async () => {
+      await rejects(insert({ evaluator: "wes_us", destination_country: "CA" }), /evaluator_country/);
+      await rejects(insert({ evaluator: "wes_canada", destination_country: "US" }), /evaluator_country/);
+      await rejects(insert({ evaluator: "nuffic", destination_country: "US" }), /evaluator_country/);
+      await pg.sql(insert({ evaluator: "wes_canada", destination_country: "CA" }));
+      await pg.sql(insert({ evaluator: "ece", destination_country: "CA" }));
+    });
+
+    it("rejects out-of-vocabulary values and malformed country codes", async () => {
+      await rejects(insert({ evaluator: "bogus" }), /check/i);
+      await rejects(insert({ evaluation_type: "official" }), /check/i);
+      await rejects(insert({ intended_use: "tourism" }), /check/i);
+      await rejects(insert({ conclusion: "doctorate" }), /check/i);
+      await rejects(insert({ verification_status: "approved" }), /check/i);
+      await rejects(insert({ status: "done" }), /check/i);
+      await rejects(insert({ evaluator: "ece", destination_country: "usa" }), /check/i);
+    });
+
+    it("rejects a verified row without a completed report, date, reference or document, conclusion, wording or reviewer", async () => {
+      await pg.sql(insert({ ...verifiedBase }));
+      for (const [k, v] of [
+        ["status", "in_progress"], ["report_date", null], ["conclusion", "not_yet_known"], ["conclusion_text", null], ["reviewer_user_id", null],
+      ] as const) {
+        await rejects(insert({ ...verifiedBase, [k]: v }), /verified_evidence/);
+      }
+      await rejects(insert({ ...verifiedBase, report_reference: null }), /verified_evidence/);
+      await pg.sql(insert({ ...verifiedBase, report_reference: null, document_id: "doc-syn-1" }));
+    });
+
+    it("keeps the row when a program is deleted (SET NULL) and cascades with the student", async () => {
+      const [p2] = await pg.sql(
+        `insert into student_graduate_programs (student_id, offering_id, rule_set_id, route, cohort_label, enrolled_at)
+         values ('${student.id}', '${offeringId}', '${ruleSetId}', 'eneb_unimarconi', '2026 intake', '2026-03-01') returning id`,
+      );
+      const [e] = await pg.sql(insert({ program_id: p2.id as string }));
+      await pg.sql(`delete from student_graduate_programs where id = '${p2.id}'`);
+      const [row] = await pg.sql(`select program_id from ${EVAL} where id = '${e.id}'`);
+      expect(row.program_id).toBeNull();
+    });
+
+    it("RLS: select-only policy, students read only their own, anon/authenticated hold no write privilege", async () => {
+      const [rls] = await pg.sql(`select relrowsecurity from pg_class where relname = '${EVAL}' and relkind = 'r'`);
+      expect(rls.relrowsecurity).toBe(true);
+      const policies = await pg.sql(`select cmd from pg_policies where tablename = '${EVAL}'`);
+      expect(policies.length).toBe(1);
+      expect(policies[0].cmd).toBe("SELECT");
+      for (const role of ["anon", "authenticated"]) {
+        for (const priv of ["INSERT", "UPDATE", "DELETE", "TRUNCATE"]) {
+          const [r] = await pg.sql(`select has_table_privilege('${role}', 'public.${EVAL}', '${priv}') as ok`);
+          expect(r.ok, `${role} ${priv}`).toBe(false);
+        }
+      }
+      await pg.sql(`grant select on ${EVAL} to authenticated`);
+      await pg.sql(insert({ student_id: other.id }));
+      const conn = pg.connect({ max: 1 });
+      try {
+        const as = (uid: string) =>
+          conn.begin(async (tx) => {
+            await tx`select set_config('request.jwt.claim.sub', ${uid}, true)`;
+            await tx.unsafe(`set local role authenticated`);
+            return Array.from(await tx.unsafe(`select student_id from ${EVAL}`));
+          });
+        const own = await as(studentUser.id);
+        expect(own.length).toBeGreaterThan(0);
+        expect(own.every((r) => r.student_id === student.id)).toBe(true);
+        const theirs = await as(otherUser.id);
+        expect(theirs.length).toBe(1);
+        expect(theirs[0].student_id).toBe(other.id);
+        const staffRows = await as(staff.id);
+        expect(new Set(staffRows.map((r) => r.student_id))).toEqual(new Set([student.id, other.id]));
+      } finally {
+        await conn.end({ timeout: 5 });
+      }
     });
   });
 

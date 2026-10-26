@@ -22,6 +22,11 @@ export class GraduateApiError extends Error {
   }
 }
 
+/** Older servers omit `evaluations`; treat that as none. */
+function normalizeView(v: StudentGraduateView): StudentGraduateView {
+  return { ...v, evaluations: v.evaluations ?? [] };
+}
+
 async function graduateRequest(method: string, url: string, body?: unknown): Promise<StudentGraduateView> {
   const headers: Record<string, string> = { Accept: "application/json" };
   const token = getAuthToken();
@@ -38,7 +43,7 @@ async function graduateRequest(method: string, url: string, body?: unknown): Pro
     const message = (typeof err === "object" && err?.message) || (typeof err === "string" && err) || data?.message || `Request failed (${res.status})`;
     throw new GraduateApiError(String(message), res.status, typeof err === "object" ? err?.code : undefined);
   }
-  return (await res.json()) as StudentGraduateView;
+  return normalizeView((await res.json()) as StudentGraduateView);
 }
 
 /** GET /api/student/graduate. */

@@ -13,7 +13,9 @@
    graduate.student_progress_reported, graduate.record_created,
    graduate.record_updated, graduate.record_verified,
    graduate.record_rejected, graduate.official_change_blocked,
-   graduate.credit_recorded, graduate.access_denied
+   graduate.credit_recorded, graduate.access_denied,
+   graduate.evaluation_recorded, graduate.evaluation_updated,
+   graduate.evaluation_verified
 
 3. Compatibility
    - Each ADD VALUE is guarded with IF NOT EXISTS (safe to re-run).
@@ -36,3 +38,6 @@ ALTER TYPE public.audit_event_type ADD VALUE IF NOT EXISTS 'graduate.record_reje
 ALTER TYPE public.audit_event_type ADD VALUE IF NOT EXISTS 'graduate.official_change_blocked';
 ALTER TYPE public.audit_event_type ADD VALUE IF NOT EXISTS 'graduate.credit_recorded';
 ALTER TYPE public.audit_event_type ADD VALUE IF NOT EXISTS 'graduate.access_denied';
+ALTER TYPE public.audit_event_type ADD VALUE IF NOT EXISTS 'graduate.evaluation_recorded';
+ALTER TYPE public.audit_event_type ADD VALUE IF NOT EXISTS 'graduate.evaluation_updated';
+ALTER TYPE public.audit_event_type ADD VALUE IF NOT EXISTS 'graduate.evaluation_verified';
