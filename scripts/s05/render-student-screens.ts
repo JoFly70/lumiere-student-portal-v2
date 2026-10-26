@@ -33,10 +33,11 @@ const rich: any = process.env.S05_ROADMAP_FIXTURE
   : RICH_MID_JOURNEY;
 
 function startVite(): Promise<ChildProcess> {
-  const child = spawn("npx", ["vite", "--port", String(PORT), "--strictPort", "--host", "localhost"], {
+  const child = spawn(process.execPath, ["node_modules/vite/bin/vite.js", "--port", String(PORT), "--strictPort", "--host", "localhost"], {
     cwd: ROOT,
     env: { ...process.env, NODE_ENV: "development" },
     stdio: ["ignore", "pipe", "pipe"],
+    detached: true,
   });
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error("vite did not start")), 60_000);
@@ -183,7 +184,11 @@ async function main() {
           const vw = document.documentElement.clientWidth;
           const main = document.querySelector("main") as HTMLElement;
           out.push(`main scrollWidth ${main?.scrollWidth} clientWidth ${main?.clientWidth} vw ${vw}`);
-          main?.querySelectorAll("*").forEach((el) => { const r = (el as HTMLElement).getBoundingClientRect(); if (r.right > vw + 1 && out.length < 6) out.push(`${el.tagName}.${(el as HTMLElement).className.toString().slice(0, 60)} right=${Math.round(r.right)}`); });
+          main?.querySelectorAll("*").forEach((el) => { const r = (el as HTMLElement).getBoundingClientRect(); if (false) out.push(`${el.tagName}.${(el as HTMLElement).className.toString().slice(0, 60)} right=${Math.round(r.right)}`); });
+          const kids = Array.from(document.querySelectorAll('.max-w-6xl > *')) as HTMLElement[];
+          for (const k of kids) { const d = k.style.display; k.style.display = "none"; out.push(`hide ${k.id || k.tagName + (k.getAttribute("data-testid") ?? "")} -> ${main.clientWidth}`); k.style.display = d; }
+          const jk = Array.from(document.querySelectorAll('[data-testid="journey"] > li, [data-testid="lane-filter"], [data-testid="roadmap-journey"] > *')) as HTMLElement[];
+          for (const k of jk) { const d = k.style.display; k.style.display = "none"; out.push(`hideJ ${k.getAttribute("data-testid") ?? k.tagName} -> ${main.clientWidth}`); k.style.display = d; }
           return out;
         });
         console.log("OVERFLOW", s.file, over.join(" | "));
@@ -211,7 +216,7 @@ async function main() {
     fs.writeFileSync(path.join(OUT, "axe-summary.json"), JSON.stringify({ generatedAt: new Date().toISOString(), fixture: process.env.S05_ROADMAP_FIXTURE ?? "built-in rich fixture", results: axeResults }, null, 2));
   } finally {
     await browser.close();
-    vite.kill("SIGTERM");
+    try { process.kill(-vite.pid!, "SIGTERM"); } catch { vite.kill("SIGTERM"); }
   }
 }
 
