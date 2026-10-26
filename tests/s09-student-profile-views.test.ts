@@ -28,13 +28,13 @@ describe("S09 profile: rich profile", () => {
   const markup = html(React.createElement(ProfilePageView, { profile: RICH_PROFILE }));
   const t = text(markup);
 
-  it("renders all six sections with sticky nav and a mobile jump menu", () => {
+  it("renders all six sections with one in-page navigation", () => {
     for (const id of ["identity", "contact", "background", "contacts", "eligibility", "account"]) {
       expect(markup).toContain(`id="section-${id}"`);
       expect(markup).toContain(`href="#section-${id}"`);
     }
     expect(markup).toContain('data-testid="section-nav"');
-    expect(markup).toContain('data-testid="jump-menu"');
+    expect(markup).not.toContain('data-testid="jump-menu"');
   });
 
   it("shows header with preferred name, legal name and student id", () => {

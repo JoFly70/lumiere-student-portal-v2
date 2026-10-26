@@ -1,6 +1,6 @@
 import React, { useId, useState } from "react";
 import { Link } from "wouter";
-import { FileCheck2, Hourglass, ShieldCheck, XCircle, CheckCircle2 } from "lucide-react";
+import { FileCheck2, Hourglass, ShieldCheck, Upload, XCircle, CheckCircle2 } from "lucide-react";
 import type {
   CreateIdentityCorrection,
   IdentityCorrectionChanges,
@@ -34,6 +34,7 @@ import {
   describeError,
   displayName,
   formatDate,
+  needsUpload,
   verificationChip,
 } from "./profile-presentation";
 import {
@@ -510,7 +511,6 @@ export function IdentitySection({ identity }: { identity: ProfileIdentity }) {
   return (
     <ProfileSection
       id="identity"
-      eyebrow="Section 1"
       title="My Identity"
       description="Your legal identity is the record Lumière uses for admissions, transcripts and credentials. You can keep your preferred name up to date; everything else changes only after Lumière reviews a request."
     >
@@ -523,11 +523,11 @@ export function IdentitySection({ identity }: { identity: ProfileIdentity }) {
           <FactGrid>
             <Fact label="Legal full name" testId="fact-legal-name">{names.legal}</Fact>
             <Fact label="Student ID" testId="fact-student-id">{identity.studentCode}</Fact>
-            <Fact label="Date of birth" testId="fact-dob">{formatDate(identity.dob)}</Fact>
+            <Fact label="Date of birth" testId="fact-dob" missing>{formatDate(identity.dob)}</Fact>
             <Fact label="Sex" testId="fact-sex">{identity.sex}</Fact>
             <Fact label="Nationality" testId="fact-nationality">{identity.nationality.join(", ")}</Fact>
             <Fact label="Government ID type" testId="fact-gov-id-type">{identity.govIdType}</Fact>
-            <Fact label="Government ID number" testId="fact-gov-id-number" empty="Not on record">
+            <Fact label="Government ID number" testId="fact-gov-id-number" empty="Not on record" missing={needsUpload(identity.verification)}>
               {identity.govIdNumberMasked}
             </Fact>
           </FactGrid>
@@ -535,6 +535,12 @@ export function IdentitySection({ identity }: { identity: ProfileIdentity }) {
             <ShieldCheck className="mr-1.5 inline h-4 w-4 align-text-bottom text-student-gold-ink" aria-hidden="true" />
             {chip.explain}
           </p>
+          {needsUpload(identity.verification) && (
+            <Link href="/documents" className={cn(buttonClass.solid, "mt-3 w-full sm:w-auto")} data-testid="link-upload-government-id">
+              <Upload className="h-4 w-4" aria-hidden="true" />
+              Upload government ID
+            </Link>
+          )}
           <div className="mt-3 space-y-2 border-t border-student-line pt-3">
             <ReadOnlyNote>
               Read-only. Identity changes go through a correction request, and your recorded details stay as they are until Lumière approves it.

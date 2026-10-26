@@ -18,7 +18,6 @@ export function BackgroundSection({ background }: { background: ProfileAcademicB
   return (
     <ProfileSection
       id="background"
-      eyebrow="Section 3"
       title="My Academic Background"
       description="What Lumière has on record about your schooling before Lumière. This is maintained by your advisor and the registrar, so it is read-only here."
     >

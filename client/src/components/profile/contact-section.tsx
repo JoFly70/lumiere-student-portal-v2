@@ -1,5 +1,5 @@
 import React, { useId, useState } from "react";
-import { Mail } from "lucide-react";
+import { CircleDashed, Mail } from "lucide-react";
 import type { PreferredContactChannel, ProfileContactInfo, StudentSelfServiceUpdate } from "@shared/student-profile-contract";
 import { PREFERRED_CONTACT_CHANNELS } from "@shared/student-profile-contract";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -136,7 +136,7 @@ function PhoneCard({ contact }: { contact: ProfileContactInfo }) {
         card.editing ? null : (
           <div className="flex items-center gap-3">
             <SavedIndicator saved={card.saved} />
-            <EditButton label="Edit phone numbers" onClick={start} testId="button-edit-phone" />
+            <EditButton label="Edit phone numbers" onClick={start} testId="button-edit-phone" addText={contact.phonePrimary ? undefined : "Add phone"} />
           </div>
         )
       }
@@ -151,7 +151,7 @@ function PhoneCard({ contact }: { contact: ProfileContactInfo }) {
         </form>
       ) : (
         <FactGrid>
-          <Fact label="Primary phone" testId="fact-phone-primary" empty="Not provided yet">{contact.phonePrimary}</Fact>
+          <Fact label="Primary phone" testId="fact-phone-primary" empty="Not provided yet" missing>{contact.phonePrimary}</Fact>
           <Fact label="Alternative phone" testId="fact-phone-secondary" empty="None added">{contact.phoneSecondary}</Fact>
           <Fact label="Primary phone on WhatsApp">{yesNo(contact.whatsappPrimary)}</Fact>
         </FactGrid>
@@ -213,7 +213,7 @@ function AddressCard({ contact }: { contact: ProfileContactInfo }) {
         card.editing ? null : (
           <div className="flex items-center gap-3">
             <SavedIndicator saved={card.saved} />
-            <EditButton label="Edit mailing address" onClick={start} testId="button-edit-address" />
+            <EditButton label="Edit mailing address" onClick={start} testId="button-edit-address" addText={summary.length ? undefined : "Add address"} />
           </div>
         )
       }
@@ -238,7 +238,7 @@ function AddressCard({ contact }: { contact: ProfileContactInfo }) {
           ))}
         </address>
       ) : (
-        <p className="text-sm italic text-student-muted" data-testid="text-address">No address on file yet.</p>
+        <p className="flex items-center gap-1.5 text-sm font-semibold text-student-attn" data-testid="text-address"><CircleDashed className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />No address on file yet.</p>
       )}
     </SubCard>
   );
@@ -341,7 +341,6 @@ export function ContactSection({ contact }: { contact: ProfileContactInfo }) {
   return (
     <ProfileSection
       id="contact"
-      eyebrow="Section 2"
       title="Contact Information"
       description="How Lumière reaches you. Keep your phone and address current so you never miss something important."
     >

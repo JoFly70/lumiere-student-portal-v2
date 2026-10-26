@@ -13,13 +13,24 @@ import type {
 } from "@shared/student-profile-contract";
 
 export const PROFILE_SECTIONS = [
-  { id: "identity", label: "My Identity" },
+  { id: "identity", label: "Identity" },
   { id: "contact", label: "Contact" },
-  { id: "background", label: "Academic Background" },
-  { id: "contacts", label: "Authorized Contacts" },
-  { id: "eligibility", label: "Eligibility & Documents" },
+  { id: "background", label: "Background" },
+  { id: "contacts", label: "Authorized contacts" },
+  { id: "eligibility", label: "Eligibility" },
   { id: "account", label: "Account" },
 ] as const;
+
+/** One-tap actions for readiness items that ask the student to supply something. */
+export function readinessAction(item: { key: string; kind: string; section: string }): { label: string; href: string; external: boolean } | null {
+  if (item.kind !== "missing" && item.kind !== "action_required") return null;
+  switch (item.key) {
+    case "phone": return { label: "Add phone", href: `#${sectionDomId("contact")}`, external: false };
+    case "address": return { label: "Add address", href: `#${sectionDomId("contact")}`, external: false };
+    case "id_gov": return { label: "Upload government ID", href: "/documents", external: true };
+    default: return { label: item.kind === "missing" ? "Add" : "Fix", href: `#${sectionDomId(item.section)}`, external: false };
+  }
+}
 export type ProfileSectionId = (typeof PROFILE_SECTIONS)[number]["id"];
 
 export const sectionDomId = (id: string) => `section-${id}`;

@@ -3,15 +3,15 @@
  * mutations come from ProfileActionsContext, so it renders from fixtures with
  * no network.
  */
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { Link } from "wouter";
-import { AlertCircle, ChevronUp, CheckCircle2, ChevronRight, UserRound } from "lucide-react";
+import { AlertCircle, CheckCircle2, ChevronRight, UserRound } from "lucide-react";
 import type { ProfileReadinessItem, StudentProfileView } from "@shared/student-profile-contract";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { StudentSurface, buttonClass, cardClass } from "@/components/student-progress/student-ui";
+import { Eyebrow, StudentSurface, buttonClass, cardClass } from "@/components/student-progress/student-ui";
 import { ProfileAvatarUpload } from "@/components/profile-avatar-upload";
-import { PROFILE_SECTIONS, displayName, readinessChip, sectionDomId, splitReadiness, verificationChip } from "./profile-presentation";
+import { PROFILE_SECTIONS, displayName, readinessAction, readinessChip, sectionDomId, splitReadiness, verificationChip } from "./profile-presentation";
 import { StatusChip } from "./profile-ui";
 import { useProfileActions } from "./profile-actions";
 import { IdentitySection } from "./identity-section";
@@ -23,53 +23,19 @@ import { AccountSection } from "./account-section";
 
 const sections = PROFILE_SECTIONS.map((s) => ({ id: sectionDomId(s.id), label: s.label }));
 
+/**
+ * The one in-page navigation: short pills under the header (same order as Roadmap:
+ * header first, then navigation). Pills wrap on small screens so none is cut off.
+ */
 export function ProfileSectionNav() {
-  const [active, setActive] = useState<string>(sections[0].id);
-  useEffect(() => {
-    let frame = 0;
-    const compute = () => {
-      frame = 0;
-      // The active section is the last one whose top has passed the reading line.
-      // Before the first section reaches it (e.g. at scrollY 0) the first stays active.
-      const line = 140;
-      let current = sections[0].id;
-      for (const s of sections) {
-        const el = document.getElementById(s.id);
-        if (el && el.getBoundingClientRect().top <= line) current = s.id;
-      }
-      setActive(current);
-    };
-    const schedule = () => {
-      if (!frame) frame = window.requestAnimationFrame(compute);
-    };
-    compute();
-    // The app shell scrolls <main>, not the window, so listen in the capture phase.
-    window.addEventListener("scroll", schedule, { passive: true, capture: true });
-    window.addEventListener("resize", schedule);
-    return () => {
-      if (frame) window.cancelAnimationFrame(frame);
-      window.removeEventListener("scroll", schedule, true);
-      window.removeEventListener("resize", schedule);
-    };
-  }, []);
   return (
-    <nav
-      aria-label="Profile sections"
-      className="z-30 -mx-8 hidden min-w-0 border-b border-student-line bg-student-bg px-8 shadow-sm lg:sticky lg:-top-8 lg:-mt-8 lg:block lg:pt-8"
-      data-testid="section-nav"
-    >
-      <ul className="mx-auto flex max-w-6xl gap-1 overflow-x-auto py-1.5">
+    <nav aria-label="Profile sections" className="min-w-0" data-testid="section-nav">
+      <ul className="flex flex-wrap gap-2">
         {sections.map((s) => (
-          <li key={s.id} className="shrink-0">
+          <li key={s.id}>
             <a
               href={`#${s.id}`}
-              aria-current={active === s.id ? "location" : undefined}
-              className={cn(
-                "inline-flex min-h-[44px] items-center rounded-full px-3 text-sm font-medium",
-                active === s.id
-                  ? "border-2 border-student-gold-ink bg-student-gold-soft text-student-gold-ink"
-                  : "border-2 border-transparent text-student-muted hover:text-student-ink",
-              )}
+              className="inline-flex min-h-[44px] items-center rounded-full border border-student-line-strong bg-student-card px-4 text-sm font-medium text-student-ink hover:bg-student-gold-soft"
             >
               {s.label}
             </a>
@@ -80,68 +46,47 @@ export function ProfileSectionNav() {
   );
 }
 
-/** Mobile only: one compact floating "Jump to" menu. */
-export function ProfileJumpMenu() {
-  const [open, setOpen] = useState(false);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  useEffect(() => {
-    // Radix sets data-scroll-locked on <body> while any modal dialog is open.
-    const sync = () => setDialogOpen(document.body.hasAttribute("data-scroll-locked") || Boolean(document.querySelector('[role="dialog"], [role="alertdialog"]')));
-    sync();
-    const observer = new MutationObserver(sync);
-    observer.observe(document.body, { attributes: true, attributeFilter: ["data-scroll-locked"], childList: true });
-    return () => observer.disconnect();
-  }, []);
-  if (dialogOpen) return null;
-  return (
-    <div className="student-surface fixed bottom-4 right-4 z-40 !bg-transparent lg:hidden" data-testid="jump-menu">
-      {open && (
-        <ul className="mb-2 overflow-hidden rounded-xl border border-student-line bg-student-card shadow-lg" aria-label="Jump to section">
-          {sections.map((s) => (
-            <li key={s.id}>
-              <a
-                href={`#${s.id}`}
-                onClick={() => setOpen(false)}
-                className="flex min-h-[44px] items-center px-4 text-sm font-medium text-student-ink hover:bg-student-gold-soft"
-              >
-                {s.label}
-              </a>
-            </li>
-          ))}
-        </ul>
-      )}
-      <button
-        type="button"
-        aria-expanded={open}
-        onClick={() => setOpen((o) => !o)}
-        className="ml-auto flex min-h-[44px] items-center gap-2 rounded-full bg-student-seal px-4 text-sm font-semibold text-student-seal-ink shadow-lg"
-      >
-        Jump to
-        <ChevronUp className={cn("h-4 w-4 transition-transform", !open && "rotate-180")} aria-hidden="true" />
-      </button>
-    </div>
-  );
-}
-
 function ReadinessRow({ item }: { item: ProfileReadinessItem }) {
   const chip = readinessChip(item.kind);
+  const action = readinessAction(item);
+  const body = (
+    <span className="min-w-0">
+      <span className="block text-sm font-medium text-student-ink">{item.label}</span>
+      {item.detail && <span className="block text-xs text-student-muted">{item.detail}</span>}
+    </span>
+  );
+  if (!action) {
+    return (
+      <li>
+        <a
+          href={`#${sectionDomId(item.section)}`}
+          className="flex min-h-[44px] items-center justify-between gap-3 rounded-lg px-3 py-2 hover:bg-student-gold-soft"
+          data-testid="readiness-item"
+          data-kind={item.kind}
+        >
+          {body}
+          <span className="flex shrink-0 items-center gap-2">
+            <StatusChip label={chip.label} tone={chip.tone} />
+            <ChevronRight className="h-4 w-4 text-student-muted" aria-hidden="true" />
+          </span>
+        </a>
+      </li>
+    );
+  }
+  // Missing or action-required: a weighted row with its own action button.
   return (
-    <li>
-      <a
-        href={`#${sectionDomId(item.section)}`}
-        className="flex min-h-[44px] items-center justify-between gap-3 rounded-lg px-3 py-2 hover:bg-student-gold-soft"
-        data-testid="readiness-item"
-        data-kind={item.kind}
-      >
-        <span className="min-w-0">
-          <span className="block text-sm font-medium text-student-ink">{item.label}</span>
-          {item.detail && <span className="block text-xs text-student-muted">{item.detail}</span>}
-        </span>
-        <span className="flex shrink-0 items-center gap-2">
+    <li className="rounded-lg border border-st-attention bg-student-attn-soft" data-testid="readiness-item" data-kind={item.kind}>
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-3 py-2.5">
+        {body}
+        <span className="flex shrink-0 flex-wrap items-center gap-2">
           <StatusChip label={chip.label} tone={chip.tone} />
-          <ChevronRight className="h-4 w-4 text-student-muted" aria-hidden="true" />
+          {action.external ? (
+            <Link href={action.href} className={buttonClass.solid} data-testid="readiness-action">{action.label}</Link>
+          ) : (
+            <a href={action.href} className={buttonClass.solid} data-testid="readiness-action">{action.label}</a>
+          )}
         </span>
-      </a>
+      </div>
     </li>
   );
 }
@@ -200,7 +145,7 @@ export function ProfileHeader({ identity }: { identity: StudentProfileView["iden
         showUploadButton
       />
       <div className="min-w-0 space-y-1">
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-student-gold-ink">My profile</p>
+        <Eyebrow>My profile</Eyebrow>
         <h1 className="break-words font-serif text-3xl leading-tight tracking-tight text-student-ink sm:text-5xl" data-testid="text-profile-name">
           {names.primary}
         </h1>
@@ -217,9 +162,9 @@ export function ProfileHeader({ identity }: { identity: StudentProfileView["iden
 export function ProfilePageView({ profile }: { profile: StudentProfileView }) {
   return (
     <StudentSurface testId="page-student-profile">
-      <ProfileSectionNav />
-      <div className="mx-auto max-w-6xl space-y-6 pb-24 pt-2 sm:space-y-8 sm:pt-4 lg:pb-0">
+      <div className="mx-auto max-w-6xl space-y-6 pb-6 pt-2 sm:space-y-8 sm:pt-4">
         <ProfileHeader identity={profile.identity} />
+        <ProfileSectionNav />
         <ReadinessPanel items={profile.readiness} />
         <IdentitySection identity={profile.identity} />
         <ContactSection contact={profile.contact} />
@@ -228,7 +173,6 @@ export function ProfilePageView({ profile }: { profile: StudentProfileView }) {
         <EligibilitySection eligibility={profile.eligibility} />
         <AccountSection account={profile.account} email={profile.contact.email} />
       </div>
-      <ProfileJumpMenu />
     </StudentSurface>
   );
 }

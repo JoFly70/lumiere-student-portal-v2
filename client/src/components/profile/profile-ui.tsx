@@ -2,7 +2,7 @@
  * Shared building blocks for the profile sections. Local Tailwind classes on
  * top of the S05 `.student-surface` tokens; nothing global.
  */
-import React, { useId, useRef, useState } from "react";
+import React, { useEffect, useId, useRef, useState } from "react";
 import { Link } from "wouter";
 import {
   AlertTriangle,
@@ -19,6 +19,7 @@ import {
   FileCheck2,
   KeyRound,
   ChevronDown,
+  Plus,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -31,7 +32,14 @@ import { sectionDomId, type ChipTone } from "./profile-presentation";
 export const inputClass =
   "h-11 border-student-line-strong bg-student-card text-student-ink placeholder:text-student-muted focus:ring-student-gold-ink focus-visible:ring-student-gold-ink focus-visible:ring-offset-student-card";
 
-export const dialogClass = "student-surface border-student-line bg-student-card text-student-ink max-h-[90vh] overflow-y-auto overscroll-contain scroll-pb-24 sm:max-w-lg";
+/**
+ * Dialog shell. At sm and up: a centred card capped at 90vh. Below sm: a full-height
+ * sheet (inset-0, 100dvh, no rounding) so no page text can show around it and the
+ * sticky footer actions always sit on the bottom edge of the screen.
+ */
+export const dialogClass =
+  "student-surface border-student-line bg-student-card text-student-ink overflow-y-auto overscroll-contain sm:max-h-[90vh] sm:max-w-lg " +
+  "max-sm:left-0 max-sm:top-0 max-sm:h-[100dvh] max-sm:max-h-none max-sm:w-full max-sm:max-w-none max-sm:translate-x-0 max-sm:translate-y-0 max-sm:content-start max-sm:rounded-none max-sm:border-0";
 
 const TONE_TO_PILL = {
   waiting: "neutral",
@@ -105,6 +113,7 @@ export function ProfileSection({
   description,
   children,
   testId,
+  collapsible,
 }: {
   id: string;
   eyebrow?: string;
@@ -112,9 +121,21 @@ export function ProfileSection({
   description?: React.ReactNode;
   children: React.ReactNode;
   testId?: string;
+  /** Low-frequency sections: a one-line summary stays visible, the details sit behind a disclosure. */
+  collapsible?: { summary: React.ReactNode; defaultOpen?: boolean };
 }) {
   const headingId = `${sectionDomId(id)}-title`;
   const Icon = SECTION_ICONS[id];
+  const [open, setOpen] = useState(collapsible?.defaultOpen ?? false);
+  const bodyId = useId();
+  useEffect(() => {
+    if (!collapsible) return;
+    // In-page links (nav pills, readiness rows) open the section they point at.
+    const sync = () => { if (window.location.hash === `#${sectionDomId(id)}`) setOpen(true); };
+    sync();
+    window.addEventListener("hashchange", sync);
+    return () => window.removeEventListener("hashchange", sync);
+  }, [collapsible, id]);
   return (
     <section
       id={sectionDomId(id)}
@@ -136,7 +157,27 @@ export function ProfileSection({
           {description && <p className="max-w-2xl text-sm leading-relaxed text-student-muted">{description}</p>}
         </div>
       </div>
-      {children}
+      {collapsible ? (
+        <>
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded-xl border border-student-line bg-student-card px-4" data-testid="section-summary">
+            <p className="py-2 text-sm text-student-muted">{collapsible.summary}</p>
+            <button
+              type="button"
+              aria-expanded={open}
+              aria-controls={bodyId}
+              onClick={() => setOpen((o) => !o)}
+              className="inline-flex min-h-[44px] items-center gap-1.5 text-sm font-medium text-student-gold-ink underline-offset-4 hover:underline"
+              data-testid="button-section-toggle"
+            >
+              {open ? "Hide details" : "Show details"}
+              <ChevronDown className={cn("h-4 w-4 transition-transform", open && "rotate-180")} aria-hidden="true" />
+            </button>
+          </div>
+          <div id={bodyId} hidden={!open} className="space-y-3 sm:space-y-4">{children}</div>
+        </>
+      ) : (
+        children
+      )}
     </section>
   );
 }
@@ -172,19 +213,28 @@ export function Fact({
   label,
   children,
   empty = "Not provided",
+  missing = false,
   testId,
 }: {
   label: string;
   children?: React.ReactNode;
   empty?: string;
+  /** An empty value the student is expected to supply: shown with weight, not as a quiet blank. */
+  missing?: boolean;
   testId?: string;
 }) {
   const has = children !== null && children !== undefined && children !== "" && children !== false;
   return (
     <div className="min-w-0" data-testid={testId}>
       <dt className="text-xs font-medium uppercase tracking-wide text-student-muted">{label}</dt>
-      <dd className={cn("mt-0.5 break-words text-sm", has ? "text-student-ink" : "italic text-student-muted")}>
-        {has ? children : empty}
+      <dd className={cn("mt-0.5 break-words text-sm", has ? "text-student-ink" : missing ? "font-semibold text-student-attn" : "italic text-student-muted")}>
+        {has ? children : missing ? (
+          <span className="inline-flex items-center gap-1.5" data-testid="fact-missing">
+            <CircleDashed className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            Missing
+            <span className="sr-only">: {empty}</span>
+          </span>
+        ) : empty}
       </dd>
     </div>
   );
@@ -303,7 +353,7 @@ export function FormActions({
     <div
       className={cn(
         "flex gap-2 pt-2 sm:justify-end",
-        sticky && "sticky -bottom-6 z-10 -mx-6 -mb-6 border-t border-student-line bg-student-card px-4 py-2 sm:px-6",
+        sticky && "sticky bottom-0 z-10 -mx-6 -mb-6 border-t border-student-line bg-student-card px-4 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-6 sm:pb-3",
       )}
       data-testid={sticky ? "dialog-footer" : undefined}
     >
@@ -339,17 +389,33 @@ export function FormError({ message }: { message: string | null }) {
   );
 }
 
-export function EditButton({ onClick, label, testId }: { onClick: () => void; label: string; testId?: string }) {
+export function EditButton({
+  onClick,
+  label,
+  testId,
+  addText,
+}: {
+  onClick: () => void;
+  label: string;
+  testId?: string;
+  /** When the value is missing, show a solid "Add ..." action instead of a quiet Edit. */
+  addText?: string;
+}) {
   return (
     <button
       type="button"
       onClick={onClick}
-      aria-label={label}
+      aria-label={addText ? undefined : label}
       data-testid={testId}
-      className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-student-line-strong bg-student-card px-3 text-sm font-medium text-student-ink hover:bg-student-gold-soft"
+      className={cn(
+        "inline-flex min-h-[44px] items-center gap-1.5 rounded-lg px-3 text-sm font-medium",
+        addText
+          ? "bg-student-seal px-4 text-student-seal-ink hover:opacity-90"
+          : "border border-student-line-strong bg-student-card text-student-ink hover:bg-student-gold-soft",
+      )}
     >
-      <Pencil className="h-4 w-4" aria-hidden="true" />
-      Edit
+      {addText ? <Plus className="h-4 w-4" aria-hidden="true" /> : <Pencil className="h-4 w-4" aria-hidden="true" />}
+      {addText ?? "Edit"}
     </button>
   );
 }

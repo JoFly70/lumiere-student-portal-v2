@@ -163,9 +163,9 @@ export default function AdminStudentWorkspace() {
   };
   return <div className="mx-auto max-w-6xl space-y-6">
     <Link href={ADMIN_STUDENTS_PATH} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" />Back to Students</Link>
-    <header className="flex flex-col justify-between gap-4 border-b border-border/70 pb-6 md:flex-row md:items-end">
-      <div><p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary">Lumière / student workspace</p><h1 className="text-3xl font-semibold tracking-tight">{name}</h1><p className="mt-1 text-muted-foreground">{identity.email ?? "Not provided"} · <span className="font-mono">{identity.studentCode ?? "Not provided"}</span></p></div>
-      <Badge variant="outline" className="w-fit gap-2"><ShieldCheck className="h-3.5 w-3.5" />Canonical view · controlled placement writes</Badge>
+    <header className="flex flex-col justify-between gap-4 border-b border-border/70 pb-6 lg:flex-row lg:items-end">
+      <div className="min-w-0"><div className="student-surface mb-2 !bg-transparent"><p className="text-xs font-semibold uppercase tracking-[0.18em] text-student-gold-ink">Lumière / student workspace</p></div><h1 className="text-3xl font-semibold tracking-tight">{name}</h1><p className="mt-1 text-muted-foreground">{identity.email ?? "Not provided"} · <span className="font-mono">{identity.studentCode ?? "Not provided"}</span></p></div>
+      <Badge variant="outline" className="h-auto w-fit max-w-full gap-2 whitespace-normal"><ShieldCheck className="h-3.5 w-3.5" />Canonical view · controlled placement writes</Badge>
     </header>
      <nav aria-label="Student workspace sections" className="flex flex-wrap gap-2 border-b pb-3">
        <a href="#workspace-overview" className="rounded-md border px-3 py-2 text-sm font-medium hover:bg-muted">Overview</a>

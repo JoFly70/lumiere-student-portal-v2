@@ -16,13 +16,13 @@
       "pageHeightPx": 3136
     },
     "06-roadmap-390-light.png": {
-      "pageHeightPx": 5647
+      "pageHeightPx": 5587
     },
     "07-roadmap-1440-dark.png": {
       "pageHeightPx": 3136
     },
     "08-roadmap-390-dark.png": {
-      "pageHeightPx": 5647
+      "pageHeightPx": 5587
     },
     "09-support-student-1440-light.png": {
       "pageHeightPx": 994
@@ -49,19 +49,37 @@
       "pageHeightPx": 1378
     },
     "17-documents-1440-light.png": {
-      "pageHeightPx": 1301
+      "pageHeightPx": 1413
     },
     "18-documents-390-light.png": {
-      "pageHeightPx": 1729
+      "pageHeightPx": 2221
     },
     "19-documents-390-dark.png": {
-      "pageHeightPx": 1729
+      "pageHeightPx": 2221
     },
-    "20-profile-nav-1440-light.png": {
-      "pageHeightPx": 1458
+    "20-profile-1440-light.png": {
+      "pageHeightPx": 3439
     },
-    "21-profile-nav-menu-390-light.png": {
+    "21-profile-390-light.png": {
+      "pageHeightPx": 5790
+    },
+    "23-profile-1440-dark.png": {
+      "pageHeightPx": 3439
+    },
+    "24-profile-390-dark.png": {
+      "pageHeightPx": 5790
+    },
+    "25-profile-correction-dialog-390-light.png": {
       "pageHeightPx": 0
+    },
+    "26-staff-profile-panel-1440-light.png": {
+      "pageHeightPx": 3908
+    },
+    "27-staff-profile-panel-1440-dark.png": {
+      "pageHeightPx": 3908
+    },
+    "28-staff-profile-panel-768-light.png": {
+      "pageHeightPx": 5030
     }
   },
   "chrome390": {
@@ -86,5 +104,42 @@
     },
     "toastOverlapsChangedControl": false,
     "toastOverlapsChangedRow": false
-  }
+  },
+  "staffPanelButtons": [
+    {
+      "name": "Approve…",
+      "height": 44,
+      "width": 103
+    },
+    {
+      "name": "Reject…",
+      "height": 44,
+      "width": 88
+    },
+    {
+      "name": "Review documents",
+      "height": 44,
+      "width": 193
+    },
+    {
+      "name": "Verify authority…",
+      "height": 44,
+      "width": 150
+    },
+    {
+      "name": "Decline request…",
+      "height": 44,
+      "width": 152
+    },
+    {
+      "name": "Awaiting decision ↑",
+      "height": 44,
+      "width": 142
+    },
+    {
+      "name": "Documents",
+      "height": 17,
+      "width": 76
+    }
+  ]
 }

@@ -113,7 +113,7 @@ export function StageTrack({ stage }: { stage: StudentItemStage; label?: string 
               </span>
               <span
                 className={cn(
-                  "mt-1 block text-xs leading-tight tracking-tight [overflow-wrap:anywhere]",
+                  "mt-1 block text-xs leading-tight tracking-tight [overflow-wrap:normal] max-[480px]:text-[10px]",
                   i === current ? "font-semibold text-student-ink" : reached ? "text-student-ink" : "text-student-muted",
                 )}
               >

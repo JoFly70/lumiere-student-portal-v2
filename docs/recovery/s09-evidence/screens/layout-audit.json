@@ -32,25 +32,8 @@
   {
     "width": 768,
     "screen": "staff profile review",
-    "overflow": true,
-    "problems": [
-      "page scrolls horizontally: 840 > 768",
-      "overflow persists with the Profile & identity panel hidden (pre-existing shell/workspace)",
-      "beyond viewport: div[flex flex-col flex-1] right=840",
-      "beyond viewport: header[flex items-center justify-between p-4 border-b] right=840",
-      "beyond viewport: div[flex items-center gap-2] right=824",
-      "beyond viewport: button[button-theme-toggle] right=780",
-      "wide: div[mx-auto max-w-6xl space-y-6] 520px",
-      "wide: header[flex flex-col justify-between gap-4 bord] 520px",
-      "wide: nav[flex flex-wrap gap-2 border-b pb-3] 520px",
-      "wide: section[scroll-mt-4 space-y-5] 520px",
-      "wide: div[border-b pb-3] 520px",
-      "wide: h2[flex items-center gap-2 text-xl font-sem] 520px",
-      "wide: p[mt-1 text-sm text-muted-foreground] 520px",
-      "wide: div[needs-decision] 520px",
-      "wide: div[grid gap-4 lg:grid-cols-2 [&>*]:min-w-0] 520px",
-      "wide: div[shadcn-card rounded-xl border bg-card bo] 520px"
-    ]
+    "overflow": false,
+    "problems": []
   },
   {
     "width": 390,
