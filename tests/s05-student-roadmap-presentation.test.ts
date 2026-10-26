@@ -162,7 +162,7 @@ describe("S05 roadmap presentation: journey", () => {
   });
   it("exposes the four sections in order", () => {
     expect(FLIGHT_DECK_SECTIONS.map((s) => s.label)).toEqual(["Today", "Journey", "Progress", "Foundation", "Horizon"]);
-    expect(ROADMAP_SECTIONS.map((s) => s.label)).toEqual(["Now", "Journey"]);
+    expect(ROADMAP_SECTIONS.map((s) => s.label)).toEqual(["Now", "Phases"]);
   });
 });
 

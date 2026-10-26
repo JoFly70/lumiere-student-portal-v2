@@ -42,7 +42,7 @@ export const FLIGHT_DECK_SECTIONS = [
 
 export const ROADMAP_SECTIONS = [
   { id: "section-today", label: "Now" },
-  { id: "section-roadmap", label: "Journey" },
+  { id: "section-roadmap", label: "Phases" },
 ] as const;
 
 export const FLIGHT_DECK_PATH = "/flight-deck";

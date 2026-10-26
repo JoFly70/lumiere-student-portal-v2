@@ -18,6 +18,7 @@ import {
   FLIGHT_DECK_PATH,
   FLIGHT_DECK_SECTIONS,
   ROADMAP_PATH,
+  ROADMAP_SECTIONS,
   isPublished,
   primaryObjectiveTitle,
 } from "@/pages/student-roadmap-presentation";
@@ -32,10 +33,7 @@ import { JourneyStrip } from "./journey-graphics";
 import { RoadmapNotPublished } from "./roadmap-states";
 
 /** Roadmap page sections. "Phases" (not "Journey"): the Flight Deck's "Journey" is the overview strip. */
-const ROADMAP_NAV = [
-  { id: "section-today", label: "Now" },
-  { id: "section-roadmap", label: "Phases" },
-] as const;
+const ROADMAP_NAV = ROADMAP_SECTIONS;
 
 function PageHeader({ eyebrow, title, subtitle, children }: { eyebrow: string; title: string; subtitle?: string | null; children?: React.ReactNode }) {
   return (
