@@ -232,8 +232,8 @@ export function ProfileErrorState({ onRetry }: { onRetry: () => void }) {
     <StudentSurface testId="profile-error">
       <div className="mx-auto max-w-md space-y-3 py-16 text-center" role="alert">
         <AlertCircle className="mx-auto h-10 w-10 text-student-attn" aria-hidden="true" />
-        <h1 className="font-serif text-2xl text-student-ink">We could not load your profile</h1>
-        <p className="text-sm text-student-muted">This is a temporary problem on our side. Your information is safe.</p>
+        <h1 className="font-serif text-2xl text-student-ink">Student record could not be loaded</h1>
+        <p className="text-sm text-student-muted">This is a system error, not a missing student record. Your information is safe.</p>
         <button type="button" className={buttonClass.solid} onClick={onRetry} data-testid="button-retry-profile">
           Try again
         </button>
@@ -247,8 +247,8 @@ export function ProfileNotReady() {
     <StudentSurface testId="profile-not-ready">
       <div className="mx-auto max-w-md space-y-3 py-16 text-center">
         <UserRound className="mx-auto h-10 w-10 text-student-muted" aria-hidden="true" />
-        <h1 className="font-serif text-2xl text-student-ink">Your student record is not ready yet</h1>
-        <p className="text-sm text-student-muted">Your Lumière advisor needs to create your student record before your profile can be shown.</p>
+        <h1 className="font-serif text-2xl text-student-ink">Student record not ready</h1>
+        <p className="text-sm text-student-muted">Your Lumière advisor must create your student record before your profile can be shown.</p>
         <Link href="/support" className={buttonClass.outline}>Contact support</Link>
       </div>
     </StudentSurface>

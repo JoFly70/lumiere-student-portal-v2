@@ -59,11 +59,12 @@ describe('S03 client route wiring (static)', () => {
   });
 
   it('uses real contact routes with auth', () => {
-    const src = read('client/src/pages/student-profile.tsx');
+    // S09: the profile page delegates data access to the profile hook.
+    const src = read('client/src/hooks/use-student-profile.ts');
     expect(src).not.toContain('`/api/contacts/');
-    expect(src).toContain("apiRequest('DELETE', `/api/students/contacts/${encodeURIComponent(contactId)}`)");
-    expect(src).toContain('api.get<StudentContact[]>(`/api/students/${encodeURIComponent(studentId)}/contacts`)');
-    expect(src).not.toMatch(/fetch\(`\/api\/students\/\$\{studentId\}\/contacts`\)/);
+    expect(src).toContain('profileRequest("DELETE", `/api/students/contacts/${encodeURIComponent(id)}`)');
+    expect(src).toContain('profileRequest("PUT", `/api/students/contacts/${encodeURIComponent(id)}`, patch)');
+    expect(src).toContain('headers.Authorization = `Bearer ${token}`');
   });
 
   it('documents flow uses server response fields and sends metadata only', () => {

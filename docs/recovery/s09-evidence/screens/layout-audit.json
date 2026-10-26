@@ -1,0 +1,82 @@
+[
+  {
+    "width": 1440,
+    "screen": "student profile",
+    "overflow": false,
+    "problems": []
+  },
+  {
+    "width": 1440,
+    "screen": "staff profile review",
+    "overflow": false,
+    "problems": []
+  },
+  {
+    "width": 1024,
+    "screen": "student profile",
+    "overflow": false,
+    "problems": []
+  },
+  {
+    "width": 1024,
+    "screen": "staff profile review",
+    "overflow": false,
+    "problems": []
+  },
+  {
+    "width": 768,
+    "screen": "student profile",
+    "overflow": true,
+    "problems": [
+      "page scrolls horizontally: 898 > 768",
+      "beyond viewport: div[flex flex-col flex-1] right=898",
+      "beyond viewport: header[flex items-center justify-between p-4 border-b] right=898",
+      "beyond viewport: div[flex items-center gap-2] right=882",
+      "beyond viewport: button[button-theme-toggle] right=838",
+      "wide: div[page-student-profile] 642px",
+      "wide: nav[section-nav] 642px",
+      "wide: ul[mx-auto flex max-w-6xl gap-1 overflow-x-] 578px",
+      "wide: div[mx-auto max-w-6xl space-y-10 pt-6] 578px",
+      "wide: header[profile-header] 578px",
+      "wide: section[readiness-panel] 578px",
+      "wide: section[profile-section-identity] 578px",
+      "wide: div[space-y-1] 578px",
+      "wide: p[text-xs font-semibold uppercase tracking] 578px",
+      "wide: h2[font-serif text-2xl tracking-tight text-] 578px"
+    ]
+  },
+  {
+    "width": 768,
+    "screen": "staff profile review",
+    "overflow": true,
+    "problems": [
+      "page scrolls horizontally: 840 > 768",
+      "beyond viewport: div[flex flex-col flex-1] right=840",
+      "beyond viewport: header[flex items-center justify-between p-4 border-b] right=840",
+      "beyond viewport: div[flex items-center gap-2] right=824",
+      "beyond viewport: button[button-theme-toggle] right=780",
+      "wide: div[mx-auto max-w-6xl space-y-6] 520px",
+      "wide: header[flex flex-col justify-between gap-4 bord] 520px",
+      "wide: nav[flex flex-wrap gap-2 border-b pb-3] 520px",
+      "wide: div[] 520px",
+      "wide: section[grid gap-4 md:grid-cols-3] 520px",
+      "wide: div[flex flex-col gap-3 rounded-md border bo] 520px",
+      "wide: div[shadcn-card rounded-xl border bg-card bo] 520px",
+      "wide: div[flex flex-col space-y-1.5 p-6] 518px",
+      "wide: div[p-6 pt-0] 518px",
+      "wide: section[space-y-4] 520px"
+    ]
+  },
+  {
+    "width": 390,
+    "screen": "student profile",
+    "overflow": false,
+    "problems": []
+  },
+  {
+    "width": 390,
+    "screen": "staff profile review",
+    "overflow": false,
+    "problems": []
+  }
+]

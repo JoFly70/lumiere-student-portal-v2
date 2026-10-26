@@ -130,7 +130,8 @@ async function newPage(browser: any, o: Opts) {
     if (p === `/api/students/${STAFF_STUDENT_ID}/profile`) return json(200, staffProfile());
     if (p === `/api/students/${STAFF_STUDENT_ID}/identity-corrections`) return json(200, [PENDING, OLD_REJECTED]);
     if (p === `/api/admin/students/${STAFF_STUDENT_ID}/workspace`) return json(200, workspacePayload());
-    if (p.startsWith("/api/documents") || p.startsWith("/api/tickets")) return json(200, []);
+    if (p.startsWith("/api/documents")) return json(200, []);
+    if (p.startsWith("/api/tickets")) return json(200, { tickets: [], total: 0 });
     return json(404, { error: { code: "STUB_NOT_FOUND", message: "not stubbed" } });
   });
   const page = await ctx.newPage();
@@ -363,6 +364,21 @@ async function main() {
           if (doc.scrollWidth > doc.clientWidth + 1) out.push(`page scrolls horizontally: ${doc.scrollWidth} > ${doc.clientWidth}`);
           const main = document.querySelector("main") as HTMLElement | null;
           if (main && main.scrollWidth > main.clientWidth + 1) out.push(`main scrolls horizontally: ${main.scrollWidth} > ${main.clientWidth}`);
+          if (out.length) {
+            const cw = doc.clientWidth;
+            const beyond = Array.from(document.querySelectorAll<HTMLElement>("body *"))
+              .filter((el) => { const r = el.getBoundingClientRect(); return r.width > 0 && r.right > cw + 1 && !el.closest("svg"); })
+              .slice(0, 4);
+            for (const el of beyond) out.push(`beyond viewport: ${el.tagName.toLowerCase()}[${el.getAttribute("data-testid") ?? String(el.className).slice(0, 50)}] right=${Math.round(el.getBoundingClientRect().right)}`);
+          }
+          if (out.length && main) {
+            // Name the widest elements inside <main> that force the overflow.
+            const wide = Array.from(main.querySelectorAll<HTMLElement>("*"))
+              .map((el) => ({ el, w: Math.round(el.getBoundingClientRect().width) }))
+              .filter((x) => x.w > main.clientWidth - 70 && x.w > 0)
+              .slice(0, 10);
+            for (const x of wide) out.push(`wide: ${x.el.tagName.toLowerCase()}[${x.el.getAttribute("data-testid") ?? String(x.el.className).slice(0, 40)}] ${x.w}px`);
+          }
           return out;
         });
         audit.push({ width, screen: label, overflow: problems.length > 0, problems });

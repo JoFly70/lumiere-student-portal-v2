@@ -76,7 +76,7 @@ describe("Phase 5F production truth and routing", () => {
 
   it("does not calculate Flight Deck projections before a real student record exists", () => {
     const flightDeck = read("client/src/pages/flight-deck.tsx");
-    const profile = read("client/src/pages/student-profile.tsx");
+    const profile = read("client/src/pages/student-profile.tsx") + read("client/src/components/profile/profile-page-view.tsx");
 
     expect(flightDeck).toContain("fetchStudentRecordStatus");
     expect(flightDeck).toContain("getAuthToken");
@@ -89,7 +89,7 @@ describe("Phase 5F production truth and routing", () => {
     expect(states).toContain("before your academic progress can be shown");
 
     expect(profile).toContain("Student record not ready");
-    expect(profile).toContain("Your Lumiere advisor must create your student record");
+    expect(profile).toContain("Your Lumière advisor must create your student record");
     expect(profile).toContain("Student record could not be loaded");
     expect(profile).toContain("This is a system error, not a missing student record.");
   });

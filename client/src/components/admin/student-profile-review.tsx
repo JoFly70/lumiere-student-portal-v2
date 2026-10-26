@@ -68,8 +68,11 @@ function TrustPill({ badge }: { badge: TrustBadge }) {
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</dt><dd className="mt-1 text-sm">{children ?? "Not provided"}</dd></div>;
+  return <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</dt><dd className="mt-1 break-words text-sm">{children ?? "Not provided"}</dd></div>;
 }
+
+/** Darker primary so 12px button text meets 4.5:1 in both themes. */
+const PRIMARY_ACTION = "bg-blue-700 text-white hover:bg-blue-800 border-blue-800";
 
 const text = (v: string | null | undefined) => (v ? v : "Not provided");
 
@@ -131,7 +134,7 @@ function DecisionDialog({ decision, studentId, onClose, onDone }: { decision: De
       </div>
       <DialogFooter>
         <Button type="button" variant="outline" disabled={mutation.isPending} onClick={() => { setError(null); setNote(""); onClose(); }}>Cancel</Button>
-        <Button type="button" variant={destructive ? "destructive" : "default"} disabled={!gate.ok || mutation.isPending} onClick={() => { setError(null); mutation.mutate(decision); }}>
+        <Button type="button" variant={destructive ? "destructive" : "default"} className={destructive ? undefined : PRIMARY_ACTION} disabled={!gate.ok || mutation.isPending} onClick={() => { setError(null); mutation.mutate(decision); }}>
           {mutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" /> : null}Confirm
         </Button>
       </DialogFooter>
@@ -141,11 +144,11 @@ function DecisionDialog({ decision, studentId, onClose, onDone }: { decision: De
 
 export function CorrectionTable({ request }: { request: IdentityCorrectionRequestView }) {
   const rows = correctionRows(request);
-  return <table className="w-full text-sm">
+  return <div className="overflow-x-auto"><table className="w-full text-sm">
     <caption className="sr-only">Current and requested identity values</caption>
     <thead><tr className="text-left text-xs uppercase tracking-wide text-muted-foreground"><th scope="col" className="py-1 pr-3 font-medium">Field</th><th scope="col" className="py-1 pr-3 font-medium">On record</th><th scope="col" className="py-1 font-medium">Requested</th></tr></thead>
     <tbody className="divide-y">{rows.map((r) => <tr key={r.field}><th scope="row" className="py-2 pr-3 text-left font-medium">{r.label}</th><td className="py-2 pr-3 text-muted-foreground">{r.current}</td><td className="py-2 font-medium">{r.requested}</td></tr>)}</tbody>
-  </table>;
+  </table></div>;
 }
 
 export function StudentProfileReviewView({
@@ -180,13 +183,13 @@ export function StudentProfileReviewView({
         <div><p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Student's reason</p><p className="mt-1 text-sm">{pending.reason}</p></div>
         <p className="text-xs text-muted-foreground">Submitted {new Date(pending.createdAt).toISOString().slice(0, 10)}{pending.evidenceDocumentId ? " · supporting document attached" : " · no supporting document attached"}. Approving does not change document verification.</p>
         <div className="flex flex-wrap gap-2">
-          <Button type="button" size="sm" disabled={!canDecide} onClick={() => onDecide?.({ kind: "correction", decision: "approve", request: pending })}>Approve…</Button>
+          <Button type="button" size="sm" className={PRIMARY_ACTION} disabled={!canDecide} onClick={() => onDecide?.({ kind: "correction", decision: "approve", request: pending })}>Approve…</Button>
           <Button type="button" size="sm" variant="outline" disabled={!canDecide} onClick={() => onDecide?.({ kind: "correction", decision: "reject", request: pending })}>Reject…</Button>
           <Button asChild size="sm" variant="ghost"><a href={STAFF_PROFILE_PATHS.documents(studentId)}><FileCheck2 className="mr-2 h-4 w-4" aria-hidden="true" />Review documents</a></Button>
         </div>
       </CardContent>
     </Card> : null}
-    <div className="grid gap-4 md:grid-cols-2">
+    <div className="grid gap-4 lg:grid-cols-2 [&>*]:min-w-0">
       <Card><CardHeader><div className="flex flex-wrap items-center justify-between gap-2"><CardTitle className="text-base">Legal identity</CardTitle><TrustPill badge={trust} /></div></CardHeader>
         <CardContent><dl className="grid gap-3 sm:grid-cols-2">
           <Field label="Student code">{identity.studentCode}</Field>
@@ -218,7 +221,7 @@ export function StudentProfileReviewView({
             <p className="text-xs text-muted-foreground">Requested scopes: {c.requestedScopes.join(", ") || "none"} · In force: {c.effectiveScopes.join(", ") || "none"} · Portal access: none</p>
             {c.authorityNote ? <p className="text-xs text-muted-foreground">Staff note: {c.authorityNote}</p> : null}
             {c.authorityStatus !== "listed" || c.requestedScopes.length > 0 || c.type === "guardian" || c.type === "representative" ? <div className="flex flex-wrap gap-2">
-              {actions.canVerify && c.authorityStatus !== "verified" ? <Button type="button" size="sm" disabled={!canDecide} onClick={() => onDecide?.({ kind: "authority", decision: "verify", contact: c })}>Verify authority…</Button> : null}
+              {actions.canVerify && c.authorityStatus !== "verified" ? <Button type="button" size="sm" className={PRIMARY_ACTION} disabled={!canDecide} onClick={() => onDecide?.({ kind: "authority", decision: "verify", contact: c })}>Verify authority…</Button> : null}
               {actions.canRevoke ? <Button type="button" size="sm" variant="outline" disabled={!canDecide} onClick={() => onDecide?.({ kind: "authority", decision: "revoke", contact: c })}>Revoke…</Button> : null}
             </div> : null}
           </div>;

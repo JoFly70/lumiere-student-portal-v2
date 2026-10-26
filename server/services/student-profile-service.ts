@@ -8,7 +8,6 @@
  */
 import {
   type StudentContact,
-  studentSchema,
   type Student,
   type StudentIdentityCorrectionRow,
 } from '@shared/schema';
@@ -80,7 +79,24 @@ export function maskStudentRecord<T extends object>(student: T): T & {
 // Field ownership
 // ---------------------------------------------------------------------------
 
-const KNOWN_STUDENT_FIELDS: ReadonlySet<string> = new Set(Object.keys(studentSchema.shape));
+/**
+ * Every column of `students` a client could name. Kept static (and asserted
+ * equal to studentSchema's keys in tests/s09-profile-security.test.ts) so this
+ * module has no load-time dependency on the schema value.
+ */
+export const KNOWN_STUDENT_FIELDS: ReadonlySet<string> = new Set([
+  'id', 'user_id', 'student_code', 'status',
+  'first_name', 'middle_name', 'last_name', 'preferred_name', 'dob', 'sex', 'nationality',
+  'gov_id_type', 'gov_id_number', 'photo_url',
+  'residency', 'hs_completion', 'hs_path', 'hs_country', 'hs_school', 'hs_year', 'hs_doc_url',
+  'email', 'email_verified_at', 'phone_primary', 'phone_secondary', 'whatsapp_primary', 'timezone',
+  'preferred_contact_channel',
+  'address_country', 'address_state', 'address_city', 'address_postal', 'address_line1', 'address_line2',
+  'target_degree', 'target_major', 'start_term', 'prior_credits', 'prior_credits_est', 'prior_sources',
+  'transcripts_url', 'target_pace',
+  'marketing_opt_in', 'media_release', 'consent_signed_at', 'consent_signature',
+  'created_at', 'updated_at',
+]);
 const EDITABLE: ReadonlySet<string> = new Set(STUDENT_EDITABLE_PROFILE_FIELDS);
 const IDENTITY: ReadonlySet<string> = new Set(IDENTITY_CORRECTION_FIELDS);
 

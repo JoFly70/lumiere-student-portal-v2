@@ -482,20 +482,15 @@ describe('PROFILE — real router from server/routes/students.ts', () => {
       user_id: 'student-1',
       student_code: 'S001',
     });
-    // getStudent uses supabaseAdmin.from('students').select().eq().single()
-    setupSupabaseFrom({
-      students: (q: any) => makeQueryChain({
-        data: {
-          id: 'student-1',
-          user_id: 'student-1',
-          student_code: 'S001',
-          first_name: 'Test',
-          last_name: 'Student',
-          email: 'a@test.com',
-          status: 'active',
-        },
-        error: null,
-      }),
+    // getStudent reads through the Drizzle student repository
+    mockRepoGetStudentById.mockResolvedValue({
+      id: 'student-1',
+      user_id: 'student-1',
+      student_code: 'S001',
+      first_name: 'Test',
+      last_name: 'Student',
+      email: 'a@test.com',
+      status: 'active',
     });
 
     const app = makeStudentsApp(studentsRouter);
@@ -531,29 +526,27 @@ describe('PROFILE — real router from server/routes/students.ts', () => {
       student_code: 'S001',
     });
 
-    // updateStudent uses supabaseAdmin.from('students').update().eq().select().single()
-    setupSupabaseFrom({
-      students: (q: any) => makeQueryChain({
-        data: {
-          id: 'student-1',
-          user_id: 'student-1',
-          student_code: 'S001',
-          first_name: 'Updated',
-          last_name: 'Student',
-          email: 'a@test.com',
-          status: 'active',
-        },
-        error: null,
-      }),
-    });
+    // getStudent / updateStudent go through the Drizzle student repository
+    const stored = {
+      id: 'student-1',
+      user_id: 'student-1',
+      student_code: 'S001',
+      first_name: 'Test',
+      last_name: 'Student',
+      preferred_name: null,
+      email: 'a@test.com',
+      status: 'active',
+    };
+    mockRepoGetStudentById.mockResolvedValue(stored);
+    mockRepoUpdateStudent.mockResolvedValue({ ...stored, preferred_name: 'Updated' });
 
     const app = makeStudentsApp(studentsRouter);
     const res = await request(app)
       .put('/api/students/student-1')
       .set('Authorization', 'Bearer valid-token')
-      .send({ first_name: 'Updated' });
+      .send({ preferred_name: 'Updated' });
     expect(res.status).toBe(200);
-    expect(res.body.first_name).toBe('Updated');
+    expect(res.body.preferred_name).toBe('Updated');
   });
 });
 
