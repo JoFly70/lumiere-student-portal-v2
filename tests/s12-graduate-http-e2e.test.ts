@@ -565,7 +565,7 @@ describe.skipIf(!ready)("S12 graduate programmes — real HTTP end to end", () =
     expect((await verify(credential, verifyBody(unimarconiEvidence({ outcome: "confirmed", decisionDate: "2026-10-25", documentTypeLabel: "Credential confirmation", documentReference: "SYN-CRED-1" })), staff, "credential verification confirmed")).status).toBe(200);
     const final = await studentView(user, programId);
     expect(final.graduation.milestones.every((m: any) => m.state === "done" || m.state === "not_applicable")).toBe(true);
-    expect(final.nextStep.title).toBe("Everything is complete");
+    expect(final.nextStep.title).toBe("Your university degree is complete");
     expect(final.credits.find((c: any) => c.authority === "university_awarded")).toMatchObject({ amount: 60 });
     expect(final.credits.find((c: any) => c.authority === "eneb_stated").amount).toBeNull(); // never merged into the awarded total
     activeJourney = null;

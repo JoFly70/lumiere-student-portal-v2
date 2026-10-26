@@ -855,6 +855,241 @@ export function legalizationRequirements(
 }
 
 // ---------------------------------------------------------------------------
+// Foreign credential evaluations (S12 addendum, 26 Oct 2026)
+// ---------------------------------------------------------------------------
+//
+// A foreign evaluator's opinion about an awarded qualification. Kept apart from
+// everything above: an evaluation never changes the Italian award, cohort rules,
+// recognition, examinations, graduation or any credit layer, and nothing above
+// reads evaluations except to display them.
+//
+// Research position (docs/s12/evidence-register/): an Italian Master universitario
+// di primo livello must not automatically be treated as below master's level
+// abroad, and absence of Italian doctoral-access rights does not establish the
+// absence of master's-level equivalency. Equivalency is a credible possibility,
+// never a guaranteed outcome; only a completed evaluation states the result for
+// that evaluator, country and use.
+
+export const EVALUATORS = ["wes_us", "wes_canada", "nuffic", "ece", "ierf", "enic_naric_other", "other"] as const;
+export type Evaluator = (typeof EVALUATORS)[number];
+
+export const EVALUATOR_LABEL: Record<Evaluator, string> = {
+  wes_us: "WES (United States)",
+  wes_canada: "WES Canada",
+  nuffic: "Nuffic (Netherlands)",
+  ece: "Educational Credential Evaluators (ECE)",
+  ierf: "International Education Research Foundation (IERF)",
+  enic_naric_other: "Other ENIC-NARIC centre",
+  other: "Other evaluator",
+};
+
+/** WES U.S. and WES Canada are different services with different outcomes; each is tied to its country. */
+export const EVALUATOR_FIXED_COUNTRY: Partial<Record<Evaluator, string>> = { wes_us: "US", wes_canada: "CA", nuffic: "NL" };
+
+/** A free online equivalency tool is preliminary; only a completed report is an evaluation outcome. */
+export const EVALUATION_TYPES = ["preliminary_tool", "completed_report", "advisory_statement"] as const;
+export type EvaluationType = (typeof EVALUATION_TYPES)[number];
+export const EVALUATION_TYPE_LABEL: Record<EvaluationType, string> = {
+  preliminary_tool: "Preliminary equivalency-tool result (not an official evaluation)",
+  completed_report: "Completed official evaluation report",
+  advisory_statement: "Advisory statement (not an evaluation report)",
+};
+
+export const EVALUATION_USES = ["employment", "further_study", "immigration", "professional_licensing", "other"] as const;
+export const EVALUATION_STATUSES = ["planned", "submitted", "in_progress", "completed", "withdrawn"] as const;
+
+/** The evaluator's conclusion as a coarse level; `conclusionText` holds its exact words. */
+export const EVALUATION_CONCLUSIONS = [
+  "not_yet_known",
+  "masters_equivalent",
+  "professional_masters_equivalent",
+  "research_masters_equivalent",
+  "graduate_certificate_or_diploma",
+  "bachelors_equivalent",
+  "other",
+] as const;
+export type EvaluationConclusion = (typeof EVALUATION_CONCLUSIONS)[number];
+export const EVALUATION_CONCLUSION_LABEL: Record<EvaluationConclusion, string> = {
+  not_yet_known: "Not yet known",
+  masters_equivalent: "Master's-level equivalent",
+  professional_masters_equivalent: "Professional master's equivalent (e.g. Dutch HBO master)",
+  research_masters_equivalent: "Research master's equivalent (e.g. Dutch WO master)",
+  graduate_certificate_or_diploma: "Graduate certificate or diploma equivalent",
+  bachelors_equivalent: "Bachelor's-level equivalent",
+  other: "Other conclusion (see the evaluator's wording)",
+};
+
+export const recordEvaluationSchema = z
+  .object({
+    /** The graduate programme whose award was evaluated, when it is in the portal. */
+    programId: z.string().min(1).nullable().default(null),
+    evaluator: z.enum(EVALUATORS),
+    evaluatorName: z.string().trim().max(160).nullable().default(null),
+    destinationCountry: z.string().trim().regex(/^[A-Z]{2}$/, "ISO 3166-1 alpha-2"),
+    /** Exactly as submitted to the evaluator (the qualification title on the award). */
+    qualificationEvaluated: z.string().trim().min(3).max(300),
+    awardingInstitution: z.enum(INSTITUTIONS),
+    intendedUse: z.enum(EVALUATION_USES),
+    evaluationType: z.enum(EVALUATION_TYPES),
+    status: z.enum(EVALUATION_STATUSES).default("planned"),
+    reportDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().default(null),
+    reportReference: z.string().trim().max(200).nullable().default(null),
+    documentId: z.string().min(1).nullable().default(null),
+    conclusion: z.enum(EVALUATION_CONCLUSIONS).default("not_yet_known"),
+    /** The evaluator's own words. */
+    conclusionText: z.string().trim().max(2000).nullable().default(null),
+    note: z.string().trim().max(1000).nullable().default(null),
+  })
+  .strict()
+  .refine((v) => v.evaluator !== "other" || !!v.evaluatorName, { message: "Name the evaluator", path: ["evaluatorName"] });
+export type RecordEvaluation = z.infer<typeof recordEvaluationSchema>;
+
+export const updateEvaluationSchema = z
+  .object({
+    status: z.enum(EVALUATION_STATUSES),
+    reportDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable(),
+    reportReference: z.string().trim().max(200).nullable(),
+    documentId: z.string().min(1).nullable(),
+    conclusion: z.enum(EVALUATION_CONCLUSIONS),
+    conclusionText: z.string().trim().max(2000).nullable(),
+    note: z.string().trim().max(1000).nullable(),
+  })
+  .partial()
+  .strict()
+  .refine((v) => Object.keys(v).length > 0, { message: "Nothing to update" });
+export type UpdateEvaluation = z.infer<typeof updateEvaluationSchema>;
+
+export const verifyEvaluationSchema = z
+  .object({
+    decision: z.enum(["verified", "rejected", "conflicting"]),
+    conflictingEvidence: z.string().trim().max(1000).nullable().default(null),
+    note: z.string().trim().min(3).max(1000),
+  })
+  .strict();
+export type VerifyEvaluation = z.infer<typeof verifyEvaluationSchema>;
+
+export interface CredentialEvaluationRecord {
+  readonly id: string;
+  readonly studentId: string;
+  readonly programId: string | null;
+  readonly evaluator: Evaluator;
+  readonly evaluatorName: string | null;
+  readonly destinationCountry: string;
+  readonly qualificationEvaluated: string;
+  readonly awardingInstitution: Institution;
+  readonly intendedUse: (typeof EVALUATION_USES)[number];
+  readonly evaluationType: EvaluationType;
+  readonly status: (typeof EVALUATION_STATUSES)[number];
+  readonly reportDate: string | null;
+  readonly reportReference: string | null;
+  readonly documentId: string | null;
+  readonly conclusion: EvaluationConclusion;
+  readonly conclusionText: string | null;
+  readonly verificationStatus: VerificationStatus;
+  readonly conflictingEvidence: string | null;
+  readonly reviewerUserId: string | null;
+  readonly reviewedAt: string | null;
+  readonly note: string | null;
+  readonly createdBy: string | null;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+}
+
+export const EVALUATION_GUARD_CODES = [
+  "EVALUATOR_COUNTRY_MISMATCH",
+  "REPORT_DATE_REQUIRED",
+  "REPORT_REFERENCE_REQUIRED",
+  "CONCLUSION_REQUIRED",
+  "CONCLUSION_TEXT_REQUIRED",
+  "NOT_COMPLETED",
+  "CONFLICT_DETAIL_REQUIRED",
+  "STAFF_ONLY",
+] as const;
+export type EvaluationGuardCode = (typeof EVALUATION_GUARD_CODES)[number];
+export const EVALUATION_GUARD_MESSAGES: Record<EvaluationGuardCode, string> = {
+  EVALUATOR_COUNTRY_MISMATCH: "This evaluator reports for one country only (WES U.S. → US, WES Canada → CA, Nuffic → NL).",
+  REPORT_DATE_REQUIRED: "Enter the date on the evaluation or tool result.",
+  REPORT_REFERENCE_REQUIRED: "Give the report reference or attach the report from Documents.",
+  CONCLUSION_REQUIRED: "Record the evaluator's conclusion.",
+  CONCLUSION_TEXT_REQUIRED: "Copy the evaluator's exact wording of the conclusion.",
+  NOT_COMPLETED: "Only a completed evaluation (or a tool result already obtained) can be verified.",
+  CONFLICT_DETAIL_REQUIRED: "Describe the conflicting evidence.",
+  STAFF_ONLY: "Only Lumière staff can verify an evaluation.",
+};
+
+/** Consistency checks that apply whenever an evaluation is recorded or updated. */
+export function evaluationConsistency(e: Pick<CredentialEvaluationRecord, "evaluator" | "destinationCountry">): EvaluationGuardCode[] {
+  const fixed = EVALUATOR_FIXED_COUNTRY[e.evaluator];
+  return fixed && fixed !== e.destinationCountry ? ["EVALUATOR_COUNTRY_MISMATCH"] : [];
+}
+
+/** Verifying means Lumière checked the record against the evaluator's own document. */
+export function evaluateEvaluationVerification(
+  e: CredentialEvaluationRecord,
+  change: VerifyEvaluation,
+  actorRole: GuardActorRole,
+): { allowed: boolean; missing: EvaluationGuardCode[] } {
+  if (actorRole !== "staff" && actorRole !== "admin") return { allowed: false, missing: ["STAFF_ONLY"] };
+  const missing: EvaluationGuardCode[] = [...evaluationConsistency(e)];
+  if (change.decision === "conflicting" && !change.conflictingEvidence) missing.push("CONFLICT_DETAIL_REQUIRED");
+  if (change.decision === "verified") {
+    if (e.status !== "completed") missing.push("NOT_COMPLETED");
+    if (!e.reportDate) missing.push("REPORT_DATE_REQUIRED");
+    if (!e.reportReference && !e.documentId) missing.push("REPORT_REFERENCE_REQUIRED");
+    if (e.conclusion === "not_yet_known") missing.push("CONCLUSION_REQUIRED");
+    if (!e.conclusionText) missing.push("CONCLUSION_TEXT_REQUIRED");
+  }
+  return { allowed: missing.length === 0, missing };
+}
+
+export interface EvaluationView {
+  readonly id: string;
+  readonly evaluatorLabel: string;
+  readonly destinationCountry: string;
+  readonly qualificationEvaluated: string;
+  readonly intendedUse: string;
+  readonly typeLabel: string;
+  /** True only for a completed report Lumière verified against the evaluator's document. */
+  readonly isOfficialOutcome: boolean;
+  readonly isPreliminary: boolean;
+  readonly status: string;
+  readonly reportDate: string | null;
+  readonly conclusionLabel: string;
+  readonly conclusionText: string | null;
+  readonly verificationLabel: string;
+  readonly caveat: string;
+}
+
+/** The fixed framing shown with any evaluation: a possibility, never a promise; separate from the Italian award. */
+export const EVALUATION_FRAMING =
+  "Foreign credential evaluations are separate from the Italian award and do not change it. Results depend on the evaluator, the country and the purpose, so one result does not predict another.";
+
+export function buildEvaluationView(e: CredentialEvaluationRecord): EvaluationView {
+  const preliminary = e.evaluationType === "preliminary_tool";
+  const official = e.evaluationType === "completed_report" && e.status === "completed" && e.verificationStatus === "verified";
+  return {
+    id: e.id,
+    evaluatorLabel: e.evaluator === "other" || e.evaluator === "enic_naric_other" ? e.evaluatorName ?? EVALUATOR_LABEL[e.evaluator] : EVALUATOR_LABEL[e.evaluator],
+    destinationCountry: e.destinationCountry,
+    qualificationEvaluated: e.qualificationEvaluated,
+    intendedUse: e.intendedUse.replace(/_/g, " "),
+    typeLabel: EVALUATION_TYPE_LABEL[e.evaluationType],
+    isOfficialOutcome: official,
+    isPreliminary: preliminary,
+    status: e.status.replace(/_/g, " "),
+    reportDate: e.reportDate,
+    conclusionLabel: EVALUATION_CONCLUSION_LABEL[e.conclusion],
+    conclusionText: e.conclusionText,
+    verificationLabel: VERIFICATION_LABEL[e.verificationStatus],
+    caveat: preliminary
+      ? "A preliminary tool result is an indication only. It is not an evaluation report."
+      : official
+        ? `The conclusion of ${EVALUATOR_LABEL[e.evaluator]} for ${e.destinationCountry} and this purpose only.`
+        : "Not yet confirmed from the evaluator's report.",
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Errors
 // ---------------------------------------------------------------------------
 
@@ -919,6 +1154,9 @@ export const GRADUATE_API = {
     verifyRecord: "POST /api/admin/graduate/records/:recordId/verify",
     createCredit: "POST /api/admin/graduate/programs/:programId/credits",
     history: "GET /api/admin/graduate/programs/:programId/events",
+    recordEvaluation: "POST /api/admin/students/:studentId/graduate/evaluations",
+    updateEvaluation: "PATCH /api/admin/graduate/evaluations/:evaluationId",
+    verifyEvaluation: "POST /api/admin/graduate/evaluations/:evaluationId/verify",
   },
 } as const;
 
@@ -937,7 +1175,8 @@ export interface GraduateProgramBundle {
   readonly documents: readonly { readonly id: string; readonly fileName: string; readonly status: string }[];
 }
 
-export type MilestoneState = "done" | "in_progress" | "waiting" | "not_started" | "attention" | "not_applicable";
+/** `later` = cannot start until an earlier official step (e.g. conferral) has happened. */
+export type MilestoneState = "done" | "in_progress" | "waiting" | "later" | "not_started" | "attention" | "not_applicable";
 
 export interface MilestoneView {
   readonly key: string;
@@ -956,6 +1195,8 @@ export interface CreditLayerView {
   readonly amount: number | null;
   readonly unit: "ECTS" | "CFU" | null;
   readonly state: "recorded" | "unknown" | "not_applicable";
+  /** Part of `amount` that only counts if its stated conditions are met (university_recognized only). */
+  readonly conditionalAmount: number | null;
   readonly explanation: string;
 }
 
@@ -996,6 +1237,9 @@ export interface StudentGraduateProgramView {
     readonly enebSubjectsTotal: number;
     readonly universitySubjectsPassed: number;
     readonly universitySubjectsTotal: number;
+    /** Passes Lumière has checked against the issuing institution's document (subset of *Passed). */
+    readonly enebSubjectsVerified: number;
+    readonly universitySubjectsVerified: number;
     /** null when the university-approved module structure is not authenticated. */
     readonly verifiedRequirements: { readonly done: number; readonly total: number } | null;
     readonly statement: string;
@@ -1046,6 +1290,8 @@ export interface StudentGraduateProgramView {
 
 export interface StudentGraduateView {
   readonly programs: readonly StudentGraduateProgramView[];
+  /** The student's foreign credential evaluations (any programme). Shown apart from the programme. */
+  readonly evaluations: readonly EvaluationView[];
 }
 
 // ---------------------------------------------------------------------------
@@ -1116,10 +1362,11 @@ function creditLayers(bundle: GraduateProgramBundle): CreditLayerView[] {
     const s = sumCredits(bundle.credits, authority, filter);
     const universityLayer = authority === "recognition_requested" || authority === "university_recognized" || authority === "university_awarded";
     if (universityLayer && !uni) {
-      return { authority, label: CREDIT_AUTHORITY_LABEL[authority], amount: null, unit: null, state: "not_applicable", explanation: "Not part of an ENEB-only programme." };
+      return { authority, label: CREDIT_AUTHORITY_LABEL[authority], amount: null, unit: null, state: "not_applicable", explanation: "Not part of an ENEB-only programme.", conditionalAmount: null };
     }
     if (s) {
-      return { authority, label: CREDIT_AUTHORITY_LABEL[authority], amount: s.amount, unit: s.unit, state: "recorded", explanation: CREDIT_EXPLANATION[authority] };
+      const conditional = authority === "university_recognized" ? sumCredits(bundle.credits, authority, (e) => e.recognitionOutcome === "recognized_with_conditions") : null;
+      return { authority, label: CREDIT_AUTHORITY_LABEL[authority], amount: s.amount, unit: s.unit, state: "recorded", explanation: CREDIT_EXPLANATION[authority], conditionalAmount: conditional?.amount ?? null };
     }
     let explanation = "Nothing recorded yet.";
     if (authority === "university_recognized") {
@@ -1127,11 +1374,11 @@ function creditLayers(bundle: GraduateProgramBundle): CreditLayerView[] {
         ? "The university decided not to recognize earlier learning."
         : "Unknown until the university issues its recognition decision. This is not zero and not a refusal.";
       if (decision && decision.verificationStatus === "verified" && decision.outcome === "none") {
-        return { authority, label: CREDIT_AUTHORITY_LABEL[authority], amount: 0, unit: null, state: "recorded", explanation };
+        return { authority, label: CREDIT_AUTHORITY_LABEL[authority], amount: 0, unit: null, state: "recorded", explanation, conditionalAmount: null };
       }
     }
     if (authority === "university_awarded") explanation = "Shown only from the university's official transcript.";
-    return { authority, label: CREDIT_AUTHORITY_LABEL[authority], amount: null, unit: null, state: "unknown", explanation };
+    return { authority, label: CREDIT_AUTHORITY_LABEL[authority], amount: null, unit: null, state: "unknown", explanation, conditionalAmount: null };
   };
   return [
     layer("eneb_stated"),
@@ -1199,6 +1446,7 @@ function graduationView(bundle: GraduateProgramBundle, subjectsDone: boolean): S
   const time = latest(r, "time_requirement");
   const procedure = latest(r, "graduation_procedure");
   const conferral = verifiedRecord(r, "award_conferral");
+  const registration = verifiedRecord(r, "university_registration");
   const transcript = verifiedRecord(r, "official_transcript");
   const ordered = latest(r, "diploma_ordered");
   const issued = verifiedRecord(r, "diploma_issued");
@@ -1221,7 +1469,12 @@ function graduationView(bundle: GraduateProgramBundle, subjectsDone: boolean): S
           thesisResult?.decisionDate ?? null,
         )
       : m("thesis", "Thesis passed", "not_applicable", "Your cohort's terms do not include a thesis.", false),
-    m("time", "Minimum academic period satisfied", tracked(time), time?.trackingStatus === "completed" ? "The required study period has passed." : "Counted from your verified registration date.", false, time?.effectiveDate ?? null),
+    m("time", "Minimum academic period satisfied", tracked(time), time?.trackingStatus === "completed"
+        ? "The required study period has passed."
+        : registration?.decisionDate ? `Counting from your university registration on ${registration.decisionDate}.` : "Starts counting once your university registration is confirmed.",
+      false,
+      time?.effectiveDate ?? null,
+    ),
     m("procedure", "Graduation procedure completed", tracked(procedure), procedure?.trackingStatus === "completed" ? "Formalities done. This does not by itself award the degree." : "Final formalities set by the university.", false, procedure?.details.ceremonyDate ?? null),
     m(
       "conferral",
@@ -1231,18 +1484,18 @@ function graduationView(bundle: GraduateProgramBundle, subjectsDone: boolean): S
       !!conferral,
       conferral?.effectiveDate ?? null,
     ),
-    m("transcript", "Official university transcript issued", transcript ? "done" : "waiting", transcript ? "Issued by the university." : "Issued by the university after conferral.", !!transcript, transcript?.decisionDate ?? null),
+    m("transcript", "Official university transcript issued", transcript ? "done" : conferral ? "waiting" : "later", transcript ? "Issued by the university." : "Issued by the university after conferral.", !!transcript, transcript?.decisionDate ?? null),
     m(
       "diploma",
       "Diploma issued and delivered",
-      issued && delivered?.trackingStatus === "completed" ? "done" : issued ? "in_progress" : ordered ? "in_progress" : "waiting",
+      issued && delivered?.trackingStatus === "completed" ? "done" : issued ? "in_progress" : ordered ? "in_progress" : conferral ? "waiting" : "later",
       issued
         ? delivered?.trackingStatus === "completed" ? "Issued by the university and delivered to you." : "Issued by the university; delivery in progress."
         : ordered ? "Ordered. An order is not an issued diploma." : "Requested after conferral.",
       !!issued,
       issued?.decisionDate ?? null,
     ),
-    m("verification", "Credential verification completed", credential ? "done" : "waiting", credential ? "The award was confirmed with the issuing university." : "A final check with the university that the award is genuine.", !!credential, credential?.decisionDate ?? null),
+    m("verification", "Credential verification completed", credential ? "done" : issued ? "waiting" : "later", credential ? "The award was confirmed with the issuing university." : "A final check with the university that the award is genuine.", !!credential, credential?.decisionDate ?? null),
   ];
   const academicWorkComplete = subjectsDone && (!thesisRequired || thesisResult?.outcome === "passed");
   return {
@@ -1282,7 +1535,7 @@ function nextStep(bundle: GraduateProgramBundle, v: Omit<StudentGraduateProgramV
   if (v.graduation) {
     const open = v.graduation.milestones.find((m) => m.state !== "done" && m.state !== "not_applicable");
     if (open) return { title: open.label, detail: open.detail, href: "#graduate-graduation" };
-    return { title: "Everything is complete", detail: "Your university degree is conferred and verified.", href: null };
+    return { title: "Your university degree is complete", detail: "Conferred by the university, documents issued and the award verified. Your ENEB record is shown separately below.", href: null };
   }
   if (v.enebQualification.state !== "completed_verified") return { title: "Waiting for ENEB to confirm completion", detail: "Lumière will record your ENEB certificate when it arrives.", href: null };
   return { title: "Your ENEB programme is complete", detail: "Your ENEB qualification is recorded.", href: null };
@@ -1451,6 +1704,8 @@ export function buildStudentGraduateProgramView(bundle: GraduateProgramBundle): 
       enebSubjectsTotal: enebSubjects.length,
       universitySubjectsPassed: passed(uniSubjects),
       universitySubjectsTotal: uniSubjects.length,
+      enebSubjectsVerified: enebSubjects.filter((x) => x.resultStatus === "passed" && x.verificationStatus === "verified").length,
+      universitySubjectsVerified: uniSubjects.filter((x) => x.resultStatus === "passed" && x.verificationStatus === "verified").length,
       verifiedRequirements,
       statement,
     },
@@ -1512,6 +1767,7 @@ export interface StaffGraduateWorkspace {
   readonly programs: readonly StaffGraduateProgramView[];
   readonly offerings: readonly OfferingRecord[];
   readonly ruleSets: readonly RuleSetRecord[];
+  readonly evaluations: readonly (CredentialEvaluationRecord & { readonly view: EvaluationView; readonly blockers: readonly EvaluationGuardCode[] })[];
 }
 
 export function buildStaffGraduateProgramView(bundle: GraduateProgramBundle, currentRuleSetId: string | null, actorRole: GuardActorRole): StaffGraduateProgramView {

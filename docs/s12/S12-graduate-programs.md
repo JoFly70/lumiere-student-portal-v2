@@ -112,6 +112,41 @@ Rules that follow from this:
   - Recording an ENEB grade creates no credit entry.
   - Creating a credit entry requires the matching backing record. It is checked by `evaluateCreditEntry`.
 
+## 2b. Foreign credential evaluations (addendum, 26 Oct 2026)
+
+The owner's addendum is filed in `docs/s12/evidence-register/` as register entry `S12-EQ-001`.
+
+- Its status is `working`. Submission to the Knowledge register goes through `knowledge-submission-package.json`, under normal promotion governance.
+- Nothing is marked confirmed.
+
+### What the addendum establishes
+
+- An Italian *Master universitario di primo livello* must not automatically be classed as below master's level abroad.
+- Nuffic normally compares it to a Dutch HBO master's, and sometimes to a WO master's.
+- Positive WES U.S. *tool* results have been reported for the general category.
+- No authenticated WES U.S. report exists yet for the exact ENEB–Unimarconi pathway.
+- The absence of Italian doctoral-access rights does not establish the absence of master's-level equivalency abroad.
+
+### How S12 records it
+
+A separate table, `graduate_credential_evaluations`, records:
+
+- the **evaluator**. WES U.S., WES Canada and Nuffic are each tied to their country, and a mismatch is refused;
+- the destination country;
+- the exact qualification evaluated;
+- the intended use;
+- the **evaluation type**, which keeps preliminary equivalency-tool results apart from completed reports;
+- the report date and reference;
+- the evaluator's conclusion, as a coarse level plus its exact wording;
+- the verification status.
+
+### Rules that apply to evaluations
+
+- **Only a completed report verified against the evaluator's document** is shown as an official outcome. A database check enforces this.
+- **Evaluations are never read** by the evidence guards, the credit layers or the cohort rules. ENEB transfer credit, examinations, recognition and graduation cannot change because of them.
+- **The student-facing framing is fixed:** equivalency is a credible possibility, never a guarantee, and it is separate from the Italian award.
+- **Priority action:** obtain an authenticated WES U.S. evaluation for an actual graduate awarded the first-level Unimarconi master's through ENEB.
+
 ## 3. Cohort-aware programme contract
 
 **`graduate_cohort_rule_sets`** holds versioned rule sets per offering. Each rule set has a cohort label, a version and an effective-from date. It also has **rules**, and each rule carries `{ key, value, source {title, reference, date}, basis, verifiedAt }`.
@@ -249,7 +284,7 @@ See `S12-closeout.md`.
 8. Apostille or legalization requirements by issuing country, and whether a *dichiarazione di valore* or a CIMEA statement is needed. The synthetic rule set uses non-EU → apostille only as a placeholder.
 9. The form and timing of diploma and transcript issuance, and how credentials are verified (university office or a verification service).
 10. Whether Universidad Isabel I ECTS certification is ever relevant to this route.
-11. International equivalence and PhD eligibility. **No automatic equivalency judgement is implemented.**
+11. International equivalence: the portal never computes or promises one. Per the addendum, master's-level equivalency abroad is a credible, evidence-supported possibility. It is recorded per evaluator, country and use (§2b). The absence of Italian doctoral access is not treated as decisive. **An authenticated WES U.S. report for an actual ENEB–Unimarconi graduate is still outstanding.**
 12. The enrollment terms, programme and remaining requirements of the one currently enrolled Unimarconi student. These were **not supplied**, and **that student is not represented anywhere**.
 
 ## 12. Integration instructions
