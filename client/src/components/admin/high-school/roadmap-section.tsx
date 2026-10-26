@@ -3,7 +3,6 @@ import { useMemo, useState } from "react";
 import { ArrowRightLeft, MoreHorizontal, Plus, Trash2, Undo2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -14,10 +13,10 @@ import {
 import { HS_TASK_KINDS, formatHalfUnits, type HsPlanCourse, type HsRoadmapContent, type HsTaskKind } from "@shared/high-school-contract";
 import { adminHighSchoolApi } from "@/lib/admin-high-school-api";
 import {
-  addCourse, addTask, areaPlanRows, blockingDraftIssues, defaultOpenAreas, formatDate, statusLabel, fromTemplateBody, plannedHalfUnits, publishBody, publishGate, removeCourse, removeTask,
+  CLOSED_RECORD_TEXT, addCourse, addTask, areaPlanRows, blockingDraftIssues, creditsLabel, defaultOpenAreas, formatDate, isOpenEnrollment, statusLabel, fromTemplateBody, plannedHalfUnits, publishBody, publishGate, removeCourse, removeTask,
   replaceCourse, restoreCourse, saveDraftBody, setTaskDueDate, updateCourse, validateDraftContent, validateNewCourse, validateNewTask, type NewCourseForm,
 } from "@/lib/admin-high-school-logic";
-import { ActionMessage, DISABLED_CLASS, FIELD_CLASS, Field, GatedButton, MiniBar, Notice, Pill, SectionHeading, type SectionProps } from "./shared";
+import { ActionMessage, DISABLED_CLASS, FIELD_CLASS, Field, FormPanel, GatedButton, MiniBar, Notice, Pill, RecordButton, SectionCard, SectionHeading, useOpenForm, type OpenForm, type SectionProps } from "./shared";
 import { useStaffAction } from "./use-staff-action";
 import { PacingCard, PoliciesCard, VersionHistory } from "./roadmap-parts";
 
@@ -78,18 +77,20 @@ function TaskEditor({ course, content, onChange }: { course: HsPlanCourse; conte
   );
 }
 
-function CourseCard({ course, content, onChange, replacedBy }: { course: HsPlanCourse; content: HsRoadmapContent; onChange: (c: HsRoadmapContent) => void; replacedBy: string | null }) {
-  const [replacing, setReplacing] = useState(false);
-  const [form, setForm] = useState<NewCourseForm>({ ...EMPTY_COURSE, areaKey: course.areaKey, credits: formatHalfUnits(course.halfUnits) });
+function CourseCard({ course, content, onChange, replacedBy, form }: { course: HsPlanCourse; content: HsRoadmapContent; onChange: (c: HsRoadmapContent) => void; replacedBy: string | null; form: OpenForm }) {
+  const [repForm, setRepForm] = useState<NewCourseForm>({ ...EMPTY_COURSE, areaKey: course.areaKey, credits: formatHalfUnits(course.halfUnits) });
   const dim = course.status !== "planned";
-  const problem = replacing ? validateNewCourse(content, form) : null;
+  const repId = `replace-${course.key}`;
+  const editId = `edit-${course.key}`;
+  const problem = form.isOpen(repId) ? validateNewCourse(content, repForm) : null;
   return (
-    <li className={`space-y-3 px-4 py-3 ${dim ? "bg-muted/30" : ""}`} data-testid="plan-course" data-status={course.status}>
+    <li className={`space-y-3 px-4 py-3 sm:px-5 ${dim ? "bg-muted/30" : ""}`} data-testid="plan-course" data-status={course.status}>
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
           <p className={`font-medium ${dim ? "text-muted-foreground line-through" : ""}`}>{course.title}</p>
           <p className="text-xs text-muted-foreground">
-            {formatHalfUnits(course.halfUnits)} {course.halfUnits === 2 ? "credit" : "credits"} · {course.plannedStart || course.plannedEnd ? `${formatDate(course.plannedStart)} to ${formatDate(course.plannedEnd)}` : "Dates not set"}
+            <span className="tabular-nums">{creditsLabel(course.halfUnits)}</span> · {course.plannedStart || course.plannedEnd ? `${formatDate(course.plannedStart)} to ${formatDate(course.plannedEnd)}` : "Dates not set"}
+            {course.status === "planned" ? ` · ${course.tasks.length} ${course.tasks.length === 1 ? "task" : "tasks"}` : ""}
             {course.replacesCourseKey ? ` · replaces ${content.courses.find((c) => c.key === course.replacesCourseKey)?.title ?? course.replacesCourseKey}` : ""}
           </p>
         </div>
@@ -97,60 +98,62 @@ function CourseCard({ course, content, onChange, replacedBy }: { course: HsPlanC
           {course.status === "replaced" ? <Pill tone="warn">Replaced{replacedBy ? ` by ${replacedBy}` : ""} — history kept</Pill> : null}
           {course.status === "removed" ? <Pill tone="bad">Removed from plan — history kept</Pill> : null}
           {course.status === "planned" ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button type="button" variant="ghost" size="icon" aria-label={`Actions for ${course.title}`}><MoreHorizontal className="h-4 w-4" aria-hidden="true" /></Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onSelect={() => setReplacing(true)}><ArrowRightLeft className="mr-2 h-4 w-4" aria-hidden="true" />Replace course…</DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => onChange(removeCourse(content, course.key))}><Trash2 className="mr-2 h-4 w-4" aria-hidden="true" />Remove from plan</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <>
+              <RecordButton form={form} id={editId} variant="outline" size="sm">Edit course and tasks</RecordButton>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button type="button" variant="ghost" size="icon" aria-label={`Actions for ${course.title}`}><MoreHorizontal className="h-4 w-4" aria-hidden="true" /></Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onSelect={() => form.open(repId)}><ArrowRightLeft className="mr-2 h-4 w-4" aria-hidden="true" />Replace course…</DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => onChange(removeCourse(content, course.key))}><Trash2 className="mr-2 h-4 w-4" aria-hidden="true" />Remove from plan</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </>
           ) : null}
           {course.status === "removed" ? <Button type="button" variant="outline" size="sm" onClick={() => onChange(restoreCourse(content, course.key))}><Undo2 className="mr-1 h-4 w-4" aria-hidden="true" />Restore</Button> : null}
         </div>
       </div>
-      {replacing ? (
-        <div className="space-y-3 rounded-md border border-dashed p-3" data-testid="replace-form">
-          <p className="text-sm">The new course takes over from <span className="font-medium">{course.title}</span>. This course stays in the history; progress and results already recorded are kept.</p>
-          <CourseForm idPrefix={`rep-${course.key}`} content={content} value={form} onChange={setForm} />
-          <div className="flex flex-wrap items-start gap-3">
-            <GatedButton id={`rep-${course.key}-go`} size="sm" gate={problem ? { enabled: false, reason: problem } : { enabled: true, reason: null }} onClick={() => { onChange(replaceCourse(content, course.key, form)); setReplacing(false); }}>Replace course</GatedButton>
-            <Button type="button" variant="ghost" size="sm" onClick={() => setReplacing(false)}>Cancel</Button>
+      {form.isOpen(repId) ? (
+        <FormPanel form={form} id={repId} className="space-y-3">
+          <div data-testid="replace-form" className="space-y-3">
+            <p className="text-sm">The new course takes over from <span className="font-medium">{course.title}</span>. This course stays in the history; progress and results already recorded are kept.</p>
+            <CourseForm idPrefix={`rep-${course.key}`} content={content} value={repForm} onChange={setRepForm} />
+            <div className="flex flex-wrap items-start gap-3">
+              <GatedButton id={`rep-${course.key}-go`} size="sm" gate={problem ? { enabled: false, reason: problem } : { enabled: true, reason: null }} onClick={() => { onChange(replaceCourse(content, course.key, repForm)); form.close(); }}>Replace course</GatedButton>
+              <Button type="button" variant="ghost" size="sm" onClick={() => form.close()}>Cancel</Button>
+            </div>
           </div>
-        </div>
+        </FormPanel>
       ) : null}
       {course.status === "planned" ? (
-        <details>
-          <summary className="cursor-pointer text-sm font-medium">Edit credit and dates, tasks ({course.tasks.length})</summary>
-          <div className="mt-3 space-y-3">
-        <div className="grid gap-3 sm:grid-cols-[9rem_10rem_10rem]">
-          <Field id={`c-${course.key}-credit`} label="Credit">
-            <select id={`c-${course.key}-credit`} className={FIELD_CLASS} value={course.halfUnits} onChange={(e) => onChange(updateCourse(content, course.key, { halfUnits: Number(e.target.value) }))}>
-              {[...new Set([...HALF_OPTIONS, course.halfUnits])].sort((a, b) => a - b).map((h) => <option key={h} value={h}>{formatHalfUnits(h)} credits</option>)}
-            </select>
-          </Field>
-          <Field id={`c-${course.key}-start`} label="Planned start"><Input id={`c-${course.key}-start`} type="date" value={course.plannedStart ?? ""} onChange={(e) => onChange(updateCourse(content, course.key, { plannedStart: e.target.value || null }))} /></Field>
-          <Field id={`c-${course.key}-end`} label="Planned end"><Input id={`c-${course.key}-end`} type="date" value={course.plannedEnd ?? ""} onChange={(e) => onChange(updateCourse(content, course.key, { plannedEnd: e.target.value || null }))} /></Field>
-        </div>
-<TaskEditor course={course} content={content} onChange={onChange} /></div>
-        </details>
+        <FormPanel form={form} id={editId} className="space-y-3">
+          <div className="grid gap-3 sm:grid-cols-[9rem_10rem_10rem]">
+            <Field id={`c-${course.key}-credit`} label="Credit">
+              <select id={`c-${course.key}-credit`} className={FIELD_CLASS} value={course.halfUnits} onChange={(e) => onChange(updateCourse(content, course.key, { halfUnits: Number(e.target.value) }))}>
+                {[...new Set([...HALF_OPTIONS, course.halfUnits])].sort((a, b) => a - b).map((h) => <option key={h} value={h}>{formatHalfUnits(h)} credits</option>)}
+              </select>
+            </Field>
+            <Field id={`c-${course.key}-start`} label="Planned start"><Input id={`c-${course.key}-start`} type="date" value={course.plannedStart ?? ""} onChange={(e) => onChange(updateCourse(content, course.key, { plannedStart: e.target.value || null }))} /></Field>
+            <Field id={`c-${course.key}-end`} label="Planned end"><Input id={`c-${course.key}-end`} type="date" value={course.plannedEnd ?? ""} onChange={(e) => onChange(updateCourse(content, course.key, { plannedEnd: e.target.value || null }))} /></Field>
+          </div>
+          <TaskEditor course={course} content={content} onChange={onChange} />
+        </FormPanel>
       ) : null}
     </li>
   );
 }
 
+const gapText = (gap: number): string => (gap > 0 ? formatHalfUnits(gap) : gap < 0 ? `${formatHalfUnits(-gap)} over` : "Fully planned");
+
 function CreditPlan({ content }: { content: HsRoadmapContent }) {
   const rows = areaPlanRows(content);
   const planned = plannedHalfUnits(content);
   return (
-    <Card data-testid="credit-plan">
-      <CardHeader>
-        <CardTitle className="text-base">Approved credits</CardTitle>
-        <CardDescription>Planned {formatHalfUnits(planned)} of {formatHalfUnits(content.totalRequiredHalfUnits)} required credits. Planned credit is not earned credit.</CardDescription>
-      </CardHeader>
-      <CardContent className="overflow-x-auto" tabIndex={0} role="region" aria-label="Credits by area">
-        <table className="w-full min-w-[34rem] text-sm">
+    <SectionCard testId="credit-plan" title="Approved credits" description={<>Planned <span className="tabular-nums">{formatHalfUnits(planned)} of {formatHalfUnits(content.totalRequiredHalfUnits)}</span> required credits. Planned credit is not earned credit.</>}>
+      {/* Wide screens: a table. Phones: stacked rows, so Required and Planned never scroll out of view. */}
+      <div className="hidden md:block">
+        <table className="w-full text-sm">
           <caption className="sr-only">Required and planned credits by area</caption>
           <thead><tr className="border-b text-left text-xs uppercase tracking-wide text-muted-foreground"><th scope="col" className="py-2 pr-3 font-medium">Area</th><th scope="col" className="py-2 pr-3 font-medium">Kind</th><th scope="col" className="w-[26%] py-2 pr-3 font-medium"><span className="sr-only">Planned against required</span></th><th scope="col" className="py-2 pr-3 text-right font-medium">Required</th><th scope="col" className="py-2 pr-3 text-right font-medium">Planned</th><th scope="col" className="py-2 text-right font-medium">Still to plan</th></tr></thead>
           <tbody>
@@ -161,17 +164,29 @@ function CreditPlan({ content }: { content: HsRoadmapContent }) {
                 <td className="py-2 pr-3"><MiniBar value={r.plannedHalfUnits} max={r.requiredHalfUnits} over={r.gapHalfUnits < 0} /></td>
                 <td className="py-2 pr-3 text-right tabular-nums">{formatHalfUnits(r.requiredHalfUnits)}</td>
                 <td className="py-2 pr-3 text-right tabular-nums">{formatHalfUnits(r.plannedHalfUnits)}</td>
-                <td className={`py-2 text-right tabular-nums ${r.gapHalfUnits !== 0 ? "font-medium" : "text-muted-foreground"}`}>{r.gapHalfUnits > 0 ? formatHalfUnits(r.gapHalfUnits) : r.gapHalfUnits < 0 ? `${formatHalfUnits(-r.gapHalfUnits)} over` : "Complete"}</td>
+                <td className={`py-2 text-right tabular-nums ${r.gapHalfUnits !== 0 ? "font-medium" : "text-muted-foreground"}`}>{gapText(r.gapHalfUnits)}</td>
               </tr>
             ))}
           </tbody>
         </table>
-      </CardContent>
-    </Card>
+      </div>
+      <ul className="divide-y md:hidden" data-testid="credit-plan-rows">
+        {rows.map((r) => (
+          <li key={r.key} className="space-y-1.5 py-2.5 first:pt-0 last:pb-0">
+            <p className="flex items-baseline justify-between gap-2 text-sm"><span className="font-medium">{r.label}</span><span className="text-xs capitalize text-muted-foreground">{r.kind}</span></p>
+            <MiniBar value={r.plannedHalfUnits} max={r.requiredHalfUnits} over={r.gapHalfUnits < 0} />
+            <p className="text-xs text-muted-foreground">
+              Required <span className="tabular-nums font-medium text-foreground">{formatHalfUnits(r.requiredHalfUnits)}</span> · Planned <span className="tabular-nums font-medium text-foreground">{formatHalfUnits(r.plannedHalfUnits)}</span> · Still to plan <span className={`tabular-nums ${r.gapHalfUnits !== 0 ? "font-medium text-foreground" : ""}`}>{gapText(r.gapHalfUnits)}</span>
+            </p>
+          </li>
+        ))}
+      </ul>
+    </SectionCard>
   );
 }
 
-export function RoadmapEditor({ state, studentId, isAdmin, eid }: Pick<SectionProps, "state" | "studentId" | "isAdmin"> & { eid: string }) {
+export function RoadmapEditor({ state, studentId, isAdmin, eid, initialOpenForm }: Pick<SectionProps, "state" | "studentId" | "isAdmin" | "initialOpenForm"> & { eid: string }) {
+  const form = useOpenForm(initialOpenForm ?? null);
   const cur = state.current!;
   const draft = cur.draft;
   const published = cur.published;
@@ -217,52 +232,48 @@ export function RoadmapEditor({ state, studentId, isAdmin, eid }: Pick<SectionPr
 
       <CreditPlan content={content} />
 
-      <Card data-testid="course-plan">
-        <CardHeader>
-          <CardTitle className="text-base">Courses, electives and tasks</CardTitle>
-          <CardDescription>Each course is 0.5, 1 or more credits. Replacing or removing a course keeps its history; official results stay attached to it.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-0 p-0">
-          <Accordion type="multiple" value={openAreas} onValueChange={setOpenAreas} className="border-t">
-            {areaGroups.map(({ row, courses }) => (
-              <AccordionItem key={row.key} value={row.key} className="border-b" data-testid="area-group">
-                <AccordionTrigger className="gap-3 px-4 py-3 hover:no-underline">
-                  <span className="flex min-w-0 flex-1 flex-wrap items-center gap-x-4 gap-y-1 text-left">
-                    <span className="min-w-[10rem] text-sm font-semibold">{row.label}</span>
-                    <span className="flex min-w-[9rem] flex-1 items-center gap-3 text-xs font-normal text-muted-foreground">
-                      <MiniBar className="max-w-[10rem]" value={row.plannedHalfUnits} max={row.requiredHalfUnits} over={row.gapHalfUnits < 0} />
-                      <span className="whitespace-nowrap tabular-nums">{formatHalfUnits(row.plannedHalfUnits)} of {formatHalfUnits(row.requiredHalfUnits)} planned · {courses.filter((c) => c.status === "planned").length === 1 ? "1 course" : `${courses.filter((c) => c.status === "planned").length} courses`}</span>
-                    </span>
+      <SectionCard testId="course-plan" flush title="Courses, electives and tasks" description="Each course is 0.5, 1 or more credits. Replacing or removing a course keeps its history; official results stay attached to it. Tasks stay folded until you edit a course.">
+        <Accordion type="multiple" value={openAreas} onValueChange={setOpenAreas}>
+          {areaGroups.map(({ row, courses }) => (
+            <AccordionItem key={row.key} value={row.key} className="border-b" data-testid="area-group">
+              <AccordionTrigger className="gap-3 px-4 py-3 hover:no-underline sm:px-5">
+                <span className="flex min-w-0 flex-1 flex-wrap items-center gap-x-4 gap-y-1 text-left">
+                  <span className="min-w-[10rem] text-sm font-semibold">{row.label}</span>
+                  <span className="flex min-w-[9rem] flex-1 items-center gap-3 text-xs font-normal text-muted-foreground">
+                    <MiniBar className="max-w-[10rem]" value={row.plannedHalfUnits} max={row.requiredHalfUnits} over={row.gapHalfUnits < 0} />
+                    <span className="tabular-nums">{formatHalfUnits(row.plannedHalfUnits)} of {formatHalfUnits(row.requiredHalfUnits)} planned · {courses.filter((c) => c.status === "planned").length === 1 ? "1 course" : `${courses.filter((c) => c.status === "planned").length} courses`}</span>
                   </span>
-                </AccordionTrigger>
-                <AccordionContent className="p-0">
-                  {courses.length === 0 ? <p className="border-t px-4 py-3 text-sm text-muted-foreground">No courses planned in this area yet. Add one below.</p> : (
-                    <ul className="divide-y border-t">{courses.map((c) => <CourseCard key={c.key} course={c} content={content} onChange={setContent} replacedBy={replacedBy(c.key)} />)}</ul>
-                  )}
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
-          <div className="space-y-3 border-t p-4">
-            <h3 className="text-sm font-semibold">Add a course or elective</h3>
-            <CourseForm idPrefix="new-course" content={content} value={courseForm} onChange={setCourseForm} />
-            <GatedButton id="new-course-add" variant="outline" gate={courseProblem ? { enabled: false, reason: courseProblem } : { enabled: true, reason: null }} onClick={() => { setContent(addCourse(content, courseForm)); setCourseForm(EMPTY_COURSE); }}>Add to plan</GatedButton>
+                </span>
+              </AccordionTrigger>
+              <AccordionContent className="p-0">
+                {courses.length === 0 ? <p className="border-t px-4 py-3 text-sm text-muted-foreground sm:px-5">No courses planned in this area yet. Add one below.</p> : (
+                  <ul className="divide-y border-t">{courses.map((c) => <CourseCard key={c.key} course={c} content={content} onChange={setContent} replacedBy={replacedBy(c.key)} form={form} />)}</ul>
+                )}
+              </AccordionContent>
+            </AccordionItem>
+          ))}
+        </Accordion>
+        <div className="space-y-3 p-4 sm:p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h4 className="text-sm font-semibold">Add a course or elective</h4>
+            <RecordButton form={form} id="add-course" variant="outline">Add a course</RecordButton>
           </div>
-        </CardContent>
-      </Card>
+          <FormPanel form={form} id="add-course" className="space-y-3">
+            <CourseForm idPrefix="new-course" content={content} value={courseForm} onChange={setCourseForm} />
+            <GatedButton id="new-course-add" gate={courseProblem ? { enabled: false, reason: courseProblem } : { enabled: true, reason: null }} onClick={() => { setContent(addCourse(content, courseForm)); setCourseForm(EMPTY_COURSE); form.close(); }}>Add to plan</GatedButton>
+          </FormPanel>
+        </div>
+      </SectionCard>
 
-      <div className="grid gap-5 xl:grid-cols-2">
-        <PacingCard content={content} onChange={setContent} />
-        <PoliciesCard key={epoch} content={content} onChange={setContent} />
+      <div className="grid gap-5 xl:grid-cols-2 xl:items-start">
+        <PacingCard content={content} onChange={setContent} form={form} />
+        <PoliciesCard key={epoch} content={content} onChange={setContent} form={form} />
       </div>
 
-      <Card>
-        <CardHeader><CardTitle className="text-base">Message to the student (optional)</CardTitle><CardDescription>Shown with the published roadmap.</CardDescription></CardHeader>
-        <CardContent>
-          <label htmlFor="rm-message" className="sr-only">Message to the student</label>
-          <Textarea id="rm-message" rows={3} maxLength={600} value={content.studentMessage ?? ""} onChange={(e) => setContent({ ...content, studentMessage: e.target.value || null })} />
-        </CardContent>
-      </Card>
+      <SectionCard title="Message to the student (optional)" description="Shown with the published roadmap.">
+        <label htmlFor="rm-message" className="sr-only">Message to the student</label>
+        <Textarea id="rm-message" rows={3} maxLength={600} value={content.studentMessage ?? ""} onChange={(e) => setContent({ ...content, studentMessage: e.target.value || null })} />
+      </SectionCard>
 
       <AlertDialog open={confirm} onOpenChange={setConfirm}>
         <AlertDialogContent>
@@ -282,7 +293,7 @@ export function RoadmapEditor({ state, studentId, isAdmin, eid }: Pick<SectionPr
   );
 }
 
-export function RoadmapSection({ state, studentId, isAdmin }: SectionProps) {
+export function RoadmapSection({ state, studentId, isAdmin, initialOpenForm }: SectionProps) {
   const cur = state.current;
   const eid = cur?.enrollment.id ?? "";
   const fromTemplate = useStaffAction(studentId, (body: unknown) => adminHighSchoolApi.draftFromTemplate(studentId, eid, body), "Draft created.");
@@ -293,27 +304,17 @@ export function RoadmapSection({ state, studentId, isAdmin }: SectionProps) {
       <SectionHeading id="hs-roadmap-h" title="Approved roadmap">
         Configure the approved credits and electives, the target schedule and any optional policies in a draft. Only an administrator publishes; the student never sees a draft.
       </SectionHeading>
-      {!draft ? (
-        <Card data-testid="no-draft">
-          <CardContent className="flex flex-wrap items-center justify-between gap-4 py-5">
-            <div className="max-w-xl text-sm">
-              {cur.published ? <>
-                <p className="font-medium">Version {cur.published.versionNumber} is published. There is no open draft.</p>
-                <p className="text-muted-foreground">Start a new draft from the published version to adjust pacing, replace a course or reschedule. Progress and results are kept.</p>
-              </> : <>
-                <p className="font-medium">No roadmap yet.</p>
-                <p className="text-muted-foreground">Create a draft from the {cur.template.title} template ({formatHalfUnits(cur.enrollment.totalRequiredHalfUnits)} credits required).</p>
-              </>}
-            </div>
-            <div className="space-y-3">
-              <ActionMessage message={fromTemplate.message} />
-              <GatedButton id="rm-new-draft" pending={fromTemplate.pending} gate={{ enabled: true, reason: null }} onClick={() => fromTemplate.run(fromTemplateBody())}>
-                {cur.published ? "Adjust pacing: new draft from published" : "Create draft from template"}
-              </GatedButton>
-            </div>
-          </CardContent>
-        </Card>
-      ) : <RoadmapEditor key={`${draft.versionId}-${draft.draftRevision}`} state={state} studentId={studentId} isAdmin={isAdmin} eid={eid} />}
+      {!isOpenEnrollment(cur.enrollment) ? (
+        <Notice tone="info" testId="closed-record">{CLOSED_RECORD_TEXT} The roadmap can no longer be changed; the published version and its history stay visible below.</Notice>
+      ) : !draft ? (
+        <SectionCard testId="no-draft" title={cur.published ? `Version ${cur.published.versionNumber} is published. There is no open draft.` : "No roadmap yet."}
+          description={cur.published ? "Start a new draft from the published version to adjust pacing, replace a course or reschedule. Progress and results are kept." : `Create a draft from the ${cur.template.title} template (${formatHalfUnits(cur.enrollment.totalRequiredHalfUnits)} credits required).`}>
+          <ActionMessage message={fromTemplate.message} />
+          <GatedButton id="rm-new-draft" pending={fromTemplate.pending} gate={{ enabled: true, reason: null }} onClick={() => fromTemplate.run(fromTemplateBody())}>
+            {cur.published ? "Adjust pacing: new draft from published" : "Create draft from template"}
+          </GatedButton>
+        </SectionCard>
+      ) : <RoadmapEditor key={`${draft.versionId}-${draft.draftRevision}`} state={state} studentId={studentId} isAdmin={isAdmin} eid={eid} initialOpenForm={initialOpenForm} />}
       <VersionHistory history={cur.versionHistory} />
     </section>
   );

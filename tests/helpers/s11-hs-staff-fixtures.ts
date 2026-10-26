@@ -15,6 +15,7 @@ import {
   NO_POLICIES,
   TEMPLATE_STANDARD_21,
   creditsToHalfUnits,
+  formatHalfUnits,
   type HsCreditAwardView,
   type HsEnrollmentSummary,
   type HsOfficialResultView,
@@ -138,9 +139,10 @@ interface Assembly {
   progress: HsProgressRecord[];
   taskResults: (HsTaskResultRecord & { id: string; evidence: string; verified?: boolean })[];
   courseResults: (HsCourseResultRecord & { id: string; evidence: string })[];
-  awards: (HsAwardRecord & { claimId?: string | null; evidence: string; recordedAt: string; voidReason?: string | null; verified?: boolean })[];
+  awards: (HsAwardRecord & { claimId?: string | null; evidence: string; recordedAt: string; voidReason?: string | null; voidedAt?: string; verified?: boolean })[];
   claims: Claim[];
   graduation: HsGraduationRecordInput;
+  /** Events that are not derived from awards/results (roadmap, enrollment, graduation steps ...). */
   events: StaffHighSchoolState["events"];
 }
 
@@ -150,12 +152,19 @@ const GUARDIANS: StaffHighSchoolState["guardians"] = [
   { contactId: "c-3", fullName: "Samira Khoury", relationship: "Court-appointed guardian", standing: "verified_guardian", mayDiscussAcademics: true, mayDiscussFinances: false, hasPortalAccess: false, notes: [] },
 ];
 
+/** The server rule (programTitleOf in high-school-service.ts): the template title carrying THIS enrollment's own credit total. */
+export function programTitleOf(title: string, totalRequiredHalfUnits: number): string {
+  const label = `(${formatHalfUnits(totalRequiredHalfUnits)} credits)`;
+  return /\(\d+(?:\.5)? credits\)/.test(title) ? title.replace(/\(\d+(?:\.5)? credits\)/, label) : `${title} ${label}`;
+}
+
 function enrollmentOf(over: Partial<HsEnrollmentSummary> = {}): HsEnrollmentSummary {
-  return {
+  const e: HsEnrollmentSummary = {
     id: HS_ENROLLMENT_ID, status: "active", templateKey: T.templateKey, templateVersion: T.version, programTitle: T.title, jurisdiction: null,
     totalRequiredHalfUnits: T.totalRequiredHalfUnits, requiredOverrideReason: null, startedOn: "2026-08-17", targetCompletionDate: "2028-06-30",
     institutionDisclosed: false, awardingSchoolName: null, schoolStudentRef: null, isHistorical: false, revision: 4, createdAt: "2026-08-10T10:00:00.000Z", ...over,
   };
+  return { ...e, programTitle: programTitleOf(T.title, e.totalRequiredHalfUnits) };
 }
 
 function assemble(a: Assembly): StaffHighSchoolState {
@@ -173,13 +182,8 @@ function assemble(a: Assembly): StaffHighSchoolState {
     priorEducation: [{ id: "44444444-4444-4444-8444-000000000001", schoolName: "Collège Synthétique", status: "evaluated", claims: a.claims.map((c) => ({ id: c.id, courseTitle: c.courseTitle, claimedHalfUnits: c.claimedHalfUnits, status: c.status })) }],
     graduation: a.graduation, guardians: GUARDIANS, nowIso: a.now,
   });
-  const exams = view.graduation.outstandingExams;
-  const projects = view.graduation.outstandingProjects;
-  const blockers = [
-    ...creditBlockers(view.credits).slice(0, 3),
-    ...(exams > 0 ? [`${exams} ${exams === 1 ? "exam has" : "exams have"} no official result.`] : []),
-    ...(projects > 0 ? [`${projects} ${projects === 1 ? "project has" : "projects have"} no official result.`] : []),
-  ];
+  // Exactly what the server returns for blockers: creditBlockers() unmodified (confirm_eligibility checks credit only).
+  const blockers = creditBlockers(view.credits);
   const results: HsOfficialResultView[] = [
     ...a.courseResults.map((r) => ({ id: r.id, courseKey: r.courseKey, taskKey: null, outcome: r.outcome, scorePercent: null, evidenceDocumentId: r.evidence, recordedBy: "staff-1", recordedAt: r.recordedAt, note: null })),
     ...a.taskResults.map((r) => ({ id: r.id, courseKey: r.courseKey, taskKey: r.taskKey, outcome: r.outcome, scorePercent: r.scorePercent, evidenceDocumentId: r.evidence, recordedBy: "staff-1", recordedAt: r.recordedAt, note: null, ...(r.verified === false ? { evidenceStillVerified: false } : {}) })),
@@ -195,7 +199,7 @@ function assemble(a: Assembly): StaffHighSchoolState {
   return {
     studentId: HS_STUDENT_ID,
     hasUniversityProgram: true,
-    enrollments: [a.enrollment, { ...a.enrollment, id: HS_OLD_ENROLLMENT_ID, status: "withdrawn", startedOn: "2024-09-02", targetCompletionDate: null, requiredOverrideReason: null, isHistorical: false, revision: 2, createdAt: "2024-08-20T10:00:00.000Z" }],
+    enrollments: [a.enrollment, enrollmentOf({ id: HS_OLD_ENROLLMENT_ID, status: "withdrawn", startedOn: "2024-09-02", targetCompletionDate: null, institutionDisclosed: false, awardingSchoolName: null, revision: 2, createdAt: "2024-08-20T10:00:00.000Z" })],
     current: {
       enrollment: a.enrollment,
       template: T,
@@ -210,12 +214,28 @@ function assemble(a: Assembly): StaffHighSchoolState {
         id: "44444444-4444-4444-8444-000000000001", schoolName: "Collège Synthétique", country: "France", gradeLevels: "Grades 9-10", status: "evaluated",
         evidenceDocumentId: "doc-transcript", staffNote: "Official transcript received Oct 18, 2026.", claims: a.claims,
       }],
-      graduation: { ...view.graduation, eligibilityEvidenceDocumentId: a.graduation.eligibilityEvidenceDocumentId, blockers },
+      graduation: { ...view.graduation, eligibilityEvidenceDocumentId: a.graduation.eligibilityEvidenceDocumentId, financialClearance: a.graduation.financialClearance, blockers },
       studentPreview: view,
     },
     guardians: GUARDIANS,
-    events: a.events,
+    events: [...a.events, ...derivedEvents(a)].sort((x, y) => (x.createdAt === y.createdAt ? (x.id < y.id ? 1 : -1) : x.createdAt < y.createdAt ? 1 : -1)),
   };
+}
+
+/**
+ * Events the real server writes for every award, void and official result (types and summaries as in
+ * high-school-service.ts), so the Activity tab always agrees with the Reviews tab.
+ */
+function derivedEvents(a: Assembly): StaffHighSchoolState["events"] {
+  const out: StaffHighSchoolState["events"] = [];
+  for (const w of a.awards) {
+    out.push({ id: `ev-aw-${w.id}`, type: "credit_awarded", actorId: "staff-1", createdAt: w.recordedAt,
+      summary: w.source === "transfer" ? `${formatHalfUnits(w.halfUnits)} transfer credit awarded` : `${formatHalfUnits(w.halfUnits)} credit awarded for course ${w.courseKey}` });
+    if (w.status === "voided") out.push({ id: `ev-vd-${w.id}`, type: "credit_voided", actorId: "admin-1", createdAt: w.voidedAt ?? w.recordedAt, summary: `${formatHalfUnits(w.halfUnits)} credit voided` });
+  }
+  for (const r of a.courseResults) out.push({ id: `ev-cr-${r.id}`, type: "official_course_result", actorId: "staff-1", createdAt: r.recordedAt, summary: `Official result recorded for course ${r.courseKey}: ${r.outcome.replace(/_/g, " ")}` });
+  for (const r of a.taskResults) out.push({ id: `ev-tr-${r.id}`, type: "official_task_result", actorId: "staff-1", createdAt: r.recordedAt, summary: `Official result recorded for ${r.courseKey}/${r.taskKey}: ${r.outcome}` });
+  return out;
 }
 
 // ── rich, in-progress pathway (today = FIXTURE_TODAY) ────────────────────────
@@ -239,12 +259,14 @@ export function staffStateRich(): StaffHighSchoolState {
     courseResults: [
       { id: "res-1", courseKey: "startup-personal-growth", outcome: "completed", recordedAt: "2026-09-14T10:00:00.000Z", evidence: "doc-transcript" },
       { id: "res-3", courseKey: "startup-learning-tech", outcome: "completed", recordedAt: "2026-10-12T10:00:00.000Z", evidence: "doc-transcript" },
+      // The server creates a course-completion award only together with a completed course result; the award was later voided, the result stays on record.
+      { id: "res-4", courseKey: "humanities-digital-literacy", outcome: "completed", recordedAt: "2026-10-13T10:00:00.000Z", evidence: "doc-transcript" },
     ],
     awards: [
       { id: "aw-1", source: "course_completion", courseKey: "startup-personal-growth", areaKey: "startup", halfUnits: h(0.5), status: "active", evidence: "doc-transcript", recordedAt: "2026-09-14T10:00:00.000Z" },
       { id: "aw-4", source: "course_completion", courseKey: "startup-learning-tech", areaKey: "startup", halfUnits: h(0.5), status: "active", evidence: "doc-transcript", recordedAt: "2026-10-12T10:00:00.000Z" },
       { id: "aw-2", source: "transfer", courseKey: null, claimId: "claim-1", areaKey: "math", halfUnits: h(1), status: "active", evidence: "doc-eval", recordedAt: "2026-10-19T10:00:00.000Z" },
-      { id: "aw-3", source: "course_completion", courseKey: "humanities-digital-literacy", areaKey: "humanities", halfUnits: h(1), status: "voided", evidence: "doc-transcript", recordedAt: "2026-10-13T10:00:00.000Z", voidReason: "Recorded against the wrong course." },
+      { id: "aw-3", source: "course_completion", courseKey: "humanities-digital-literacy", areaKey: "humanities", halfUnits: h(1), status: "voided", evidence: "doc-transcript", recordedAt: "2026-10-13T10:00:00.000Z", voidReason: "Recorded against the wrong course.", voidedAt: "2026-10-14T09:00:00.000Z" },
     ],
     claims: [
       { id: "claim-1", courseTitle: "Algebra I", areaKey: "math", claimedHalfUnits: h(1), status: "accepted", note: "School accepted in full." },
@@ -253,12 +275,18 @@ export function staffStateRich(): StaffHighSchoolState {
       { id: "claim-4", courseTitle: "Chemistry basics", areaKey: "science", claimedHalfUnits: h(1), acceptedHalfUnits: h(0.5), status: "partially_accepted", note: "School accepted half a credit." },
     ],
     graduation: { status: "in_progress", eligibilityConfirmedAt: null, eligibilityEvidenceDocumentId: null, conferredOn: null, diplomaEvidenceDocumentId: null, transcriptEvidenceDocumentId: null, transcriptStatus: "not_requested", diplomaDeliveryStatus: "not_requested", financialClearance: "unknown" },
+    // Real server event types and summaries. Award, void and result events are derived from the records above.
     events: [
-      { id: "ev-5", type: "high_school.roadmap_draft_saved", actorId: "staff-1", summary: "Draft v2 saved: English 2 replaced for the new term.", createdAt: "2026-10-24T08:00:00.000Z" },
-      { id: "ev-4", type: "high_school.credit_awarded", actorId: "staff-1", summary: "Transfer award: Math 1 credit (Algebra I).", createdAt: "2026-10-19T10:00:00.000Z" },
-      { id: "ev-3", type: "high_school.credit_awarded", actorId: "staff-1", summary: "Course completion: Foundations of Personal Growth, 0.5 credit.", createdAt: "2026-09-14T10:00:00.000Z" },
-      { id: "ev-2", type: "high_school.roadmap_published", actorId: "admin-1", summary: "Roadmap v1 published.", createdAt: "2026-08-18T09:00:00.000Z" },
-      { id: "ev-1", type: "high_school.enrollment_created", actorId: "staff-1", summary: "Enrollment created from template us-hs-diploma-21 v1.", createdAt: "2026-08-10T10:00:00.000Z" },
+      { id: "ev-12", type: "roadmap_draft_saved", actorId: "staff-1", summary: "Roadmap draft saved", createdAt: "2026-10-24T08:00:00.000Z" },
+      { id: "ev-11", type: "roadmap_draft_opened", actorId: "staff-1", summary: "Draft opened from the published roadmap", createdAt: "2026-10-23T09:00:00.000Z" },
+      { id: "ev-10", type: "guardian_note", actorId: "staff-1", summary: "Guardian coordination note added", createdAt: "2026-10-23T11:00:00.000Z" },
+      { id: "ev-9", type: "transfer_claim_resolved", actorId: "staff-1", summary: "Transfer claim marked partially accepted", createdAt: "2026-10-20T10:00:00.000Z" },
+      { id: "ev-8", type: "transfer_claim_resolved", actorId: "staff-1", summary: "Transfer claim marked submitted to school", createdAt: "2026-10-19T09:30:00.000Z" },
+      { id: "ev-7", type: "transfer_claim_resolved", actorId: "staff-1", summary: "Transfer claim marked accepted", createdAt: "2026-10-19T09:00:00.000Z" },
+      { id: "ev-6", type: "transfer_claim_created", actorId: "staff-1", summary: "Transfer claim recorded (a claim is not credit)", createdAt: "2026-10-18T10:30:00.000Z" },
+      { id: "ev-5", type: "prior_education_recorded", actorId: "staff-1", summary: "Prior education recorded (no credit awarded)", createdAt: "2026-10-18T10:00:00.000Z" },
+      { id: "ev-2", type: "roadmap_published", actorId: "admin-1", summary: "Roadmap version 1 published", createdAt: "2026-08-18T09:00:00.000Z" },
+      { id: "ev-1", type: "enrollment_created", actorId: "staff-1", summary: "High school enrollment created (21 credits required)", createdAt: "2026-08-10T10:00:00.000Z" },
     ],
   });
 }
@@ -293,40 +321,47 @@ function finished(o: FinishedOpts): StaffHighSchoolState {
     enrollment: enrollmentOf({ startedOn: "2024-08-19", targetCompletionDate: "2026-06-30", createdAt: "2024-08-12T10:00:00.000Z", totalRequiredHalfUnits: total, revision: 7, ...o.enrollment }),
     progress: [], taskResults, courseResults, awards, claims: [],
     graduation: { status: "in_progress", eligibilityConfirmedAt: null, eligibilityEvidenceDocumentId: null, conferredOn: null, diplomaEvidenceDocumentId: null, transcriptEvidenceDocumentId: null, transcriptStatus: "not_requested", diplomaDeliveryStatus: "not_requested", financialClearance: "cleared", ...o.graduation },
-    events: o.events,
-  });
-}
-
-/** Every credit and result is official: eligibility can be confirmed. */
-export function staffStateGraduationReady(): StaffHighSchoolState {
-  return finished({
-    now: "2026-06-10T12:00:00.000Z", graduation: {}, enrollment: {},
-    events: [{ id: "ev-g1", type: "high_school.credit_awarded", actorId: "staff-1", summary: "Course completion: Personal Finance, 0.5 credit.", createdAt: "2026-06-08T10:00:00.000Z" }],
-  });
-}
-
-/** Eligibility confirmed; diploma awaiting conferral. */
-export function staffStateEligibilityConfirmed(): StaffHighSchoolState {
-  return finished({
-    now: "2026-06-15T12:00:00.000Z",
-    graduation: { status: "eligibility_confirmed", eligibilityConfirmedAt: "2026-06-12T10:00:00.000Z", eligibilityEvidenceDocumentId: "doc-letter", transcriptEvidenceDocumentId: "doc-transcript", transcriptStatus: "issued" },
-    enrollment: {},
     events: [
-      { id: "ev-g3", type: "high_school.graduation_eligibility_confirmed", actorId: "admin-1", summary: "Graduation eligibility confirmed.", createdAt: "2026-06-12T10:00:00.000Z" },
-      { id: "ev-g1", type: "high_school.credit_awarded", actorId: "staff-1", summary: "Course completion: Personal Finance, 0.5 credit.", createdAt: "2026-06-08T10:00:00.000Z" },
+      ...o.events,
+      { id: "ev-f2", type: "financial_clearance_set", actorId: "staff-1", summary: "Financial clearance set to cleared", createdAt: "2026-06-02T10:00:00.000Z" },
+      { id: "ev-f1", type: "roadmap_published", actorId: "admin-1", summary: "Roadmap version 1 published", createdAt: "2024-08-20T09:00:00.000Z" },
+      { id: "ev-f0", type: "enrollment_created", actorId: "staff-1", summary: `High school enrollment created (${formatHalfUnits(total)} credits required)`, createdAt: "2024-08-12T10:00:00.000Z" },
     ],
   });
 }
 
-/** Diploma conferred on a 22-credit pathway (a Tennessee-style exception). Conferral follows eligibility. */
+/** Every credit area is met with official credit: eligibility can be confirmed (the server checks credit blockers only). */
+export function staffStateGraduationReady(): StaffHighSchoolState {
+  return finished({ now: "2026-06-10T12:00:00.000Z", graduation: {}, enrollment: {}, events: [] });
+}
+
+/**
+ * Eligibility confirmed; diploma awaiting conferral. The server records the diploma and transcript evidence AT conferral,
+ * so before it there is no archived evidence and "issued" is impossible: the transcript can at most be "requested".
+ */
+export function staffStateEligibilityConfirmed(): StaffHighSchoolState {
+  return finished({
+    now: "2026-06-15T12:00:00.000Z",
+    graduation: { status: "eligibility_confirmed", eligibilityConfirmedAt: "2026-06-12T10:00:00.000Z", eligibilityEvidenceDocumentId: "doc-letter", transcriptStatus: "requested" },
+    enrollment: {},
+    events: [
+      // The student requested it: the actor is the student's own account id (a UUID), never shown as a person.
+      { id: "ev-g4", type: "transcript_requested", actorId: "5a1e0000-0000-4000-8000-000000000001", summary: "Student requested their transcript", createdAt: "2026-06-13T09:00:00.000Z" },
+      { id: "ev-g3", type: "eligibility_confirmed", actorId: "admin-1", summary: "Graduation eligibility confirmed", createdAt: "2026-06-12T10:00:00.000Z" },
+    ],
+  });
+}
+
+/** Diploma conferred on a 22-credit pathway (a Tennessee-style exception). Conferral follows eligibility; conferral issues both documents. */
 export function staffStateGraduate(): StaffHighSchoolState {
   return finished({
     now: "2026-07-01T12:00:00.000Z", extraElectiveHalf: 2,
-    graduation: { status: "diploma_conferred", eligibilityConfirmedAt: "2026-06-12T10:00:00.000Z", eligibilityEvidenceDocumentId: "doc-letter", conferredOn: "2026-06-20", diplomaEvidenceDocumentId: "doc-diploma", transcriptEvidenceDocumentId: "doc-transcript", transcriptStatus: "delivered", diplomaDeliveryStatus: "delivered" },
+    graduation: { status: "diploma_conferred", eligibilityConfirmedAt: "2026-06-12T10:00:00.000Z", eligibilityEvidenceDocumentId: "doc-letter", conferredOn: "2026-06-20", diplomaEvidenceDocumentId: "doc-diploma", transcriptEvidenceDocumentId: "doc-transcript", transcriptStatus: "delivered", diplomaDeliveryStatus: "issued" },
     enrollment: { status: "completed", institutionDisclosed: true, awardingSchoolName: "Synthetic Online Academy", requiredOverrideReason: "Tennessee residency requires 22 credits.", revision: 9 },
     events: [
-      { id: "ev-g5", type: "high_school.diploma_conferred", actorId: "admin-1", summary: "Diploma conferred.", createdAt: "2026-06-20T10:00:00.000Z" },
-      { id: "ev-g3", type: "high_school.graduation_eligibility_confirmed", actorId: "admin-1", summary: "Graduation eligibility confirmed.", createdAt: "2026-06-12T10:00:00.000Z" },
+      { id: "ev-g7", type: "transcript_status_set", actorId: "staff-1", summary: "Transcript set to delivered", createdAt: "2026-06-25T10:00:00.000Z" },
+      { id: "ev-g5", type: "diploma_conferred", actorId: "admin-1", summary: "Diploma conferred on 2026-06-20", createdAt: "2026-06-20T10:00:00.000Z" },
+      { id: "ev-g3", type: "eligibility_confirmed", actorId: "admin-1", summary: "Graduation eligibility confirmed", createdAt: "2026-06-12T10:00:00.000Z" },
     ],
   });
 }

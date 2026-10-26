@@ -2,7 +2,7 @@ import * as React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { Router } from "wouter";
 import { describe, expect, it, vi } from "vitest";
-import { TEMPLATE_STANDARD_21, TEMPLATE_TN_22, creditsToHalfUnits, hsRoadmapContentSchema, type StaffHighSchoolState } from "@shared/high-school-contract";
+import { TEMPLATE_STANDARD_21, TEMPLATE_TN_22, creditsToHalfUnits, formatHalfUnits, hsRoadmapContentSchema, type StaffHighSchoolState } from "@shared/high-school-contract";
 
 vi.stubGlobal("React", React);
 vi.mock("@tanstack/react-query", async (importOriginal) => ({
@@ -21,18 +21,19 @@ import { GraduationSection } from "@/components/admin/high-school/graduation-sec
 import { GuardiansSection } from "@/components/admin/high-school/guardians-section";
 import { EventsSection } from "@/components/admin/high-school/events-section";
 import { HS_EVIDENCE_DOC_TYPES } from "@shared/high-school-contract";
+import { creditBlockers } from "@shared/high-school-projection";
 import {
   FIXTURE_TODAY,
 } from "./helpers/s11-hs-staff-fixtures";
 import {
-  deliveryOptions, financialGate, acceptedSummary, claimBadge, claimDecisionGate, defaultOpenAreas, disclosurePreview, formatDate, initialClaimDecision, planCourseOptions, remainingHalfUnits, resolveClaimBody,
+  actorRoleLabel, awardLabel, deliveryOptions, financialGate, formatMonth, friendlyEventSummary, creditSlots, acceptedSummary, claimBadge, claimDecisionGate, defaultOpenAreas, disclosurePreview, formatDate, initialClaimDecision, planCourseOptions, remainingHalfUnits, resolveClaimBody,
   statusLabel, transferAwardGate, actorLabel,
   addCourse, addMilestone, addTask, areaPlanRows, blockingDraftIssues, classifyHsFailure, claimBody, conferDiplomaBody, createEnrollmentBody, disclosureGate,
   enrollmentTimeline, evidenceGate, graduationGates, guardianGuidance, hsStaffPaths, parseCreditInput, plannedHalfUnits, publishGate, removeCourse, replaceCourse,
   setPolicy, slugKey, taskResultBody, validateDraftContent, validateEnrollmentForm, validateNewCourse, verifiedEvidenceDocs, type EnrollmentForm,
 } from "@/lib/admin-high-school-logic";
 import {
-  FIXTURE_DOCS, FIXTURE_TEMPLATES, HS_ENROLLMENT_ID, HS_STUDENT_ID, fixtureContent, staffStateEligibilityConfirmed, staffStateEmpty, staffStateGraduate,
+  FIXTURE_DOCS, FIXTURE_TEMPLATES, HS_ENROLLMENT_ID, HS_STUDENT_ID, fixtureContent, programTitleOf, staffStateEligibilityConfirmed, staffStateEmpty, staffStateGraduate,
   staffStateGraduationReady, staffStateRich,
 } from "./helpers/s11-hs-staff-fixtures";
 
@@ -41,10 +42,13 @@ const selectBlock = (out: string, id: string) => new RegExp(`<select id="${id}"[
 const selectedValue = (out: string, id: string) => /<option value="([^"]*)" selected=""/.exec(selectBlock(out, id))?.[1] ?? null;
 const allStates = () => [staffStateRich(), staffStateGraduationReady(), staffStateEligibilityConfirmed(), staffStateGraduate()];
 const routed = (el: React.ReactElement) => React.createElement(Router, { ssrPath: "/" }, el);
-const html = (state: StaffHighSchoolState, tab: HsTabId, isAdmin = true) =>
-  renderToStaticMarkup(routed(React.createElement(HighSchoolWorkspace, { state, studentId: HS_STUDENT_ID, isAdmin, docs: FIXTURE_DOCS, defaultTab: tab })));
-const section = (C: React.ComponentType<any>, state: StaffHighSchoolState, isAdmin = true) =>
-  renderToStaticMarkup(routed(React.createElement(C, { state, studentId: HS_STUDENT_ID, isAdmin, docs: FIXTURE_DOCS })));
+type Open = string | "all" | null;
+/** Forms are folded behind "Record …" buttons until opened. Most structure tests render them all open ("all"); pass null for the real default. */
+const html = (state: StaffHighSchoolState, tab: HsTabId, isAdmin = true, open: Open = "all") =>
+  renderToStaticMarkup(routed(React.createElement(HighSchoolWorkspace, { state, studentId: HS_STUDENT_ID, isAdmin, docs: FIXTURE_DOCS, defaultTab: tab, initialOpenForm: open })));
+const section = (C: React.ComponentType<any>, state: StaffHighSchoolState, isAdmin = true, open: Open = "all") =>
+  renderToStaticMarkup(routed(React.createElement(C, { state, studentId: HS_STUDENT_ID, isAdmin, docs: FIXTURE_DOCS, initialOpenForm: open })));
+const text = (out: string) => out.replace(/<[^>]+>/g, " ").replace(/&#x27;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, "&").replace(/\s+/g, " ");
 
 describe("S11 staff UI — fixtures are valid against the contract", () => {
   it("the rich fixture's roadmap content parses and has zero validation problems apart from planning notes", () => {
@@ -168,7 +172,7 @@ describe("S11 staff UI — enrollment creation and exceptions", () => {
     expect(t[0]).toMatchObject({ open: false, selected: true });
     expect(t[0]!.note).toMatch(/22 credits/);
     expect(enrollmentTimeline(rich)[1]).toMatchObject({ status: "Withdrawn", open: false, selected: false, period: "Started Sep 2, 2024" });
-    expect(enrollmentTimeline(rich)[0]!.period).toBe("Started Aug 17, 2026 · target Jun 30, 2028");
+    expect(enrollmentTimeline(rich)[0]!.period).toBe("Started Aug 17, 2026"); // the target date is shown once, in the summary strip
   });
   it("disclosure explains the generic text and refuses an unconfirmed enrollment", () => {
     const e = rich.current!.enrollment;
@@ -237,7 +241,7 @@ describe("S11 staff UI — gates, evidence and failures", () => {
     expect(evidenceGate("doc-pending", FIXTURE_DOCS, "transcript").reason).toMatch(/not verified/);
   });
   it("transfer claims: decision starts at the saved state, units are capped, the badge follows the award", () => {
-    expect(initialClaimDecision("claimed")).toBe("submitted_to_school");
+    expect(initialClaimDecision("claimed")).toBe("claimed"); // the select starts at the saved value
     expect(initialClaimDecision("accepted")).toBe("accepted");
     expect(initialClaimDecision("partially_accepted")).toBe("partially_accepted");
     const partial = { claimedHalfUnits: 2, acceptedHalfUnits: 1, status: "partially_accepted" as const };
@@ -273,8 +277,14 @@ describe("S11 staff UI — gates, evidence and failures", () => {
     expect(formatDate("soon")).toBe("soon");
     expect(statusLabel("on_hold")).toBe("On hold");
     expect(statusLabel("active")).toBe("Active");
-    expect(actorLabel("11111111-1111-4111-8111-111111111111")).toBeNull();
-    expect(actorLabel("admin-1")).toBe("admin-1");
+    expect(actorLabel("11111111-1111-4111-8111-111111111111")).toBe("Lumière staff");
+    expect(actorLabel(null)).toBe("Lumière staff");
+    expect(actorLabel("admin-1")).toBe("an admin");
+    expect(actorLabel("staff-1")).toBe("a staff member");
+    expect(actorRoleLabel("admin-1")).toBe("Admin");
+    expect(actorRoleLabel("staff-1")).toBe("Staff member");
+    expect(formatMonth("2026-10")).toBe("Oct 2026");
+    expect(formatMonth("soon")).toBe("soon");
   });
   it("delivery only moves forward and financial clearance locks after conferral", () => {
     expect(deliveryOptions("issued")).toEqual(["issued", "delivered"]);
@@ -355,17 +365,21 @@ describe("S11 staff UI — rendering", () => {
     over.current = { ...over.current!, credits: { ...over.current!.credits, earnedHalfUnits: 44, remainingHalfUnits: -2 } };
     const o = html(over, "program");
     expect(o.replace(/<[^>]+>/g, "|")).not.toMatch(/[|\s]-\d/);
-    expect(o).toContain(">0</span> remaining");
+    expect(o).toContain(">0</span> credits remaining");
     const done = html(staffStateGraduate(), "program");
     expect(done).toContain("Completed on");
     expect(done).toContain("Jun 20, 2026");
     expect(done).not.toContain("a target, not a guarantee");
   });
-  it("disabled buttons use a readable muted outline, never a pale fill", () => {
+  it("disabled actions are unmistakable: lock icon, muted solid fill, readable text, reason underneath", () => {
     const out = section(GraduationSection, staffStateGraduationReady(), false);
-    expect(out).toContain("disabled:text-foreground/75");
-    expect(out).toContain("disabled:bg-transparent");
-    expect(out).not.toMatch(/disabled:bg-(blue|primary)/);
+    expect(out).toContain("disabled:text-foreground/80");
+    expect(out).toContain("disabled:bg-muted");
+    expect(out).not.toContain("border-dashed");
+    expect(out).not.toMatch(/disabled:bg-(blue|primary|transparent)/);
+    expect(out).toMatch(/<button[^>]*id="ge-save"[^>]*data-locked="true"[^>]*>\s*<svg[^>]*lucide-lock/);
+    expect(out).toContain('aria-describedby="ge-save-why"');
+    expect(out).toContain('id="ge-save-why"');
     expect(out).toContain("Admin only.");
   });
   it("program tab offers creation with template/version and an exception reason when nothing is open", () => {
@@ -405,7 +419,7 @@ describe("S11 staff UI — rendering", () => {
   });
   it("prior study: selects start from the saved value; the award is capped at the accepted amount for the claim's area", () => {
     const out = section(PriorEducationSection, rich);
-    expect(selectedValue(out, "claim-claim-3-status")).toBe("submitted_to_school"); // claimed -> next step
+    expect(selectedValue(out, "claim-claim-3-status")).toBe("claimed"); // the select starts at the saved status
     expect(selectedValue(out, "claim-claim-2-status")).toBe("submitted_to_school");
     expect(selectedValue(out, "claim-claim-4-status")).toBe("partially_accepted");
     expect(selectedValue(out, "claim-claim-4-accepted")).toBe("1");
@@ -449,8 +463,9 @@ describe("S11 staff UI — rendering", () => {
     expect(out).not.toContain('placeholder="Not configured —');
     expect(out).toContain("Dates not set");
     expect(out).not.toContain("— to —");
-    expect(out).toMatch(/aria-expanded="true"[^>]*data-state="open"[^>]*>[\s\S]{0,400}English/); // the replaced-course area opens first
-    expect(out.match(/aria-expanded="true"/g)).toHaveLength(1);
+    const folded = html(rich, "roadmap", true, null);
+    expect(folded).toMatch(/aria-expanded="true"[^>]*data-state="open"[^>]*>[\s\S]{0,400}English/); // the replaced-course area opens first
+    expect(folded.match(/aria-expanded="true"/g)).toHaveLength(1); // forms stay folded: only the one accordion area is open
     expect(out).toContain("Planned against required");
   });
   it("roadmap editor starts clean (saved) and publishable for an admin", () => {
@@ -472,7 +487,7 @@ describe("S11 staff UI — rendering", () => {
     expect(out).toContain('data-testid="review-queue"');
     expect(out).not.toContain("2 waiting");
     expect(out.match(/data-testid="review-item"/g)).toHaveLength(2);
-    expect(out).toContain("student saw 84% (not official)");
+    expect(text(out)).toContain("student saw 84% (not official)");
     expect(out).toContain("Record official result");
     const sel = selectBlock(out, "rt-evidence");
     expect(sel).toContain("school-transcript-2026.pdf");
@@ -506,13 +521,15 @@ describe("S11 staff UI — rendering", () => {
     expect(out).toContain('data-testid="graduation-blockers"');
     const n = rich.current!.graduation.blockers.length;
     expect(out).toContain(`${n} blockers before eligibility can be confirmed`);
-    expect(out).toContain("exams have no official result");
+    // The server's blockers are credit-only: no hand-added exam/project lines.
+    expect(rich.current!.graduation.blockers).toEqual(creditBlockers(rich.current!.credits));
+    expect(out).not.toMatch(/no official result/);
     expect(out).toContain(`${n} blockers remain`);
     expect(out).toContain('id="ge-save"'); // the current step keeps its form, disabled, with the reason
     const nul = staffStateRich();
     nul.current = { ...nul.current!, graduation: { ...nul.current!.graduation, financialClearance: null } };
     expect(section(GraduationSection, nul)).toContain("Not available");
-    expect(section(GraduationSection, staffStateGraduationReady())).toContain("No blockers. Eligibility can be confirmed.");
+    expect(section(GraduationSection, staffStateGraduationReady())).toContain("Ready to confirm. No credit blockers.");
   });
   it("graduation tab: staff cannot confirm eligibility (admin only), even with no blockers", () => {
     const out = section(GraduationSection, staffStateGraduationReady(), false);
@@ -526,7 +543,9 @@ describe("S11 staff UI — rendering", () => {
     expect(out).toContain("No change from the current clearance.");
     expect(selectedValue(section(GraduationSection, rich), "fc-value")).toBe("unknown");
     const eligible = section(GraduationSection, staffStateEligibilityConfirmed());
-    expect(selectedValue(eligible, "dl-transcript-status")).toBe("issued");
+    // Before conferral there is no archived evidence: "issued"/"delivered" cannot be offered, so a requested transcript has no further choice.
+    expect(eligible).not.toContain('id="dl-transcript-status"');
+    expect(text(eligible)).toContain("Archived evidence: Not archived yet");
     expect(selectedValue(eligible, "dl-diploma-status")).toBe("not_requested");
   });
   it("graduation tab: evidence selects are filtered by purpose", () => {
@@ -541,12 +560,13 @@ describe("S11 staff UI — rendering", () => {
   });
   it("graduation tab: finished steps collapse into a summary row, not a dead disabled form", () => {
     const eligible = section(GraduationSection, staffStateEligibilityConfirmed());
-    expect(eligible).toContain("Eligibility confirmed on Jun 12, 2026 by admin-1");
+    expect(eligible).toContain("Step 1 · Eligibility confirmed on Jun 12, 2026 by an admin");
+    expect(eligible).not.toContain("admin-1");
     expect(eligible).toContain("school-completion-letter.pdf");
     expect(eligible).not.toContain('id="ge-save"');
     expect(eligible).toContain('id="gc-save"');
     const done = section(GraduationSection, staffStateGraduate());
-    expect(done).toContain("Diploma conferred on Jun 20, 2026");
+    expect(done).toContain("Step 2 · Diploma conferred on Jun 20, 2026");
     expect(done).not.toContain('id="ge-save"');
     expect(done).not.toContain('id="gc-save"');
     expect(done).not.toContain("<form");
@@ -575,7 +595,7 @@ describe("S11 staff UI — rendering", () => {
   });
   it("activity tab lists recent events newest first", () => {
     const out = renderToStaticMarkup(React.createElement(EventsSection, { state: rich }));
-    expect(out.indexOf("Draft v2 saved")).toBeLessThan(out.indexOf("Enrollment created"));
+    expect(out.indexOf("Roadmap draft saved")).toBeLessThan(out.indexOf("High school enrollment created"));
   });
   it("summary shows only OFFICIAL credit in exact half-unit decimals", () => {
     const s = staffStateRich();
@@ -589,3 +609,255 @@ describe("S11 staff UI — rendering", () => {
     expect(ProgramSection).toBeTypeOf("function");
   });
 });
+
+// ── final polish after the second independent review ─────────────────────────
+
+const closedState = (status: "withdrawn" | "transferred_out" | "completed") => {
+  const s = staffStateRich();
+  s.current = { ...s.current!, enrollment: { ...s.current!.enrollment, status } };
+  return s;
+};
+const ALL_TABS = ["program", "prior", "roadmap", "results", "graduation", "guardians", "activity"] as const;
+
+describe("S11 staff polish — fixtures only show what the server can produce (fix 1)", () => {
+  it("blockers are creditBlockers() unmodified in every state (confirm_eligibility checks credit only)", () => {
+    for (const st of allStates()) expect(st.current!.graduation.blockers).toEqual(creditBlockers(st.current!.credits));
+    expect(rich.current!.graduation.blockers.length).toBeGreaterThan(3); // not truncated
+    expect(staffStateGraduationReady().current!.graduation.blockers).toEqual([]);
+  });
+  it("transcript and diploma evidence exist only from conferral on; before it nothing is issued or delivered", () => {
+    const before = staffStateEligibilityConfirmed().current!.graduation;
+    expect(before.status).toBe("eligibility_confirmed");
+    expect(before.transcript.documentId).toBeNull();
+    expect(before.diploma.documentId).toBeNull();
+    expect(["issued", "delivered"]).not.toContain(before.transcript.status);
+    expect(["issued", "delivered"]).not.toContain(before.diploma.status);
+    for (const st of [rich, staffStateGraduationReady()]) {
+      const g = st.current!.graduation;
+      expect(g.transcript.documentId).toBeNull();
+      expect(g.transcript.status).toBe("not_requested");
+    }
+    const after = staffStateGraduate().current!.graduation;
+    expect(after.diploma.documentId).toBe("doc-diploma");
+    expect(after.transcript.documentId).toBe("doc-transcript");
+    const out = text(section(GraduationSection, staffStateEligibilityConfirmed()));
+    expect(out).not.toContain("Issued by school");
+  });
+  it("program titles carry the enrollment's own credit total (server programTitleOf rule)", () => {
+    expect(programTitleOf("Accredited U.S. High School Diploma (21 credits)", 44)).toBe("Accredited U.S. High School Diploma (22 credits)");
+    expect(programTitleOf("Plain", 42)).toBe("Plain (21 credits)");
+    for (const st of allStates()) for (const e of st.enrollments) expect(e.programTitle).toBe(programTitleOf(TEMPLATE_STANDARD_21.title, e.totalRequiredHalfUnits));
+    expect(staffStateGraduate().current!.enrollment.programTitle).toBe("Accredited U.S. High School Diploma (22 credits)");
+    expect(text(html(staffStateGraduate(), "program"))).toContain("Accredited U.S. High School Diploma (22 credits) · version 1");
+    const g = html(staffStateGraduate(), "program");
+    const cur = g.slice(g.indexOf('data-testid="current-enrollment"'), g.indexOf('data-testid="enrollment-history"'));
+    expect(cur).not.toContain("(21 credits)"); // the template list further down legitimately offers 21-credit templates
+    expect(cur).toContain("(22 credits)");
+  });
+  it("a course-completion award always has its completed course result, and every award/void/result has an activity event", () => {
+    for (const st of allStates()) {
+      const c = st.current!;
+      for (const a of c.awards.filter((x) => x.source === "course_completion")) expect(c.results.some((r) => r.courseKey === a.courseKey && r.taskKey === null && r.outcome === "completed")).toBe(true);
+      const count = (type: string) => st.events.filter((e) => e.type === type).length;
+      expect(count("credit_awarded")).toBe(c.awards.length);
+      expect(count("credit_voided")).toBe(c.awards.filter((a) => a.status === "voided").length);
+      expect(count("official_course_result") + count("official_task_result")).toBe(c.results.length);
+    }
+    expect(rich.events.some((e) => e.type === "credit_awarded" && /transfer credit/.test(e.summary))).toBe(true);
+    expect(rich.events.some((e) => e.type === "credit_voided")).toBe(true);
+  });
+});
+
+describe("S11 staff polish — copy, status and wording (fixes 2, 3, 4, 6, 9)", () => {
+  it("step 1 states the real rule", () => {
+    const out = text(section(GraduationSection, staffStateGraduationReady()));
+    expect(out).toContain("Requires every credit area to be met with official credit, and the school's verified confirmation document.");
+    expect(out).not.toContain("every credit and result to be official");
+  });
+  it("prior study: the saved status is the current state, the select is 'Change to' and starts at the saved value with Save disabled", () => {
+    const out = section(PriorEducationSection, rich);
+    const french = out.slice(out.indexOf("French Literature"), out.indexOf("Chemistry basics"));
+    expect(french).toContain("Current status");
+    expect(french).toContain("Claimed — not credit");
+    expect(french).toContain(">Change to</label>");
+    expect(french).not.toContain("School&#x27;s decision");
+    expect(selectedValue(out, "claim-claim-3-status")).toBe("claimed");
+    expect(french).toMatch(/<button[^>]*id="claim-claim-3-resolve"[^>]*disabled/);
+    expect(text(french)).toContain("No change from the saved decision.");
+    const biology = out.slice(out.indexOf("Biology"), out.indexOf("French Literature"));
+    expect(selectedValue(out, "claim-claim-2-status")).toBe("submitted_to_school");
+    expect(biology).not.toContain('value="claimed"'); // a sent claim cannot go back to "claimed"
+    expect(claimDecisionGate({ claimedHalfUnits: 2, status: "claimed" }, "claimed", "a note", 1).enabled).toBe(false);
+    expect(claimDecisionGate({ claimedHalfUnits: 2, status: "claimed" }, "accepted", "a note", 1).enabled).toBe(true);
+  });
+  it("roadmap: 'Fully planned' instead of 'Complete', and stacked rows keep Required/Planned for phones", () => {
+    const out = html(rich, "roadmap");
+    expect(out).toContain("Fully planned");
+    expect(out).not.toMatch(/>Complete</);
+    const rows = out.slice(out.indexOf('data-testid="credit-plan-rows"'), out.indexOf('data-testid="course-plan"'));
+    expect(out).toContain("md:hidden");
+    expect(text(rows)).toMatch(/Startup courses core Required 1 · Planned 1 · Still to plan Fully planned/);
+    expect(out).not.toContain("min-w-[34rem]"); // no horizontal-scroll table hiding the numbers at 390
+    expect(rows.match(/<li/g)).toHaveLength(8);
+  });
+  it("milestones read 'Oct 2026' and the month control is labelled selects, not a native month input", () => {
+    const out = html(rich, "roadmap");
+    expect(text(out)).toMatch(/By Oct 2026\s*:\s*2 credits/);
+    expect(text(out)).not.toMatch(/By 2026-10/);
+    expect(out).toContain('aria-label="Remove milestone Oct 2026"');
+    expect(out).not.toContain('type="month"');
+    expect(out).toMatch(/<legend[^>]*>Month<\/legend>/);
+    expect(selectBlock(out, "ms-month")).toContain("October");
+    expect(selectBlock(out, "ms-year")).toContain("2026");
+    expect(out).not.toContain("---------");
+  });
+  it("graduation: 'Ready to confirm' beside no blockers, never 'In progress'; one status line per step, no repeated chip", () => {
+    const ready = text(section(GraduationSection, staffStateGraduationReady()));
+    expect(ready).toContain("Ready to confirm");
+    expect(ready).not.toContain("In progress");
+    const confirmed = text(section(GraduationSection, staffStateEligibilityConfirmed()));
+    expect(confirmed.match(/Eligibility confirmed/g)).toHaveLength(1);
+    expect(confirmed).not.toContain("In progress");
+    const done = text(section(GraduationSection, staffStateGraduate()));
+    expect(done.match(/Diploma conferred/g)).toHaveLength(1);
+    expect(done.match(/Eligibility confirmed/g)).toHaveLength(1);
+    expect(section(GraduationSection, staffStateGraduate())).not.toMatch(/rounded-full border[^>]*>(Diploma conferred|Eligibility confirmed|In progress)</);
+  });
+  it("program tab shows the target date once (summary strip); the edit form holds it only when opened", () => {
+    const folded = text(html(rich, "program", true, null));
+    expect(folded.match(/Jun 30, 2028/g)).toHaveLength(1);
+    const opened = html(rich, "program", true, "edit-enrollment");
+    expect(text(opened).match(/Jun 30, 2028/g)).toHaveLength(1);
+    expect(opened).toMatch(/<input[^>]*id="hs-edit-target"[^>]*value="2028-06-30"/);
+  });
+});
+
+describe("S11 staff polish — people, awards, activity (fix 5)", () => {
+  it("never shows raw ids as people anywhere", () => {
+    for (const st of allStates()) for (const tab of ALL_TABS) {
+      const out = text(html(st, tab));
+      expect(out).not.toMatch(/\b(admin|staff)-\d/);
+      expect(out).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}/i);
+    }
+  });
+  it("activity has a By column with role labels and lists every event, matching the Reviews tab", () => {
+    const out = html(rich, "activity");
+    expect(out).toContain(">By<");
+    expect(out.match(/data-testid="event-row"/g)).toHaveLength(rich.events.length);
+    const by = [...out.matchAll(/data-testid="event-by">([^<]*)</g)].map((m) => m[1]);
+    expect(new Set(by)).toEqual(new Set(["Staff member", "Admin"]));
+    const t = text(out);
+    expect(t).toContain("1 credit voided");
+    expect(t).toContain("1 transfer credit awarded");
+    expect(t).toContain("0.5 credit awarded for Foundations of Personal Growth");
+    expect(t).not.toMatch(/for course [a-z]+-[a-z]/);
+    // a student's own request is "Student"; an unknown account id is "Lumière staff", never the id.
+    const conf = html(staffStateEligibilityConfirmed(), "activity");
+    expect(conf).toContain('data-testid="event-by">Student<');
+    expect(actorRoleLabel("5a1e0000-0000-4000-8000-000000000001")).toBe("Lumière staff");
+    expect(friendlyEventSummary("Official result recorded for english-1/exam-midterm: passed", rich.current!.published!.content.courses)).toBe("Official result recorded for Midterm exam (English 1: Introduction to Language Arts): passed");
+  });
+  it("award rows show the course or claim title and credits, never '1 cr'", () => {
+    const out = text(section(ResultsSection, rich));
+    expect(out).toContain("Transfer credit · Algebra I · 1 credit");
+    expect(out).toContain("Course completion · Foundations of Personal Growth · 0.5 credits");
+    expect(out).not.toMatch(/\bcr\b/);
+    expect(awardLabel({ source: "transfer", courseKey: null, claimId: "c1", halfUnits: 2 }, [], [{ id: "c1", courseTitle: "Spanish 1" }])).toBe("Transfer credit · Spanish 1 · 1 credit");
+    expect(selectBlock(section(ResultsSection, rich), "void-award")).toContain("Transfer credit · Algebra I · 1 credit");
+    expect(text(selectBlock(section(ResultsSection, rich), "rc-course"))).toMatch(/English 1: Introduction to Language Arts · \d+(\.5)? credits?/);
+  });
+  it("guardian notes name the role, not the id", () => {
+    expect(text(section(GuardiansSection, rich))).toContain("Oct 23, 2026 · by a staff member");
+  });
+});
+
+describe("S11 staff polish — layout and controls (fixes 7, 10, 11, 12)", () => {
+  it("tabs are one scrollable row: tablist, overflow-x-auto, no wrapping, visible fade cue", () => {
+    const out = html(rich, "program");
+    const list = /<div role="tablist"[^>]*>/.exec(out)?.[0] ?? "";
+    expect(list).toContain("overflow-x-auto");
+    expect(list).not.toContain("flex-wrap");
+    expect(list).toContain('aria-label="High school pathway sections"');
+    expect(out).toContain('data-testid="hs-tabs-fade"');
+    expect(out.match(/role="tab"[^>]*class="[^"]*shrink-0/g)).toHaveLength(7);
+  });
+  it("credit bar has a visible legend of every area with earned/required, official only", () => {
+    const out = html(rich, "program");
+    const legend = out.slice(out.indexOf('data-testid="credit-legend"'), out.indexOf("credits remaining"));
+    for (const s of creditSlots(rich.current!.credits)) expect(text(legend)).toContain(`${s.label} ${formatHalfUnits(s.earnedHalfUnits)}/${formatHalfUnits(s.requiredHalfUnits)}`);
+    expect(text(legend)).toContain("Mathematics 1/3");
+    expect(legend).not.toContain("title="); // not hover-only
+    expect(text(out)).toContain("official credit only");
+    expect(text(out)).not.toMatch(/planned credit|reported credit/i);
+  });
+  it("forms are folded behind a primary 'Record …' button; opening one closes the others", () => {
+    for (const [C, st, ids] of [
+      [ResultsSection, rich, ["rt-save", "rc-save", "void-go"]],
+      [GraduationSection, staffStateEligibilityConfirmed(), ["gc-save", "fc-save"]],
+      [PriorEducationSection, rich, ["pe-save", "tc-save", "claim-claim-3-resolve"]],
+    ] as const) {
+      const folded = section(C as React.ComponentType<any>, st, true, null);
+      expect(folded).not.toContain("<form");
+      for (const id of ids) expect(folded).not.toContain(`id="${id}"`);
+      expect(folded).toMatch(/aria-expanded="false"[^>]*aria-controls="[a-z0-9-]+-panel"/);
+    }
+    const onlyTask = section(ResultsSection, rich, true, "task");
+    expect(onlyTask).toContain('id="rt-save"');
+    expect(onlyTask).not.toContain('id="rc-save"');
+    expect(onlyTask).toContain("Close form");
+    expect(section(ResultsSection, rich, true, null)).toContain("Record task result");
+    expect(html(staffStateEmpty(), "program", true, undefined as unknown as null)).toContain('id="hs-create"'); // a student with no program starts on the create form
+  });
+  it("numbers use tabular-nums", () => {
+    for (const tab of ALL_TABS) expect(html(rich, tab)).toContain("tabular-nums");
+  });
+  it("a locked (disabled) action shows a lock icon and its reason; a gated enabled action does not", () => {
+    const staff = html(rich, "roadmap", false);
+    expect(staff).toMatch(/<button[^>]*id="rm-publish"[^>]*data-locked="true"[^>]*>\s*<svg[^>]*lucide-lock/);
+    expect(staff).toContain('id="rm-publish-why"');
+    const admin = html(rich, "roadmap", true);
+    expect(admin).not.toMatch(/<button[^>]*id="rm-publish"[^>]*data-locked/);
+  });
+});
+
+describe("S11 staff polish — closed enrollments are read-only (server: HS_OFFICIAL_RECORD_LOCKED)", () => {
+  it("program tab: no edit or disclosure forms for a closed enrollment, just 'This record is closed'", () => {
+    for (const status of ["withdrawn", "transferred_out", "completed"] as const) {
+      const out = html(closedState(status), "program");
+      expect(text(out)).toContain("This record is closed.");
+      for (const gone of ['id="hs-edit-save"', 'id="hs-edit-status"', 'id="hs-disclosure-save"', 'id="hs-disclosed"', "Edit program", "Change disclosure"]) expect(out).not.toContain(gone);
+      expect(out).toContain('data-testid="disclosure-preview"'); // what the student sees stays visible
+    }
+    const open = html(rich, "program");
+    expect(open).toContain('id="hs-edit-save"');
+    expect(open).not.toContain("This record is closed");
+    expect(html(staffStateGraduate(), "program")).not.toContain('id="hs-edit-save"');
+  });
+  it("every other editing tab locks too; financial clearance and delivery follow the server rules", () => {
+    const w = closedState("withdrawn");
+    const prior = section(PriorEducationSection, w);
+    expect(text(prior)).toContain("This record is closed.");
+    for (const gone of ['id="pe-save"', 'id="tc-save"', 'id="claim-claim-3-resolve"', "Record school decision"]) expect(prior).not.toContain(gone);
+    const results = section(ResultsSection, w);
+    for (const gone of ['id="rt-save"', 'id="rc-save"', 'id="void-go"', "Record official result", "Void an award"]) expect(results).not.toContain(gone);
+    expect(text(results)).toContain("This record is closed.");
+    const road = html(w, "roadmap");
+    expect(text(road)).toContain("This record is closed.");
+    expect(road).not.toContain('id="rm-publish"');
+    expect(road).toContain('data-testid="version-history"');
+    const grad = section(GraduationSection, w);
+    for (const gone of ['id="ge-evidence"', 'id="fc-save"', 'id="dl-transcript-save"', 'id="dl-diploma-save"']) expect(grad).not.toContain(gone);
+    expect(text(grad)).toContain("This record is closed. Delivery can no longer change.");
+    expect(financialGate(w, "cleared", "note").enabled).toBe(false);
+    expect(graduationGates(w, true).confirm.reason).toBe("This record is closed.");
+    // completed (diploma conferred): delivery may still move forward, financial clearance is locked.
+    const done = staffStateGraduate();
+    expect(financialGate(done, "hold", "note").reason).toMatch(/locked/);
+    expect(deliveryOptions("issued", true)).toEqual(["issued", "delivered"]);
+    expect(deliveryOptions("requested", false)).toEqual(["requested"]);
+    expect(section(GraduationSection, done)).toContain('id="dl-diploma-status"');
+    // guardian notes stay allowed (the server does not lock them).
+    expect(section(GuardiansSection, w)).toContain('id="gn-c-1-save"');
+  });
+});
+

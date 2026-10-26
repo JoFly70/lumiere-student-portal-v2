@@ -400,11 +400,11 @@ export function enrollmentTimeline(state: StaffHighSchoolState): { id: string; l
   }));
 }
 
-/** "Sep 2, 2024 · target Jun 30, 2028" — what the history row says about timing. */
+/** "Started Sep 2, 2024" — what the history row says about timing. */
 export function enrollmentPeriod(e: Pick<HsEnrollmentSummary, "startedOn" | "targetCompletionDate" | "createdAt" | "status">): string {
   const started = e.startedOn ? `Started ${formatDate(e.startedOn)}` : `Created ${formatDate(e.createdAt)}`;
-  const target = e.targetCompletionDate && isOpenEnrollment(e) ? ` · target ${formatDate(e.targetCompletionDate)}` : "";
-  return `${started}${target}`;
+  // The target date lives in the summary strip and the edit form only; it is never repeated in the history.
+  return started;
 }
 
 export interface DisclosureGate extends Gate {
@@ -497,14 +497,24 @@ export function claimBody(f: { priorEducationId: string; courseTitle: string; ar
   return { priorEducationId: f.priorEducationId, courseTitle: f.courseTitle.trim(), areaKey: f.areaKey, claimedHalfUnits: parseCreditInput(f.credits) as number };
 }
 
-export type ClaimDecision = "submitted_to_school" | "accepted" | "partially_accepted" | "declined";
+/** "claimed" is only offered as the saved (unchanged) value of a claim that was never sent to the school. */
+export type ClaimDecision = "claimed" | "submitted_to_school" | "accepted" | "partially_accepted" | "declined";
 
-export function resolveClaimBody(status: ClaimDecision, note: string, acceptedHalfUnits?: number | null) {
+export function resolveClaimBody(status: Exclude<ClaimDecision, "claimed">, note: string, acceptedHalfUnits?: number | null) {
   return status === "partially_accepted" && acceptedHalfUnits ? { status, note: note.trim(), acceptedHalfUnits } : { status, note: note.trim() };
 }
 
-/** The select starts at the saved decision; a bare "claimed" claim moves to the next sensible step. */
-export const initialClaimDecision = (status: TransferClaimStatus): ClaimDecision => (status === "claimed" ? "submitted_to_school" : status);
+/** The "Change to" select starts at the saved decision, so nothing is proposed until staff pick a different one. */
+export const initialClaimDecision = (status: TransferClaimStatus): ClaimDecision => status;
+
+/** Short labels for the decision select (the saved status is shown separately as the current state). */
+export const CLAIM_DECISION_LABEL: Record<ClaimDecision, string> = {
+  claimed: "Claimed (not yet sent to the school)",
+  submitted_to_school: "Submitted to school",
+  accepted: "Accepted",
+  partially_accepted: "Partially accepted",
+  declined: "Declined",
+};
 
 export interface ClaimLike {
   readonly claimedHalfUnits: number;
@@ -614,8 +624,11 @@ export function taskOptions(state: StaffHighSchoolState, courseKey: string): { k
 export function graduationGates(state: StaffHighSchoolState, isAdmin: boolean) {
   const g = state.current?.graduation;
   const blockers = g?.blockers ?? [];
+  const closed = !!state.current && isClosedEnrollment(state.current.enrollment.status);
   const confirm: Gate = !g
     ? { enabled: false, reason: "No enrollment." }
+    : closed && g.status !== "diploma_conferred"
+      ? { enabled: false, reason: CLOSED_RECORD_TEXT }
     : g.status !== "in_progress"
       ? { enabled: false, reason: "Eligibility is already confirmed." }
       : !isAdmin
@@ -625,6 +638,8 @@ export function graduationGates(state: StaffHighSchoolState, isAdmin: boolean) {
         : { enabled: true, reason: null };
   const confer: Gate = !g
     ? { enabled: false, reason: "No enrollment." }
+    : closed && g.status !== "diploma_conferred"
+      ? { enabled: false, reason: CLOSED_RECORD_TEXT }
     : !isAdmin
       ? { enabled: false, reason: "Only an administrator can confer the diploma." }
       : g.status === "diploma_conferred"
@@ -643,13 +658,23 @@ export const financialClearanceBody = (value: "unknown" | "cleared" | "hold", no
 export const deliveryBody = (action: "set_transcript_status" | "set_diploma_delivery", value: string) => ({ action, value });
 
 /** Delivery statuses only move forward: the options start at the current one. */
-export const deliveryOptions = (current: string): string[] => {
+export const deliveryOptions = (current: string, hasEvidence = true): string[] => {
   const order = ["not_requested", "requested", "issued", "delivered"];
-  return order.slice(Math.max(0, order.indexOf(current)));
+  const forward = order.slice(Math.max(0, order.indexOf(current)));
+  // Server rule: "issued" and "delivered" need the school's document, which is recorded when the diploma is conferred.
+  return hasEvidence ? forward : forward.filter((v) => v !== "issued" && v !== "delivered");
 };
+
+/** Delivery statuses stay editable after conferral (completed) but never on a withdrawn or transferred-out enrollment. */
+export const deliveryLocked = (status: string): boolean => status === "withdrawn" || status === "transferred_out";
+
+/** Server rule: a closed enrollment (completed, withdrawn, transferred out) is locked for every field. */
+export const isClosedEnrollment = (status: string): boolean => !(OPEN_STATUSES as readonly string[]).includes(status);
+export const CLOSED_RECORD_TEXT = "This record is closed.";
 
 export function financialGate(state: StaffHighSchoolState, value: string, note: string): Gate {
   const g = state.current?.graduation;
+  if (state.current && (state.current.enrollment.status === "withdrawn" || state.current.enrollment.status === "transferred_out")) return { enabled: false, reason: `This enrollment is ${statusLabel(state.current.enrollment.status).toLowerCase()}: financial clearance is locked.` };
   if (g?.status === "diploma_conferred") return { enabled: false, reason: "Financial clearance is locked once the diploma is conferred." };
   if (value === (g?.financialClearance ?? "unknown")) return { enabled: false, reason: "No change from the current clearance." };
   return noteGate(note);
@@ -717,17 +742,51 @@ export const statusLabel = (s: string): string => {
   return t.charAt(0).toUpperCase() + t.slice(1);
 };
 
-/** Never show a raw id as a person: only a readable actor name is returned. */
-export const actorLabel = (id: string | null | undefined): string | null => (id && !/^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(id) ? id : null);
+/** Role of an actor from its id. Ids are never shown as people: only the role, or "Lumière staff" when unknown. */
+export const actorRole = (id: string | null | undefined): "admin" | "staff" | "unknown" => (id && /^admin\b/i.test(id) ? "admin" : id && /^staff\b/i.test(id) ? "staff" : "unknown");
+
+/** Sentence form: "an admin", "a staff member", "Lumière staff". */
+export const actorLabel = (id: string | null | undefined): string => ({ admin: "an admin", staff: "a staff member", unknown: "Lumière staff" })[actorRole(id)];
+
+/** Column form: "Admin", "Staff member", "Lumière staff". */
+export const actorRoleLabel = (id: string | null | undefined): string => ({ admin: "Admin", staff: "Staff member", unknown: "Lumière staff" })[actorRole(id)];
+
+/** "2026-10" -> "Oct 2026"; anything else is shown as-is. */
+export function formatMonth(value: string | null | undefined): string {
+  const m = /^(\d{4})-(\d{2})$/.exec(value ?? "");
+  const month = m ? MONTHS[Number(m[2]) - 1] : undefined;
+  return m && month ? `${month} ${m[1]}` : value ?? "—";
+}
+
+export const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"] as const;
+
+/** Course/claim title for an award row ("Transfer credit · Spanish 1 · 1 credit", "Course completion · English 1 · 1 credit"), never a raw key or "1 cr". */
+export function awardLabel(
+  a: { source: string; courseKey: string | null; claimId: string | null; halfUnits: number },
+  courses: readonly { key: string; title: string }[],
+  claims: readonly { id: string; courseTitle: string }[],
+): string {
+  const credits = creditsLabel(a.halfUnits);
+  if (a.source === "transfer") return `Transfer credit · ${claims.find((c) => c.id === a.claimId)?.courseTitle ?? "Prior study"} · ${credits}`;
+  return `Course completion · ${courses.find((c) => c.key === a.courseKey)?.title ?? "Course"} · ${credits}`;
+}
+
+/** The server's event summaries name courses by key; show their titles. */
+export function friendlyEventSummary(summary: string, courses: readonly { key: string; title: string; tasks: readonly { key: string; title: string }[] }[]): string {
+  const title = (k: string) => courses.find((c) => c.key === k)?.title ?? k;
+  return summary
+    .replace(/for course ([a-z0-9-]+)/g, (_, k: string) => `for ${title(k)}`)
+    .replace(/for ([a-z0-9-]+)\/([a-z0-9-]+)/g, (_, k: string, t: string) => `for ${courses.find((c) => c.key === k)?.tasks.find((x) => x.key === t)?.title ?? t} (${title(k)})`);
+}
 
 /** Official remaining credit is never negative. */
 export const remainingHalfUnits = (required: number, earned: number): number => Math.max(0, required - earned);
 
-export interface CreditSlot { readonly key: string; readonly label: string; readonly kind: "core" | "elective"; readonly requiredHalfUnits: number; readonly countedHalfUnits: number }
+export interface CreditSlot { readonly key: string; readonly label: string; readonly kind: "core" | "elective"; readonly requiredHalfUnits: number; readonly countedHalfUnits: number; readonly earnedHalfUnits: number }
 
 /** Segments for the official-credit bar, one slot per area in order (core first); counted credit never exceeds the slot. */
 export function creditSlots(credits: HsCreditSummary): CreditSlot[] {
-  const slots = credits.byArea.map((a) => ({ key: a.key, label: a.label, kind: a.kind, requiredHalfUnits: a.requiredHalfUnits, countedHalfUnits: Math.min(a.countedHalfUnits, a.requiredHalfUnits) }));
+  const slots = credits.byArea.map((a) => ({ key: a.key, label: a.label, kind: a.kind, requiredHalfUnits: a.requiredHalfUnits, countedHalfUnits: Math.min(a.countedHalfUnits, a.requiredHalfUnits), earnedHalfUnits: a.earnedHalfUnits }));
   return [...slots.filter((s) => s.kind === "core"), ...slots.filter((s) => s.kind === "elective")];
 }
 

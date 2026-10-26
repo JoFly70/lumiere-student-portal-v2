@@ -3,7 +3,7 @@
  * Admin shell (default shadcn look). Lumière coordinates; the awarding school decides.
  * Every mutation returns the refreshed StaffHighSchoolState, which replaces the query cache.
  */
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "wouter";
 import { AlertCircle, ArrowLeft, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -74,11 +74,17 @@ export function SummaryStrip({ state }: { state: StaffHighSchoolState }) {
   );
 }
 
-export function HighSchoolWorkspace({ state, studentId, isAdmin, docs, defaultTab = "program" }: SectionProps & { defaultTab?: HsTabId }) {
+export function HighSchoolWorkspace({ state, studentId, isAdmin, docs, defaultTab = "program", initialOpenForm }: SectionProps & { defaultTab?: HsTabId }) {
   const [tab, setTab] = useState<HsTabId>(defaultTab);
   const c = state.current;
   const pending = c?.reviewQueue.length ?? 0;
-  const props = { state, studentId, isAdmin, docs };
+  const props = { state, studentId, isAdmin, docs, initialOpenForm };
+  const listRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    // Keep the active tab visible inside the horizontally scrollable tab list.
+    const el = listRef.current?.querySelector<HTMLElement>('[role="tab"][data-state="active"]');
+    el?.scrollIntoView?.({ inline: "center", block: "nearest" });
+  }, [tab]);
   return (
     <div className="space-y-6">
       <header className="space-y-3">
@@ -98,13 +104,17 @@ export function HighSchoolWorkspace({ state, studentId, isAdmin, docs, defaultTa
       </header>
       <SummaryStrip state={state} />
       <Tabs value={tab} onValueChange={(v) => setTab(v as HsTabId)} className="space-y-5">
-        <TabsList className="h-auto w-full flex-wrap justify-start gap-1 p-1" aria-label="High school pathway sections">
-          {HS_TABS.map((t) => (
-            <TabsTrigger key={t.id} value={t.id} className="min-h-10 px-3">
-              {t.label}{t.id === "results" && pending > 0 ? <span className="ml-2 rounded-full bg-foreground px-1.5 py-0.5 text-xs text-background">{pending}</span> : null}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+        {/* One row, never wrapped: an intended horizontal scroll region with edge fades as the scroll cue. */}
+        <div className="relative" data-testid="hs-tabs" ref={listRef}>
+          <TabsList className="flex h-auto w-full justify-start gap-1 overflow-x-auto p-1 [scrollbar-width:thin]" aria-label="High school pathway sections">
+            {HS_TABS.map((t) => (
+              <TabsTrigger key={t.id} value={t.id} className="min-h-10 shrink-0 px-3">
+                {t.label}{t.id === "results" && pending > 0 ? <span className="ml-2 rounded-full bg-foreground px-1.5 py-0.5 text-xs tabular-nums text-background">{pending}</span> : null}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          <span aria-hidden="true" data-testid="hs-tabs-fade" className="pointer-events-none absolute inset-y-0 right-0 w-10 rounded-r-md bg-gradient-to-l from-muted via-muted/80 to-transparent md:hidden" />
+        </div>
         <TabsContent value="program" className="mt-0"><ProgramSection {...props} /></TabsContent>
         <TabsContent value="prior" className="mt-0"><PriorEducationSection {...props} /></TabsContent>
         <TabsContent value="roadmap" className="mt-0"><RoadmapSection {...props} /></TabsContent>

@@ -2,8 +2,8 @@
  * Shared building blocks for the staff High School Pathway workspace.
  * Admin pages use the default shadcn shell (not the student gold surface).
  */
-import type { ReactNode } from "react";
-import { AlertCircle, CheckCircle2, Info, Loader2, ShieldCheck } from "lucide-react";
+import { useState, type ReactNode } from "react";
+import { AlertCircle, CheckCircle2, Info, Loader2, Lock, Plus, ShieldCheck, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { evidenceLabel, evidenceTypesText, verifiedEvidenceDocs, type EvidenceDoc, type Gate } from "@/lib/admin-high-school-logic";
@@ -14,6 +14,8 @@ export interface SectionProps {
   readonly studentId: string;
   readonly isAdmin: boolean;
   readonly docs: readonly EvidenceDoc[];
+  /** Which collapsed form starts open ("all" for static renders). Staff open one at a time. */
+  readonly initialOpenForm?: string | "all" | null;
 }
 
 export const FIELD_CLASS =
@@ -56,22 +58,72 @@ export function Notice({ tone = "info", children, testId }: { tone?: keyof typeo
   );
 }
 
-/** A disabled action must always say why. */
-/** Disabled = muted outline with readable text (never a pale fill with white text). */
-export const DISABLED_CLASS = "disabled:pointer-events-none disabled:border disabled:border-dashed disabled:border-border disabled:bg-transparent disabled:text-foreground/75 disabled:opacity-100 disabled:shadow-none";
+/**
+ * Disabled = unmistakable: muted solid fill, a lock icon, no hover, text at >= 4.5:1 (foreground on muted),
+ * and the reason is always printed under the button.
+ */
+export const DISABLED_CLASS = "disabled:pointer-events-none disabled:cursor-not-allowed disabled:border disabled:border-border disabled:bg-muted disabled:text-foreground/80 disabled:opacity-100 disabled:shadow-none";
 
 export function GatedButton({ gate, id, children, onClick, pending, variant, type = "button", size }: {
   gate: Gate; id: string; children: ReactNode; onClick?: () => void; pending?: boolean;
   variant?: "default" | "outline" | "destructive" | "secondary"; type?: "button" | "submit"; size?: "sm" | "default";
 }) {
+  const locked = !gate.enabled && !pending;
   return (
-    <div className="inline-flex flex-col items-start gap-1">
-      <Button id={id} type={type} variant={variant} size={size} disabled={!gate.enabled || pending} onClick={onClick} aria-describedby={gate.reason ? `${id}-why` : undefined} className={`min-h-10 ${DISABLED_CLASS} ${!variant || variant === "default" ? "dark:bg-blue-700 dark:text-white dark:hover:bg-blue-800" : ""}`}>
-        {pending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" /> : null}
+    <div className="inline-flex max-w-full flex-col items-start gap-1.5">
+      <Button id={id} type={type} variant={variant} size={size} disabled={!gate.enabled || pending} onClick={onClick} aria-describedby={gate.reason ? `${id}-why` : undefined} data-locked={locked ? "true" : undefined} className={`min-h-10 ${DISABLED_CLASS} ${!variant || variant === "default" ? "dark:bg-blue-700 dark:text-white dark:hover:bg-blue-800" : ""}`}>
+        {pending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" /> : locked ? <Lock className="mr-2 h-4 w-4" aria-hidden="true" /> : null}
         {children}
       </Button>
       {gate.reason ? <p id={`${id}-why`} className="max-w-sm text-xs text-muted-foreground">{gate.reason}</p> : null}
     </div>
+  );
+}
+
+/** One form open at a time per section. `initial="all"` is for static renders (tests, evidence). */
+export function useOpenForm(initial: string | "all" | null = null) {
+  const [open, setOpen] = useState<string | "all" | null>(initial);
+  return {
+    isOpen: (id: string) => open === "all" || open === id,
+    toggle: (id: string) => setOpen((o) => (o === id ? null : id)),
+    open: (id: string) => setOpen(id),
+    close: () => setOpen(null),
+  };
+}
+export type OpenForm = ReturnType<typeof useOpenForm>;
+
+/** The primary "Record …" button that opens a collapsed form. */
+export function RecordButton({ form, id, children, variant = "default", size = "default" }: { form: OpenForm; id: string; children: ReactNode; variant?: "default" | "outline"; size?: "sm" | "default" }) {
+  const open = form.isOpen(id);
+  return (
+    <Button type="button" variant={open ? "outline" : variant} size={size} className="min-h-10 shrink-0" aria-expanded={open} aria-controls={`${id}-panel`} onClick={() => form.toggle(id)}>
+      {open ? <X className="mr-2 h-4 w-4" aria-hidden="true" /> : <Plus className="mr-2 h-4 w-4" aria-hidden="true" />}
+      {open ? "Close form" : children}
+    </Button>
+  );
+}
+
+/** The collapsed form body. Rendered only while open. */
+export function FormPanel({ form, id, children, className = "" }: { form: OpenForm; id: string; children: ReactNode; className?: string }) {
+  if (!form.isOpen(id)) return null;
+  return <div id={`${id}-panel`} className={`rounded-md border bg-muted/30 p-4 ${className}`}>{children}</div>;
+}
+
+/** The one section card: header (title, description, optional action) + body. Same padding everywhere. */
+export function SectionCard({ title, description, action, children, testId, bodyClassName = "", flush = false }: {
+  title: ReactNode; description?: ReactNode; action?: ReactNode; children?: ReactNode; testId?: string; bodyClassName?: string; flush?: boolean;
+}) {
+  return (
+    <section data-testid={testId} className="rounded-lg border bg-card text-card-foreground shadow-sm">
+      <header className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3 p-4 sm:p-5">
+        <div className="min-w-0 flex-1 basis-60">
+          <h3 className="text-base font-semibold leading-tight tracking-tight">{title}</h3>
+          {description ? <p className="mt-1 max-w-prose text-sm text-muted-foreground">{description}</p> : null}
+        </div>
+        {action ? <div className="shrink-0">{action}</div> : null}
+      </header>
+      {children ? <div className={flush ? `border-t empty:hidden ${bodyClassName}` : `space-y-4 border-t p-4 empty:hidden sm:p-5 ${bodyClassName}`}>{children}</div> : null}
+    </section>
   );
 }
 
