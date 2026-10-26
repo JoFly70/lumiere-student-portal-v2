@@ -34,6 +34,8 @@ import {
   parseCourseText,
   parseProvider,
   rowIsBlank,
+  subjectKey,
+  wordsOf,
   type Located,
 } from "./s07-shared";
 
@@ -74,11 +76,35 @@ const ACTIVITY_SPEC = {
 type ActivityField = keyof typeof ACTIVITY_SPEC;
 
 const MILESTONE_SPEC = {
-  date: ["Date", "When", "Target Date"],
-  title: ["Milestone", "Event", "Gate"],
+  date: ["Date", "When", "Target Date", "Value"],
+  title: ["Milestone", "Event", "Gate", "Constant", "Checkpoint"],
   kind: ["Type", "Kind"],
 } as const;
 type MilestoneField = keyof typeof MILESTONE_SPEC;
+
+/** Provider tracker tables: one row per course with counters (several tables may share a sheet). */
+const TRACKER_SPEC = {
+  course: ["Course"],
+  credits: ["Cr", "Credits"],
+  format: ["Format"],
+  challenges: ["Challenges"],
+  milestones: ["Milestones", "Milestones (timed tests)"],
+  touchstones: ["Touchstones"],
+  papers: ["Papers", "Assignments"],
+  hasFinal: ["Has final?"],
+  finish: ["Finish target", "Final / Finish Target", "Finish Target"],
+  examDate: ["Exam date", "Exam / paper date"],
+  status: ["Status"],
+} as const;
+type TrackerField = keyof typeof TRACKER_SPEC;
+
+/** Dated assignment lists: Due, Course, Assignment. */
+const ASSIGN_SPEC = {
+  due: ["Due", "Due Date"],
+  course: ["Course"],
+  assignment: ["Assignment", "Deliverable"],
+} as const;
+type AssignField = keyof typeof ASSIGN_SPEC;
 
 // ── model ────────────────────────────────────────────────────────────────────
 
@@ -105,6 +131,8 @@ export interface ExecCourse {
   plannedStart: string | null;
   plannedEnd: string | null;
   tasks: ExecTask[];
+  /** Conditional lane text ("only if ... confirms; otherwise a replacement"), or null. */
+  condition: string | null;
 }
 
 export interface ExecMilestone {
@@ -184,6 +212,154 @@ function weekRange(v: CellValue | undefined): { from: number; to: number } | nul
   return { from: Number(m[1]), to: Number(m[2] ?? m[1]) };
 }
 
+
+// ── table scanning (several tables may share one sheet) ──────────────────────
+
+interface TableAt<F extends string> {
+  readonly sheet: SheetData;
+  readonly headerRow: number;
+  readonly endRow: number;
+  readonly columns: Map<F, number>;
+}
+
+function lookupOf<F extends string>(spec: Record<F, readonly string[]>): Map<string, F> {
+  const lookup = new Map<string, F>();
+  for (const field of Object.keys(spec) as F[]) for (const alias of spec[field]) lookup.set(norm(alias), field);
+  return lookup;
+}
+
+/** Every header row of a table in `sheet` (not only the best one), with the rows it spans (to the next blank row). */
+function findTables<F extends string>(sheet: SheetData, spec: Record<F, readonly string[]>, required: readonly (F | readonly F[])[]): TableAt<F>[] {
+  const lookup = lookupOf(spec);
+  const tables: TableAt<F>[] = [];
+  for (let r = 0; r < sheet.rows.length; r++) {
+    const row = sheet.rows[r] ?? [];
+    const columns = new Map<F, number>();
+    row.forEach((v, c) => {
+      const text = cellText(v);
+      if (!text) return;
+      const field = lookup.get(norm(text));
+      if (field && !columns.has(field)) columns.set(field, c);
+    });
+    const ok = required.every((req) => (Array.isArray(req) ? (req as readonly F[]).some((f) => columns.has(f)) : columns.has(req as F)));
+    if (!ok) continue;
+    // spacer rows (up to 3) may separate a header from its first data row
+    let end = r + 1;
+    let spacers = 0;
+    while (end < sheet.rows.length && rowIsBlank(sheet.rows[end] ?? []) && spacers < 3) {
+      end++;
+      spacers++;
+    }
+    while (end < sheet.rows.length && !rowIsBlank(sheet.rows[end] ?? [])) end++;
+    tables.push({ sheet, headerRow: r, endRow: end, columns });
+    r = end - 1;
+  }
+  return tables;
+}
+
+const PROVIDER_HINT = /^(sophia|study\.?\s?com|csm(?:\s+learn)?|tecep|tesu)\b/i;
+function canonicalProvider(raw: string): string {
+  const t = raw.toLowerCase();
+  if (t.startsWith("sophia")) return "Sophia";
+  if (t.startsWith("study")) return "Study.com";
+  if (t.startsWith("csm")) return "CSM Learn";
+  if (t.startsWith("tecep")) return "TESU TECEP";
+  return "TESU Online";
+}
+function firstCellText(cells: readonly CellValue[] | undefined): string {
+  for (const c of cells ?? []) {
+    const t = cellText(c);
+    if (t) return t;
+  }
+  return "";
+}
+/** Provider of a tracker table: a section title just above it, else the sheet title. */
+function providerNear(sheet: SheetData, headerRow: number): string | null {
+  for (let r = headerRow - 1; r >= Math.max(0, headerRow - 3); r--) {
+    const m = PROVIDER_HINT.exec(firstCellText(sheet.rows[r]));
+    if (m) return canonicalProvider(m[1]!);
+  }
+  const m = /\b(sophia|study\.?\s?com|tecep|csm learn)\b/i.exec(headText(sheet, 3));
+  return m ? canonicalProvider(m[1]!) : null;
+}
+/** "13 COURSES / 39 CREDITS" -> 3 (only when it divides evenly: the workbook's own stated arithmetic). */
+function statedCreditsPerCourse(sheet: SheetData): string | null {
+  const m = /(\d{1,3})\s+courses?\s*[·/•-]\s*(\d{1,4})\s+(?:upper-level\s+)?credits/i.exec(headText(sheet, 4));
+  if (!m) return null;
+  const n = Number(m[1]);
+  const total = Number(m[2]);
+  return n > 0 && total % n === 0 ? String(total / n) : null;
+}
+const isNumber = (v: CellValue | undefined): boolean => typeof v === "number" && Number.isFinite(v);
+const COMPLETED_SHEET = /completed|already earned|read only/i;
+
+// ── lane scanning ────────────────────────────────────────────────────────────
+
+const LANE_HEADER = /^(course\s+[a-z]|lane\s*\d?)$|^(sophia|study\.?\s?com|csm(?:\s+learn)?|tecep|tesu)\b.*\b(this week|finish|lane)\b/i;
+const LANE_PREFIX = /^([A-Za-z][A-Za-z\-/ ]{0,24}?) · (.*)$/s;
+const NON_WORK_PREFIX = /^(closed|admin|prep only)\b/i;
+const WORK_PREFIX = /^(quiz|stretch quiz|paper|high-load paper|paper \/ wrap|exam|exam prep|speech|tesu-write|unlock)\b/i;
+const LEADING_NOISE: readonly (readonly string[])[] = [["u", "s"], ["introduction", "to"], ["intro", "to"]];
+const ADMIN_VERB = /^(send|request|message|register|confirm|buy|screenshot|map|chase|paste|order)\b/i;
+/** "Keep a second quiz course alive", "Light second quiz only", "Second quiz course." — capacity placeholders, not courses. */
+const GENERIC_LANE = /^(?:keep a |light |another |a )?(?:second|extra|other) (?:quiz|paper)(?: course)?(?: alive| only)?\.?$|^(?:keep a )?second quiz(?: course)?\.?(?: do not start .*)?$/i;
+
+/** Word sequences that identify a course in free lane text ("Acc 201", "Soc 305", "Intro to IT", "Government"). */
+function aliasSeqs(c: ExecCourse): string[][] {
+  const seqs: string[][] = [];
+  const seen = new Set<string>();
+  const add = (w: string[]): void => {
+    if (!(w.length >= 2 || (w.length === 1 && w[0]!.length >= 6))) return;
+    const k = w.join(" ");
+    if (seen.has(k)) return;
+    seen.add(k);
+    seqs.push(w);
+  };
+  const codeLike = c.code ?? (/^(.+?)\s+(\d{2,4})$/.exec(c.title)?.[0] ?? null);
+  const cm = codeLike ? /^(.+?)[\s-]+(\d{2,4})$/.exec(codeLike) : null;
+  if (cm) {
+    const subj = wordsOf(cm[1]!);
+    const num = cm[2]!;
+    add([...subj, num]);
+    if (subj.length === 1) {
+      const w = subj[0]!;
+      for (const k of [3, 4, 5]) if (w.length > k) add([w.slice(0, k), num]);
+      add([subjectKey(w), num]);
+    } else if (subj.length > 1) add([subj.map((w) => w[0]).join(""), num]);
+  }
+  for (const part of c.title.split(/\s*[\/—–:]\s*/)) {
+    let words = wordsOf(part.replace(/\([^)]*\)/g, " "));
+    if (words.length === 0) continue;
+    add(words);
+    for (const lead of LEADING_NOISE) {
+      if (words.length > lead.length && lead.every((w, i) => words[i] === w)) {
+        words = words.slice(lead.length);
+        add(words);
+        if (lead[0] === "introduction" || lead[0] === "intro") {
+          if (words.length >= 2) add(["intro", "to", words.map((w) => w[0]).join("")]);
+          add(["intro", "to", ...words]);
+        }
+        break;
+      }
+    }
+  }
+  return seqs;
+}
+
+function seqIndex(words: readonly string[], seq: readonly string[]): number {
+  for (let i = 0; i + seq.length <= words.length; i++) {
+    let ok = true;
+    for (let j = 0; j < seq.length; j++) {
+      if (words[i + j] !== seq[j]) {
+        ok = false;
+        break;
+      }
+    }
+    if (ok) return i;
+  }
+  return -1;
+}
+
 export function parseExecution(wb: WorkbookData): ExecData {
   const sheets = executionSheets(wb);
   const exceptions = new ExceptionCollector();
@@ -211,6 +387,21 @@ export function parseExecution(wb: WorkbookData): ExecData {
       break;
     }
   }
+  if (!out.schedule.preparedOn) {
+    // version / review lines usually sit in the footer ("Version 2.0 · 2026-09-09", "Reviewed Aug 28, 2026")
+    for (const sh of wb.sheets) {
+      const tail = sh.rows.slice(-8).map((r) => (r ?? []).map(cellText).filter(Boolean).join(" ")).join(" | ");
+      let hit: { iso: string } | undefined;
+      for (const m of tail.matchAll(/\b(version|prepared|updated|reviewed)\b/gi)) {
+        hit = datesInText(tail.slice(m.index!, m.index! + 90), null).find((d) => d.hadYear);
+        if (hit) break;
+      }
+      if (hit) {
+        out.schedule.preparedOn = hit.iso;
+        break;
+      }
+    }
+  }
   const yearFrom = (text: string): number | null => {
     const m = /\b(20\d{2})\b/.exec(text);
     return m ? Number(m[1]) : null;
@@ -227,7 +418,7 @@ export function parseExecution(wb: WorkbookData): ExecData {
   const indexCourse = (c: ExecCourse): void => {
     for (const id of c.ids) if (!byIds.has(id)) byIds.set(id, c);
   };
-  const upsertCourse = (init: Omit<ExecCourse, "ids" | "tasks" | "rows"> & { ids: string[] }): ExecCourse => {
+  const upsertCourse = (init: Omit<ExecCourse, "ids" | "tasks" | "rows" | "condition"> & { ids: string[] }): ExecCourse => {
     const existing = findCourse(init.ids);
     if (existing) {
       for (const id of init.ids) if (!existing.ids.includes(id)) existing.ids.push(id);
@@ -240,7 +431,7 @@ export function parseExecution(wb: WorkbookData): ExecData {
       existing.weekTo ??= init.weekTo;
       return existing;
     }
-    const c: ExecCourse = { ...init, rows: [{ sheet: init.sheet, row: init.row }], tasks: [] };
+    const c: ExecCourse = { ...init, rows: [{ sheet: init.sheet, row: init.row }], tasks: [], condition: null };
     out.courses.push(c);
     indexCourse(c);
     return c;
@@ -258,9 +449,14 @@ export function parseExecution(wb: WorkbookData): ExecData {
     existing.dueDate ??= t.dueDate;
     existing.week ??= t.week;
   };
-  const widen = (c: ExecCourse, start: string | null, end: string | null): void => {
+  /** Courses whose planned end comes from a stated date (finish target, final, due date), not from lane weeks. */
+  const hardEnd = new Set<ExecCourse>();
+  const widen = (c: ExecCourse, start: string | null, end: string | null, hard = false): void => {
     if (start && (!c.plannedStart || start < c.plannedStart)) c.plannedStart = start;
-    if (end && (!c.plannedEnd || end > c.plannedEnd)) c.plannedEnd = end;
+    if (end && hard && !hardEnd.has(c)) {
+      hardEnd.add(c);
+      c.plannedEnd = end;
+    } else if (end && (!c.plannedEnd || end > c.plannedEnd) && (hard || !hardEnd.has(c))) c.plannedEnd = end;
   };
   const addMilestone = (title: string, date: string | null, sheet: string, row: number): void => {
     const kind = /conferr/i.test(title) ? "graduation" : /apply|application|filing|register/i.test(title) ? "application" : /graduat/i.test(title) ? "graduation" : "checkpoint";
@@ -355,28 +551,130 @@ export function parseExecution(wb: WorkbookData): ExecData {
         if (after && after.index === 0) setTask(course, { key: "final-exam", kind: "exam", title: "Final exam", dueDate: after.iso, week: null, row: r + 1 }, c.sheet.name);
       }
       const dates = hint.map((h) => h.iso).sort();
-      if (dates.length > 0) widen(course, dates[0]!, dates[dates.length - 1]!);
+      if (dates.length > 0) widen(course, dates[0]!, dates[dates.length - 1]!, true);
       else if (wr && weekStart.has(wr.from)) widen(course, weekStart.get(wr.from)!, weekEnd.get(wr.to) ?? weekEnd.get(wr.from) ?? null);
     }
   }
 
-  // 3) lane grid deliverables
+  // 2b) tracker tables (EXTERNAL / TECEP / residency / provider trackers): course identity, credits,
+  //     counters, finish targets. Header-content discovery; several tables may share a sheet.
+  const planYear = weekStart.get(1) ?? gridYear ?? yearFrom(allHead);
+  const weekOf = (iso: string): number | null => {
+    for (const [w, st] of weekStart) {
+      const en = weekEnd.get(w);
+      if (en && iso >= st && iso <= en) return w;
+    }
+    return null;
+  };
+  for (const sh of wb.sheets) {
+    if (isLedgerSheet(sh) || COMPLETED_SHEET.test(headText(sh, 3))) continue;
+    for (const t of findTables<TrackerField>(sh, TRACKER_SPEC, ["course", ["credits", "challenges", "milestones", "touchstones", "papers"]])) {
+      const colOf = (f: TrackerField): number | undefined => t.columns.get(f);
+      const statusCol = colOf("status");
+      if (statusCol !== undefined) {
+        const statuses = sh.rows.slice(t.headerRow + 1, t.endRow).map((row) => cellText((row ?? [])[statusCol])).filter(Boolean);
+        // a table whose statuses are mostly "Done" is history, not a plan
+        if (statuses.length >= 3 && statuses.filter((x) => /^done$/i.test(x)).length / statuses.length >= 0.5) continue;
+      }
+      const sectionProvider = providerNear(sh, t.headerRow);
+      const stated = statedCreditsPerCourse(sh);
+      const finishHead = colOf("finish") !== undefined ? cellText((sh.rows[t.headerRow] ?? [])[colOf("finish")!]) : "";
+      for (let r = t.headerRow + 1; r < t.endRow; r++) {
+        const cells = sh.rows[r] ?? [];
+        const g = (f: TrackerField): CellValue | undefined => {
+          const c = colOf(f);
+          return c === undefined ? undefined : cells[c];
+        };
+        const courseText = cellText(g("course"));
+        if (!courseText || /\bblock\b|\btotal\b|^course$/i.test(courseText)) continue;
+        const counts = (["challenges", "milestones", "touchstones", "papers"] as const).map((f) => ({ f, n: isNumber(g(f)) ? Number(g(f)) : 0 }));
+        if (!isNumber(g("credits")) && !counts.some((c) => c.n > 0)) continue;
+        out.rowsRead++;
+        const clean = courseText.replace(/\s*\((?:\d+\s+)?(?:papers?|assignments?)[^)]*\)\s*$/i, "").replace(/\s+·\s+.*$/, "").trim();
+        const parsed = parseCourseText(clean);
+        const fmt = cellText(g("format"));
+        const providerText = /e-?pack/i.test(fmt) ? "TESU e-Pack" : /tesu/i.test(fmt) ? "TESU Online" : sectionProvider;
+        const provider = parseProvider(providerText ?? "");
+        const credits = isNumber(g("credits")) ? parseCredits(g("credits")).value : stated;
+        const course = upsertCourse({
+          sheet: sh.name,
+          row: r + 1,
+          provider: provider.provider,
+          code: parsed.code,
+          title: parsed.title,
+          ids: [...parsed.ids, ...looseCourseIds(clean)],
+          credits,
+          weekFrom: null,
+          weekTo: null,
+          plannedStart: null,
+          plannedEnd: null,
+        });
+        const labels = { challenges: ["challenge", "Challenge"], milestones: ["milestone", "Milestone"], touchstones: ["touchstone", "Touchstone"], papers: ["assignment", "Assignment"] } as const;
+        for (const { f, n } of counts) {
+          const [kind, label] = labels[f];
+          for (let i = 1; i <= Math.min(n, 100); i++) setTask(course, { key: `${kind}-${i}`, kind, title: `${label} ${i}`, dueDate: null, week: null, row: r + 1 }, sh.name);
+        }
+        const finishText = cellText(g("finish"));
+        const finishDate = finishText ? datesInText(finishText, planYear)[0]?.iso ?? null : null;
+        if (finishDate) {
+          widen(course, null, finishDate, true);
+          if (/final/i.test(finishHead) && !/no final/i.test(finishText)) {
+            setTask(course, { key: "final-exam", kind: "exam", title: "Final exam", dueDate: finishDate, week: weekOf(finishDate), row: r + 1 }, sh.name);
+          }
+        }
+        if (/^(y|yes)/i.test(cellText(g("hasFinal")))) setTask(course, { key: "final-exam", kind: "exam", title: "Final exam", dueDate: null, week: null, row: r + 1 }, sh.name);
+        if (colOf("examDate") !== undefined && /tecep|e-?pack/i.test(providerText ?? "")) {
+          const examText = cellText(g("examDate"));
+          const examDate = examText ? parseDateCell(g("examDate")).value ?? datesInText(examText, planYear)[0]?.iso ?? null : null;
+          setTask(course, { key: "final-exam", kind: "exam", title: /tecep/i.test(providerText ?? "") ? "TECEP exam" : "e-Pack exam", dueDate: examDate, week: examDate ? weekOf(examDate) : null, row: r + 1 }, sh.name);
+          if (examDate) widen(course, null, examDate, true);
+        }
+      }
+      if (!out.sheetsRead.includes(sh.name)) out.sheetsRead.push(sh.name);
+    }
+
+    // 2c) dated assignment lists (Due, Course, Assignment)
+    for (const t of findTables<AssignField>(sh, ASSIGN_SPEC, ["due", "course", "assignment"])) {
+      for (let r = t.headerRow + 1; r < t.endRow; r++) {
+        const cells = sh.rows[r] ?? [];
+        const g = (f: AssignField): CellValue | undefined => cells[t.columns.get(f)!];
+        const a = cellText(g("assignment"));
+        const cText = cellText(g("course"));
+        const hit = datesInText(cellText(g("due")), planYear)[0];
+        if (!a || !cText || !hit) continue;
+        out.rowsRead++;
+        const course = findCourse([...parseCourseText(cText).ids, ...looseCourseIds(cText)]);
+        if (!course) {
+          warn("COMPANION_ROW_UNMATCHED", "warning", `${sh.name} row ${r + 1}: the dated assignment "${a.slice(0, 80)}" names a course ("${cText.slice(0, 80)}") that is not in this workbook's course tables. It was NOT added to the plan.`, { sheet: sh.name, row: r + 1 });
+          continue;
+        }
+        const n = /(\d{1,2})/.exec(a)?.[1] ?? "1";
+        setTask(course, { key: `assignment-${n}`, kind: "assignment", title: a.slice(0, 200), dueDate: hit.iso, week: weekOf(hit.iso), row: r + 1 }, sh.name);
+        widen(course, null, hit.iso, true);
+        if (!out.sheetsRead.includes(sh.name)) out.sheetsRead.push(sh.name);
+      }
+    }
+  }
+
+  // 3) lane grid: dated deliverables, then the work lanes
   if (gridSheet && gridSheet.kind === "grid") {
     const loc = gridSheet.loc as Located<GridField>;
+    const gridName = gridSheet.sheet.name;
+    const resolve = (label: string): ExecCourse | undefined => findCourse(looseCourseIds(label));
     for (let r = loc.headerRow + 1; r < gridSheet.sheet.rows.length; r++) {
       const cells = gridSheet.sheet.rows[r] ?? [];
       const wk = numOf(cell(loc, cells, "wk"));
       if (wk === null) continue;
       const start = weekStart.get(wk) ?? null;
-      const resolve = (label: string): ExecCourse | undefined => findCourse(looseCourseIds(label));
       for (const part of cellText(cell(loc, cells, "due")).split(/[;\n]+/)) {
-        const m = /^(.*?)\s+A(\d)\b(.*)$/i.exec(part.trim());
+        const m = /^(.*?)\s+(?:A(\d)|(final|midterm))\b(.*)$/i.exec(part.trim());
         if (!m) continue;
-        const date = datesInText(m[3]!, start)[0]?.iso ?? null;
+        const date = datesInText(m[4]!, start)[0]?.iso ?? null;
         const course = resolve(m[1]!);
         if (!course || !date) continue;
-        setTask(course, { key: `assignment-${m[2]}`, kind: "assignment", title: `Assignment ${m[2]}`, dueDate: date, week: wk, row: r + 1 }, gridSheet.sheet.name);
-        widen(course, null, date);
+        const key = m[2] ? `assignment-${m[2]}` : /midterm/i.test(m[3]!) ? "midterm-exam" : "final-exam";
+        setTask(course, { key, kind: m[2] ? "assignment" : "exam", title: m[2] ? `Assignment ${m[2]}` : key === "midterm-exam" ? "Midterm exam" : "Final exam", dueDate: date, week: wk, row: r + 1 }, gridName);
+        widen(course, null, date, true);
       }
       for (const part of cellText(cell(loc, cells, "exam")).split(/[;\n]+/)) {
         const m = /^(.*?)\s*[—–-]\s*(.+)$/.exec(part.trim());
@@ -384,11 +682,129 @@ export function parseExecution(wb: WorkbookData): ExecData {
         const date = datesInText(m[2]!, start)[0]?.iso ?? null;
         const course = m[1]!.trim() ? resolve(m[1]!) : undefined;
         if (!course || !date) continue;
-        setTask(course, { key: "final-exam", kind: "exam", title: "Final exam", dueDate: date, week: wk, row: r + 1 }, gridSheet.sheet.name);
-        widen(course, null, date);
+        setTask(course, { key: "final-exam", kind: "exam", title: "Final exam", dueDate: date, week: wk, row: r + 1 }, gridName);
+        widen(course, null, date, true);
       }
       // tasks seen in a week inherit the week number when still unset
       for (const course of out.courses) for (const t of course.tasks) if (t.dueDate && t.week === null && start && weekEnd.has(wk) && t.dueDate >= start && t.dueDate <= weekEnd.get(wk)!) t.week = wk;
+    }
+
+    // work lanes ("Course A/B/C", "Sophia — finish this week", ...): free text per week and lane
+    const headerCells = gridSheet.sheet.rows[loc.headerRow] ?? [];
+    const laneCols: number[] = [];
+    headerCells.forEach((h, i) => {
+      if (LANE_HEADER.test(cellText(h))) laneCols.push(i);
+    });
+    const phaseCol = headerCells.findIndex((h) => /^phase$/i.test(cellText(h)));
+    if (laneCols.length > 0 && out.courses.length > 0) {
+      const aliases = out.courses.map((c) => ({ c, seqs: aliasSeqs(c) }));
+      // collective references: "e-Pack quizzes", "CSM", "SOS" (only when they name one course or a whole kind)
+      const providerCount = new Map<string, number>();
+      const prefixCount = new Map<string, number>();
+      for (const c of out.courses) {
+        providerCount.set(c.provider ?? "", (providerCount.get(c.provider ?? "") ?? 0) + 1);
+        const pre = /^([A-Z]{3})-\d{4}$/.exec(c.code ?? "")?.[1];
+        if (pre) prefixCount.set(pre, (prefixCount.get(pre) ?? 0) + 1);
+      }
+      for (const a of aliases) {
+        const pv = a.c.provider ?? "";
+        if (/e-?pack/i.test(pv)) a.seqs.push(["e", "pack"], ["e", "packs"], ["epack"], ["epacks"]);
+        if (/^csm/i.test(pv) && providerCount.get(pv) === 1) a.seqs.push(["csm"]);
+        const pre = /^([A-Z]{3})-\d{4}$/.exec(a.c.code ?? "")?.[1];
+        if (pre && prefixCount.get(pre) === 1 && /^tesu online$/i.test(pv)) a.seqs.push([pre.toLowerCase()]);
+      }
+      const weeksOf = new Map<ExecCourse, Set<number>>();
+      const genericLane: { row: number; lane: string }[] = [];
+      const deriveTasks = (c: ExecCourse, sentence: string, prefix: string, wk: number, row: number): void => {
+        const put = (key: string, kind: ExecTask["kind"], title: string, laterWins = false): void => {
+          const existing = c.tasks.find((x) => x.key === key);
+          if (existing && laterWins) {
+            if (existing.week === null || wk > existing.week) existing.week = wk;
+            return;
+          }
+          setTask(c, { key, kind, title, dueDate: null, week: wk, row }, gridName);
+        };
+        for (const m of sentence.matchAll(/\bAssignments?\s+(\d)(?:\s*[–-]\s*(\d))?/gi)) {
+          for (let n = Number(m[1]); n <= Math.min(Number(m[2] ?? m[1]), Number(m[1]) + 9); n++) put(`assignment-${n}`, "assignment", `Assignment ${n}`);
+        }
+        for (const m of sentence.matchAll(/\bSpeech\s+(\d)\b/gi)) put(`assignment-${m[1]}`, "assignment", `Speech ${m[1]}`);
+        if (/\bfinal[\s-]project\b/i.test(sentence)) put("final-project", "assignment", "Final project");
+        else if (/\bfinal\b/i.test(sentence) && !/\bfinal(?:s)?\s+(?:grade|posted)/i.test(sentence)) put("final-exam", "exam", "Final exam", true);
+        if (/\bmidterm\b/i.test(sentence)) put("midterm-exam", "exam", "Midterm exam", true);
+        if (/^exam$/i.test(prefix) && !c.tasks.some((x) => x.key === "final-exam")) put("final-exam", "exam", "Exam", true);
+      };
+      for (let r = loc.headerRow + 1; r < gridSheet.sheet.rows.length; r++) {
+        const cells = gridSheet.sheet.rows[r] ?? [];
+        const wk = numOf(cell(loc, cells, "wk"));
+        if (wk === null) continue;
+        if (phaseCol >= 0 && /^admin/i.test(cellText(cells[phaseCol]))) continue; // registration / transcript weeks are not coursework
+        for (const lc of laneCols) {
+          const raw = cellText(cells[lc]);
+          if (!raw) continue;
+          const pm = LANE_PREFIX.exec(raw);
+          const prefix = pm ? pm[1]!.trim() : "";
+          const body = pm ? pm[2]! : raw;
+          if (prefix && NON_WORK_PREFIX.test(prefix)) continue;
+          const hitsInCell = new Set<ExecCourse>();
+          for (const sentence of body.split(/(?<=[.!?])\s+/).filter(Boolean)) {
+            if (!prefix && ADMIN_VERB.test(sentence.trim())) continue;
+            const words = wordsOf(sentence);
+            const hits: { c: ExecCourse; at: number }[] = [];
+            for (const { c, seqs } of aliases) {
+              let at = -1;
+              for (const q of seqs) {
+                const i = seqIndex(words, q);
+                if (i < 0) continue;
+                // a bare 3-letter subject ("bus") followed by a number is another course ("Bus 103"), not this one
+                if (q.length === 1 && q[0]!.length <= 3 && /^\d/.test(words[i + 1] ?? "")) continue;
+                at = at < 0 ? i : Math.min(at, i);
+              }
+              if (at >= 0) hits.push({ c, at });
+            }
+            hits.sort((a, b) => a.at - b.at);
+            hits.forEach(({ c }, idx) => {
+              hitsInCell.add(c);
+              if (idx === 0) deriveTasks(c, sentence, prefix, wk, r + 1); // the sentence's subject course owns its tasks
+              if (!prefix && /\b(only if|unless|otherwise|replacement)\b/i.test(sentence)) c.condition ??= clipText(sentence, 300);
+            });
+          }
+          for (const c of hitsInCell) {
+            const set = weeksOf.get(c) ?? new Set<number>();
+            set.add(wk);
+            weeksOf.set(c, set);
+          }
+          const meaningful = prefix
+            ? WORK_PREFIX.test(prefix)
+            : /\b(open|finish|chapters?|final|assignment|submit)\b/i.test(body) && !/^(no new|confirm|do not)/i.test(body.trim());
+          if (hitsInCell.size === 0 && meaningful && GENERIC_LANE.test(body.trim())) {
+            genericLane.push({ row: r + 1, lane: cellText(headerCells[lc]).slice(0, 60) });
+          } else if (hitsInCell.size === 0 && meaningful) {
+            warn(
+              "COMPANION_ROW_UNMATCHED",
+              "warning",
+              `${gridName} row ${r + 1}, lane "${cellText(headerCells[lc])}": scheduled work ("${raw.slice(0, 90)}") names no course found in this workbook's course tables. It was NOT added to the plan; confirm whether a course is missing.`,
+              { sheet: gridName, row: r + 1, column: cellText(headerCells[lc]).slice(0, 60) },
+              `lane-${lc}`,
+            );
+          }
+        }
+      }
+      if (genericLane.length > 0) {
+        warn(
+          "COMPANION_ROW_UNMATCHED",
+          "info",
+          `${genericLane.length} lane entr${genericLane.length === 1 ? "y" : "ies"} in ${gridName} (first at row ${genericLane[0]!.row}, lane "${genericLane[0]!.lane}") are generic capacity placeholders ("second quiz course", "light second quiz") that name no course. They were not imported as plan items.`,
+          { sheet: gridName, row: genericLane[0]!.row, column: genericLane[0]!.lane },
+          "generic-lane",
+        );
+      }
+      for (const [c, weeks] of weeksOf) {
+        const lo = Math.min(...weeks);
+        const hi = Math.max(...weeks);
+        c.weekFrom = Math.min(c.weekFrom ?? lo, lo);
+        c.weekTo = Math.max(c.weekTo ?? hi, hi);
+        widen(c, weekStart.get(lo) ?? null, weekEnd.get(hi) ?? null);
+      }
     }
   }
 
@@ -452,19 +868,25 @@ export function parseExecution(wb: WorkbookData): ExecData {
     }
   }
 
-  // 5) milestone lists
-  for (const c of sheets) {
-    if (c.kind !== "milestones") continue;
-    out.sheetsRead.push(c.sheet.name);
-    for (let r = c.loc.headerRow + 1; r < c.sheet.rows.length; r++) {
-      const cells = c.sheet.rows[r] ?? [];
-      if (rowIsBlank(cells)) continue;
-      const title = cellText(cell(c.loc, cells, "title"));
-      if (!title) continue;
-      out.rowsRead++;
-      const d = parseDateCell(cell(c.loc, cells, "date"));
-      if (d.invalid) warn("INVALID_DATE", "warning", `${c.sheet.name} row ${r + 1}: date ${JSON.stringify(cellText(cell(c.loc, cells, "date")))} could not be read.`, { sheet: c.sheet.name, row: r + 1, column: "Date" });
-      addMilestone(title, d.value, c.sheet.name, r + 1);
+  // 5) milestone lists and date constants ("Constant | Value", "Checkpoint | When", "Date | Milestone")
+  for (const sh of wb.sheets) {
+    if (isLedgerSheet(sh)) continue;
+    for (const t of findTables<MilestoneField>(sh, MILESTONE_SPEC, ["date", "title"])) {
+      for (let r = t.headerRow + 1; r < t.endRow; r++) {
+        const cells = sh.rows[r] ?? [];
+        const title = cellText(cells[t.columns.get("title")!]);
+        if (!title) continue;
+        out.rowsRead++;
+        const rawDate = cells[t.columns.get("date")!];
+        const parsed = parseDateCell(rawDate);
+        let date = parsed.value;
+        if (!date && cellText(rawDate)) date = datesInText(cellText(rawDate), planYear)[0]?.iso ?? null;
+        if (!date && cellText(rawDate)) {
+          warn("INVALID_DATE", "warning", `${sh.name} row ${r + 1}: date ${JSON.stringify(cellText(rawDate))} could not be read.`, { sheet: sh.name, row: r + 1, column: "Date" });
+        }
+        addMilestone(title, date, sh.name, r + 1);
+        if (!out.sheetsRead.includes(sh.name)) out.sheetsRead.push(sh.name);
+      }
     }
   }
 
@@ -520,6 +942,7 @@ function convertStandalone(wb: WorkbookData, ctx: AdapterContext): ConversionRes
       plannedEnd: c.plannedEnd,
       dependsOn: [],
       planStatus: "planned",
+      condition: c.condition ? c.condition.slice(0, 500) : null,
       provenance: c.rows.slice(0, 10).map((r) => ({ file, sheet: r.sheet.slice(0, 120), row: r.row, role: "execution" as const })),
       tasks: c.tasks.map((t, k) => ({ key: t.key, kind: t.kind, title: t.title, sequence: k + 1, dueDate: t.dueDate, week: t.week })),
     };

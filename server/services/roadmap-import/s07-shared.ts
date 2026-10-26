@@ -126,7 +126,7 @@ export function stripProviderPrefix(s: string): string {
   return s.replace(PROVIDER_PREFIX, "").trim();
 }
 
-function subjectKey(subject: string): string {
+export function subjectKey(subject: string): string {
   const n = norm(subject);
   return SUBJECT_ALIASES[n] ?? n;
 }
@@ -309,6 +309,16 @@ export function datesInText(text: string, base: string | number | null): DateMen
 
 /** A range like "Tue 1 Sep – Mon 7 Sep" -> [start, end]. */
 export function dateRange(text: string, base: string | number | null): { start: string; end: string } | null {
+  // "Sep 1–7": one month, a bare second day (the second day has no month of its own).
+  const short = new RegExp(`\\b${MONTH_RE}\\.?\\s+(\\d{1,2})\\s*[–-]\\s*(\\d{1,2})\\b(?!\\s*${MONTH_RE})`, "i").exec(text);
+  if (short) {
+    const startHit = datesInText(`${short[1]} ${short[2]}`, base)[0];
+    if (startHit) {
+      const [y, m] = startHit.iso.split("-").map(Number) as [number, number];
+      const end = isoOf(y, m, Number(short[3]));
+      if (end && end >= startHit.iso) return { start: startHit.iso, end };
+    }
+  }
   const first = datesInText(text, base);
   if (first.length === 0) return null;
   const start = first[0]!.iso;
@@ -346,3 +356,42 @@ export const CONVERSION_ONLY_CODES: ReadonlySet<RoadmapExceptionCode> = new Set<
   "PACKAGE_INVALID",
   ...S07_CONVERSION_CODES,
 ]);
+
+
+// ── loose title aliases (companion matching and lane scanning) ───────────────
+
+const LEADING_NOISE: readonly (readonly string[])[] = [["u", "s"], ["introduction", "to"], ["intro", "to"]];
+
+/** Lowercase alphanumeric words of `text` ("U.S. History I" -> ["u","s","history","i"]). */
+export function wordsOf(text: string): string[] {
+  return text
+    .normalize("NFKD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter(Boolean);
+}
+
+/**
+ * Alternative normalised keys for a course title, so "U.S. Government / American Government",
+ * "U.S. Government" and "Government" meet, as do "Introduction to Information Technology" and
+ * "Information Technology". Keys are `norm`-style (no spaces); callers compare equality only.
+ */
+export function titleAliasKeys(title: string): string[] {
+  const out = new Set<string>();
+  const parts = [title, ...title.split(/\s*[\/—–:]\s*/), title.split(/\s+for\s+/i)[0] ?? title];
+  for (const part of parts) {
+    const clean = part.replace(/\([^)]*\)/g, " ");
+    let words = wordsOf(clean);
+    if (words.length === 0) continue;
+    out.add(words.join(""));
+    for (const lead of LEADING_NOISE) {
+      if (words.length > lead.length && lead.every((w, i) => words[i] === w)) {
+        out.add(words.slice(lead.length).join(""));
+        if (words.length - lead.length >= 1) words = words.slice(lead.length);
+      }
+    }
+    out.add(words.join(""));
+  }
+  return [...out].filter((k) => k.length >= 6);
+}

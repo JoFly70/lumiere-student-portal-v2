@@ -9,6 +9,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { convertWorkbook, convertWorkbookPair } from "../../server/services/roadmap-import";
 import type { ConversionResult, RoadmapContent, RoadmapItem } from "../../shared/student-roadmap-contract";
+import { titleAliasKeys } from "../../server/services/roadmap-import/s07-shared";
 import { countExecEph, countMaster, countRut, identityTokens } from "./count-originals";
 
 const args = process.argv.slice(2);
@@ -37,7 +38,7 @@ const aliasTok = (t: string): string => {
   for (const [re, to] of ALIAS) if (re.test(t)) return t.replace(re, to);
   return t;
 };
-const tokensOf = (s: string): Set<string> => new Set(identityTokens(s).map(aliasTok));
+const tokensOf = (s: string): Set<string> => new Set([...identityTokens(s).map(aliasTok), ...titleAliasKeys(s).map(aliasTok)]);
 const itemTokens = (i: RoadmapItem): Set<string> => {
   const t = new Set<string>();
   for (const s of [i.title, i.code ?? "", `${i.code ?? ""} ${i.title}`]) for (const x of tokensOf(s)) t.add(x);

@@ -14,7 +14,7 @@ import { finalizeContent } from "./finalize";
 import { executionSheets, parseExecution, EXECUTION_V1_ID, type ExecCourse } from "./execution-v1";
 import { ExceptionCollector, type WorkbookData } from "./types";
 import { norm, slug } from "./util";
-import { CONVERSION_ONLY_CODES, familyOf, looseCourseIds, parseCourseText } from "./s07-shared";
+import { CONVERSION_ONLY_CODES, clipText, familyOf, looseCourseIds, parseCourseText, titleAliasKeys } from "./s07-shared";
 
 export interface CompanionContext {
   readonly masterFileName: string | null;
@@ -63,6 +63,7 @@ export function mergeCompanionConversion(master: ConversionResult, execution: Wo
     }
     push(byTitle, norm(item.title), item);
     for (const id of parseCourseText(item.title).ids) push(byTitle, id, item);
+    for (const id of titleAliasKeys(item.title)) push(byTitle, id, item);
   }
   const compatible = (course: ExecCourse, item: RoadmapItem): boolean => {
     const a = familyOf(course.provider);
@@ -75,7 +76,7 @@ export function mergeCompanionConversion(master: ConversionResult, execution: Wo
       const hit = byCode.get(id)?.find((i) => compatible(course, i));
       if (hit) return hit;
     }
-    for (const id of course.ids) {
+    for (const id of [...course.ids, ...titleAliasKeys(course.title)]) {
       const hit = byTitle.get(id)?.find((i) => compatible(course, i));
       if (hit) return hit;
     }
@@ -128,6 +129,16 @@ export function mergeCompanionConversion(master: ConversionResult, execution: Wo
       }
     }
     item.tasks = tasks.map((t, i) => ({ ...t, sequence: i + 1 }));
+    if (course.condition && !item.condition) {
+      item.condition = clipText(course.condition, 500);
+      ex.add(
+        "CONDITIONAL_ALLOCATION",
+        "warning",
+        `"${item.title}" is conditional in the execution workbook ("${course.condition.slice(0, 160)}"). Confirm the plan and what the student is told.`,
+        ref,
+        "condition",
+      );
+    }
     const prov = course.rows.slice(0, 3).map((r) => ({ file, sheet: r.sheet.slice(0, 120), row: r.row, role: "execution" as const }));
     item.provenance = [...item.provenance, ...prov].slice(0, 10);
     ex.add(
