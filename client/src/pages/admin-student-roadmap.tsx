@@ -28,6 +28,10 @@ type PendingImport = { kind: "file"; file: File } | { kind: "package"; pkg: unkn
 
 const SEVERITY_LABEL = { blocking: "Blocking — must be fixed", warning: "Warnings — acknowledge before publishing", info: "Information" } as const;
 
+function plural(n: number, word: string): string {
+  return `${n} ${word}${n === 1 ? "" : "s"}`;
+}
+
 function formatDate(value: string | null | undefined): string {
   return value ? value.slice(0, 10) : "—";
 }
@@ -156,7 +160,7 @@ export default function AdminStudentRoadmap() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
+    <div className="mx-auto w-full min-w-0 max-w-6xl space-y-6">
       <Link href={`/admin/students/${encodeURIComponent(studentId)}`} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" />Back to student</Link>
       <header className="border-b border-border/70 pb-6">
         <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary">Lumière / student roadmap</p>
@@ -182,8 +186,8 @@ export default function AdminStudentRoadmap() {
           <CardContent className="space-y-2 text-sm">
             {state.published ? (
               <>
-                <p className="text-lg font-semibold">{state.published.title}</p>
-                <p className="text-muted-foreground">Version {state.published.versionNumber} · published {formatDate(state.published.publishedAt)}{state.published.publishedBy ? ` by ${state.published.publishedBy}` : ""}</p>
+                <p className="break-words text-lg font-semibold">{state.published.title}</p>
+                <p className="break-words text-muted-foreground">Version {state.published.versionNumber} · published {formatDate(state.published.publishedAt)}</p>
                 <p className="text-muted-foreground">{state.published.content.items.length} items in {state.published.content.phases.length} phases</p>
                 {!draft && (
                   <Button type="button" size="sm" variant="outline" disabled={busy !== null} onClick={() => void run("from-published", () => adminRoadmapApi.fromPublished(studentId), "Opened a draft copied from the published version.")}>
@@ -200,7 +204,7 @@ export default function AdminStudentRoadmap() {
             {state.versions.length === 0 ? <p className="text-sm text-muted-foreground">No versions yet.</p> : (
               <ul className="divide-y text-sm">
                 {state.versions.map((v) => (
-                  <li key={v.versionId} className="flex items-center justify-between gap-2 py-2">
+                  <li key={v.versionId} className="flex flex-wrap items-center justify-between gap-2 py-2">
                     <span>v{v.versionNumber} · {v.title}</span>
                     <span className="flex items-center gap-2 text-muted-foreground"><Badge variant="outline">{v.status}</Badge>{formatDate(v.publishedAt ?? v.createdAt)}</span>
                   </li>
@@ -419,7 +423,7 @@ function DraftReview(props: DraftReviewProps) {
           </CardDescription>
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground">
-          {draft.content.objectives.length} objectives · {draft.content.phases.length} phases · {draft.content.items.length} items · {draft.content.milestones.length} milestones
+          {plural(draft.content.objectives.length, "objective")} · {plural(draft.content.phases.length, "phase")} · {plural(draft.content.items.length, "item")} · {plural(draft.content.milestones.length, "milestone")}
         </CardContent>
       </Card>
 
@@ -527,16 +531,16 @@ function DraftReview(props: DraftReviewProps) {
               <table className="w-full text-left text-sm">
                 <caption className="sr-only">Draft roadmap items</caption>
                 <thead className="text-xs uppercase tracking-wide text-muted-foreground">
-                  <tr><th scope="col" className="py-2 pr-3">Item</th><th scope="col" className="py-2 pr-3">Phase</th><th scope="col" className="py-2 pr-3">Dates</th><th scope="col" className="py-2 pr-3">Status</th><th scope="col" className="py-2"><span className="sr-only">Actions</span></th></tr>
+                  <tr><th scope="col" className="py-2 pr-3">Item</th><th scope="col" className="hidden py-2 pr-3 sm:table-cell">Phase</th><th scope="col" className="hidden py-2 pr-3 md:table-cell">Dates</th><th scope="col" className="py-2 pr-3">Status</th><th scope="col" className="py-2"><span className="sr-only">Actions</span></th></tr>
                 </thead>
                 <tbody className="divide-y">
                   {draft.content.items.map((item) => {
                     const issues = itemIssues.get(item.key) ?? [];
                     return (
                       <tr key={item.key} className={removedProgress.has(item.key) ? "bg-amber-500/10" : ""}>
-                        <td className="py-2 pr-3"><span className="font-medium">{item.title}</span>{item.code && <span className="text-muted-foreground"> · {item.code}</span>}<span className="block font-mono text-xs text-muted-foreground">{item.key}</span></td>
-                        <td className="py-2 pr-3">{draft.content.phases.find((p) => p.key === item.phaseKey)?.title ?? item.phaseKey}</td>
-                        <td className="py-2 pr-3 whitespace-nowrap">{formatDate(item.plannedStart)} → {formatDate(item.plannedEnd)}</td>
+                        <td className="py-2 pr-3"><span className="font-medium">{item.title}</span>{item.code && <span className="text-muted-foreground"> · {item.code}</span>}<span className="block break-all font-mono text-xs text-muted-foreground">{item.key}</span><span className="block text-xs text-muted-foreground sm:hidden">{phaseTitle(draft, item)} · {formatDate(item.plannedStart)} → {formatDate(item.plannedEnd)}</span></td>
+                        <td className="hidden py-2 pr-3 sm:table-cell">{phaseTitle(draft, item)}<span className="block text-xs text-muted-foreground md:hidden">{formatDate(item.plannedStart)} → {formatDate(item.plannedEnd)}</span></td>
+                        <td className="hidden whitespace-nowrap py-2 pr-3 md:table-cell">{formatDate(item.plannedStart)} → {formatDate(item.plannedEnd)}</td>
                         <td className="py-2 pr-3"><Badge variant="outline">{item.planStatus}</Badge>{issues.length > 0 && <Badge variant={issues.some((i) => i.severity === "blocking") ? "destructive" : "secondary"} className="ml-1">{issues.length} issue{issues.length === 1 ? "" : "s"}</Badge>}</td>
                         <td className="py-2 text-right"><Button type="button" size="sm" variant="outline" disabled={busy !== null} onClick={() => props.onEdit(item)} aria-label={`Edit ${item.title}`}>Edit</Button></td>
                       </tr>
@@ -552,6 +556,10 @@ function DraftReview(props: DraftReviewProps) {
   );
 }
 
+function phaseTitle(draft: AdminRoadmapDraftView, item: RoadmapItem): string {
+  return draft.content.phases.find((p) => p.key === item.phaseKey)?.title ?? item.phaseKey;
+}
+
 function ExceptionRow({ e }: { e: RoadmapException }) {
   return (
     <li className="p-3 text-sm">
@@ -562,7 +570,9 @@ function ExceptionRow({ e }: { e: RoadmapException }) {
 }
 
 function DiffList({ title, rows }: { title: string; rows: string[] }) {
-  return <div><h3 className="mb-1 font-semibold">{title}</h3><ul className="list-disc space-y-0.5 pl-5">{rows.map((r) => <li key={r}>{r}</li>)}</ul></div>;
+  const list = <ul className="list-disc space-y-0.5 pl-5 break-words">{rows.map((r) => <li key={r}>{r}</li>)}</ul>;
+  if (rows.length <= 5) return <div><h3 className="mb-1 font-semibold">{title}</h3>{list}</div>;
+  return <details><summary className="cursor-pointer font-semibold">{title} ({rows.length})</summary><div className="mt-1">{list}</div></details>;
 }
 
 /** Deliberately compact, read-only: phases -> items with stage. The polished student UI lives elsewhere. */

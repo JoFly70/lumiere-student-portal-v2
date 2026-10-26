@@ -1,0 +1,845 @@
+{
+  "studentId": "26bd0390-420d-4035-a009-36f7562ec7a6",
+  "planId": "4d8561f9-78b2-4171-96ce-ca13866ed66b",
+  "published": null,
+  "draft": {
+    "versionId": "3952633b-e188-4f49-adfe-2008229fb428",
+    "versionNumber": 1,
+    "draftRevision": 0,
+    "baseVersionId": null,
+    "content": {
+      "items": [
+        {
+          "key": "primary-eng101",
+          "code": "ENG101",
+          "hold": null,
+          "kind": "course",
+          "tasks": [
+            {
+              "key": "challenge-1",
+              "kind": "challenge",
+              "title": "Challenge 1",
+              "sequence": 1
+            },
+            {
+              "key": "challenge-2",
+              "kind": "challenge",
+              "title": "Challenge 2",
+              "sequence": 2
+            },
+            {
+              "key": "challenge-3",
+              "kind": "challenge",
+              "title": "Challenge 3",
+              "sequence": 3
+            },
+            {
+              "key": "challenge-4",
+              "kind": "challenge",
+              "title": "Challenge 4",
+              "sequence": 4
+            },
+            {
+              "key": "challenge-5",
+              "kind": "challenge",
+              "title": "Challenge 5",
+              "sequence": 5
+            },
+            {
+              "key": "milestone-1",
+              "kind": "milestone",
+              "title": "Milestone 1",
+              "sequence": 6
+            },
+            {
+              "key": "milestone-2",
+              "kind": "milestone",
+              "title": "Milestone 2",
+              "sequence": 7
+            },
+            {
+              "key": "milestone-3",
+              "kind": "milestone",
+              "title": "Milestone 3",
+              "sequence": 8
+            },
+            {
+              "key": "touchstone-1",
+              "kind": "touchstone",
+              "title": "Touchstone 1",
+              "sequence": 9
+            }
+          ],
+          "title": "English Composition",
+          "credits": "3",
+          "approval": null,
+          "phaseKey": "pending-evaluation",
+          "provider": "Sophia",
+          "sequence": 1,
+          "dependsOn": [],
+          "staffNote": null,
+          "planStatus": "planned",
+          "plannedEnd": "2026-11-29",
+          "institution": "Pathways State University",
+          "studentNote": null,
+          "objectiveKey": "primary",
+          "plannedStart": "2026-11-02",
+          "alternativeOf": null
+        },
+        {
+          "key": "primary-hist201",
+          "code": "HIST201",
+          "hold": null,
+          "kind": "course",
+          "tasks": [],
+          "title": "World History",
+          "credits": "3",
+          "approval": null,
+          "phaseKey": "pending-evaluation",
+          "provider": "Study.com",
+          "sequence": 2,
+          "dependsOn": [],
+          "staffNote": "Source allocation: foreign transcript lines 14-16 (synthetic).\nCondition: Plan this only if the evaluation does not already award humanities credit for the foreign history courses.",
+          "planStatus": "planned",
+          "plannedEnd": "2026-12-06",
+          "institution": "Pathways State University",
+          "studentNote": null,
+          "objectiveKey": "primary",
+          "plannedStart": "2026-11-02",
+          "alternativeOf": null
+        },
+        {
+          "key": "primary-math120",
+          "code": "MATH120",
+          "hold": null,
+          "kind": "course",
+          "tasks": [
+            {
+              "key": "challenge-1",
+              "kind": "challenge",
+              "title": "Challenge 1",
+              "sequence": 1
+            },
+            {
+              "key": "challenge-2",
+              "kind": "challenge",
+              "title": "Challenge 2",
+              "sequence": 2
+            },
+            {
+              "key": "challenge-3",
+              "kind": "challenge",
+              "title": "Challenge 3",
+              "sequence": 3
+            },
+            {
+              "key": "challenge-4",
+              "kind": "challenge",
+              "title": "Challenge 4",
+              "sequence": 4
+            },
+            {
+              "key": "challenge-5",
+              "kind": "challenge",
+              "title": "Challenge 5",
+              "sequence": 5
+            },
+            {
+              "key": "challenge-6",
+              "kind": "challenge",
+              "title": "Challenge 6",
+              "sequence": 6
+            },
+            {
+              "key": "milestone-1",
+              "kind": "milestone",
+              "title": "Milestone 1",
+              "sequence": 7
+            },
+            {
+              "key": "milestone-2",
+              "kind": "milestone",
+              "title": "Milestone 2",
+              "sequence": 8
+            },
+            {
+              "key": "milestone-3",
+              "kind": "milestone",
+              "title": "Milestone 3",
+              "sequence": 9
+            },
+            {
+              "key": "milestone-4",
+              "kind": "milestone",
+              "title": "Milestone 4",
+              "sequence": 10
+            },
+            {
+              "key": "touchstone-1",
+              "kind": "touchstone",
+              "title": "Touchstone 1",
+              "sequence": 11
+            },
+            {
+              "key": "touchstone-2",
+              "kind": "touchstone",
+              "title": "Touchstone 2",
+              "sequence": 12
+            }
+          ],
+          "title": "College Algebra",
+          "credits": "3",
+          "approval": null,
+          "phaseKey": "pending-evaluation",
+          "provider": "Sophia",
+          "sequence": 3,
+          "dependsOn": [],
+          "staffNote": "Condition: Waived if the evaluator maps the foreign mathematics module to college algebra.",
+          "planStatus": "planned",
+          "plannedEnd": "2027-01-03",
+          "institution": "Pathways State University",
+          "studentNote": null,
+          "objectiveKey": "primary",
+          "plannedStart": "2026-12-07",
+          "alternativeOf": null
+        },
+        {
+          "key": "primary-bio101",
+          "code": "BIO101",
+          "hold": {
+            "reason": "Awaiting foreign credential evaluation of the science modules."
+          },
+          "kind": "course",
+          "tasks": [],
+          "title": "Introduction to Biology",
+          "credits": "4",
+          "approval": null,
+          "phaseKey": "pending-evaluation",
+          "provider": "Study.com",
+          "sequence": 4,
+          "dependsOn": [],
+          "staffNote": null,
+          "planStatus": "hold",
+          "plannedEnd": "2027-01-10",
+          "institution": "Pathways State University",
+          "studentNote": null,
+          "objectiveKey": "primary",
+          "plannedStart": "2026-12-07",
+          "alternativeOf": null
+        },
+        {
+          "key": "primary-psy101",
+          "code": "PSY101",
+          "hold": null,
+          "kind": "course",
+          "tasks": [
+            {
+              "key": "challenge-1",
+              "kind": "challenge",
+              "title": "Challenge 1",
+              "sequence": 1
+            },
+            {
+              "key": "challenge-2",
+              "kind": "challenge",
+              "title": "Challenge 2",
+              "sequence": 2
+            },
+            {
+              "key": "challenge-3",
+              "kind": "challenge",
+              "title": "Challenge 3",
+              "sequence": 3
+            },
+            {
+              "key": "challenge-4",
+              "kind": "challenge",
+              "title": "Challenge 4",
+              "sequence": 4
+            },
+            {
+              "key": "challenge-5",
+              "kind": "challenge",
+              "title": "Challenge 5",
+              "sequence": 5
+            },
+            {
+              "key": "milestone-1",
+              "kind": "milestone",
+              "title": "Milestone 1",
+              "sequence": 6
+            },
+            {
+              "key": "milestone-2",
+              "kind": "milestone",
+              "title": "Milestone 2",
+              "sequence": 7
+            },
+            {
+              "key": "milestone-3",
+              "kind": "milestone",
+              "title": "Milestone 3",
+              "sequence": 8
+            },
+            {
+              "key": "touchstone-1",
+              "kind": "touchstone",
+              "title": "Touchstone 1",
+              "sequence": 9
+            },
+            {
+              "key": "touchstone-2",
+              "kind": "touchstone",
+              "title": "Touchstone 2",
+              "sequence": 10
+            }
+          ],
+          "title": "Introduction to Psychology",
+          "credits": "3",
+          "approval": null,
+          "phaseKey": "provider-execution",
+          "provider": "Sophia",
+          "sequence": 5,
+          "dependsOn": [],
+          "staffNote": null,
+          "planStatus": "planned",
+          "plannedEnd": "2027-02-07",
+          "institution": "Pathways State University",
+          "studentNote": null,
+          "objectiveKey": "primary",
+          "plannedStart": "2027-01-11",
+          "alternativeOf": null
+        },
+        {
+          "key": "primary-soc101",
+          "code": "SOC101",
+          "hold": null,
+          "kind": "course",
+          "tasks": [
+            {
+              "key": "challenge-1",
+              "kind": "challenge",
+              "title": "Challenge 1",
+              "sequence": 1
+            },
+            {
+              "key": "challenge-2",
+              "kind": "challenge",
+              "title": "Challenge 2",
+              "sequence": 2
+            },
+            {
+              "key": "challenge-3",
+              "kind": "challenge",
+              "title": "Challenge 3",
+              "sequence": 3
+            },
+            {
+              "key": "challenge-4",
+              "kind": "challenge",
+              "title": "Challenge 4",
+              "sequence": 4
+            },
+            {
+              "key": "milestone-1",
+              "kind": "milestone",
+              "title": "Milestone 1",
+              "sequence": 5
+            },
+            {
+              "key": "milestone-2",
+              "kind": "milestone",
+              "title": "Milestone 2",
+              "sequence": 6
+            },
+            {
+              "key": "milestone-3",
+              "kind": "milestone",
+              "title": "Milestone 3",
+              "sequence": 7
+            },
+            {
+              "key": "touchstone-1",
+              "kind": "touchstone",
+              "title": "Touchstone 1",
+              "sequence": 8
+            }
+          ],
+          "title": "Introduction to Sociology",
+          "credits": "3",
+          "approval": null,
+          "phaseKey": "provider-execution",
+          "provider": "Sophia",
+          "sequence": 6,
+          "dependsOn": [],
+          "staffNote": "Condition: Counts toward the social-science area only when the foreign sociology credits are NOT accepted.",
+          "planStatus": "planned",
+          "plannedEnd": "2027-02-07",
+          "institution": "Pathways State University",
+          "studentNote": null,
+          "objectiveKey": "primary",
+          "plannedStart": "2027-01-11",
+          "alternativeOf": null
+        },
+        {
+          "key": "primary-bus110",
+          "code": "BUS110",
+          "hold": null,
+          "kind": "course",
+          "tasks": [
+            {
+              "key": "challenge-1",
+              "kind": "challenge",
+              "title": "Challenge 1",
+              "sequence": 1
+            },
+            {
+              "key": "challenge-2",
+              "kind": "challenge",
+              "title": "Challenge 2",
+              "sequence": 2
+            },
+            {
+              "key": "challenge-3",
+              "kind": "challenge",
+              "title": "Challenge 3",
+              "sequence": 3
+            },
+            {
+              "key": "challenge-4",
+              "kind": "challenge",
+              "title": "Challenge 4",
+              "sequence": 4
+            },
+            {
+              "key": "milestone-1",
+              "kind": "milestone",
+              "title": "Milestone 1",
+              "sequence": 5
+            },
+            {
+              "key": "milestone-2",
+              "kind": "milestone",
+              "title": "Milestone 2",
+              "sequence": 6
+            },
+            {
+              "key": "milestone-3",
+              "kind": "milestone",
+              "title": "Milestone 3",
+              "sequence": 7
+            },
+            {
+              "key": "touchstone-1",
+              "kind": "touchstone",
+              "title": "Touchstone 1",
+              "sequence": 8
+            }
+          ],
+          "title": "Introduction to Business",
+          "credits": "3",
+          "approval": null,
+          "phaseKey": "provider-execution",
+          "provider": "Sophia",
+          "sequence": 7,
+          "dependsOn": [
+            "primary-eng101"
+          ],
+          "staffNote": null,
+          "planStatus": "planned",
+          "plannedEnd": "2027-03-07",
+          "institution": "Pathways State University",
+          "studentNote": null,
+          "objectiveKey": "primary",
+          "plannedStart": "2027-02-08",
+          "alternativeOf": null
+        },
+        {
+          "key": "primary-econ101",
+          "code": "ECON101",
+          "hold": null,
+          "kind": "course",
+          "tasks": [],
+          "title": "Principles of Economics",
+          "credits": "3",
+          "approval": null,
+          "phaseKey": "provider-execution",
+          "provider": "Study.com",
+          "sequence": 8,
+          "dependsOn": [],
+          "staffNote": "Condition: Source allocation pending: either the foreign economics course or this provider course will be applied, not both.",
+          "planStatus": "planned",
+          "plannedEnd": "2027-03-14",
+          "institution": "Pathways State University",
+          "studentNote": null,
+          "objectiveKey": "primary",
+          "plannedStart": "2027-02-08",
+          "alternativeOf": null
+        },
+        {
+          "key": "primary-elec-a",
+          "code": "ELEC-A",
+          "hold": {
+            "reason": "Elective choice depends on the final evaluation outcome."
+          },
+          "kind": "course",
+          "tasks": [],
+          "title": "Free elective (to be assigned)",
+          "credits": "3",
+          "approval": null,
+          "phaseKey": "provider-execution",
+          "provider": null,
+          "sequence": 9,
+          "dependsOn": [],
+          "staffNote": null,
+          "planStatus": "hold",
+          "plannedEnd": null,
+          "institution": "Pathways State University",
+          "studentNote": null,
+          "objectiveKey": "primary",
+          "plannedStart": null,
+          "alternativeOf": null
+        },
+        {
+          "key": "primary-review",
+          "code": "REVIEW",
+          "hold": null,
+          "kind": "task",
+          "tasks": [],
+          "title": "Re-evaluate the plan when the credential evaluation arrives",
+          "credits": null,
+          "approval": null,
+          "phaseKey": "provider-execution",
+          "provider": null,
+          "sequence": 10,
+          "dependsOn": [],
+          "staffNote": null,
+          "planStatus": "planned",
+          "plannedEnd": "2027-03-26",
+          "institution": null,
+          "studentNote": "We will update your roadmap as soon as the evaluation is received.",
+          "objectiveKey": "primary",
+          "plannedStart": "2027-03-15",
+          "alternativeOf": null
+        }
+      ],
+      "title": "Scenario M — evaluation pending plan",
+      "phases": [
+        {
+          "key": "pending-evaluation",
+          "title": "Pending evaluation",
+          "sequence": 1
+        },
+        {
+          "key": "provider-execution",
+          "title": "Provider execution",
+          "sequence": 2
+        }
+      ],
+      "summary": "Foreign credits are awaiting evaluation. Several planned courses depend on how credits are allocated.",
+      "milestones": [
+        {
+          "key": "m-eval-received",
+          "kind": "checkpoint",
+          "title": "Credential evaluation received",
+          "targetDate": "2027-01-15",
+          "objectiveKey": "primary",
+          "afterItemKeys": []
+        }
+      ],
+      "objectives": [
+        {
+          "key": "primary",
+          "kind": "primary",
+          "note": null,
+          "title": "Bachelor of Arts in Liberal Studies",
+          "status": "active",
+          "institution": "Pathways State University",
+          "credentialLabel": "BA",
+          "linkedToProgramAssignment": true
+        }
+      ],
+      "contentVersion": "roadmap-content/1"
+    },
+    "exceptions": [
+      {
+        "key": "UNMAPPED_COLUMN:Plan!T",
+        "ref": {
+          "sheet": "Plan",
+          "column": "T"
+        },
+        "code": "UNMAPPED_COLUMN",
+        "message": "Column \"Evaluator Ref\" (T) is not part of the template and was ignored.",
+        "severity": "info"
+      },
+      {
+        "key": "ROW_SKIPPED:Plan!14",
+        "ref": {
+          "row": 14,
+          "sheet": "Plan"
+        },
+        "code": "ROW_SKIPPED",
+        "message": "Row 14 repeats the column headers and was skipped.",
+        "severity": "info"
+      },
+      {
+        "key": "GENERATED_ITEM_KEY:primary-eng101:Plan Key",
+        "ref": {
+          "row": 2,
+          "sheet": "Plan",
+          "column": "Plan Key",
+          "itemKey": "primary-eng101"
+        },
+        "code": "GENERATED_ITEM_KEY",
+        "message": "Row 2 has no Plan Key; the key \"primary-eng101\" was generated from the objective and code. Add a Plan Key to keep identity stable if the title changes.",
+        "severity": "info"
+      },
+      {
+        "key": "GENERATED_ITEM_KEY:primary-hist201:Plan Key",
+        "ref": {
+          "row": 3,
+          "sheet": "Plan",
+          "column": "Plan Key",
+          "itemKey": "primary-hist201"
+        },
+        "code": "GENERATED_ITEM_KEY",
+        "message": "Row 3 has no Plan Key; the key \"primary-hist201\" was generated from the objective and code. Add a Plan Key to keep identity stable if the title changes.",
+        "severity": "info"
+      },
+      {
+        "key": "CONDITIONAL_ALLOCATION:primary-hist201:Condition",
+        "ref": {
+          "row": 3,
+          "sheet": "Plan",
+          "column": "Condition",
+          "itemKey": "primary-hist201"
+        },
+        "code": "CONDITIONAL_ALLOCATION",
+        "message": "\"World History\" has a condition (\"Plan this only if the evaluation does not already award humanities credit for the foreign history courses.\"). Conditional credit allocation is not modelled; confirm the plan is right and note the condition for the student.",
+        "severity": "warning"
+      },
+      {
+        "key": "GENERATED_ITEM_KEY:primary-math120:Plan Key",
+        "ref": {
+          "row": 4,
+          "sheet": "Plan",
+          "column": "Plan Key",
+          "itemKey": "primary-math120"
+        },
+        "code": "GENERATED_ITEM_KEY",
+        "message": "Row 4 has no Plan Key; the key \"primary-math120\" was generated from the objective and code. Add a Plan Key to keep identity stable if the title changes.",
+        "severity": "info"
+      },
+      {
+        "key": "CONDITIONAL_ALLOCATION:primary-math120:Condition",
+        "ref": {
+          "row": 4,
+          "sheet": "Plan",
+          "column": "Condition",
+          "itemKey": "primary-math120"
+        },
+        "code": "CONDITIONAL_ALLOCATION",
+        "message": "\"College Algebra\" has a condition (\"Waived if the evaluator maps the foreign mathematics module to college algebra.\"). Conditional credit allocation is not modelled; confirm the plan is right and note the condition for the student.",
+        "severity": "warning"
+      },
+      {
+        "key": "GENERATED_ITEM_KEY:primary-bio101:Plan Key",
+        "ref": {
+          "row": 5,
+          "sheet": "Plan",
+          "column": "Plan Key",
+          "itemKey": "primary-bio101"
+        },
+        "code": "GENERATED_ITEM_KEY",
+        "message": "Row 5 has no Plan Key; the key \"primary-bio101\" was generated from the objective and code. Add a Plan Key to keep identity stable if the title changes.",
+        "severity": "info"
+      },
+      {
+        "key": "GENERATED_ITEM_KEY:primary-psy101:Plan Key",
+        "ref": {
+          "row": 6,
+          "sheet": "Plan",
+          "column": "Plan Key",
+          "itemKey": "primary-psy101"
+        },
+        "code": "GENERATED_ITEM_KEY",
+        "message": "Row 6 has no Plan Key; the key \"primary-psy101\" was generated from the objective and code. Add a Plan Key to keep identity stable if the title changes.",
+        "severity": "info"
+      },
+      {
+        "key": "GENERATED_ITEM_KEY:primary-soc101:Plan Key",
+        "ref": {
+          "row": 7,
+          "sheet": "Plan",
+          "column": "Plan Key",
+          "itemKey": "primary-soc101"
+        },
+        "code": "GENERATED_ITEM_KEY",
+        "message": "Row 7 has no Plan Key; the key \"primary-soc101\" was generated from the objective and code. Add a Plan Key to keep identity stable if the title changes.",
+        "severity": "info"
+      },
+      {
+        "key": "CONDITIONAL_ALLOCATION:primary-soc101:Condition",
+        "ref": {
+          "row": 7,
+          "sheet": "Plan",
+          "column": "Condition",
+          "itemKey": "primary-soc101"
+        },
+        "code": "CONDITIONAL_ALLOCATION",
+        "message": "\"Introduction to Sociology\" has a condition (\"Counts toward the social-science area only when the foreign sociology credits are NOT accepted.\"). Conditional credit allocation is not modelled; confirm the plan is right and note the condition for the student.",
+        "severity": "warning"
+      },
+      {
+        "key": "GENERATED_ITEM_KEY:primary-bus110:Plan Key",
+        "ref": {
+          "row": 8,
+          "sheet": "Plan",
+          "column": "Plan Key",
+          "itemKey": "primary-bus110"
+        },
+        "code": "GENERATED_ITEM_KEY",
+        "message": "Row 8 has no Plan Key; the key \"primary-bus110\" was generated from the objective and code. Add a Plan Key to keep identity stable if the title changes.",
+        "severity": "info"
+      },
+      {
+        "key": "GENERATED_ITEM_KEY:primary-econ101:Plan Key",
+        "ref": {
+          "row": 9,
+          "sheet": "Plan",
+          "column": "Plan Key",
+          "itemKey": "primary-econ101"
+        },
+        "code": "GENERATED_ITEM_KEY",
+        "message": "Row 9 has no Plan Key; the key \"primary-econ101\" was generated from the objective and code. Add a Plan Key to keep identity stable if the title changes.",
+        "severity": "info"
+      },
+      {
+        "key": "CONDITIONAL_ALLOCATION:primary-econ101:Condition",
+        "ref": {
+          "row": 9,
+          "sheet": "Plan",
+          "column": "Condition",
+          "itemKey": "primary-econ101"
+        },
+        "code": "CONDITIONAL_ALLOCATION",
+        "message": "\"Principles of Economics\" has a condition (\"Source allocation pending: either the foreign economics course or this provider course will be applied, not both.\"). Conditional credit allocation is not modelled; confirm the plan is right and note the condition for the student.",
+        "severity": "warning"
+      },
+      {
+        "key": "GENERATED_ITEM_KEY:primary-elec-a:Plan Key",
+        "ref": {
+          "row": 10,
+          "sheet": "Plan",
+          "column": "Plan Key",
+          "itemKey": "primary-elec-a"
+        },
+        "code": "GENERATED_ITEM_KEY",
+        "message": "Row 10 has no Plan Key; the key \"primary-elec-a\" was generated from the objective and code. Add a Plan Key to keep identity stable if the title changes.",
+        "severity": "info"
+      },
+      {
+        "key": "GENERATED_ITEM_KEY:primary-review:Plan Key",
+        "ref": {
+          "row": 11,
+          "sheet": "Plan",
+          "column": "Plan Key",
+          "itemKey": "primary-review"
+        },
+        "code": "GENERATED_ITEM_KEY",
+        "message": "Row 11 has no Plan Key; the key \"primary-review\" was generated from the objective and code. Add a Plan Key to keep identity stable if the title changes.",
+        "severity": "info"
+      }
+    ],
+    "acknowledgements": [],
+    "diff": {
+      "baseVersionNumber": null,
+      "added": [
+        {
+          "itemKey": "primary-eng101",
+          "title": "English Composition"
+        },
+        {
+          "itemKey": "primary-hist201",
+          "title": "World History"
+        },
+        {
+          "itemKey": "primary-math120",
+          "title": "College Algebra"
+        },
+        {
+          "itemKey": "primary-bio101",
+          "title": "Introduction to Biology"
+        },
+        {
+          "itemKey": "primary-psy101",
+          "title": "Introduction to Psychology"
+        },
+        {
+          "itemKey": "primary-soc101",
+          "title": "Introduction to Sociology"
+        },
+        {
+          "itemKey": "primary-bus110",
+          "title": "Introduction to Business"
+        },
+        {
+          "itemKey": "primary-econ101",
+          "title": "Principles of Economics"
+        },
+        {
+          "itemKey": "primary-elec-a",
+          "title": "Free elective (to be assigned)"
+        },
+        {
+          "itemKey": "primary-review",
+          "title": "Re-evaluate the plan when the credential evaluation arrives"
+        }
+      ],
+      "removed": [],
+      "changed": [],
+      "unchangedCount": 0,
+      "objectivesAdded": [
+        "primary"
+      ],
+      "objectivesRemoved": [],
+      "objectivesChanged": [],
+      "phasesChanged": false,
+      "milestonesChanged": false
+    },
+    "import": {
+      "importId": "7a780e0e-87e4-4eb2-820d-341054d218b4",
+      "templateId": "lumiere-roadmap-v1",
+      "fileName": "scenario-m-pending-evaluation-conditional.xlsx",
+      "fileSha256": "1a7787f539707e6a1649048f93a9e517309780aae1942646e898444d5c3616db",
+      "summary": {
+        "kind": "workbook",
+        "fileName": "scenario-m-pending-evaluation-conditional.xlsx",
+        "rowsRead": 11,
+        "generator": null,
+        "sheetsRead": [
+          "Plan",
+          "Objectives",
+          "Milestones",
+          "About"
+        ],
+        "rowsSkipped": 1,
+        "rowsConverted": 10
+      }
+    },
+    "publishable": false
+  },
+  "versions": [
+    {
+      "versionId": "3952633b-e188-4f49-adfe-2008229fb428",
+      "versionNumber": 1,
+      "status": "draft",
+      "title": "Scenario M — evaluation pending plan",
+      "createdAt": "2026-10-26T18:09:44.021Z",
+      "createdBy": "4862dfbc-5000-4551-8823-5deb1f623a9b",
+      "publishedAt": null,
+      "publishedBy": null,
+      "importId": "7a780e0e-87e4-4eb2-820d-341054d218b4"
+    }
+  ]
+}
