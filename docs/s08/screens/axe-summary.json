@@ -1,0 +1,143 @@
+{
+  "generatedAt": "2026-10-26T19:19:13.030Z",
+  "note": "Renders of synthetic fixtures with stubbed auth and API; not a deployment.",
+  "failures": [],
+  "totalViolations": 7,
+  "results": [
+    {
+      "screen": "01-student-overview-1440.png",
+      "violations": [
+        {
+          "id": "page-has-heading-one",
+          "impact": "moderate",
+          "help": "Page should contain a level-one heading",
+          "nodes": 1,
+          "sample": [
+            {
+              "target": "html",
+              "summary": "Fix all of the following:   Page must have a level-one heading"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "screen": "02-student-awaiting-you-1440.png",
+      "violations": [
+        {
+          "id": "page-has-heading-one",
+          "impact": "moderate",
+          "help": "Page should contain a level-one heading",
+          "nodes": 1,
+          "sample": [
+            {
+              "target": "html",
+              "summary": "Fix all of the following:   Page must have a level-one heading"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "screen": "03-student-new-request-1440.png",
+      "violations": [
+        {
+          "id": "page-has-heading-one",
+          "impact": "moderate",
+          "help": "Page should contain a level-one heading",
+          "nodes": 1,
+          "sample": [
+            {
+              "target": "html",
+              "summary": "Fix all of the following:   Page must have a level-one heading"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "screen": "04-student-resolved-outcome-1440.png",
+      "violations": [
+        {
+          "id": "page-has-heading-one",
+          "impact": "moderate",
+          "help": "Page should contain a level-one heading",
+          "nodes": 1,
+          "sample": [
+            {
+              "target": "html",
+              "summary": "Fix all of the following:   Page must have a level-one heading"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "screen": "05-student-context-1440.png",
+      "violations": [
+        {
+          "id": "page-has-heading-one",
+          "impact": "moderate",
+          "help": "Page should contain a level-one heading",
+          "nodes": 1,
+          "sample": [
+            {
+              "target": "html",
+              "summary": "Fix all of the following:   Page must have a level-one heading"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "screen": "06-student-overview-390.png",
+      "violations": [
+        {
+          "id": "page-has-heading-one",
+          "impact": "moderate",
+          "help": "Page should contain a level-one heading",
+          "nodes": 1,
+          "sample": [
+            {
+              "target": "html",
+              "summary": "Fix all of the following:   Page must have a level-one heading"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "screen": "07-student-conversation-390.png",
+      "violations": [
+        {
+          "id": "page-has-heading-one",
+          "impact": "moderate",
+          "help": "Page should contain a level-one heading",
+          "nodes": 1,
+          "sample": [
+            {
+              "target": "html",
+              "summary": "Fix all of the following:   Page must have a level-one heading"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "screen": "08-staff-queue-conversation-1440.png",
+      "violations": []
+    },
+    {
+      "screen": "09-staff-queue-390.png",
+      "violations": []
+    },
+    {
+      "screen": "10-staff-conversation-390.png",
+      "violations": []
+    },
+    {
+      "screen": "11-staff-queue-conversation-1440-dark.png",
+      "violations": []
+    }
+  ]
+}
