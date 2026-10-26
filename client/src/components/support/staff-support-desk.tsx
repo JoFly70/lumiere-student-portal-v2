@@ -31,6 +31,7 @@ import {
 import {
   STAFF_QUEUES,
   assigneeSelectValue,
+  orderStaffQueue,
   overdueByLabel,
   staffQueueFilters as queueFilters,
   type StaffQueueKey as QueueKey,
@@ -559,7 +560,7 @@ export function StaffSupportDesk() {
   const stats = useTicketStats(true);
   const directory = useSupportStaffDirectory(isManager);
 
-  const tickets = ((list.data as { tickets?: SupportTicketSummary[] } | undefined)?.tickets ?? []) as SupportTicketSummary[];
+  const tickets = orderStaffQueue(((list.data as { tickets?: SupportTicketSummary[] } | undefined)?.tickets ?? []) as SupportTicketSummary[]);
   const total = (list.data as { pagination?: { total: number } } | undefined)?.pagination?.total ?? tickets.length;
   const staff = ((directory.data as { staff?: SupportPerson[] } | undefined)?.staff ?? []) as SupportPerson[];
 

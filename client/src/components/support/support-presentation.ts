@@ -382,3 +382,16 @@ export const STAFF_QUEUES: readonly { readonly key: StaffQueueKey; readonly labe
   { key: "resolved", label: "Resolved", help: "Finished" },
   { key: "all", label: "All", help: "Everything" },
 ];
+
+/**
+ * Staff triage order: open work first, overdue before on-time, then whoever has
+ * waited longest. Resolved/closed tickets keep the server order (newest first)
+ * after the open ones. The server returns newest-first; this is the desk's order.
+ */
+export function orderStaffQueue<T extends { status: string; awaiting_since: string; is_overdue?: boolean }>(tickets: readonly T[]): T[] {
+  const done = (t: T) => t.status === "resolved" || t.status === "closed";
+  const open = tickets.filter((t) => !done(t));
+  const closed = tickets.filter(done);
+  open.sort((a, b) => Number(!!b.is_overdue) - Number(!!a.is_overdue) || a.awaiting_since.localeCompare(b.awaiting_since));
+  return [...open, ...closed];
+}

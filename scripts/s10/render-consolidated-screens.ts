@@ -183,8 +183,8 @@ async function newPage(browser: any, o: Opts) {
       // Staff queue honours the same filters as the server (view, awaiting, overdue, assignedTo, search).
       let list = mode === "student" ? summaries : queryStaffQueue(summaries, url.searchParams, NOW, STAFF_ME.id);
       // The workspace asks for one student's tickets (studentId); the canonical student's reporter id is the ticket owner.
-      // Server-side queue order (stub): overdue first, then longest-waiting first.
-      if (mode !== "student") list = [...list].sort((a, b) => Number(!!b.is_overdue) - Number(!!a.is_overdue) || a.awaiting_since.localeCompare(b.awaiting_since));
+      // Like the server: newest first. The desk applies its own triage order (orderStaffQueue).
+      list = [...list].sort((a, b) => b.created_at.localeCompare(a.created_at));
       if (url.searchParams.get("studentId")) list = list.filter((t) => t.reporter_id === "student-user-1");
       return json(200, { tickets: list, pagination: { total: list.length, limit: 50, offset: 0 } });
     }
