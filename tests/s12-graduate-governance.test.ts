@@ -167,7 +167,8 @@ describe("S12 evidence guard", () => {
 
   it("track schema has no way to set verification, outcome or dates", () => {
     expect(trackRecordSchema.safeParse({ verificationStatus: "verified" }).success).toBe(false);
-    expect(trackRecordSchema.safeParse({ outcome: "admitted" }).success).toBe(false);
+    // outcome is accepted by the schema only for thesis_topic approval; the server rejects it on official kinds (409) and on create (400)
+    expect(trackRecordSchema.safeParse({ outcome: "approved" }).success).toBe(true);
     expect(trackRecordSchema.safeParse({ decisionDate: "2026-01-01" }).success).toBe(false);
     expect(trackRecordSchema.safeParse({ effectiveDate: "2026-01-01" }).success).toBe(false);
     expect(trackRecordSchema.safeParse({ trackingStatus: "completed", note: "ok" }).success).toBe(true);
@@ -438,5 +439,23 @@ describe("S12 input schemas", () => {
       expect(REQUIRED_ISSUERS[r.kind as keyof typeof REQUIRED_ISSUERS]).toContain(r.issuingInstitution);
     }
     expect(verified("p", "s", "eneb_certificate", "eneb").verificationStatus).toBe("verified");
+  });
+});
+
+describe("S12 next step ordering (orchestrator regression)", () => {
+  it("does not ask to propose a topic once the thesis is graded, even without a topic record", async () => {
+    const { buildStudentGraduateProgramView } = await import("../shared/graduate-program-contract");
+    const { journeyB } = await import("./helpers/s12-graduate-fixtures");
+    const b = journeyB("thesis_passed");
+    const v = buildStudentGraduateProgramView({ ...b, records: b.records.filter((r) => r.kind !== "thesis_topic") });
+    expect(v.nextStep.title).not.toMatch(/Propose your thesis topic/);
+  });
+  it("on the university route an unfinished ENEB subject does not become the next step once university subjects exist", async () => {
+    const { buildStudentGraduateProgramView } = await import("../shared/graduate-program-contract");
+    const { journeyB } = await import("./helpers/s12-graduate-fixtures");
+    const b = journeyB("procedure_done");
+    const subjects = b.subjects.map((s, i) => (s.authority === "eneb" && i === 0 ? { ...s, resultStatus: "none" as const, studentProgress: "in_progress" as const } : s));
+    const v = buildStudentGraduateProgramView({ ...b, subjects });
+    expect(v.nextStep.title).toMatch(/confer/i);
   });
 });

@@ -824,7 +824,6 @@ describe.skipIf(!ready)("S12 graduate programmes — real HTTP end to end", () =
     expectMissing(await verify(conferral, verifyBody(unimarconiEvidence({ outcome: "conferred", decisionDate: "2026-10-20" })), admin), "CONFERRAL_DATE_REQUIRED");
     expect((await dbRecord(conferral)).effective_date).toBeNull();
     expect((await verify(conferral, verifyBody(unimarconiEvidence({ outcome: "conferred", decisionDate: "2026-10-20", effectiveDate: "2026-10-18" })), admin)).status).toBe(200);
-    const row = await dbRecord(conferral);
     expect(String((await rowsOf(`select effective_date::text as d from graduate_records where id = ${q(conferral)}`))[0].d)).toBe("2026-10-18");
     const view = await studentView(user, programId);
     expect(view.graduation.conferredOn).toBe("2026-10-18");
@@ -956,6 +955,9 @@ describe.skipIf(!ready)("S12 graduate programmes — real HTTP end to end", () =
     }
     // coach is not staff for this either; staff cannot create offerings or rule sets (admin only)
     expect((await call("get", wsPath(student.id), coach)).status).toBe(403);
+    // The workspace states the viewer's role (the panel explains admin-only conferral from it).
+    expect((await call("get", wsPath(student.id), staff)).body.viewerRole).toBe("staff");
+    expect((await call("get", wsPath(student.id), admin)).body.viewerRole).toBe("admin");
     expect((await call("post", "/api/admin/graduate/offerings", staff, { key: "staff-offering", category: "mba", route: "eneb_only", marketingTitle: "x", awardingInstitution: "eneb", programVersion: "1" })).status).toBe(403);
     expect((await call("post", `/api/admin/graduate/offerings/${uniOffering.id}/rule-sets`, staff, ruleBody(RULE_SET_2026, { cohortLabel: "staff set" }))).status).toBe(403);
     expect((await call("get", wsPath(student.id), null)).status).toBe(401);

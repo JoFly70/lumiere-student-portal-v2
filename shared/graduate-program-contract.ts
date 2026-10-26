@@ -1269,9 +1269,13 @@ function nextStep(bundle: GraduateProgramBundle, v: Omit<StudentGraduateProgramV
       return { title: "Waiting for your university registration", detail: "Once the university registers you, Lumière confirms it here with your matricola.", href: null };
     }
   }
-  const openModule = v.modules.find((m) => m.result !== "passed" && m.progress !== "submitted");
+  // On the university route the remaining UNIVERSITY subjects drive the next step once they are listed;
+  // ENEB subjects only matter there while no university subject exists yet.
+  const hasUniversityModules = v.modules.some((m) => m.authority === "unimarconi");
+  const relevant = v.modules.filter((m) => (bundle.program.route === "eneb_unimarconi" && hasUniversityModules ? m.authority === "unimarconi" : true));
+  const openModule = relevant.find((m) => m.result !== "passed" && m.progress !== "submitted");
   if (openModule) return { title: `Continue ${openModule.title}`, detail: `${openModule.assessment}. Mark it submitted when you hand it in.`, href: "#graduate-modules" };
-  if (v.thesis && v.thesis.topicApproval === "not_proposed") return { title: "Propose your thesis topic", detail: "Add a working title so your topic can be approved.", href: "#graduate-thesis" };
+  if (v.thesis && v.thesis.gradingStatus === "not_submitted" && v.thesis.topicApproval === "not_proposed") return { title: "Propose your thesis topic", detail: "Add a working title so your topic can be approved.", href: "#graduate-thesis" };
   if (v.thesis && v.thesis.gradingStatus === "not_submitted") return { title: "Finish and submit your thesis", detail: v.thesis.minWords ? `At least ${v.thesis.minWords.toLocaleString("en-US")} words under your cohort's terms.` : "Check the word count with your academic contact.", href: "#graduate-thesis" };
   if (v.thesis && v.thesis.gradingStatus === "submitted") return { title: "Your thesis is being graded", detail: "Submitted is not passed yet. You'll see the result here.", href: null };
   if (v.graduation && !v.graduation.awardConferred) return { title: "Waiting for the university to confer your degree", detail: v.graduation.explanation, href: "#graduate-graduation" };
@@ -1503,6 +1507,8 @@ export interface StaffGraduateProgramView {
 
 export interface StaffGraduateWorkspace {
   readonly studentId: string;
+  /** The requesting staff member's role, so the panel can explain admin-only actions. */
+  readonly viewerRole: "staff" | "admin";
   readonly programs: readonly StaffGraduateProgramView[];
   readonly offerings: readonly OfferingRecord[];
   readonly ruleSets: readonly RuleSetRecord[];

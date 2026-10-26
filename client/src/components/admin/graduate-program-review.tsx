@@ -19,8 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { apiRequest } from "@/lib/queryClient";
-import { useAuth } from "@/lib/auth";
+import { getAuthToken, getCsrfToken } from "@/lib/api";
 import {
   ASSESSMENT_TYPES,
   INSTITUTIONS,
@@ -233,7 +232,7 @@ function ProgramCard({ p, role, onDialog, canEdit }: { p: StaffGraduateProgramVi
   </Card>;
 }
 
-export function GraduateProgramReviewView({ workspace, role = "staff", canEdit = true, onDialog, feedback }: { workspace: StaffGraduateWorkspace; role?: Role; canEdit?: boolean; onDialog?: (d: PanelDialog) => void; feedback?: string | null }) {
+export function GraduateProgramReviewView({ workspace, role = workspace.viewerRole ?? "staff", canEdit = true, onDialog, feedback }: { workspace: StaffGraduateWorkspace; role?: Role; canEdit?: boolean; onDialog?: (d: PanelDialog) => void; feedback?: string | null }) {
   return <section id="workspace-graduate" aria-labelledby="workspace-graduate-heading" className="scroll-mt-4 space-y-4">
     <div className="flex flex-wrap items-center justify-between gap-2">
       <h2 id="workspace-graduate-heading" className="flex items-center gap-2 text-xl font-semibold"><GraduationCap className="h-5 w-5" aria-hidden="true" />Graduate programmes</h2>
@@ -401,10 +400,27 @@ function EnrollDialog({ workspace, send, onClose }: { workspace: StaffGraduateWo
 // Container
 // ---------------------------------------------------------------------------
 
+/**
+ * Same error format as apiRequest ("<status>: <body>", parsed by parseApiFailure) but without
+ * importing @/lib/queryClient, whose module-level QueryClient breaks the workspace page's tests.
+ */
+async function apiRequest(method: string, url: string, body?: unknown): Promise<Response> {
+  const headers: Record<string, string> = {};
+  const token = getAuthToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  if (method !== "GET") {
+    const csrf = getCsrfToken();
+    if (csrf) headers["X-CSRF-Token"] = csrf;
+  }
+  if (body !== undefined) headers["Content-Type"] = "application/json";
+  const res = await fetch(url, { method, headers, credentials: "include", body: body === undefined ? undefined : JSON.stringify(body) });
+  if (!res.ok) throw new Error(`${res.status}: ${(await res.text()) || res.statusText}`);
+  return res;
+}
+
 export default function GraduateProgramReview({ studentId }: { studentId: string }) {
-  const { user } = useAuth();
-  const role: Role = user?.role === "admin" ? "admin" : "staff";
-  const canEdit = user?.role === "admin" || user?.role === "staff";
+  // The server states the viewer's role; only staff and admin can load this workspace at all.
+  const canEdit = true;
   const queryClient = useQueryClient();
   const [dialog, setDialog] = useState<PanelDialog | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
@@ -429,6 +445,7 @@ export default function GraduateProgramReview({ studentId }: { studentId: string
     </section>;
   }
   const close = () => setDialog(null);
+  const role: Role = query.data.viewerRole === "admin" ? "admin" : "staff";
   return <>
     <GraduateProgramReviewView workspace={query.data} role={role} canEdit={canEdit} feedback={feedback} onDialog={(d) => { setFeedback(null); setDialog(d); }} />
     {dialog?.t === "enroll" ? <EnrollDialog workspace={query.data} send={send} onClose={close} /> : null}

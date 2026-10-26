@@ -46,7 +46,7 @@ import {
 
 const staffView = (bundle = journeyB("registered"), current: string | null = bundle.ruleSet.id) => buildStaffGraduateProgramView(bundle, current, "staff");
 const rec = (v: ReturnType<typeof staffView>, kind: string) => v.records.find((r) => r.kind === kind) as StaffRecordView;
-const workspace = (programs: ReturnType<typeof staffView>[]): StaffGraduateWorkspace => ({ studentId: "stu-syn-b", programs, offerings: OFFERINGS, ruleSets: [RULE_SET_2025, RULE_SET_2026, RULE_SET_ENEB_ONLY] });
+const workspace = (programs: ReturnType<typeof staffView>[]): StaffGraduateWorkspace => ({ studentId: "stu-syn-b", viewerRole: "staff", programs, offerings: OFFERINGS, ruleSets: [RULE_SET_2025, RULE_SET_2026, RULE_SET_ENEB_ONLY] });
 const html = (w: StaffGraduateWorkspace, role: "staff" | "admin" = "staff") => renderToStaticMarkup(React.createElement(GraduateProgramReviewView, { workspace: w, role }));
 
 describe("S12 staff graduate panel logic", () => {
@@ -220,10 +220,10 @@ describe("S12 staff graduate panel render", () => {
   });
 
   it("shows the empty state and the enroll action", () => {
-    const out = html({ studentId: "s", programs: [], offerings: OFFERINGS, ruleSets: [] });
+    const out = html({ studentId: "s", viewerRole: "staff", programs: [], offerings: OFFERINGS, ruleSets: [] });
     expect(out).toContain("not enrolled in a graduate programme");
     expect(out).toContain("Enroll in a programme");
-    expect(renderToStaticMarkup(React.createElement(GraduateProgramReviewView, { workspace: { studentId: "s", programs: [], offerings: [], ruleSets: [] }, canEdit: false }))).not.toContain("Enroll in a programme");
+    expect(renderToStaticMarkup(React.createElement(GraduateProgramReviewView, { workspace: { studentId: "s", viewerRole: "staff", programs: [], offerings: [], ruleSets: [] }, canEdit: false }))).not.toContain("Enroll in a programme");
   });
 
   it("verified records show reviewer and decision date; admin-only reason appears for staff on conferral", () => {

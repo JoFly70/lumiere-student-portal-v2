@@ -377,7 +377,7 @@ export function createGraduateProgramService(deps: GraduateServiceDeps) {
       const [offerings, ruleSets, programs] = await Promise.all([repo.listOfferings(tx), repo.listRuleSets(tx), repo.listProgramsForStudent(studentId, tx)]);
       const views: StaffGraduateProgramView[] = [];
       for (const p of programs) views.push(await staffView(p.id, actorRole, tx));
-      return { studentId, programs: views, offerings, ruleSets };
+      return { studentId, viewerRole: actorRole === "admin" ? "admin" : "staff", programs: views, offerings, ruleSets };
     },
 
     async enroll(actor: GraduateActor, studentId: string, input: EnrollProgram): Promise<{ program: StaffGraduateProgramView; id: string }> {
