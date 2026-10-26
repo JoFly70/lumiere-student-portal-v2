@@ -745,21 +745,45 @@ export function buildStudentProfileView(input: ProfileViewInputs): StudentProfil
     });
   }
 
+  // A contact whose authority is pending (or was declined) needs a signed consent
+  // from the STUDENT. Until one is on file that is the student's action, not
+  // something Lumière is waiting on; once uploaded, Lumière is the one reviewing.
+  // (A rejected or resubmit-requested consent form is reported by the document loop below.)
+  const consentStatus = evidenceStatus(documents, 'consent_form');
+  const consentOnFile = consentStatus !== 'not_submitted';
   for (const c of contacts) {
     if (c.authorityStatus === 'pending_verification') {
+      readiness.push(consentOnFile
+        ? { key: `contact_authority:${c.id}`, kind: 'pending_review', label: `${c.fullName}: authority awaiting verification`, detail: null, section: 'contacts' }
+        : { key: `contact_authority:${c.id}`, kind: 'action_required', label: `Upload a signed consent for ${c.fullName}`, detail: 'Lumière verifies authority from a signed consent or legal document.', section: 'contacts' });
+    } else if (c.authorityStatus === 'revoked' && !consentOnFile) {
       readiness.push({
         key: `contact_authority:${c.id}`,
-        kind: 'pending_review',
-        label: `${c.fullName}: authority awaiting verification`,
-        detail: null,
+        kind: 'action_required',
+        label: `${c.fullName}: authority was not approved`,
+        detail: c.authorityNote ?? 'Upload a signed consent to ask Lumière to review again.',
         section: 'contacts',
       });
     }
   }
 
+  if (idStatus === 'verified') {
+    readiness.push({ key: 'identity_document', kind: 'complete', label: 'Identity document verified', detail: null, section: 'identity' });
+  }
+  for (const c of contacts) {
+    // Only a staff-verified status is authority; a merely listed contact never is.
+    if (c.authorityStatus === 'verified') {
+      readiness.push({ key: `contact_authority:${c.id}`, kind: 'complete', label: `${c.fullName}: authority verified`, detail: null, section: 'contacts' });
+    }
+  }
   for (const item of evidenceItems) {
     if (item.docType === 'id_gov') continue;
-    if (item.status === 'pending') {
+    if (item.status === 'verified') {
+      readiness.push({ key: `document:${item.docType}`, kind: 'complete', label: `${item.label} verified`, detail: null, section: 'eligibility' });
+    } else if (item.status === 'pending' && item.docType === 'foreign_eval') {
+      // Credential evaluations are done by an outside evaluation service, not by Lumière staff.
+      readiness.push({ key: `document:${item.docType}`, kind: 'waiting_external', label: `${item.label} is with the evaluation service`, detail: null, section: 'eligibility' });
+    } else if (item.status === 'pending') {
       readiness.push({ key: `document:${item.docType}`, kind: 'pending_review', label: `${item.label} under review`, detail: null, section: 'eligibility' });
     } else if (item.status === 'rejected' || item.status === 'resubmit_requested') {
       readiness.push({ key: `document:${item.docType}`, kind: 'action_required', label: `${item.label} needs to be resubmitted`, detail: null, section: 'eligibility' });

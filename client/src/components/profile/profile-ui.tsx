@@ -38,8 +38,19 @@ export const inputClass =
  * sticky footer actions always sit on the bottom edge of the screen.
  */
 export const dialogClass =
-  "student-surface border-student-line bg-student-card text-student-ink overflow-y-auto overscroll-contain sm:max-h-[90vh] sm:max-w-lg " +
-  "max-sm:left-0 max-sm:top-0 max-sm:h-[100dvh] max-sm:max-h-none max-sm:w-full max-sm:max-w-none max-sm:translate-x-0 max-sm:translate-y-0 max-sm:content-start max-sm:rounded-none max-sm:border-0";
+  "student-surface flex flex-col gap-0 overflow-hidden border-student-line bg-student-card p-0 text-student-ink sm:max-h-[90vh] sm:max-w-lg " +
+  "max-sm:left-0 max-sm:top-0 max-sm:h-[100dvh] max-sm:max-h-none max-sm:w-full max-sm:max-w-none max-sm:translate-x-0 max-sm:translate-y-0 max-sm:rounded-none max-sm:border-0";
+
+/**
+ * Dialog layout: header (fixed) / body (the ONLY scroll region) / footer (fixed).
+ * The footer is a flex sibling of the body, never an overlay on it, so no content
+ * can sit beneath or peek above the Cancel/Send row.
+ */
+export const dialogFormClass = "flex min-h-0 flex-1 flex-col";
+export const dialogHeaderClass = "shrink-0 px-6 pb-2 pt-6 pr-12";
+export function DialogBody({ children }: { children: React.ReactNode }) {
+  return <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-6 py-3" data-testid="dialog-body">{children}</div>;
+}
 
 const TONE_TO_PILL = {
   waiting: "neutral",
@@ -353,7 +364,7 @@ export function FormActions({
     <div
       className={cn(
         "flex gap-2 pt-2 sm:justify-end",
-        sticky && "sticky bottom-0 z-10 -mx-6 -mb-6 border-t border-student-line bg-student-card px-4 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-6 sm:pb-3",
+        sticky && "shrink-0 border-t border-student-line bg-student-card px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 sm:px-6 sm:pb-4",
       )}
       data-testid={sticky ? "dialog-footer" : undefined}
     >

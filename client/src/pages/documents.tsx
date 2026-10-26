@@ -40,6 +40,7 @@ import {
 import type { StudentDocument } from "@shared/schema";
 import { Eyebrow, Pill, StudentSurface, buttonClass } from "@/components/student-progress/student-ui";
 import { cn } from "@/lib/utils";
+import { docTypeLabel } from "@/lib/document-type-labels";
 
 type DocumentCategory =
   | "academic"
@@ -127,22 +128,7 @@ function mapDocTypeToCategory(docType: string): DocumentCategory {
   return mapping[docType] || "academic";
 }
 
-/** Human names for the stored document type codes. */
-const DOC_TYPE_LABELS: Record<string, string> = {
-  hs_transcript: "High-school transcript",
-  hs_diploma: "High-school diploma",
-  id_gov: "Government ID",
-  college_transcript: "College transcript",
-  foreign_eval: "Foreign credential evaluation",
-  degree_certificate: "Degree certificate",
-  english_cert: "English proficiency proof",
-  residency_doc: "Proof of residency",
-  consent_form: "Consent form",
-  other: "Other document",
-};
-export function docTypeLabel(docType: string): string {
-  return DOC_TYPE_LABELS[docType] ?? docType.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
-}
+export { docTypeLabel };
 const formatDocDate = (value: string) => new Date(value).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
 const STATUS_PILL: Record<DocumentStatus, string> = {

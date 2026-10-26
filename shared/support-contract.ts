@@ -108,6 +108,22 @@ export const isSupportStaffRole = (role: string | undefined): boolean =>
   role === "admin" || role === "staff" || role === "coach";
 
 // ---------------------------------------------------------------------------
+// One status vocabulary. Staff and students see different words for the same
+// state on purpose (staff: queue triage; student: who has the ball), but both
+// come from this single map so the correspondence is explicit and testable.
+// ---------------------------------------------------------------------------
+
+export const SUPPORT_STATUS_LABEL: Readonly<Record<TicketStatus, { readonly staff: string; readonly student: string }>> = {
+  open: { staff: "New", student: "Received" },
+  in_progress: { staff: "In progress", student: "With your advisor" },
+  waiting_on_student: { staff: "Waiting on student", student: "Waiting for you" },
+  resolved: { staff: "Resolved", student: "Resolved" },
+  closed: { staff: "Closed", student: "Closed" },
+};
+
+export const staffStatusLabel = (status: TicketStatus): string => SUPPORT_STATUS_LABEL[status]?.staff ?? String(status);
+
+// ---------------------------------------------------------------------------
 // Status transitions
 // ---------------------------------------------------------------------------
 

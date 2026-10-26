@@ -435,9 +435,30 @@ describe("S09 profile read model", () => {
     expect(kinds.identity_document).toBe("action_required");
     expect(kinds["document:hs_diploma"]).toBe("pending_review");
     expect(kinds["document:foreign_eval"]).toBe("action_required");
-    expect(kinds["contact_authority:c2"]).toBe("pending_review");
+    expect(kinds["contact_authority:c2"]).toBe("action_required"); // no consent on file: the student must upload one
     expect(kinds.identity_correction).toBe("action_required");
     expect(view.eligibility.documents.find((d) => d.docType === "hs_diploma")?.status).toBe("pending");
+  });
+
+  it("S10: pending/declined authority is the STUDENT's action until a consent is on file, then Lumière's", () => {
+    const mk = (id: string, authority_status: string) => toContactView({
+      id, type: "guardian", full_name: `Contact ${id}`, relationship: "aunt", phone: "+1555", email: null, language: null,
+      scopes: ["academic"], authority_status, created_at: "2026-01-01T00:00:00.000Z",
+    } as any);
+    const kindsFor = (documents: Array<[string, string]>) => {
+      const view = build({ documents: docs(documents), contacts: [mk("p", "pending_verification"), mk("r", "revoked")] });
+      return Object.fromEntries(view.readiness.map((r) => [r.key, r.kind]));
+    };
+    // No consent form at all: both contacts ask the student to upload one.
+    expect(kindsFor([])["contact_authority:p"]).toBe("action_required");
+    expect(kindsFor([])["contact_authority:r"]).toBe("action_required");
+    // Consent uploaded and waiting: Lumière is reviewing; a revoked contact no longer nags.
+    const waiting = kindsFor([["consent_form", "pending"]]);
+    expect(waiting["contact_authority:p"]).toBe("pending_review");
+    expect(waiting["contact_authority:r"]).toBeUndefined();
+    expect(waiting["document:consent_form"]).toBe("pending_review");
+    // Consent rejected / resubmission requested: the document row asks the student again.
+    expect(kindsFor([["consent_form", "resubmit_requested"]])["document:consent_form"]).toBe("action_required");
   });
 
   it("a pending correction supersedes an earlier rejection", () => {

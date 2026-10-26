@@ -100,7 +100,7 @@ export function AppSidebar() {
     ? profile.email
     : user?.email || "";
 
-  const portalLabel = user?.role === "admin" ? "Admin Portal" : "Student Portal";
+  const portalLabel = user?.role === "admin" ? "Admin Portal" : isStudent ? "Student Portal" : "Staff Portal";
 
   if (isStudent) {
     const renderItems = (items: typeof studentMenuItems) => (

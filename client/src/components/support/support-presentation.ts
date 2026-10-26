@@ -2,10 +2,11 @@
  * S08 student support presentation helpers. Pure: no React, no I/O. Student
  * wording only; staff wording lives in the staff desk.
  */
-import { format, formatDistance } from "date-fns";
+import { format, formatDistance, formatDistanceStrict } from "date-fns";
 import {
   STUDENT_REOPEN_WINDOW_DAYS,
   SUPPORT_ATTACHMENT_MAX_BYTES,
+  SUPPORT_STATUS_LABEL,
   SUPPORT_TOPICS,
   SUPPORT_TOPIC_INFO,
   attachmentTypeAllowed,
@@ -27,15 +28,34 @@ export const DESCRIPTION_MAX = 5000;
 // ---------------------------------------------------------------------------
 
 export const STUDENT_STATUS_LABEL: Readonly<Record<TicketStatus, string>> = {
-  open: "Received",
-  in_progress: "With your advisor",
-  waiting_on_student: "Waiting for you",
-  resolved: "Resolved",
-  closed: "Closed",
+  open: SUPPORT_STATUS_LABEL.open.student,
+  in_progress: SUPPORT_STATUS_LABEL.in_progress.student,
+  waiting_on_student: SUPPORT_STATUS_LABEL.waiting_on_student.student,
+  resolved: SUPPORT_STATUS_LABEL.resolved.student,
+  closed: SUPPORT_STATUS_LABEL.closed.student,
 };
 
 export function studentStatusLabel(status: TicketStatus): string {
   return STUDENT_STATUS_LABEL[status];
+}
+
+/**
+ * Age text for a staff queue row, tied to what the clock measures. Only a ticket
+ * awaiting staff counts "waiting"; otherwise the last meaningful date is shown,
+ * so a resolved ticket never reads "1 day" from a stale awaiting_since.
+ */
+export function staffRowAge(
+  t: { readonly awaiting: "staff" | "student" | "none"; readonly awaiting_since: string; readonly created_at: string; readonly resolved_at?: string | null; readonly updated_at?: string },
+  now: Date,
+): string {
+  const span = (iso: string | null | undefined) => {
+    const d = iso ? new Date(iso) : null;
+    return d && !Number.isNaN(d.getTime()) ? formatDistanceStrict(d, now) : "";
+  };
+  if (t.awaiting === "staff") return `Waiting ${span(t.awaiting_since)}`.trim();
+  if (t.awaiting === "student") return `Asked ${span(t.awaiting_since)} ago`;
+  const done = t.resolved_at ?? t.updated_at ?? t.created_at;
+  return `Resolved ${span(done)} ago`;
 }
 
 export type NextActionTone = "you" | "lumiere" | "done";
@@ -267,4 +287,25 @@ export function attachmentError(file: { name: string; size: number; type: string
     return `${file.name} is not a supported type. Please use ${ATTACHMENT_HELP.replace(/, up to 10 MB\.$/, ".")}`;
   }
   return null;
+}
+
+// ---------------------------------------------------------------------------
+// Staff queue filters. Each stats tile and queue chip maps to exactly one
+// server query, and the server's stats counts use the same rules, so a
+// tile number always equals the list it opens.
+// ---------------------------------------------------------------------------
+
+export type StaffQueueKey = "needs" | "waiting" | "overdue" | "mine" | "unassigned" | "resolved" | "all";
+
+export function staffQueueFilters(key: StaffQueueKey): Record<string, string | boolean> {
+  switch (key) {
+    case "needs": return { view: "active", awaiting: "staff" };
+    case "waiting": return { view: "active", awaiting: "student" };
+    case "overdue": return { overdue: true };
+    case "mine": return { view: "active", assignedTo: "me" };
+    // Same population as the "Unassigned" tile: tickets that need a staff response.
+    case "unassigned": return { view: "active", awaiting: "staff", assignedTo: "unassigned" };
+    case "resolved": return { view: "resolved" };
+    default: return {};
+  }
 }

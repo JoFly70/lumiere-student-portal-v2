@@ -21,6 +21,9 @@ import {
   academicCreditRows,
   resolveWorkspaceStudentIdentity,
   workspaceStudentIdFromData,
+  formatWorkspaceDateTime,
+  workspaceProgressStatusLabel,
+  workspaceToken,
   type WorkspaceAttentionItem,
   type WorkspaceRecord,
 } from "./admin-student-workspace-presentation";
@@ -36,6 +39,8 @@ import {
 import StudentProfileReview from "@/components/admin/student-profile-review";
 import { useDocuments } from "@/hooks/use-documents";
 import { useTickets, type Ticket } from "@/hooks/use-tickets";
+import { SUPPORT_TOPIC_INFO, staffStatusLabel, topicForTicket } from "@shared/support-contract";
+import { docStatusLabel, docTypeLabel } from "@/lib/document-type-labels";
 
 function value(row: unknown, ...keys: string[]) {
   const record = row && typeof row === "object" && !Array.isArray(row) ? row as WorkspaceRecord : {};
@@ -52,8 +57,16 @@ function Evidence({ item }: { item: WorkspaceAttentionItem }) {
   </details>;
 }
 function displayDate(value: unknown): string {
-  if (value instanceof Date) return value.toISOString();
-  return typeof value === "string" && value ? value : "Not provided";
+  return formatWorkspaceDateTime(value) ?? "Date not recorded";
+}
+/** Enum-ish record value as readable text; "Not provided" only when truly absent. */
+/** Join only the parts that are actually recorded. */
+function provided(...parts: string[]): string {
+  return parts.filter((part) => part !== "Not provided").join(" · ");
+}
+function humanValue(row: unknown, ...keys: string[]) {
+  const raw = value(row, ...keys);
+  return raw === "Not provided" ? raw : workspaceToken(raw) ?? raw;
 }
 function DetailField({ label, children }: { label: string; children: ReactNode }) {
   return <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</dt><dd className="mt-1 text-sm">{children}</dd></div>;
@@ -128,6 +141,8 @@ export default function AdminStudentWorkspace() {
     : validSnapshotFingerprint(snapshot.fingerprint)
       ? snapshot.fingerprint
       : undefined;
+  const programName = label("programs", value(vm.program, "id")) ?? value(vm.program, "name", "code");
+  const programVersionName = label("programVersions", value(vm.programVersion, "id")) ?? value(vm.programVersion, "versionLabel", "id");
   const requirementOptions = canonicalLabelOptions(vm.labels.requirements);
   const academicRuleOptions = canonicalLabelOptions(vm.labels.academicRules);
   const writesDisabled = !placementStudentId || !placementWritesEnabled(
@@ -167,7 +182,7 @@ export default function AdminStudentWorkspace() {
       <div className="min-w-0"><div className="student-surface mb-2 !bg-transparent"><p className="text-xs font-semibold uppercase tracking-[0.18em] text-student-gold-ink">Lumière / student workspace</p></div><h1 className="text-3xl font-semibold tracking-tight">{name}</h1><p className="mt-1 text-muted-foreground">{identity.email ?? "Not provided"} · <span className="font-mono">{identity.studentCode ?? "Not provided"}</span></p></div>
       <Badge variant="outline" className="h-auto w-fit max-w-full gap-2 whitespace-normal"><ShieldCheck className="h-3.5 w-3.5" />Canonical view · controlled placement writes</Badge>
     </header>
-     <nav aria-label="Student workspace sections" className="flex flex-wrap gap-2 border-b pb-3">
+     <nav aria-label="Student workspace sections" className="flex flex-wrap items-center gap-2 border-b pb-3"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Jump to</span>
        <a href="#workspace-overview" className="rounded-md border px-3 py-2 text-sm font-medium hover:bg-muted">Overview</a>
        <a href="#workspace-profile" className="rounded-md border px-3 py-2 text-sm font-medium hover:bg-muted"><Fingerprint className="mr-2 inline h-4 w-4" />Profile &amp; identity</a>
        <a href="#workspace-documents" className="rounded-md border px-3 py-2 text-sm font-medium hover:bg-muted"><FileText className="mr-2 inline h-4 w-4" />Documents</a>
@@ -177,20 +192,20 @@ export default function AdminStudentWorkspace() {
      {canonicalStudentId ? <StudentProfileReview studentId={canonicalStudentId} /> : null}
      <div id="workspace-overview" aria-label="Overview">
     <section className="grid gap-4 md:grid-cols-3">
-       <Card><CardHeader><CardTitle className="text-sm text-muted-foreground">Current program</CardTitle></CardHeader><CardContent><p className="text-lg font-semibold">{label("programs", value(vm.program, "id")) ?? value(vm.program, "name", "code")}</p><p className="mt-1 text-sm text-muted-foreground">Version {label("programVersions", value(vm.programVersion, "id")) ?? value(vm.programVersion, "versionLabel", "id")}</p></CardContent></Card>
-       <Card><CardHeader><CardTitle className="text-sm text-muted-foreground">Progress status</CardTitle></CardHeader><CardContent><p className="text-lg font-semibold">{value(vm.report, "status")}</p><p className="mt-1 text-sm text-muted-foreground">Canonical degree-progress result</p></CardContent></Card>
-       <Card><CardHeader><CardTitle className="text-sm text-muted-foreground">Snapshot</CardTitle></CardHeader><CardContent><p className="text-sm">{String(snapshot.asOf ?? vm.asOf ?? "As-of unavailable")}</p><p className="mt-2 flex items-center gap-1 truncate font-mono text-xs text-muted-foreground"><Fingerprint className="h-3.5 w-3.5 shrink-0" />{String(snapshot.fingerprint ?? vm.snapshotFingerprint ?? "Fingerprint unavailable")}</p></CardContent></Card>
+       <Card><CardHeader><CardTitle className="text-sm text-muted-foreground">Current program</CardTitle></CardHeader><CardContent>{programName === "Not provided" ? <p className="text-lg font-semibold">No program assigned</p> : <><p className="text-lg font-semibold">{programName}</p>{programVersionName !== "Not provided" ? <p className="mt-1 text-sm text-muted-foreground">Version {programVersionName}</p> : null}</>}</CardContent></Card>
+       <Card><CardHeader><CardTitle className="text-sm text-muted-foreground">Progress status</CardTitle></CardHeader><CardContent><p className="break-words text-lg font-semibold">{workspaceProgressStatusLabel(vm.report?.status)}</p><p className="mt-1 text-sm text-muted-foreground">Canonical degree-progress result</p></CardContent></Card>
+       <Card><CardHeader><CardTitle className="text-sm text-muted-foreground">Snapshot</CardTitle></CardHeader><CardContent><p className="text-sm">{formatWorkspaceDateTime(snapshot.asOf ?? vm.asOf) ?? "No snapshot yet"}</p>{snapshotFingerprint ? <p className="mt-2 flex items-center gap-1 font-mono text-xs text-muted-foreground"><Fingerprint className="h-3.5 w-3.5 shrink-0" /><span className="min-w-0 truncate" title={snapshotFingerprint}>{snapshotFingerprint}</span></p> : null}</CardContent></Card>
     </section>
     {!snapshotFingerprint || snapshotUnavailable
       ? <div role="status" className="flex flex-col gap-3 rounded-md border border-amber-500/40 bg-amber-500/5 px-4 py-3 text-sm text-amber-900 dark:text-amber-200 sm:flex-row sm:items-center sm:justify-between">
-          <span>Placement controls are disabled until a fresh canonical snapshot with a valid fingerprint is available.</span>
+          <span>Placement changes are paused: this student has no current academic snapshot yet. Refresh the workspace once the degree report has been generated.</span>
           <Button type="button" size="sm" variant="outline" disabled={query.isFetching} onClick={() => void refreshCanonical()}>
             <RefreshCw className={`mr-2 h-4 w-4 ${query.isFetching ? "animate-spin" : ""}`} />
             Refresh workspace
           </Button>
         </div>
       : null}
-      <Card className={vm.attention.hasAttention ? "border-amber-500/40" : ""}><CardHeader><div className="flex items-center justify-between"><div><CardTitle>Needs attention</CardTitle><p className="mt-1 text-sm text-muted-foreground">Prioritized items retained from the canonical report.</p></div><Badge variant={vm.attention.hasAttention ? "destructive" : "secondary"}>{vm.attention.total} items</Badge></div></CardHeader><CardContent>{vm.attention.total === 0 ? <div className="rounded-md bg-muted/50 px-4 py-8 text-center text-sm text-muted-foreground">No manual-review, conflict, missing, or partial items reported.</div> : <div className="divide-y">{vm.attention.items.map((item, i) => <div key={i} className="py-3">{isDiagnosticAttentionItem(item) ? <div className="flex items-center gap-2">{diagnosticItemStatus(item) && <Badge variant="outline">{diagnosticItemStatus(item)}</Badge>}<span className="font-medium">{item.kind === "integration-diagnostic" ? "Integration diagnostic" : "Diagnostic"}</span><span className="text-sm text-muted-foreground">{typeof item.diagnostic === "object" ? JSON.stringify(item.diagnostic) : String(item.diagnostic)}</span></div> : <><div className="flex flex-wrap items-center gap-2">{attentionItemStatus(vm, item) && <Badge variant="outline">{attentionItemStatus(vm, item)}</Badge>}<span className="font-medium">{attentionItemLabel(vm.labels, item)}</span>{item.reason && <span className="text-sm text-muted-foreground">· {item.reason}</span>}</div><Evidence item={item} /></>}</div>)}</div>}</CardContent></Card>
+      <Card className={vm.attention.hasAttention ? "border-amber-500/40" : ""}><CardHeader><div className="flex items-center justify-between"><div><CardTitle>Academic report review</CardTitle><p className="mt-1 text-sm text-muted-foreground">Manual-review, conflict, missing or partial items from the canonical degree report. Profile and identity decisions are listed above.</p></div><Badge variant={vm.attention.hasAttention ? "destructive" : "secondary"}>{vm.attention.total} {vm.attention.total === 1 ? "item" : "items"}</Badge></div></CardHeader><CardContent>{vm.attention.total === 0 ? <div className="rounded-md bg-muted/50 px-4 py-8 text-center text-sm text-muted-foreground">No manual-review, conflict, missing, or partial items reported.</div> : <div className="divide-y">{vm.attention.items.map((item, i) => <div key={i} className="py-3">{isDiagnosticAttentionItem(item) ? <div className="flex items-center gap-2">{diagnosticItemStatus(item) && <Badge variant="outline">{diagnosticItemStatus(item)}</Badge>}<span className="font-medium">{item.kind === "integration-diagnostic" ? "Integration diagnostic" : "Diagnostic"}</span><span className="text-sm text-muted-foreground">{typeof item.diagnostic === "object" ? JSON.stringify(item.diagnostic) : String(item.diagnostic)}</span></div> : <><div className="flex flex-wrap items-center gap-2">{attentionItemStatus(vm, item) && <Badge variant="outline">{attentionItemStatus(vm, item)}</Badge>}<span className="font-medium">{attentionItemLabel(vm.labels, item)}</span>{item.reason && <span className="text-sm text-muted-foreground">· {item.reason}</span>}</div><Evidence item={item} /></>}</div>)}</div>}</CardContent></Card>
     <section aria-labelledby="operator-academic-detail" className="space-y-4">
       <div>
         <h2 id="operator-academic-detail" className="text-xl font-semibold">Operator academic detail</h2>
@@ -207,16 +222,16 @@ export default function AdminStudentWorkspace() {
           return <Card key={String(credit.id)}>
             <CardHeader className="space-y-2">
               <div className="flex flex-wrap items-start justify-between gap-3">
-                <div><CardTitle>{value(credit, "rawCourseCode") !== "Not provided" ? `${value(credit, "rawCourseCode")} · ${value(credit, "rawTitle")}` : value(credit, "rawTitle")}</CardTitle><p className="mt-1 text-sm text-muted-foreground">{value(credit, "term")} · {value(credit, "recordType")}</p></div>
-                <Badge variant="outline">{value(credit, "status")}</Badge>
+                <div><CardTitle>{value(credit, "rawCourseCode") !== "Not provided" ? `${value(credit, "rawCourseCode")} · ${value(credit, "rawTitle")}` : value(credit, "rawTitle")}</CardTitle>{provided(value(credit, "term"), humanValue(credit, "recordType")) ? <p className="mt-1 text-sm text-muted-foreground">{provided(value(credit, "term"), humanValue(credit, "recordType"))}</p> : null}</div>
+                <Badge variant="outline">{humanValue(credit, "status")}</Badge>
               </div>
             </CardHeader>
             <CardContent className="space-y-5">
               <dl className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <DetailField label="Source"><span className="font-medium">{source ? value(source, "title") : "Source unavailable"}</span><span className="block text-muted-foreground">{source ? `${value(source, "sourceType")} · ${value(source, "status")}` : "Canonical source record not supplied"}</span></DetailField>
-                <DetailField label="Credit"><span className="font-medium">{value(credit, "normalizedCredits", "rawCredits")} credits</span><span className="block text-muted-foreground">Grade {value(credit, "rawGrade")} · Level {value(credit, "normalizedLevel", "rawLevel")}</span></DetailField>
-                <DetailField label="Latest verification">{verification ? <><Badge variant="secondary">{value(verification, "action")}</Badge><span className="mt-1 block text-muted-foreground">{displayDate(verification.createdAt)}</span></> : "No verification recorded"}</DetailField>
-                <DetailField label="Latest decision">{decision ? <><Badge variant="secondary">{value(decision, "action")}</Badge><span className="mt-1 block text-muted-foreground">{value(decision, "creditsAwarded")} credits awarded · {displayDate(decision.createdAt)}</span></> : "No decision for the active assignment"}</DetailField>
+                <DetailField label="Source"><span className="font-medium">{source ? value(source, "title") : "Source unavailable"}</span><span className="block text-muted-foreground">{source ? `${humanValue(source, "sourceType")} · ${humanValue(source, "status")}` : "Canonical source record not supplied"}</span></DetailField>
+                <DetailField label="Credit"><span className="font-medium">{value(credit, "normalizedCredits", "rawCredits")} credits</span>{provided(value(credit, "rawGrade") !== "Not provided" ? `Grade ${value(credit, "rawGrade")}` : "Not provided", value(credit, "normalizedLevel", "rawLevel") !== "Not provided" ? `Level ${value(credit, "normalizedLevel", "rawLevel")}` : "Not provided") ? <span className="block text-muted-foreground">{provided(value(credit, "rawGrade") !== "Not provided" ? `Grade ${value(credit, "rawGrade")}` : "Not provided", value(credit, "normalizedLevel", "rawLevel") !== "Not provided" ? `Level ${value(credit, "normalizedLevel", "rawLevel")}` : "Not provided")}</span> : null}</DetailField>
+                <DetailField label="Latest verification">{verification ? <><Badge variant="secondary">{humanValue(verification, "action")}</Badge><span className="mt-1 block text-muted-foreground">{displayDate(verification.createdAt)}</span></> : "No verification recorded"}</DetailField>
+                <DetailField label="Latest decision">{decision ? <><Badge variant="secondary">{humanValue(decision, "action")}</Badge><span className="mt-1 block text-muted-foreground">{value(decision, "creditsAwarded")} credits awarded · {displayDate(decision.createdAt)}</span></> : "No decision for the active assignment"}</DetailField>
               </dl>
               <div className="border-t pt-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
@@ -248,7 +263,7 @@ export default function AdminStudentWorkspace() {
                       {row.placements.map((placement) => {
                         const placementKey = `placement:${String(placement.id)}`;
                         const currentLabel = placementLabel(placement);
-                        const currentStatus = value(placement, "status");
+                        const currentStatus = humanValue(placement, "status");
                         const currentRationale = value(placement, "rationale");
                         const reportFeedback = (feedback: PlacementActionFeedback) =>
                           setPlacementFeedback((current) => ({ ...current, [placementKey]: feedback }));
@@ -306,8 +321,8 @@ export default function AdminStudentWorkspace() {
                             <dl className="mt-3 grid gap-3 sm:grid-cols-2">
                               <DetailField label="Recorded">{displayDate(placement.createdAt)}</DetailField>
                               <DetailField label="Updated">{displayDate(placement.updatedAt)}</DetailField>
-                              <DetailField label="Revocation">{value(placement, "revocationRationale")}</DetailField>
-                              <DetailField label="Supersession">{value(placement, "supersedeRationale")}</DetailField>
+                              {value(placement, "revocationRationale") !== "Not provided" ? <DetailField label="Revocation">{value(placement, "revocationRationale")}</DetailField> : null}
+                              {value(placement, "supersedeRationale") !== "Not provided" ? <DetailField label="Supersession">{value(placement, "supersedeRationale")}</DetailField> : null}
                             </dl>
                             <pre className="mt-3 overflow-auto rounded bg-muted p-3 text-xs text-muted-foreground">{JSON.stringify({ provenance: placement.provenance, metadata: placement.metadata }, null, 2)}</pre>
                             <Reference value={placement.id} />
@@ -333,7 +348,7 @@ export default function AdminStudentWorkspace() {
         {vm.academicDetail.placements.filter((placement) => !academicRows.some((row) => row.placements.includes(placement))).map((placement) => {
           const placementKey = `placement:${String(placement.id)}`;
           const currentLabel = placementLabel(placement);
-          const currentStatus = value(placement, "status");
+          const currentStatus = humanValue(placement, "status");
           const currentRationale = value(placement, "rationale");
           return <div key={String(placement.id)} className="py-3">
             <div className="flex items-center justify-between gap-2">
@@ -375,18 +390,18 @@ export default function AdminStudentWorkspace() {
         })}
       </CardContent>
     </Card>}
-     <Card><CardHeader><CardTitle>Report provenance</CardTitle></CardHeader><CardContent className="grid gap-4 text-sm md:grid-cols-3"><div><p className="text-muted-foreground">Report status</p><p className="mt-1 font-medium">{vm.provenance.reportStatus}</p></div><div><p className="text-muted-foreground">Reasons</p><p className="mt-1 font-medium">{vm.provenance.reasons.length || "None reported"}</p></div><div><p className="text-muted-foreground">Diagnostics</p><p className="mt-1 font-medium">{vm.provenance.integrationDiagnostics.length + vm.provenance.diagnostics.length || "None reported"}</p></div></CardContent></Card>
+     <Card><CardHeader><CardTitle>Report provenance</CardTitle></CardHeader><CardContent className="grid gap-4 text-sm md:grid-cols-3"><div><p className="text-muted-foreground">Report status</p><p className="mt-1 font-medium">{workspaceProgressStatusLabel(vm.provenance.reportStatus)}</p></div><div><p className="text-muted-foreground">Reasons</p><p className="mt-1 font-medium">{vm.provenance.reasons.length || "None reported"}</p></div><div><p className="text-muted-foreground">Diagnostics</p><p className="mt-1 font-medium">{vm.provenance.integrationDiagnostics.length + vm.provenance.diagnostics.length || "None reported"}</p></div></CardContent></Card>
      </div>
      <section id="workspace-documents" aria-labelledby="workspace-documents-heading" className="space-y-4">
        <div><h2 id="workspace-documents-heading" className="flex items-center gap-2 text-xl font-semibold"><FileText className="h-5 w-5" />Documents</h2><p className="mt-1 text-sm text-muted-foreground">Documents already recorded for this student. This workspace is read-only.</p></div>
        <WorkspaceResourceState loading={documentsQuery.isLoading} error={documentsQuery.isError} empty={!documentsQuery.data?.length} onRetry={() => void documentsQuery.refetch()}>
-         <div className="grid gap-3 md:grid-cols-2">{documentsQuery.data?.map((document) => <Card key={document.id}><CardContent className="space-y-2 p-4"><div className="flex items-center justify-between gap-3"><p className="font-medium">{document.file_name}</p><Badge variant="outline">{document.status}</Badge></div><p className="text-sm text-muted-foreground">{document.doc_type}{document.issuer ? ` · ${document.issuer}` : ""}</p><p className="text-xs text-muted-foreground">Uploaded {displayDate(document.uploaded_at)}</p></CardContent></Card>)}</div>
+         <div className="grid gap-3 md:grid-cols-2">{documentsQuery.data?.map((document) => <Card key={document.id}><CardContent className="space-y-2 p-4"><div className="flex items-center justify-between gap-3"><p className="font-medium">{document.file_name}</p><Badge variant="outline">{docStatusLabel(document.status)}</Badge></div><p className="text-sm text-muted-foreground">{docTypeLabel(document.doc_type)}{document.issuer ? ` · ${document.issuer}` : ""}</p>{formatWorkspaceDateTime(document.uploaded_at ?? document.created_at) ? <p className="text-xs text-muted-foreground">Uploaded {formatWorkspaceDateTime(document.uploaded_at ?? document.created_at)}</p> : null}</CardContent></Card>)}</div>
        </WorkspaceResourceState>
      </section>
      <section id="workspace-support" aria-labelledby="workspace-support-heading" className="space-y-4">
        <div><h2 id="workspace-support-heading" className="flex items-center gap-2 text-xl font-semibold"><LifeBuoy className="h-5 w-5" />Support</h2><p className="mt-1 text-sm text-muted-foreground">Support tickets associated with this student. This workspace is read-only.</p></div>
        <WorkspaceResourceState loading={ticketsQuery.isLoading} error={ticketsQuery.isError} empty={!ticketsQuery.data?.tickets.length} onRetry={() => void ticketsQuery.refetch()}>
-         <div className="space-y-3">{ticketsQuery.data?.tickets.map((ticket: Ticket) => <Card key={ticket.id}><CardContent className="space-y-2 p-4"><div className="flex flex-wrap items-center justify-between gap-3"><p className="font-medium">{ticket.subject}</p><div className="flex gap-2"><Badge variant="outline">{ticket.status}</Badge><Badge variant="secondary">{ticket.priority}</Badge></div></div><p className="text-sm text-muted-foreground">{ticket.ticket_number} · {ticket.category}</p><p className="text-xs text-muted-foreground">Opened {displayDate(ticket.created_at)}</p></CardContent></Card>)}</div>
+         <div className="space-y-3">{ticketsQuery.data?.tickets.map((ticket: Ticket) => <Card key={ticket.id}><CardContent className="space-y-2 p-4"><div className="flex flex-wrap items-center justify-between gap-3"><p className="font-medium">{ticket.subject}</p><div className="flex gap-2"><Badge variant="outline">{staffStatusLabel(ticket.status)}</Badge><Badge variant="secondary">{workspaceToken(ticket.priority) ?? ticket.priority}</Badge></div></div><p className="text-sm text-muted-foreground">{ticket.ticket_number} · {SUPPORT_TOPIC_INFO[ticket.topic ?? topicForTicket(null, ticket.category)].label}</p>{formatWorkspaceDateTime(ticket.created_at) ? <p className="text-xs text-muted-foreground">Opened {formatWorkspaceDateTime(ticket.created_at)}</p> : null}</CardContent></Card>)}</div>
        </WorkspaceResourceState>
      </section>
   </div>;

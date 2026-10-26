@@ -1,7 +1,7 @@
 import React, { useId, useState } from "react";
 import { Link } from "wouter";
 import { Info, Lock, Mail, Pencil, Phone, Plus, Trash2, UserRound } from "lucide-react";
-import type { ContactScope, ContactType, StudentContactInput, StudentContactView } from "@shared/student-profile-contract";
+import type { ContactScope, ContactType, ProfileReadinessItem, StudentContactInput, StudentContactView } from "@shared/student-profile-contract";
 import { CONTACT_SCOPES, CONTACT_TYPES, contactRequestsAuthority } from "@shared/student-profile-contract";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
@@ -33,7 +33,7 @@ import {
   validatePhone,
   type FieldErrors,
 } from "./profile-presentation";
-import { FormActions, FormError, ProfileSection, StatusChip, SubCard, TextField, dialogClass, inputClass } from "./profile-ui";
+import { DialogBody, FormActions, FormError, ProfileSection, StatusChip, SubCard, TextField, dialogClass, dialogFormClass, dialogHeaderClass, inputClass } from "./profile-ui";
 import { Pill } from "@/components/student-progress/student-ui";
 
 export function AuthorityExplainer() {
@@ -78,8 +78,11 @@ export function ContactCard({
   contact,
   onEdit,
   onDelete,
+  consentUnderReview = false,
 }: {
   contact: StudentContactView;
+  /** True when a signed consent is already on file, so Lumière (not the student) is the one acting. */
+  consentUnderReview?: boolean;
   onEdit?: (c: StudentContactView) => void;
   onDelete?: (c: StudentContactView) => void;
 }) {
@@ -107,7 +110,11 @@ export function ContactCard({
       <div className="mt-3"><ScopeLine contact={contact} /></div>
       {contact.authorityStatus === "pending_verification" && (
         <p className="mt-3 text-sm text-student-muted" data-testid="pending-hint">
-          Lumière is waiting for a signed consent or legal document. <Link href="/documents" className="font-medium text-student-gold-ink underline underline-offset-4">Upload it in Documents</Link>.
+          {consentUnderReview ? (
+            "Lumière is reviewing the consent you sent. You will see the result here."
+          ) : (
+            <>Lumière is waiting for a signed consent or legal document. <Link href="/documents" className="font-medium text-student-gold-ink underline underline-offset-4">Upload it in Documents</Link>.</>
+          )}
         </p>
       )}
       {contact.authorityStatus === "revoked" && (
@@ -261,7 +268,7 @@ export function ContactDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className={dialogClass}>
-        <DialogHeader>
+        <DialogHeader className={dialogHeaderClass}>
           <DialogTitle className="font-serif text-2xl">
             {locked ? "Update contact details" : editing ? "Edit contact" : "Add a contact"}
           </DialogTitle>
@@ -271,7 +278,8 @@ export function ContactDialog({
               : "Listing someone does not give them portal access or access to your records."}
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={onSubmit} className="space-y-4" noValidate>
+        <form onSubmit={onSubmit} className={dialogFormClass} noValidate>
+          <DialogBody>
           {!locked && (
             <>
               <div className="space-y-1.5">
@@ -331,6 +339,7 @@ export function ContactDialog({
             </p>
           )}
           <FormError message={serverError} />
+          </DialogBody>
           <FormActions saving={busy} onCancel={() => onOpenChange(false)} saveLabel={editing ? "Save contact" : "Add contact"} sticky />
         </form>
       </DialogContent>
@@ -386,7 +395,7 @@ function DeleteContactDialog({ contact, onClose }: { contact: StudentContactView
   );
 }
 
-export function ContactsSection({ contacts }: { contacts: readonly StudentContactView[] }) {
+export function ContactsSection({ contacts, readiness = [] }: { contacts: readonly StudentContactView[]; readiness?: readonly ProfileReadinessItem[] }) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<StudentContactView | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<StudentContactView | null>(null);
@@ -421,6 +430,7 @@ export function ContactsSection({ contacts }: { contacts: readonly StudentContac
             <ContactCard
               key={c.id}
               contact={c}
+              consentUnderReview={readiness.some((r) => r.key === `contact_authority:${c.id}` && r.kind === "pending_review")}
               onEdit={(x) => {
                 setEditTarget(x);
                 setDialogOpen(true);

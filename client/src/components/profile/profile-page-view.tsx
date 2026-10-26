@@ -92,8 +92,8 @@ function ReadinessRow({ item }: { item: ProfileReadinessItem }) {
 }
 
 export function ReadinessPanel({ items }: { items: readonly ProfileReadinessItem[] }) {
-  const { attention, waiting } = splitReadiness(items);
-  const clear = attention.length === 0 && waiting.length === 0;
+  const { attention, waiting, external, completed } = splitReadiness(items);
+  const clear = attention.length === 0 && waiting.length === 0 && external.length === 0;
   return (
     <section aria-labelledby="readiness-title" className={cn(cardClass, "space-y-4")} data-testid="readiness-panel">
       <div>
@@ -105,24 +105,37 @@ export function ReadinessPanel({ items }: { items: readonly ProfileReadinessItem
           <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
           Nothing needs your attention, and nothing is waiting on Lumière.
         </p>
-      ) : (
+      ) : null}
+      {clear && completed.length === 0 ? null : (
         <div className="grid gap-4 md:grid-cols-2">
-          <div data-testid="readiness-attention">
+          {!clear && <div data-testid="readiness-attention">
             <h3 className="mb-1 text-sm font-semibold text-student-ink">Needs your attention</h3>
             {attention.length ? (
               <ul>{attention.map((i) => <ReadinessRow key={i.key} item={i} />)}</ul>
             ) : (
               <p className="px-3 text-sm text-student-muted">Nothing for you to do right now.</p>
             )}
-          </div>
-          <div data-testid="readiness-waiting">
+          </div>}
+          {!clear && <div data-testid="readiness-waiting">
             <h3 className="mb-1 text-sm font-semibold text-student-ink">Waiting on Lumière</h3>
             {waiting.length ? (
               <ul>{waiting.map((i) => <ReadinessRow key={i.key} item={i} />)}</ul>
             ) : (
               <p className="px-3 text-sm text-student-muted">Nothing is waiting for review.</p>
             )}
-          </div>
+          </div>}
+          {external.length > 0 && (
+            <div data-testid="readiness-external">
+              <h3 className="mb-1 text-sm font-semibold text-student-ink">Waiting on an outside institution</h3>
+              <ul>{external.map((i) => <ReadinessRow key={i.key} item={i} />)}</ul>
+            </div>
+          )}
+          {completed.length > 0 && (
+            <div data-testid="readiness-completed">
+              <h3 className="mb-1 text-sm font-semibold text-student-ink">Completed</h3>
+              <ul>{completed.map((i) => <ReadinessRow key={i.key} item={i} />)}</ul>
+            </div>
+          )}
         </div>
       )}
     </section>
@@ -169,7 +182,7 @@ export function ProfilePageView({ profile }: { profile: StudentProfileView }) {
         <IdentitySection identity={profile.identity} />
         <ContactSection contact={profile.contact} />
         <BackgroundSection background={profile.academicBackground} />
-        <ContactsSection contacts={profile.contacts} />
+        <ContactsSection contacts={profile.contacts} readiness={profile.readiness} />
         <EligibilitySection eligibility={profile.eligibility} />
         <AccountSection account={profile.account} email={profile.contact.email} />
       </div>
