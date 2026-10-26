@@ -272,3 +272,42 @@ export function selectWorkspaceState(query: WorkspaceQueryState):
   if (!isRecord(query.data)) return { kind: "empty" };
   return { kind: "ready", viewModel: toWorkspaceViewModel(query.data) };
 }
+
+export interface WorkspaceStudentIdentity {
+  readonly id?: string;
+  readonly name: string;
+  readonly email?: string;
+  readonly studentCode?: string;
+}
+
+const identityString = (record: WorkspaceRecord, ...keys: string[]): string | undefined => {
+  for (const key of keys) {
+    const candidate = record[key];
+    if (typeof candidate === "string" && candidate.trim()) return candidate.trim();
+  }
+  return undefined;
+};
+
+/**
+ * Single resolver for student identity shown or used anywhere in the
+ * workspace. The only input is the student record returned by the workspace
+ * endpoint; route params, list caches and the auth user are never consulted.
+ */
+export function resolveWorkspaceStudentIdentity(student: unknown): WorkspaceStudentIdentity {
+  const record = isRecord(student) ? student : {};
+  const first = identityString(record, "first_name", "firstName");
+  const last = identityString(record, "last_name", "lastName");
+  const name = identityString(record, "preferred_name", "preferredName")
+    ?? ([first, last].filter(Boolean).join(" ") || "Name not provided");
+  return {
+    id: identityString(record, "id", "studentId", "student_id"),
+    name,
+    email: identityString(record, "email"),
+    studentCode: identityString(record, "student_code", "studentCode"),
+  };
+}
+
+/** Student id from the (possibly not yet loaded) workspace query data. */
+export function workspaceStudentIdFromData(data: unknown): string | undefined {
+  return isRecord(data) ? resolveWorkspaceStudentIdentity(data.student).id : undefined;
+}

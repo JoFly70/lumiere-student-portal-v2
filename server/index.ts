@@ -14,6 +14,7 @@ import {
   compressionConfig,
 } from "./config/production";
 import { logger, logStartup, generateRequestId } from "./lib/logger";
+import { configureRateLimitBackend, createRateLimitStore, getRateLimitBackend } from "./lib/rate-limit-store";
 
 const app = express();
 const isProduction = process.env.NODE_ENV === 'production';
@@ -57,7 +58,6 @@ app.use(cors(corsConfig));
 app.use(compression(compressionConfig));
 
 // Initialize Redis client for rate limiting (if configured)
-let redisStore: any = undefined;
 const redisUrl = process.env.REDIS_URL;
 
 if (redisUrl && isProduction) {
@@ -150,11 +150,12 @@ if (redisUrl && isProduction) {
       throw connectError;
     }
 
-    redisStore = new RedisStoreClass({
-      // @ts-expect-error - RedisStore types are outdated
-      client: redisClient,
-      prefix: 'rl:',
-    });
+    // Every limiter (global, admin and the per-endpoint auth limiters) gets its
+    // own RedisStore with a distinct prefix on this shared client.
+    configureRateLimitBackend((prefix) => new RedisStoreClass({
+      sendCommand: (...args: string[]) => redisClient.sendCommand(args),
+      prefix,
+    }));
 
     // Periodic health check
     setInterval(async () => {
@@ -172,7 +173,7 @@ if (redisUrl && isProduction) {
     logger.error('⚠️  Redis initialization failed. Falling back to in-memory rate limiting.', {
       error: error instanceof Error ? error.message : String(error),
     });
-    logger.warn('   In-memory rate limiting is NOT suitable for multi-instance deployments.');
+    logger.warn('   In-memory rate limiting is NOT suitable for multi-instance deployments. /api/health/ready will report not ready.');
 
     // Alert for production failures
     if (isSentryConfigured && Sentry) {
@@ -203,16 +204,16 @@ if (redisUrl && isProduction) {
   }
 }
 
-// Rate limiting configuration with Redis (if available)
-const createLimiter = (config: typeof rateLimitConfig.api) => {
+// Rate limiting configuration; the store uses Redis once it is configured above
+const createLimiter = (config: typeof rateLimitConfig.api, prefix: string) => {
   return rateLimit({
     ...config,
-    ...(redisStore ? { store: redisStore } : {}),
+    store: createRateLimitStore(prefix),
   });
 };
 
-const apiLimiter = createLimiter(rateLimitConfig.api);
-const adminLimiter = createLimiter(rateLimitConfig.admin);
+const apiLimiter = createLimiter(rateLimitConfig.api, 'rl:api:');
+const adminLimiter = createLimiter(rateLimitConfig.admin, 'rl:admin:');
 
 // Webhook routes MUST come before body parsing AND rate limiting
 declare module 'http' {
@@ -353,7 +354,7 @@ app.use((req, res, next) => {
         features: [
           'Security headers (Helmet with strict CSP)',
           'CORS protection',
-          `Rate limiting${redisStore ? ' (Redis-backed)' : ' (in-memory)'}`,
+          `Rate limiting${getRateLimitBackend() === 'redis' ? ' (Redis-backed)' : ' (in-memory)'}`,
           'Gzip/Deflate compression (streaming)',
           'Structured logging (Winston)',
           'Health checks (/health, /ready, /live)',

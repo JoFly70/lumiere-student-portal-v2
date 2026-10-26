@@ -10,9 +10,24 @@ const validConfig = {
   sessionSecret: 'a-production-session-secret-with-32-chars',
   demoMode: false,
   authEmailMode: 'custom_smtp',
+  rateLimitBackend: 'redis' as const,
 };
 
 describe('production auth readiness', () => {
+  it('requires Redis-backed rate limiting shared across instances', async () => {
+    const probes = {
+      checkTables: async () => ({ users: true, profiles: true }),
+      checkAuthEmail: async () => true,
+    };
+    for (const rateLimitBackend of ['memory', undefined] as const) {
+      const result = await validateProductionAuthReadiness({ ...validConfig, rateLimitBackend }, probes);
+      expect(result.ready).toBe(false);
+      expect(result.failures).toContain('distributedRateLimit');
+    }
+    const redis = await validateProductionAuthReadiness(validConfig, probes);
+    expect(redis.checks.distributedRateLimit).toBe(true);
+  });
+
   it('passes without exposing configuration values', async () => {
     const result = await validateProductionAuthReadiness(validConfig, {
       checkTables: async () => ({ users: true, profiles: true }),

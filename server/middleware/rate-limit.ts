@@ -5,6 +5,7 @@
 
 import rateLimit from 'express-rate-limit';
 import { logger } from '../lib/logger';
+import { createRateLimitStore } from '../lib/rate-limit-store';
 
 /**
  * Aggressive rate limiting for authentication endpoints
@@ -12,6 +13,7 @@ import { logger } from '../lib/logger';
  * - Prevents brute force password attacks
  */
 export const authRateLimit = rateLimit({
+  store: createRateLimitStore('rl:auth:'),
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 5, // 5 requests per window
   message: { error: 'Too many authentication attempts. Please try again in 15 minutes.' },
@@ -39,6 +41,7 @@ export const authRateLimit = rateLimit({
  * - Prevents email enumeration attacks
  */
 export const passwordResetRateLimit = rateLimit({
+  store: createRateLimitStore('rl:password-reset:'),
   windowMs: 60 * 60 * 1000, // 1 hour
   max: 3, // 3 requests per window
   message: { error: 'Too many password reset requests. Please try again in an hour.' },
@@ -63,6 +66,7 @@ export const passwordResetRateLimit = rateLimit({
  * - 5 attempts per 15 minutes per IP
  */
 export const passwordUpdateRateLimit = rateLimit({
+  store: createRateLimitStore('rl:password-update:'),
   windowMs: 15 * 60 * 1000,
   max: 5,
   message: { error: 'Too many password update attempts. Please try again later.' },
@@ -82,6 +86,7 @@ export const passwordUpdateRateLimit = rateLimit({
  * - Protects against general abuse
  */
 export const apiRateLimit = rateLimit({
+  store: createRateLimitStore('rl:route-api:'),
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // 100 requests per window
   message: { error: 'Too many requests. Please slow down.' },
@@ -108,6 +113,7 @@ export const apiRateLimit = rateLimit({
  * - Prevents storage abuse
  */
 export const uploadRateLimit = rateLimit({
+  store: createRateLimitStore('rl:upload:'),
   windowMs: 60 * 60 * 1000, // 1 hour
   max: 10, // 10 uploads per window
   message: { error: 'Too many file uploads. Please try again in an hour.' },
@@ -133,6 +139,7 @@ export const uploadRateLimit = rateLimit({
  * - Prevents automated account creation
  */
 export const signupRateLimit = rateLimit({
+  store: createRateLimitStore('rl:signup:'),
   windowMs: 60 * 60 * 1000, // 1 hour
   max: 3, // 3 signups per window
   message: { error: 'Too many signup attempts. Please try again in an hour.' },

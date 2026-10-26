@@ -31,6 +31,7 @@ import {
   placementMutationOutcome,
   placementSuccessMessage,
   revokePlacementBody,
+  unknownPlacementOutcome,
   supersedePlacementBody,
   type CanonicalLabelOption,
   type PlacementOperation,
@@ -145,10 +146,7 @@ export function PlacementActionDialog({
       try {
         payload = await response.json();
       } catch {
-        throw new PlacementRequestError({
-          kind: "unexpected",
-          message: "The placement request returned an invalid response. No changes were applied.",
-        });
+        throw new PlacementRequestError(unknownPlacementOutcome());
       }
       if (!response.ok) {
         throw new PlacementRequestError(
@@ -156,10 +154,7 @@ export function PlacementActionDialog({
         );
       }
       if (!payload || typeof payload !== "object") {
-        throw new PlacementRequestError({
-          kind: "unexpected",
-          message: "The placement request returned an invalid response. No changes were applied.",
-        });
+        throw new PlacementRequestError(unknownPlacementOutcome());
       }
       return payload;
     },
@@ -177,10 +172,7 @@ export function PlacementActionDialog({
     onError: async (error) => {
       const workflowError = error instanceof PlacementRequestError
         ? error.workflowError
-        : {
-            kind: "unexpected" as const,
-            message: "The placement request could not be completed. No changes were applied.",
-          };
+        : unknownPlacementOutcome();
       const outcome = placementMutationOutcome(workflowError.kind);
       if (workflowError.kind === "snapshot-unavailable") {
         onSnapshotUnavailable();

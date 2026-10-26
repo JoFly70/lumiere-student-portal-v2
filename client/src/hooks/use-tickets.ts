@@ -115,6 +115,9 @@ export function useTickets(filters?: {
       const url = `/api/tickets${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
       return apiRequest(url);
     },
+    // A caller that scopes by student but has no resolved student id yet must
+    // not fall through to the unscoped ticket list.
+    enabled: !(filters && 'studentId' in filters && !filters.studentId),
   });
 }
 

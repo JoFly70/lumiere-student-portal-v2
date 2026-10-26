@@ -1,5 +1,9 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
+  PLACEMENT_OUTCOME_UNKNOWN_MESSAGE,
+  unknownPlacementOutcome,
   canCreatePlacement,
   canRevokePlacement,
   canSupersedePlacement,
@@ -191,6 +195,44 @@ describe("Phase 5C.2 controlled placement UI safety helpers", () => {
     expect(classifyPlacementWorkflowError(500, {
       error: { code: "PLACEMENT_WORKFLOW_SNAPSHOT_UNAVAILABLE" },
     }).kind).toBe("snapshot-unavailable");
+  });
+
+  it("treats unexpected, 5xx, unparseable and unknown-status responses as an unknown outcome", () => {
+    const cases: Array<[number, unknown]> = [
+      [500, { error: { code: "INTERNAL_ERROR", message: "Internal Server Error" } }],
+      [502, null],
+      [503, "<html>"],
+      [418, { error: { code: "SOMETHING" } }],
+      [409, { error: "no code" }],
+      [401, { error: { code: "UNAUTHORIZED" } }],
+    ];
+    for (const [status, payload] of cases) {
+      const result = classifyPlacementWorkflowError(status, payload);
+      expect(result.kind).toBe("unexpected");
+      expect(result.message).toBe(PLACEMENT_OUTCOME_UNKNOWN_MESSAGE);
+      expect(result.message).not.toMatch(/no change|not saved|nothing/i);
+    }
+    expect(unknownPlacementOutcome().message).toContain("could not be confirmed");
+    expect(placementMutationOutcome("unexpected").refetchCanonicalWorkspace).toBe(true);
+  });
+
+  it("only claims no change for server-defined pre-write rejections", () => {
+    const validation = classifyPlacementWorkflowError(400, {
+      error: { code: "STUDENT_ACADEMIC_VALIDATION_ERROR", message: "rationale required" },
+    });
+    expect(validation.kind).toBe("rejected");
+    expect(validation.message).toContain("No changes were applied.");
+    expect(classifyPlacementWorkflowError(404, {
+      error: { code: "PLACEMENT_WORKFLOW_CONTEXT_NOT_FOUND" },
+    }).kind).toBe("rejected");
+    expect(placementMutationOutcome("rejected").refetchCanonicalWorkspace).toBe(false);
+  });
+
+  it("dialog never asserts no change on network/parse failures and refetches", async () => {
+    const source = readFileSync(
+      resolve(__dirname, "../client/src/components/placement-action-dialog.tsx"), "utf8");
+    expect(source).not.toMatch(/No changes were applied/);
+    expect(source.match(/unknownPlacementOutcome\(\)/g)?.length).toBeGreaterThanOrEqual(3);
   });
 
   it("refreshes without retry or optimistic patch and preserves stale drafts", () => {

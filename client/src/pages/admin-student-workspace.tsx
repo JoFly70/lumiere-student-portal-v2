@@ -19,6 +19,8 @@ import {
   isDiagnosticAttentionItem,
   selectWorkspaceState,
   academicCreditRows,
+  resolveWorkspaceStudentIdentity,
+  workspaceStudentIdFromData,
   type WorkspaceAttentionItem,
   type WorkspaceRecord,
 } from "./admin-student-workspace-presentation";
@@ -98,14 +100,16 @@ export default function AdminStudentWorkspace() {
     queryKey: ADMIN_STUDENT_WORKSPACE_QUERY_KEY(studentId),
     ...ADMIN_STUDENT_WORKSPACE_QUERY_OPTIONS,
   });
-  const documentsQuery = useDocuments(studentId);
-  const ticketsQuery = useTickets({ studentId });
+  // Route param only locates the workspace; every panel keys off the id of the
+  // student record the workspace endpoint returned.
+  const canonicalStudentId = workspaceStudentIdFromData(query.data) ?? null;
+  const documentsQuery = useDocuments(canonicalStudentId);
+  const ticketsQuery = useTickets({ studentId: canonicalStudentId });
   const state = selectWorkspaceState(query);
   if (state.kind === "loading") return <div role={state.role} aria-live={state.ariaLive} className="space-y-4"><span className="sr-only">Loading student workspace</span><div className="h-8 w-64 animate-pulse rounded bg-muted" /><div className="h-32 animate-pulse rounded-lg bg-muted" /><div className="h-64 animate-pulse rounded-lg bg-muted" /></div>;
   if (state.kind === "error") return <Card><CardContent className="flex flex-col items-center gap-3 py-16 text-center"><AlertCircle className="h-8 w-8 text-destructive" /><h2 className="text-lg font-semibold">Workspace unavailable</h2><p className="text-sm text-muted-foreground">The canonical student workspace could not be loaded.</p><Button onClick={() => query.refetch()}><RefreshCw className="mr-2 h-4 w-4" />Retry</Button></CardContent></Card>;
   if (state.kind === "empty") return <Card><CardContent className="flex flex-col items-center gap-3 py-16 text-center"><h2 className="text-lg font-semibold">{state.reason === "not-found" ? "Student workspace not found" : "Workspace unavailable"}</h2><p className="text-sm text-muted-foreground">{state.reason === "not-found" ? "There is no canonical workspace for this student." : "No workspace record is available for this student."}</p></CardContent></Card>;
   const vm = state.viewModel;
-  const student = vm.student ?? {};
   const snapshot = vm.snapshot && typeof vm.snapshot === "object" && !Array.isArray(vm.snapshot) ? vm.snapshot as WorkspaceRecord : {};
   const label = (kind: "programs" | "programVersions" | "requirements", id: unknown): string | undefined => {
     const labels = vm.labels[kind];
@@ -114,7 +118,9 @@ export default function AdminStudentWorkspace() {
     return entry && typeof entry === "object" && !Array.isArray(entry) && typeof (entry as WorkspaceRecord).label === "string"
       ? String((entry as WorkspaceRecord).label) : undefined;
   };
-  const name = value(student, "preferred_name", "preferredName") !== "Not provided" ? value(student, "preferred_name", "preferredName") : `${value(student, "first_name", "firstName")} ${value(student, "last_name", "lastName")}`;
+  const identity = resolveWorkspaceStudentIdentity(vm.student);
+  const name = identity.name;
+  const placementStudentId = identity.id;
   const academicRows = academicCreditRows(vm.academicDetail);
   const snapshotFingerprint = validSnapshotFingerprint(vm.snapshotFingerprint)
     ? vm.snapshotFingerprint
@@ -123,7 +129,7 @@ export default function AdminStudentWorkspace() {
       : undefined;
   const requirementOptions = canonicalLabelOptions(vm.labels.requirements);
   const academicRuleOptions = canonicalLabelOptions(vm.labels.academicRules);
-  const writesDisabled = !placementWritesEnabled(
+  const writesDisabled = !placementStudentId || !placementWritesEnabled(
     snapshotFingerprint,
     snapshotUnavailable,
     query.isFetching,
@@ -157,7 +163,7 @@ export default function AdminStudentWorkspace() {
   return <div className="mx-auto max-w-6xl space-y-6">
     <Link href={ADMIN_STUDENTS_PATH} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" />Back to Students</Link>
     <header className="flex flex-col justify-between gap-4 border-b border-border/70 pb-6 md:flex-row md:items-end">
-      <div><p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary">Lumière / student workspace</p><h1 className="text-3xl font-semibold tracking-tight">{name}</h1><p className="mt-1 text-muted-foreground">{value(student, "email")} · <span className="font-mono">{value(student, "student_code", "studentCode")}</span></p></div>
+      <div><p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary">Lumière / student workspace</p><h1 className="text-3xl font-semibold tracking-tight">{name}</h1><p className="mt-1 text-muted-foreground">{identity.email ?? "Not provided"} · <span className="font-mono">{identity.studentCode ?? "Not provided"}</span></p></div>
       <Badge variant="outline" className="w-fit gap-2"><ShieldCheck className="h-3.5 w-3.5" />Canonical view · controlled placement writes</Badge>
     </header>
      <nav aria-label="Student workspace sections" className="flex flex-wrap gap-2 border-b pb-3">
@@ -214,7 +220,7 @@ export default function AdminStudentWorkspace() {
                   {canCreatePlacement(decision)
                     ? <PlacementActionDialog
                         operation="create"
-                        studentId={studentId}
+                        studentId={placementStudentId ?? ""}
                         studentName={name}
                         snapshotFingerprint={snapshotFingerprint ?? ""}
                         decisionId={String(decision!.id)}
@@ -253,7 +259,7 @@ export default function AdminStudentWorkspace() {
                                 {canSupersedePlacement(placement, decision)
                                   ? <PlacementActionDialog
                                       operation="supersede"
-                                      studentId={studentId}
+                                      studentId={placementStudentId ?? ""}
                                       studentName={name}
                                       snapshotFingerprint={snapshotFingerprint ?? ""}
                                       placementId={String(placement.id)}
@@ -272,7 +278,7 @@ export default function AdminStudentWorkspace() {
                                 {canRevokePlacement(placement)
                                   ? <PlacementActionDialog
                                       operation="revoke"
-                                      studentId={studentId}
+                                      studentId={placementStudentId ?? ""}
                                       studentName={name}
                                       snapshotFingerprint={snapshotFingerprint ?? ""}
                                       placementId={String(placement.id)}
@@ -335,7 +341,7 @@ export default function AdminStudentWorkspace() {
               ? <div className="mt-3">
                   <PlacementActionDialog
                     operation="revoke"
-                    studentId={studentId}
+                    studentId={placementStudentId ?? ""}
                     studentName={name}
                     snapshotFingerprint={snapshotFingerprint ?? ""}
                     placementId={String(placement.id)}

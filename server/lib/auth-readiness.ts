@@ -20,12 +20,20 @@ export type AuthReadinessConfig = {
    * or validate the provider-side configuration.
    */
   authEmailMode?: string;
+  /**
+   * Backend currently used by every rate limiter. Production must share
+   * limits across instances, so only 'redis' is ready.
+   */
+  rateLimitBackend?: 'memory' | 'redis';
 };
 
 export type AuthReadinessProbes = {
   /** Read-only checks for the two public tables. */
   checkTables?: () => Promise<{ users: boolean; profiles: boolean }>;
-  /** Observable, non-secret Supabase Auth/email configuration indicator. */
+  /**
+   * Observable, non-secret Supabase Auth settings indicator: the email
+   * provider is enabled and public signup is disabled (invitation-only).
+   */
   checkAuthEmail?: () => Promise<boolean>;
 };
 
@@ -41,6 +49,7 @@ export type AuthReadinessResult = {
     sessionSecret: boolean;
     authEmail: boolean;
     customSmtpDeclared: boolean;
+    distributedRateLimit: boolean;
   };
   /** Safe, non-secret deployment signal; never treated as delivery proof. */
   mailMode: 'custom_smtp' | 'supabase_default' | 'unknown';
@@ -118,7 +127,8 @@ export async function validateProductionAuthReadiness(
     demoModeDisabled: config.demoMode !== true,
     sessionSecret: hasSafeSessionSecret(config.sessionSecret),
     // Keys establish that the server can use the configured project. The
-    // provider/signup state must come from the read-only settings probe below;
+    // provider/signup state must come from the read-only settings probe below,
+    // which requires public signup to be disabled (invitation-only);
     // ENABLE_EMAIL_VERIFICATION is intentionally not consulted because
     // administrator-confirmed signup is a valid production configuration.
     authEmail: Boolean(config.supabaseAnonKey && config.supabaseServiceKey && probes.checkAuthEmail),
@@ -126,6 +136,7 @@ export async function validateProductionAuthReadiness(
     // verified by the separate deploy/CI auth-config check, and inbox delivery
     // remains an end-to-end smoke test.
     customSmtpDeclared: mailMode === 'custom_smtp',
+    distributedRateLimit: config.rateLimitBackend === 'redis',
   };
 
   if (probes.checkTables) {

@@ -2,6 +2,7 @@ import { type Express } from 'express';
 import { supabaseAdmin, isSupabaseConfigured } from '../lib/supabase';
 import { logger } from '../lib/logger';
 import { validateProductionAuthReadiness } from '../lib/auth-readiness';
+import { getRateLimitBackend } from '../lib/rate-limit-store';
 
 export function registerHealthRoutes(app: Express) {
   // Health check endpoint for monitoring/load balancers
@@ -95,6 +96,7 @@ export function registerHealthRoutes(app: Express) {
           sessionSecret: process.env.SESSION_SECRET,
           demoMode: process.env.ALLOW_DEMO_MODE === 'true',
           authEmailMode: process.env.AUTH_EMAIL_MODE,
+          rateLimitBackend: getRateLimitBackend(),
         }, {
           checkTables: async () => {
             const [users, profiles] = await Promise.all([
@@ -118,7 +120,9 @@ export function registerHealthRoutes(app: Express) {
               };
               const email = settings.external?.email;
               const emailEnabled = typeof email === 'boolean' ? email : email?.enabled === true;
-              return emailEnabled === true && settings.disable_signup !== true;
+              // Accounts are created only through the server's invitation flow,
+              // so Supabase's own public signup must be disabled.
+              return emailEnabled === true && settings.disable_signup === true;
             } catch {
               return false;
             }

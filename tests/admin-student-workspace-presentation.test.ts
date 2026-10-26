@@ -11,6 +11,8 @@ import {
   attentionItemLabel,
   classifyWorkspaceQueryError,
   diagnosticItemStatus,
+  resolveWorkspaceStudentIdentity,
+  workspaceStudentIdFromData,
   selectWorkspaceState,
   toWorkspaceViewModel,
 } from "@/pages/admin-student-workspace-presentation";
@@ -365,6 +367,40 @@ describe("admin student workspace presentation", () => {
     expect(markup).toContain("Enrollment question");
     expect(markup).not.toContain("demo");
     expect(markup).not.toContain("fake");
+  });
+  it("resolves identity only from the workspace student record", () => {
+    expect(resolveWorkspaceStudentIdentity({
+      id: "student-1", first_name: "Ada", last_name: "Lovelace", email: "ada@example.test", student_code: "S-1",
+    })).toEqual({ id: "student-1", name: "Ada Lovelace", email: "ada@example.test", studentCode: "S-1" });
+    expect(resolveWorkspaceStudentIdentity({ id: "s", preferredName: "Addie", firstName: "Ada" }).name).toBe("Addie");
+    expect(resolveWorkspaceStudentIdentity(undefined)).toMatchObject({ name: "Name not provided", id: undefined });
+    expect(workspaceStudentIdFromData({ student: { id: "student-9" } })).toBe("student-9");
+    expect(workspaceStudentIdFromData(undefined)).toBeUndefined();
+  });
+  it("keys documents, tickets and placement controls off the record id, not the route param", async () => {
+    useQueryMock.mockReturnValueOnce({
+      isLoading: false, isError: false,
+      data: {
+        student: { id: "record-student", first_name: "Ada", last_name: "Lovelace", email: "ada@example.test", student_code: "S-77" },
+        report: { status: "COMPOSED" },
+        needsAttention: { groups: { manualReview: [], missing: [], partial: [], conflict: [] } },
+        displayLabels: {}, academicDetail: {},
+      },
+    } as any);
+    useDocumentsMock.mockClear(); useTicketsMock.mockClear();
+    const { default: AdminStudentWorkspace } = await import("@/pages/admin-student-workspace");
+    const markup = renderToStaticMarkup(React.createElement(AdminStudentWorkspace));
+    expect(useDocumentsMock).toHaveBeenCalledWith("record-student");
+    expect(useTicketsMock).toHaveBeenCalledWith({ studentId: "record-student" });
+    expect(markup).toContain("Ada Lovelace");
+    expect(markup).toContain("ada@example.test");
+    expect(markup).toContain("S-77");
+    // Route param must not be used for scoped panels before the record loads.
+    useQueryMock.mockReturnValueOnce({ isLoading: true } as any);
+    useDocumentsMock.mockClear(); useTicketsMock.mockClear();
+    renderToStaticMarkup(React.createElement(AdminStudentWorkspace));
+    expect(useDocumentsMock).toHaveBeenCalledWith(null);
+    expect(useTicketsMock).toHaveBeenCalledWith({ studentId: null });
   });
   it("shows explicit empty and error/retry states for documents and support", async () => {
     useQueryMock.mockReturnValueOnce({

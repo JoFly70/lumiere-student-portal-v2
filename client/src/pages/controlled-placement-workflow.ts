@@ -16,7 +16,29 @@ export type PlacementWorkflowErrorKind =
   | "stale"
   | "snapshot-unavailable"
   | "conflict"
+  | "rejected"
   | "unexpected";
+
+export const PLACEMENT_OUTCOME_UNKNOWN_MESSAGE =
+  "The outcome of this request could not be confirmed. Refreshing the current record\u2026";
+
+// Codes the placement routes emit only for rejections that happen before any
+// write (zod/param validation, missing context, state/duplicate conflicts).
+const DEFINITIVE_REJECTION_STATUS_CODES: Readonly<Record<number, readonly string[]>> = {
+  400: ["PLACEMENT_WORKFLOW_VALIDATION_ERROR", "STUDENT_ACADEMIC_VALIDATION_ERROR"],
+  404: ["PLACEMENT_WORKFLOW_CONTEXT_NOT_FOUND", "STUDENT_ACADEMIC_NOT_FOUND"],
+  409: [
+    "STUDENT_ACADEMIC_DUPLICATE",
+    "STUDENT_ACADEMIC_INVALID_STATE",
+    "STUDENT_ACADEMIC_PROGRAM_REQUIRED",
+    "STUDENT_ACADEMIC_VERIFICATION_REQUIRED",
+    "STUDENT_ACADEMIC_PROVENANCE_MISMATCH",
+  ],
+};
+
+export function unknownPlacementOutcome(): PlacementWorkflowError {
+  return { kind: "unexpected", message: PLACEMENT_OUTCOME_UNKNOWN_MESSAGE };
+}
 
 export interface PlacementWorkflowError {
   readonly kind: PlacementWorkflowErrorKind;
@@ -215,23 +237,29 @@ export function classifyPlacementWorkflowError(
       message: "The canonical snapshot is unavailable. Placement writes remain disabled until it refreshes.",
     };
   }
-  if (status === 409) {
+  if (status === 409 && code && DEFINITIVE_REJECTION_STATUS_CODES[409].includes(code)) {
     return {
       kind: "conflict",
       message: message ?? "The placement could not be changed because the canonical record is in conflict.",
     };
   }
-  return {
-    kind: "unexpected",
-    message: "The placement request could not be completed. No changes were applied.",
-  };
+  if (code && DEFINITIVE_REJECTION_STATUS_CODES[status]?.includes(code)) {
+    return {
+      kind: "rejected",
+      message: `${message ?? "The placement request was rejected."} No changes were applied.`,
+    };
+  }
+  // Network errors, 5xx (including a failure after the write committed, e.g.
+  // audit), unparseable bodies and unknown statuses: outcome is unknown.
+  return unknownPlacementOutcome();
 }
 
 export function placementMutationOutcome(
   result: "success" | PlacementWorkflowErrorKind,
 ): PlacementMutationOutcome {
   return {
-    refetchCanonicalWorkspace: result === "success" || result === "stale",
+    refetchCanonicalWorkspace:
+      result === "success" || result === "stale" || result === "unexpected",
     retryAutomatically: false,
     resetDialog: result === "success",
     optimisticPatch: false,

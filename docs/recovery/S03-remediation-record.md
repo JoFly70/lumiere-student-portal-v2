@@ -72,3 +72,32 @@ The 192 skipped tests are suites gated to a specific hosted project. They refuse
 8. The hosted-project-gated database and E2E suites (192 tests).
 
 These require independent security acceptance testing by an authorized tester. This session did not build a penetration-testing harness.
+
+## S03 final closeout corrections (on top of `798f6f6`)
+
+### Authentication and production readiness
+- **Signup readiness inverted:** `/ready` treated Supabase public signup as required (`disable_signup !== true`). It now requires `disable_signup === true` as well as the email provider being enabled, in line with the invitation-only model and the config verifier.
+- **Auth rate limits were per instance:** the login, signup, password-reset, password-update, upload and route-level API limiters in `server/middleware/rate-limit.ts` always used in-memory stores. The global and admin limiters shared a single Redis store, which express-rate-limit v8 rejects, and that store was built with a `client` option that rate-limit-redis v4 does not accept. Every limiter now gets its own store from `server/lib/rate-limit-store.ts`, each with its own prefix. At startup they all move to Redis (`sendCommand`) on one client. If Redis is not configured or does not connect, the server keeps per-instance memory limits and `/ready` reports `distributedRateLimit: false`.
+
+### Canonical academic workflow
+- **Placement outcomes:** a network error, a 5xx (which can follow a committed write, because audit runs after it), an unparseable body or an unknown status is now reported as an unknown outcome, and the canonical workspace is refetched. "No changes were applied" is shown only for the 400/404/409 codes that the routes emit before any write.
+- **Workspace identity:** the header, documents, tickets and placement dialogs take the student's identity from the student record returned by the workspace endpoint, not from the route parameter. While no record id is loaded, placement writes are disabled. A ticket query scoped to a student no longer falls back to the unscoped list while that id is missing.
+
+### Historical Codex findings re-checked
+Of the 10 P1 findings on PRs #1–#11, 8 are fixed, no longer apply, or are covered by the corrections above.
+
+**Still present (P1, PR #2):** placements and exceptions bound to a soft-deactivated requirement are not filtered in `server/repositories/degree-evaluation-snapshot-repo.ts`. The snapshot therefore fails with `INVALID_PLACEMENT_BINDING` or `INVALID_EXCEPTION_TARGET`. This fails closed: the student goes to manual review and no credit is wrongly applied. The fix changes the facts and fingerprint of the canonical snapshot, so it was not changed during closeout. It is deferred to a reviewed S04 change.
+
+**Still present (P2, PR #8):** the flight-deck `/api/students/me` readiness query inherits `staleTime: Infinity`.
+
+### Closeout verification
+- `tsc --noEmit`: pass.
+- `vitest run`: 48 files passed and 8 skipped; 1227 tests passed and 192 skipped (hosted-project-gated suites).
+- `npm run build`: pass.
+
+**Not run:**
+- ESLint: `@eslint/js` is not installed (a pre-existing problem).
+- `verify:supabase-auth-config` and the canonical environment check: they need production credentials and access, which are not authorized.
+- The disposable SQL audit: no SQL changed in closeout.
+
+The behavioral security requirements listed above remain **NOT TESTED**. Redis-backed limiting across real instances is also **NOT TESTED**; only a unit test with a simulated shared store was run.
