@@ -263,7 +263,7 @@ export const JOURNEY_B_STAGES: readonly JourneyBStage[] = ["eligibility", "admit
 export function journeyB(stage: JourneyBStage, opts: { ruleSet?: RuleSetRecord } = {}): GraduateProgramBundle {
   const at = (s: JourneyBStage) => JOURNEY_B_STAGES.indexOf(stage) >= JOURNEY_B_STAGES.indexOf(s);
   const ruleSet = opts.ruleSet ?? RULE_SET_2026;
-  const p = program({ id: "prog-b", studentId: "stu-syn-b", offeringId: "off-bdbi-uni", ruleSetId: ruleSet.id, route: "eneb_unimarconi", cohortLabel: ruleSet.cohortLabel, enrollmentContractTitle: "Master in Big Data and Business Intelligence", enebStatus: at("assessments") ? "coursework_complete" : "in_progress", priorBachelorSource: "external" });
+  const p = program({ id: "prog-b", studentId: "stu-syn-b", offeringId: "off-bdbi-uni", ruleSetId: ruleSet.id, route: "eneb_unimarconi", cohortLabel: ruleSet.cohortLabel, enrollmentContractTitle: "Master in Big Data and Business Intelligence", enebStatus: "coursework_complete", priorBachelorSource: "external" });
   const sid = p.studentId;
   const records: GraduateRecord[] = [];
   const credits: CreditEntryRecord[] = [];

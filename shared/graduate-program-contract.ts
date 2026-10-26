@@ -1081,7 +1081,10 @@ export function buildEvaluationView(e: CredentialEvaluationRecord): EvaluationVi
     destinationCountry: e.destinationCountry,
     qualificationEvaluated: e.qualificationEvaluated,
     intendedUse: e.intendedUse.replace(/_/g, " "),
-    typeLabel: EVALUATION_TYPE_LABEL[e.evaluationType],
+    typeLabel:
+      e.evaluationType === "completed_report" && e.status !== "completed"
+        ? "Official evaluation report (requested, not yet issued)"
+        : EVALUATION_TYPE_LABEL[e.evaluationType],
     isOfficialOutcome: official,
     isPreliminary: preliminary,
     status: e.status.replace(/_/g, " "),
@@ -1461,6 +1464,7 @@ function graduationView(bundle: GraduateProgramBundle, subjectsDone: boolean): S
   const delivered = latest(r, "diploma_delivered");
   const credential = verifiedRecord(r, "credential_verification");
 
+  const academicWorkComplete = subjectsDone && (!thesisRequired || thesisResult?.outcome === "passed");
   const m = (key: string, label: string, state: MilestoneState, detail: string, official: boolean, date: string | null = null): MilestoneView => ({ key, label, state, detail, official, date });
   const tracked = (rec: GraduateRecord | null): MilestoneState =>
     !rec ? "not_started" : rec.trackingStatus === "completed" ? "done" : rec.trackingStatus === "blocked" ? "attention" : rec.trackingStatus === "not_started" ? "not_started" : "in_progress";
@@ -1487,8 +1491,12 @@ function graduationView(bundle: GraduateProgramBundle, subjectsDone: boolean): S
     m(
       "conferral",
       "University degree formally conferred",
-      conferral ? "done" : "waiting",
-      conferral ? "Confirmed from the university's conferral document." : "Only the university can confer the degree. Lumière records it once we hold the university's document.",
+      conferral ? "done" : academicWorkComplete ? "waiting" : "later",
+      conferral
+        ? "Confirmed from the university's conferral document."
+        : academicWorkComplete
+          ? "Only the university can confer the degree. Lumière records it once we hold the university's document."
+          : "Comes after your subjects and thesis are complete.",
       !!conferral,
       conferral?.effectiveDate ?? null,
     ),
@@ -1505,7 +1513,6 @@ function graduationView(bundle: GraduateProgramBundle, subjectsDone: boolean): S
     ),
     m("verification", "Credential verification completed", credential ? "done" : issued ? "waiting" : "later", credential ? "The award was confirmed with the issuing university." : "A final check with the university that the award is genuine.", !!credential, credential?.decisionDate ?? null),
   ];
-  const academicWorkComplete = subjectsDone && (!thesisRequired || thesisResult?.outcome === "passed");
   return {
     milestones,
     academicWorkComplete,
@@ -1602,7 +1609,7 @@ export function buildStudentGraduateProgramView(bundle: GraduateProgramBundle): 
       pendingDocuments.push({
         key: "document_legalization",
         label: needs.requirements.includes("apostille") ? "Apostille for your degree" : "Legalized degree documents",
-        detail: `Required for degrees issued in ${country} under your cohort's terms.`,
+        detail: `Required for degrees issued in ${countryName(country ?? "")} under your cohort's terms.`,
         recordId: leg?.id ?? null,
       });
     }
@@ -1618,7 +1625,9 @@ export function buildStudentGraduateProgramView(bundle: GraduateProgramBundle): 
   const uniAllPassed = uniSubjects.length > 0 && passed(uniSubjects) === uniSubjects.length;
   const subjectsDone = uni ? uniAllPassed : enebAllPassed;
 
-  const statement = uni
+  const statement = uni && verifiedRecord(r, "award_conferral")
+    ? "The university has conferred your degree; your official transcript is the record of your credits."
+    : uni
     ? verifiedRequirements
       ? `${verifiedRequirements.done} of ${verifiedRequirements.total} university-approved requirements verified.`
       : uniSubjects.length
@@ -1693,7 +1702,7 @@ export function buildStudentGraduateProgramView(bundle: GraduateProgramBundle): 
     route: program.route,
     title: program.enrollmentContractTitle ?? offering.marketingTitle,
     titleNote:
-      uni
+      uni && !verifiedRecord(r, "award_conferral")
         ? offering.universityLegalTitleStatus === "verified" && offering.universityLegalTitle
           ? `University title: ${offering.universityLegalTitle}`
           : "The university's official title for this master's is still being confirmed."
