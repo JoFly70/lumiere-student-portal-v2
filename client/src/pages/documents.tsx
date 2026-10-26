@@ -466,7 +466,7 @@ export default function Documents() {
             ) : (
               <>
                 <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <h3 className="font-semibold mb-2">Drag and drop files here</h3>
+                <p className="font-semibold mb-2">Drag and drop files here</p>
                 <p className="text-sm text-muted-foreground mb-4">or click to browse your computer</p>
                 <input
                   ref={fileInputRef}
@@ -478,7 +478,7 @@ export default function Documents() {
                   onChange={handleFileSelect}
                   data-testid="input-file-upload"
                 />
-                <Button asChild data-testid="button-browse">
+                <Button asChild data-testid="button-browse" className="dark:bg-[hsl(215_80%_45%)]">
                   <label htmlFor="file-upload" className="cursor-pointer">
                     Browse Files
                   </label>
