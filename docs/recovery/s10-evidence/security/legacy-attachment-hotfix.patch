@@ -1,0 +1,70 @@
+--- a/server/routes/tickets.ts
++++ b/server/routes/tickets.ts
+@@ -18,6 +18,18 @@
+   sendNewCommentEmail,
+ } from '../lib/email';
+ 
++/**
++ * S10 hotfix: attachment objects must live under tickets/<ticketId>/<single-segment>.
++ * Prevents registering/downloading arbitrary objects in the shared bucket.
++ */
++function isPinnedAttachmentPath(ticketId: string, storagePath: unknown): boolean {
++  if (typeof storagePath !== 'string') return false;
++  const prefix = `tickets/${ticketId}/`;
++  if (!storagePath.startsWith(prefix)) return false;
++  const rest = storagePath.slice(prefix.length);
++  return rest.length > 0 && rest.length <= 255 && !/[\\/]/.test(rest) && !rest.includes('..') && !rest.includes('\0');
++}
++
+ const router = Router();
+ 
+ // Validation schemas
+@@ -611,16 +623,9 @@
+       return res.status(500).json({ error: 'Failed to generate upload URL' });
+     }
+ 
+-    // Get public URL for the file
+-    const { data: { publicUrl } } = supabaseAdmin
+-      .storage
+-      .from('documents')
+-      .getPublicUrl(storagePath);
+-
+     res.json({
+       uploadUrl: uploadData.signedUrl,
+       storagePath,
+-      publicUrl,
+     });
+   } catch (error) {
+     if (error instanceof z.ZodError) {
+@@ -673,6 +678,11 @@
+       return res.status(403).json({ error: 'Access denied' });
+     }
+ 
++    // S10 hotfix: the path must be inside this ticket's own folder
++    if (!isPinnedAttachmentPath(ticketId, validated.storage_path)) {
++      return res.status(400).json({ error: 'Invalid attachment path' });
++    }
++
+     // Create attachment record
+     const { data: attachment, error } = await supabaseAdmin
+       .from('ticket_attachments')
+@@ -742,11 +752,17 @@
+       return res.status(403).json({ error: 'Access denied' });
+     }
+ 
+-    // Generate presigned download URL (valid for 1 hour)
++    // S10 hotfix: refuse rows (including previously registered ones) whose path escapes the ticket folder
++    if (!isPinnedAttachmentPath(attachment.ticket_id, attachment.storage_path)) {
++      logger.warn('Attachment path outside ticket folder refused', { ticketId, attachmentId });
++      return res.status(404).json({ error: 'Attachment not found' });
++    }
++
++    // Generate presigned download URL (shortened from 1 hour to 5 minutes)
+     const { data: downloadData, error: downloadError } = await supabaseAdmin
+       .storage
+       .from('documents')
+-      .createSignedUrl(attachment.storage_path, 3600);
++      .createSignedUrl(attachment.storage_path, 300);
+ 
+     if (downloadError || !downloadData) {
+       logger.error('Failed to generate download URL', { error: downloadError });
