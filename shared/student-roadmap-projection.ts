@@ -330,20 +330,26 @@ export function projectStudentRoadmap(input: ProjectStudentRoadmapInput): Studen
   // phases
   const sortedPhases = [...content.phases].sort((a, b) => a.sequence - b.sequence || cmp(a.key, b.key));
   const phaseDerived = sortedPhases.map((p) => allDerived.filter((d) => d.item.phaseKey === p.key));
-  let currentAssigned = false;
+  // Exactly ONE phase is "current" (the student is never shown two "Current phase" labels):
+  //   1. the first unfinished phase (by sequence) in which the student has reported activity;
+  //   2. otherwise the first unfinished phase.
+  // Any OTHER unfinished phase with activity (overlapping weekly blocks, a parallel
+  // prerequisite track) is "also_active"; the rest are "upcoming".
+  const isStarted = (members: readonly DerivedItem[]) =>
+    members.some((d) => d.active && d.stage !== "not_started");
+  const isComplete = (members: readonly DerivedItem[]) => {
+    const active = members.filter((d) => d.active);
+    return active.length > 0 && active.every((d) => d.done);
+  };
+  const unfinishedIdx = phaseDerived.map((m, i) => (isComplete(m) ? -1 : i)).filter((i) => i >= 0);
+  const currentIdx = unfinishedIdx.find((i) => isStarted(phaseDerived[i])) ?? unfinishedIdx[0] ?? -1;
   const phases: StudentRoadmapPhaseView[] = sortedPhases.map((phase, idx) => {
     const members = phaseDerived[idx];
-    const active = members.filter((d) => d.active);
-    const complete = active.length > 0 && active.every((d) => d.done);
     let state: StudentRoadmapPhaseView["state"];
-    const started = active.some((d) => d.stage !== "not_started");
-    if (complete) state = "complete";
-    // The first unfinished phase is current, and so is any later phase the
-    // student is already working in (e.g. a parallel prerequisite track).
-    else if (!currentAssigned || started) {
-      state = "current";
-      currentAssigned = true;
-    } else state = "upcoming";
+    if (isComplete(members)) state = "complete";
+    else if (idx === currentIdx) state = "current";
+    else if (isStarted(members)) state = "also_active";
+    else state = "upcoming";
     return {
       key: phase.key,
       title: phase.title,
@@ -409,14 +415,20 @@ export function projectStudentRoadmap(input: ProjectStudentRoadmapInput): Studen
   // today
   const activeDerived = allDerived.filter((d) => d.active);
   const reportable = activeDerived.filter((d) => roadmapReportBlockedReason(d.item) === null);
-  const working = reportable.filter((d) => d.stage === "in_progress" || d.stage === "submitted" || d.stage === "graded");
+  // "submitted" stage: every task is submitted or done, so no student action remains until
+  // grading; those items are not Today focus (they are reported as "awaiting grading").
+  const working = reportable.filter((d) => d.stage === "in_progress" || d.stage === "graded");
   const startable = reportable.filter(
     (d) => d.stage === "not_started"
       && views.get(d.item.key)!.waitingOn.length === 0,
   );
+  const awaitingGrading = reportable.filter((d) => d.stage === "submitted");
   const focus = [...working, ...startable].slice(0, 3);
   const nextMilestone = milestones.find((m) => !m.reached) ?? null;
-  const tasksRemaining = (d: DerivedItem) => d.tasks.filter((t) => t.status !== "graded").length;
+  // Tasks the student can still act on (not yet submitted or done).
+  const tasksRemaining = (d: DerivedItem) => d.tasks.filter((t) => t.status === "not_started" || t.status === "in_progress").length;
+  const tasksSubmittedIn = (d: DerivedItem) => d.tasks.filter((t) => t.status === "submitted").length;
+  const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
   let headline: string;
   let detail: string;
@@ -432,15 +444,19 @@ export function projectStudentRoadmap(input: ProjectStudentRoadmapInput): Studen
   } else if (focus.length > 0) {
     const first = focus[0];
     const remaining = tasksRemaining(first);
+    const submitted = tasksSubmittedIn(first);
     const isWorking = first.stage !== "not_started";
     headline = `${isWorking ? "Continue" : "Start"} ${first.item.title}`;
     if (first.tasks.length === 0) {
       detail = isWorking ? "Keep going and mark the course complete when you finish it." : "Begin when you are ready.";
     } else if (remaining === 0) {
-      detail = "All tasks are graded. Mark the course complete when you finish it at the provider.";
+      detail = "All tasks are done. Mark the course complete when you finish it at the provider.";
     } else {
-      detail = `${remaining} ${remaining === 1 ? "task" : "tasks"} remaining.`;
+      detail = `${plural(remaining, "task", "tasks")} remaining${submitted > 0 ? `, ${submitted} submitted and awaiting grading` : ""}.`;
     }
+  } else if (awaitingGrading.length > 0) {
+    headline = "Everything you can do is submitted";
+    detail = `${plural(awaitingGrading.length, "course is", "courses are")} waiting to be graded. Mark a task done once you see it graded at the provider.`;
   } else {
     headline = "Waiting on earlier courses";
     detail = "Your next courses unlock when the courses they depend on are complete.";
@@ -455,6 +471,8 @@ export function projectStudentRoadmap(input: ProjectStudentRoadmapInput): Studen
   // foundation
   let planned = 0n;
   for (const d of activeDerived) {
+    // Licensing-only credit is not degree credit, so it is never planned degree credit.
+    if (d.item.creditUse === "licensing") continue;
     if (d.stage !== "officially_accepted") planned += toHundredths(d.item.credits ?? null) ?? 0n;
   }
 

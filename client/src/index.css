@@ -367,10 +367,25 @@
   }
 }
 /* ------------------------------------------------------------------------- */
-/* Student-facing surface (S05): gold, ivory and charcoal.                    */
+/* Student-facing surface (S05, refined in S07): gold, ivory and charcoal.    */
 /* Scoped to .student-surface so admin pages and the global --primary stay    */
-/* untouched. Contrast: ink/muted/gold-ink >= 4.5:1 on bg and card (text),    */
-/* gold and line >= 3:1 on bg and card (graphics, control boundaries).        */
+/* untouched.                                                                 */
+/*                                                                            */
+/* GOLD IS THE BRAND ACCENT, NOT A STATUS. It is used for eyebrows, the       */
+/* primary call to action, focus rings and the active navigation item. It     */
+/* never encodes a progress or credit state.                                  */
+/*                                                                            */
+/* STATUS LANGUAGE (--st-*): seven semantic statuses, each with a text/graphic */
+/* colour (>= 4.5:1 on the card, the page and its own tint) and a soft tint.   */
+/* Every use pairs the colour with an icon and a label, never colour alone.    */
+/*   official      charcoal seal   Lumiere verified it (credit, accepted course) */
+/*   applied       green           verified credit counted toward a requirement  */
+/*   provider      plum            student says finished at the provider         */
+/*   progress      blue            started or part-way                           */
+/*   submitted     teal            submitted, waiting to be graded               */
+/*   notstarted    grey            nothing reported yet                          */
+/*   attention     terracotta      on hold, awaiting approval, overdue           */
+/* tests/s07-student-ui-tokens.test.ts verifies the contrast ratios.           */
 /* ------------------------------------------------------------------------- */
 .student-surface {
   --s-bg: 43 45% 96%;
@@ -379,6 +394,8 @@
   --s-muted: 30 6% 33%;
   --s-gold: 38 62% 40%;
   --s-gold-fill: 38 62% 40%;
+  --s-gold-bright: 41 72% 60%;
+  --s-gold-bright-ink: 30 30% 10%;
   --s-gold-ink: 33 70% 26%;
   --s-gold-soft: 42 62% 90%;
   --s-line: 40 20% 86%;
@@ -387,6 +404,23 @@
   --s-attn-soft: 30 90% 93%;
   --s-seal: 30 10% 16%;
   --s-seal-ink: 43 60% 80%;
+
+  --st-official: 30 10% 16%;
+  --st-official-soft: 40 14% 90%;
+  --st-applied: 158 62% 20%;
+  --st-applied-soft: 150 35% 91%;
+  --st-provider: 275 38% 34%;
+  --st-provider-soft: 275 30% 93%;
+  --st-progress: 214 66% 34%;
+  --st-progress-soft: 214 60% 93%;
+  --st-submitted: 188 90% 19%;
+  --st-submitted-soft: 188 45% 91%;
+  --st-notstarted: 30 6% 36%;
+  --st-notstarted-soft: 40 12% 93%;
+  --st-attention: 18 78% 31%;
+  --st-attention-soft: 25 90% 93%;
+
+  --font-serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
   background-color: hsl(var(--s-bg));
   color: hsl(var(--s-ink));
   color-scheme: light;
@@ -399,6 +433,8 @@
   --s-muted: 40 10% 70%;
   --s-gold-fill: 40 60% 38%;
   --s-gold: 41 60% 58%;
+  --s-gold-bright: 41 66% 62%;
+  --s-gold-bright-ink: 30 30% 10%;
   --s-gold-ink: 41 66% 72%;
   --s-gold-soft: 38 25% 17%;
   --s-line: 35 8% 22%;
@@ -407,6 +443,21 @@
   --s-attn-soft: 28 30% 16%;
   --s-seal: 43 60% 80%;
   --s-seal-ink: 30 10% 12%;
+
+  --st-official: 43 60% 80%;
+  --st-official-soft: 40 12% 20%;
+  --st-applied: 152 48% 62%;
+  --st-applied-soft: 152 25% 16%;
+  --st-provider: 280 55% 80%;
+  --st-provider-soft: 280 22% 20%;
+  --st-progress: 214 85% 74%;
+  --st-progress-soft: 214 35% 19%;
+  --st-submitted: 188 60% 62%;
+  --st-submitted-soft: 188 30% 16%;
+  --st-notstarted: 40 10% 70%;
+  --st-notstarted-soft: 35 8% 18%;
+  --st-attention: 25 88% 68%;
+  --st-attention-soft: 25 30% 17%;
 }
 .student-surface :focus-visible {
   outline: 2px solid hsl(var(--s-gold-ink));
@@ -428,4 +479,35 @@
 .s-seg { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.25rem; min-width: 0; }
 @container (min-width: 26rem) {
   .s-seg { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+/* ------------------------------------------------------------------------- */
+/* Student shell (S07): sidebar, header and mobile bar take the Lumiere look. */
+/* The class is added to <body> only for the student role, so the sheet that  */
+/* holds the mobile sidebar (a portal) is themed too. Only the sidebar tokens */
+/* change; --primary and every admin token are untouched.                      */
+/* ------------------------------------------------------------------------- */
+body.student-shell {
+  --sidebar: 41 38% 93%;
+  --sidebar-foreground: 30 10% 13%;
+  --sidebar-border: 38 22% 82%;
+  --sidebar-primary: 33 70% 26%;
+  --sidebar-primary-foreground: 45 60% 99%;
+  --sidebar-accent: 42 62% 88%;
+  --sidebar-accent-foreground: 33 70% 22%;
+  --sidebar-ring: 33 70% 26%;
+  --font-serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+}
+.dark body.student-shell {
+  --sidebar: 33 18% 8%;
+  --sidebar-foreground: 43 25% 92%;
+  --sidebar-border: 35 10% 20%;
+  --sidebar-primary: 41 66% 72%;
+  --sidebar-primary-foreground: 30 10% 10%;
+  --sidebar-accent: 38 25% 17%;
+  --sidebar-accent-foreground: 41 66% 78%;
+  --sidebar-ring: 41 66% 72%;
+}
+.student-shell-bar {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }

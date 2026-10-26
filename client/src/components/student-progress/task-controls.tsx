@@ -4,12 +4,14 @@
  * Nothing here can award credit: "Done" means the student reports the work done.
  */
 import React from "react";
-import { Check, ChevronDown, CircleDashed, Loader2, Play, Send } from "lucide-react";
+import { CalendarClock, Check, ChevronDown, CircleDashed, Loader2, Play, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { StudentRoadmapItemView, StudentTaskStatus, StudentTaskView } from "@shared/student-roadmap-contract";
 import {
   controlsEnabled,
+  dueInfo,
   rowKey,
+  taskStatusKey,
   statusOptionsFor,
   taskKindLabel,
   taskSavedLabel,
@@ -17,7 +19,7 @@ import {
   taskUpdate,
 } from "@/pages/student-roadmap-presentation";
 import { useRoadmapActions } from "./roadmap-actions";
-import { Disclosure } from "./student-ui";
+import { Disclosure, STATUS_STYLE } from "./student-ui";
 
 function Saving() {
   return (
@@ -35,9 +37,11 @@ const STATUS_ICON = {
   graded: Check,
 } as const;
 
+/** Task status colours come from the shared status language; the icon and the label always accompany them. */
 function statusStyle(status: StudentTaskStatus): string {
-  if (status === "graded") return "border-2 border-student-gold-ink bg-student-gold-soft font-semibold text-student-gold-ink";
-  if (status === "submitted" || status === "in_progress") return "border-2 border-student-gold bg-student-card font-semibold text-student-ink";
+  const st = STATUS_STYLE[taskStatusKey(status)];
+  if (status === "graded") return cn("border-2 font-semibold", st.border, st.soft, st.text);
+  if (status === "submitted" || status === "in_progress") return cn("border-2 font-semibold bg-student-card", st.border, st.text);
   return "border border-student-line-strong bg-student-card text-student-muted";
 }
 
@@ -56,7 +60,7 @@ function StatusSelect({
   const Icon = STATUS_ICON[task.status];
   return (
     <span className="relative inline-flex min-w-0 shrink-0">
-      <Icon className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-student-gold-ink" strokeWidth={task.status === "graded" ? 3 : 2} aria-hidden="true" />
+      <Icon className={cn("pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2", STATUS_STYLE[taskStatusKey(task.status)].text)} strokeWidth={task.status === "graded" ? 3 : 2} aria-hidden="true" />
       <select
         value={task.status}
         disabled={disabled}
@@ -85,7 +89,7 @@ function StatusReadout({ task }: { task: StudentTaskView }) {
   const Icon = STATUS_ICON[task.status];
   return (
     <span className="inline-flex shrink-0 items-center gap-1.5 text-sm text-student-muted" data-testid="status-readout">
-      <Icon className="h-3.5 w-3.5 text-student-gold-ink" aria-hidden="true" />
+      <Icon className={cn("h-3.5 w-3.5", STATUS_STYLE[taskStatusKey(task.status)].text)} aria-hidden="true" />
       {taskStatusLabel(task.status)}
       <span className="sr-only"> (recorded, cannot be changed right now)</span>
     </span>
@@ -97,6 +101,7 @@ export function TaskRow({ item, task }: { item: StudentRoadmapItemView; task: St
   const key = rowKey(item.key, task.key);
   const saving = actions.isPending(key);
   const enabled = controlsEnabled(item);
+  const due = dueInfo(task);
   return (
     <li
       className="s-cq flex min-h-[48px] min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-1.5 py-1.5"
@@ -107,6 +112,19 @@ export function TaskRow({ item, task }: { item: StudentRoadmapItemView; task: St
       <span className="min-w-0 flex-1 basis-40 text-sm text-student-ink">
         {task.title}
         <span className="sr-only"> ({taskKindLabel(task.kind)})</span>
+        {due && (
+          <span
+            className={cn(
+              "mt-0.5 flex items-center gap-1 text-xs",
+              due.tone === "overdue" ? cn("font-semibold", STATUS_STYLE.attention.text) : due.tone === "soon" ? "font-medium text-student-ink" : "text-student-muted",
+            )}
+            data-testid="task-due"
+            data-due-tone={due.tone}
+          >
+            <CalendarClock className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            {due.text}
+          </span>
+        )}
       </span>
       <span className="flex items-center gap-2">
         {saving && <Saving />}
@@ -140,15 +158,18 @@ export function TaskList({
   item,
   tasks,
   collapseDone = false,
+  label,
 }: {
   item: StudentRoadmapItemView;
   tasks?: readonly StudentTaskView[];
   collapseDone?: boolean;
+  /** Accessible name of the list; defaults to "Tasks for <course>". */
+  label?: string;
 }) {
   const list = tasks ?? item.tasks;
   if (list.length === 0) return null;
   const done = collapseDone ? list.filter((t) => t.status === "graded") : [];
-  if (done.length === 0) return <PlainList item={item} tasks={list} label={`Tasks for ${item.title}`} />;
+  if (done.length === 0) return <PlainList item={item} tasks={list} label={label ?? `Tasks for ${item.title}`} />;
   const todo = list.filter((t) => t.status !== "graded");
   return (
     <div>

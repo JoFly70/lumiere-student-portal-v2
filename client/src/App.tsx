@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Switch, Route, Redirect, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -21,6 +22,8 @@ import Support from "@/pages/support";
 import NotFound from "@/pages/not-found";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
+import { StudentBottomNav, StudentHeader } from "@/components/student-shell";
+import { cn } from "@/lib/utils";
 import Admin from "@/pages/admin";
 import AdminStudentWorkspace from "@/pages/admin-student-workspace";
 import AdminStudentRoadmap from "@/pages/admin-student-roadmap";
@@ -135,6 +138,15 @@ function Router() {
 
 function AuthenticatedLayout() {
   const { user, logout } = useAuth();
+  const isStudent = user?.role === "student";
+
+  // Student-only theming of the shell. The class is on <body> so the mobile sidebar
+  // sheet (a portal) is themed too; admin and staff keep the default shell.
+  useEffect(() => {
+    if (!isStudent) return;
+    document.body.classList.add("student-shell");
+    return () => document.body.classList.remove("student-shell");
+  }, [isStudent]);
 
   const style = {
     "--sidebar-width": "16rem",
@@ -143,30 +155,36 @@ function AuthenticatedLayout() {
 
   return (
     <SidebarProvider style={style as React.CSSProperties}>
-      <div className="flex h-screen w-full">
+      <div className={cn("flex h-dvh w-full", isStudent && "student-surface")}>
         <AppSidebar />
-        <div className="flex flex-col flex-1">
-          <header className="flex items-center justify-between p-4 border-b">
-            <div className="flex items-center gap-4">
-              <SidebarTrigger data-testid="button-sidebar-toggle" />
-              {user && (
-                <span className="text-sm text-gray-600 dark:text-gray-400">
-                  {user.name}
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              <ThemeToggle />
-              {user && (
-                <Button variant="ghost" size="icon" onClick={logout} title="Logout">
-                  <LogOut className="h-5 w-5" />
-                </Button>
-              )}
-            </div>
-          </header>
-          <main className="flex-1 overflow-auto p-6 md:p-8">
+        <div className="flex min-w-0 flex-1 flex-col">
+          {isStudent ? (
+            // One Log out control for students: in the sidebar (and the mobile "More" menu).
+            <StudentHeader />
+          ) : (
+            <header className="flex items-center justify-between p-4 border-b">
+              <div className="flex items-center gap-4">
+                <SidebarTrigger data-testid="button-sidebar-toggle" />
+                {user && (
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    {user.name}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <ThemeToggle />
+                {user && (
+                  <Button variant="ghost" size="icon" onClick={logout} title="Logout">
+                    <LogOut className="h-5 w-5" />
+                  </Button>
+                )}
+              </div>
+            </header>
+          )}
+          <main className={cn("flex-1 overflow-auto p-6 md:p-8", isStudent && "relative min-h-0")}>
             <Router />
           </main>
+          {isStudent && <StudentBottomNav />}
         </div>
       </div>
     </SidebarProvider>

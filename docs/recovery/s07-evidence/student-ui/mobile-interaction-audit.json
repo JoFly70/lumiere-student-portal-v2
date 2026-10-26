@@ -1,0 +1,30 @@
+{
+  "afterSave": {
+    "viewportHeight": 844,
+    "toast": {
+      "top": 724,
+      "bottom": 772,
+      "left": 16,
+      "right": 374
+    },
+    "bottomNav": {
+      "top": 787,
+      "bottom": 844,
+      "left": 0,
+      "right": 390
+    },
+    "changedControl": {
+      "top": 0,
+      "bottom": 0,
+      "left": 0,
+      "right": 0
+    }
+  },
+  "atPageEnd": {
+    "journeyEndBottom": 675,
+    "bottomNavTop": 787,
+    "contentClearOfBar": true
+  },
+  "logoutControlsVisible": 1,
+  "desktopLogoutControls": 1
+}

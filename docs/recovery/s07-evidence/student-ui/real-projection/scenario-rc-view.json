@@ -1,0 +1,1134 @@
+{
+  "contractVersion": "student-roadmap/1",
+  "state": "PUBLISHED",
+  "preview": false,
+  "plan": {
+    "title": "Scenario Rc — bachelor's completion and nursing prerequisites",
+    "summary": "Finish the bachelor's degree and, separately, complete nursing-program admission prerequisites.",
+    "versionNumber": 1,
+    "publishedAt": "2026-10-01T09:00:00.000Z"
+  },
+  "objectives": [
+    {
+      "key": "bachelor",
+      "title": "Bachelor of Science in Health Studies",
+      "kind": "primary",
+      "institution": "Pathways State University",
+      "credentialLabel": "BS",
+      "status": "active",
+      "note": null,
+      "canonicalProgramName": "Bachelor of Science in Health Studies",
+      "counts": {
+        "itemsTotal": 4,
+        "itemsOfficiallyAccepted": 0,
+        "itemsProviderComplete": 1,
+        "itemsInProgress": 1,
+        "itemsNotStarted": 2,
+        "tasksTotal": 19,
+        "tasksGraded": 14,
+        "tasksSubmitted": 1
+      }
+    },
+    {
+      "key": "nursing-prereq",
+      "title": "Nursing program admission prerequisites",
+      "kind": "prerequisite",
+      "institution": "Riverbend College of Nursing",
+      "credentialLabel": null,
+      "status": "active",
+      "note": "Separate objective: not part of the bachelor's requirements.",
+      "canonicalProgramName": null,
+      "counts": {
+        "itemsTotal": 7,
+        "itemsOfficiallyAccepted": 0,
+        "itemsProviderComplete": 0,
+        "itemsInProgress": 0,
+        "itemsNotStarted": 7,
+        "tasksTotal": 38,
+        "tasksGraded": 0,
+        "tasksSubmitted": 0
+      }
+    }
+  ],
+  "phases": [
+    {
+      "key": "bachelor-s-completion",
+      "title": "Bachelor's completion",
+      "sequence": 1,
+      "objectiveKey": null,
+      "startDate": null,
+      "endDate": null,
+      "description": null,
+      "items": [
+        {
+          "key": "rc-hlth-201",
+          "phaseKey": "bachelor-s-completion",
+          "objectiveKey": "bachelor",
+          "sequence": 1,
+          "kind": "course",
+          "code": "HLTH-201",
+          "title": "Health and Wellness",
+          "provider": "Sophia",
+          "institution": "Pathways State University",
+          "credits": "3",
+          "plannedStart": "2026-11-02",
+          "plannedEnd": "2026-12-06",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "provider_complete",
+          "itemRevision": 1,
+          "tasks": [
+            {
+              "key": "challenge-1",
+              "kind": "challenge",
+              "title": "Challenge 1",
+              "dueDate": null,
+              "status": "graded",
+              "revision": 1,
+              "updatedAt": "2026-10-20T12:00:00.000Z"
+            },
+            {
+              "key": "challenge-2",
+              "kind": "challenge",
+              "title": "Challenge 2",
+              "dueDate": null,
+              "status": "graded",
+              "revision": 1,
+              "updatedAt": "2026-10-20T12:00:00.000Z"
+            },
+            {
+              "key": "challenge-3",
+              "kind": "challenge",
+              "title": "Challenge 3",
+              "dueDate": null,
+              "status": "graded",
+              "revision": 1,
+              "updatedAt": "2026-10-20T12:00:00.000Z"
+            },
+            {
+              "key": "challenge-4",
+              "kind": "challenge",
+              "title": "Challenge 4",
+              "dueDate": null,
+              "status": "graded",
+              "revision": 1,
+              "updatedAt": "2026-10-20T12:00:00.000Z"
+            },
+            {
+              "key": "challenge-5",
+              "kind": "challenge",
+              "title": "Challenge 5",
+              "dueDate": null,
+              "status": "graded",
+              "revision": 1,
+              "updatedAt": "2026-10-20T12:00:00.000Z"
+            },
+            {
+              "key": "milestone-1",
+              "kind": "milestone",
+              "title": "Milestone 1",
+              "dueDate": null,
+              "status": "graded",
+              "revision": 1,
+              "updatedAt": "2026-10-20T12:00:00.000Z"
+            },
+            {
+              "key": "milestone-2",
+              "kind": "milestone",
+              "title": "Milestone 2",
+              "dueDate": null,
+              "status": "graded",
+              "revision": 1,
+              "updatedAt": "2026-10-20T12:00:00.000Z"
+            },
+            {
+              "key": "milestone-3",
+              "kind": "milestone",
+              "title": "Milestone 3",
+              "dueDate": null,
+              "status": "graded",
+              "revision": 1,
+              "updatedAt": "2026-10-20T12:00:00.000Z"
+            },
+            {
+              "key": "touchstone-1",
+              "kind": "touchstone",
+              "title": "Touchstone 1",
+              "dueDate": null,
+              "status": "graded",
+              "revision": 1,
+              "updatedAt": "2026-10-20T12:00:00.000Z"
+            }
+          ],
+          "taskCounts": {
+            "total": 9,
+            "graded": 9,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 0
+          },
+          "stage": "provider_complete",
+          "official": null,
+          "canReport": true,
+          "reportBlockedReason": null
+        },
+        {
+          "key": "rc-psy-201",
+          "phaseKey": "bachelor-s-completion",
+          "objectiveKey": "bachelor",
+          "sequence": 2,
+          "kind": "course",
+          "code": "PSY-201",
+          "title": "Lifespan Development",
+          "provider": "Sophia",
+          "institution": "Pathways State University",
+          "credits": "3",
+          "plannedStart": "2026-12-07",
+          "plannedEnd": "2027-01-10",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "challenge-1",
+              "kind": "challenge",
+              "title": "Challenge 1",
+              "dueDate": null,
+              "status": "graded",
+              "revision": 1,
+              "updatedAt": "2026-10-20T12:00:00.000Z"
+            },
+            {
+              "key": "challenge-2",
+              "kind": "challenge",
+              "title": "Challenge 2",
+              "dueDate": null,
+              "status": "graded",
+              "revision": 1,
+              "updatedAt": "2026-10-20T12:00:00.000Z"
+            },
+            {
+              "key": "challenge-3",
+              "kind": "challenge",
+              "title": "Challenge 3",
+              "dueDate": null,
+              "status": "graded",
+              "revision": 1,
+              "updatedAt": "2026-10-20T12:00:00.000Z"
+            },
+            {
+              "key": "challenge-4",
+              "kind": "challenge",
+              "title": "Challenge 4",
+              "dueDate": null,
+              "status": "graded",
+              "revision": 1,
+              "updatedAt": "2026-10-20T12:00:00.000Z"
+            },
+            {
+              "key": "challenge-5",
+              "kind": "challenge",
+              "title": "Challenge 5",
+              "dueDate": null,
+              "status": "graded",
+              "revision": 1,
+              "updatedAt": "2026-10-20T12:00:00.000Z"
+            },
+            {
+              "key": "milestone-1",
+              "kind": "milestone",
+              "title": "Milestone 1",
+              "dueDate": null,
+              "status": "submitted",
+              "revision": 1,
+              "updatedAt": "2026-10-20T12:00:00.000Z"
+            },
+            {
+              "key": "milestone-2",
+              "kind": "milestone",
+              "title": "Milestone 2",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-3",
+              "kind": "milestone",
+              "title": "Milestone 3",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "touchstone-1",
+              "kind": "touchstone",
+              "title": "Touchstone 1",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "touchstone-2",
+              "kind": "touchstone",
+              "title": "Touchstone 2",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 10,
+            "graded": 5,
+            "submitted": 1,
+            "inProgress": 0,
+            "notStarted": 4
+          },
+          "stage": "in_progress",
+          "official": null,
+          "canReport": true,
+          "reportBlockedReason": null
+        },
+        {
+          "key": "rc-soc-310",
+          "phaseKey": "bachelor-s-completion",
+          "objectiveKey": "bachelor",
+          "sequence": 3,
+          "kind": "course",
+          "code": "SOC-310",
+          "title": "Sociology of Health",
+          "provider": "Study.com",
+          "institution": "Pathways State University",
+          "credits": "3",
+          "plannedStart": "2027-01-11",
+          "plannedEnd": "2027-02-14",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [
+            {
+              "itemKey": "rc-psy-201",
+              "title": "Lifespan Development"
+            }
+          ],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [],
+          "taskCounts": {
+            "total": 0,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 0
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true,
+          "reportBlockedReason": null
+        },
+        {
+          "key": "rc-cap-490",
+          "phaseKey": "bachelor-s-completion",
+          "objectiveKey": "bachelor",
+          "sequence": 4,
+          "kind": "course",
+          "code": "HLTH-490",
+          "title": "Health Studies capstone",
+          "provider": null,
+          "institution": "Pathways State University",
+          "credits": "3",
+          "plannedStart": "2027-02-15",
+          "plannedEnd": "2027-04-11",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": {
+            "required": true,
+            "status": "pending"
+          },
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [
+            {
+              "itemKey": "rc-soc-310",
+              "title": "Sociology of Health"
+            }
+          ],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [],
+          "taskCounts": {
+            "total": 0,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 0
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": false,
+          "reportBlockedReason": "approval_pending"
+        }
+      ],
+      "counts": {
+        "itemsTotal": 4,
+        "itemsOfficiallyAccepted": 0,
+        "itemsProviderComplete": 1,
+        "itemsInProgress": 1,
+        "itemsNotStarted": 2,
+        "tasksTotal": 19,
+        "tasksGraded": 14,
+        "tasksSubmitted": 1
+      },
+      "state": "current"
+    },
+    {
+      "key": "nursing-prerequisites",
+      "title": "Nursing prerequisites",
+      "sequence": 2,
+      "objectiveKey": null,
+      "startDate": null,
+      "endDate": null,
+      "description": null,
+      "items": [
+        {
+          "key": "rc-anp-1",
+          "phaseKey": "nursing-prerequisites",
+          "objectiveKey": "nursing-prereq",
+          "sequence": 5,
+          "kind": "course",
+          "code": "BIOL-2301",
+          "title": "Anatomy and Physiology I (with lab)",
+          "provider": "Study.com",
+          "institution": "Riverbend College of Nursing",
+          "credits": "4",
+          "plannedStart": "2026-11-02",
+          "plannedEnd": "2027-01-17",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "quiz-1",
+              "kind": "quiz",
+              "title": "Quiz 1",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "quiz-2",
+              "kind": "quiz",
+              "title": "Quiz 2",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "quiz-3",
+              "kind": "quiz",
+              "title": "Quiz 3",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "quiz-4",
+              "kind": "quiz",
+              "title": "Quiz 4",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "exam-1",
+              "kind": "exam",
+              "title": "Exam 1",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "exam-2",
+              "kind": "exam",
+              "title": "Exam 2",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 6,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 6
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true,
+          "reportBlockedReason": null
+        },
+        {
+          "key": "rc-anp-2",
+          "phaseKey": "nursing-prerequisites",
+          "objectiveKey": "nursing-prereq",
+          "sequence": 6,
+          "kind": "course",
+          "code": "BIOL-2302",
+          "title": "Anatomy and Physiology II (with lab)",
+          "provider": "Study.com",
+          "institution": "Riverbend College of Nursing",
+          "credits": "4",
+          "plannedStart": "2027-01-18",
+          "plannedEnd": "2027-03-28",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [
+            {
+              "itemKey": "rc-anp-1",
+              "title": "Anatomy and Physiology I (with lab)"
+            }
+          ],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "quiz-1",
+              "kind": "quiz",
+              "title": "Quiz 1",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "quiz-2",
+              "kind": "quiz",
+              "title": "Quiz 2",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "quiz-3",
+              "kind": "quiz",
+              "title": "Quiz 3",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "quiz-4",
+              "kind": "quiz",
+              "title": "Quiz 4",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "exam-1",
+              "kind": "exam",
+              "title": "Exam 1",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "exam-2",
+              "kind": "exam",
+              "title": "Exam 2",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 6,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 6
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true,
+          "reportBlockedReason": null
+        },
+        {
+          "key": "rc-micro",
+          "phaseKey": "nursing-prerequisites",
+          "objectiveKey": "nursing-prereq",
+          "sequence": 7,
+          "kind": "course",
+          "code": "BIOL-2420",
+          "title": "Microbiology (with lab)",
+          "provider": "Study.com",
+          "institution": "Riverbend College of Nursing",
+          "credits": "4",
+          "plannedStart": "2027-03-29",
+          "plannedEnd": "2027-05-30",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [
+            {
+              "itemKey": "rc-anp-2",
+              "title": "Anatomy and Physiology II (with lab)"
+            }
+          ],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "quiz-1",
+              "kind": "quiz",
+              "title": "Quiz 1",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "quiz-2",
+              "kind": "quiz",
+              "title": "Quiz 2",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "quiz-3",
+              "kind": "quiz",
+              "title": "Quiz 3",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "exam-1",
+              "kind": "exam",
+              "title": "Exam 1",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "exam-2",
+              "kind": "exam",
+              "title": "Exam 2",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 5,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 5
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true,
+          "reportBlockedReason": null
+        },
+        {
+          "key": "rc-chem",
+          "phaseKey": "nursing-prerequisites",
+          "objectiveKey": "nursing-prereq",
+          "sequence": 8,
+          "kind": "course",
+          "code": "CHEM-1305",
+          "title": "Introductory Chemistry",
+          "provider": "Sophia",
+          "institution": "Riverbend College of Nursing",
+          "credits": "3",
+          "plannedStart": "2026-11-02",
+          "plannedEnd": "2026-12-13",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "challenge-1",
+              "kind": "challenge",
+              "title": "Challenge 1",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-2",
+              "kind": "challenge",
+              "title": "Challenge 2",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-3",
+              "kind": "challenge",
+              "title": "Challenge 3",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-4",
+              "kind": "challenge",
+              "title": "Challenge 4",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-5",
+              "kind": "challenge",
+              "title": "Challenge 5",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-1",
+              "kind": "milestone",
+              "title": "Milestone 1",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-2",
+              "kind": "milestone",
+              "title": "Milestone 2",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-3",
+              "kind": "milestone",
+              "title": "Milestone 3",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "touchstone-1",
+              "kind": "touchstone",
+              "title": "Touchstone 1",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 9,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 9
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true,
+          "reportBlockedReason": null
+        },
+        {
+          "key": "rc-stats",
+          "phaseKey": "nursing-prerequisites",
+          "objectiveKey": "nursing-prereq",
+          "sequence": 9,
+          "kind": "course",
+          "code": "STAT-1342",
+          "title": "Statistics for Health Sciences",
+          "provider": "Sophia",
+          "institution": "Riverbend College of Nursing",
+          "credits": "3",
+          "plannedStart": "2026-12-14",
+          "plannedEnd": "2027-01-24",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "challenge-1",
+              "kind": "challenge",
+              "title": "Challenge 1",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-2",
+              "kind": "challenge",
+              "title": "Challenge 2",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-3",
+              "kind": "challenge",
+              "title": "Challenge 3",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-4",
+              "kind": "challenge",
+              "title": "Challenge 4",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-5",
+              "kind": "challenge",
+              "title": "Challenge 5",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-6",
+              "kind": "challenge",
+              "title": "Challenge 6",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-1",
+              "kind": "milestone",
+              "title": "Milestone 1",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-2",
+              "kind": "milestone",
+              "title": "Milestone 2",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-3",
+              "kind": "milestone",
+              "title": "Milestone 3",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-4",
+              "kind": "milestone",
+              "title": "Milestone 4",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "touchstone-1",
+              "kind": "touchstone",
+              "title": "Touchstone 1",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "touchstone-2",
+              "kind": "touchstone",
+              "title": "Touchstone 2",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 12,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 12
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true,
+          "reportBlockedReason": null
+        }
+      ],
+      "counts": {
+        "itemsTotal": 5,
+        "itemsOfficiallyAccepted": 0,
+        "itemsProviderComplete": 0,
+        "itemsInProgress": 0,
+        "itemsNotStarted": 5,
+        "tasksTotal": 38,
+        "tasksGraded": 0,
+        "tasksSubmitted": 0
+      },
+      "state": "upcoming"
+    },
+    {
+      "key": "nursing-admission",
+      "title": "Nursing admission",
+      "sequence": 3,
+      "objectiveKey": null,
+      "startDate": null,
+      "endDate": null,
+      "description": null,
+      "items": [
+        {
+          "key": "rc-entrance-exam",
+          "phaseKey": "nursing-admission",
+          "objectiveKey": "nursing-prereq",
+          "sequence": 10,
+          "kind": "exam",
+          "code": null,
+          "title": "Nursing entrance exam",
+          "provider": null,
+          "institution": "Riverbend College of Nursing",
+          "credits": null,
+          "plannedStart": "2027-06-07",
+          "plannedEnd": "2027-06-07",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": {
+            "required": true,
+            "status": "pending"
+          },
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [
+            {
+              "itemKey": "rc-micro",
+              "title": "Microbiology (with lab)"
+            },
+            {
+              "itemKey": "rc-chem",
+              "title": "Introductory Chemistry"
+            },
+            {
+              "itemKey": "rc-stats",
+              "title": "Statistics for Health Sciences"
+            }
+          ],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [],
+          "taskCounts": {
+            "total": 0,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 0
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": false,
+          "reportBlockedReason": "approval_pending"
+        },
+        {
+          "key": "rc-application",
+          "phaseKey": "nursing-admission",
+          "objectiveKey": "nursing-prereq",
+          "sequence": 11,
+          "kind": "application",
+          "code": null,
+          "title": "Nursing program application",
+          "provider": null,
+          "institution": "Riverbend College of Nursing",
+          "credits": null,
+          "plannedStart": "2027-06-14",
+          "plannedEnd": "2027-07-15",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": "Admission is decided by Riverbend College of Nursing, not by Lumière.",
+          "waitingOn": [
+            {
+              "itemKey": "rc-entrance-exam",
+              "title": "Nursing entrance exam"
+            }
+          ],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [],
+          "taskCounts": {
+            "total": 0,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 0
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true,
+          "reportBlockedReason": null
+        }
+      ],
+      "counts": {
+        "itemsTotal": 2,
+        "itemsOfficiallyAccepted": 0,
+        "itemsProviderComplete": 0,
+        "itemsInProgress": 0,
+        "itemsNotStarted": 2,
+        "tasksTotal": 0,
+        "tasksGraded": 0,
+        "tasksSubmitted": 0
+      },
+      "state": "upcoming"
+    }
+  ],
+  "milestones": [
+    {
+      "key": "rc-bachelor-complete",
+      "title": "Bachelor's degree complete",
+      "kind": "objective_complete",
+      "targetDate": "2027-04-30",
+      "objectiveKey": "bachelor",
+      "reached": false,
+      "remainingItems": 3
+    },
+    {
+      "key": "rc-prereqs-done",
+      "title": "Nursing prerequisites complete",
+      "kind": "checkpoint",
+      "targetDate": "2027-05-30",
+      "objectiveKey": "nursing-prereq",
+      "reached": false,
+      "remainingItems": 5
+    },
+    {
+      "key": "rc-application-milestone",
+      "title": "Nursing application submitted",
+      "kind": "application",
+      "targetDate": "2027-07-15",
+      "objectiveKey": "nursing-prereq",
+      "reached": false,
+      "remainingItems": 1
+    }
+  ],
+  "counts": {
+    "itemsTotal": 11,
+    "itemsOfficiallyAccepted": 0,
+    "itemsProviderComplete": 1,
+    "itemsInProgress": 1,
+    "itemsNotStarted": 9,
+    "tasksTotal": 57,
+    "tasksGraded": 14,
+    "tasksSubmitted": 1
+  },
+  "today": {
+    "focusItemKeys": [
+      "rc-psy-201",
+      "rc-anp-1",
+      "rc-chem"
+    ],
+    "headline": "Continue Lifespan Development",
+    "detail": "4 tasks remaining, 1 submitted and awaiting grading.",
+    "nextMilestoneKey": "rc-bachelor-complete"
+  },
+  "foundation": {
+    "credentials": [],
+    "sources": [
+      {
+        "sourceId": "5a05f1c7-0000-4000-8000-000000001401",
+        "title": "Hillcrest College transcript (synthetic)",
+        "sourceType": "transcript",
+        "status": "verified",
+        "creditRecordCount": 4
+      }
+    ],
+    "ladder": {
+      "reported": "15.00",
+      "provisional": "6.00",
+      "verified": "9.00",
+      "applied": "9.00",
+      "surplus": "0.00",
+      "planned": "30.00",
+      "required": "120.00"
+    },
+    "degreeState": "COMPOSED"
+  },
+  "history": {
+    "previousVersions": [],
+    "retiredProgress": []
+  }
+}
