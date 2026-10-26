@@ -3,10 +3,15 @@
  * One focused queue + conversation workspace for admin, staff and coach.
  * Server decisions (permissions, allowed statuses) are authoritative; this
  * component only reflects them and shows server errors plainly.
+ *
+ * S10 staff pass: Lumière look (shared tokens, staff primitives). The KPI tiles
+ * are the queue filters (pressed state + "Showing"), every ticket card says who is
+ * waiting, for how long and who owns it, and status words/colours come from the
+ * one student status vocabulary (SUPPORT_STATUS_LABEL + StatusPill).
  */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { formatDistanceToNowStrict } from "date-fns";
-import { AlertTriangle, ArrowLeft, Download, EyeOff, Loader2, Lock, MessageSquare, Paperclip, Search } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Clock, Download, EyeOff, Inbox, Loader2, Lock, MessageSquare, Paperclip, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -23,7 +28,15 @@ import {
   staffStatusLabel,
   topicForTicket,
 } from "@shared/support-contract";
-import { assigneeSelectValue, staffQueueFilters as queueFilters, type StaffQueueKey as QueueKey, staffRowAge } from "./support-presentation";
+import {
+  STAFF_QUEUES,
+  assigneeSelectValue,
+  overdueByLabel,
+  staffQueueFilters as queueFilters,
+  type StaffQueueKey as QueueKey,
+  staffRowAge,
+  ticketStatusKey,
+} from "./support-presentation";
 import {
   useAttachmentDownload,
   useCreateComment,
@@ -34,12 +47,27 @@ import {
   useUpdateTicket,
   useUploadTicketAttachment,
 } from "@/hooks/use-tickets";
+import {
+  KpiTile,
+  StaffAvatar,
+  StaffCard,
+  StaffEmpty,
+  StaffNotice,
+  StaffPage,
+  StaffPageHeader,
+  StaffPill,
+  StatusPill,
+  staffBtn,
+  staffField,
+  staffLabel,
+} from "@/components/staff/staff-ui";
+import { cn } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
-// Local presentation (kept local so the desk does not depend on student UI)
+// Local presentation
 // ---------------------------------------------------------------------------
 
-// Staff wording comes from the one shared map (shared/support-contract.ts).
+// Staff wording comes from the one shared map (shared/support-contract.ts); colours from the student status language.
 const STATUS_LABEL: Record<TicketStatus, string> = {
   open: staffStatusLabel("open"),
   in_progress: staffStatusLabel("in_progress"),
@@ -48,28 +76,16 @@ const STATUS_LABEL: Record<TicketStatus, string> = {
   closed: staffStatusLabel("closed"),
 };
 
-const STATUS_CLASS: Record<TicketStatus, string> = {
-  open: "bg-blue-100 text-blue-900 dark:bg-blue-950 dark:text-blue-200",
-  in_progress: "bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200",
-  waiting_on_student: "bg-purple-100 text-purple-900 dark:bg-purple-950 dark:text-purple-200",
-  resolved: "bg-green-100 text-green-900 dark:bg-green-950 dark:text-green-200",
-  closed: "bg-muted text-muted-foreground",
-};
-
 const PRIORITY_LABEL: Record<TicketPriority, string> = { low: "Low", medium: "Medium", high: "High", urgent: "Urgent" };
-const PRIORITY_CLASS: Record<TicketPriority, string> = {
-  low: "bg-muted text-muted-foreground",
-  medium: "bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-slate-100",
-  high: "bg-orange-100 text-orange-900 dark:bg-orange-950 dark:text-orange-200",
-  urgent: "bg-red-100 text-red-900 dark:bg-red-950 dark:text-red-200",
-};
 
-function Pill({ className, children, testId }: { className: string; children: React.ReactNode; testId?: string }) {
-  return (
-    <span data-testid={testId} className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${className}`}>
-      {children}
-    </span>
-  );
+function TicketStatusPill({ status, testId }: { status: TicketStatus; testId?: string }) {
+  return <StatusPill status={ticketStatusKey(status)} label={STATUS_LABEL[status]} data-testid={testId} />;
+}
+
+function PriorityPill({ priority, always }: { priority: TicketPriority; always?: boolean }) {
+  if (priority === "urgent") return <StaffPill tone="urgent-solid" icon={<AlertTriangle className="h-3 w-3" aria-hidden="true" />}>Urgent</StaffPill>;
+  if (priority === "high") return <StaffPill tone="attention">High priority</StaffPill>;
+  return always ? <StaffPill tone="neutral">{PRIORITY_LABEL[priority]} priority</StaffPill> : null;
 }
 
 function age(iso: string): string {
@@ -83,42 +99,43 @@ function errorText(e: unknown): string {
   return "Something went wrong. Please try again.";
 }
 
-const QUEUES: { key: QueueKey; label: string }[] = [
-  { key: "needs", label: "Needs response" },
-  { key: "waiting", label: "Waiting on student" },
-  { key: "overdue", label: "Overdue" },
-  { key: "mine", label: "Mine" },
-  { key: "unassigned", label: "Unassigned" },
-  { key: "resolved", label: "Resolved" },
-  { key: "all", label: "All" },
+const QUEUE_LABEL = Object.fromEntries(STAFF_QUEUES.map((q) => [q.key, q.label])) as Record<QueueKey, string>;
+
+const EMPTY_COPY: Record<QueueKey, { title: string; body: string }> = {
+  needs: { title: "You are all caught up", body: "No request is waiting on Lumière right now." },
+  waiting: { title: "Nothing is waiting on a student", body: "Requests you have answered and are waiting on a student for appear here." },
+  overdue: { title: "Nothing is overdue", body: "Every request waiting on Lumière is inside its response target." },
+  mine: { title: "Nothing is assigned to you", body: "Requests assigned to you appear here." },
+  unassigned: { title: "Every open request has an advisor", body: "Requests waiting on Lumière with nobody assigned appear here." },
+  resolved: { title: "No resolved requests yet", body: "Resolved and closed requests appear here." },
+  all: { title: "No requests yet", body: "Student requests appear here as they arrive." },
+};
+
+// ---------------------------------------------------------------------------
+// KPI tiles = queue filters
+// ---------------------------------------------------------------------------
+
+const TILES: { queue: QueueKey; label: string; hint: string; tone?: "urgent" | "attention"; pick: (s: SupportStatsResponse["stats"]) => number }[] = [
+  { queue: "needs", label: "Needs response", hint: "Waiting on Lumière", pick: (s) => s.awaitingStaff },
+  { queue: "overdue", label: "Overdue", hint: "Past the response target", tone: "urgent", pick: (s) => s.overdue },
+  { queue: "unassigned", label: "Unassigned", hint: "No advisor yet", tone: "attention", pick: (s) => s.unassigned },
+  { queue: "waiting", label: "Waiting on student", hint: "Ball is with the student", pick: (s) => s.awaitingStudent },
 ];
 
-// ---------------------------------------------------------------------------
-// Stats strip
-// ---------------------------------------------------------------------------
-
 function StatsStrip({ stats, active, onPick }: { stats?: SupportStatsResponse["stats"]; active: QueueKey; onPick: (q: QueueKey) => void }) {
-  const tiles: { label: string; value: number | undefined; queue: QueueKey; warn?: boolean }[] = [
-    { label: "Awaiting staff", value: stats?.awaitingStaff, queue: "needs" },
-    { label: "Awaiting student", value: stats?.awaitingStudent, queue: "waiting" },
-    { label: "Overdue", value: stats?.overdue, queue: "overdue", warn: true },
-    { label: "Unassigned", value: stats?.unassigned, queue: "unassigned" },
-  ];
   return (
-    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" data-testid="staff-stats">
-      {tiles.map((t) => (
-        <button
-          key={t.label}
-          type="button"
+    <div role="group" aria-label="Queue summary. Select a tile to filter the list." className="grid grid-cols-2 gap-3 lg:grid-cols-4" data-testid="staff-stats">
+      {TILES.map((t) => (
+        <KpiTile
+          key={t.queue}
+          label={t.label}
+          value={stats ? t.pick(stats) : "–"}
+          hint={t.hint}
+          tone={t.tone}
+          pressed={active === t.queue}
           onClick={() => onPick(t.queue)}
-          aria-pressed={active === t.queue}
-          className={`rounded-lg border p-3 text-left transition-colors hover:bg-accent ${active === t.queue ? "border-foreground bg-accent" : "bg-card"} focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring`}
-        >
-          <div className="text-xs text-muted-foreground">{t.label}</div>
-          <div className={`text-2xl font-semibold tabular-nums ${t.warn && (t.value ?? 0) > 0 ? "text-red-700 dark:text-red-400" : ""}`}>
-            {t.value ?? "–"}
-          </div>
-        </button>
+          testId={`tile-${t.queue}`}
+        />
       ))}
     </div>
   );
@@ -130,6 +147,9 @@ function StatsStrip({ stats, active, onPick }: { stats?: SupportStatsResponse["s
 
 export function TicketRow({ ticket, selected, onSelect }: { ticket: SupportTicketSummary; selected: boolean; onSelect: () => void }) {
   const topic = SUPPORT_TOPIC_INFO[ticket.topic ?? topicForTicket(null, ticket.category)];
+  const now = new Date();
+  const overdue = !!ticket.is_overdue;
+  const needsOwner = !ticket.assignee && ticket.awaiting === "staff";
   return (
     <li>
       <button
@@ -137,26 +157,46 @@ export function TicketRow({ ticket, selected, onSelect }: { ticket: SupportTicke
         onClick={onSelect}
         aria-current={selected ? "true" : undefined}
         data-testid="staff-ticket-row"
-        className={`w-full rounded-lg border p-3 text-left transition-colors hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring ${selected ? "border-primary bg-accent" : "bg-card"}`}
+        data-ticket-id={ticket.id}
+        className={cn(
+          "relative w-full overflow-hidden rounded-xl border py-3 pl-5 pr-3.5 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-student-gold-ink",
+          selected ? "border-student-gold-ink bg-student-gold-soft" : "border-student-line bg-student-card hover:border-student-line-strong hover:bg-student-gold-soft/40",
+        )}
       >
-        <div className="flex items-start justify-between gap-2">
-          <span className="font-medium text-sm">{ticket.reporter_name}</span>
-          <span className="shrink-0 text-xs text-muted-foreground">{staffRowAge(ticket, new Date())}</span>
-        </div>
-        <div className="mt-0.5 line-clamp-2 text-sm">{ticket.subject}</div>
-        <div className="mt-0.5 text-xs text-muted-foreground">{topic.label}</div>
-        <div className="mt-2 flex flex-wrap items-center gap-1.5">
-          <Pill className={STATUS_CLASS[ticket.status]}>{STATUS_LABEL[ticket.status]}</Pill>
-          <Pill className={PRIORITY_CLASS[ticket.priority]}>{PRIORITY_LABEL[ticket.priority]}</Pill>
-          {ticket.is_overdue && (
-            <Pill className="bg-red-100 text-red-900 dark:bg-red-950 dark:text-red-200" testId="overdue-flag">
-              <AlertTriangle className="mr-1 h-3 w-3" aria-hidden="true" />
-              Overdue
-            </Pill>
-          )}
-          <span className="text-xs text-muted-foreground">
-            {ticket.assignee ? `Assigned: ${ticket.assignee.name}` : "Unassigned"}
+        <span
+          aria-hidden="true"
+          className={cn("absolute inset-y-0 left-0 w-1.5", overdue ? "bg-st-urgent" : selected ? "bg-student-gold-ink" : needsOwner ? "bg-st-attention" : "bg-transparent")}
+        />
+        <div className="flex items-start justify-between gap-3">
+          <span className="min-w-0 truncate text-sm font-semibold text-student-ink">{ticket.reporter_name}</span>
+          <span className={cn("inline-flex shrink-0 items-center gap-1 text-xs font-medium", overdue ? "text-st-urgent" : "text-student-muted")}>
+            <Clock className="h-3.5 w-3.5" aria-hidden="true" />
+            {staffRowAge(ticket, now)}
           </span>
+        </div>
+        <div className="mt-1 line-clamp-2 text-sm leading-snug text-student-ink">{ticket.subject}</div>
+        <div className="mt-1 text-xs text-student-muted">{topic.label} · <span className="font-mono">{ticket.ticket_number}</span></div>
+        <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+          <TicketStatusPill status={ticket.status} />
+          {overdue && (
+            <StaffPill tone="urgent" testId="overdue-flag" icon={<AlertTriangle className="h-3 w-3" aria-hidden="true" />}>
+              Overdue
+            </StaffPill>
+          )}
+          <PriorityPill priority={ticket.priority} />
+        </div>
+        <div className="mt-2.5 flex items-center gap-2 text-xs">
+          {ticket.assignee ? (
+            <>
+              <StaffAvatar name={ticket.assignee.name} size="sm" />
+              <span className="min-w-0 truncate text-student-muted">Assigned: {ticket.assignee.name}</span>
+            </>
+          ) : (
+            <>
+              <StaffAvatar name="?" size="sm" muted />
+              <span className={cn("font-medium", needsOwner ? "text-st-attention" : "text-student-muted")}>Unassigned</span>
+            </>
+          )}
         </div>
       </button>
     </li>
@@ -170,31 +210,64 @@ export function TicketRow({ ticket, selected, onSelect }: { ticket: SupportTicke
 function CommentBubble({ comment }: { comment: SupportComment }) {
   if (comment.is_internal) {
     return (
-      <li data-testid="internal-note" className="rounded-lg border-2 border-dashed border-amber-500 bg-amber-50 p-3 dark:border-amber-600 dark:bg-amber-950/40">
-        <div className="mb-1 flex items-center gap-2 text-xs font-semibold text-amber-900 dark:text-amber-200">
+      <li data-testid="internal-note" className="rounded-xl border-2 border-dashed border-st-attention bg-st-attention-soft p-4">
+        <div className="mb-1 flex items-center gap-2 text-xs font-semibold text-st-attention">
           <EyeOff className="h-3.5 w-3.5" aria-hidden="true" />
           Internal note — not visible to the student
         </div>
-        <div className="mb-1 text-xs text-muted-foreground">
+        <div className="mb-1.5 text-xs text-student-muted">
           {comment.author_name} · {age(comment.created_at)} ago
         </div>
-        <p className="whitespace-pre-wrap text-sm">{comment.content}</p>
+        <p className="whitespace-pre-wrap text-sm leading-relaxed text-student-ink">{comment.content}</p>
       </li>
     );
   }
   const staff = comment.author_kind === "staff";
   return (
-    <li className={`rounded-lg border p-3 ${staff ? "bg-primary/5" : "bg-card"}`} data-testid={staff ? "staff-message" : "student-message"}>
-      <div className="mb-1 text-xs text-muted-foreground">
-        <span className="font-medium text-foreground">{comment.author_name}</span> · {staff ? "Lumière team" : "Student"} · {age(comment.created_at)} ago
+    <li className={cn("flex gap-3", staff && "flex-row-reverse")} data-testid={staff ? "staff-message" : "student-message"}>
+      <StaffAvatar name={comment.author_name} muted={!staff} />
+      <div className={cn("min-w-0 max-w-[92%] rounded-2xl border p-4", staff ? "border-student-gold bg-student-gold-soft" : "border-student-line bg-student-card")}>
+        <div className="mb-1 text-xs text-student-muted">
+          <span className="font-semibold text-student-ink">{comment.author_name}</span> · {staff ? "Lumière team" : "Student"} · {age(comment.created_at)} ago
+        </div>
+        <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-student-ink">{comment.content}</p>
       </div>
-      <p className="whitespace-pre-wrap text-sm">{comment.content}</p>
     </li>
   );
 }
 
-function selectClass() {
-  return "h-9 w-full rounded-md border bg-background px-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-60";
+/** One plain sentence: who is waiting, how long, and whether the target is missed. */
+function WaitingBanner({ ticket }: { ticket: SupportTicketDetail }) {
+  const now = new Date();
+  const over = overdueByLabel(ticket, now);
+  if (ticket.awaiting === "staff") {
+    return (
+      <StaffNotice
+        tone={over ? "urgent" : "attention"}
+        icon={<Clock className="h-4 w-4" />}
+        role="status"
+        testId="waiting-banner"
+      >
+        <p className="font-semibold">{over ? "Overdue" : "Waiting on Lumière"} · {staffRowAge(ticket, now)}</p>
+        <p className="text-student-muted">
+          {over ? `${over}. ` : ""}{ticket.assignee ? `Owner: ${ticket.assignee.name}.` : "Nobody owns this request yet. Assign an advisor."}
+        </p>
+      </StaffNotice>
+    );
+  }
+  if (ticket.awaiting === "student") {
+    return (
+      <StaffNotice tone="info" icon={<Clock className="h-4 w-4" />} testId="waiting-banner">
+        <p className="font-semibold">Waiting on the student · {staffRowAge(ticket, now)}</p>
+        <p className="text-student-muted">No action is needed from Lumière until the student replies.</p>
+      </StaffNotice>
+    );
+  }
+  return (
+    <StaffNotice tone="success" testId="waiting-banner">
+      <p className="font-semibold">{staffRowAge(ticket, now)}</p>
+    </StaffNotice>
+  );
 }
 
 function TicketDetailPane({ ticketId, staff, onBack }: { ticketId: string; staff: readonly SupportPerson[]; onBack: () => void }) {
@@ -218,13 +291,13 @@ function TicketDetailPane({ ticketId, staff, onBack }: { ticketId: string; staff
   }, [ticketId]);
 
   if (isLoading) {
-    return <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" aria-label="Loading ticket" /></div>;
+    return <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-student-muted" aria-label="Loading ticket" /></div>;
   }
   if (error || !ticket) {
     return (
-      <div role="alert" className="rounded-lg border border-destructive/40 p-4 text-sm">
+      <div role="alert" className="rounded-xl border border-st-urgent bg-st-urgent-soft p-4 text-sm text-student-ink">
         {error ? errorText(error) : "This ticket is not available."}
-        <div className="mt-2"><Button variant="outline" size="sm" onClick={onBack}>Back to queue</Button></div>
+        <div className="mt-3"><Button variant="outline" size="sm" className={staffBtn.outline} onClick={onBack}>Back to queue</Button></div>
       </div>
     );
   }
@@ -294,42 +367,44 @@ function TicketDetailPane({ ticketId, staff, onBack }: { ticketId: string; staff
   const canWait = perms.allowed_statuses.includes("waiting_on_student");
 
   return (
-    <article className="space-y-4" data-testid="staff-ticket-detail" aria-label={`Ticket ${ticket.ticket_number}`}>
-      <div>
-        <Button variant="ghost" size="sm" className="mb-2 -ml-2 lg:hidden" onClick={onBack}>
-          <ArrowLeft className="mr-1 h-4 w-4" aria-hidden="true" /> Queue
+    <article className="space-y-5" data-testid="staff-ticket-detail" aria-label={`Ticket ${ticket.ticket_number}`}>
+      <div className="space-y-2">
+        <Button variant="ghost" size="sm" className={cn(staffBtn.ghost, "-ml-3 lg:hidden")} onClick={onBack} data-testid="staff-back-to-queue">
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Back to queue
         </Button>
         <div className="flex flex-wrap items-center gap-2">
-          <span className="font-mono text-xs text-muted-foreground">{ticket.ticket_number}</span>
-          <Pill className={STATUS_CLASS[ticket.status]}>{STATUS_LABEL[ticket.status]}</Pill>
-          <Pill className={PRIORITY_CLASS[ticket.priority]}>{PRIORITY_LABEL[ticket.priority]}</Pill>
-          {ticket.is_overdue && <Pill className="bg-red-100 text-red-900 dark:bg-red-950 dark:text-red-200">Overdue</Pill>}
+          <span className="font-mono text-xs text-student-muted">{ticket.ticket_number}</span>
+          <TicketStatusPill status={ticket.status} testId="detail-status" />
+          <PriorityPill priority={ticket.priority} always />
+          {ticket.is_overdue && <StaffPill tone="urgent" icon={<AlertTriangle className="h-3 w-3" aria-hidden="true" />}>Overdue</StaffPill>}
         </div>
-        <h2 className="mt-1 text-xl font-semibold leading-snug">{ticket.subject}</h2>
-        <p className="text-sm text-muted-foreground">
-          {ticket.reporter_name}{ticket.reporter_email ? ` · ${ticket.reporter_email}` : ""} · {topic.label} · opened {age(ticket.created_at)} ago
+        <h2 tabIndex={-1} data-testid="staff-ticket-title" className="font-serif text-2xl leading-snug tracking-tight text-student-ink focus-visible:outline-none">{ticket.subject}</h2>
+        <p className="text-sm text-student-muted">
+          <span className="font-medium text-student-ink">{ticket.reporter_name}</span>{ticket.reporter_email ? ` · ${ticket.reporter_email}` : ""} · {topic.label} · opened {age(ticket.created_at)} ago
         </p>
         {ticket.context && (
-          <p className="mt-2 inline-flex items-center gap-1.5 rounded-md border bg-muted px-2 py-1 text-xs" data-testid="academic-context">
-            <span className="font-medium">Academic context</span>
+          <p className="inline-flex flex-wrap items-center gap-1.5 rounded-lg border border-student-line-strong bg-student-card px-2.5 py-1.5 text-xs" data-testid="academic-context">
+            <span className="font-semibold text-student-ink">Academic context</span>
             <span>{ticket.context.code ? `${ticket.context.code} · ` : ""}{ticket.context.title}</span>
-            <span className="text-muted-foreground">(plan v{ticket.context.planVersion}, verified from the student's roadmap)</span>
+            <span className="text-student-muted">(plan v{ticket.context.planVersion}, verified from the student's roadmap)</span>
           </p>
         )}
       </div>
 
-      <section aria-label="Ticket controls" className="grid gap-3 rounded-lg border p-3 sm:grid-cols-3">
-        <label className="space-y-1 text-xs font-medium">
-          Status
-          <select className={selectClass()} value={ticket.status} disabled={busy || perms.allowed_statuses.length === 0} onChange={(e) => changeStatus(e.target.value)}>
+      <WaitingBanner ticket={ticket} />
+
+      <section aria-label="Ticket controls" className="grid gap-3 rounded-xl border border-student-line bg-student-bg/60 p-3 sm:grid-cols-3">
+        <label className="space-y-1.5">
+          <span className={staffLabel}>Status</span>
+          <select className={staffField} value={ticket.status} disabled={busy || perms.allowed_statuses.length === 0} onChange={(e) => changeStatus(e.target.value)}>
             {statusOptions.map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
           </select>
         </label>
-        <label className="space-y-1 text-xs font-medium">
-          Assigned to
+        <label className="space-y-1.5">
+          <span className={staffLabel}>Assigned to</span>
           {perms.can_assign ? (
             <select
-              className={selectClass()}
+              className={staffField}
               value={assigneeSelectValue(ticket)}
               disabled={busy}
               onChange={(e) => void run(() => update.mutateAsync({ assignedTo: e.target.value || null }), e.target.value ? "Ticket reassigned." : "Ticket unassigned.")}
@@ -341,51 +416,53 @@ function TicketDetailPane({ ticketId, staff, onBack }: { ticketId: string; staff
               )}
             </select>
           ) : (
-            <div className="flex h-9 items-center text-sm font-normal">{ticket.assignee ? ticket.assignee.name : "Unassigned"}</div>
+            <div className="flex min-h-10 items-center gap-2 text-sm font-normal text-student-ink">
+              {ticket.assignee ? <><StaffAvatar name={ticket.assignee.name} size="sm" />{ticket.assignee.name}</> : "Unassigned"}
+            </div>
           )}
         </label>
-        <label className="space-y-1 text-xs font-medium">
-          Priority
+        <label className="space-y-1.5">
+          <span className={staffLabel}>Priority</span>
           {perms.can_change_priority ? (
-            <select className={selectClass()} value={ticket.priority} disabled={busy} onChange={(e) => void run(() => update.mutateAsync({ priority: e.target.value as TicketPriority }), "Priority updated.")}>
+            <select className={staffField} value={ticket.priority} disabled={busy} onChange={(e) => void run(() => update.mutateAsync({ priority: e.target.value as TicketPriority }), "Priority updated.")}>
               {(["low", "medium", "high", "urgent"] as const).map((p) => <option key={p} value={p}>{PRIORITY_LABEL[p]}</option>)}
             </select>
           ) : (
-            <div className="flex h-9 items-center text-sm font-normal">{PRIORITY_LABEL[ticket.priority]}</div>
+            <div className="flex min-h-10 items-center text-sm font-normal text-student-ink">{PRIORITY_LABEL[ticket.priority]}</div>
           )}
         </label>
         {resolving && (
           <div className="space-y-2 sm:col-span-3" data-testid="resolve-form">
-            <label htmlFor="resolution-note" className="text-xs font-medium">Resolution note (required, shown to the student)</label>
-            <Textarea id="resolution-note" rows={3} value={resolution} onChange={(e) => setResolution(e.target.value)} placeholder="What was done, and what the student should do next if anything." />
+            <label htmlFor="resolution-note" className={staffLabel}>Resolution note (required, shown to the student)</label>
+            <Textarea id="resolution-note" rows={3} className={cn(staffField, "min-h-[88px] py-2")} value={resolution} onChange={(e) => setResolution(e.target.value)} placeholder="What was done, and what the student should do next if anything." />
             <div className="flex gap-2">
-              <Button size="sm" onClick={confirmResolve} disabled={!resolution.trim() || busy}>Resolve ticket</Button>
-              <Button size="sm" variant="outline" onClick={() => setResolving(false)}>Cancel</Button>
+              <Button size="sm" className={staffBtn.seal} onClick={confirmResolve} disabled={!resolution.trim() || busy}>Resolve ticket</Button>
+              <Button size="sm" variant="outline" className={staffBtn.outline} onClick={() => setResolving(false)}>Cancel</Button>
             </div>
           </div>
         )}
       </section>
 
       {ticket.resolution_notes && (
-        <section className="rounded-lg border border-green-600/40 bg-green-50 p-3 text-sm dark:bg-green-950/30" aria-label="Resolution">
-          <div className="text-xs font-semibold">Resolution shown to the student</div>
-          <p className="mt-1 whitespace-pre-wrap">{ticket.resolution_notes}</p>
+        <section className="rounded-xl border border-st-applied bg-st-applied-soft p-4 text-sm text-student-ink" aria-label="Resolution">
+          <div className="text-xs font-semibold uppercase tracking-[0.1em] text-st-applied">Resolution shown to the student</div>
+          <p className="mt-1.5 whitespace-pre-wrap leading-relaxed">{ticket.resolution_notes}</p>
         </section>
       )}
 
       <section aria-label="Conversation">
-        <h3 className="mb-2 text-sm font-semibold">Conversation ({comments.length})</h3>
-        <ul className="space-y-2">
+        <h3 className="mb-3 font-serif text-lg tracking-tight text-student-ink">Conversation <span className="text-sm text-student-muted">({comments.length})</span></h3>
+        <ul className="space-y-3">
           {comments.map((c) => <CommentBubble key={c.id} comment={c} />)}
         </ul>
         {attachments.length > 0 && (
-          <div className="mt-3" data-testid="staff-attachments">
-            <h4 className="mb-1 text-xs font-semibold text-muted-foreground">Attachments</h4>
-            <ul className="space-y-1">
+          <div className="mt-4" data-testid="staff-attachments">
+            <h4 className={cn(staffLabel, "mb-1.5")}>Attachments</h4>
+            <ul className="space-y-1.5">
               {attachments.map((a) => (
-                <li key={a.id} className="flex items-center justify-between gap-2 rounded-md border px-2 py-1 text-sm">
-                  <span className="min-w-0 truncate"><Paperclip className="mr-1 inline h-3.5 w-3.5" aria-hidden="true" />{a.file_name}</span>
-                  <Button variant="ghost" size="sm" onClick={() => openDownload(a.id)} aria-label={`Download ${a.file_name}`}>
+                <li key={a.id} className="flex items-center justify-between gap-2 rounded-lg border border-student-line bg-student-card px-3 py-1.5 text-sm text-student-ink">
+                  <span className="min-w-0 truncate"><Paperclip className="mr-1.5 inline h-3.5 w-3.5 text-student-gold-ink" aria-hidden="true" />{a.file_name}</span>
+                  <Button variant="ghost" size="sm" className={staffBtn.ghost} onClick={() => openDownload(a.id)} aria-label={`Download ${a.file_name}`}>
                     <Download className="h-4 w-4" aria-hidden="true" />
                   </Button>
                 </li>
@@ -396,51 +473,51 @@ function TicketDetailPane({ ticketId, staff, onBack }: { ticketId: string; staff
       </section>
 
       {msg && (
-        <div role={msg.kind === "error" ? "alert" : "status"} className={`rounded-md border p-2 text-sm ${msg.kind === "error" ? "border-destructive/50 text-destructive" : "border-green-600/40"}`}>
+        <div role={msg.kind === "error" ? "alert" : "status"} className={cn("rounded-xl border px-4 py-2.5 text-sm text-student-ink", msg.kind === "error" ? "border-st-urgent bg-st-urgent-soft" : "border-st-applied bg-st-applied-soft")}>
           {msg.text}
         </div>
       )}
 
       {perms.can_reply && !closedTicket ? (
-        <section aria-label="Reply" className="space-y-2 rounded-lg border p-3">
-          <div role="group" aria-label="Message type" className="inline-flex rounded-md border p-0.5 text-sm">
-            <button type="button" aria-pressed={mode === "public"} onClick={() => setMode("public")} className={`rounded px-3 py-1 ${mode === "public" ? "bg-foreground text-background" : ""}`}>Public reply</button>
+        <section aria-label="Reply" className={cn("space-y-3 rounded-2xl border p-4", mode === "internal" ? "border-dashed border-st-attention bg-st-attention-soft" : "border-student-line-strong bg-student-card")}>
+          <div role="group" aria-label="Message type" className="inline-flex rounded-lg border border-student-line-strong bg-student-bg p-0.5 text-sm">
+            <button type="button" aria-pressed={mode === "public"} onClick={() => setMode("public")} className={cn("min-h-10 rounded-md px-4 font-medium", mode === "public" ? "bg-student-seal text-student-seal-ink" : "text-student-ink hover:bg-student-gold-soft")}>Public reply</button>
             {perms.can_add_internal_note && (
-              <button type="button" aria-pressed={mode === "internal"} onClick={() => setMode("internal")} className={`rounded px-3 py-1 ${mode === "internal" ? "bg-amber-500 text-black" : ""}`}>Internal note</button>
+              <button type="button" aria-pressed={mode === "internal"} onClick={() => setMode("internal")} className={cn("min-h-10 rounded-md px-4 font-medium", mode === "internal" ? "bg-st-attention text-student-card" : "text-student-ink hover:bg-student-gold-soft")}>Internal note</button>
             )}
           </div>
           {mode === "internal" ? (
-            <p className="flex items-center gap-1.5 text-xs text-amber-900 dark:text-amber-200"><Lock className="h-3.5 w-3.5" aria-hidden="true" /> Internal note — not visible to the student. It never changes the status.</p>
+            <p className="flex items-center gap-1.5 text-xs text-st-attention"><Lock className="h-3.5 w-3.5" aria-hidden="true" /> Internal note — not visible to the student. It never changes the status.</p>
           ) : (
-            <p className="text-xs text-muted-foreground">The student reads this. Use plain, student-safe language: no internal jargon, no other students' details, no promises about credit acceptance or outcomes you cannot guarantee.</p>
+            <p className="text-xs leading-relaxed text-student-muted">The student reads this. Use plain, student-safe language: no internal jargon, no other students' details, no promises about credit acceptance or outcomes you cannot guarantee.</p>
           )}
           <label htmlFor="staff-composer" className="sr-only">{mode === "internal" ? "Internal note" : "Reply to student"}</label>
-          <Textarea id="staff-composer" rows={4} value={text} onChange={(e) => setText(e.target.value)} placeholder={mode === "internal" ? "Write a note for the team…" : "Write your reply to the student…"} className={mode === "internal" ? "border-amber-500" : ""} />
+          <Textarea id="staff-composer" rows={4} value={text} onChange={(e) => setText(e.target.value)} placeholder={mode === "internal" ? "Write a note for the team…" : "Write your reply to the student…"} className={cn(staffField, "min-h-[112px] py-2.5", mode === "internal" && "border-st-attention")} />
           {perms.can_attach && mode === "public" && (
             <div className="flex flex-wrap items-center gap-2 text-sm">
               <input ref={fileRef} type="file" className="sr-only" id="staff-file" aria-label="Attach files" multiple accept=".pdf,.png,.jpg,.jpeg,.webp,.txt,.doc,.docx" onChange={(e) => { setFiles((p) => [...p, ...Array.from(e.target.files ?? [])]); if (fileRef.current) fileRef.current.value = ""; }} />
-              <Button type="button" variant="outline" size="sm" onClick={() => fileRef.current?.click()}><Paperclip className="mr-1 h-4 w-4" aria-hidden="true" />Attach file</Button>
+              <Button type="button" variant="outline" size="sm" className={staffBtn.outline} onClick={() => fileRef.current?.click()}><Paperclip className="h-4 w-4" aria-hidden="true" />Attach file</Button>
               {files.map((f, i) => (
-                <span key={i} className="rounded border px-2 py-0.5 text-xs">{f.name} <button type="button" className="ml-1 underline" onClick={() => setFiles((p) => p.filter((_, j) => j !== i))}>remove</button></span>
+                <span key={i} className="inline-flex items-center gap-1 rounded-full border border-student-line-strong px-2.5 py-1 text-xs text-student-ink">{f.name} <button type="button" className="ml-1 inline-flex min-h-6 items-center underline" onClick={() => setFiles((p) => p.filter((_, j) => j !== i))}>remove</button></span>
               ))}
             </div>
           )}
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {mode === "internal" ? (
-              <Button onClick={() => sendReply()} disabled={!text.trim() || busy}>Add internal note</Button>
+              <Button className={staffBtn.seal} onClick={() => sendReply()} disabled={!text.trim() || busy}>Add internal note</Button>
             ) : (
               <>
-                {canWait && <Button onClick={() => sendReply("waiting_on_student")} disabled={!text.trim() || busy}>Reply &amp; wait for student</Button>}
-                <Button variant={canWait ? "outline" : "default"} onClick={() => sendReply()} disabled={!text.trim() || busy}>Reply</Button>
-                {canResolve && <Button variant="outline" onClick={() => sendReply("resolved")} disabled={!text.trim() || busy}>Reply &amp; resolve</Button>}
+                {canWait && <Button className={staffBtn.primary} onClick={() => sendReply("waiting_on_student")} disabled={!text.trim() || busy}>Reply &amp; wait for student</Button>}
+                <Button variant={canWait ? "outline" : "default"} className={canWait ? staffBtn.outline : staffBtn.primary} onClick={() => sendReply()} disabled={!text.trim() || busy}>Reply</Button>
+                {canResolve && <Button variant="outline" className={staffBtn.outline} onClick={() => sendReply("resolved")} disabled={!text.trim() || busy}>Reply &amp; resolve</Button>}
               </>
             )}
-            {busy && <Loader2 className="h-4 w-4 animate-spin self-center" aria-label="Working" />}
+            {busy && <Loader2 className="h-4 w-4 animate-spin self-center text-student-muted" aria-label="Working" />}
           </div>
-          {mode === "public" && canResolve && <p className="text-xs text-muted-foreground">“Reply &amp; resolve” uses your reply as the resolution note the student sees.</p>}
+          {mode === "public" && canResolve && <p className="text-xs text-student-muted">“Reply &amp; resolve” uses your reply as the resolution note the student sees.</p>}
         </section>
       ) : (
-        <p className="text-sm text-muted-foreground">{closedTicket ? "This ticket is closed." : "You can view this ticket but not reply to it."}</p>
+        <p className="text-sm text-student-muted">{closedTicket ? "This ticket is closed." : "You can view this ticket but not reply to it."}</p>
       )}
     </article>
   );
@@ -450,6 +527,11 @@ function TicketDetailPane({ ticketId, staff, onBack }: { ticketId: string; staff
 // Desk
 // ---------------------------------------------------------------------------
 
+const TILE_QUEUES = new Set<QueueKey>(TILES.map((t) => t.queue));
+const MORE_VIEWS = STAFF_QUEUES.filter((q) => !TILE_QUEUES.has(q.key));
+
+const isTwoPane = () => typeof window !== "undefined" && !!window.matchMedia && window.matchMedia("(min-width: 1024px)").matches;
+
 export function StaffSupportDesk() {
   const { user } = useAuth();
   const isManager = user?.role === "admin" || user?.role === "staff";
@@ -457,11 +539,20 @@ export function StaffSupportDesk() {
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const detailRef = useRef<HTMLElement>(null);
+  const lastSelected = useRef<string | null>(null);
 
   useEffect(() => {
     const t = setTimeout(() => setSearch(searchInput.trim()), 300);
     return () => clearTimeout(t);
   }, [searchInput]);
+
+  // Single-pane (phone, tablet): move focus into the conversation when a ticket opens, and back to its row on return.
+  useEffect(() => {
+    if (!selectedId || isTwoPane()) return;
+    const t = setTimeout(() => detailRef.current?.querySelector<HTMLElement>('[data-testid="staff-ticket-title"]')?.focus(), 80);
+    return () => clearTimeout(t);
+  }, [selectedId]);
 
   const filters = useMemo(() => ({ ...queueFilters(queue), ...(search ? { search } : {}), limit: 50 }), [queue, search]);
   const list = useTickets(filters);
@@ -472,63 +563,93 @@ export function StaffSupportDesk() {
   const total = (list.data as { pagination?: { total: number } } | undefined)?.pagination?.total ?? tickets.length;
   const staff = ((directory.data as { staff?: SupportPerson[] } | undefined)?.staff ?? []) as SupportPerson[];
 
+  const pick = (q: QueueKey) => { setQueue(q); setSelectedId(null); };
+  const select = (id: string) => { lastSelected.current = id; setSelectedId(id); };
+  const back = () => {
+    const id = selectedId ?? lastSelected.current;
+    setSelectedId(null);
+    if (id) setTimeout(() => document.querySelector<HTMLElement>(`[data-ticket-id="${CSS.escape(id)}"]`)?.focus(), 80);
+  };
+  const empty = EMPTY_COPY[queue];
+
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-4 px-4 py-4 sm:px-6" data-testid="staff-support-desk">
-      <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Support desk</h1>
-        <p className="text-sm text-muted-foreground">{isManager ? "All student requests." : "Requests assigned to you."}</p>
-      </header>
+    <StaffPage width="wide" testId="staff-support-desk">
+      <StaffPageHeader
+        eyebrow="Staff Portal"
+        title="Support desk"
+        description={isManager
+          ? "Every student request, who owns it and how long it has waited. Select a tile to filter the queue."
+          : "Requests assigned to you, and how long each has waited."}
+      />
 
-      <StatsStrip stats={(stats.data as SupportStatsResponse | undefined)?.stats} active={queue} onPick={(q) => { setQueue(q); setSelectedId(null); }} />
+      <div className={cn(selectedId && "hidden lg:block")}>
+        <StatsStrip stats={(stats.data as SupportStatsResponse | undefined)?.stats} active={queue} onPick={pick} />
+      </div>
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(320px,400px)_1fr]">
-        <section className={`${selectedId ? "hidden lg:block" : ""} space-y-3`} aria-label="Queue">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" aria-hidden="true" />
-            <label htmlFor="staff-search" className="sr-only">Search tickets by subject</label>
-            <Input id="staff-search" className="pl-8" placeholder="Search by subject…" value={searchInput} onChange={(e) => setSearchInput(e.target.value)} />
+      <div className="grid gap-5 lg:grid-cols-[minmax(320px,400px)_minmax(0,1fr)]">
+        <section className={cn(selectedId && "hidden lg:block", "min-w-0 space-y-3")} aria-label="Queue">
+          <div className="flex flex-wrap items-center justify-between gap-2" data-testid="queue-header">
+            <div className="min-w-0">
+              <h2 className="font-serif text-xl tracking-tight text-student-ink" data-testid="queue-title">{QUEUE_LABEL[queue]}</h2>
+              <p className="text-xs text-student-muted" aria-live="polite" data-testid="queue-count">
+                {list.isLoading ? "Loading…" : `${total} ticket${total === 1 ? "" : "s"}${search ? ` matching “${search}”` : ""}`}
+              </p>
+            </div>
+            {queue !== "needs" && (
+              <Button type="button" variant="ghost" size="sm" className={staffBtn.ghost} onClick={() => pick("needs")}>
+                <X className="h-4 w-4" aria-hidden="true" />Clear filter
+              </Button>
+            )}
           </div>
-          <div role="group" aria-label="Queue filter" className="flex flex-wrap gap-1.5">
-            {QUEUES.map((q) => (
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-student-muted" aria-hidden="true" />
+            <label htmlFor="staff-search" className="sr-only">Search tickets by subject</label>
+            <Input id="staff-search" className={cn(staffField, "pl-9")} placeholder="Search by subject…" value={searchInput} onChange={(e) => setSearchInput(e.target.value)} />
+          </div>
+          <div role="group" aria-label="More views" className="flex flex-wrap gap-1.5" data-testid="more-views">
+            {MORE_VIEWS.map((q) => (
               <button
                 key={q.key}
                 type="button"
                 aria-pressed={queue === q.key}
-                onClick={() => { setQueue(q.key); setSelectedId(null); }}
-                className={`rounded-full border px-3 py-1 text-xs font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring ${queue === q.key ? "border-foreground bg-foreground text-background" : "bg-card hover:bg-accent"}`}
+                onClick={() => pick(q.key)}
+                className={cn(
+                  "min-h-10 rounded-full border px-4 text-sm font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-student-gold-ink",
+                  queue === q.key ? "border-student-seal bg-student-seal text-student-seal-ink" : "border-student-line-strong bg-student-card text-student-ink hover:bg-student-gold-soft",
+                )}
               >
                 {q.label}
               </button>
             ))}
           </div>
           {list.isLoading ? (
-            <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" aria-label="Loading tickets" /></div>
+            <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-student-muted" aria-label="Loading tickets" /></div>
           ) : list.error ? (
-            <div role="alert" className="rounded-lg border border-destructive/40 p-3 text-sm">{errorText(list.error)}</div>
+            <div role="alert" className="rounded-xl border border-st-urgent bg-st-urgent-soft p-4 text-sm text-student-ink">{errorText(list.error)}</div>
           ) : tickets.length === 0 ? (
-            <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">Nothing in this queue.</div>
+            <StaffEmpty icon={<Inbox className="h-8 w-8" />} title={empty.title} testId="queue-empty">{empty.body}</StaffEmpty>
           ) : (
-            <>
-              <p className="text-xs text-muted-foreground" aria-live="polite">{total} ticket{total === 1 ? "" : "s"}</p>
-              <ul className="space-y-2">
-                {tickets.map((t) => <TicketRow key={t.id} ticket={t} selected={t.id === selectedId} onSelect={() => setSelectedId(t.id)} />)}
-              </ul>
-            </>
+            <ul className="space-y-2.5" data-testid="staff-ticket-list">
+              {tickets.map((t) => <TicketRow key={t.id} ticket={t} selected={t.id === selectedId} onSelect={() => select(t.id)} />)}
+            </ul>
           )}
         </section>
 
-        <section className={`${selectedId ? "" : "hidden lg:block"} min-w-0 rounded-lg border bg-card p-4`} aria-label="Ticket detail">
-          {selectedId ? (
-            <TicketDetailPane ticketId={selectedId} staff={staff} onBack={() => setSelectedId(null)} />
-          ) : (
-            <div className="flex flex-col items-center justify-center py-20 text-center text-muted-foreground">
-              <MessageSquare className="mb-3 h-10 w-10" aria-hidden="true" />
-              <p className="text-sm">Select a ticket to read the conversation and reply.</p>
-            </div>
-          )}
+        <section ref={detailRef} className={cn(selectedId ? "" : "hidden lg:block", "min-w-0")} aria-label="Ticket detail">
+          <StaffCard as="div" className="lg:min-h-[420px]">
+            {selectedId ? (
+              <TicketDetailPane ticketId={selectedId} staff={staff} onBack={back} />
+            ) : (
+              <div className="flex flex-col items-center justify-center gap-2 py-20 text-center text-student-muted">
+                <MessageSquare className="h-10 w-10 text-student-gold-ink" aria-hidden="true" />
+                <p className="font-serif text-lg tracking-tight text-student-ink">Select a request</p>
+                <p className="max-w-xs text-sm">Read the conversation, assign an advisor and reply from here.</p>
+              </div>
+            )}
+          </StaffCard>
         </section>
       </div>
-    </div>
+    </StaffPage>
   );
 }
 

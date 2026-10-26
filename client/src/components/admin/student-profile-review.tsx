@@ -1,11 +1,12 @@
 /**
  * S09 — staff "Profile & identity" panel, mounted in the admin student workspace.
- * Styled with the Lumière tokens (scoped `.student-surface`) so decisions and
- * buttons match the student portal, not the generic admin blue. Staff decisions
+ * S10 staff pass: no longer a separately styled island. It is one tab panel of the
+ * workspace and uses the shared Lumière tokens/primitives like every other section
+ * (verified is the charcoal seal, never gold; gold stays the action accent). Staff decisions
  * (identity correction, guardian authority) are always explicit, confirmed and
  * recorded with a note; trust labels derive from status, never from field presence.
  */
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, ArrowRight, CheckCircle2, CircleDashed, Clock, FileCheck2, Fingerprint, Loader2, Paperclip, ShieldAlert, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +16,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { getAuthToken, getCsrfToken } from "@/lib/api";
+import { StaffSectionHeader } from "@/components/staff/staff-ui";
 import type { IdentityCorrectionRequestView, StudentContactView, StudentProfileView } from "@shared/student-profile-contract";
 import {
   STAFF_PROFILE_HISTORY_QUERY_KEY,
@@ -32,6 +34,7 @@ import {
   humanizeList,
   showVerifyAction,
   correctionStatusLabel,
+  profileDecisionCount,
   identityTrust,
   identityStatusChip,
   normalizeHistory,
@@ -60,7 +63,7 @@ async function staffRequest<T>(method: "GET" | "POST", url: string, body?: unkno
 }
 
 const TONE_CLASS: Record<TrustBadge["tone"], string> = {
-  verified: "border-2 border-student-gold-ink bg-student-card text-student-gold-ink",
+  verified: "border-st-official bg-st-official text-student-seal-ink",
   pending: "border-st-attention bg-st-attention-soft text-st-attention",
   problem: "border-student-attn bg-student-attn-soft text-student-attn",
   reported: "border-student-line-strong bg-student-card text-student-muted",
@@ -95,7 +98,8 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 const PRIMARY_ACTION = "min-h-11 border-student-seal bg-student-seal px-4 text-student-seal-ink hover:bg-student-seal/90";
 const OUTLINE_ACTION = "min-h-11 border-student-line-strong bg-student-card px-4 text-student-ink hover:bg-student-gold-soft";
 const DESTRUCTIVE_ACTION = "min-h-11 border-student-attn bg-student-attn px-4 text-student-card hover:bg-student-attn/90";
-const CARD = "border-student-line bg-student-card text-student-ink";
+const CARD = "rounded-2xl border-student-line bg-student-card text-student-ink shadow-none";
+const CARD_TITLE = "font-serif text-lg font-normal tracking-tight";
 
 const text = (v: string | null | undefined) => (v ? v : "Not provided");
 
@@ -103,7 +107,7 @@ type Decision =
   | { kind: "correction"; decision: "approve" | "reject"; request: IdentityCorrectionRequestView }
   | { kind: "authority"; decision: "verify" | "revoke"; contact: StudentContactView };
 
-function DecisionDialog({ decision, studentId, onClose, onDone }: { decision: Decision | null; studentId: string; onClose: () => void; onDone: (message: string) => void }) {
+function DecisionDialog({ decision, studentId, onClose, onDone, returnFocusTo }: { decision: Decision | null; studentId: string; onClose: () => void; onDone: (message: string) => void; returnFocusTo?: React.RefObject<HTMLElement | null> }) {
   const queryClient = useQueryClient();
   const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -130,24 +134,35 @@ function DecisionDialog({ decision, studentId, onClose, onDone }: { decision: De
       }
     },
   });
-  if (!decision) return null;
-  const gate = decision.kind === "correction"
-    ? correctionDecisionGate(decision.decision, note)
+  // Keep the dialog mounted while it closes so focus returns to the button that opened it.
+  const lastDecision = useRef<Decision | null>(null);
+  if (decision) lastDecision.current = decision;
+  const shown = decision ?? lastDecision.current;
+  if (!shown) return null;
+  const open = !!decision;
+  const gate = shown.kind === "correction"
+    ? correctionDecisionGate(shown.decision, note)
     : authorityDecisionGate(note);
-  const noteRequired = decision.kind === "authority" || decision.decision === "reject";
-  const title = decision.kind === "correction"
-    ? decision.decision === "approve" ? "Approve identity correction?" : "Reject identity correction?"
-    : decision.decision === "verify" ? "Verify guardian authority?" : decision.contact.authorityStatus === "verified" ? "Revoke guardian authority?" : "Decline authority request?";
-  const description = decision.kind === "correction"
-    ? decision.decision === "approve"
+  const noteRequired = shown.kind === "authority" || shown.decision === "reject";
+  const title = shown.kind === "correction"
+    ? shown.decision === "approve" ? "Approve identity correction?" : "Reject identity correction?"
+    : shown.decision === "verify" ? "Verify guardian authority?" : shown.contact.authorityStatus === "verified" ? "Revoke guardian authority?" : "Decline authority request?";
+  const description = shown.kind === "correction"
+    ? shown.decision === "approve"
       ? "Approving applies the requested values to the student's legal identity record. This is recorded in the audit log."
       : "The student will see your note and can submit a new request."
-    : decision.decision === "verify"
-      ? `${decision.contact.fullName} will be able to act within the requested scopes. Only verify after checking the supporting document.`
-      : `${decision.contact.fullName} will lose any academic, financial or release authority.`;
-  const destructive = decision.kind === "correction" ? decision.decision === "reject" : decision.decision === "revoke";
-  return <Dialog open onOpenChange={(open) => { if (!open && !mutation.isPending) { setError(null); setNote(""); onClose(); } }}>
-    <DialogContent className="student-surface border-student-line bg-student-card text-student-ink max-sm:left-0 max-sm:top-0 max-sm:h-[100dvh] max-sm:max-w-none max-sm:translate-x-0 max-sm:translate-y-0 max-sm:content-start max-sm:rounded-none max-sm:border-0">
+    : shown.decision === "verify"
+      ? `${shown.contact.fullName} will be able to act within the requested scopes. Only verify after checking the supporting document.`
+      : `${shown.contact.fullName} will lose any academic, financial or release authority.`;
+  const destructive = shown.kind === "correction" ? shown.decision === "reject" : shown.decision === "revoke";
+  return <Dialog open={open} onOpenChange={(open) => { if (!open && !mutation.isPending) { setError(null); setNote(""); onClose(); } }}>
+    <DialogContent onCloseAutoFocus={(e) => {
+      // No Radix trigger here (the dialog is opened from state), so return focus to the control that opened it;
+      // if a successful decision removed that control, land on the panel heading instead of the page top.
+      e.preventDefault();
+      const opener = returnFocusTo?.current;
+      (opener && opener.isConnected ? opener : document.getElementById("workspace-profile-heading"))?.focus();
+    }} className="student-surface border-student-line bg-student-card text-student-ink max-sm:left-0 max-sm:top-0 max-sm:h-[100dvh] max-sm:max-w-none max-sm:translate-x-0 max-sm:translate-y-0 max-sm:content-start max-sm:rounded-none max-sm:border-0">
       <DialogHeader><DialogTitle>{title}</DialogTitle><DialogDescription>{description}</DialogDescription></DialogHeader>
       <div className="space-y-2">
         <Label htmlFor="profile-decision-note">{noteRequired ? "Note (required)" : "Note (optional)"}</Label>
@@ -157,7 +172,7 @@ function DecisionDialog({ decision, studentId, onClose, onDone }: { decision: De
       </div>
       <DialogFooter>
         <Button type="button" variant="outline" className={OUTLINE_ACTION} disabled={mutation.isPending} onClick={() => { setError(null); setNote(""); onClose(); }}>Cancel</Button>
-        <Button type="button" className={`${destructive ? DESTRUCTIVE_ACTION : PRIMARY_ACTION} disabled:border-student-line disabled:bg-student-line disabled:text-student-muted disabled:opacity-100`} disabled={!gate.ok || mutation.isPending} onClick={() => { setError(null); mutation.mutate(decision); }}>
+        <Button type="button" className={`${destructive ? DESTRUCTIVE_ACTION : PRIMARY_ACTION} disabled:border-student-line disabled:bg-student-line disabled:text-student-muted disabled:opacity-100`} disabled={!gate.ok || mutation.isPending} onClick={() => { setError(null); mutation.mutate(shown); }}>
           {mutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" /> : null}Confirm
         </Button>
       </DialogFooter>
@@ -224,16 +239,14 @@ export function StudentProfileReviewView({
   const idChip = identityStatusChip(identity.verification);
   const past = history.filter((h) => h.status !== "pending");
   const decisionContacts = contacts.filter(contactNeedsDecision);
-  const decisionCount = (pending ? 1 : 0) + decisionContacts.length;
-  return <section id="workspace-profile" aria-labelledby="workspace-profile-heading" className="student-surface scroll-mt-4 space-y-5 rounded-2xl border border-student-line p-3 sm:p-6">
-    <div className="border-b border-student-line pb-3">
-      <h2 id="workspace-profile-heading" className="flex items-center gap-2 text-xl font-semibold"><Fingerprint className="h-5 w-5 text-student-gold-ink" aria-hidden="true" />Profile &amp; identity</h2>
-    </div>
-    {feedback ? <div role="status" className="rounded-md border-2 border-student-gold-ink bg-student-card px-3 py-2 text-sm font-medium text-student-gold-ink">{feedback}</div> : null}
-    {decisionCount > 0 ? <div className="space-y-3 rounded-xl border-2 border-student-gold-ink bg-student-gold-soft p-3 sm:p-4" data-testid="needs-decision" role="group" aria-labelledby="needs-decision-heading">
-      <h3 id="needs-decision-heading" className="flex items-center gap-2 text-base font-semibold"><AlertCircle className="h-4 w-4 text-student-gold-ink" aria-hidden="true" />Needs a decision<Badge className="ml-1 bg-student-seal text-student-seal-ink hover:bg-student-seal">{decisionCount}</Badge></h3>
+  const decisionCount = profileDecisionCount(profile);
+  return <section id="workspace-profile" aria-labelledby="workspace-profile-heading" className="scroll-mt-4 space-y-5">
+    <StaffSectionHeader id="workspace-profile-heading" tabIndex={-1} icon={<Fingerprint className="h-5 w-5" />} title="Profile & identity" description="Identity, contact details and guardian authority, with the decisions that need a staff member." className="mb-0" />
+    {feedback ? <div role="status" className="rounded-xl border border-student-gold bg-student-gold-soft px-4 py-2.5 text-sm font-medium text-student-ink">{feedback}</div> : null}
+    {decisionCount > 0 ? <div className="space-y-3 rounded-2xl border border-student-gold bg-student-gold-soft p-3 sm:p-4" data-testid="needs-decision" role="group" aria-labelledby="needs-decision-heading">
+      <h3 id="needs-decision-heading" className="flex items-center gap-2 font-serif text-lg"><AlertCircle className="h-4 w-4 text-student-gold-ink" aria-hidden="true" />Needs a decision<Badge className="ml-1 bg-student-seal text-student-seal-ink hover:bg-student-seal">{decisionCount}</Badge></h3>
       {pending ? <Card className={CARD} data-testid="pending-correction">
-        <CardHeader className="pb-3"><div className="flex flex-wrap items-center justify-between gap-2"><CardTitle className="flex items-center gap-2 text-base"><ShieldAlert className="h-4 w-4 text-student-gold-ink" aria-hidden="true" />Pending identity correction</CardTitle><StatusBadge status={pending.status} /></div></CardHeader>
+        <CardHeader className="pb-3"><div className="flex flex-wrap items-center justify-between gap-2"><CardTitle className={`flex items-center gap-2 ${CARD_TITLE}`}><ShieldAlert className="h-4 w-4 text-student-gold-ink" aria-hidden="true" />Pending identity correction</CardTitle><StatusBadge status={pending.status} /></div></CardHeader>
         <CardContent className="space-y-4">
           <CorrectionTable request={pending} />
           <div><p className="text-xs font-medium uppercase tracking-wide text-student-muted">Student's reason</p><p className="mt-1 text-sm">{pending.reason}</p></div>
@@ -261,7 +274,7 @@ export function StudentProfileReviewView({
     </div> : null}
     <p className="text-sm text-student-muted">Values the student reported are labelled as such. Only a verified government ID document makes identity verified.</p>
     <div className="grid gap-4 lg:grid-cols-2 [&>*]:min-w-0">
-      <Card className={CARD}><CardHeader className="pb-3"><div className="flex flex-wrap items-center justify-between gap-2"><CardTitle className="text-base">Legal identity</CardTitle><TrustPill badge={idChip} /></div><p className="pt-1 text-xs text-student-muted" data-testid="identity-trust-detail">{trust.label}</p></CardHeader>
+      <Card className={CARD}><CardHeader className="pb-3"><div className="flex flex-wrap items-center justify-between gap-2"><CardTitle className={CARD_TITLE}>Legal identity</CardTitle><TrustPill badge={idChip} /></div><p className="pt-1 text-xs text-student-muted" data-testid="identity-trust-detail">{trust.label}</p></CardHeader>
         <CardContent><dl className="grid gap-3 sm:grid-cols-2">
           <Field label="Student code">{identity.studentCode}</Field>
           <Field label="Legal name">{[identity.firstName, identity.middleName, identity.lastName].filter(Boolean).join(" ")}</Field>
@@ -272,7 +285,7 @@ export function StudentProfileReviewView({
           <Field label="Government ID"><span>{text(identity.govIdType)} <span className="font-mono">{identity.govIdNumberMasked ?? ""}</span></span></Field>
         </dl>
         <p className="mt-3 text-xs text-student-muted">Government ID numbers are always masked here.</p></CardContent></Card>
-      <Card className={CARD}><CardHeader className="pb-3"><div className="flex flex-wrap items-center justify-between gap-2"><CardTitle className="text-base">Contact information</CardTitle><TrustPill badge={{ label: "Reported by student", tone: "reported" }} /></div></CardHeader>
+      <Card className={CARD}><CardHeader className="pb-3"><div className="flex flex-wrap items-center justify-between gap-2"><CardTitle className={CARD_TITLE}>Contact information</CardTitle><TrustPill badge={{ label: "Reported by student", tone: "reported" }} /></div></CardHeader>
         <CardContent><dl className="grid gap-3 sm:grid-cols-2">
           <Field label="Login email">{contact.email}{contact.emailVerified ? " · verified" : " · unverified"}</Field>
           <Field label="Primary phone">{text(contact.phonePrimary)}</Field>
@@ -282,12 +295,12 @@ export function StudentProfileReviewView({
           <Field label="Address">{[contact.addressLine1, contact.addressLine2, contact.addressCity, contact.addressState, contact.addressPostal, contact.addressCountry].filter(Boolean).join(", ") || "Not provided"}</Field>
         </dl></CardContent></Card>
     </div>
-    <Card className={CARD}><CardHeader className="pb-3"><CardTitle className="flex items-center gap-2 text-base"><Users className="h-4 w-4" aria-hidden="true" />Contacts &amp; guardian authority</CardTitle></CardHeader>
+    <Card className={CARD}><CardHeader className="pb-3"><CardTitle className={`flex items-center gap-2 ${CARD_TITLE}`}><Users className="h-4 w-4" aria-hidden="true" />Contacts &amp; guardian authority</CardTitle></CardHeader>
       <CardContent className="divide-y">
         {contacts.length === 0 ? <p className="py-2 text-sm text-student-muted">The student has not listed any contacts.</p> : contacts.map((c) => contactNeedsDecision(c)
           ? <div key={c.id} className="flex flex-wrap items-center justify-between gap-2 py-2 first:pt-0" data-testid="staff-contact" data-compact="true">
               <p className="min-w-0 text-sm font-medium">{c.fullName} <span className="font-normal text-student-muted">· {c.relationship} ({humanize(c.type)})</span></p>
-              <a href="#needs-decision-heading" className="inline-flex min-h-11 items-center rounded-full border border-st-attention bg-st-attention-soft px-3 text-xs font-semibold text-st-attention underline-offset-2 hover:underline">Awaiting decision ↑</a>
+              <a href="#needs-decision-heading" className="inline-flex min-h-11 items-center rounded-full border border-st-attention bg-st-attention-soft px-3 text-xs font-semibold text-st-attention underline-offset-2 hover:underline">Review request ↑</a>
             </div>
           : <div key={c.id} className="space-y-2 py-3 first:pt-0" data-testid="staff-contact">
             <div className="flex flex-wrap items-center justify-between gap-2"><p className="font-medium">{c.fullName} <span className="font-normal text-student-muted">· {c.relationship} ({humanize(c.type)})</span></p><TrustPill badge={authorityTrust(c.authorityStatus)} /></div>
@@ -295,19 +308,17 @@ export function StudentProfileReviewView({
             <ContactActions c={c} canDecide={canDecide} onDecide={onDecide} />
           </div>)}
       </CardContent></Card>
-    <Card className={CARD}><CardHeader className="pb-3"><CardTitle className="text-base">Correction history</CardTitle></CardHeader>
+    <Card className={CARD}><CardHeader className="pb-3"><CardTitle className={CARD_TITLE}>Correction history</CardTitle></CardHeader>
       <CardContent>{past.length === 0 ? <p className="text-sm text-student-muted">No resolved correction requests.</p> : <ul className="divide-y">{past.map((h) => <li key={h.id} className="space-y-1 py-3 first:pt-0" data-testid="correction-history-item">
         <div className="flex flex-wrap items-center justify-between gap-2"><span className="text-sm font-medium">{h.fields.map((f) => correctionRows({ ...h, fields: [f] })[0].label).join(", ")}</span><StatusBadge status={h.status} /></div>
         <p className="text-xs text-student-muted">{new Date(h.createdAt).toISOString().slice(0, 10)}{h.reviewedAt ? ` → ${new Date(h.reviewedAt).toISOString().slice(0, 10)}` : ""}{h.reviewNote ? ` · Note: ${h.reviewNote}` : ""}</p>
       </li>)}</ul>}</CardContent></Card>
-    <p className="text-sm text-student-muted">Document verification is managed in <a className="font-medium underline underline-offset-2" href={STAFF_PROFILE_PATHS.documents(studentId)}>Documents</a>. Approving a correction never verifies a document.</p>
-    <p className="border-t-2 border-border pt-2 text-center text-xs font-medium uppercase tracking-wide text-student-muted" data-testid="profile-end">End of profile &amp; identity</p>
+    <p className="text-sm text-student-muted">Document verification is managed in <a className="inline-flex min-h-10 items-center font-medium underline underline-offset-2" href={STAFF_PROFILE_PATHS.documents(studentId)}>Documents</a>. Approving a correction never verifies a document.</p>
   </section>;
 }
 
-export default function StudentProfileReview({ studentId, canDecide = true }: { studentId: string; canDecide?: boolean }) {
-  const [decision, setDecision] = useState<Decision | null>(null);
-  const [feedback, setFeedback] = useState<string | null>(null);
+/** The staff profile + history queries. Shared (same keys) by the panel and the workspace's attention summary. */
+export function useStaffProfileData(studentId: string) {
   const profileQuery = useQuery<StudentProfileView>({
     queryKey: STAFF_PROFILE_QUERY_KEY(studentId),
     queryFn: () => staffRequest<StudentProfileView>("GET", STAFF_PROFILE_PATHS.profile(studentId)),
@@ -320,6 +331,14 @@ export default function StudentProfileReview({ studentId, canDecide = true }: { 
     enabled: !!studentId,
     retry: false,
   });
+  return { profileQuery, historyQuery };
+}
+
+export default function StudentProfileReview({ studentId, canDecide = true }: { studentId: string; canDecide?: boolean }) {
+  const [decision, setDecision] = useState<Decision | null>(null);
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const opener = useRef<HTMLElement | null>(null);
+  const { profileQuery, historyQuery } = useStaffProfileData(studentId);
   if (profileQuery.isLoading) return <div role="status" aria-live="polite" className="rounded-md border p-6 text-center text-sm text-student-muted">Loading profile &amp; identity…</div>;
   if (profileQuery.isError || !profileQuery.data) {
     return <section id="workspace-profile" aria-labelledby="workspace-profile-heading" className="space-y-2">
@@ -328,7 +347,7 @@ export default function StudentProfileReview({ studentId, canDecide = true }: { 
     </section>;
   }
   return <>
-    <StudentProfileReviewView profile={profileQuery.data} history={historyQuery.data ?? []} studentId={studentId} canDecide={canDecide} onDecide={(d) => { setFeedback(null); setDecision(d); }} feedback={feedback} />
-    <DecisionDialog decision={decision} studentId={studentId} onClose={() => setDecision(null)} onDone={(m) => { setDecision(null); setFeedback(m); }} />
+    <StudentProfileReviewView profile={profileQuery.data} history={historyQuery.data ?? []} studentId={studentId} canDecide={canDecide} onDecide={(d) => { opener.current = document.activeElement as HTMLElement | null; setFeedback(null); setDecision(d); }} feedback={feedback} />
+    <DecisionDialog returnFocusTo={opener} decision={decision} studentId={studentId} onClose={() => setDecision(null)} onDone={(m) => { setDecision(null); setFeedback(m); }} />
   </>;
 }

@@ -1,0 +1,168 @@
+{
+  "note": "Renders of synthetic fixtures with stubbed auth and API; not a deployment.",
+  "failures": [],
+  "screens": 27,
+  "totalViolations": 4,
+  "results": [
+    {
+      "screen": "14-support-staff-1440-light.png",
+      "violations": []
+    },
+    {
+      "screen": "15-support-staff-1440-dark.png",
+      "violations": []
+    },
+    {
+      "screen": "16-support-staff-queue-390-light.png",
+      "violations": []
+    },
+    {
+      "screen": "26-staff-profile-panel-1440-light.png",
+      "violations": []
+    },
+    {
+      "screen": "27-staff-profile-panel-1440-dark.png",
+      "violations": []
+    },
+    {
+      "screen": "28-staff-profile-panel-768-light.png",
+      "violations": []
+    },
+    {
+      "screen": "29-staff-desk-conversation-390-light.png",
+      "violations": []
+    },
+    {
+      "screen": "30-staff-desk-queue-768-light.png",
+      "violations": []
+    },
+    {
+      "screen": "31-staff-desk-conversation-768-light.png",
+      "violations": []
+    },
+    {
+      "screen": "32-staff-desk-queue-1024-light.png",
+      "violations": []
+    },
+    {
+      "screen": "33-staff-desk-conversation-1024-light.png",
+      "violations": []
+    },
+    {
+      "screen": "34-staff-desk-overdue-filter-1440-light.png",
+      "violations": []
+    },
+    {
+      "screen": "35-staff-desk-queue-1440-light.png",
+      "violations": []
+    },
+    {
+      "screen": "36-staff-workspace-overview-390-light.png",
+      "violations": []
+    },
+    {
+      "screen": "37-staff-workspace-overview-768-light.png",
+      "violations": []
+    },
+    {
+      "screen": "38-staff-workspace-overview-1024-light.png",
+      "violations": []
+    },
+    {
+      "screen": "39-staff-workspace-overview-1440-light.png",
+      "violations": []
+    },
+    {
+      "screen": "40-staff-workspace-overview-1440-dark.png",
+      "violations": []
+    },
+    {
+      "screen": "41-staff-workspace-documents-1440-light.png",
+      "violations": []
+    },
+    {
+      "screen": "42-staff-workspace-support-1440-light.png",
+      "violations": []
+    },
+    {
+      "screen": "43-admin-home-1440-light.png",
+      "violations": []
+    },
+    {
+      "screen": "44-admin-home-1440-dark.png",
+      "violations": []
+    },
+    {
+      "screen": "45-admin-home-390-light.png",
+      "violations": []
+    },
+    {
+      "screen": "46-admin-students-1440-light.png",
+      "violations": [
+        {
+          "id": "button-name",
+          "impact": "critical",
+          "help": "Buttons must have discernible text",
+          "nodes": 1,
+          "sample": [
+            {
+              "target": ".data-\\[placeholder\\]\\:text-muted-foreground",
+              "summary": "Fix any of the following:   Element does not have inner text that is visible to screen readers   aria-label attribute does not exist or is empty"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "screen": "47-admin-students-1024-light.png",
+      "violations": [
+        {
+          "id": "button-name",
+          "impact": "critical",
+          "help": "Buttons must have discernible text",
+          "nodes": 1,
+          "sample": [
+            {
+              "target": ".data-\\[placeholder\\]\\:text-muted-foreground",
+              "summary": "Fix any of the following:   Element does not have inner text that is visible to screen readers   aria-label attribute does not exist or is empty"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "screen": "48-admin-students-768-light.png",
+      "violations": [
+        {
+          "id": "button-name",
+          "impact": "critical",
+          "help": "Buttons must have discernible text",
+          "nodes": 1,
+          "sample": [
+            {
+              "target": ".data-\\[placeholder\\]\\:text-muted-foreground",
+              "summary": "Fix any of the following:   Element does not have inner text that is visible to screen readers   aria-label attribute does not exist or is empty"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "screen": "49-admin-students-390-light.png",
+      "violations": [
+        {
+          "id": "button-name",
+          "impact": "critical",
+          "help": "Buttons must have discernible text",
+          "nodes": 1,
+          "sample": [
+            {
+              "target": ".data-\\[placeholder\\]\\:text-muted-foreground",
+              "summary": "Fix any of the following:   Element does not have inner text that is visible to screen readers   aria-label attribute does not exist or is empty"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

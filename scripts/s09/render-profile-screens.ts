@@ -292,7 +292,7 @@ async function main() {
     // 5. Staff review panel with a pending correction.
     for (const [theme, file] of [["light", "11-staff-profile-review-1440-light.png"], ["dark", "12-staff-profile-review-1440-dark.png"]] as const) {
       const { page, ctx } = await newPage(browser, { theme, width: 1440, height: 900, role: "admin" });
-      await page.goto(`${BASE}/admin/students/${STAFF_STUDENT_ID}`);
+      await page.goto(`${BASE}/admin/students/${STAFF_STUDENT_ID}#profile`);
       await settle(page, STAFF_READY);
       await page.waitForSelector('[data-testid="pending-correction"]', { timeout: 10_000 });
       await shot(page, file);
@@ -309,7 +309,7 @@ async function main() {
     }
     {
       const { page, ctx } = await newPage(browser, { theme: "light", width: 390, height: 844, role: "admin" });
-      await page.goto(`${BASE}/admin/students/${STAFF_STUDENT_ID}`);
+      await page.goto(`${BASE}/admin/students/${STAFF_STUDENT_ID}#profile`);
       await settle(page, STAFF_READY);
       await shot(page, "14-staff-profile-review-390-light.png");
       await runAxe(page, "14-staff-profile-review-390-light.png", axeResults);
@@ -318,7 +318,7 @@ async function main() {
 
     {
       const { page, ctx } = await newPage(browser, { theme: "light", width: 768, height: 900, role: "admin" });
-      await page.goto(`${BASE}/admin/students/${STAFF_STUDENT_ID}`);
+      await page.goto(`${BASE}/admin/students/${STAFF_STUDENT_ID}#profile`);
       await settle(page, STAFF_READY);
       await shot(page, "15-staff-profile-review-768-light.png");
       await runAxe(page, "15-staff-profile-review-768-light.png", axeResults);
@@ -329,7 +329,7 @@ async function main() {
     const audit: any[] = [];
     for (const width of [1440, 1024, 768, 390]) {
       for (const [route, role, sel, label] of [
-        ["/profile", "student", STUDENT_READY, "student profile"], [`/admin/students/${STAFF_STUDENT_ID}`, "admin", STAFF_READY, "staff profile review"],
+        ["/profile", "student", STUDENT_READY, "student profile"], [`/admin/students/${STAFF_STUDENT_ID}#profile`, "admin", STAFF_READY, "staff profile review"],
       ] as const) {
         const { page, ctx } = await newPage(browser, { theme: "light", width, height: 900, role, profile: fx.RICH });
         await page.goto(BASE + route);

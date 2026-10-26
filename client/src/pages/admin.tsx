@@ -1,13 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import {
   Users,
@@ -15,18 +11,9 @@ import {
   BookOpen,
   DollarSign,
   Activity,
-  UserCog,
-  AlertCircle,
   Search,
-  MoreHorizontal,
-  Eye,
-  Edit,
-  Trash2,
-  Download,
-  Upload,
-  Filter,
-  Calendar,
-  BarChart3
+  ArrowRight,
+  BarChart3,
 } from "lucide-react";
 import { apiRequest } from "@/lib/api";
 import { ProgramsManagement } from "@/components/programs-management";
@@ -38,6 +25,22 @@ import {
   adminTabPath,
   type AdminTab,
 } from "./admin-student-workspace-presentation";
+import {
+  KpiTile,
+  StaffAvatar,
+  StaffCard,
+  StaffEmpty,
+  StaffPage,
+  StaffPageHeader,
+  StaffPill,
+  StaffSectionHeader,
+  StatusPill,
+  staffBtn,
+  staffField,
+  staffTable,
+} from "@/components/staff/staff-ui";
+import { cn } from "@/lib/utils";
+import type { StatusKey } from "./student-roadmap-presentation";
 
 // Types
 interface User {
@@ -76,30 +79,46 @@ interface AuditLogEntry {
   actor_user_id?: string;
 }
 
-// Stats Card Component
-function StatCard({
-  title,
-  value,
-  icon: Icon
-}: {
-  title: string;
-  value: string | number;
-  icon: any;
-}) {
+const sentence = (raw: string) => {
+  const spaced = raw.replace(/[_-]+/g, " ").trim().toLowerCase();
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+};
+
+/** Student account status in the shared status language (Lumière tokens, icon + word). */
+const STUDENT_STATUS: Record<string, { status: StatusKey; label: string }> = {
+  active: { status: "progress", label: "Active" },
+  lead: { status: "submitted", label: "Lead" },
+  paused: { status: "attention", label: "Paused" },
+  graduated: { status: "official", label: "Graduated" },
+};
+function StudentStatusPill({ status }: { status: string }) {
+  const m = STUDENT_STATUS[status] ?? { status: "notstarted" as StatusKey, label: sentence(status) };
+  return <StatusPill status={m.status} label={m.label} />;
+}
+
+const ROLE_LABEL: Record<string, string> = { admin: "Administrator", coach: "Coach", staff: "Staff", student: "Student" };
+const roleLabel = (role: string) => ROLE_LABEL[role] ?? sentence(role);
+
+const selectTrigger = "h-10 min-h-10 rounded-lg border-student-line-strong bg-student-card text-student-ink";
+
+/** Proportional bar list: neutral ink fill, count printed (never colour alone, never a status). */
+function DistributionList({ entries, label }: { entries: [string, number][]; label: (key: string) => string }) {
+  const max = Math.max(1, ...entries.map(([, n]) => n));
+  if (entries.length === 0) return <p className="text-sm text-student-muted">No data yet.</p>;
   return (
-    <Card>
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm text-muted-foreground">{title}</p>
-            <p className="text-3xl font-bold mt-2">{value}</p>
+    <ul className="space-y-3">
+      {entries.map(([key, count]) => (
+        <li key={key} className="space-y-1.5">
+          <div className="flex items-baseline justify-between text-sm">
+            <span className="text-student-ink">{label(key)}</span>
+            <span className="font-semibold tabular-nums text-student-ink">{count}</span>
           </div>
-          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-            <Icon className="w-6 h-6 text-primary" />
+          <div className="h-2 overflow-hidden rounded-full bg-student-line" aria-hidden="true">
+            <div className="h-full rounded-full bg-student-seal" style={{ width: `${(count / max) * 100}%` }} />
           </div>
-        </div>
-      </CardContent>
-    </Card>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -110,103 +129,42 @@ function DashboardOverview() {
   });
 
   if (isLoading) {
-    return <div className="text-center py-12">Loading analytics...</div>;
+    return <div className="py-12 text-center text-student-muted">Loading analytics...</div>;
   }
 
   const stats = analytics?.analytics;
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          title="Total Students"
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <KpiTile
+          label="Total students"
           value={stats?.studentsByStatus ? Object.values(stats.studentsByStatus).reduce((a, b) => a + b, 0) : 0}
-          icon={GraduationCap}
+          icon={<GraduationCap className="h-5 w-5" />}
         />
-        <StatCard
-          title="Active Enrollments"
-          value={stats?.activeEnrollments || 0}
-          icon={BookOpen}
-        />
-        <StatCard
-          title="New Signups (30d)"
-          value={stats?.recentSignups || 0}
-          icon={Users}
-        />
-        <StatCard
-          title="Revenue (30d)"
-          value={`$${((stats?.totalRevenue || 0) / 100).toLocaleString()}`}
-          icon={DollarSign}
-        />
+        <KpiTile label="Active enrollments" value={stats?.activeEnrollments || 0} icon={<BookOpen className="h-5 w-5" />} />
+        <KpiTile label="New signups (30d)" value={stats?.recentSignups || 0} icon={<Users className="h-5 w-5" />} />
+        <KpiTile label="Revenue (30d)" value={`$${((stats?.totalRevenue || 0) / 100).toLocaleString()}`} icon={<DollarSign className="h-5 w-5" />} />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Users by Role</CardTitle>
-            <CardDescription>Distribution of user roles</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {stats?.usersByRole && Object.entries(stats.usersByRole).map(([role, count]) => (
-                <div key={role} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className={`w-3 h-3 rounded-full ${
-                      role === 'admin' ? 'bg-red-500' :
-                      role === 'coach' ? 'bg-blue-500' :
-                      role === 'staff' ? 'bg-green-500' :
-                      'bg-gray-500'
-                    }`} />
-                    <span className="capitalize">{role}</span>
-                  </div>
-                  <span className="font-semibold">{count}</span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Students by Status</CardTitle>
-            <CardDescription>Current student status distribution</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {stats?.studentsByStatus && Object.entries(stats.studentsByStatus).map(([status, count]) => (
-                <div key={status} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className={`w-3 h-3 rounded-full ${
-                      status === 'active' ? 'bg-green-500' :
-                      status === 'lead' ? 'bg-yellow-500' :
-                      status === 'paused' ? 'bg-orange-500' :
-                      'bg-blue-500'
-                    }`} />
-                    <span className="capitalize">{status}</span>
-                  </div>
-                  <span className="font-semibold">{count}</span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        <StaffCard>
+          <StaffSectionHeader title="Users by role" description="Distribution of user roles" />
+          <DistributionList entries={Object.entries(stats?.usersByRole ?? {})} label={roleLabel} />
+        </StaffCard>
+        <StaffCard>
+          <StaffSectionHeader title="Students by status" description="Current student status distribution" />
+          <DistributionList entries={Object.entries(stats?.studentsByStatus ?? {})} label={(k) => STUDENT_STATUS[k]?.label ?? sentence(k)} />
+        </StaffCard>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Activity</CardTitle>
-          <CardDescription>Latest verified actions in the system</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="rounded-lg border border-dashed p-6 text-center">
-            <Activity className="w-5 h-5 mx-auto mb-2 text-muted-foreground" />
-            <p className="text-sm font-medium">Activity feed not connected</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              No sample activity is shown. Verified activity will appear here when the feed is connected.
-            </p>
-          </div>
-        </CardContent>
-      </Card>    </div>
+      <StaffCard>
+        <StaffSectionHeader title="Recent activity" description="Latest verified actions in the system" />
+        <StaffEmpty icon={<Activity className="h-6 w-6" />} title="Activity feed not connected">
+          No sample activity is shown. Verified activity will appear here when the feed is connected.
+        </StaffEmpty>
+      </StaffCard>
+    </div>
   );
 }
 
@@ -235,27 +193,29 @@ function UserManagement() {
   });
 
   if (isLoading) {
-    return <div className="text-center py-12">Loading users...</div>;
+    return <div className="py-12 text-center text-student-muted">Loading users...</div>;
   }
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-student-muted" aria-hidden="true" />
+          <label htmlFor="admin-user-search" className="sr-only">Search users by name or email</label>
           <Input
+            id="admin-user-search"
             placeholder="Search users by name or email..."
-            className="pl-9"
+            className={cn(staffField, "pl-9")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
         <Select value={roleFilter} onValueChange={setRoleFilter}>
-          <SelectTrigger className="w-40">
+          <SelectTrigger className={cn(selectTrigger, "sm:w-44")} aria-label="Filter by role">
             <SelectValue placeholder="Filter by role" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Roles</SelectItem>
+            <SelectItem value="all">All roles</SelectItem>
             <SelectItem value="student">Student</SelectItem>
             <SelectItem value="coach">Coach</SelectItem>
             <SelectItem value="staff">Staff</SelectItem>
@@ -264,55 +224,52 @@ function UserManagement() {
         </Select>
       </div>
 
-      <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Joined</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data?.users.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell className="font-medium">{user.name}</TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>
-                    <Badge variant={
-                      user.role === 'admin' ? 'destructive' :
-                      user.role === 'coach' ? 'default' :
-                      'secondary'
-                    }>
-                      {user.role}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
-                  <TableCell className="text-right">
-                    <Select
-                      value={user.role}
-                      onValueChange={(role) => updateRoleMutation.mutate({ userId: user.id, role })}
-                    >
-                      <SelectTrigger className="w-28">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="student">Student</SelectItem>
-                        <SelectItem value="coach">Coach</SelectItem>
-                        <SelectItem value="staff">Staff</SelectItem>
-                        <SelectItem value="admin">Admin</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      <div className={staffTable.frame}>
+        <table className={staffTable.table}>
+          <caption className="sr-only">Users</caption>
+          <thead>
+            <tr>
+              <th scope="col" className={staffTable.th}>Name</th>
+              <th scope="col" className={cn(staffTable.th, "hidden md:table-cell")}>Email</th>
+              <th scope="col" className={staffTable.th}>Role</th>
+              <th scope="col" className={cn(staffTable.th, "hidden lg:table-cell")}>Joined</th>
+              <th scope="col" className={cn(staffTable.th, "text-right")}>Change role</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data?.users.map((user) => (
+              <tr key={user.id} className={staffTable.tr}>
+                <td className={staffTable.td}>
+                  <div className="flex items-center gap-3">
+                    <StaffAvatar name={user.name} />
+                    <div className="min-w-0"><p className="truncate font-medium text-student-ink">{user.name}</p><p className="truncate text-xs text-student-muted md:hidden">{user.email}</p></div>
+                  </div>
+                </td>
+                <td className={cn(staffTable.td, "hidden text-student-muted md:table-cell")}>{user.email}</td>
+                <td className={staffTable.td}><StaffPill tone={user.role === "admin" ? "seal" : "neutral"}>{roleLabel(user.role)}</StaffPill></td>
+                <td className={cn(staffTable.td, "hidden text-student-muted lg:table-cell")}>{new Date(user.created_at).toLocaleDateString()}</td>
+                <td className={cn(staffTable.td, "text-right")}>
+                  <Select
+                    value={user.role}
+                    onValueChange={(role) => updateRoleMutation.mutate({ userId: user.id, role })}
+                  >
+                    <SelectTrigger className={cn(selectTrigger, "ml-auto w-32")} aria-label={`Change role for ${user.name}`}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="student">Student</SelectItem>
+                      <SelectItem value="coach">Coach</SelectItem>
+                      <SelectItem value="staff">Staff</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {!data?.users?.length && <p className="px-4 py-8 text-center text-sm text-student-muted">No users match.</p>}
+      </div>
     </div>
   );
 }
@@ -328,81 +285,76 @@ function StudentManagement() {
   });
 
   if (isLoading) {
-    return <div className="text-center py-12">Loading students...</div>;
+    return <div className="py-12 text-center text-student-muted">Loading students...</div>;
   }
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-student-muted" aria-hidden="true" />
+          <label htmlFor="admin-student-search" className="sr-only">Search students</label>
           <Input
+            id="admin-student-search"
             placeholder="Search students..."
-            className="pl-9"
+            className={cn(staffField, "pl-9")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-40">
+          <SelectTrigger className={cn(selectTrigger, "sm:w-44")} aria-label="Filter by status">
             <SelectValue placeholder="Filter by status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
+            <SelectItem value="all">All statuses</SelectItem>
             <SelectItem value="lead">Lead</SelectItem>
             <SelectItem value="active">Active</SelectItem>
             <SelectItem value="paused">Paused</SelectItem>
             <SelectItem value="graduated">Graduated</SelectItem>
           </SelectContent>
         </Select>
-        <Button variant="outline">
-          <Download className="w-4 h-4 mr-2" />
-          Export
-        </Button>
       </div>
 
-      <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Student Code</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Residency</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data?.students.map((student) => (
-                <TableRow key={student.id}>
-                  <TableCell className="font-mono">{student.student_code}</TableCell>
-                  <TableCell className="font-medium">
-                    {student.first_name} {student.last_name}
-                  </TableCell>
-                  <TableCell>{student.email}</TableCell>
-                  <TableCell>
-                    <Badge variant={
-                      student.status === 'active' ? 'default' :
-                      student.status === 'lead' ? 'secondary' :
-                      'outline'
-                    }>
-                      {student.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="capitalize">{student.residency}</TableCell>
-                  <TableCell className="text-right">
-                     <Button variant="ghost" size="icon" aria-label={`Open ${student.first_name} ${student.last_name}`} onClick={() => setLocation(adminStudentWorkspacePath(student.id))}>
-                      <Eye className="w-4 h-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      <div className={staffTable.frame}>
+        <table className={cn(staffTable.table, "table-fixed sm:table-auto")} data-testid="students-table">
+          <caption className="sr-only">Students</caption>
+          <thead>
+            <tr>
+              <th scope="col" className={staffTable.th}>Student</th>
+              <th scope="col" className={cn(staffTable.th, "hidden md:table-cell")}>Code</th>
+              <th scope="col" className={cn(staffTable.th, "hidden sm:table-cell")}>Status</th>
+              <th scope="col" className={cn(staffTable.th, "hidden lg:table-cell")}>Residency</th>
+              <th scope="col" className={cn(staffTable.th, "w-16 text-right sm:w-auto")}><span className="sr-only">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            {data?.students.map((student) => (
+              <tr key={student.id} className={staffTable.tr}>
+                <td className={staffTable.td}>
+                  <div className="flex items-center gap-3">
+                    <StaffAvatar name={`${student.first_name} ${student.last_name}`} />
+                    <div className="min-w-0">
+                      <p className="truncate font-medium text-student-ink">{student.first_name} {student.last_name}</p>
+                      <p className="truncate text-xs text-student-muted">{student.email}</p>
+                      <div className="mt-1 sm:hidden"><StudentStatusPill status={student.status} /></div>
+                    </div>
+                  </div>
+                </td>
+                <td className={cn(staffTable.td, "hidden font-mono text-xs text-student-muted md:table-cell")}>{student.student_code}</td>
+                <td className={cn(staffTable.td, "hidden sm:table-cell")}><StudentStatusPill status={student.status} /></td>
+                <td className={cn(staffTable.td, "hidden text-student-muted lg:table-cell")}>{sentence(student.residency)}</td>
+                <td className={cn(staffTable.td, "text-right")}>
+                  <Button variant="outline" size="sm" className={staffBtn.outline} aria-label={`Open ${student.first_name} ${student.last_name}`} onClick={() => setLocation(adminStudentWorkspacePath(student.id))}>
+                    <span className="hidden sm:inline">Open workspace</span><ArrowRight className="h-4 w-4" aria-hidden="true" />
+                  </Button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {!data?.students?.length && <p className="px-4 py-8 text-center text-sm text-student-muted">No students match.</p>}
+      </div>
     </div>
   );
 }
@@ -416,14 +368,14 @@ function AuditLogs() {
   });
 
   if (isLoading) {
-    return <div className="text-center py-12">Loading audit logs...</div>;
+    return <div className="py-12 text-center text-student-muted">Loading audit logs...</div>;
   }
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3">
         <Select value={dateRange} onValueChange={setDateRange}>
-          <SelectTrigger className="w-40">
+          <SelectTrigger className={cn(selectTrigger, "w-48")} aria-label="Date range">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -433,50 +385,34 @@ function AuditLogs() {
             <SelectItem value="90d">Last 90 days</SelectItem>
           </SelectContent>
         </Select>
-        <Button variant="outline">
-          <Filter className="w-4 h-4 mr-2" />
-          Filter
-        </Button>
-        <Button variant="outline">
-          <Download className="w-4 h-4 mr-2" />
-          Export
-        </Button>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Activity Log</CardTitle>
-          <CardDescription>FERPA-compliant audit trail of all sensitive operations</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            {data?.logs?.slice(0, 20).map((log: any) => (
-              <div key={log.id} className="flex items-start gap-3 p-3 rounded-lg border">
-                <div className={`w-2 h-2 rounded-full mt-1.5 ${
-                  log.severity === 'critical' ? 'bg-red-500' :
-                  log.severity === 'warning' ? 'bg-yellow-500' :
-                  log.severity === 'info' ? 'bg-blue-500' :
-                  'bg-gray-500'
-                }`} />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <code className="text-xs bg-muted px-1.5 py-0.5 rounded">{log.event_type}</code>
-                    <Badge variant="outline" className="text-xs">{log.severity}</Badge>
-                  </div>
-                  <p className="text-sm mt-1">{log.action_description}</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {new Date(log.created_at).toLocaleString()}
-                    {log.actor_user_id && ` • Actor: ${log.actor_user_id.substring(0, 8)}...`}
-                  </p>
+      <StaffCard>
+        <StaffSectionHeader title="Recent activity log" description="FERPA-compliant audit trail of all sensitive operations" />
+        <ul className="space-y-2">
+          {data?.logs?.slice(0, 20).map((log) => (
+            <li key={log.id} className="flex items-start gap-3 rounded-xl border border-student-line p-3">
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <code className="rounded bg-student-gold-soft px-1.5 py-0.5 text-xs text-student-ink">{log.event_type}</code>
+                  <StaffPill tone={log.severity === "critical" || log.severity === "error" ? "urgent" : log.severity === "warning" ? "attention" : "neutral"}>{sentence(log.severity)}</StaffPill>
                 </div>
+                <p className="mt-1 text-sm text-student-ink">{log.action_description}</p>
+                <p className="mt-1 text-xs text-student-muted">
+                  {new Date(log.created_at).toLocaleString()}
+                  {log.actor_user_id && ` • Actor: ${log.actor_user_id.substring(0, 8)}...`}
+                </p>
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+            </li>
+          ))}
+        </ul>
+      </StaffCard>
     </div>
   );
 }
+
+const TAB_TRIGGER =
+  "min-h-11 gap-2 rounded-none rounded-t-lg border-b-2 border-transparent px-4 py-2 text-student-muted shadow-none hover:bg-student-gold-soft/50 hover:text-student-ink data-[state=active]:border-student-gold-ink data-[state=active]:bg-student-card data-[state=active]:text-student-ink data-[state=active]:shadow-none focus-visible:ring-student-gold-ink";
 
 // Main Admin Dashboard
 export default function Admin() {
@@ -484,70 +420,71 @@ export default function Admin() {
   const search = useSearch();
   const selectedTab = adminTabFromSearch(search);
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold" data-testid="text-page-title">Admin Dashboard</h1>
-        <p className="text-muted-foreground mt-1">
-          Comprehensive system management and analytics
-        </p>
-      </div>
+    <StaffPage>
+      <StaffPageHeader
+        eyebrow="Staff Portal · Administration"
+        title="Admin Dashboard"
+        description="System management and analytics."
+      />
 
       <Tabs
         value={selectedTab}
         onValueChange={(tab) => setLocation(adminTabPath(tab as AdminTab))}
         className="space-y-6"
       >
-        <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:inline-grid">
-          <TabsTrigger value="overview">
-            <BarChart3 className="w-4 h-4 mr-2" />
-            Overview
-          </TabsTrigger>
-          <TabsTrigger value="users">
-            <Users className="w-4 h-4 mr-2" />
-            Users
-          </TabsTrigger>
-          <TabsTrigger value="students">
-            <GraduationCap className="w-4 h-4 mr-2" />
-            Students
-          </TabsTrigger>
-          <TabsTrigger value="programs">
-            <BookOpen className="w-4 h-4 mr-2" />
-            Programs
-          </TabsTrigger>
-          <TabsTrigger value="knowledge">
-            <BookOpen className="w-4 h-4 mr-2" />
-            Knowledge
-          </TabsTrigger>
-          <TabsTrigger value="logs">
-            <Activity className="w-4 h-4 mr-2" />
-            Audit Logs
-          </TabsTrigger>
-        </TabsList>
+        <div className="-mx-1 overflow-x-auto px-1">
+          <TabsList className="h-auto min-w-max justify-start gap-1 rounded-none border-b border-student-line bg-transparent p-0">
+            <TabsTrigger value="overview" className={TAB_TRIGGER}>
+              <BarChart3 className="h-4 w-4" aria-hidden="true" />
+              Overview
+            </TabsTrigger>
+            <TabsTrigger value="users" className={TAB_TRIGGER}>
+              <Users className="h-4 w-4" aria-hidden="true" />
+              Users
+            </TabsTrigger>
+            <TabsTrigger value="students" className={TAB_TRIGGER}>
+              <GraduationCap className="h-4 w-4" aria-hidden="true" />
+              Students
+            </TabsTrigger>
+            <TabsTrigger value="programs" className={TAB_TRIGGER}>
+              <BookOpen className="h-4 w-4" aria-hidden="true" />
+              Programs
+            </TabsTrigger>
+            <TabsTrigger value="knowledge" className={TAB_TRIGGER}>
+              <BookOpen className="h-4 w-4" aria-hidden="true" />
+              Knowledge
+            </TabsTrigger>
+            <TabsTrigger value="logs" className={TAB_TRIGGER}>
+              <Activity className="h-4 w-4" aria-hidden="true" />
+              Audit logs
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
-        <TabsContent value="overview">
+        <TabsContent value="overview" className="mt-0">
           <DashboardOverview />
         </TabsContent>
 
-        <TabsContent value="users">
+        <TabsContent value="users" className="mt-0">
           <UserManagement />
         </TabsContent>
 
-        <TabsContent value="students">
+        <TabsContent value="students" className="mt-0">
           <StudentManagement />
         </TabsContent>
 
-        <TabsContent value="programs">
+        <TabsContent value="programs" className="mt-0">
           <ProgramsManagement />
         </TabsContent>
 
-        <TabsContent value="knowledge">
+        <TabsContent value="knowledge" className="mt-0">
           <KnowledgeSources />
         </TabsContent>
 
-        <TabsContent value="logs">
+        <TabsContent value="logs" className="mt-0">
           <AuditLogs />
         </TabsContent>
       </Tabs>
-    </div>
+    </StaffPage>
   );
 }

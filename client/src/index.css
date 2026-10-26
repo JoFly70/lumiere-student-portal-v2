@@ -368,8 +368,10 @@
 }
 /* ------------------------------------------------------------------------- */
 /* Student-facing surface (S05, refined in S07): gold, ivory and charcoal.    */
-/* Scoped to .student-surface so admin pages and the global --primary stay    */
-/* untouched.                                                                 */
+/* Scoped to .student-surface (and, since the staff pass, to the same tokens  */
+/* under .staff-surface / body.staff-shell: ONE Lumiere token layer, not a    */
+/* second admin theme). The global --primary stays untouched for everything   */
+/* outside those scopes.                                                      */
 /*                                                                            */
 /* GOLD IS THE BRAND ACCENT, NOT A STATUS. It is used for eyebrows, the       */
 /* primary call to action, focus rings and the active navigation item. It     */
@@ -387,7 +389,9 @@
 /*   attention     terracotta      on hold, awaiting approval, overdue           */
 /* tests/s07-student-ui-tokens.test.ts verifies the contrast ratios.           */
 /* ------------------------------------------------------------------------- */
-.student-surface {
+.student-surface,
+.staff-surface,
+body.staff-shell {
   --s-bg: 43 45% 96%;
   --s-card: 45 60% 99%;
   --s-ink: 30 10% 13%;
@@ -419,13 +423,18 @@
   --st-notstarted-soft: 40 12% 93%;
   --st-attention: 18 78% 31%;
   --st-attention-soft: 25 90% 93%;
+  /* Real errors and urgent work only (staff). Never a progress or credit state. */
+  --st-urgent: 358 62% 38%;
+  --st-urgent-soft: 358 70% 95%;
 
   --font-serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
   background-color: hsl(var(--s-bg));
   color: hsl(var(--s-ink));
   color-scheme: light;
 }
-.dark .student-surface {
+.dark .student-surface,
+.dark .staff-surface,
+.dark body.staff-shell {
   color-scheme: dark;
   --s-bg: 33 17% 10%;
   --s-card: 33 14% 13%;
@@ -459,13 +468,17 @@
   --st-notstarted-soft: 35 8% 18%;
   --st-attention: 25 88% 68%;
   --st-attention-soft: 25 30% 17%;
+  --st-urgent: 4 82% 72%;
+  --st-urgent-soft: 4 32% 17%;
 }
-.student-surface :focus-visible {
+.student-surface :focus-visible,
+.staff-surface :focus-visible {
   outline: 2px solid hsl(var(--s-gold-ink));
   outline-offset: 2px;
 }
 @media (prefers-reduced-motion: reduce) {
-  .student-surface * {
+  .student-surface *,
+  .staff-surface * {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
@@ -488,7 +501,8 @@
 /* holds the mobile sidebar (a portal) is themed too. Only the sidebar tokens */
 /* change; --primary and every admin token are untouched.                      */
 /* ------------------------------------------------------------------------- */
-body.student-shell {
+body.student-shell,
+body.staff-shell {
   --sidebar: 41 38% 93%;
   --sidebar-foreground: 30 10% 13%;
   --sidebar-border: 38 22% 82%;
@@ -499,7 +513,8 @@ body.student-shell {
   --sidebar-ring: 33 70% 26%;
   --font-serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
 }
-.dark body.student-shell {
+.dark body.student-shell,
+.dark body.staff-shell {
   --sidebar: 33 18% 8%;
   --sidebar-foreground: 43 25% 92%;
   --sidebar-border: 35 10% 20%;
@@ -512,3 +527,63 @@ body.student-shell {
 .student-shell-bar {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
+
+
+/* ------------------------------------------------------------------------- */
+/* Staff shell (S10 staff pass). The same Lumiere tokens, mapped onto the     */
+/* shadcn variables for staff and admin sessions only (class on <body>, so    */
+/* dialogs, menus and the mobile drawer, which are portals, are themed too).  */
+/* Student screens never get this class. Gold stays the brand/action accent;   */
+/* the default button is the charcoal seal, red is reserved for errors.        */
+/* ------------------------------------------------------------------------- */
+body.staff-shell {
+  --background: var(--s-bg);
+  --foreground: var(--s-ink);
+  --card: var(--s-card);
+  --card-foreground: var(--s-ink);
+  --card-border: var(--s-line);
+  --popover: var(--s-card);
+  --popover-foreground: var(--s-ink);
+  --popover-border: var(--s-line);
+  --border: var(--s-line);
+  --input: var(--s-line-strong);
+  --primary: var(--s-seal);
+  --primary-foreground: var(--s-seal-ink);
+  --secondary: 40 16% 92%;
+  --secondary-foreground: var(--s-ink);
+  --muted: 40 16% 93%;
+  --muted-foreground: var(--s-muted);
+  --accent: var(--s-gold-soft);
+  --accent-foreground: var(--s-ink);
+  --destructive: var(--st-urgent);
+  --destructive-foreground: 0 0% 100%;
+  --ring: var(--s-gold-ink);
+  --badge-outline: hsl(var(--s-line-strong));
+  --button-outline: hsl(var(--s-line-strong));
+  --elevate-1: hsl(var(--s-ink) / 0.04);
+  --elevate-2: hsl(var(--s-ink) / 0.09);
+  --radius: 0.625rem;
+  --primary-border: hsl(var(--primary));
+  --secondary-border: hsl(var(--secondary));
+  --muted-border: hsl(var(--muted));
+  --accent-border: hsl(var(--accent));
+  --destructive-border: hsl(var(--destructive));
+  --sidebar-primary-border: hsl(var(--sidebar-primary));
+  --sidebar-accent-border: hsl(var(--sidebar-accent));
+}
+.dark body.staff-shell {
+  --secondary: 35 8% 20%;
+  --muted: 35 8% 18%;
+  --destructive-foreground: 30 10% 10%;
+  --elevate-1: hsl(var(--s-ink) / 0.05);
+  --elevate-2: hsl(var(--s-ink) / 0.10);
+}
+/* Staff form controls: parchment fields, a visible gold-ink focus ring. */
+.staff-surface input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+.staff-surface textarea,
+.staff-surface select {
+  background-color: hsl(var(--s-card));
+  color: hsl(var(--s-ink));
+}
+.staff-surface ::placeholder { color: hsl(var(--s-muted)); opacity: 1; }
+.staff-surface table { border-collapse: collapse; }

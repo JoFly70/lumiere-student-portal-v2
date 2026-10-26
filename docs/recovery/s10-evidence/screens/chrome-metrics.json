@@ -4,25 +4,25 @@
       "pageHeightPx": 3167
     },
     "02-flight-deck-390-light.png": {
-      "pageHeightPx": 5150
+      "pageHeightPx": 3981
     },
     "03-flight-deck-1440-dark.png": {
       "pageHeightPx": 3167
     },
     "04-flight-deck-390-dark.png": {
-      "pageHeightPx": 5150
+      "pageHeightPx": 3981
     },
     "05-roadmap-1440-light.png": {
-      "pageHeightPx": 3136
+      "pageHeightPx": 3034
     },
     "06-roadmap-390-light.png": {
-      "pageHeightPx": 5587
+      "pageHeightPx": 5424
     },
     "07-roadmap-1440-dark.png": {
-      "pageHeightPx": 3136
+      "pageHeightPx": 3034
     },
     "08-roadmap-390-dark.png": {
-      "pageHeightPx": 5587
+      "pageHeightPx": 5424
     },
     "09-support-student-1440-light.png": {
       "pageHeightPx": 994
@@ -40,13 +40,13 @@
       "pageHeightPx": 1566
     },
     "14-support-staff-1440-light.png": {
-      "pageHeightPx": 1162
+      "pageHeightPx": 1533
     },
     "15-support-staff-1440-dark.png": {
-      "pageHeightPx": 1162
+      "pageHeightPx": 1533
     },
     "16-support-staff-queue-390-light.png": {
-      "pageHeightPx": 926
+      "pageHeightPx": 1666
     },
     "17-documents-1440-light.png": {
       "pageHeightPx": 1413
@@ -73,13 +73,76 @@
       "pageHeightPx": 0
     },
     "26-staff-profile-panel-1440-light.png": {
-      "pageHeightPx": 4460
+      "pageHeightPx": 2136
     },
     "27-staff-profile-panel-1440-dark.png": {
-      "pageHeightPx": 4460
+      "pageHeightPx": 2136
     },
     "28-staff-profile-panel-768-light.png": {
-      "pageHeightPx": 5834
+      "pageHeightPx": 2440
+    },
+    "29-staff-desk-conversation-390-light.png": {
+      "pageHeightPx": 1791
+    },
+    "30-staff-desk-queue-768-light.png": {
+      "pageHeightPx": 1612
+    },
+    "31-staff-desk-conversation-768-light.png": {
+      "pageHeightPx": 1410
+    },
+    "32-staff-desk-queue-1024-light.png": {
+      "pageHeightPx": 1511
+    },
+    "33-staff-desk-conversation-1024-light.png": {
+      "pageHeightPx": 1637
+    },
+    "34-staff-desk-overdue-filter-1440-light.png": {
+      "pageHeightPx": 1159
+    },
+    "35-staff-desk-queue-1440-light.png": {
+      "pageHeightPx": 1497
+    },
+    "36-staff-workspace-overview-390-light.png": {
+      "pageHeightPx": 2990
+    },
+    "37-staff-workspace-overview-768-light.png": {
+      "pageHeightPx": 2137
+    },
+    "38-staff-workspace-overview-1024-light.png": {
+      "pageHeightPx": 2001
+    },
+    "39-staff-workspace-overview-1440-light.png": {
+      "pageHeightPx": 2001
+    },
+    "40-staff-workspace-overview-1440-dark.png": {
+      "pageHeightPx": 2001
+    },
+    "41-staff-workspace-documents-1440-light.png": {
+      "pageHeightPx": 994
+    },
+    "42-staff-workspace-support-1440-light.png": {
+      "pageHeightPx": 1248
+    },
+    "43-admin-home-1440-light.png": {
+      "pageHeightPx": 1176
+    },
+    "44-admin-home-1440-dark.png": {
+      "pageHeightPx": 1176
+    },
+    "45-admin-home-390-light.png": {
+      "pageHeightPx": 1563
+    },
+    "46-admin-students-1440-light.png": {
+      "pageHeightPx": 994
+    },
+    "47-admin-students-1024-light.png": {
+      "pageHeightPx": 915
+    },
+    "48-admin-students-768-light.png": {
+      "pageHeightPx": 1118
+    },
+    "49-admin-students-390-light.png": {
+      "pageHeightPx": 1088
     }
   },
   "chrome390": {
@@ -97,7 +160,7 @@
       "right": 374
     },
     "changedControl": {
-      "top": -212,
+      "top": -232,
       "bottom": -96,
       "left": 64,
       "right": 374
@@ -132,13 +195,13 @@
       "width": 152
     },
     {
-      "name": "Awaiting decision ↑",
+      "name": "Review request ↑",
       "height": 44,
-      "width": 142
+      "width": 129
     },
     {
       "name": "Documents",
-      "height": 17,
+      "height": 40,
       "width": 76
     }
   ],

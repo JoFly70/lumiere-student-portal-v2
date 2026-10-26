@@ -203,3 +203,8 @@ export function showVerifyAction(contact: Pick<StudentContactView, "authoritySta
 export function contactNeedsDecision(contact: Pick<StudentContactView, "authorityStatus">): boolean {
   return contact.authorityStatus === "pending_verification";
 }
+
+/** Items in the profile that need a staff decision: a pending identity correction plus authority requests. */
+export function profileDecisionCount(profile: { identity: { pendingCorrection: unknown }; contacts: readonly StudentContactView[] }): number {
+  return (profile.identity.pendingCorrection ? 1 : 0) + profile.contacts.filter(contactNeedsDecision).length;
+}
