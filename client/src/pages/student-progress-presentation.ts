@@ -322,7 +322,12 @@ export function attentionHref(item: StudentAttentionItem, view?: StudentDegreePr
 export function visibleAttention(view: StudentDegreeProgressView): StudentAttentionItem[] {
   const step = primaryNextStep(view);
   const norm = (t: string) => t.trim().toLowerCase();
-  return view.attention.filter((item) => !step || norm(item.title) !== norm(step.title));
+  const reviewHero = progressMode(view) === "under-review";
+  return view.attention.filter(
+    (item) =>
+      (!step || norm(item.title) !== norm(step.title)) &&
+      !(reviewHero && item.kind === "PROGRESS_UNDER_REVIEW"),
+  );
 }
 
 /** Staff-owned items are calm/neutral; student-owned items use the amber tone. */
@@ -350,6 +355,8 @@ export function nextStepActionLabel(step: StudentNextStep): string {
       return "See requirement";
     case "AWAIT_VERIFICATION":
       return "View your credits";
+    case "DEGREE_REQUIREMENTS_MET":
+      return "Talk to your advisor";
     default:
       return "View roadmap";
   }
@@ -412,8 +419,8 @@ export function requirementLegend(requirements: readonly StudentRequirementView[
   return ([
     { tone: "satisfied", label: "satisfied", count: c.satisfied },
     { tone: "progress", label: "in progress", count: c.progress },
-    { tone: "outstanding", label: "outstanding", count: c.outstanding },
     { tone: "review", label: "under review", count: c.review },
+    { tone: "outstanding", label: "outstanding", count: c.outstanding },
   ] as LegendEntry[]).filter((e) => e.count > 0);
 }
 
@@ -469,3 +476,41 @@ export const PLANNED_COURSES_COPY = {
   title: "Your planned & in-progress courses",
   qualifier: "self-reported — not yet part of your verified record",
 } as const;
+
+export const TONE_ORDER: StatusTone[] = ["satisfied", "progress", "review", "outstanding"];
+
+/** Requirements grouped by status in legend order; each group keeps canonical order. */
+export function requirementsGroupedByTone(
+  requirements: readonly StudentRequirementView[],
+): StudentRequirementView[] {
+  const ordered = sortRequirements(requirements);
+  return TONE_ORDER.flatMap((tone) =>
+    ordered.filter((r) => requirementStatusPresentation(r.status).tone === tone),
+  );
+}
+
+export function requirementLegendSummary(requirements: readonly StudentRequirementView[]): string {
+  return `${requirements.length} requirements: ${requirementLegend(requirements)
+    .map((e) => `${e.count} ${e.label}`)
+    .join(", ")}.`;
+}
+
+export interface VerifiedReconciliation {
+  readonly verifiedLabel: string;
+  readonly notAppliedCount: number;
+  readonly text: string;
+}
+
+/** One line reconciling "applied" with "verified on record", from view values only. */
+export function verifiedReconciliation(view: StudentDegreeProgressView): VerifiedReconciliation | null {
+  const totals = visibleTotals(view);
+  if (!totals) return null;
+  const verified = formatDecimal(totals.verifiedCreditsOnRecord);
+  if (verified === null) return null;
+  const notApplied = view.credits.filter((c) => c.standing === "VERIFIED_NOT_APPLIED").length;
+  const verifiedLabel = `${verified} verified on record`;
+  const text = notApplied
+    ? `${verifiedLabel} \u00b7 ${notApplied} verified ${notApplied === 1 ? "course" : "courses"} not applied to a requirement`
+    : verifiedLabel;
+  return { verifiedLabel, notAppliedCount: notApplied, text };
+}

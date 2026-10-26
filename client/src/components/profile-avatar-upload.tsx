@@ -110,7 +110,7 @@ export function ProfileAvatarUpload({
       <div className="relative">
         <Avatar className={sizeClasses[size]} data-testid="avatar-profile">
           <AvatarImage src={photoUrl || undefined} alt="Profile picture" />
-          <AvatarFallback className="bg-primary text-primary-foreground font-semibold">
+          <AvatarFallback className="bg-gold-soft text-gold-strong ring-1 ring-gold/40 font-semibold">
             {getInitials()}
           </AvatarFallback>
         </Avatar>

@@ -4,6 +4,9 @@ import {
   attentionOwnerLabel,
   milestoneSegmentFills,
   requirementLegend,
+  requirementLegendSummary,
+  requirementsGroupedByTone,
+  verifiedReconciliation,
   visibleAttention,
   creditAmountDisplay,
   creditsAppliedToRequirement,
@@ -117,7 +120,7 @@ describe("S04 student progress presentation", () => {
 
   it("builds a legend with counts in the same tones as the strip", () => {
     expect(requirementLegend(COMPOSED.requirements).map((e) => `${e.count} ${e.label}`)).toEqual([
-      "1 satisfied", "1 in progress", "1 outstanding", "1 under review",
+      "1 satisfied", "1 in progress", "1 under review", "1 outstanding",
     ]);
   });
 
@@ -125,5 +128,24 @@ describe("S04 student progress presentation", () => {
     expect(milestoneSegmentFills(COMPOSED.milestones, "36.50")[0]).toBeCloseTo(6.5 / 30);
     expect(milestoneSegmentFills(COMPOSED.milestones, "36.50")[1]).toBe(0);
     expect(milestoneSegmentFills(COMPOSED.milestones, "100")[0]).toBe(1);
+  });
+
+  it("groups strip segments by status, reconciles verified credits, and drops review duplicates", () => {
+    expect(requirementsGroupedByTone(COMPOSED.requirements).map((r) => r.requirementId)).toEqual(["r1", "r3", "r4", "r2"]);
+    expect(requirementLegendSummary(COMPOSED.requirements)).toContain("4 requirements: 1 satisfied");
+    expect(verifiedReconciliation(COMPOSED)!.text).toBe("39.5 verified on record \u00b7 1 verified course not applied to a requirement");
+    expect(verifiedReconciliation(UNDER_REVIEW)).toBeNull();
+    const none = { ...COMPOSED, credits: COMPOSED.credits.filter((c) => c.standing !== "VERIFIED_NOT_APPLIED") };
+    expect(verifiedReconciliation(none)!.text).toBe("39.5 verified on record");
+    expect(visibleAttention(UNDER_REVIEW)).toEqual([]);
+  });
+});
+
+describe("next step action label matches its destination", () => {
+  it("labels the degree-complete step for the advisor conversation it links to", async () => {
+    const { nextStepActionLabel } = await import("../client/src/pages/student-progress-presentation");
+    expect(nextStepActionLabel({
+      kind: "DEGREE_REQUIREMENTS_MET", title: "Degree requirements met", detail: "", href: "/support",
+    })).toBe("Talk to your advisor");
   });
 });

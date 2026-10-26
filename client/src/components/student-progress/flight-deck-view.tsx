@@ -28,6 +28,9 @@ import {
   progressMode,
   requirementAmounts,
   requirementLegend,
+  requirementLegendSummary,
+  requirementsGroupedByTone,
+  verifiedReconciliation,
   milestoneSegmentFills,
   visibleAttention,
   requirementStatusPresentation,
@@ -72,15 +75,15 @@ export function FlightDeckView({ view }: FlightDeckViewProps) {
         </p>
       </header>
 
-      {mode === "under-review" && <UnderReviewHero nextStep={nextStep} />}
-      {mode === "no-program" && <NoProgramHero nextStep={nextStep} />}
+      {mode === "under-review" && <UnderReviewHero nextStep={nextStep} asOf={asOf} />}
+      {mode === "no-program" && <NoProgramHero nextStep={nextStep} asOf={asOf} />}
 
       {(mode === "composed" || mode === "composed-without-totals") && (
         <section aria-labelledby="fd-position" className="grid gap-6 lg:grid-cols-5">
           <h2 id="fd-position" className="sr-only">
             Your academic position
           </h2>
-          <div className="rounded-2xl border border-card-border bg-card p-6 shadow-sm sm:p-8 lg:col-span-2">
+          <div className="order-2 rounded-2xl border border-card-border bg-card p-6 shadow-sm sm:p-8 lg:order-1 lg:col-span-2">
             {totals ? (
               <div className="space-y-5">
                 <ProgressRing
@@ -96,17 +99,29 @@ export function FlightDeckView({ view }: FlightDeckViewProps) {
                   </span>{" "}
                   credits remaining
                 </p>
+                {verifiedReconciliation(view) && (
+                  <p className="border-t border-border pt-4 text-center text-sm text-muted-foreground" data-testid="text-reconcile">
+                    {verifiedReconciliation(view)!.text}{" "}
+                    <Link
+                      href="/roadmap#your-credits"
+                      className="inline-flex min-h-[44px] items-center rounded-md font-medium text-gold-strong underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+                      data-testid="link-your-credits"
+                    >
+                      See your credits
+                    </Link>
+                  </p>
+                )}
               </div>
             ) : (
               <div className="space-y-3 py-6 text-center" data-testid="no-totals-note">
-                <Compass className="mx-auto h-8 w-8 text-gold" aria-hidden="true" />
+                <Hourglass className="mx-auto h-8 w-8 text-gold" aria-hidden="true" />
                 <p className="font-serif text-xl text-foreground">Totals are on their way</p>
                 <p className="text-sm leading-relaxed text-muted-foreground">{NO_TOTALS_COPY}</p>
               </div>
             )}
           </div>
-          <div className="lg:col-span-3 [&>section]:h-full">
-            <NextStepPanel step={nextStep} />
+          <div className="order-1 lg:order-2 lg:col-span-3 [&>section]:h-full">
+            <NextStepPanel step={nextStep} asOf={asOf} />
           </div>
         </section>
       )}
@@ -163,7 +178,7 @@ function StepLink({ step, className }: { step: StudentNextStep; className?: stri
   );
 }
 
-export function NextStepPanel({ step }: { step: StudentNextStep | null }) {
+export function NextStepPanel({ step, asOf }: { step: StudentNextStep | null; asOf?: string | null }) {
   return (
     <section
       aria-labelledby="fd-next-step"
@@ -184,11 +199,27 @@ export function NextStepPanel({ step }: { step: StudentNextStep | null }) {
         </p>
       </div>
       {step && <StepLink step={step} className="self-start" />}
+      <div
+        className="mt-auto flex flex-wrap items-center justify-between gap-x-6 gap-y-1 border-t border-gold/30 pt-4 text-sm text-foreground/75"
+        data-testid="next-step-footer"
+      >
+        <span>
+          Questions?{" "}
+          <Link
+            href="/support"
+            className="inline-flex min-h-[44px] items-center rounded-md font-medium text-gold-strong underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+            data-testid="link-support"
+          >
+            Contact Lumi&egrave;re support
+          </Link>
+        </span>
+        {asOf && <span>Record updated {asOf}</span>}
+      </div>
     </section>
   );
 }
 
-function UnderReviewHero({ nextStep }: { nextStep: StudentNextStep | null }) {
+function UnderReviewHero({ nextStep, asOf }: { nextStep: StudentNextStep | null; asOf?: string | null }) {
   return (
     <section
       aria-labelledby="fd-review"
@@ -205,13 +236,13 @@ function UnderReviewHero({ nextStep }: { nextStep: StudentNextStep | null }) {
         </p>
       </div>
       <div className="lg:col-span-2">
-        <NextStepPanel step={nextStep} />
+        <NextStepPanel step={nextStep} asOf={asOf} />
       </div>
     </section>
   );
 }
 
-function NoProgramHero({ nextStep }: { nextStep: StudentNextStep | null }) {
+function NoProgramHero({ nextStep, asOf }: { nextStep: StudentNextStep | null; asOf?: string | null }) {
   return (
     <section
       aria-labelledby="fd-no-program"
@@ -228,7 +259,7 @@ function NoProgramHero({ nextStep }: { nextStep: StudentNextStep | null }) {
         </p>
       </div>
       <div className="lg:col-span-2">
-        <NextStepPanel step={nextStep} />
+        <NextStepPanel step={nextStep} asOf={asOf} />
       </div>
     </section>
   );
@@ -242,6 +273,9 @@ export function AttentionSection({
   view?: StudentDegreeProgressView;
 }) {
   if (items.length === 0) return null;
+  const staffItems = items.filter((i) => i.owner === "staff" && i.kind !== "NO_ACTIVE_PROGRAM");
+  const groupStaff = staffItems.length >= 3;
+  const rest = groupStaff ? items.filter((i) => !staffItems.includes(i)) : items;
   return (
     <section aria-labelledby="fd-attention" className="space-y-4" data-testid="attention-section">
       <SectionHeading
@@ -251,7 +285,29 @@ export function AttentionSection({
         description={"Each item says who acts next. Verified academic facts are only ever changed by Lumi\u00e8re staff."}
       />
       <ul className="space-y-3">
-        {items.map((item, index) => {
+        {groupStaff && (
+          <li data-owner="staff" data-testid="attention-staff-group">
+            <div className="rounded-xl border border-card-border bg-card p-4 sm:p-5">
+              <div className="flex items-center gap-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground" aria-hidden="true">
+                  <Hourglass className="h-4 w-4" />
+                </span>
+                <p className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">
+                  {attentionOwnerLabel("staff")} · {staffItems.length} items
+                </p>
+              </div>
+              <ul className="mt-3 divide-y divide-border">
+                {staffItems.map((item, i) => (
+                  <li key={`${item.kind}-${i}`} className="space-y-0.5 py-3 first:pt-0 last:pb-0 sm:pl-12">
+                    <p className="font-medium text-foreground">{item.title}</p>
+                    <p className="text-sm leading-relaxed text-muted-foreground">{item.detail}</p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </li>
+        )}
+        {rest.map((item, index) => {
           const staff = item.owner === "staff";
           const href = attentionHref(item, view);
           const body = (
@@ -406,7 +462,7 @@ export function RequirementsGlance({
       ) : (
         <>
           <div className="flex h-2 gap-1" aria-hidden="true" data-testid="requirements-strip">
-            {ordered.map((req) => {
+            {requirementsGroupedByTone(ordered).map((req) => {
               const tone = requirementStatusPresentation(req.status).tone;
               return (
                 <span
@@ -416,6 +472,7 @@ export function RequirementsGlance({
               );
             })}
           </div>
+          <p className="sr-only">{requirementLegendSummary(ordered)}</p>
           <ul
             className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-muted-foreground"
             aria-label={`${ordered.length} requirements by status`}
@@ -445,7 +502,7 @@ export function RequirementsGlance({
                     </p>
                     <StatusChip tone={status.tone} label={status.label} />
                   </div>
-                  {!compact && amounts.required && amounts.applied && (
+                  {amounts.required && amounts.applied && (
                     <>
                       <SlimBar
                         applied={req.appliedAmount}

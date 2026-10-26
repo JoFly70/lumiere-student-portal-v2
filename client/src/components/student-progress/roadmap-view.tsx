@@ -344,7 +344,7 @@ function CreditGroup({
 export function CreditsSection({ credits }: { credits: readonly StudentCreditView[] }) {
   const grouped = groupCredits(credits);
   return (
-    <section aria-labelledby="rm-credits" className="space-y-6" data-testid="credits-section">
+    <section id="your-credits" aria-labelledby="rm-credits" className="scroll-mt-20 space-y-6" data-testid="credits-section">
       <SectionHeading
         id="rm-credits"
         eyebrow="Your record"
@@ -428,7 +428,7 @@ export function SourcesSection({ sources }: { sources: readonly StudentCreditSou
 }
 
 const ENROLLMENT_STATUS_LABEL: Record<string, string> = {
-  todo: "To do",
+  todo: "Planned",
   in_progress: "In progress",
   completed: "Completed",
   dropped: "Dropped",
@@ -490,9 +490,9 @@ export function PlannedCoursesSection({
                 </h3>
                 <div className="flex flex-wrap items-center gap-2">
                   {course.courseCode && (
-                    <code className="text-sm font-semibold" data-testid={`text-course-code-${course.id}`}>
+                    <span className="font-sans text-sm font-semibold tabular-nums" data-testid={`text-course-code-${course.id}`}>
                       {course.courseCode}
-                    </code>
+                    </span>
                   )}
                   <span className="rounded-full border border-dashed border-muted-foreground/50 px-2 py-0.5 text-xs text-muted-foreground">
                     {ENROLLMENT_STATUS_LABEL[course.status] ?? course.status}

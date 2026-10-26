@@ -62,6 +62,32 @@ describe("S04 Flight Deck view", () => {
     expect(t).toContain("1 in progress");
     expect(t).toContain("1 outstanding");
     expect(t).toContain("1 under review");
+    const row1 = markup.slice(markup.indexOf("glance-row-r1"), markup.indexOf("glance-row-r2"));
+    expect(row1).toContain("3 credits of 3 credits applied");
+  });
+
+  it("reconciles verified credits under the ring, links to the credits anchor, and fills the next-step footer", () => {
+    const markup = html(React.createElement(FlightDeckView, { view: COMPOSED }));
+    const t = text(markup);
+    expect(t).toContain("39.5 verified on record \u00b7 1 verified course not applied to a requirement");
+    expect(markup).toContain('href="/roadmap#your-credits"');
+    expect(html(React.createElement(RoadmapView, { view: COMPOSED }))).toContain('id="your-credits"');
+    expect(markup).toContain('data-testid="next-step-footer"');
+    expect(t).toContain("Record updated October 26, 2026");
+    expect(markup).toContain('href="/support"');
+    expect(markup).toContain("order-1");
+    expect(markup).toContain("lg:order-2");
+  });
+
+  it("shows the review message once and groups three or more staff items", () => {
+    const t = text(html(React.createElement(FlightDeckView, { view: UNDER_REVIEW })));
+    expect(t).not.toContain("Record under review");
+    const staff = (n: number) => ({ kind: "CREDIT_PENDING_VERIFICATION" as const, owner: "staff" as const, title: `Item ${n}`, detail: "d" });
+    const grouped = html(React.createElement(FlightDeckView, { view: { ...COMPOSED, attention: [staff(1), staff(2), staff(3)] } }));
+    expect(grouped).toContain("attention-staff-group");
+    expect(text(grouped)).toContain("Lumi\u00e8re staff is reviewing \u00b7 3 items");
+    const two = html(React.createElement(FlightDeckView, { view: { ...COMPOSED, attention: [staff(1), staff(2)] } }));
+    expect(two).not.toContain("attention-staff-group");
   });
 
   it("hides milestones when totals are null or state is not COMPOSED", () => {
@@ -92,7 +118,7 @@ describe("S04 Flight Deck view", () => {
     expect(markup).not.toContain('data-testid="milestone-track"');
     expect(markup).not.toContain("figure-applied");
     // Only the page chrome date; strip it and assert no digits remain in body copy.
-    const withoutDate = t.replace("Record as of October 26, 2026", "");
+    const withoutDate = t.replace("Record as of October 26, 2026", "").replace("Record updated October 26, 2026", "");
     expect(withoutDate).not.toMatch(/\d/);
     expect(t).toContain("Sit tight");
   });
@@ -160,6 +186,8 @@ describe("S04 Roadmap view", () => {
     expect(noCode).not.toContain("N/A");
     expect(noCode).not.toContain("text-course-code-e2");
     expect(noCode).toContain("Public Speaking");
+    expect(noCode).toContain("Planned");
+    expect(noCode).not.toContain("<code");
     const withHandlers = html(
       React.createElement(RoadmapView, {
         view: COMPOSED,
