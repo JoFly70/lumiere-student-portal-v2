@@ -147,7 +147,7 @@ export async function updateStudent(
   try {
     const result = await db
       .update(studentsTable)
-      .set(updates as any)
+      .set({ ...updates, updated_at: new Date() } as any)
       .where(eq(studentsTable.id, studentId))
       .returning();
 
@@ -201,6 +201,7 @@ export async function updateStudentPhoto(
 function serializeStudentContact(row: StudentContactsTableSelect): StudentContact {
   return {
     ...row,
+    authority_verified_at: row.authority_verified_at?.toISOString() ?? null,
     created_at: row.created_at.toISOString(),
   } as StudentContact;
 }

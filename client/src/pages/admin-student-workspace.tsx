@@ -33,6 +33,7 @@ import {
   placementRequirementLabel,
   validSnapshotFingerprint,
 } from "./controlled-placement-workflow";
+import StudentProfileReview from "@/components/admin/student-profile-review";
 import { useDocuments } from "@/hooks/use-documents";
 import { useTickets, type Ticket } from "@/hooks/use-tickets";
 
@@ -168,10 +169,12 @@ export default function AdminStudentWorkspace() {
     </header>
      <nav aria-label="Student workspace sections" className="flex flex-wrap gap-2 border-b pb-3">
        <a href="#workspace-overview" className="rounded-md border px-3 py-2 text-sm font-medium hover:bg-muted">Overview</a>
+       <a href="#workspace-profile" className="rounded-md border px-3 py-2 text-sm font-medium hover:bg-muted"><Fingerprint className="mr-2 inline h-4 w-4" />Profile &amp; identity</a>
        <a href="#workspace-documents" className="rounded-md border px-3 py-2 text-sm font-medium hover:bg-muted"><FileText className="mr-2 inline h-4 w-4" />Documents</a>
        <a href="#workspace-support" className="rounded-md border px-3 py-2 text-sm font-medium hover:bg-muted"><LifeBuoy className="mr-2 inline h-4 w-4" />Support</a>
        <Link href={`/admin/students/${encodeURIComponent(studentId)}/roadmap`} className="rounded-md border px-3 py-2 text-sm font-medium hover:bg-muted">Roadmap</Link>
      </nav>
+     {canonicalStudentId ? <StudentProfileReview studentId={canonicalStudentId} /> : null}
      <div id="workspace-overview" aria-label="Overview">
     <section className="grid gap-4 md:grid-cols-3">
        <Card><CardHeader><CardTitle className="text-sm text-muted-foreground">Current program</CardTitle></CardHeader><CardContent><p className="text-lg font-semibold">{label("programs", value(vm.program, "id")) ?? value(vm.program, "name", "code")}</p><p className="mt-1 text-sm text-muted-foreground">Version {label("programVersions", value(vm.programVersion, "id")) ?? value(vm.programVersion, "versionLabel", "id")}</p></CardContent></Card>

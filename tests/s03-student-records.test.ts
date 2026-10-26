@@ -17,6 +17,7 @@ const studentSvc = vi.hoisted(() => ({
   getStudentWithRelations: vi.fn(),
   listStudents: vi.fn(),
   getStudentContacts: vi.fn(),
+  getStudentContact: vi.fn(),
   addStudentContact: vi.fn(),
   updateStudentContact: vi.fn(),
   deleteStudentContact: vi.fn(),
@@ -68,6 +69,8 @@ vi.mock("../server/lib/db", () => {
     },
   };
 });
+
+const PNG = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(16)]);
 
 const STUDENT = {
   id: "student-1",
@@ -152,9 +155,9 @@ describe("S03 student profile updates", () => {
     const app = await makeApp();
     const res = await request(app).put("/api/students/student-1")
       .set("x-role", "student").set("x-user-id", "user-1")
-      .send({ residency: "foreign", hs_completion: true, hs_country: "", first_name: "Anna" });
+      .send({ residency: "foreign", hs_completion: true, hs_country: "", first_name: "Ana", phone_primary: "+1999" });
     expect(res.status).toBe(200);
-    expect(studentSvc.updateStudent).toHaveBeenCalledWith("student-1", { first_name: "Anna" }, "user-1");
+    expect(studentSvc.updateStudent).toHaveBeenCalledWith("student-1", { phone_primary: "+1999" }, "user-1");
   });
 
   it("rejects student_code and user_id for everyone, and keeps staff edit rights", async () => {
@@ -193,19 +196,16 @@ describe("S03 English proof", () => {
 });
 
 describe("S03 contacts ownership", () => {
-  function contactRow(studentId: string) {
-    const q: any = {};
-    q.select = () => q;
-    q.eq = () => q;
-    q.single = async () => ({ data: { student_id: studentId }, error: null });
-    return q;
-  }
+  const contactRow = (studentId: string) => ({
+    id: "c1", student_id: studentId, type: "other", full_name: "Pat", relationship: "friend",
+    phone: "+15550001", email: null, language: null, scopes: [], authority_status: "listed", created_at: "2026-01-01T00:00:00.000Z",
+  });
 
   it("resolves ownership from the stored contact row", async () => {
     const app = await makeApp();
-    fromMock.mockImplementation(() => contactRow("other-student"));
+    studentSvc.getStudentContact.mockResolvedValue(contactRow("other-student"));
     const put = await request(app).put("/api/students/contacts/c1")
-      .set("x-role", "student").set("x-user-id", "user-1").send({ phone: "1" });
+      .set("x-role", "student").set("x-user-id", "user-1").send({ phone: "+15559999" });
     expect(put.status).toBe(403);
     const del = await request(app).delete("/api/students/contacts/c1")
       .set("x-role", "student").set("x-user-id", "user-1");
@@ -214,15 +214,15 @@ describe("S03 contacts ownership", () => {
     expect(studentSvc.deleteStudentContact).not.toHaveBeenCalled();
   });
 
-  it("updates an owned contact, returns the updated row and audits the actor", async () => {
+  it("updates an owned contact, returns the contact view and audits the actor", async () => {
     const app = await makeApp();
-    fromMock.mockImplementation(() => contactRow("student-1"));
-    studentSvc.updateStudentContact.mockResolvedValue({ id: "c1", phone: "1" });
+    studentSvc.getStudentContact.mockResolvedValue(contactRow("student-1"));
+    studentSvc.updateStudentContact.mockResolvedValue({ ...contactRow("student-1"), phone: "+15559999" });
     const put = await request(app).put("/api/students/contacts/c1")
-      .set("x-role", "student").set("x-user-id", "user-1").send({ phone: "1" });
+      .set("x-role", "student").set("x-user-id", "user-1").send({ phone: "+15559999" });
     expect(put.status).toBe(200);
-    expect(put.body).toEqual({ id: "c1", phone: "1" });
-    expect(studentSvc.updateStudentContact).toHaveBeenCalledWith("c1", { phone: "1" }, "user-1");
+    expect(put.body).toMatchObject({ id: "c1", phone: "+15559999", hasPortalAccess: false });
+    expect(studentSvc.updateStudentContact).toHaveBeenCalledWith("c1", { phone: "+15559999" }, "user-1");
   });
 });
 
@@ -231,11 +231,11 @@ describe("S03 profile photo", () => {
     const app = await makeApp();
     const res = await request(app).post("/api/students/student-1/photo")
       .set("x-role", "student").set("x-user-id", "user-1")
-      .attach("photo", Buffer.from("png"), { filename: "../../evil.php", contentType: "image/png" });
+      .attach("photo", PNG, { filename: "../../evil.php", contentType: "image/png" });
     expect(res.status).toBe(200);
     const stored = studentSvc.updateStudent.mock.calls[0][1].photo_url as string;
-    expect(stored).toMatch(/^storage:student-documents\/profile-photos\/student-1_\d+\.png$/);
-    expect(storageMock.upload.mock.calls[0][0]).toMatch(/^profile-photos\/student-1_\d+\.png$/);
+    expect(stored).toMatch(/^storage:student-documents\/profile-photos\/student-1_[0-9a-f-]{36}\.png$/);
+    expect(storageMock.upload.mock.calls[0][0]).toMatch(/^profile-photos\/student-1_[0-9a-f-]{36}\.png$/);
     expect(res.body.photoUrl).toMatch(/^https:\/\/signed\/profile-photos\//);
     expect(storageMock.getPublicUrl).not.toHaveBeenCalled();
   });
@@ -245,7 +245,7 @@ describe("S03 profile photo", () => {
     studentSvc.getStudentByUserId.mockResolvedValue({ id: "other-student" });
     const res = await request(app).post("/api/students/student-1/photo")
       .set("x-role", "student").set("x-user-id", "user-9")
-      .attach("photo", Buffer.from("png"), { filename: "a.png", contentType: "image/png" });
+      .attach("photo", PNG, { filename: "a.png", contentType: "image/png" });
     expect(res.status).toBe(403);
     expect(storageMock.upload).not.toHaveBeenCalled();
   });

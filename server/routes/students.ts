@@ -2,7 +2,8 @@
  * Student Profile API Routes
  */
 
-import { Router } from 'express';
+import { Router, type NextFunction, type Request, type Response } from 'express';
+import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import multer from 'multer';
 import { requireAuth, requireStaff } from '../middleware/auth';
@@ -13,110 +14,71 @@ import {
   updateStudent,
   getStudentWithRelations,
   listStudents,
-  getStudentContacts,
-  addStudentContact,
-  updateStudentContact,
+  getStudentContact,
   deleteStudentContact,
   getEnglishProof,
   upsertEnglishProof,
 } from '../services/student-service';
 import {
   insertStudentSchema,
-  insertStudentContactSchema,
   insertEnglishProofSchema,
 } from '@shared/schema';
+import {
+  CORRECTION_STATUSES,
+  PROFILE_ERROR_CODES,
+  createIdentityCorrectionSchema,
+  resolveContactAuthoritySchema,
+  resolveIdentityCorrectionSchema,
+  studentContactInputSchema,
+  studentSelfServiceUpdateSchema,
+  type CorrectionStatus,
+} from '@shared/student-profile-contract';
 import { logger } from '../lib/logger';
 import { supabaseAdmin } from '../lib/supabase';
 import { studentOwnsProfile, isAdminOrStaff } from '../lib/resource-ownership';
+import {
+  PHOTO_BUCKET,
+  PHOTO_MAX_BYTES,
+  STORED_PHOTO_PREFIX,
+  detectImageType,
+  resolvePhotoUrl,
+  storedPhotoPath,
+  validatePhotoUpload,
+} from '../lib/profile-photo';
+import {
+  ProfileHttpError,
+  assertContactDeletable,
+  assertStudentMayUpdate,
+  changedIdentityFields,
+  createContact,
+  createIdentityCorrection,
+  listContactViews,
+  listCorrectionQueue,
+  listOwnCorrections,
+  listStudentCorrectionsForStaff,
+  loadStudentProfileView,
+  maskStudentRecord,
+  partitionStudentProfileUpdate,
+  prepareStaffProfileUpdate,
+  resolveContactAuthority,
+  resolveIdentityCorrection,
+  updateContact,
+  withdrawCorrection,
+} from '../services/student-profile-service';
+
+// Re-exported for tests and callers that used the previous locations.
+export { STORED_PHOTO_PREFIX, resolvePhotoUrl, detectImageType, validatePhotoUpload, partitionStudentProfileUpdate };
+export { STUDENT_EDITABLE_PROFILE_FIELDS } from '@shared/student-profile-contract';
 
 /**
- * Profile fields a student may change on their own record (identity, contact,
- * address, communication preferences). All other fields — status, residency
- * and high-school eligibility, prior credits/transcripts, program intent,
- * consent signature, photo URL, user link — are staff-controlled.
+ * Staff may edit staff-controlled and identity fields (identity edits are
+ * audited as material changes). Never editable through this API by anyone:
+ * user_id, student_code, photo_url (upload endpoint only) and the login email.
  */
-export const STUDENT_EDITABLE_PROFILE_FIELDS = [
-  'first_name',
-  'middle_name',
-  'last_name',
-  'preferred_name',
-  'dob',
-  'sex',
-  'nationality',
-  'gov_id_type',
-  'gov_id_number',
-  'email',
-  'phone_primary',
-  'phone_secondary',
-  'whatsapp_primary',
-  'timezone',
-  'preferred_contact_channel',
-  'address_country',
-  'address_state',
-  'address_city',
-  'address_postal',
-  'address_line1',
-  'address_line2',
-  'marketing_opt_in',
-  'media_release',
-] as const;
-
-const staffProfileUpdateSchema = insertStudentSchema.omit({ user_id: true }).partial().strict();
-
-function normalizeComparable(value: unknown): unknown {
-  return value === '' || value === undefined ? null : value;
-}
-
-function sameStoredValue(submitted: unknown, stored: unknown): boolean {
-  return JSON.stringify(normalizeComparable(submitted)) === JSON.stringify(normalizeComparable(stored));
-}
-
-/**
- * Split a validated student-initiated update into the editable subset. A
- * controlled field is tolerated only when it equals the stored value (forms
- * resubmit whole sections); any change to it is returned as forbidden.
- */
-export function partitionStudentProfileUpdate(
-  updates: Record<string, unknown>,
-  stored: Record<string, unknown>,
-): { allowed: Record<string, unknown>; forbidden: string[] } {
-  const editable = new Set<string>(STUDENT_EDITABLE_PROFILE_FIELDS);
-  const allowed: Record<string, unknown> = {};
-  const forbidden: string[] = [];
-  for (const [key, value] of Object.entries(updates)) {
-    if (editable.has(key)) {
-      allowed[key] = value;
-    } else if (!sameStoredValue(value, stored[key])) {
-      forbidden.push(key);
-    }
-  }
-  return { allowed, forbidden };
-}
-
-// Profile photos live in the private student-documents bucket. The row stores
-// a bucket-relative reference; responses carry a short-lived signed URL.
-const PHOTO_BUCKET = 'student-documents';
-export const STORED_PHOTO_PREFIX = 'storage:student-documents/';
-const PHOTO_URL_TTL_SECONDS = 3600;
-
-export async function resolvePhotoUrl(photoUrl: unknown): Promise<unknown> {
-  if (typeof photoUrl !== 'string' || !photoUrl.startsWith(STORED_PHOTO_PREFIX)) {
-    return photoUrl;
-  }
-  const path = photoUrl.slice(STORED_PHOTO_PREFIX.length);
-  if (!/^profile-photos\/[A-Za-z0-9_-]+\.(png|jpg|webp|gif)$/.test(path)) {
-    return null;
-  }
-  try {
-    const { data, error } = await supabaseAdmin.storage
-      .from(PHOTO_BUCKET)
-      .createSignedUrl(path, PHOTO_URL_TTL_SECONDS);
-    if (error || !data?.signedUrl) return null;
-    return data.signedUrl;
-  } catch {
-    return null;
-  }
-}
+const staffProfileUpdateSchema = insertStudentSchema
+  .omit({ user_id: true, photo_url: true, email: true })
+  .partial()
+  .strict();
 
 async function withSignedPhoto<T>(student: T): Promise<T> {
   const row = student as unknown as { photo_url?: unknown } | null;
@@ -124,26 +86,61 @@ async function withSignedPhoto<T>(student: T): Promise<T> {
   return { ...row, photo_url: await resolvePhotoUrl(row.photo_url) } as unknown as T;
 }
 
-async function canAccessStudent(req: import('express').Request, studentId: string): Promise<boolean> {
+/** Student record as returned to clients: signed photo, raw government id never included. */
+async function presentStudent<T extends object>(student: T): Promise<T> {
+  return withSignedPhoto(maskStudentRecord(student));
+}
+
+async function canAccessStudent(req: Request, studentId: string): Promise<boolean> {
   return !!req.user && (await studentOwnsProfile(req.user, studentId));
+}
+
+function sendProfileError(res: Response, error: unknown): boolean {
+  if (error instanceof ProfileHttpError) {
+    res.status(error.status).json({ error: error.message, message: error.message, code: error.code, ...error.extra });
+    return true;
+  }
+  if (error instanceof z.ZodError) {
+    res.status(400).json({ error: 'Validation failed', code: 'VALIDATION_FAILED', details: error.errors });
+    return true;
+  }
+  return false;
+}
+
+function actorIdOf(req: Request): string | null {
+  return req.audit?.actorId || req.user?.id || null;
 }
 
 const router = Router();
 
-// Configure multer for memory storage
+// Photo upload: memory storage, 5 MB cap. Content is validated by magic bytes
+// in the handler, not by the client-declared MIME type.
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB
-  },
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only image files are allowed'));
-    }
-  },
+  limits: { fileSize: PHOTO_MAX_BYTES, files: 1 },
 });
+
+function parsePhotoUpload(req: Request, res: Response, next: NextFunction) {
+  upload.single('photo')(req, res, (err: unknown) => {
+    if (!err) return next();
+    if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(413).json({ error: 'The photo is larger than 5 MB', code: PROFILE_ERROR_CODES.PHOTO_INVALID });
+    }
+    return res.status(400).json({ error: 'The upload could not be read', code: PROFILE_ERROR_CODES.PHOTO_INVALID });
+  });
+}
+
+async function requirePhotoOwner(req: Request, res: Response, next: NextFunction) {
+  try {
+    if (!(await canAccessStudent(req, req.params.id))) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+    return next();
+  } catch (error) {
+    logger.error('Photo ownership check error', { studentId: req.params.id, error });
+    return res.status(500).json({ error: 'Failed to upload photo' });
+  }
+}
 
 // Apply auth to all routes
 router.use(requireAuth);
@@ -171,9 +168,13 @@ router.get('/', requireStaff, async (req, res) => {
   }
 });
 
+// ----------------------------------------------------------------------------
+// Literal paths first: they must be registered before any '/:id' route.
+// ----------------------------------------------------------------------------
+
 /**
  * GET /api/students/me
- * Get current user's student profile
+ * Get current user's student profile (government id masked)
  */
 router.get('/me', async (req, res) => {
   try {
@@ -187,10 +188,137 @@ router.get('/me', async (req, res) => {
       return res.status(404).json({ error: 'Student profile not found' });
     }
 
-    return res.json(await withSignedPhoto(student));
+    return res.json(await presentStudent(student));
   } catch (error) {
     logger.error('Get my profile error', { userId: req.user?.id, error });
     return res.status(500).json({ error: 'Failed to get profile' });
+  }
+});
+
+/**
+ * GET /api/students/me/profile
+ * StudentProfileView for the signed-in student (resolved only from the session)
+ */
+router.get('/me/profile', async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+    const student = await getStudentByUserId(req.user.id);
+    if (!student) {
+      return res.status(404).json({ error: 'Student profile not found' });
+    }
+    res.set('Cache-Control', 'no-store');
+    return res.json(await loadStudentProfileView(student, { role: req.user.role }));
+  } catch (error) {
+    if (sendProfileError(res, error)) return;
+    logger.error('Get my profile view error', { userId: req.user?.id, error });
+    return res.status(500).json({ error: 'Failed to get profile' });
+  }
+});
+
+/**
+ * POST /api/students/me/identity-corrections
+ * Student requests a legal identity correction; the students row is unchanged
+ * until staff approve.
+ */
+router.post('/me/identity-corrections', async (req, res) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: 'Authentication required' });
+    const input = createIdentityCorrectionSchema.parse(req.body);
+    const student = await getStudentByUserId(req.user.id);
+    if (!student) return res.status(404).json({ error: 'Student profile not found' });
+    const view = await createIdentityCorrection(student, req.user.id, input);
+    return res.status(201).json(view);
+  } catch (error) {
+    if (sendProfileError(res, error)) return;
+    logger.error('Create identity correction error', { userId: req.user?.id, error });
+    return res.status(500).json({ error: 'Failed to submit correction request' });
+  }
+});
+
+/**
+ * GET /api/students/me/identity-corrections
+ * Own correction history (masked; reviewer identity withheld)
+ */
+router.get('/me/identity-corrections', async (req, res) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: 'Authentication required' });
+    const student = await getStudentByUserId(req.user.id);
+    if (!student) return res.status(404).json({ error: 'Student profile not found' });
+    return res.json(await listOwnCorrections(student.id));
+  } catch (error) {
+    if (sendProfileError(res, error)) return;
+    logger.error('List own corrections error', { userId: req.user?.id, error });
+    return res.status(500).json({ error: 'Failed to load correction requests' });
+  }
+});
+
+/**
+ * POST /api/students/me/identity-corrections/:requestId/withdraw
+ */
+router.post('/me/identity-corrections/:requestId/withdraw', async (req, res) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: 'Authentication required' });
+    const student = await getStudentByUserId(req.user.id);
+    if (!student) return res.status(404).json({ error: 'Student profile not found' });
+    return res.json(await withdrawCorrection(student, req.params.requestId, req.user.id));
+  } catch (error) {
+    if (sendProfileError(res, error)) return;
+    logger.error('Withdraw correction error', { requestId: req.params.requestId, error });
+    return res.status(500).json({ error: 'Failed to withdraw correction request' });
+  }
+});
+
+/**
+ * GET /api/students/identity-corrections?status=pending
+ * Staff review queue
+ */
+router.get('/identity-corrections', requireStaff, async (req, res) => {
+  try {
+    const raw = req.query.status;
+    let status: CorrectionStatus | null = null;
+    if (raw !== undefined) {
+      if (typeof raw !== 'string' || !(CORRECTION_STATUSES as readonly string[]).includes(raw)) {
+        return res.status(400).json({ error: 'Invalid status filter', code: 'VALIDATION_FAILED' });
+      }
+      status = raw as CorrectionStatus;
+    }
+    return res.json(await listCorrectionQueue(status));
+  } catch (error) {
+    logger.error('List correction queue error', { error });
+    return res.status(500).json({ error: 'Failed to load correction requests' });
+  }
+});
+
+/**
+ * POST /api/students/identity-corrections/:requestId/resolve
+ * Staff approve (applies the values atomically) or reject
+ */
+router.post('/identity-corrections/:requestId/resolve', requireStaff, async (req, res) => {
+  try {
+    const input = resolveIdentityCorrectionSchema.parse(req.body);
+    const staffId = req.user!.id;
+    return res.json(await resolveIdentityCorrection(req.params.requestId, input, staffId));
+  } catch (error) {
+    if (sendProfileError(res, error)) return;
+    logger.error('Resolve correction error', { requestId: req.params.requestId, error });
+    return res.status(500).json({ error: 'Failed to resolve correction request' });
+  }
+});
+
+/**
+ * POST /api/students/contacts/:contactId/authority
+ * Staff verify or revoke a contact's guardian/representative authority
+ */
+router.post('/contacts/:contactId/authority', requireStaff, async (req, res) => {
+  try {
+    const input = resolveContactAuthoritySchema.parse(req.body);
+    return res.json(await resolveContactAuthority(req.params.contactId, input, req.user!.id));
+  } catch (error) {
+    if (sendProfileError(res, error)) return;
+    logger.error('Resolve contact authority error', { contactId: req.params.contactId, error });
+    return res.status(500).json({ error: 'Failed to update contact authority' });
   }
 });
 
@@ -213,10 +341,50 @@ router.get('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Student not found' });
     }
 
-    return res.json(await withSignedPhoto(student));
+    return res.json(await presentStudent(student));
   } catch (error) {
     logger.error('Get student error', { studentId: req.params.id, error });
     return res.status(500).json({ error: 'Failed to get student' });
+  }
+});
+
+/**
+ * GET /api/students/:id/profile
+ * StudentProfileView (staff, or the owning student)
+ */
+router.get('/:id/profile', async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!(await canAccessStudent(req, id))) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+    const student = await getStudent(id);
+    if (!student) {
+      return res.status(404).json({ error: 'Student not found' });
+    }
+    res.set('Cache-Control', 'no-store');
+    return res.json(await loadStudentProfileView(student, { role: req.user!.role }));
+  } catch (error) {
+    if (sendProfileError(res, error)) return;
+    logger.error('Get student profile view error', { studentId: req.params.id, error });
+    return res.status(500).json({ error: 'Failed to get profile' });
+  }
+});
+
+/**
+ * GET /api/students/:id/identity-corrections
+ * A student's correction history for staff (includes reviewer ids)
+ */
+router.get('/:id/identity-corrections', requireStaff, async (req, res) => {
+  try {
+    const student = await getStudent(req.params.id);
+    if (!student) {
+      return res.status(404).json({ error: 'Student not found' });
+    }
+    return res.json(await listStudentCorrectionsForStaff(student.id));
+  } catch (error) {
+    logger.error('List student corrections error', { studentId: req.params.id, error });
+    return res.status(500).json({ error: 'Failed to load correction requests' });
   }
 });
 
@@ -239,7 +407,7 @@ router.get('/:id/full', async (req, res) => {
       return res.status(404).json({ error: 'Student not found' });
     }
 
-    return res.json(await withSignedPhoto(student));
+    return res.json(await presentStudent(student));
   } catch (error) {
     logger.error('Get student full error', { studentId: req.params.id, error });
     return res.status(500).json({ error: 'Failed to get student' });
@@ -281,7 +449,14 @@ router.post('/', requireStaff, async (req, res) => {
 
 /**
  * PUT /api/students/:id
- * Update student profile
+ * Update student profile.
+ *  - Students: STUDENT_EDITABLE_PROFILE_FIELDS only. Identity values need a
+ *    correction request; the login email is managed by the account.
+ *  - Staff/admin: staff-controlled and identity fields (identity edits are
+ *    audited as material changes). The profile email is refused for everyone
+ *    so it cannot diverge from the login; user_id, student_code and
+ *    photo_url are never editable here.
+ * Unchanged values resubmitted by a form section are tolerated.
  */
 router.put('/:id', async (req, res) => {
   try {
@@ -292,49 +467,50 @@ router.put('/:id', async (req, res) => {
       return res.status(403).json({ error: 'Access denied' });
     }
 
-    // student_code and user_id are never client-editable. Staff may edit the
-    // remaining profile fields; students only STUDENT_EDITABLE_PROFILE_FIELDS.
-    let validated: Record<string, unknown> = staffProfileUpdateSchema.parse(req.body);
+    const body = req.body;
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      return res.status(400).json({ error: 'Validation failed', code: 'VALIDATION_FAILED' });
+    }
+
+    const stored = await getStudent(id);
+    if (!stored) {
+      return res.status(404).json({ error: 'Student not found' });
+    }
+    const storedRecord = stored as unknown as Record<string, unknown>;
+    const actorId = actorIdOf(req);
 
     if (!isAdminOrStaff(req.user)) {
-      const stored = await getStudent(id);
-      if (!stored) {
-        return res.status(404).json({ error: 'Student not found' });
-      }
-      const { allowed, forbidden } = partitionStudentProfileUpdate(
-        validated,
-        stored as unknown as Record<string, unknown>,
-      );
-      if (forbidden.length > 0) {
-        return res.status(403).json({
-          error: 'These fields can only be changed by staff',
-          fields: forbidden,
-        });
-      }
-      validated = allowed;
+      const allowed = assertStudentMayUpdate(body as Record<string, unknown>, storedRecord);
+      const validated = studentSelfServiceUpdateSchema.parse(allowed);
       if (Object.keys(validated).length === 0) {
-        return res.json(await withSignedPhoto(stored));
+        return res.json(await presentStudent(stored));
       }
+      const student = await updateStudent(id, validated, actorId);
+      logger.info('Student updated', { studentId: id, updatedBy: req.user?.id });
+      return res.json(await presentStudent(student));
     }
 
-    // Pass actor ID for audit logging
-    const actorId = req.audit?.actorId || req.user?.id || null;
-    const student = await updateStudent(id, validated, actorId);
-
-    logger.info('Student updated', { 
-      studentId: id, 
-      updatedBy: req.user?.id 
-    });
-
-    return res.json(await withSignedPhoto(student));
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return res.status(400).json({ 
-        error: 'Validation failed', 
-        details: error.errors 
+    const prepared = prepareStaffProfileUpdate(body as Record<string, unknown>, storedRecord);
+    if (prepared.emailChanged) {
+      return res.status(403).json({
+        error: 'The profile email mirrors the login email and is changed from account security',
+        code: PROFILE_ERROR_CODES.EMAIL_MANAGED_BY_ACCOUNT,
       });
     }
-
+    const validated = staffProfileUpdateSchema.parse(prepared.body) as Record<string, unknown>;
+    const identityFields = changedIdentityFields(validated, storedRecord);
+    const student = await updateStudent(
+      id,
+      validated,
+      actorId,
+      identityFields.length > 0
+        ? { auditMetadata: { material_identity_change: true, identity_fields: identityFields, actor_role: req.user?.role } }
+        : undefined,
+    );
+    logger.info('Student updated', { studentId: id, updatedBy: req.user?.id, identityFields });
+    return res.json(await presentStudent(student));
+  } catch (error) {
+    if (sendProfileError(res, error)) return;
     logger.error('Update student error', { studentId: req.params.id, error });
     return res.status(500).json({ error: 'Failed to update student' });
   }
@@ -346,7 +522,7 @@ router.put('/:id', async (req, res) => {
 
 /**
  * GET /api/students/:id/contacts
- * Get student contacts
+ * Get student contacts (StudentContactView[])
  */
 router.get('/:id/contacts', async (req, res) => {
   try {
@@ -357,9 +533,7 @@ router.get('/:id/contacts', async (req, res) => {
       return res.status(403).json({ error: 'Access denied' });
     }
 
-    const contacts = await getStudentContacts(id);
-
-    return res.json(contacts);
+    return res.json(await listContactViews(id));
   } catch (error) {
     logger.error('Get contacts error', { studentId: req.params.id, error });
     return res.status(500).json({ error: 'Failed to get contacts' });
@@ -368,7 +542,8 @@ router.get('/:id/contacts', async (req, res) => {
 
 /**
  * POST /api/students/:id/contacts
- * Add student contact
+ * Add student contact. Authority (guardian/representative, academic/financial/
+ * release scopes) starts as pending_verification and is inert until staff verify.
  */
 router.post('/:id/contacts', async (req, res) => {
   try {
@@ -379,120 +554,86 @@ router.post('/:id/contacts', async (req, res) => {
       return res.status(403).json({ error: 'Access denied' });
     }
 
-    // Validate (exclude student_id as it comes from URL)
-    const schema = insertStudentContactSchema.omit({ student_id: true });
-    const validated = schema.parse(req.body);
+    const input = studentContactInputSchema.parse(req.body);
+    const contact = await createContact(id, input, actorIdOf(req) ?? req.user!.id);
 
-    // Pass actor ID for audit logging
-    const actorId = req.audit?.actorId || req.user?.id || null;
-    const contact = await addStudentContact(id, validated, actorId);
-
-    logger.info('Contact added', { 
+    logger.info('Contact added', {
       studentId: id,
       contactId: contact.id,
-      addedBy: req.user?.id 
+      addedBy: req.user?.id
     });
 
     return res.status(201).json(contact);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return res.status(400).json({ 
-        error: 'Validation failed', 
-        details: error.errors 
-      });
-    }
-
+    if (sendProfileError(res, error)) return;
     logger.error('Add contact error', { studentId: req.params.id, error });
     return res.status(500).json({ error: 'Failed to add contact' });
   }
 });
 
 /**
- * PUT /api/contacts/:id
+ * PUT /api/students/contacts/:id
  * Update student contact
  */
 router.put('/contacts/:id', async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Get contact to check ownership
-    const { data: contact, error: fetchError } = await supabaseAdmin
-      .from('student_contacts')
-      .select('student_id')
-      .eq('id', id)
-      .single();
-
-    if (fetchError || !contact) {
+    const contact = await getStudentContact(id);
+    if (!contact) {
       return res.status(404).json({ error: 'Contact not found' });
     }
 
-    // Check authorization
     // Ownership is resolved from the stored contact row's student_id.
     if (!(await canAccessStudent(req, contact.student_id))) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
-    // Validate partial update (exclude student_id)
-    const schema = insertStudentContactSchema.omit({ student_id: true }).partial().strict();
-    const validated = schema.parse(req.body);
+    const input = studentContactInputSchema.partial().strict().parse(req.body);
+    const updated = await updateContact(contact, input, actorIdOf(req) ?? req.user!.id, isAdminOrStaff(req.user));
 
-    const actorId = req.audit?.actorId || req.user?.id || null;
-    const updated = await updateStudentContact(id, validated, actorId);
-
-    logger.info('Contact updated', { 
-      contactId: id, 
-      updatedBy: req.user?.id 
+    logger.info('Contact updated', {
+      contactId: id,
+      updatedBy: req.user?.id
     });
 
     return res.json(updated);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return res.status(400).json({ 
-        error: 'Validation failed', 
-        details: error.errors 
-      });
-    }
-
+    if (sendProfileError(res, error)) return;
     logger.error('Update contact error', { contactId: req.params.id, error });
     return res.status(500).json({ error: 'Failed to update contact' });
   }
 });
 
 /**
- * DELETE /api/contacts/:id
- * Delete student contact
+ * DELETE /api/students/contacts/:id
+ * Delete student contact (a verified contact is staff-managed)
  */
 router.delete('/contacts/:id', async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Get contact to check ownership
-    const { data: contact, error: fetchError } = await supabaseAdmin
-      .from('student_contacts')
-      .select('student_id')
-      .eq('id', id)
-      .single();
-
-    if (fetchError || !contact) {
+    const contact = await getStudentContact(id);
+    if (!contact) {
       return res.status(404).json({ error: 'Contact not found' });
     }
 
-    // Check authorization
     // Ownership is resolved from the stored contact row's student_id.
     if (!(await canAccessStudent(req, contact.student_id))) {
       return res.status(403).json({ error: 'Access denied' });
     }
+    await assertContactDeletable(contact, isAdminOrStaff(req.user));
 
-    const actorId = req.audit?.actorId || req.user?.id || null;
-    await deleteStudentContact(id, actorId);
+    await deleteStudentContact(id, actorIdOf(req));
 
-    logger.info('Contact deleted', { 
-      contactId: id, 
-      deletedBy: req.user?.id 
+    logger.info('Contact deleted', {
+      contactId: id,
+      deletedBy: req.user?.id
     });
 
     return res.status(204).send();
   } catch (error) {
+    if (sendProfileError(res, error)) return;
     logger.error('Delete contact error', { contactId: req.params.id, error });
     return res.status(500).json({ error: 'Failed to delete contact' });
   }
@@ -574,22 +715,24 @@ router.post('/:id/english-proof', async (req, res) => {
 
 /**
  * POST /api/students/:id/photo
- * Upload profile photo
- * Uses Supabase Storage in production, base64 data URLs in demo mode
+ * Upload profile photo (PNG, JPEG or WEBP, max 5 MB, validated by content).
+ * Ownership is checked before the upload is parsed. Uses private Supabase
+ * Storage in production, base64 data URLs in demo mode.
  */
-router.post('/:id/photo', upload.single('photo'), async (req, res) => {
+router.post('/:id/photo', requirePhotoOwner, parsePhotoUpload, async (req, res) => {
+  const { id } = req.params;
+  let uploadedPath: string | null = null;
   try {
-    const { id } = req.params;
     const isDemoMode = process.env.ALLOW_DEMO_MODE === 'true';
 
-    // Check authorization
-    if (!(await canAccessStudent(req, id))) {
-      return res.status(403).json({ error: 'Access denied' });
-    }
-
+    const verdict = validatePhotoUpload(req.file?.buffer, req.file?.mimetype);
     if (!req.file) {
-      return res.status(400).json({ error: 'No file uploaded' });
+      return res.status(400).json({ error: 'No file uploaded', code: PROFILE_ERROR_CODES.PHOTO_INVALID });
     }
+    if (!verdict.ok) {
+      return res.status(400).json({ error: verdict.reason, code: PROFILE_ERROR_CODES.PHOTO_INVALID });
+    }
+    const { image } = verdict;
 
     const student = await getStudent(id);
     if (!student) {
@@ -599,68 +742,74 @@ router.post('/:id/photo', upload.single('photo'), async (req, res) => {
     let photoUrl: string;
 
     if (isDemoMode) {
-      // Demo mode: Use base64 data URL (no external storage needed)
-      const base64 = req.file.buffer.toString('base64');
-      photoUrl = `data:${req.file.mimetype};base64,${base64}`;
-      
+      photoUrl = `data:${image.mime};base64,${req.file.buffer.toString('base64')}`;
       logger.info('Profile photo converted to data URL (demo mode)', {
         studentId: id,
-        mimeType: req.file.mimetype,
+        mimeType: image.mime,
         size: req.file.size,
       });
     } else {
-      // Production: Upload to Supabase Storage
-      // Object name is derived from the stored student id and the MIME type,
-      // never from the client-supplied file name.
-      const extByMime: Record<string, string> = {
-        'image/png': 'png',
-        'image/jpeg': 'jpg',
-        'image/jpg': 'jpg',
-        'image/webp': 'webp',
-        'image/gif': 'gif',
-      };
-      const fileExt = extByMime[req.file.mimetype];
-      if (!fileExt) {
-        return res.status(400).json({ error: 'Unsupported image type' });
-      }
-      const fileName = `${student.id}_${Date.now()}.${fileExt}`;
-      const filePath = `profile-photos/${fileName}`;
+      // The object name comes from the stored student id, a random id and the
+      // detected type; never from the client-supplied file name.
+      const filePath = `profile-photos/${student.id}_${randomUUID()}.${image.ext}`;
 
-      const { data: uploadData, error: uploadError } = await supabaseAdmin
+      const { error: uploadError } = await supabaseAdmin
         .storage
         .from(PHOTO_BUCKET)
         .upload(filePath, req.file.buffer, {
-          contentType: req.file.mimetype,
-          upsert: true,
+          contentType: image.mime,
+          upsert: false,
         });
 
       if (uploadError) {
-        logger.error('Photo upload error', { error: uploadError });
+        logger.error('Photo upload error', { studentId: id, error: uploadError });
         return res.status(500).json({ error: 'Failed to upload photo' });
       }
+      uploadedPath = filePath;
 
       // Store a bucket reference, not a public URL: the bucket is private.
       photoUrl = `${STORED_PHOTO_PREFIX}${filePath}`;
-
-      logger.info('Profile photo uploaded to Supabase', {
-        studentId: id,
-        fileName,
-        uploadedBy: req.user?.id,
-      });
     }
 
-    // Update student record
-    const actorId = req.audit?.actorId || req.user?.id || null;
-    const updatedStudent = await updateStudent(id, { photo_url: photoUrl }, actorId);
+    const actorId = actorIdOf(req);
+    let updatedStudent;
+    try {
+      updatedStudent = await updateStudent(id, { photo_url: photoUrl }, actorId);
+    } catch (dbError) {
+      logger.error('Photo reference update failed', { studentId: id, error: dbError });
+      await removePhotoObject(uploadedPath);
+      uploadedPath = null;
+      return res.status(500).json({ error: 'Failed to save photo' });
+    }
 
-    return res.json({ 
+    // Success: the previous private object is no longer referenced.
+    const previousPath = storedPhotoPath(student.photo_url);
+    if (previousPath && previousPath !== uploadedPath) {
+      await removePhotoObject(previousPath);
+    }
+
+    logger.info('Profile photo saved', { studentId: id, uploadedBy: req.user?.id });
+
+    return res.json({
       photoUrl: await resolvePhotoUrl(photoUrl),
-      student: await withSignedPhoto(updatedStudent),
+      student: await presentStudent(updatedStudent),
     });
   } catch (error) {
-    logger.error('Photo upload endpoint error', { studentId: req.params.id, error });
+    logger.error('Photo upload endpoint error', { studentId: id, error });
+    await removePhotoObject(uploadedPath);
     return res.status(500).json({ error: 'Failed to upload photo' });
   }
 });
+
+/** Best-effort removal of a private photo object; never throws. */
+async function removePhotoObject(path: string | null): Promise<void> {
+  if (!path) return;
+  try {
+    const { error } = await supabaseAdmin.storage.from(PHOTO_BUCKET).remove([path]);
+    if (error) logger.warn('Photo object cleanup failed', { path, error });
+  } catch (error) {
+    logger.warn('Photo object cleanup failed', { path, error });
+  }
+}
 
 export default router;

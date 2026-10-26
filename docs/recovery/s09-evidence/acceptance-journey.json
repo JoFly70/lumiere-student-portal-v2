@@ -1,0 +1,183 @@
+{
+  "generatedBy": "tests/s09-profile-http-e2e.test.ts",
+  "note": "Synthetic data, disposable local Postgres, real Express + requireAuth + RBAC; Supabase/audit/account-status mocked.",
+  "steps": [
+    {
+      "step": 1,
+      "title": "Sign in as a synthetic student (local JWT verified by requireAuth)",
+      "request": "GET /api/students/me/profile",
+      "status": 200,
+      "observed": {
+        "authenticatedAs": "student"
+      }
+    },
+    {
+      "step": 2,
+      "title": "Open the profile",
+      "request": "GET /api/students/me/profile",
+      "status": 200,
+      "observed": {
+        "sections": [
+          "identity",
+          "contact",
+          "contacts",
+          "academicBackground",
+          "eligibility",
+          "readiness",
+          "account",
+          "generatedAt"
+        ],
+        "identityVerification": "verified",
+        "govIdNumberMasked": "•••• 2349",
+        "readinessItems": 1
+      }
+    },
+    {
+      "step": 3,
+      "title": "Update phone, address and communication preferences",
+      "request": "PUT /api/students/:studentId",
+      "status": 200,
+      "observed": {
+        "fieldsSent": [
+          "phone_primary",
+          "address_line1",
+          "address_city",
+          "address_state",
+          "address_postal",
+          "address_country",
+          "preferred_contact_channel",
+          "timezone",
+          "marketing_opt_in"
+        ]
+      }
+    },
+    {
+      "step": 4,
+      "title": "Re-fetch: changes persisted",
+      "request": "GET /api/students/me/profile",
+      "status": 200,
+      "observed": {
+        "phonePrimary": "+15553334444",
+        "addressCity": "Denver",
+        "preferredContactChannel": "sms"
+      }
+    },
+    {
+      "step": 5,
+      "title": "Add an emergency contact",
+      "request": "POST /api/students/:studentId/contacts",
+      "status": 201,
+      "observed": {
+        "authorityStatus": "listed",
+        "effectiveScopes": [
+          "emergency"
+        ],
+        "hasPortalAccess": false
+      }
+    },
+    {
+      "step": 6,
+      "title": "Read academic background and eligibility (read-only)",
+      "request": "GET /api/students/me/profile",
+      "status": 200,
+      "observed": {
+        "highSchool": {
+          "completionRecorded": true,
+          "path": "local_diploma",
+          "school": "Synthetic High",
+          "country": "US",
+          "year": 2008,
+          "evidence": "not_submitted"
+        },
+        "residency": "us",
+        "documentStatuses": [
+          "id_gov:verified",
+          "hs_diploma:not_submitted",
+          "hs_transcript:not_submitted",
+          "degree_certificate:not_submitted",
+          "college_transcript:not_submitted",
+          "foreign_eval:not_submitted",
+          "english_cert:not_submitted",
+          "residency_doc:not_submitted",
+          "consent_form:not_submitted"
+        ]
+      }
+    },
+    {
+      "step": 7,
+      "title": "Request an identity correction (record unchanged until review)",
+      "request": "POST /api/students/me/identity-corrections",
+      "status": 201,
+      "observed": {
+        "status": "pending",
+        "lastNameInDbBeforeReview": "Rivera"
+      }
+    },
+    {
+      "step": 8,
+      "title": "Staff reviews the queue and approves",
+      "request": "POST /api/students/identity-corrections/:requestId/resolve",
+      "status": 200,
+      "observed": {
+        "queueContainedRequest": true,
+        "decision": "approve"
+      }
+    },
+    {
+      "step": 9,
+      "title": "Student sees the outcome and gains no privileges",
+      "request": "GET /api/students/me/profile",
+      "status": 200,
+      "observed": {
+        "lastName": "Rivera-Stone",
+        "correctionStatus": "approved",
+        "role": "student",
+        "studentCanResolveHttp": 403,
+        "studentCanReadStaffQueueHttp": 403
+      }
+    },
+    {
+      "step": 10,
+      "title": "Another student is blocked from this profile",
+      "request": "GET /api/students/:studentId/profile",
+      "status": 403,
+      "observed": {
+        "readHttp": 403,
+        "writeHttp": 403
+      }
+    },
+    {
+      "step": 11,
+      "title": "Change the photo: magic bytes validated, stored privately, returned as a signed URL",
+      "request": "POST /api/students/:studentId/photo",
+      "status": 200,
+      "observed": {
+        "validPngHttp": 200,
+        "fakePngHttp": 400,
+        "storedReferenceIsPublicUrl": false,
+        "signedUrlReturned": true
+      }
+    },
+    {
+      "step": 12,
+      "title": "Canonical credit, roadmap and billing tables unchanged by the whole journey",
+      "observed": {
+        "tablesChecked": [
+          "financial_rules",
+          "payments",
+          "plan_financials",
+          "student_credit_decisions",
+          "student_credit_records",
+          "student_credit_verification_events",
+          "student_program_assignments",
+          "student_roadmap_imports",
+          "student_roadmap_plans",
+          "student_roadmap_progress",
+          "student_roadmap_progress_events",
+          "student_roadmap_versions"
+        ],
+        "identical": true
+      }
+    }
+  ]
+}

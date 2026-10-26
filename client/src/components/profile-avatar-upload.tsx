@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Upload } from 'lucide-react';
+import { useEffect, useId, useRef, useState } from 'react';
+import { Camera, Loader2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/api';
@@ -14,6 +14,21 @@ interface ProfileAvatarUploadProps {
   showUploadButton?: boolean;
 }
 
+export const PHOTO_ACCEPT = 'image/png,image/jpeg,image/webp';
+export const PHOTO_TYPES = ['image/png', 'image/jpeg', 'image/webp'] as const;
+export const PHOTO_MAX_BYTES = 5 * 1024 * 1024;
+
+/** Client-side pre-check; the server remains the authority. Returns a message or null. */
+export function validatePhotoFile(file: { type: string; size: number }): string | null {
+  if (!(PHOTO_TYPES as readonly string[]).includes(file.type)) {
+    return 'Choose a PNG, JPEG or WEBP image.';
+  }
+  if (file.size > PHOTO_MAX_BYTES) {
+    return 'That image is larger than 5 MB. Choose a smaller one.';
+  }
+  return null;
+}
+
 export function ProfileAvatarUpload({
   photoUrl,
   firstName,
@@ -24,76 +39,86 @@ export function ProfileAvatarUpload({
   showUploadButton = false,
 }: ProfileAvatarUploadProps) {
   const [uploading, setUploading] = useState(false);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const inputId = useId();
+  const statusId = useId();
   const { toast } = useToast();
+
+  // The server photo takes over once the profile refetches with the new URL.
+  useEffect(() => {
+    setPreview((p) => {
+      if (p) URL.revokeObjectURL(p);
+      return null;
+    });
+  }, [photoUrl]);
+  useEffect(() => () => {
+    setPreview((p) => {
+      if (p) URL.revokeObjectURL(p);
+      return null;
+    });
+  }, []);
 
   const getInitials = () => {
     const first = firstName?.trim() || '';
     const last = lastName?.trim() || '';
-    
     if (!first && !last) return '?';
-    
-    const firstInitial = first.charAt(0).toUpperCase();
-    const lastInitial = last.charAt(0).toUpperCase();
-    
-    if (first && last) {
-      return `${firstInitial}${lastInitial}`;
-    }
-    
-    return firstInitial || lastInitial;
+    if (first && last) return `${first.charAt(0).toUpperCase()}${last.charAt(0).toUpperCase()}`;
+    return (first || last).charAt(0).toUpperCase();
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+    const input = e.target;
+    const file = input.files?.[0];
     if (!file || !studentId) return;
+    setDone(false);
 
-    if (!file.type.startsWith('image/')) {
-      toast({
-        title: 'Invalid file type',
-        description: 'Please upload an image file',
-        variant: 'destructive',
-      });
+    const problem = validatePhotoFile(file);
+    if (problem) {
+      setError(problem);
+      input.value = '';
       return;
     }
 
-    const maxSize = 5 * 1024 * 1024; // 5MB
-    if (file.size > maxSize) {
-      toast({
-        title: 'File too large',
-        description: 'Please upload an image smaller than 5MB',
-        variant: 'destructive',
-      });
-      return;
-    }
+    setError(null);
+    const objectUrl = URL.createObjectURL(file);
+    setPreview((p) => {
+      if (p) URL.revokeObjectURL(p);
+      return objectUrl;
+    });
 
     try {
       setUploading(true);
-      
       const formData = new FormData();
       formData.append('photo', file);
-
       // Shared helper adds Authorization/CSRF; FormData keeps the browser-set multipart Content-Type.
+      // It throws for any non-2xx response, so success below means the server accepted the photo.
       const data = await apiRequest<{ photoUrl?: string }>(
         `/api/students/${encodeURIComponent(studentId)}/photo`,
         { method: 'POST', body: formData, credentials: 'include' },
       );
-      
-      if (data?.photoUrl) {
-        onUploadSuccess?.(data.photoUrl);
-        toast({
-          title: 'Success',
-          description: 'Profile picture updated successfully',
-        });
-      }
-    } catch (error) {
-      console.error('Upload error:', error);
-      toast({
-        title: 'Upload failed',
-        description: 'Failed to upload profile picture',
-        variant: 'destructive',
+      setDone(true);
+      onUploadSuccess?.(data?.photoUrl ?? '');
+      toast({ title: 'Photo updated', description: 'Your profile photo was saved.' });
+    } catch (err) {
+      // Roll the preview back: the server did not accept this photo.
+      setPreview((p) => {
+        if (p) URL.revokeObjectURL(p);
+        return null;
       });
+      const raw = err instanceof Error ? err.message : '';
+      setError(
+        /413|too large/i.test(raw)
+          ? 'That image is larger than 5 MB. Choose a smaller one.'
+          : raw && !/^HTTP \d+/.test(raw) && raw !== 'Request failed'
+            ? raw
+            : 'We could not upload that photo. Check the file and try again.',
+      );
     } finally {
       setUploading(false);
-      e.target.value = '';
+      input.value = '';
     }
   };
 
@@ -104,39 +129,65 @@ export function ProfileAvatarUpload({
     xl: 'h-24 w-24 text-2xl',
   };
 
+  const hasPhoto = Boolean(photoUrl || preview);
+
   return (
-    <div className="flex flex-col items-center gap-3">
-      <div className="relative">
-        <Avatar className={sizeClasses[size]} data-testid="avatar-profile">
-          <AvatarImage src={photoUrl || undefined} alt="Profile picture" />
-          <AvatarFallback className="bg-gold-soft text-gold-strong ring-1 ring-gold/40 font-semibold">
-            {getInitials()}
-          </AvatarFallback>
-        </Avatar>
-        {showUploadButton && (
-          <label
-            htmlFor="photo-upload"
-            className="absolute -bottom-1 -right-1 cursor-pointer"
+    <div className="flex flex-col items-center gap-2">
+      <Avatar className={`${sizeClasses[size]} ${uploading ? 'opacity-70' : ''}`} data-testid="avatar-profile">
+        <AvatarImage src={preview || photoUrl || undefined} alt={hasPhoto ? 'Your profile photo' : ''} />
+        <AvatarFallback className="bg-gold-soft text-gold-strong ring-1 ring-gold/40 font-semibold" aria-label="No profile photo yet">
+          {getInitials()}
+        </AvatarFallback>
+      </Avatar>
+      {showUploadButton && (
+        <>
+          <input
+            ref={inputRef}
+            id={inputId}
+            type="file"
+            accept={PHOTO_ACCEPT}
+            onChange={handleFileChange}
+            disabled={uploading}
+            className="sr-only"
+            tabIndex={-1}
+            aria-label="Upload profile photo"
+            aria-describedby={statusId}
+            data-testid="input-photo-upload"
+          />
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            disabled={uploading || !studentId}
+            aria-describedby={statusId}
+            className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg px-3 text-sm font-medium text-student-gold-ink underline-offset-4 hover:underline disabled:opacity-60"
+            data-testid="button-photo-change"
           >
-            <div className="bg-primary text-primary-foreground rounded-full p-1.5 hover-elevate active-elevate-2 border-2 border-background">
-              {uploading ? (
-                <div className="h-3 w-3 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
-              ) : (
-                <Upload className="h-3 w-3" data-testid="icon-upload" />
-              )}
-            </div>
-            <input
-              id="photo-upload"
-              type="file"
-              accept="image/*"
-              onChange={handleFileChange}
-              disabled={uploading}
-              className="hidden"
-              data-testid="input-photo-upload"
-            />
-          </label>
-        )}
-      </div>
+            {uploading ? (
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+            ) : (
+              <Camera className="h-4 w-4" aria-hidden="true" data-testid="icon-upload" />
+            )}
+            {uploading ? 'Uploading…' : hasPhoto ? 'Replace photo' : 'Add a photo'}
+          </button>
+          <div id={statusId} className="max-w-[14rem] text-center text-xs" aria-live="polite" role="status">
+            {uploading ? (
+              <span className="text-student-muted" data-testid="photo-uploading">
+                Uploading your photo…
+              </span>
+            ) : error ? (
+              <span role="alert" className="font-medium text-student-attn" data-testid="photo-error">
+                {error}
+              </span>
+            ) : done ? (
+              <span className="font-medium text-student-gold-ink" data-testid="photo-saved">
+                Photo saved
+              </span>
+            ) : (
+              <span className="text-student-muted">PNG, JPEG or WEBP, up to 5 MB</span>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }
