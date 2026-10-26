@@ -37,6 +37,7 @@ import {
   type ValidateRoadmapContent,
 } from "@shared/student-roadmap-contract";
 import { projectStudentRoadmap } from "@shared/student-roadmap-projection";
+import { reviewRoadmapPlan } from "@shared/student-roadmap-plan-review";
 import type { StudentDegreeProgressView } from "@shared/student-degree-progress-view";
 import type { ImportRow, PlanRow, ProgressRow, RoadmapRepository, Tx, VersionRow } from "../repositories/student-roadmap-repo";
 
@@ -193,6 +194,7 @@ export function createStudentRoadmapService(deps: StudentRoadmapServiceDeps) {
     conversionExceptions: readonly RoadmapException[],
     published: VersionRow | null,
     progress: readonly ProgressRow[],
+    foundation: StudentDegreeProgressView | null,
   ): { exceptions: RoadmapException[]; diff: RoadmapDiff } {
     const { diff, exceptions: diffExceptions } = deps.diff(
       published ? (published.content as RoadmapContent) : null,
@@ -201,9 +203,32 @@ export function createStudentRoadmapService(deps: StudentRoadmapServiceDeps) {
       published ? published.versionNumber : null,
     );
     return {
-      exceptions: dedupe([...conversionExceptions, ...deps.validate(content), ...diffExceptions]),
+      exceptions: dedupe([
+        ...conversionExceptions,
+        ...deps.validate(content),
+        ...diffExceptions,
+        // S07 plan review: re-derived on every evaluation, never persisted as a conversion finding.
+        ...reviewRoadmapPlan(content, {
+          today: deps.now().toISOString().slice(0, 10),
+          foundation,
+          progressKeys: progressKeysOf(progress),
+        }),
+      ]),
       diff,
     };
+  }
+
+  /**
+   * Canonical foundation for plan review. Loaded BEFORE a transaction opens (it
+   * uses its own connection) and only ever read; a failure degrades to null,
+   * which makes plan review more conservative (reported credits unverified).
+   */
+  async function loadFoundation(studentId: string): Promise<StudentDegreeProgressView | null> {
+    try {
+      return await deps.loadDegreeProgress(studentId);
+    } catch {
+      return null;
+    }
   }
 
   const conversionPart = (stored: unknown): RoadmapException[] =>
@@ -229,7 +254,7 @@ export function createStudentRoadmapService(deps: StudentRoadmapServiceDeps) {
     if (draftRow) {
       const progress = await repo.listProgress(studentId, tx);
       const content = draftRow.content as RoadmapContent;
-      const { exceptions, diff } = evaluate(content, conversionPart(draftRow.exceptions), published, progress);
+      const { exceptions, diff } = evaluate(content, conversionPart(draftRow.exceptions), published, progress, await loadFoundation(studentId));
       const keys = new Set(exceptions.map((e) => e.key));
       const acknowledgements = asAcks(draftRow.acknowledgements).filter((a) => keys.has(a.exceptionKey));
       const importRow = draftRow.importId ? await repo.getImport(draftRow.importId, tx) : null;
@@ -376,6 +401,7 @@ export function createStudentRoadmapService(deps: StudentRoadmapServiceDeps) {
       }
     }
 
+    const foundation = await loadFoundation(studentId);
     const outcome = await deps.transaction<TxResult>(async (tx) => {
       const plan = await lockedPlan(studentId, tx);
       const published = await publishedOf(plan, tx);
@@ -429,7 +455,7 @@ export function createStudentRoadmapService(deps: StudentRoadmapServiceDeps) {
 
       const importRow = await writeImport(null);
       const progress = await repo.listProgress(studentId, tx);
-      const { exceptions } = evaluate(parsed, conversionExceptions, published, progress);
+      const { exceptions } = evaluate(parsed, conversionExceptions, published, progress, foundation);
       const version = await repo.insertVersion(
         {
           planId: plan.id,
@@ -466,12 +492,13 @@ export function createStudentRoadmapService(deps: StudentRoadmapServiceDeps) {
     contentInput: unknown,
   ): Promise<AdminRoadmapState> {
     const content = parseContent(contentInput);
+    const foundation = await loadFoundation(studentId);
     const plan = await deps.transaction(async (tx) => {
       const plan = await lockedPlan(studentId, tx);
       const draft = await requireDraft(plan, tx, expectedDraftRevision);
       const published = await publishedOf(plan, tx);
       const progress = await repo.listProgress(studentId, tx);
-      const { exceptions } = evaluate(content, editedConversionPart(draft.exceptions), published, progress);
+      const { exceptions } = evaluate(content, editedConversionPart(draft.exceptions), published, progress, foundation);
       const keys = new Set(exceptions.map((e) => e.key));
       await repo.updateVersion(
         draft.id,
@@ -496,12 +523,13 @@ export function createStudentRoadmapService(deps: StudentRoadmapServiceDeps) {
     exceptionKeys: readonly string[],
     note?: string | null,
   ): Promise<AdminRoadmapState> {
+    const foundation = await loadFoundation(studentId);
     const plan = await deps.transaction(async (tx) => {
       const plan = await lockedPlan(studentId, tx);
       const draft = await requireDraft(plan, tx, expectedDraftRevision);
       const published = await publishedOf(plan, tx);
       const progress = await repo.listProgress(studentId, tx);
-      const { exceptions } = evaluate(draft.content as RoadmapContent, conversionPart(draft.exceptions), published, progress);
+      const { exceptions } = evaluate(draft.content as RoadmapContent, conversionPart(draft.exceptions), published, progress, foundation);
       const byKey = new Map(exceptions.map((e) => [e.key, e]));
       const invalid = exceptionKeys.filter((k) => byKey.get(k)?.severity !== "warning");
       if (invalid.length > 0) {
@@ -552,6 +580,7 @@ export function createStudentRoadmapService(deps: StudentRoadmapServiceDeps) {
     expectedDraftRevision: number,
     expectedPublishedVersionId: string | null,
   ): Promise<AdminRoadmapState> {
+    const foundation = await loadFoundation(studentId);
     const plan = await deps.transaction(async (tx) => {
       const plan = await lockedPlan(studentId, tx);
       const draft = await repo.getOpenDraft(plan.id, tx);
@@ -570,7 +599,7 @@ export function createStudentRoadmapService(deps: StudentRoadmapServiceDeps) {
       const published = await publishedOf(plan, tx);
       const progress = await repo.listProgress(studentId, tx);
       const content = parseContent(draft.content);
-      const { exceptions } = evaluate(content, conversionPart(draft.exceptions), published, progress);
+      const { exceptions } = evaluate(content, conversionPart(draft.exceptions), published, progress, foundation);
       const keys = new Set(exceptions.map((e) => e.key));
       const acknowledgements = asAcks(draft.acknowledgements).filter((a) => keys.has(a.exceptionKey));
       if (!isPublishable(exceptions, acknowledgements)) {
@@ -608,6 +637,7 @@ export function createStudentRoadmapService(deps: StudentRoadmapServiceDeps) {
   }
 
   async function draftFromPublished(studentId: string, actorId: string): Promise<AdminRoadmapState> {
+    const foundation = await loadFoundation(studentId);
     const plan = await deps.transaction(async (tx) => {
       const plan = await lockedPlan(studentId, tx);
       const published = await publishedOf(plan, tx);
@@ -621,7 +651,7 @@ export function createStudentRoadmapService(deps: StudentRoadmapServiceDeps) {
       }
       const progress = await repo.listProgress(studentId, tx);
       const content = published.content as RoadmapContent;
-      const { exceptions } = evaluate(content, [], published, progress);
+      const { exceptions } = evaluate(content, [], published, progress, foundation);
       await repo.insertVersion(
         {
           planId: plan.id,
