@@ -1,0 +1,12 @@
+{
+  "step": "P05 staff approves",
+  "resolve": 200,
+  "studentRowNow": {
+    "first": "Adaline",
+    "last": "Journey-Smyth"
+  },
+  "studentResolveAttempt": 403,
+  "secondResolve": 409,
+  "auditEntries": 2,
+  "auditActorsAreStaff": true
+}

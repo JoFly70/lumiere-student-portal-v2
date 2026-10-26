@@ -1,0 +1,15 @@
+{
+  "step": "P04 student requests a correction",
+  "create": 201,
+  "status": "pending",
+  "secondWhilePending": 409,
+  "recordUnchangedUntilApproval": true,
+  "unaffected": {
+    "roadmapViewSha": "<hash>",
+    "degreeProgressStatus": 200,
+    "degreeProgressSha": "<hash>",
+    "ticketsSha": "<hash>",
+    "canonicalTables": 4,
+    "protectedTables": 12
+  }
+}

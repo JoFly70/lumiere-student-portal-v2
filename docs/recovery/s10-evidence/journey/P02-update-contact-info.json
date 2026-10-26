@@ -1,0 +1,20 @@
+{
+  "step": "P02 student updates contact info + lists a guardian",
+  "put": 200,
+  "persisted": true,
+  "guardian": {
+    "authorityStatus": "pending_verification",
+    "effectiveScopes": [
+      "emergency"
+    ],
+    "hasPortalAccess": false
+  },
+  "unaffected": {
+    "roadmapViewSha": "<hash>",
+    "degreeProgressStatus": 200,
+    "degreeProgressSha": "<hash>",
+    "ticketsSha": "<hash>",
+    "canonicalTables": 4,
+    "protectedTables": 12
+  }
+}

@@ -327,15 +327,48 @@ export async function updateContact(
   }
 
   const updates: Record<string, unknown> = { ...input };
-  if (status !== 'verified' && (typeChanged || scopesChanged)) {
-    updates.authority_status = initialAuthorityStatus(
-      (input.type ?? stored.type) as ContactType,
-      (input.scopes ?? storedScopes) as ContactScope[],
-    );
+  const newScopes = (input.scopes ?? storedScopes) as ContactScope[];
+  const newType = (input.type ?? stored.type) as ContactType;
+  let authorityAudit: { action: string; from: ContactAuthorityStatus; to: ContactAuthorityStatus } | null = null;
+
+  if (status === 'verified') {
+    // Fail-closed S10 rule. Verified authority was granted for ONE person, ONE type and ONE scope set.
+    // Any staff edit that changes the person's name, the contact type, or ADDS/changes a scope
+    // (anything other than a pure subset of the verified scopes) invalidates it: back to
+    // pending_verification, verifier cleared, until staff explicitly re-verify.
+    // A pure narrowing (same name, same type, every new scope already verified) cannot grant
+    // anything new, so the remaining subset stays verified and effectiveScopes shrinks with it.
+    const narrowOnly = !typeChanged && !nameChanged && scopesChanged && newScopes.every((s) => storedScopes.includes(s));
+    if ((typeChanged || nameChanged || scopesChanged) && !narrowOnly) {
+      updates.authority_status = 'pending_verification';
+      updates.authority_verified_by = null;
+      updates.authority_verified_at = null;
+      updates.authority_note = null;
+      authorityAudit = { action: 'authority_reset', from: status, to: 'pending_verification' };
+    } else if (narrowOnly) {
+      authorityAudit = { action: 'authority_narrowed', from: status, to: status };
+    }
+  } else if (status !== 'revoked' && (typeChanged || scopesChanged)) {
+    // listed / pending_verification: recompute from what is now requested.
+    updates.authority_status = initialAuthorityStatus(newType, newScopes);
     updates.authority_verified_by = null;
     updates.authority_verified_at = null;
   }
+  // revoked stays revoked: only an explicit staff decision (resolveContactAuthority) can re-verify.
+
   const updated = await studentService.updateStudentContact(stored.id, updates as never, actorId);
+  if (authorityAudit) {
+    writeAuditLog({
+      studentId: stored.student_id,
+      actorId,
+      action: authorityAudit.action,
+      entityType: 'contact',
+      entityId: stored.id,
+      oldValue: { authority_status: authorityAudit.from, scopes: storedScopes, type: stored.type },
+      newValue: { authority_status: authorityAudit.to, scopes: newScopes, type: newType },
+      metadata: { changed: [typeChanged && 'type', nameChanged && 'name', scopesChanged && 'scopes'].filter(Boolean) },
+    }).catch((err) => logger.warn('Audit log failed', { err }));
+  }
   return toContactView(updated as unknown as Record<string, unknown>);
 }
 

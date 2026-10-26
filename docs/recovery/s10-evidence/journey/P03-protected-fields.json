@@ -1,0 +1,52 @@
+{
+  "step": "P03 protected fields are 403 with stable codes",
+  "attempts": {
+    "legal_name": {
+      "status": 403,
+      "code": "PROFILE_IDENTITY_REQUIRES_CORRECTION"
+    },
+    "dob": {
+      "status": 403,
+      "code": "PROFILE_IDENTITY_REQUIRES_CORRECTION"
+    },
+    "gov_id": {
+      "status": 403,
+      "code": "PROFILE_IDENTITY_REQUIRES_CORRECTION"
+    },
+    "login_email": {
+      "status": 403,
+      "code": "PROFILE_EMAIL_MANAGED_BY_ACCOUNT"
+    },
+    "status": {
+      "status": 403,
+      "code": "PROFILE_FIELDS_STAFF_CONTROLLED"
+    },
+    "residency": {
+      "status": 403,
+      "code": "PROFILE_FIELDS_STAFF_CONTROLLED"
+    },
+    "prior_credits": {
+      "status": 403,
+      "code": "PROFILE_FIELDS_STAFF_CONTROLLED"
+    },
+    "target_degree": {
+      "status": 403,
+      "code": "PROFILE_FIELDS_STAFF_CONTROLLED"
+    },
+    "hs_completion": {
+      "status": 403,
+      "code": "PROFILE_FIELDS_STAFF_CONTROLLED"
+    },
+    "student_code": 403
+  },
+  "roadmapCreditFieldRejected": 400,
+  "studentRowUnchanged": true,
+  "unaffected": {
+    "roadmapViewSha": "<hash>",
+    "degreeProgressStatus": 200,
+    "degreeProgressSha": "<hash>",
+    "ticketsSha": "<hash>",
+    "canonicalTables": 4,
+    "protectedTables": 12
+  }
+}
