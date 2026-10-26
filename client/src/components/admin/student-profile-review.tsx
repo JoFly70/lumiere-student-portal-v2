@@ -32,6 +32,7 @@ import {
   showVerifyAction,
   correctionStatusLabel,
   identityTrust,
+  identityStatusChip,
   normalizeHistory,
   resolveBody,
   type TrustBadge,
@@ -59,7 +60,7 @@ async function staffRequest<T>(method: "GET" | "POST", url: string, body?: unkno
 
 const TONE_CLASS: Record<TrustBadge["tone"], string> = {
   verified: "border-green-600/40 bg-green-600/10 text-green-800 dark:text-green-300",
-  pending: "border-amber-500/50 bg-amber-500/10 text-amber-900 dark:text-amber-200",
+  pending: "border-amber-500/60 bg-amber-500/15 text-amber-900 dark:border-amber-400/60 dark:bg-amber-400/15 dark:text-amber-100",
   problem: "border-destructive/40 bg-destructive/10 text-red-700 dark:text-red-300",
   reported: "border-border bg-muted text-muted-foreground",
 };
@@ -73,7 +74,7 @@ const TONE_ICON: Record<TrustBadge["tone"], typeof CheckCircle2> = {
 
 function TrustPill({ badge }: { badge: TrustBadge }) {
   const Icon = TONE_ICON[badge.tone];
-  return <Badge variant="outline" className={`gap-1 whitespace-normal text-left ${TONE_CLASS[badge.tone]}`}>
+  return <Badge variant="outline" className={`gap-1 whitespace-normal text-left text-xs font-semibold ${TONE_CLASS[badge.tone]}`}>
     <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
     {badge.label}
   </Badge>;
@@ -82,7 +83,7 @@ function TrustPill({ badge }: { badge: TrustBadge }) {
 function StatusBadge({ status }: { status: IdentityCorrectionRequestView["status"] }) {
   const tone: TrustBadge["tone"] = status === "approved" ? "verified" : status === "pending" ? "pending" : status === "rejected" ? "problem" : "reported";
   const Icon = TONE_ICON[tone];
-  return <Badge variant="outline" className={`gap-1 ${TONE_CLASS[tone]}`}><Icon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />{correctionStatusLabel(status)}</Badge>;
+  return <Badge variant="outline" className={`gap-1 text-xs font-semibold ${TONE_CLASS[tone]}`}><Icon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />{correctionStatusLabel(status)}</Badge>;
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
@@ -216,6 +217,7 @@ export function StudentProfileReviewView({
   const { identity, contact, contacts } = profile;
   const pending = identity.pendingCorrection;
   const trust = identityTrust(identity.verification);
+  const idChip = identityStatusChip(identity.verification);
   const past = history.filter((h) => h.status !== "pending");
   const decisionContacts = contacts.filter(contactNeedsDecision);
   const decisionCount = (pending ? 1 : 0) + decisionContacts.length;
@@ -255,7 +257,7 @@ export function StudentProfileReviewView({
       </Card>)}
     </div> : null}
     <div className="grid gap-4 lg:grid-cols-2 [&>*]:min-w-0">
-      <Card><CardHeader className="pb-3"><div className="flex flex-wrap items-center justify-between gap-2"><CardTitle className="text-base">Legal identity</CardTitle><TrustPill badge={trust} /></div></CardHeader>
+      <Card><CardHeader className="pb-3"><div className="flex flex-wrap items-center justify-between gap-2"><CardTitle className="text-base">Legal identity</CardTitle><TrustPill badge={idChip} /></div><p className="pt-1 text-xs text-muted-foreground" data-testid="identity-trust-detail">{trust.label}</p></CardHeader>
         <CardContent><dl className="grid gap-3 sm:grid-cols-2">
           <Field label="Student code">{identity.studentCode}</Field>
           <Field label="Legal name">{[identity.firstName, identity.middleName, identity.lastName].filter(Boolean).join(" ")}</Field>
@@ -278,10 +280,15 @@ export function StudentProfileReviewView({
     </div>
     <Card><CardHeader className="pb-3"><CardTitle className="flex items-center gap-2 text-base"><Users className="h-4 w-4" aria-hidden="true" />Contacts &amp; guardian authority</CardTitle></CardHeader>
       <CardContent className="divide-y">
-        {contacts.length === 0 ? <p className="py-2 text-sm text-muted-foreground">The student has not listed any contacts.</p> : contacts.map((c) => <div key={c.id} className="space-y-2 py-3 first:pt-0" data-testid="staff-contact">
+        {contacts.length === 0 ? <p className="py-2 text-sm text-muted-foreground">The student has not listed any contacts.</p> : contacts.map((c) => contactNeedsDecision(c)
+          ? <div key={c.id} className="flex flex-wrap items-center justify-between gap-2 py-2 first:pt-0" data-testid="staff-contact" data-compact="true">
+              <p className="min-w-0 text-sm font-medium">{c.fullName} <span className="font-normal text-muted-foreground">· {c.relationship} ({humanize(c.type)})</span></p>
+              <a href="#needs-decision-heading" className="inline-flex min-h-[28px] items-center rounded-full border border-amber-500/60 bg-amber-500/15 px-2.5 text-xs font-semibold text-amber-900 underline-offset-2 hover:underline dark:border-amber-400/60 dark:bg-amber-400/15 dark:text-amber-100">Awaiting decision ↑</a>
+            </div>
+          : <div key={c.id} className="space-y-2 py-3 first:pt-0" data-testid="staff-contact">
             <div className="flex flex-wrap items-center justify-between gap-2"><p className="font-medium">{c.fullName} <span className="font-normal text-muted-foreground">· {c.relationship} ({humanize(c.type)})</span></p><TrustPill badge={authorityTrust(c.authorityStatus)} /></div>
             <ContactDetails c={c} />
-            {contactNeedsDecision(c) ? <p className="text-xs font-medium text-amber-800 dark:text-amber-200">Awaiting your decision — see “Needs a decision” above.</p> : <ContactActions c={c} canDecide={canDecide} onDecide={onDecide} />}
+            <ContactActions c={c} canDecide={canDecide} onDecide={onDecide} />
           </div>)}
       </CardContent></Card>
     <Card><CardHeader className="pb-3"><CardTitle className="text-base">Correction history</CardTitle></CardHeader>
@@ -290,6 +297,7 @@ export function StudentProfileReviewView({
         <p className="text-xs text-muted-foreground">{new Date(h.createdAt).toISOString().slice(0, 10)}{h.reviewedAt ? ` → ${new Date(h.reviewedAt).toISOString().slice(0, 10)}` : ""}{h.reviewNote ? ` · Note: ${h.reviewNote}` : ""}</p>
       </li>)}</ul>}</CardContent></Card>
     <p className="text-sm text-muted-foreground">Document verification is managed in <a className="font-medium underline underline-offset-2" href={STAFF_PROFILE_PATHS.documents(studentId)}>Documents</a>. Approving a correction never verifies a document.</p>
+    <p className="border-t-2 border-border pt-2 text-center text-xs font-medium uppercase tracking-wide text-muted-foreground" data-testid="profile-end">End of profile &amp; identity</p>
   </section>;
 }
 

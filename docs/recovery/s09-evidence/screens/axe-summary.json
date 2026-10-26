@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-26T20:16:29.818Z",
+  "generatedAt": "2026-10-26T20:22:59.375Z",
   "fixtures": "tests/helpers/s09-profile-ui-fixtures.ts",
   "totalViolations": 1,
   "results": [

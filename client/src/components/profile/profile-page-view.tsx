@@ -13,6 +13,7 @@ import { StudentSurface, buttonClass, cardClass } from "@/components/student-pro
 import { ProfileAvatarUpload } from "@/components/profile-avatar-upload";
 import { PROFILE_SECTIONS, displayName, readinessChip, sectionDomId, splitReadiness, verificationChip } from "./profile-presentation";
 import { StatusChip } from "./profile-ui";
+import { useProfileActions } from "./profile-actions";
 import { IdentitySection } from "./identity-section";
 import { ContactSection } from "./contact-section";
 import { BackgroundSection } from "./background-section";
@@ -186,9 +187,18 @@ export function ReadinessPanel({ items }: { items: readonly ProfileReadinessItem
 export function ProfileHeader({ identity }: { identity: StudentProfileView["identity"] }) {
   const names = displayName(identity);
   const chip = verificationChip(identity.verification);
+  const actions = useProfileActions();
   return (
     <header className="flex flex-col items-start gap-4 sm:flex-row sm:items-center" data-testid="profile-header">
-      <ProfileAvatarUpload photoUrl={identity.photoUrl} firstName={identity.firstName} lastName={identity.lastName} size="xl" />
+      <ProfileAvatarUpload
+        photoUrl={identity.photoUrl}
+        firstName={identity.firstName}
+        lastName={identity.lastName}
+        studentId={identity.studentId}
+        onUploadSuccess={() => actions.refresh()}
+        size="xl"
+        showUploadButton
+      />
       <div className="min-w-0 space-y-1">
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-student-gold-ink">My profile</p>
         <h1 className="break-words font-serif text-3xl leading-tight tracking-tight text-student-ink sm:text-5xl" data-testid="text-profile-name">
@@ -208,7 +218,7 @@ export function ProfilePageView({ profile }: { profile: StudentProfileView }) {
   return (
     <StudentSurface testId="page-student-profile">
       <ProfileSectionNav />
-      <div className="mx-auto max-w-6xl space-y-8 pb-24 pt-4 sm:space-y-10 sm:pt-6 lg:pb-0">
+      <div className="mx-auto max-w-6xl space-y-6 pb-24 pt-2 sm:space-y-8 sm:pt-4 lg:pb-0">
         <ProfileHeader identity={profile.identity} />
         <ReadinessPanel items={profile.readiness} />
         <IdentitySection identity={profile.identity} />

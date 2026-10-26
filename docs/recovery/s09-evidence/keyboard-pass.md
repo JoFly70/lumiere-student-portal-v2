@@ -1,6 +1,6 @@
 # S09 keyboard pass — student profile
 
-Generated 2026-10-26T20:16:29.814Z by `scripts/s09/render-profile-screens.ts` (Chromium, 1440x900, light theme, fixture data, real page code).
+Generated 2026-10-26T20:22:59.374Z by `scripts/s09/render-profile-screens.ts` (Chromium, 1440x900, light theme, fixture data, real page code).
 
 Method: focus is moved to the document start, then `Tab` is pressed repeatedly; after each press the active element, its accessible name and its focus indicator (computed outline or box-shadow ring) are recorded. Afterwards every visible focusable element on the page is compared with the set that Tab reached.
 
@@ -29,10 +29,10 @@ Method: focus is moved to the document start, then `Tab` is pressed repeatedly; 
 | 14 | a | Authorized Contacts | outline 2px solid |
 | 15 | a | Eligibility & Documents | outline 2px solid |
 | 16 | a | Account | outline 2px solid |
-| 17 | a | English proficiency proof needs a new uploadLumière could no | outline 2px solid |
-| 18 | a | High school transcript is being reviewedUnder review | outline 2px solid |
-| 19 | a | Guardian authority is not yet verifiedNgozi Eze-DemoNot yet  | outline 2px solid |
-| 20 | button | Add a photo | outline 2px solid |
+| 17 | button | Add a photo | outline 2px solid |
+| 18 | a | English proficiency proof needs a new uploadLumière could no | outline 2px solid |
+| 19 | a | High school transcript is being reviewedUnder review | outline 2px solid |
+| 20 | a | Guardian authority is not yet verifiedNgozi Eze-DemoNot yet  | outline 2px solid |
 | 21 | button | Edit preferred name | outline 2px solid |
 | 22 | button | Withdraw request | outline 2px solid |
 | 23 | a | Add supporting documents | outline 2px solid |

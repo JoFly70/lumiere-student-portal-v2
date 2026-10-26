@@ -63,6 +63,21 @@ export function identityTrust(verification: EvidenceStatus): TrustBadge {
   }
 }
 
+/** Explicit identity chip; same mapping as the student header. */
+export function identityStatusChip(verification: EvidenceStatus): TrustBadge {
+  switch (verification) {
+    case "verified":
+      return { label: "Identity: Verified", tone: "verified" };
+    case "pending":
+      return { label: "Identity: Under review", tone: "pending" };
+    case "rejected":
+    case "resubmit_requested":
+      return { label: "Identity: Action required", tone: "problem" };
+    default:
+      return { label: "Identity: Not verified", tone: "reported" };
+  }
+}
+
 export function authorityTrust(status: ContactAuthorityStatus): TrustBadge {
   switch (status) {
     case "verified":

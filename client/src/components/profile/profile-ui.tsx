@@ -29,18 +29,24 @@ import { Pill, cardClass } from "@/components/student-progress/student-ui";
 import { sectionDomId, type ChipTone } from "./profile-presentation";
 
 export const inputClass =
-  "h-11 border-student-line-strong bg-student-card text-student-ink placeholder:text-student-muted focus-visible:ring-student-gold-ink";
+  "h-11 border-student-line-strong bg-student-card text-student-ink placeholder:text-student-muted focus:ring-student-gold-ink focus-visible:ring-student-gold-ink focus-visible:ring-offset-student-card";
 
-export const dialogClass = "student-surface border-student-line bg-student-card text-student-ink max-h-[90vh] overflow-y-auto overscroll-contain sm:max-w-lg";
+export const dialogClass = "student-surface border-student-line bg-student-card text-student-ink max-h-[90vh] overflow-y-auto overscroll-contain scroll-pb-24 sm:max-w-lg";
 
 const TONE_TO_PILL = {
-  verified: "gold",
   waiting: "neutral",
   missing: "dashed",
   attention: "attn",
   neutral: "neutral",
 } as const;
 
+/**
+ * Semantic colour rules for every student status chip:
+ *  - verified  = success treatment: neutral card, 2px gold outline, check icon
+ *                (never a filled amber/gold wash, which is reserved for attention
+ *                and Lumière notes)
+ *  - attention = filled amber with a warning icon
+ */
 export function StatusChip({
   label,
   tone,
@@ -52,10 +58,23 @@ export function StatusChip({
   className?: string;
   testId?: string;
 }) {
+  if (tone === "verified") {
+    return (
+      <span
+        className={cn(
+          "inline-flex w-fit items-center gap-1.5 rounded-full border-2 border-student-gold-ink bg-student-card px-2.5 py-0.5 text-xs font-semibold text-student-gold-ink",
+          className,
+        )}
+        data-tone="verified"
+        data-testid={testId}
+      >
+        <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
+        {label}
+      </span>
+    );
+  }
   const icon =
-    tone === "verified" ? (
-      <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
-    ) : tone === "waiting" ? (
+    tone === "waiting" ? (
       <Clock className="h-3.5 w-3.5" aria-hidden="true" />
     ) : tone === "attention" ? (
       <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />
@@ -184,10 +203,11 @@ export function TextLink({ href, children, testId }: { href: string; children: R
   );
 }
 
+/** One short inline lock note per section. */
 export function ReadOnlyNote({ children }: { children: React.ReactNode }) {
   return (
-    <p className="flex items-start gap-2 rounded-lg bg-student-gold-soft px-3 py-2 text-sm text-student-gold-ink">
-      <Lock className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+    <p className="flex items-start gap-1.5 text-xs leading-relaxed text-student-muted" data-testid="read-only-note">
+      <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
       <span>{children}</span>
     </p>
   );
@@ -282,8 +302,8 @@ export function FormActions({
   return (
     <div
       className={cn(
-        "flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end",
-        sticky && "sticky -bottom-6 z-10 -mx-6 -mb-6 border-t border-student-line bg-student-card px-6 pb-4 pt-3",
+        "flex gap-2 pt-2 sm:justify-end",
+        sticky && "sticky -bottom-6 z-10 -mx-6 -mb-6 border-t border-student-line bg-student-card px-4 py-2 sm:px-6",
       )}
       data-testid={sticky ? "dialog-footer" : undefined}
     >
@@ -291,14 +311,14 @@ export function FormActions({
         type="button"
         onClick={onCancel}
         disabled={saving}
-        className="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-student-line-strong bg-student-card px-4 text-sm font-medium text-student-ink hover:bg-student-gold-soft disabled:opacity-60"
+        className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-lg border border-student-line-strong bg-student-card px-4 text-sm font-medium text-student-ink hover:bg-student-gold-soft disabled:opacity-60 sm:flex-none"
       >
         Cancel
       </button>
       <button
         type="submit"
         disabled={saving || disabled}
-        className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-lg bg-student-seal px-5 text-sm font-medium text-student-seal-ink hover:opacity-90 disabled:opacity-60"
+        className="inline-flex min-h-[44px] flex-[2] items-center justify-center gap-2 rounded-lg bg-student-seal px-5 text-sm font-medium text-student-seal-ink hover:opacity-90 disabled:opacity-60 sm:flex-none"
       >
         {saving ? "Saving…" : saveLabel}
       </button>

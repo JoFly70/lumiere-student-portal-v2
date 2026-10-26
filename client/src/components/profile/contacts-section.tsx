@@ -38,20 +38,14 @@ import { Pill } from "@/components/student-progress/student-ui";
 
 export function AuthorityExplainer() {
   return (
-    <div
-      className="flex items-start gap-3 rounded-2xl border border-student-gold bg-student-gold-soft p-4 text-student-gold-ink"
-      data-testid="authority-explainer"
-      role="note"
-    >
-      <Info className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
-      <div className="space-y-1 text-sm leading-relaxed">
-        <p className="font-semibold">Adding someone does not give them access.</p>
-        <p>
-          People listed here do not get a portal login, and they cannot see your academic or financial records. A guardian or
-          representative can only act for you after Lumière verifies a signed consent or legal document. Upload it in{" "}
-          <Link href="/documents" className="font-medium underline underline-offset-4">Documents</Link>.
-        </p>
-      </div>
+    <div className="flex items-start gap-2 text-sm leading-relaxed text-student-muted" data-testid="authority-explainer" role="note">
+      <Info className="mt-0.5 h-4 w-4 shrink-0 text-student-gold-ink" aria-hidden="true" />
+      <p>
+        <span className="font-semibold text-student-ink">Adding someone does not give them access.</span>{" "}
+        They get no portal login and cannot see your academic or financial records. A guardian or representative can act for you only after
+        Lumière verifies a signed consent or legal document. Upload it in{" "}
+        <Link href="/documents" className="font-medium text-student-gold-ink underline underline-offset-4">Documents</Link>.
+      </p>
     </div>
   );
 }
@@ -92,7 +86,7 @@ export function ContactCard({
   const chip = authorityChip(contact.authorityStatus);
   const locked = isVerifiedAuthority(contact);
   return (
-    <li className="min-w-0 rounded-2xl border border-student-line bg-student-card p-4 sm:p-5" data-testid="contact-card" data-authority={contact.authorityStatus}>
+    <li className="flex min-w-0 flex-col rounded-2xl border border-student-line bg-student-card p-4 sm:p-5" data-testid="contact-card" data-authority={contact.authorityStatus}>
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
           <h3 className="flex items-center gap-2 break-words text-base font-semibold text-student-ink">
@@ -126,7 +120,8 @@ export function ContactCard({
           <span className="font-medium">Note from Lumière: </span>{contact.authorityNote}
         </p>
       )}
-      <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-student-line pt-3">
+      <div className="h-3 shrink-0" aria-hidden="true" />
+      <div className="mt-auto flex flex-wrap items-center gap-2 border-t border-student-line pt-3">
         {locked && (
           <p className="flex items-center gap-2 text-sm text-student-muted" data-testid="contact-locked">
             <Lock className="h-4 w-4" aria-hidden="true" />

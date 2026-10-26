@@ -444,7 +444,7 @@ export function CorrectionDialog({ identity }: { identity: ProfileIdentity }) {
                     />
                     <span className="font-medium">{FIELD_LABELS[f]}</span>
                     <span className="ml-auto truncate text-xs text-student-muted">
-                      {f === "gov_id_number" ? identity.govIdNumberMasked ?? "" : currentValues(identity)[f]}
+                      {f === "gov_id_number" ? identity.govIdNumberMasked ?? "" : f === "dob" ? formatDate(identity.dob) : currentValues(identity)[f]}
                     </span>
                   </label>
                   {on && (
@@ -514,7 +514,7 @@ export function IdentitySection({ identity }: { identity: ProfileIdentity }) {
       title="My Identity"
       description="Your legal identity is the record Lumière uses for admissions, transcripts and credentials. You can keep your preferred name up to date; everything else changes only after Lumière reviews a request."
     >
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,18rem)]">
+      <div className="grid gap-3 sm:gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,18rem)] lg:items-start">
         <SubCard
           title="Legal identity"
           testId="legal-identity-card"
@@ -531,34 +531,19 @@ export function IdentitySection({ identity }: { identity: ProfileIdentity }) {
               {identity.govIdNumberMasked}
             </Fact>
           </FactGrid>
-          <p className="mt-4 text-sm text-student-muted" data-testid="verification-explain">
+          <p className="mt-3 text-sm text-student-muted" data-testid="verification-explain">
             <ShieldCheck className="mr-1.5 inline h-4 w-4 align-text-bottom text-student-gold-ink" aria-hidden="true" />
             {chip.explain}
           </p>
-          <div className="mt-4 space-y-3 border-t border-student-line pt-4">
+          <div className="mt-3 space-y-2 border-t border-student-line pt-3">
             <ReadOnlyNote>
-              These details are read-only. If something is wrong, request a correction and Lumière will review it. Until then your recorded identity stays as it is.
+              Read-only. Identity changes go through a correction request, and your recorded details stay as they are until Lumière approves it.
             </ReadOnlyNote>
             {!identity.pendingCorrection && <CorrectionDialog identity={identity} />}
           </div>
         </SubCard>
 
-        <div className="space-y-4">
-          <SubCard title="Profile photo" testId="photo-card">
-            <div className="flex justify-center">
-              <ProfileAvatarUpload
-                photoUrl={identity.photoUrl}
-                firstName={identity.firstName}
-                lastName={identity.lastName}
-                studentId={identity.studentId}
-                onUploadSuccess={() => actions.refresh()}
-                size="xl"
-                showUploadButton
-              />
-            </div>
-          </SubCard>
-          <PreferredNameCard identity={identity} />
-        </div>
+        <PreferredNameCard identity={identity} />
       </div>
 
       {identity.pendingCorrection && <PendingCorrectionCard request={identity.pendingCorrection} />}
