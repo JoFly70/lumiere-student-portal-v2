@@ -87,7 +87,7 @@ Other rules:
   - The guardian rights themselves are staff-managed.
 - **Ownership:** contact ownership is resolved from the stored row, so cross-student edits and deletes return 403.
 - **Gap, ClientDesk:** a generalized guardian account system is deliberately not built. ClientDesk/Bianca is not integrated.
-- **Gap, staff scope edits (known):** if staff edit the scopes of an already verified contact, it stays verified. The edit is staff-only and audited, but it does not trigger re-verification.
+- **Staff scope edits (closed in S10):** editing the name, type or scopes of a verified contact now drops it to `pending_verification` unless the edit only narrows scopes. See `docs/recovery/s10-evidence/profile-integration-record.md`.
 
 ## Profile photo security
 

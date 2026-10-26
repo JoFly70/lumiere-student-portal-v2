@@ -1,0 +1,15 @@
+{
+  "step": "P07 other student blocked",
+  "attempts": {
+    "GET /:id": 403,
+    "GET /:id/profile": 403,
+    "GET /:id/full": 403,
+    "GET /:id/contacts": 403,
+    "GET /:id/identity-corrections": 403,
+    "PUT /:id": 403,
+    "GET /identity-corrections (staff queue)": 403
+  },
+  "resolveCorrection": 403,
+  "ticketRead": 404,
+  "victimRowUnchanged": true
+}

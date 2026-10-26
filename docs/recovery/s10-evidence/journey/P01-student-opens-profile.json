@@ -1,0 +1,18 @@
+{
+  "step": "P01 student opens profile",
+  "status": 200,
+  "identity": {
+    "first": "Ada",
+    "last": "Journey",
+    "idMasked": true,
+    "verification": "not_submitted"
+  },
+  "unaffected": {
+    "roadmapViewSha": "<hash>",
+    "degreeProgressStatus": 200,
+    "degreeProgressSha": "<hash>",
+    "ticketsSha": "<hash>",
+    "canonicalTables": 4,
+    "protectedTables": 12
+  }
+}

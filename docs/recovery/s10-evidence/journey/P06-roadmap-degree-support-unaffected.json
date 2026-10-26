@@ -1,0 +1,14 @@
+{
+  "step": "P06 other modules unaffected by the approved correction",
+  "unaffected": {
+    "roadmapViewSha": "<hash>",
+    "degreeProgressStatus": 200,
+    "degreeProgressSha": "<hash>",
+    "ticketsSha": "<hash>",
+    "canonicalTables": 4,
+    "protectedTables": 12
+  },
+  "ticketReporterNameAtCreation": "Ada Journey",
+  "newTicketReporterNameAfterCorrection": "Ada Journey",
+  "behaviour": "reporter_name comes from the account display name (users.name) at ticket creation; profile corrections change students.first_name/last_name only, so ticket names are stable and do not follow the legal-name change (documented gap, not a leak)"
+}

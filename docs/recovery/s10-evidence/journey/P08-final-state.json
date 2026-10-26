@@ -1,0 +1,15 @@
+{
+  "step": "P08 final",
+  "guardian": {
+    "authorityStatus": "pending_verification",
+    "effectiveScopes": [
+      "emergency"
+    ],
+    "hasPortalAccess": false
+  },
+  "protectedTablesChecked": 12,
+  "canonicalTablesIdentical": true,
+  "supportWritesDuringProfileSteps": "none (the only support write after setup is the deliberate second ticket in P06)",
+  "academicBackend": "real disposable PostgreSQL 16 + repository migrations + S09 migration",
+  "supportBackend": "S08 in-memory Supabase fake behind the production /api/tickets router"
+}
