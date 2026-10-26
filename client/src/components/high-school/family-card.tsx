@@ -3,7 +3,7 @@ import React from "react";
 import { Link } from "wouter";
 import { ArrowRight, UsersRound } from "lucide-react";
 import type { HsGuardianView } from "@shared/high-school-contract";
-import { GUARDIAN_EXPLAINER, guardianSharingLabel, guardianStandingView } from "@/pages/high-school-presentation";
+import { GUARDIAN_EXPLAINER, NO_PORTAL_ACCESS_NOTE, guardianSharingShort, guardianStandingView } from "@/pages/high-school-presentation";
 import { StatusPill, buttonClass } from "@/components/student-progress/student-ui";
 import { Panel } from "./hs-ui";
 
@@ -14,7 +14,10 @@ export function FamilyCard({ guardians }: { guardians: readonly HsGuardianView[]
     <Panel title="Family & guardians" headingId="hs-family" testId="family-card">
       <p className="flex items-start gap-2 text-sm leading-relaxed text-student-muted" data-testid="guardian-explainer">
         <UsersRound className="mt-0.5 h-4 w-4 shrink-0 text-student-gold-ink" aria-hidden="true" />
-        <span>{GUARDIAN_EXPLAINER}</span>
+        <span>
+          {guardians.length > 0 && <><strong className="font-semibold text-student-ink" data-testid="no-portal-access">{NO_PORTAL_ACCESS_NOTE}</strong>{" "}</>}
+          {GUARDIAN_EXPLAINER}
+        </span>
       </p>
       {guardians.length === 0 ? (
         <p className="text-sm text-student-muted" data-testid="guardians-empty">No parent or guardian is listed yet.</p>
@@ -31,7 +34,7 @@ export function FamilyCard({ guardians }: { guardians: readonly HsGuardianView[]
                   <StatusPill status={st.key} label={st.label} />
                 </div>
                 <p className="text-sm text-student-muted">
-                  {st.detail} {guardianSharingLabel(g)} <span data-testid="no-portal-access">No portal access.</span>
+                  {guardianSharingShort(g)}
                 </p>
               </li>
             );

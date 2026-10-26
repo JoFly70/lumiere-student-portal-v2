@@ -12,6 +12,11 @@ import {
   paceBar,
   recordedTransferTitles,
   reportedWaitingLabel,
+  fullySentCourseCount,
+  attentionView,
+  groupCourses,
+  currentSubject,
+  guardianSharingShort,
   targetDateLine,
   taskListTitles,
   uniqueTasks,
@@ -142,7 +147,9 @@ describe("S11 pace and target wording", () => {
     const bar = paceBar(HS_MID_WAY);
     expect(bar.officialPercent).toBe(50);
     expect(bar.expectedPercent).toBe(61); // 13 of 21, floored
-    expect(bar.summary).toBe("10.5 official credits · the plan expected 13 by now");
+    expect(bar.summary).toBe("The plan expected 13 credits by now"); // the bar carries the official total
+    expect(bar.ariaLabel).toBe("10.5 of 21 credits official; the plan expected 13 by now");
+    expect(paceBar(HS_NEW_STUDENT).summary).toBeNull();
     expect(paceBar(HS_NEW_STUDENT).expectedPercent).toBeNull();
     expect(Object.keys(bar)).not.toContain("timePercent");
   });
@@ -268,12 +275,74 @@ describe("S11 titles and lists", () => {
     expect(kinds).toEqual(["documents_requested"]);
   });
   it("reported-but-unconfirmed work is plain text, never credit", () => {
-    expect(reportedWaitingLabel(2)).toBe("1 credit of work you reported is waiting for the school");
+    expect(reportedWaitingLabel(2, 1)).toBe("1 course fully sent (1 credit) — waiting for the school");
+    expect(reportedWaitingLabel(3, 2)).toBe("2 courses fully sent (1.5 credits) — waiting for the school");
+    expect(fullySentCourseCount(HS_MID_WAY.subjects)).toBe(1);
     expect(reportedWaitingLabel(0)).toBeNull();
+  });
+  it("gives every attention kind an owner and an action", () => {
+    expect(attentionView({ kind: "documents_requested", message: "The school asked for your previous school's transcript." })).toEqual({ title: "Your school needs your previous transcript", detail: null, action: { kind: "documents", label: "Upload in Documents" } });
+    expect(attentionView({ kind: "overdue_task", message: "x" }).action?.kind).toBe("course");
+    const pace = attentionView({ kind: "behind_pace", message: "x" });
+    expect(pace.title).toBe("Lumière can adjust your plan");
+    expect(pace.action?.kind).toBe("support");
+    expect(attentionView({ kind: "documents_requested", message: "Bank letter" }).title).toBe("Your school asked for a document");
   });
   it("flags courses with a written project still open", () => {
     const all = HS_MID_WAY.subjects.flatMap((s) => s.courses);
     expect(all.filter(hasOpenProject).map((c) => c.key)).toEqual(expect.arrayContaining(["english-3"]));
     expect(hasOpenProject(all.find((c) => c.status === "replaced")!)).toBe(false);
+  });
+});
+
+describe("S11 subject grouping", () => {
+  it("puts in-progress first, then not started; done and replaced get their own groups", () => {
+    const eng = HS_MID_WAY.subjects.find((s) => s.subject === "english")!;
+    const g = groupCourses(eng.courses);
+    expect(g.active.map((c) => c.status)).toEqual(["in_progress", "not_started"]);
+    expect(g.done.map((c) => c.status)).toEqual(["official_complete", "official_complete"]);
+    const math = groupCourses(HS_MID_WAY.subjects.find((s) => s.subject === "mathematics")!.courses);
+    expect(math.earlier).toHaveLength(1);
+    expect(math.active.map((c) => c.title)).toEqual(["Geometry"]);
+    const el = groupCourses(HS_MID_WAY.subjects.find((s) => s.subject === "electives")!.courses);
+    expect(el.done.map((c) => c.status)).toContain("transfer_credit");
+  });
+  it("finds the subject holding the current course", () => {
+    expect(currentSubject(HS_MID_WAY)).toBe("english");
+    expect(currentSubject(HS_GRADUATED)).toBeNull();
+  });
+  it("shortens guardian lines", () => {
+    expect(guardianSharingShort(GUARDIANS_ALL[0])).toBe("Lumière may discuss grades and progress.");
+    expect(guardianSharingShort(GUARDIANS_ALL[1])).toBe("Lumière does not discuss grades or billing.");
+  });
+});
+
+describe("S11 fixture dates are consistent on every screen (today = 2026-10-26)", () => {
+  const all = { HS_NEW_STUDENT, HS_MID_WAY, HS_TENNESSEE, HS_NEARLY_DONE, HS_AWAITING_REVIEW, HS_ELIGIBLE, HS_GRADUATED };
+  for (const [name, v] of Object.entries(all)) {
+    it(`${name}: started <= roadmap published <= every open task target and planned window`, () => {
+      const started = v.enrollment.startedOn!;
+      const published = v.roadmap!.publishedAt.slice(0, 10);
+      expect(started <= published).toBe(true);
+      expect(published <= HS_TODAY).toBe(true);
+      for (const c of v.subjects.flatMap((s) => s.courses)) {
+        if (c.plannedStart) expect(c.plannedStart >= published).toBe(true);
+        if (c.plannedStart && c.plannedEnd) expect(c.plannedStart <= c.plannedEnd).toBe(true);
+        for (const t of c.tasks) if (t.dueDate) expect(t.dueDate >= published).toBe(true);
+      }
+      expect(v.enrollment.programTitle).toContain(`(${v.credits.requiredHalfUnits / 2} credits)`);
+    });
+  }
+  it("new student: started Oct 19, published Oct 20, first target after that", () => {
+    expect(HS_NEW_STUDENT.enrollment.startedOn).toBe("2026-10-19");
+    expect(HS_NEW_STUDENT.roadmap!.publishedAt.startsWith("2026-10-20")).toBe(true);
+    const dues = HS_NEW_STUDENT.subjects.flatMap((s) => s.courses).flatMap((c) => c.tasks).map((t) => t.dueDate).filter((d): d is string => !!d);
+    expect(dues.length).toBeGreaterThan(0);
+    expect(dues.every((d) => d >= "2026-10-20")).toBe(true);
+  });
+  it("graduated: plausible span, started Sep 2025 and conferred Oct 2026", () => {
+    expect(HS_GRADUATED.enrollment.startedOn).toBe("2025-09-02");
+    expect(HS_GRADUATED.graduation.diploma.conferredOn).toBe("2026-10-10");
+    expect(HS_GRADUATED.graduation.eligibilityConfirmedAt! >= "2026-09-01").toBe(true);
   });
 });

@@ -121,17 +121,30 @@ export function Meter({
   );
 }
 
-/** The single pace measure: official credits as a bar, with a tick where the plan expected the student to be by now. */
+/**
+ * The single pace measure: official credits as a bar, with a tick where the plan expected the student to be by now.
+ * The tick's label sits on its own row under the bar and is clamped at both edges so it never overflows or crowds text.
+ */
 export function PaceMeter({ officialPercent, expectedPercent, ariaLabel }: { officialPercent: number; expectedPercent: number | null; ariaLabel: string }) {
+  const edge = expectedPercent === null ? "middle" : expectedPercent < 15 ? "start" : expectedPercent > 85 ? "end" : "middle";
   return (
-    <div className="relative pb-5 pt-1" data-testid="pace-meter">
-      <div className="relative h-3 w-full overflow-hidden rounded-full bg-student-line" role="img" aria-label={ariaLabel}>
-        <div className="h-full bg-student-gold" style={{ width: `${officialPercent}%` }} />
+    <div className="pt-1" data-testid="pace-meter">
+      <div className="relative">
+        <div className="h-3 w-full overflow-hidden rounded-full bg-student-line" role="img" aria-label={ariaLabel}>
+          <div className="h-full bg-student-gold" style={{ width: `${officialPercent}%` }} />
+        </div>
+        {expectedPercent !== null && (
+          <div className="pointer-events-none absolute -top-1 h-5 w-0.5 -translate-x-1/2 rounded bg-student-ink" style={{ left: `${expectedPercent}%` }} data-testid="pace-tick" aria-hidden="true" />
+        )}
       </div>
       {expectedPercent !== null && (
-        <div className="pointer-events-none absolute inset-y-0 w-0" style={{ left: `${expectedPercent}%` }} data-testid="pace-tick" aria-hidden="true">
-          <div className="absolute -top-0.5 h-[18px] w-0.5 -translate-x-1/2 rounded bg-student-ink" />
-          <span className={cn("absolute top-[22px] whitespace-nowrap text-xs text-student-muted", expectedPercent > 70 ? "-translate-x-full pr-1" : "-translate-x-1/2")}>Expected by now</span>
+        <div className="relative mb-2 mt-2 h-4" aria-hidden="true" data-testid="pace-tick-label" data-edge={edge}>
+          <span
+            className={cn("absolute top-0 whitespace-nowrap text-xs leading-4 text-student-muted", edge === "start" && "left-0", edge === "end" && "right-0", edge === "middle" && "-translate-x-1/2")}
+            style={edge === "middle" ? { left: `${expectedPercent}%` } : undefined}
+          >
+            Expected by now
+          </span>
         </div>
       )}
     </div>

@@ -78,7 +78,10 @@ describe("S11 journey tab", () => {
   it("shows OFFICIAL credits only in the ring; reported work is one small text line", () => {
     expect(t).toContain("10.5 of 21 credits");
     expect(t).toContain("10.5 credits"); // remaining
-    expect(t).toContain("1 credit of work you reported is waiting for the school");
+    expect(t).toContain("1 course fully sent (1 credit) — waiting for the school");
+    expect(t.match(/10\.5 of 21/g)?.length).toBe(1); // the ring says it once; no side label, no pace restatement
+    expect(t).not.toMatch(/Official credits/i);
+    expect(t).toContain("Still to earn");
     expect(markup).toContain('aria-label="10.5 of 21 credits official"');
     expect(markup).not.toMatch(/aria-label="[^"]*awaiting/);
     expect(markup).not.toContain("--st-submitted"); // no second arc in the ring
@@ -89,7 +92,7 @@ describe("S11 journey tab", () => {
   it("renders 20.5 and 0.5 exactly", () => {
     const n = text(panel(page(HS_NEARLY_DONE), "journey"));
     expect(n).toContain("20.5 of 21 credits");
-    expect(n).toContain("0.5 credits of work you reported is waiting for the school");
+    expect(n).toContain("1 course fully sent (0.5 credits) — waiting for the school");
   });
   it("never says Pending school review anywhere on the page", () => {
     for (const v of [HS_MID_WAY, HS_NEARLY_DONE, HS_TENNESSEE, HS_TWO_FINALS]) {
@@ -105,22 +108,37 @@ describe("S11 journey tab", () => {
     expect(t).toMatch(/Target was Oct 19, 2026/);
     const next = j.slice(j.indexOf('data-testid="next-step"'), j.indexOf('data-testid="credits-card"'));
     expect(next).toContain('data-testid="attention-card"');
-    expect(text(next)).toContain("Needs Lumière's attention");
-    expect(text(next)).toContain("The school asked for your previous school's transcript.");
+    expect(text(next)).toContain("Needs attention");
+    expect(text(next)).not.toContain("Needs Lumière's attention");
+    expect(text(next)).toContain("Your school needs your previous transcript");
+    expect(next).toMatch(/data-testid="attention-action" href="\/documents"/);
+    expect(text(next)).toContain("Upload in Documents");
+    expect(next).not.toMatch(/text-st-attention[^"]*"[^>]*>Your school needs/); // no alarming red text inside the amber card
   });
   it("lists the waiting tasks in the student's words", () => {
     expect(t).toContain("Waiting for your school");
-    expect(t).toContain("You sent these to your school — waiting for the school's grade.");
+    expect(t).toContain("Tasks you marked submitted — your school has not graded them yet.");
     expect(t).toContain("Final exam");
   });
   it("has one pace card with a single measure and the target caveat, nothing else about time", () => {
     expect(t).toContain("Behind target");
     expect(j).toContain('data-testid="pace-tick"');
-    expect(t).toContain("the plan expected 13 by now");
+    expect(t).toContain("The plan expected 13 credits by now");
+    expect(text(j.slice(j.indexOf('data-testid="pace-card"'), j.indexOf('data-testid="awaiting-grade"')))).not.toMatch(/10\.5|of 21/);
+    expect(j).toContain('data-testid="pace-tick-label"'); // its own row, not absolutely positioned over text
+    expect(j).toMatch(/aria-label="10.5 of 21 credits official; the plan expected 13 by now"/);
     expect(t).toContain("The date is a target, not a guarantee.");
     expect(t).not.toMatch(/Time to your target date|weeks to your target date/);
     expect(j.match(/data-testid="pace-card"/g)?.length).toBe(1);
     expect(j.match(/Behind target/g)?.length).toBe(1);
+  });
+  it("aligns the Journey cards at the top (no vertically centred card, no stretched dead space)", () => {
+    expect(j).toContain("items-start");
+    expect(j).not.toContain("justify-center\" data-testid=\"credits-card");
+    const credits = j.slice(j.indexOf('data-testid="credits-card"'), j.indexOf('data-testid="pace-card"'));
+    expect(credits).not.toMatch(/^[^>]*justify-center/);
+    expect(text(credits)).toContain("Core 9 of 16 credits");
+    expect(text(credits)).toContain("Elective 1.5 of 5 credits");
   });
   it("is restructured: no projects card, no earlier schooling or family on this tab", () => {
     expect(t).not.toContain("Required written projects");
@@ -139,6 +157,7 @@ describe("S11 journey tab", () => {
     const many = { ...HS_MID_WAY, attention: Array.from({ length: 5 }, (_, i) => ({ kind: "documents_requested" as const, message: `Document ${i + 1} needed`, courseKey: null, taskKey: null })) };
     const m = text(panel(page(many), "journey"));
     expect(m).toContain("and 2 more");
+    expect(text(m)).toContain("Your school asked for a document");
     expect(m).toContain("Document 5 needed");
   });
   it("tells apart two waiting tasks that share a title", () => {
@@ -166,6 +185,20 @@ describe("S11 header", () => {
     expect(m).toMatch(/aria-expanded="false"[^>]*aria-controls="hs-official-explainer"/);
     expect(m).toMatch(/id="hs-official-explainer" hidden/);
     expect(text(m)).toContain("Only your school confirms grades, credits and your diploma.");
+  });
+  it("meta line has separators only from sm up, so mobile never ends a line with a stray dot", () => {
+    const m = page(HS_MID_WAY);
+    const line = m.slice(m.lastIndexOf("<p", m.indexOf('data-testid="school-line"')), m.indexOf('data-testid="governance-note"'));
+    const seps = line.match(/<span aria-hidden="true" class="hidden sm:inline">·<\/span>/g) ?? [];
+    expect(seps.length).toBe(2);
+    expect(line.replace(/<span aria-hidden="true" class="hidden sm:inline">·<\/span>/g, "").replace(/<[^>]+>/g, "")).not.toContain("·");
+    expect(line).toContain("flex-col");
+  });
+  it("program title matches the credit total", () => {
+    for (const v of [HS_MID_WAY, HS_TENNESSEE, HS_GRADUATED]) {
+      expect(v.enrollment.programTitle).toContain(`(${v.credits.requiredHalfUnits / 2} credits)`);
+      expect(text(page(v))).toContain(v.enrollment.programTitle);
+    }
   });
   it("does not restate the governance message in Subjects or Graduation", () => {
     for (const tab of ["subjects", "graduation"] as const) {
@@ -204,6 +237,35 @@ describe("S11 subjects tab", () => {
       expect(idx.every((i) => i > -1)).toBe(true);
       expect([...idx].sort((a, b) => a - b)).toEqual(idx);
     }
+  });
+  it("opens only the subject that holds the current course", () => {
+    const open = sub.match(/aria-expanded="true"[^>]*data-testid="subject-toggle"/g) ?? [];
+    expect(open.length).toBe(1);
+    const eng = sub.slice(sub.indexOf('data-subject="english"'), sub.indexOf('data-subject="mathematics"'));
+    expect(eng).toMatch(/aria-expanded="true"[^>]*data-testid="subject-toggle"/);
+  });
+  it("orders courses in progress, not started, then a collapsed Done group", () => {
+    const eng = sub.slice(sub.indexOf('data-subject="english"'), sub.indexOf('data-subject="mathematics"'));
+    const iProg = eng.indexOf('data-course-status="in_progress"');
+    const iNot = eng.indexOf('data-course-status="not_started"');
+    const iDoneBtn = eng.indexOf('data-testid="button-done-courses"');
+    const iDone = eng.indexOf('data-course-status="official_complete"');
+    expect(iProg).toBeGreaterThan(-1);
+    expect(iProg).toBeLessThan(iNot);
+    expect(iNot).toBeLessThan(iDoneBtn);
+    expect(iDoneBtn).toBeLessThan(iDone);
+    expect(text(eng)).toContain("Done (2)");
+    expect(eng).toMatch(/aria-expanded="false"[^>]*aria-controls="[^"]+"[^>]*data-testid="button-done-courses"/);
+    expect(sub).toMatch(/data-testid="filter-projects"/);
+  });
+  it("names the project filter for what it does and exposes pressed state", () => {
+    expect(t).toContain("Show my 2 written projects");
+    expect(t).not.toContain("Written projects (2)");
+    expect(sub).toMatch(/aria-pressed="false"[^>]*data-testid="filter-projects"/);
+  });
+  it("uses realistic course titles in fixtures, not plan placeholders", () => {
+    expect(t).not.toContain("updated plan)");
+    expect(t).toContain("Geometry");
   });
   it("shows earned and required credits per subject, labelled official", () => {
     expect(t).toContain("2 of 4 credits (official)"); // English
@@ -309,6 +371,11 @@ describe("S11 graduation tab", () => {
     expect(text(g.slice(g.indexOf('data-testid="diploma-card"')))).toMatch(/Diploma conferred on Oct 10, 2026/);
     expect(t).toContain("Eligibility confirmed on Oct 1, 2026.");
     expect(g.match(/Issued by the school/g)?.length ?? 0).toBeLessThanOrEqual(2);
+    // diploma status is said once on this tab (Diploma card); the banner is the other place
+    expect(t.match(/Diploma conferred/g)?.length).toBe(1);
+    expect(t).not.toContain("Your school conferred your diploma");
+    expect(text(g.slice(g.indexOf('data-testid="completion-review"'), g.indexOf('data-testid="transcript-card"')))).not.toMatch(/conferred/i);
+    expect(g).not.toContain('data-testid="review-status"');
   });
   it("holds 'Your file': earlier schooling and family live on the Graduation tab", () => {
     const g = panel(page(HS_MID_WAY), "graduation");
@@ -317,8 +384,24 @@ describe("S11 graduation tab", () => {
     expect(g).toContain('data-testid="prior-education"');
     expect(g).toContain('data-testid="family-card"');
   });
-  it("links to the existing Documents page for official files", () => {
-    expect(panel(page(HS_GRADUATED), "graduation")).toContain('href="/documents"');
+  it("folds the Documents link into the Transcript and Diploma cards (no separate Official files card)", () => {
+    const g = panel(page(HS_GRADUATED), "graduation");
+    expect(g).toContain('href="/documents"');
+    expect(g).not.toContain('data-testid="official-files"');
+    const tr = g.slice(g.indexOf('data-testid="transcript-card"'), g.indexOf('data-testid="diploma-card"'));
+    const di = g.slice(g.indexOf('data-testid="diploma-card"'), g.indexOf('data-testid="your-file"'));
+    expect(tr).toContain('data-testid="link-documents-transcript"');
+    expect(di).toContain('data-testid="link-documents-diploma"');
+    expect(panel(page(HS_MID_WAY), "graduation")).not.toContain('href="/documents"');
+  });
+  it("uses one two-column grid and progress badges instead of empty radio-like circles", () => {
+    const g = panel(page(HS_MID_WAY), "graduation");
+    expect(g).not.toContain("lg:grid-cols-5");
+    expect(g).not.toContain("border-dashed border-student-line-strong");
+    expect(g).toContain('data-testid="req-core-badge"');
+    expect(text(g.slice(g.indexOf('data-testid="req-core-badge"'), g.indexOf('data-testid="req-core-badge"') + 80))).toContain("9 of 16");
+    expect(text(g.slice(g.indexOf('data-testid="req-work-badge"'), g.indexOf('data-testid="req-work-badge"') + 80))).toMatch(/\d+ left/);
+    expect(text(panel(page(HS_GRADUATED), "graduation"))).toContain("Done");
   });
   it("graduated: celebratory banner, diploma conferred date", () => {
     const m = page(HS_GRADUATED);
@@ -340,9 +423,11 @@ describe("S11 family and prior education", () => {
   });
   it("explains that verification is not portal access", () => {
     const t = text(m);
-    expect(t).toContain("Verification does not give anyone access to your portal account");
+    expect(t).toContain("Nobody on this list can sign in to your account.");
+    expect(t.match(/Nobody on this list can sign in/g)?.length).toBe(1);
+    expect(t).not.toContain("No portal access");
     expect(t).toContain("discusses grades or billing only with verified guardians who have that permission");
-    expect(m.match(/No portal access\./g)?.length).toBe(4);
+    expect(m.match(/data-testid="no-portal-access"/g)?.length).toBe(1);
   });
   it("links to the existing contacts section instead of duplicating the editor", () => {
     expect(m).toContain('href="/profile#section-contacts"');

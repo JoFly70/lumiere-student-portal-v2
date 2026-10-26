@@ -47,7 +47,7 @@ function baseCourses(template: HsCurriculumTemplate): CourseDef[] {
   ];
 }
 
-export type CourseState = "done" | "transfer" | "awaiting" | "progress" | "notstarted" | "replaced";
+export type CourseState = "started" | "done" | "transfer" | "awaiting" | "progress" | "notstarted" | "replaced";
 
 interface Cfg {
   template?: HsCurriculumTemplate;
@@ -68,7 +68,15 @@ interface Cfg {
   priorEducation?: StudentHighSchoolView["priorEducation"];
   reportedScores?: Record<string, number>;
   overdueTasks?: string[];
+  /** When the current roadmap version was published (never before startedOn, never after a task target). */
+  publishedAt?: string;
+  /** Reference day the planned windows and task targets are laid out from (kept at or after publishedAt). */
+  dueBase?: string;
 }
+
+const addDays = (iso: string, days: number): string => new Date(Date.parse(`${iso}T00:00:00Z`) + days * 86_400_000).toISOString().slice(0, 10);
+const DEFAULT_PUBLISHED = "2026-09-14";
+const DEFAULT_DUE_BASE = "2026-08-25";
 
 function tasksFor(course: CourseDef, state: CourseState, cfg: Cfg, index: number): HsTaskView[] {
   const isEnglish = course.areaKey === "english";
@@ -79,9 +87,11 @@ function tasksFor(course: CourseDef, state: CourseState, cfg: Cfg, index: number
     ...(isEnglish ? [{ key: `${course.key}-paper`, kind: "project" as const, title: "Written project: research paper" }] : []),
     ...(isStartup ? [] : [{ key: `${course.key}-exam`, kind: "exam" as const, title: "Final exam" }]),
   ];
+  // Targets are laid out from dueBase and are never earlier than the day the roadmap was published.
+  const published = cfg.publishedAt ?? DEFAULT_PUBLISHED;
   const due = (n: number) => {
-    const d = new Date(Date.UTC(2026, 8, 1 + index * 6 + n * 9));
-    return d.toISOString().slice(0, 10);
+    const d = addDays(cfg.dueBase ?? DEFAULT_DUE_BASE, 7 + index * 6 + n * 9);
+    return d < published ? published : d;
   };
   return defs.map((d, n) => {
     let status: HsTaskView["status"];
@@ -102,6 +112,9 @@ function tasksFor(course: CourseDef, state: CourseState, cfg: Cfg, index: number
         status = n === 0 ? "official_passed" : n === 1 ? "pending_review" : d.kind === "project" ? "in_progress" : "not_started";
         if (status === "official_passed") official = 90;
         if (status === "pending_review") reported = reported ?? 86;
+        break;
+      case "started":
+        status = n === 0 ? "in_progress" : "not_started";
         break;
       case "replaced":
         status = n === 0 ? "official_passed" : "not_started";
@@ -126,6 +139,7 @@ function tasksFor(course: CourseDef, state: CourseState, cfg: Cfg, index: number
 }
 
 const DISPLAY: Record<CourseState, HsCourseDisplayStatus> = {
+  started: "in_progress",
   done: "official_complete",
   transfer: "transfer_credit",
   awaiting: "awaiting_school",
@@ -133,6 +147,15 @@ const DISPLAY: Record<CourseState, HsCourseDisplayStatus> = {
   notstarted: "not_started",
   replaced: "replaced",
 };
+
+/** Finished courses carry no planned window; open ones start at or after the roadmap's publication. */
+function plannedWindow(state: CourseState, cfg: Cfg, index: number): { plannedStart: string | null; plannedEnd: string | null } {
+  if (state === "transfer" || state === "done") return { plannedStart: null, plannedEnd: null };
+  const published = cfg.publishedAt ?? DEFAULT_PUBLISHED;
+  const base = addDays(cfg.dueBase ?? DEFAULT_DUE_BASE, index * 6);
+  const start = base < published ? published : base;
+  return { plannedStart: start, plannedEnd: addDays(start, 56) };
+}
 
 function courseView(def: CourseDef, state: CourseState, cfg: Cfg, index: number, replaces: string | null, kindOf: (areaKey: string) => HsRequirementKind, subjectOf: (areaKey: string) => HsSubjectArea): HsCourseView {
   const tasks = state === "transfer" ? [] : tasksFor(def, state, cfg, index);
@@ -144,8 +167,7 @@ function courseView(def: CourseDef, state: CourseState, cfg: Cfg, index: number,
     kind: kindOf(def.areaKey),
     halfUnits: h(def.credits),
     status: DISPLAY[state],
-    plannedStart: state === "transfer" ? null : `2026-${String(9 + Math.floor(index / 8)).padStart(2, "0")}-01`,
-    plannedEnd: state === "transfer" ? null : `2026-${String(10 + Math.floor(index / 8)).padStart(2, "0")}-28`,
+    ...plannedWindow(state, cfg, index),
     replacesCourseKey: replaces,
     tasks,
     tasksDone: tasks.filter((t) => t.status === "official_passed").length,
@@ -222,13 +244,13 @@ export function buildHsView(cfg: Cfg): StudentHighSchoolView {
       schoolDisplayName: cfg.disclosed ? (cfg.schoolName ?? "Meridian Online Academy") : GENERIC_SCHOOL_DESCRIPTION,
       institutionDisclosed: !!cfg.disclosed,
       programTitle: template.title,
-      startedOn: cfg.startedOn === undefined ? "2026-09-01" : cfg.startedOn,
+      startedOn: cfg.startedOn === undefined ? "2026-02-02" : cfg.startedOn,
       targetCompletionDate: cfg.target === undefined ? "2027-06-30" : cfg.target,
     },
     roadmap: cfg.roadmap === false || cfg.roadmap === null ? null : {
       versionNumber: 2,
-      publishedAt: "2026-10-12T10:00:00.000Z",
-      studentMessage: cfg.studentMessage === undefined ? "Great start, Noa. We moved one math course to January so your October stays manageable." : cfg.studentMessage,
+      publishedAt: `${cfg.publishedAt ?? DEFAULT_PUBLISHED}T10:00:00.000Z`,
+      studentMessage: cfg.studentMessage === undefined ? "Nice progress, Noa. We moved one math course to January so your October stays manageable." : cfg.studentMessage,
     },
     credits: {
       requiredHalfUnits: required,
@@ -271,8 +293,10 @@ const allDone = (except: Record<string, CourseState> = {}): Record<string, Cours
 
 /** 1. New student who just started: nothing done, no pace configured yet. */
 export const HS_NEW_STUDENT: StudentHighSchoolView = buildHsView({
-  states: { "startup-personal-growth": "progress" },
+  states: { "startup-personal-growth": "started" },
   startedOn: "2026-10-19",
+  publishedAt: "2026-10-20",
+  dueBase: "2026-10-20",
   pace: { weeklyTargetHalfUnits: null, expectedByNowHalfUnits: null, status: "not_configured", nextMilestone: null },
   guardians: [GUARDIANS_ALL[0]],
   studentMessage: "Welcome, Noa. Start with the two short startup courses.",
@@ -299,7 +323,7 @@ export const HS_MID_WAY: StudentHighSchoolView = buildHsView({
     "elective-spanish-transfer": "transfer",
   },
   replacements: [
-    { replaces: "math-3", key: "math-3b", title: "Mathematics course 3 (Geometry, updated plan)", state: "notstarted" },
+    { replaces: "math-3", key: "math-3b", title: "Geometry", state: "notstarted" },
     { replaces: "elective-music", key: "elective-spanish-transfer", title: "Spanish 1", state: "transfer" },
   ],
   reportedScores: { "science-biology-exam": 91 },
@@ -341,8 +365,11 @@ export const HS_TENNESSEE: StudentHighSchoolView = buildHsView({
     "elective-environment": "notstarted",
     "elective-computer-science": "awaiting",
   }),
+  startedOn: "2025-09-02",
+  publishedAt: "2026-01-12",
   disclosed: true,
   target: "2027-05-28",
+  pace: { weeklyTargetHalfUnits: 1, expectedByNowHalfUnits: h(16), status: "on_track", nextMilestone: { month: "2026-12", cumulativeHalfUnits: h(18) } },
   graduation: {},
   guardians: GUARDIANS_ALL.slice(0, 2),
 });
@@ -350,6 +377,8 @@ export const HS_TENNESSEE: StudentHighSchoolView = buildHsView({
 /** 4. Nearly done: 20.5 official credits, 0.5 awaiting confirmation, exam pending review. */
 export const HS_NEARLY_DONE: StudentHighSchoolView = buildHsView({
   states: allDone({ "elective-creative-writing": "awaiting" }),
+  startedOn: "2025-09-02",
+  publishedAt: "2026-01-12",
   disclosed: true,
   pace: { weeklyTargetHalfUnits: 1, expectedByNowHalfUnits: h(20), status: "ahead", nextMilestone: null },
 });
@@ -357,6 +386,8 @@ export const HS_NEARLY_DONE: StudentHighSchoolView = buildHsView({
 /** 5. Awaiting graduation review: all credits earned, school review under way, financial clearance known. */
 export const HS_AWAITING_REVIEW: StudentHighSchoolView = buildHsView({
   states: allDone(),
+  startedOn: "2025-09-02",
+  publishedAt: "2026-01-12",
   disclosed: true,
   pace: { weeklyTargetHalfUnits: 1, expectedByNowHalfUnits: h(21), status: "on_track", nextMilestone: null },
   graduation: { financialClearance: "cleared" },
@@ -365,6 +396,8 @@ export const HS_AWAITING_REVIEW: StudentHighSchoolView = buildHsView({
 /** 6. Eligibility confirmed: transcript can be requested; diploma not yet conferred. */
 export const HS_ELIGIBLE: StudentHighSchoolView = buildHsView({
   states: allDone(),
+  startedOn: "2025-09-02",
+  publishedAt: "2026-01-12",
   disclosed: true,
   graduation: {
     status: "eligibility_confirmed",
@@ -377,6 +410,8 @@ export const HS_ELIGIBLE: StudentHighSchoolView = buildHsView({
 /** 7. Graduated, with diploma and transcript on file. */
 export const HS_GRADUATED: StudentHighSchoolView = buildHsView({
   states: allDone(),
+  startedOn: "2025-09-02",
+  publishedAt: "2026-01-12",
   disclosed: true,
   enrollmentStatus: "completed",
   pace: { weeklyTargetHalfUnits: null, expectedByNowHalfUnits: null, status: "not_configured", nextMilestone: null },

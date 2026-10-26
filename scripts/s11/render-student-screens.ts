@@ -106,8 +106,9 @@ async function prepare(page: any, scene: Scene) {
   await settle(page, READY);
   if (scene === "subjects") {
     await page.click('[data-testid="tab-subjects"]');
-    // Mathematics (replaced course visible), then the English 3 course with tasks and controls.
-    await page.locator('[data-subject="english"] [data-testid="subject-toggle"]').click();
+    // English (the current course's subject) is open by default; open the English 3 course with tasks and controls, then Mathematics.
+    const eng = page.locator('[data-subject="english"] [data-testid="subject-toggle"]');
+    if ((await eng.getAttribute("aria-expanded")) !== "true") await eng.click();
     await page.locator('[data-course-key="english-3"] button[aria-expanded]').click();
     await page.locator('[data-subject="mathematics"] [data-testid="subject-toggle"]').click();
     await page.waitForTimeout(300);
@@ -163,7 +164,10 @@ async function main() {
       for (const [theme, width] of [["light", 1440], ["light", 1024], ["light", 768], ["light", 390], ["dark", 1440], ["dark", 390]] as const) {
         const { page, ctx } = await newPage(browser, { theme, width, height: 900, view: fixtureFor(scene) });
         await prepare(page, scene);
-        if (scene === "eligible" && width === 390 && theme === "light") await shot(page, "22-graduation-eligible-390-light.png");
+        if (scene === "eligible" && width === 390 && theme === "light") {
+          await shot(page, "22-graduation-eligible-390-light.png");
+          await runAxe(page, "22-graduation-eligible-390-light.png", axeResults);
+        }
         if (scene === "journey" && theme === "light") journeyHeights[String(width)] = await page.evaluate(() => (document.querySelector("#hs-panel-journey") as HTMLElement).getBoundingClientRect().height);
         const res = await page.evaluate((w: number) => {
           const out: string[] = [];

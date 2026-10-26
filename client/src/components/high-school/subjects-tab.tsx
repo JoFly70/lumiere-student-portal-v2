@@ -5,7 +5,7 @@
  */
 import React, { useEffect, useId, useState } from "react";
 import { Link } from "wouter";
-import { ChevronDown, FileCheck2, History, LifeBuoy, Lock, MessageCircleQuestion, PencilLine } from "lucide-react";
+import { CheckCircle2, ChevronDown, FileCheck2, History, LifeBuoy, Lock, MessageCircleQuestion, PencilLine } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { HsCourseView, HsSubjectView, HsTaskView, StudentHighSchoolView } from "@shared/high-school-contract";
 import { formatShortDate } from "@/pages/student-roadmap-presentation";
@@ -24,7 +24,8 @@ import {
   parseReportedScore,
   reportedStatusOf,
   scoreLines,
-  sortedCourses,
+  groupCourses,
+  currentSubject,
   sortedTasks,
   subjectSummary,
   supportDraft,
@@ -202,7 +203,7 @@ function CourseRow({ course, today, schoolLine, open, onToggle }: { course: HsCo
   const muted = course.status === "replaced";
   const title = courseTitleView(course.title);
   const tasks = sortedTasks(course.tasks);
-  const window = course.plannedStart || course.plannedEnd ? [formatShortDate(course.plannedStart), formatShortDate(course.plannedEnd)].filter(Boolean).join(" to ") : null;
+  const window = course.status !== "official_complete" && (course.plannedStart || course.plannedEnd) ? [formatShortDate(course.plannedStart), formatShortDate(course.plannedEnd)].filter(Boolean).join(" to ") : null;
   return (
     <li className={cn("rounded-xl border border-student-line bg-student-card", muted && "bg-student-bg")} data-testid="course-row" data-course-key={course.key} data-course-status={course.status} id={`hs-course-${course.key}`}>
       <button type="button" aria-expanded={open} aria-controls={id} onClick={onToggle} className="flex min-h-[56px] w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left sm:px-4">
@@ -257,12 +258,16 @@ function SubjectCard({ subject, today, schoolLine, open, onToggle, openCourses, 
   const id = useId();
   const earlierId = useId();
   const complete = subject.requiredHalfUnits > 0 && subject.earnedHalfUnits >= subject.requiredHalfUnits;
-  const sorted = sortedCourses(subject.courses);
-  const current = sorted.filter((c) => c.status !== "replaced" && (!onlyProjects || hasOpenProject(c)));
-  const earlier = onlyProjects ? [] : sorted.filter((c) => c.status === "replaced");
+  const groups = groupCourses(subject.courses);
+  const current = groups.active.filter((c) => !onlyProjects || hasOpenProject(c));
+  const earlier = onlyProjects ? [] : groups.earlier;
+  const done = onlyProjects ? [] : groups.done;
+  const doneId = useId();
   const [earlierOpen, setEarlierOpen] = useState(() => earlier.some((c) => openCourses.has(c.key)));
+  const [doneOpen, setDoneOpen] = useState(() => done.some((c) => openCourses.has(c.key)));
   useEffect(() => {
     if (earlier.some((c) => openCourses.has(c.key))) setEarlierOpen(true);
+    if (done.some((c) => openCourses.has(c.key))) setDoneOpen(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openCourses]);
   const row = (c: HsCourseView) => <CourseRow key={c.key} course={c} today={today} schoolLine={schoolLine} open={openCourses.has(c.key)} onToggle={() => onToggleCourse(c.key)} />;
@@ -294,7 +299,19 @@ function SubjectCard({ subject, today, schoolLine, open, onToggle, openCourses, 
             {current.length > 0 ? (
               <ul className="space-y-2" aria-label={`${subject.label} courses`}>{current.map(row)}</ul>
             ) : (
-              <p className="text-sm text-student-muted">{onlyProjects ? "No courses with a written project in this subject." : "No current courses in this subject."}</p>
+              <p className="text-sm text-student-muted">{onlyProjects ? "No courses with a written project in this subject." : done.length > 0 ? "Every course in this subject is done." : "No current courses in this subject."}</p>
+            )}
+            {done.length > 0 && (
+              <div data-testid="done-courses">
+                <button type="button" aria-expanded={doneOpen} aria-controls={doneId} onClick={() => setDoneOpen((o) => !o)} className="flex min-h-[44px] w-full items-center gap-2 rounded-lg text-left text-sm font-medium text-student-gold-ink" data-testid="button-done-courses">
+                  <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  Done ({done.length})
+                  <ChevronDown className={cn("h-4 w-4 transition-transform", doneOpen && "rotate-180")} aria-hidden="true" />
+                </button>
+                <div id={doneId} hidden={!doneOpen}>
+                  <ul className="space-y-2" aria-label={`${subject.label} done courses`}>{done.map(row)}</ul>
+                </div>
+              </div>
             )}
             {earlier.length > 0 && (
               <div data-testid="earlier-plan">
@@ -330,7 +347,7 @@ export function SubjectsTab({
 }) {
   const subjects = orderedSubjects(view.subjects);
   const subjectOfCourse = (key: string | null) => (key ? subjects.find((s) => s.courses.some((c) => c.key === key))?.subject ?? null : null);
-  const [openSubjects, setOpenSubjects] = useState<ReadonlySet<string>>(() => new Set([defaultOpenSubject, subjectOfCourse(defaultOpenCourse), subjectOfCourse(focusCourseKey)].filter((x): x is string => !!x)));
+  const [openSubjects, setOpenSubjects] = useState<ReadonlySet<string>>(() => new Set([defaultOpenSubject, subjectOfCourse(defaultOpenCourse), subjectOfCourse(focusCourseKey), currentSubject(view)].filter((x): x is string => !!x)));
   const [onlyProjects, setOnlyProjects] = useState(false);
   const projectCourses = subjects.reduce((n, s) => n + s.courses.filter(hasOpenProject).length, 0);
   const [openCourses, setOpenCourses] = useState<ReadonlySet<string>>(() => new Set([defaultOpenCourse, focusCourseKey].filter((x): x is string => !!x)));
@@ -365,7 +382,7 @@ export function SubjectsTab({
             data-testid="filter-projects"
           >
             <PencilLine className="h-4 w-4" aria-hidden="true" />
-            Written projects ({projectCourses})
+            Show my {projectCourses} written {projectCourses === 1 ? "project" : "projects"}
           </button>
         )}
       </div>

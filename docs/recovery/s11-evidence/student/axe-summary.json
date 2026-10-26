@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-26T21:50:20.939Z",
+  "generatedAt": "2026-10-26T22:08:16.141Z",
   "fixtures": "tests/helpers/s11-hs-ui-fixtures.ts",
   "totalViolations": 0,
   "seriousOrCritical": 0,
@@ -126,6 +126,12 @@
     },
     {
       "screen": "new-student-390-light",
+      "violationCount": 0,
+      "seriousOrCritical": 0,
+      "violations": []
+    },
+    {
+      "screen": "22-graduation-eligible-390-light.png",
       "violationCount": 0,
       "seriousOrCritical": 0,
       "violations": []

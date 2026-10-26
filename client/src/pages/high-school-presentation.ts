@@ -65,9 +65,15 @@ export function barPercent(part: HalfUnits, whole: HalfUnits): number {
  * Work the student reported as finished but the school has not confirmed. Plain text only:
  * it is never drawn as credit (not in the ring, not in a bar).
  */
-export function reportedWaitingLabel(half: HalfUnits): string | null {
+export function reportedWaitingLabel(half: HalfUnits, courses = 0): string | null {
   if (half <= 0) return null;
-  return `${creditsLabel(half)} of work you reported is waiting for the school`;
+  if (courses <= 0) return `Work you sent for ${creditsLabel(half)} is waiting for the school`;
+  return `${courses} ${courses === 1 ? "course" : "courses"} fully sent (${creditsLabel(half)}) — waiting for the school`;
+}
+
+/** Courses whose every task the student marked submitted (what credits.awaitingConfirmationHalfUnits counts). */
+export function fullySentCourseCount(subjects: readonly HsSubjectView[]): number {
+  return subjects.reduce((n, s) => n + s.courses.filter((c) => c.status === "awaiting_school").length, 0);
 }
 
 // ── Titles ──────────────────────────────────────────────────────────────────
@@ -141,6 +147,33 @@ export function sortedCourses(courses: readonly HsCourseView[]): HsCourseView[] 
     .map((c, i) => ({ c, i }))
     .sort((a, b) => COURSE_ORDER[a.c.status] - COURSE_ORDER[b.c.status] || a.i - b.i)
     .map((x) => x.c);
+}
+
+export interface CourseGroups {
+  /** In progress, waiting for the school, not passed, then not started. */
+  readonly active: HsCourseView[];
+  /** Official complete and transfer credit. */
+  readonly done: HsCourseView[];
+  /** Replaced by an updated plan. */
+  readonly earlier: HsCourseView[];
+}
+
+export function groupCourses(courses: readonly HsCourseView[]): CourseGroups {
+  const sorted = sortedCourses(courses);
+  const rank = (c: HsCourseView) => ({ in_progress: 0, awaiting_school: 1, not_passed: 2, not_started: 3 } as Partial<Record<HsCourseDisplayStatus, number>>)[c.status] ?? 9;
+  const active = sorted.filter((c) => rank(c) < 9).sort((a, b) => rank(a) - rank(b));
+  return {
+    active,
+    done: sorted.filter((c) => c.status === "official_complete" || c.status === "transfer_credit"),
+    earlier: sorted.filter((c) => c.status === "replaced"),
+  };
+}
+
+/** The subject that holds the current course (the only one open by default). */
+export function currentSubject(view: Pick<StudentHighSchoolView, "current" | "subjects">): HsSubjectArea | null {
+  const key = view.current.course?.key;
+  if (!key) return null;
+  return view.subjects.find((s) => s.courses.some((c) => c.key === key))?.subject ?? null;
 }
 
 const TASK_KIND_ORDER: Record<HsTaskKind, number> = { lesson: 0, project: 1, exam: 2 };
@@ -310,7 +343,8 @@ export interface PaceBar {
   readonly officialPercent: number;
   /** Where the plan expected the student to be by now; null when no milestones are configured. */
   readonly expectedPercent: number | null;
-  readonly summary: string;
+  /** Visible line under the bar; the bar itself carries the official total. null when there is nothing to add. */
+  readonly summary: string | null;
   readonly ariaLabel: string;
 }
 
@@ -320,10 +354,9 @@ export function paceBar(view: Pick<StudentHighSchoolView, "credits" | "pace">): 
   const expected = view.pace.expectedByNowHalfUnits;
   const officialPercent = barPercent(earned, required);
   const expectedPercent = expected === null ? null : barPercent(Math.min(expected, required), required);
-  const summary = expected === null
-    ? `${creditsOfLabel(earned, required)} official`
-    : `${formatHalfUnits(earned)} official ${earned === 2 ? "credit" : "credits"} · the plan expected ${formatHalfUnits(expected)} by now`;
-  return { officialPercent, expectedPercent, summary, ariaLabel: `${summary}` };
+  const summary = expected === null ? null : `The plan expected ${creditsLabel(Math.min(expected, required))} by now`;
+  const ariaLabel = `${creditsOfLabel(earned, required)} official${expected === null ? "" : `; the plan expected ${formatHalfUnits(expected)} by now`}`;
+  return { officialPercent, expectedPercent, summary, ariaLabel };
 }
 
 /** The target date line. A date is a target, never a guarantee. */
@@ -393,14 +426,31 @@ export function journeyAttention(view: Pick<StudentHighSchoolView, "attention" |
   return view.attention.filter((a) => a.kind !== "behind_pace" && !(nextKey !== null && a.taskKey === nextKey));
 }
 
-export function attentionLabel(kind: HsAttentionItem["kind"]): string {
-  switch (kind) {
-    case "overdue_task": return "Past target date";
-    case "behind_pace": return "Pace";
-    case "retake_required": return "Retake needed";
-    case "not_passed": return "Not passed";
-    case "documents_requested": return "Documents requested";
-    default: return "Support";
+export interface AttentionView {
+  /** Who acts, in the student's words. */
+  readonly title: string;
+  /** Extra detail from the server, shown only when the title does not already say it. */
+  readonly detail: string | null;
+  readonly action: { readonly kind: "documents" | "course" | "support"; readonly label: string } | null;
+}
+
+/** Every attention kind has an owner: work the student does reads as theirs, Lumière's as Lumière's. */
+export function attentionView(a: Pick<HsAttentionItem, "kind" | "message">): AttentionView {
+  switch (a.kind) {
+    case "documents_requested":
+      return /transcript/i.test(a.message)
+        ? { title: "Your school needs your previous transcript", detail: null, action: { kind: "documents", label: "Upload in Documents" } }
+        : { title: "Your school asked for a document", detail: a.message, action: { kind: "documents", label: "Upload in Documents" } };
+    case "overdue_task":
+      return { title: "Your task is past its target date", detail: a.message, action: { kind: "course", label: "Open the course" } };
+    case "retake_required":
+      return { title: "Your school asked for a retake", detail: a.message, action: { kind: "course", label: "Open the course" } };
+    case "behind_pace":
+      return { title: "Lumière can adjust your plan", detail: a.message, action: { kind: "support", label: "Ask Lumière" } };
+    case "not_passed":
+      return { title: "Lumière can help with next steps", detail: a.message, action: { kind: "support", label: "Ask Lumière" } };
+    default:
+      return { title: "Lumière can help", detail: a.message, action: { kind: "support", label: "Ask Lumière" } };
   }
 }
 
@@ -545,8 +595,16 @@ export function guardianSharingLabel(g: HsGuardianView): string {
   return `Lumière may discuss ${parts.join(" and ")} with this person.`;
 }
 
-export const GUARDIAN_EXPLAINER =
-  "Verification does not give anyone access to your portal account. Lumière discusses grades or billing only with verified guardians who have that permission.";
+export const GUARDIAN_EXPLAINER = "Lumière discusses grades or billing only with verified guardians who have that permission.";
+export const NO_PORTAL_ACCESS_NOTE = "Nobody on this list can sign in to your account.";
+
+/** One short line per person; the standing pill already says who they are. */
+export function guardianSharingShort(g: HsGuardianView): string {
+  const parts: string[] = [];
+  if (g.mayDiscussAcademics) parts.push("grades and progress");
+  if (g.mayDiscussFinances) parts.push("billing");
+  return parts.length === 0 ? "Lumière does not discuss grades or billing." : `Lumière may discuss ${parts.join(" and ")}.`;
+}
 
 export const GOVERNANCE_COPY = {
   /** The single short trust line in the header. */

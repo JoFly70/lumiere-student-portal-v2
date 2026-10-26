@@ -3,15 +3,18 @@
  * one pace measure and what is waiting for the school. Each task appears once on this tab.
  */
 import React from "react";
+import { Link } from "wouter";
 import { ArrowRight, BookOpenCheck, FileText, Hourglass, PartyPopper, Sparkles } from "lucide-react";
 import type { StudentHighSchoolView } from "@shared/high-school-contract";
 import { formatShortDate } from "@/pages/student-roadmap-presentation";
 import {
-  attentionLabel,
+  attentionView,
   cleanCourseTitle,
   creditsLabel,
+  creditRequirementRows,
   creditsOfLabel,
   dueLabel,
+  fullySentCourseCount,
   journeyAttention,
   nextMilestoneLabel,
   nextStep,
@@ -26,7 +29,7 @@ import {
 } from "@/pages/high-school-presentation";
 import { StatusGlyph, StatusPill, buttonClass } from "@/components/student-progress/student-ui";
 import { TaskRing } from "@/components/student-progress/journey-graphics";
-import { CreditRing, Fact, MoreList, PaceMeter, Panel } from "./hs-ui";
+import { CreditRing, Fact, MoreList, PaceMeter, Panel, linkButton } from "./hs-ui";
 
 export interface TabProps {
   readonly view: StudentHighSchoolView;
@@ -49,22 +52,34 @@ function AttentionList({ view, onNavigate }: Pick<TabProps, "view" | "onNavigate
     <div className="border-t border-student-gold/40 pt-3" data-testid="attention-card">
       <h4 id="hs-attention" className="mb-1 flex items-center gap-2 text-sm font-semibold text-student-ink">
         <StatusGlyph status="attention" className="h-4 w-4" />
-        Needs Lumière&apos;s attention
+        Needs attention
       </h4>
       <MoreList
         items={items}
         max={3}
         testId="attention-list"
         listClass="divide-y divide-student-gold/30"
-        ariaLabel="Needs Lumière's attention"
-        render={(a, i) => (
-          <li key={`${a.kind}-${i}`} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-0.5 py-1.5">
-            <p className="min-w-0 text-sm text-student-ink">
-              <span className="font-semibold text-st-attention">{attentionLabel(a.kind)}. </span>
-              {a.message}
-            </p>
-          </li>
-        )}
+        ariaLabel="Needs attention"
+        render={(a, i) => {
+          const v = attentionView(a);
+          return (
+            <li key={`${a.kind}-${i}`} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-0 py-1.5" data-attention-kind={a.kind}>
+              <p className="min-w-0 text-sm text-student-ink">
+                <span className="font-semibold">{v.title}.</span>
+                {v.detail ? ` ${v.detail}` : ""}
+              </p>
+              {v.action?.kind === "documents" && (
+                <Link href="/documents" className={linkButton} data-testid="attention-action">{v.action.label}<ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>
+              )}
+              {v.action?.kind === "support" && (
+                <Link href="/support" className={linkButton} data-testid="attention-action">{v.action.label}<ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>
+              )}
+              {v.action?.kind === "course" && (
+                <button type="button" className={linkButton} onClick={() => onNavigate("subjects", a.courseKey)} data-testid="attention-action">{v.action.label}<ArrowRight className="h-4 w-4" aria-hidden="true" /></button>
+              )}
+            </li>
+          );
+        }}
       />
     </div>
   );
@@ -116,20 +131,25 @@ function NextStepCard({ view, today, onNavigate }: TabProps) {
 
 function CreditsCard({ view }: { view: StudentHighSchoolView }) {
   const c = view.credits;
-  const reported = reportedWaitingLabel(c.awaitingConfirmationHalfUnits);
+  const reported = reportedWaitingLabel(c.awaitingConfirmationHalfUnits, fullySentCourseCount(view.subjects));
+  const rows = creditRequirementRows(view);
   return (
-    <Panel title="Your credits" headingId="hs-credits" testId="credits-card" className="flex h-full flex-col justify-center">
-      <div className="grid grid-cols-[auto_1fr] items-center gap-4 sm:gap-6">
+    <Panel title="Your credits" headingId="hs-credits" testId="credits-card" className="flex flex-col justify-start">
+      <div className="grid grid-cols-[auto_1fr] items-start gap-4 sm:gap-6">
         <CreditRing earned={c.earnedHalfUnits} required={c.requiredHalfUnits} size={160} />
         <dl className="space-y-3 text-left">
-          <Fact label="Official credits"><span data-testid="credits-earned">{creditsOfLabel(c.earnedHalfUnits, c.requiredHalfUnits)}</span></Fact>
           <Fact label="Still to earn"><span data-testid="credits-remaining">{creditsLabel(c.remainingHalfUnits)}</span></Fact>
+          {rows.map((r) => (
+            <Fact key={r.id} label={r.id === "core" ? "Core" : "Elective"}>
+              <span data-testid={`credits-${r.id}`}>{creditsOfLabel(r.earned, r.required)}</span>
+            </Fact>
+          ))}
         </dl>
       </div>
       {reported ? (
-        <p className="text-sm text-student-muted" data-testid="credits-reported">{reported}.</p>
+        <p className="border-t border-student-line pt-3 text-sm text-student-muted" data-testid="credits-reported">{reported}.</p>
       ) : (
-        <p className="text-sm text-student-muted" data-testid="credits-official-note">Only credits confirmed by your school are counted here.</p>
+        <p className="border-t border-student-line pt-3 text-sm text-student-muted" data-testid="credits-official-note">Only credits confirmed by your school are counted here.</p>
       )}
     </Panel>
   );
@@ -140,14 +160,14 @@ function PaceCard({ view }: { view: StudentHighSchoolView }) {
   const bar = paceBar(view);
   const milestone = nextMilestoneLabel(view.pace);
   return (
-    <Panel title="Your pace" headingId="hs-pace" testId="pace-card" className="h-full">
+    <Panel title="Your pace" headingId="hs-pace" testId="pace-card">
       <div className="flex flex-wrap items-center gap-2">
         <StatusPill status={pace.key} label={pace.label} data-testid="pace-status" />
       </div>
       <p className="text-sm leading-relaxed text-student-muted">{pace.detail}</p>
       <div data-testid="target-progress">
         <PaceMeter officialPercent={bar.officialPercent} expectedPercent={bar.expectedPercent} ariaLabel={bar.ariaLabel} />
-        <p className="text-sm text-student-ink" data-testid="pace-summary">{bar.summary}.</p>
+        {bar.summary && <p className="text-sm text-student-ink" data-testid="pace-summary">{bar.summary}.</p>}
         {milestone && <p className="text-sm text-student-muted">{milestone}.</p>}
       </div>
       <p className="border-t border-student-line pt-3 text-sm text-student-muted" data-testid="target-date">{targetDateLine(view, formatShortDate)}</p>
@@ -160,10 +180,10 @@ function WaitingCard({ view, today, onNavigate }: TabProps) {
   const tasks = uniqueTasks(view.awaitingGrade).filter((t) => `${t.courseKey}:${t.key}` !== nextKey);
   const titles = taskListTitles(tasks);
   return (
-    <Panel title="Waiting for your school" headingId="hs-awaiting" testId="awaiting-grade" className="h-full">
+    <Panel title="Waiting for your school" headingId="hs-awaiting" testId="awaiting-grade">
       <p className="flex items-start gap-2 text-sm text-student-muted">
         <Hourglass className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-        You sent these to your school — waiting for the school&apos;s grade.
+        Tasks you marked submitted — your school has not graded them yet.
       </p>
       {tasks.length === 0 ? (
         <p className="text-sm text-student-muted" data-testid="awaiting-list-empty">Nothing is waiting for a grade.</p>
@@ -199,11 +219,16 @@ export function JourneyTab(props: TabProps) {
   const message = view.roadmap?.studentMessage ?? null;
   return (
     <div className="space-y-4 sm:space-y-6" data-testid="tab-journey">
-      <div className="grid items-stretch gap-4 sm:gap-6 lg:grid-cols-2">
-        <NextStepCard {...props} />
-        <CreditsCard view={view} />
-        <PaceCard view={view} />
-        <WaitingCard {...props} />
+      {/* Two balanced columns from lg up; on smaller screens the wrappers dissolve and `order` keeps the reading order. */}
+      <div className="grid items-start gap-4 sm:gap-6 lg:grid-cols-2">
+        <div className="contents lg:flex lg:flex-col lg:gap-6">
+          <div className="order-1 min-w-0 lg:order-none"><NextStepCard {...props} /></div>
+          <div className="order-4 min-w-0 lg:order-none"><WaitingCard {...props} /></div>
+        </div>
+        <div className="contents lg:flex lg:flex-col lg:gap-6">
+          <div className="order-2 min-w-0 lg:order-none"><CreditsCard view={view} /></div>
+          <div className="order-3 min-w-0 lg:order-none"><PaceCard view={view} /></div>
+        </div>
       </div>
       {view.roadmap && (
         <div className="flex min-w-0 items-start gap-3 rounded-2xl border border-student-line bg-student-card p-4 text-sm" data-testid="roadmap-version">

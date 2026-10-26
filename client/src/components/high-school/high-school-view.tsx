@@ -23,12 +23,14 @@ function Header({ view }: { view: StudentHighSchoolView }) {
   return (
     <header className="space-y-2" data-testid="hs-header">
       <h1 className="font-serif text-3xl tracking-tight text-student-ink sm:text-4xl">My High School Journey</h1>
-      <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-student-muted" data-testid="school-line">
-        <School className="h-4 w-4 shrink-0 text-student-gold-ink" aria-hidden="true" />
-        <span className="font-medium text-student-ink" data-testid="school-name">{e.schoolDisplayName}</span>
-        <span aria-hidden="true">·</span>
-        <span>{e.programTitle}</span>
-        {started && (<><span aria-hidden="true">·</span><span>Started {started}</span></>)}
+      <p className="flex flex-col items-start gap-y-1 text-sm text-student-muted sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-2" data-testid="school-line">
+        <span className="flex items-center gap-2">
+          <School className="h-4 w-4 shrink-0 text-student-gold-ink" aria-hidden="true" />
+          <span className="font-medium text-student-ink" data-testid="school-name">{e.schoolDisplayName}</span>
+        </span>
+        <span aria-hidden="true" className="hidden sm:inline">·</span>
+        <span className="pl-6 sm:pl-0" data-testid="program-title">{e.programTitle}</span>
+        {started && (<><span aria-hidden="true" className="hidden sm:inline">·</span><span className="pl-6 sm:pl-0">Started {started}</span></>)}
       </p>
       <div data-testid="governance-note" role="note">
         <p className="flex items-start gap-2 text-sm text-student-ink sm:items-center">
