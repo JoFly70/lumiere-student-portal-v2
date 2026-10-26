@@ -132,3 +132,36 @@ Backwards compatible exports kept: `ticketQueryParams`, `Ticket`, `useTickets`, 
   `client/src/components/support/support-presentation.ts`.
 - `?item=<roadmapItemKey>` on `/support` pre-selects academic context (future integration point for
   the S07 roadmap / Flight Deck; S08 does not modify those files).
+
+## S10 addendum — truthful ticket creation (supersedes the POST `/` row above)
+
+`POST /api/tickets` writes the ticket and then its opening comment. PostgREST has no
+multi-statement transaction, so the route compensates instead of claiming success:
+
+- **Opening comment fails** -> the just-created ticket is deleted (children cascade) and the
+  response is `503 SUPPORT_CREATE_INCOMPLETE` with `details: { saved: false, mayHaveSaved: false }`.
+  No notification is sent. An audit event `support.ticket_created` with severity `error` and
+  `metadata.outcome = "rolled_back"` records the failure (no message body).
+- **The compensating delete also fails** -> still `503 SUPPORT_CREATE_INCOMPLETE`, now with
+  `mayHaveSaved: true` and wording telling the student the request may appear in their list. The
+  failure is logged at error level and audited with severity `critical`,
+  `metadata.outcome = "rollback_failed"`.
+- **Idempotency key**: optional body field `idempotencyKey` (`^[A-Za-z0-9_-]{16,100}$`, see
+  `SUPPORT_IDEMPOTENCY_KEY_PATTERN`), chosen over a header so it validates with the same strict
+  schema as the rest of the body. Stored as `support_tickets.metadata.idempotency_key`, never
+  returned to students. The lookup is always `reporter_id = caller AND key`, so another student's
+  identical key is a different key.
+  - Key matches a **complete** ticket (has its opening comment) -> `200 { ticket, replayed: true }`,
+    same id, nothing created, no second notification or audit.
+  - Key matches an **incomplete** leftover (failed rollback) -> it is deleted and creation proceeds
+    cleanly (`201`). If that delete fails -> `503 SUPPORT_CREATE_INCOMPLETE`.
+  - No key -> unchanged behaviour (201, a new ticket each time).
+- The client generates one key per distinct submission (content-bound: editing the text makes a new
+  key) and reuses it on retry. The form says "not sent" only when the server said so; after a network
+  failure or an unconfirmed rollback it says the request may have been received and that sending
+  again is safe.
+- Optional migration `supabase/migrations/20261028100000_s10_support_idempotency_index.sql` adds a
+  partial unique index on `(reporter_id, metadata->>'idempotency_key')` to close the concurrent
+  double-submit window. The route is correct without it; with it, a racing duplicate insert fails
+  with 23505 (reported as a generic 500, nothing duplicated).
+- `apiRequest` now throws `ApiError` (an `Error` subclass) exposing `status`, `code`, `details`.

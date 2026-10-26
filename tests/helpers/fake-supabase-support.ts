@@ -5,11 +5,13 @@
  *   from(table).select(cols?, { count: 'exact' }?) | insert(row|rows) | update(patch)
  *   filters: eq neq in is(col, null) gte lte ilike
  *   modifiers: order range limit single maybeSingle
+ *   delete() with the same filters (cascades from support_tickets to its children);
+ *   JSON text path filters such as eq('metadata->>idempotency_key', v)
  *   insert/update: optional .select(cols?) then optional .single()
  *   awaiting resolves { data, error, count? }
  *   storage.from(bucket): createSignedUploadUrl / createSignedUrl / list
  *
- * Any other method (delete, upsert, or, not, textSearch, embedded resources
+ * Any other method (upsert, or, not, textSearch, embedded resources
  * such as "ticket_comments(*)") is deliberately absent / rejected so a router
  * that leaves the documented subset fails loudly in tests.
  *
@@ -55,7 +57,7 @@ const NOT_NULL: Record<string, readonly string[]> = {
   ticket_status_history: ["ticket_id", "new_status", "changed_by"],
 };
 
-export type OpKind = "select" | "insert" | "update";
+export type OpKind = "select" | "insert" | "update" | "delete";
 export interface RecordedOp {
   table: string;
   op: OpKind;
@@ -117,10 +119,19 @@ export function createFakeSupportSupabase(options: FakeSupabaseOptions = {}) {
   const clone = <T,>(v: T): T => (v === undefined ? v : (structuredClone(v) as T));
   const tableRows = (t: string): Row[] => (tables[t] ??= []);
 
+  /** PostgREST JSON text path filter, e.g. "metadata->>idempotency_key": base column + key. */
+  const baseColumn = (c: string): string => c.split("->")[0];
+  function columnValue(row: Row, column: string): any {
+    const m = /^([a-z_]+)->>([A-Za-z0-9_]+)$/.exec(column);
+    if (!m) return row[column];
+    const v = row[m[1]]?.[m[2]];
+    return v === undefined || v === null ? undefined : String(v);
+  }
+
   function colsOk(table: string, cols: string[]): FakeError | null {
     const known = COLUMNS[table];
     if (!known) return null; // users and others: permissive
-    const bad = cols.find((c) => !known.includes(c));
+    const bad = cols.map(baseColumn).find((c) => !known.includes(c));
     return bad ? { message: `column ${table}.${bad} does not exist`, code: "42703" } : null;
   }
 
@@ -146,7 +157,7 @@ export function createFakeSupportSupabase(options: FakeSupabaseOptions = {}) {
 
   type Filter = { kind: "eq" | "neq" | "in" | "is" | "gte" | "lte" | "ilike"; column: string; value: any };
   function matches(row: Row, f: Filter): boolean {
-    const v = row[f.column];
+    const v = columnValue(row, f.column);
     switch (f.kind) {
       case "eq": return v === f.value;
       case "neq": return v !== f.value && v !== undefined;
@@ -251,6 +262,7 @@ export function createFakeSupportSupabase(options: FakeSupabaseOptions = {}) {
     }
     insert(row: Row | Row[]) { this.op = "insert"; this.payload = row; return this; }
     update(patch: Row) { this.op = "update"; this.payload = patch; return this; }
+    delete() { this.op = "delete"; return this; }
     eq(column: string, value: unknown) { this.filters.push({ kind: "eq", column, value }); return this; }
     neq(column: string, value: unknown) { this.filters.push({ kind: "neq", column, value }); return this; }
     in(column: string, value: unknown[]) { this.filters.push({ kind: "in", column, value }); return this; }
@@ -355,6 +367,25 @@ export function createFakeSupportSupabase(options: FakeSupabaseOptions = {}) {
         return this.shape(matched.map((r) => project(r, this.cols)), null);
       }
 
+      if (this.op === "delete") {
+        const doomed = new Set(matched);
+        const remaining = store.filter((r) => !doomed.has(r));
+        store.length = 0;
+        store.push(...remaining);
+        // ON DELETE CASCADE from the ticket to its children (schema FKs).
+        if (this.table === "support_tickets") {
+          const ids = new Set(matched.map((r) => r.id));
+          for (const child of ["ticket_comments", "ticket_attachments", "ticket_status_history"]) {
+            const rows = tableRows(child);
+            const keep = rows.filter((r) => !ids.has(r.ticket_id));
+            rows.length = 0;
+            rows.push(...keep);
+          }
+        }
+        this.record(matched.length, null);
+        return { data: null, error: null };
+      }
+
       // select
       for (const o of [...this.orders].reverse()) {
         matched = [...matched].sort((a, b) => {
@@ -379,6 +410,7 @@ export function createFakeSupportSupabase(options: FakeSupabaseOptions = {}) {
         select: (cols?: string, opts?: { count?: "exact" }) => new Query(table).select(cols, opts),
         insert: (row: Row | Row[]) => new Query(table).insert(row),
         update: (patch: Row) => new Query(table).update(patch),
+        delete: () => new Query(table).delete(),
       };
     },
     storage: {

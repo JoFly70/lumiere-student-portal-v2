@@ -129,6 +129,36 @@ export interface AuditLogEntry {
   sessionId?: string;
 }
 
+// ==================== WRITE-FAILURE OBSERVABILITY ====================
+
+/**
+ * Audit writes never fail a user request, so failures must be observable some
+ * other way. Every failed write is logged AND counted here (per event type) so
+ * a health check or test can assert on it.
+ */
+export interface AuditFailureStats {
+  total: number;
+  byEventType: Record<string, number>;
+  last: { eventType: string; message: string; at: string } | null;
+}
+const auditFailures: AuditFailureStats = { total: 0, byEventType: {}, last: null };
+
+function recordAuditFailure(eventType: string, message: string): void {
+  auditFailures.total += 1;
+  auditFailures.byEventType[eventType] = (auditFailures.byEventType[eventType] ?? 0) + 1;
+  auditFailures.last = { eventType, message, at: new Date().toISOString() };
+}
+
+export function getAuditFailureStats(): AuditFailureStats {
+  return { total: auditFailures.total, byEventType: { ...auditFailures.byEventType }, last: auditFailures.last ? { ...auditFailures.last } : null };
+}
+
+export function resetAuditFailureStats(): void {
+  auditFailures.total = 0;
+  auditFailures.byEventType = {};
+  auditFailures.last = null;
+}
+
 // ==================== MAIN AUDIT LOGGING FUNCTION ====================
 
 /**
@@ -174,6 +204,7 @@ export async function createAuditLog(entry: AuditLogEntry): Promise<void> {
       .setHeader('Authorization', `Bearer ${process.env.SUPABASE_SERVICE_KEY}`);
 
     if (error) {
+      recordAuditFailure(entry.eventType, error.message);
       logger.error('Failed to create audit log', {
         error: error.message,
         eventType: entry.eventType,
@@ -186,6 +217,7 @@ export async function createAuditLog(entry: AuditLogEntry): Promise<void> {
       });
     }
   } catch (error) {
+    recordAuditFailure(entry.eventType, error instanceof Error ? error.message : String(error));
     logger.error('Audit logging error', {
       error: error instanceof Error ? error.message : String(error),
       eventType: entry.eventType,

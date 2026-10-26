@@ -1,7 +1,7 @@
 /** Student Support Center: request list + conversation, list -> drill-in on small screens. */
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { MessageCircle, Plus } from "lucide-react";
-import { useCreateTicket, useSupportContextOptions, useTickets } from "@/hooks/use-tickets";
+import { describeCreateFailure, newIdempotencyKey, useCreateTicket, useSupportContextOptions, useTickets } from "@/hooks/use-tickets";
 import { StudentSurface, buttonClass, cardClass } from "@/components/student-progress/student-ui";
 import { StudentTicketList } from "./student-ticket-list";
 import { NewRequestForm, type NewRequestValues } from "./student-request-form";
@@ -29,6 +29,8 @@ export function StudentSupportCenter() {
   const tickets = useTickets({ limit: 100 });
   const contextOptions = useSupportContextOptions(creating);
   const createTicket = useCreateTicket();
+  // One idempotency key per distinct submission; a retry of the SAME content reuses it.
+  const submissionKey = useRef<{ fingerprint: string; key: string } | null>(null);
   const detailOpen = creating || selectedId !== null;
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -45,8 +47,11 @@ export function StudentSupportCenter() {
   const back = () => { setCreating(false); setSelectedId(null); };
 
   const submit = (v: NewRequestValues) => {
+    const fingerprint = JSON.stringify([v.topic, v.subject, v.description, v.roadmapItemKey ?? null]);
+    if (submissionKey.current?.fingerprint !== fingerprint) submissionKey.current = { fingerprint, key: newIdempotencyKey() };
     createTicket.mutate(
       {
+        idempotencyKey: submissionKey.current.key,
         topic: v.topic,
         subject: v.subject,
         description: v.description,
@@ -55,6 +60,7 @@ export function StudentSupportCenter() {
       {
         // Only runs once the API answered successfully (201); never optimistic.
         onSuccess: ({ ticket }) => {
+          submissionKey.current = null;
           setConfirmation({ ticketId: ticket.id, ticketNumber: ticket.ticket_number });
           setPendingFile(v.file ?? null);
           setCreating(false);
@@ -119,7 +125,8 @@ export function StudentSupportCenter() {
                   contextOptions={contextOptions.data}
                   defaultItemKey={itemParam}
                   submitting={createTicket.isPending}
-                  serverError={createTicket.isError ? createTicket.error.message : null}
+                  serverError={createTicket.isError ? describeCreateFailure(createTicket.error).message : null}
+                  serverErrorMayHaveSaved={createTicket.isError ? describeCreateFailure(createTicket.error).mayHaveSaved : false}
                   onSubmit={submit}
                   onCancel={back}
                 />

@@ -4,6 +4,7 @@
  * disclosure so the journey stays scannable.
  */
 import React, { useEffect, useId, useState } from "react";
+import { Link } from "wouter";
 import { CalendarDays, ChevronDown, GitBranch, Hourglass, Layers, PauseCircle, ShieldCheck, UserCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { StudentRoadmapItemView, StudentRoadmapObjectiveView } from "@shared/student-roadmap-contract";
@@ -236,6 +237,17 @@ export function ItemCard({
         )}
         <TaskList item={item} collapseDone />
         <ItemActions item={item} />
+        {(item.planStatus === "planned" || item.planStatus === "hold") && (
+          <p className="text-sm">
+            <Link
+              href={`/support?item=${encodeURIComponent(item.key)}`}
+              className="text-student-muted underline underline-offset-4 hover:text-student-ink"
+              data-testid="link-ask-for-help"
+            >
+              Ask for help with this item
+            </Link>
+          </p>
+        )}
       </div>
     </article>
   );
