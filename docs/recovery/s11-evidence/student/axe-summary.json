@@ -1,0 +1,134 @@
+{
+  "generatedAt": "2026-10-26T21:24:04.045Z",
+  "fixtures": "tests/helpers/s11-hs-ui-fixtures.ts",
+  "totalViolations": 0,
+  "seriousOrCritical": 0,
+  "results": [
+    {
+      "screen": "01-journey-1440-light.png",
+      "violationCount": 0,
+      "seriousOrCritical": 0,
+      "violations": []
+    },
+    {
+      "screen": "02-journey-390-light.png",
+      "violationCount": 0,
+      "seriousOrCritical": 0,
+      "violations": []
+    },
+    {
+      "screen": "03-journey-1440-dark.png",
+      "violationCount": 0,
+      "seriousOrCritical": 0,
+      "violations": []
+    },
+    {
+      "screen": "04-journey-390-dark.png",
+      "violationCount": 0,
+      "seriousOrCritical": 0,
+      "violations": []
+    },
+    {
+      "screen": "05-subjects-1440-light.png",
+      "violationCount": 0,
+      "seriousOrCritical": 0,
+      "violations": []
+    },
+    {
+      "screen": "06-subjects-390-light.png",
+      "violationCount": 0,
+      "seriousOrCritical": 0,
+      "violations": []
+    },
+    {
+      "screen": "07-subjects-1440-dark.png",
+      "violationCount": 0,
+      "seriousOrCritical": 0,
+      "violations": []
+    },
+    {
+      "screen": "08-subjects-390-dark.png",
+      "violationCount": 0,
+      "seriousOrCritical": 0,
+      "violations": []
+    },
+    {
+      "screen": "09-graduation-1440-light.png",
+      "violationCount": 0,
+      "seriousOrCritical": 0,
+      "violations": []
+    },
+    {
+      "screen": "10-graduation-390-light.png",
+      "violationCount": 0,
+      "seriousOrCritical": 0,
+      "violations": []
+    },
+    {
+      "screen": "11-graduation-1440-dark.png",
+      "violationCount": 0,
+      "seriousOrCritical": 0,
+      "violations": []
+    },
+    {
+      "screen": "12-graduation-390-dark.png",
+      "violationCount": 0,
+      "seriousOrCritical": 0,
+      "violations": []
+    },
+    {
+      "screen": "13-no-enrollment-1440-light.png",
+      "violationCount": 0,
+      "seriousOrCritical": 0,
+      "violations": []
+    },
+    {
+      "screen": "14-no-enrollment-390-light.png",
+      "violationCount": 0,
+      "seriousOrCritical": 0,
+      "violations": []
+    },
+    {
+      "screen": "15-no-enrollment-1440-dark.png",
+      "violationCount": 0,
+      "seriousOrCritical": 0,
+      "violations": []
+    },
+    {
+      "screen": "16-no-enrollment-390-dark.png",
+      "violationCount": 0,
+      "seriousOrCritical": 0,
+      "violations": []
+    },
+    {
+      "screen": "17-graduated-1440-light.png",
+      "violationCount": 0,
+      "seriousOrCritical": 0,
+      "violations": []
+    },
+    {
+      "screen": "18-graduated-390-light.png",
+      "violationCount": 0,
+      "seriousOrCritical": 0,
+      "violations": []
+    },
+    {
+      "screen": "19-graduated-1440-dark.png",
+      "violationCount": 0,
+      "seriousOrCritical": 0,
+      "violations": []
+    },
+    {
+      "screen": "20-graduated-390-dark.png",
+      "violationCount": 0,
+      "seriousOrCritical": 0,
+      "violations": []
+    },
+    {
+      "screen": "new-student-390-light",
+      "violationCount": 0,
+      "seriousOrCritical": 0,
+      "violations": []
+    }
+  ]
+}

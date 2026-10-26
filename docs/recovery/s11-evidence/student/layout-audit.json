@@ -1,0 +1,152 @@
+[
+  {
+    "scene": "journey",
+    "width": 1440,
+    "overflow": false,
+    "problems": [],
+    "smallTargets": []
+  },
+  {
+    "scene": "journey",
+    "width": 1024,
+    "overflow": false,
+    "problems": [],
+    "smallTargets": []
+  },
+  {
+    "scene": "journey",
+    "width": 768,
+    "overflow": false,
+    "problems": [],
+    "smallTargets": []
+  },
+  {
+    "scene": "journey",
+    "width": 390,
+    "overflow": false,
+    "problems": [],
+    "smallTargets": [
+      "button \"Toggle theme\" 36x36"
+    ]
+  },
+  {
+    "scene": "subjects",
+    "width": 1440,
+    "overflow": false,
+    "problems": [],
+    "smallTargets": []
+  },
+  {
+    "scene": "subjects",
+    "width": 1024,
+    "overflow": false,
+    "problems": [],
+    "smallTargets": []
+  },
+  {
+    "scene": "subjects",
+    "width": 768,
+    "overflow": false,
+    "problems": [],
+    "smallTargets": []
+  },
+  {
+    "scene": "subjects",
+    "width": 390,
+    "overflow": false,
+    "problems": [],
+    "smallTargets": [
+      "button \"Toggle theme\" 36x36"
+    ]
+  },
+  {
+    "scene": "graduation",
+    "width": 1440,
+    "overflow": false,
+    "problems": [],
+    "smallTargets": []
+  },
+  {
+    "scene": "graduation",
+    "width": 1024,
+    "overflow": false,
+    "problems": [],
+    "smallTargets": []
+  },
+  {
+    "scene": "graduation",
+    "width": 768,
+    "overflow": false,
+    "problems": [],
+    "smallTargets": []
+  },
+  {
+    "scene": "graduation",
+    "width": 390,
+    "overflow": false,
+    "problems": [],
+    "smallTargets": [
+      "button \"Toggle theme\" 36x36"
+    ]
+  },
+  {
+    "scene": "no-enrollment",
+    "width": 1440,
+    "overflow": false,
+    "problems": [],
+    "smallTargets": []
+  },
+  {
+    "scene": "no-enrollment",
+    "width": 1024,
+    "overflow": false,
+    "problems": [],
+    "smallTargets": []
+  },
+  {
+    "scene": "no-enrollment",
+    "width": 768,
+    "overflow": false,
+    "problems": [],
+    "smallTargets": []
+  },
+  {
+    "scene": "no-enrollment",
+    "width": 390,
+    "overflow": false,
+    "problems": [],
+    "smallTargets": [
+      "button \"Toggle theme\" 36x36"
+    ]
+  },
+  {
+    "scene": "graduated",
+    "width": 1440,
+    "overflow": false,
+    "problems": [],
+    "smallTargets": []
+  },
+  {
+    "scene": "graduated",
+    "width": 1024,
+    "overflow": false,
+    "problems": [],
+    "smallTargets": []
+  },
+  {
+    "scene": "graduated",
+    "width": 768,
+    "overflow": false,
+    "problems": [],
+    "smallTargets": []
+  },
+  {
+    "scene": "graduated",
+    "width": 390,
+    "overflow": false,
+    "problems": [],
+    "smallTargets": [
+      "button \"Toggle theme\" 36x36"
+    ]
+  }
+]
