@@ -5,7 +5,7 @@
  */
 import React, { useEffect, useId, useState } from "react";
 import { Link } from "wouter";
-import { ChevronDown, FileCheck2, LifeBuoy, Lock, MessageCircleQuestion } from "lucide-react";
+import { ChevronDown, FileCheck2, History, LifeBuoy, Lock, MessageCircleQuestion, PencilLine } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { HsCourseView, HsSubjectView, HsTaskView, StudentHighSchoolView } from "@shared/high-school-contract";
 import { formatShortDate } from "@/pages/student-roadmap-presentation";
@@ -15,6 +15,9 @@ import {
   canReportTask,
   courseCountLabel,
   courseStatusView,
+  courseTitleView,
+  hasOpenProject,
+  isOfficialTask,
   creditsLabel,
   dueLabel,
   orderedSubjects,
@@ -30,7 +33,7 @@ import {
 import { StatusPill, buttonClass } from "@/components/student-progress/student-ui";
 import type { HsReportedStatus } from "@shared/high-school-contract";
 import { useHsActions } from "./hs-actions";
-import { Meter } from "./hs-ui";
+import { Meter, solidButton } from "./hs-ui";
 
 const fieldClass =
   "min-h-[44px] w-full rounded-lg border border-student-line-strong bg-student-card px-3 text-sm text-student-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-student-gold-ink disabled:opacity-60";
@@ -55,7 +58,7 @@ function TaskReport({ course, task }: { course: HsCourseView; task: HsTaskView }
 
   return (
     <form
-      className="mt-2 grid gap-3 rounded-xl bg-student-bg p-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-end"
+      className={cn("mt-2 grid gap-3 rounded-xl bg-student-bg p-3 sm:items-end", dirty ? "sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]" : "sm:grid-cols-2")}
       onSubmit={(e) => {
         e.preventDefault();
         if (invalid || !dirty || busy) return;
@@ -100,9 +103,11 @@ function TaskReport({ course, task }: { course: HsCourseView; task: HsTaskView }
           <p className="text-xs text-student-muted">Choose &ldquo;In progress&rdquo; or &ldquo;Submitted&rdquo; to add a grade you saw.</p>
         )}
       </div>
-      <button type="submit" className={buttonClass.solid} disabled={!dirty || invalid || busy} data-testid="button-save-task">
-        {busy ? "Saving…" : "Save"}
-      </button>
+      {dirty && (
+        <button type="submit" className={cn(buttonClass.solid, solidButton)} aria-disabled={busy || invalid} data-testid="button-save-task">
+          {busy ? "Saving…" : "Save"}
+        </button>
+      )}
     </form>
   );
 }
@@ -135,7 +140,7 @@ function TaskRow({ course, task, today }: { course: HsCourseView; task: HsTaskVi
       {editable ? (
         <TaskReport course={course} task={task} />
       ) : (
-        <p className="flex items-center gap-1.5 text-xs text-student-muted"><Lock className="h-3 w-3" aria-hidden="true" />Confirmed by the school, so it is locked here.</p>
+        <p className="flex items-center gap-1.5 text-xs text-student-muted"><Lock className="h-3 w-3" aria-hidden="true" />{isOfficialTask(task.status) ? "Confirmed by the school, so it is locked here." : "This course is not part of your current plan, so progress is locked."}</p>
       )}
     </li>
   );
@@ -159,7 +164,7 @@ function CourseSupport({ course, schoolLine }: { course: HsCourseView; schoolLin
   }
   if (!open) {
     return (
-      <button type="button" className={buttonClass.outline} onClick={() => setOpen(true)} data-testid="button-request-support" aria-label={`Ask Lumière for help with ${course.title}`}>
+      <button type="button" className={buttonClass.outline} onClick={() => setOpen(true)} data-testid="button-request-support" aria-label={`Ask Lumière for help with ${courseTitleView(course.title).title}`}>
         <LifeBuoy className="h-4 w-4" aria-hidden="true" />
         Ask for help with this course
       </button>
@@ -170,6 +175,7 @@ function CourseSupport({ course, schoolLine }: { course: HsCourseView; schoolLin
       className="space-y-2 rounded-xl border border-student-line p-3"
       onSubmit={async (e) => {
         e.preventDefault();
+        if (state.kind === "sending" || text.trim().length < 10) return;
         setState({ kind: "sending" });
         const r = await actions.requestSupport({ courseKey: course.key, subject: draft.subject, description: text });
         setState(r.ok ? { kind: "sent", ticketNumber: r.ticketNumber } : { kind: "error", message: r.message });
@@ -181,7 +187,7 @@ function CourseSupport({ course, schoolLine }: { course: HsCourseView; schoolLin
       <p className="text-xs text-student-muted">This goes to Lumière through the Support Center, with the subject &ldquo;{draft.subject}&rdquo;.</p>
       {state.kind === "error" && <p role="alert" className="text-sm text-st-attention">{state.message}</p>}
       <div className="flex flex-wrap gap-2">
-        <button type="submit" className={buttonClass.solid} disabled={state.kind === "sending" || text.trim().length < 10} data-testid="button-send-support">
+        <button type="submit" className={cn(buttonClass.solid, solidButton)} aria-disabled={state.kind === "sending" || text.trim().length < 10} data-testid="button-send-support">
           {state.kind === "sending" ? "Sending…" : "Send request"}
         </button>
         <button type="button" className={buttonClass.outline} onClick={() => setOpen(false)}>Cancel</button>
@@ -194,16 +200,19 @@ function CourseRow({ course, today, schoolLine, open, onToggle }: { course: HsCo
   const id = useId();
   const st = courseStatusView(course.status);
   const muted = course.status === "replaced";
+  const title = courseTitleView(course.title);
   const tasks = sortedTasks(course.tasks);
   const window = course.plannedStart || course.plannedEnd ? [formatShortDate(course.plannedStart), formatShortDate(course.plannedEnd)].filter(Boolean).join(" to ") : null;
   return (
     <li className={cn("rounded-xl border border-student-line bg-student-card", muted && "bg-student-bg")} data-testid="course-row" data-course-key={course.key} data-course-status={course.status} id={`hs-course-${course.key}`}>
       <button type="button" aria-expanded={open} aria-controls={id} onClick={onToggle} className="flex min-h-[56px] w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left sm:px-4">
         <span className="min-w-0 space-y-1">
-          <span className={cn("block text-sm font-semibold leading-snug", muted ? "text-student-muted" : "text-student-ink")}>{course.title}</span>
+          <span className={cn("block text-sm font-semibold leading-snug", muted ? "text-student-muted" : "text-student-ink")}>{title.title}</span>
+          {title.toBeConfirmed && <span className="block text-xs text-student-muted" data-testid="course-tbc">Course to be confirmed</span>}
           <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <StatusPill status={st.key} label={st.label} className={muted ? "opacity-90" : undefined} />
             <span className="text-xs text-student-muted">{creditsLabel(course.halfUnits)}{course.tasksTotal > 0 ? ` · ${course.tasksDone}/${course.tasksTotal} tasks done` : ""}</span>
+            {hasOpenProject(course) && <span className="inline-flex items-center gap-1 text-xs text-student-muted" data-testid="project-indicator"><PencilLine className="h-3 w-3" aria-hidden="true" />Written project</span>}
           </span>
         </span>
         <ChevronDown className={cn("h-4 w-4 shrink-0 text-student-gold-ink transition-transform", open && "rotate-180")} aria-hidden="true" />
@@ -223,7 +232,7 @@ function CourseRow({ course, today, schoolLine, open, onToggle }: { course: HsCo
         )}
         {window && <p className="text-xs text-student-muted">Planned window: {window}. Dates are targets set with Lumière.</p>}
         {tasks.length > 0 && (
-          <ul className="divide-y divide-student-line" aria-label={`Tasks in ${course.title}`}>
+          <ul className="divide-y divide-student-line" aria-label={`Tasks in ${courseTitleView(course.title).title}`}>
             {tasks.map((t) => (
               <TaskRow key={t.key} course={course} task={t} today={today} />
             ))}
@@ -235,7 +244,7 @@ function CourseRow({ course, today, schoolLine, open, onToggle }: { course: HsCo
   );
 }
 
-function SubjectCard({ subject, today, schoolLine, open, onToggle, openCourses, onToggleCourse }: {
+function SubjectCard({ subject, today, schoolLine, open, onToggle, openCourses, onToggleCourse, onlyProjects }: {
   subject: HsSubjectView;
   today: string;
   schoolLine: string;
@@ -243,14 +252,24 @@ function SubjectCard({ subject, today, schoolLine, open, onToggle, openCourses, 
   onToggle: () => void;
   openCourses: ReadonlySet<string>;
   onToggleCourse: (key: string) => void;
+  onlyProjects: boolean;
 }) {
   const id = useId();
-  const awaiting = subject.courses.filter((c) => c.status === "awaiting_school").reduce((s, c) => s + c.halfUnits, 0);
+  const earlierId = useId();
   const complete = subject.requiredHalfUnits > 0 && subject.earnedHalfUnits >= subject.requiredHalfUnits;
+  const sorted = sortedCourses(subject.courses);
+  const current = sorted.filter((c) => c.status !== "replaced" && (!onlyProjects || hasOpenProject(c)));
+  const earlier = onlyProjects ? [] : sorted.filter((c) => c.status === "replaced");
+  const [earlierOpen, setEarlierOpen] = useState(() => earlier.some((c) => openCourses.has(c.key)));
+  useEffect(() => {
+    if (earlier.some((c) => openCourses.has(c.key))) setEarlierOpen(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openCourses]);
+  const row = (c: HsCourseView) => <CourseRow key={c.key} course={c} today={today} schoolLine={schoolLine} open={openCourses.has(c.key)} onToggle={() => onToggleCourse(c.key)} />;
   return (
     <li className="rounded-2xl border border-student-line bg-student-card shadow-[0_1px_2px_hsl(var(--s-ink)/0.04)]" data-testid="subject-card" data-subject={subject.subject}>
       <h3>
-        <button type="button" aria-expanded={open} aria-controls={id} onClick={onToggle} className="flex min-h-[72px] w-full flex-col gap-2 rounded-2xl p-4 text-left sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:px-6" data-testid="subject-toggle">
+        <button type="button" aria-expanded={open} aria-controls={id} onClick={onToggle} className="flex min-h-[72px] w-full flex-col gap-2 rounded-2xl p-4 text-left lg:flex-row lg:items-center lg:justify-between lg:gap-6 lg:px-6" data-testid="subject-toggle">
           <span className="flex min-w-0 items-center gap-3">
             <ChevronDown className={cn("h-5 w-5 shrink-0 text-student-gold-ink transition-transform", !open && "-rotate-90")} aria-hidden="true" />
             <span className="min-w-0">
@@ -258,13 +277,12 @@ function SubjectCard({ subject, today, schoolLine, open, onToggle, openCourses, 
               <span className="block text-xs text-student-muted">{courseCountLabel(subject)}</span>
             </span>
           </span>
-          <span className="flex min-w-0 flex-col gap-1.5 pl-8 sm:w-72 sm:pl-0">
+          <span className="flex min-w-0 flex-col gap-1.5 pl-8 lg:w-72 lg:pl-0">
             <span className="flex flex-wrap items-center justify-between gap-2 text-sm">
               <span className="font-semibold text-student-ink" data-testid="subject-credits">{subjectSummary(subject)}</span>
               {complete && <StatusPill status="official" label="Requirement met" />}
             </span>
-            <Meter value={subject.earnedHalfUnits} total={subject.requiredHalfUnits} extra={awaiting} label={`${subject.label} official credits`} />
-            {awaiting > 0 && <span className="text-xs text-st-submitted">{creditsLabel(awaiting)} awaiting school confirmation</span>}
+            <Meter value={subject.earnedHalfUnits} total={subject.requiredHalfUnits} label={`${subject.label} official credits`} />
           </span>
         </button>
       </h3>
@@ -272,11 +290,25 @@ function SubjectCard({ subject, today, schoolLine, open, onToggle, openCourses, 
         {subject.courses.length === 0 ? (
           <p className="text-sm text-student-muted">No courses are planned in this subject yet.</p>
         ) : (
-          <ul className="space-y-2" aria-label={`${subject.label} courses`}>
-            {sortedCourses(subject.courses).map((c) => (
-              <CourseRow key={c.key} course={c} today={today} schoolLine={schoolLine} open={openCourses.has(c.key)} onToggle={() => onToggleCourse(c.key)} />
-            ))}
-          </ul>
+          <div className="space-y-3">
+            {current.length > 0 ? (
+              <ul className="space-y-2" aria-label={`${subject.label} courses`}>{current.map(row)}</ul>
+            ) : (
+              <p className="text-sm text-student-muted">{onlyProjects ? "No courses with a written project in this subject." : "No current courses in this subject."}</p>
+            )}
+            {earlier.length > 0 && (
+              <div data-testid="earlier-plan">
+                <button type="button" aria-expanded={earlierOpen} aria-controls={earlierId} onClick={() => setEarlierOpen((o) => !o)} className="flex min-h-[44px] w-full items-center gap-2 rounded-lg text-left text-sm font-medium text-student-gold-ink" data-testid="button-earlier-plan">
+                  <History className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  Earlier plan ({earlier.length})
+                  <ChevronDown className={cn("h-4 w-4 transition-transform", earlierOpen && "rotate-180")} aria-hidden="true" />
+                </button>
+                <div id={earlierId} hidden={!earlierOpen}>
+                  <ul className="space-y-2" aria-label={`${subject.label} earlier plan`}>{earlier.map(row)}</ul>
+                </div>
+              </div>
+            )}
+          </div>
         )}
       </div>
     </li>
@@ -299,6 +331,8 @@ export function SubjectsTab({
   const subjects = orderedSubjects(view.subjects);
   const subjectOfCourse = (key: string | null) => (key ? subjects.find((s) => s.courses.some((c) => c.key === key))?.subject ?? null : null);
   const [openSubjects, setOpenSubjects] = useState<ReadonlySet<string>>(() => new Set([defaultOpenSubject, subjectOfCourse(defaultOpenCourse), subjectOfCourse(focusCourseKey)].filter((x): x is string => !!x)));
+  const [onlyProjects, setOnlyProjects] = useState(false);
+  const projectCourses = subjects.reduce((n, s) => n + s.courses.filter(hasOpenProject).length, 0);
   const [openCourses, setOpenCourses] = useState<ReadonlySet<string>>(() => new Set([defaultOpenCourse, focusCourseKey].filter((x): x is string => !!x)));
 
   useEffect(() => {
@@ -320,22 +354,37 @@ export function SubjectsTab({
 
   return (
     <div className="space-y-4" data-testid="tab-subjects">
-      <p className="max-w-2xl text-sm leading-relaxed text-student-muted">
-        Open a subject to see its courses. Credits shown as &ldquo;official&rdquo; were confirmed by your school. Anything you mark here is your own report and helps Lumière support you.
-      </p>
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+        <p className="text-sm text-student-muted">Open a subject to see its courses and report your progress.</p>
+        {projectCourses > 0 && (
+          <button
+            type="button"
+            aria-pressed={onlyProjects}
+            onClick={() => setOnlyProjects((v) => !v)}
+            className={cn("inline-flex min-h-[44px] items-center gap-2 rounded-full border px-4 text-sm font-medium", onlyProjects ? "border-student-seal bg-student-seal text-student-seal-ink" : "border-student-line-strong bg-student-card text-student-ink hover:bg-student-gold-soft")}
+            data-testid="filter-projects"
+          >
+            <PencilLine className="h-4 w-4" aria-hidden="true" />
+            Written projects ({projectCourses})
+          </button>
+        )}
+      </div>
       <ul className="space-y-3" aria-label="Subjects">
-        {subjects.map((s) => (
-          <SubjectCard
-            key={s.subject}
-            subject={s}
-            today={today}
-            schoolLine={view.enrollment.schoolDisplayName}
-            open={openSubjects.has(s.subject)}
-            onToggle={() => setOpenSubjects((o) => toggle(o, s.subject))}
-            openCourses={openCourses}
-            onToggleCourse={(k) => setOpenCourses((o) => toggle(o, k))}
-          />
-        ))}
+        {subjects
+          .filter((s) => !onlyProjects || s.courses.some(hasOpenProject))
+          .map((s) => (
+            <SubjectCard
+              key={s.subject}
+              subject={s}
+              today={today}
+              schoolLine={view.enrollment.schoolDisplayName}
+              open={openSubjects.has(s.subject) || (onlyProjects && s.courses.some(hasOpenProject))}
+              onToggle={() => setOpenSubjects((o) => toggle(o, s.subject))}
+              openCourses={openCourses}
+              onToggleCourse={(k) => setOpenCourses((o) => toggle(o, k))}
+              onlyProjects={onlyProjects}
+            />
+          ))}
       </ul>
       <p className="flex items-center gap-2 text-sm text-student-muted">
         <MessageCircleQuestion className="h-4 w-4 text-student-gold-ink" aria-hidden="true" />

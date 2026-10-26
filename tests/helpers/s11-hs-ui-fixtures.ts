@@ -319,9 +319,11 @@ export const HS_MID_WAY: StudentHighSchoolView = buildHsView({
         { id: "cl-1", courseTitle: "Spanish 1", claimedHalfUnits: h(1), status: "accepted" },
         { id: "cl-2", courseTitle: "Geometry", claimedHalfUnits: h(1), status: "submitted_to_school" },
         { id: "cl-3", courseTitle: "Art 1", claimedHalfUnits: h(0.5), status: "claimed" },
+        // The contract will carry the school's accepted amount (additive, optional).
+        { id: "cl-4", courseTitle: "Chemistry 1", claimedHalfUnits: h(1), status: "partially_accepted", acceptedHalfUnits: h(0.5) },
       ],
     },
-  ],
+  ] as StudentHighSchoolView["priorEducation"],
   disclosed: false,
 });
 
@@ -405,3 +407,11 @@ export const HS_SHUFFLED_SUBJECTS: StudentHighSchoolView = (() => {
 })();
 
 export const HS_DISCLOSED_MID_WAY: StudentHighSchoolView = { ...HS_MID_WAY, enrollment: { ...HS_MID_WAY.enrollment, schoolDisplayName: "Meridian Online Academy", institutionDisclosed: true } };
+
+/** Two different courses each hold a task called "Final exam" that the student marked submitted (titles must be told apart). */
+export const HS_TWO_FINALS: StudentHighSchoolView = (() => {
+  const v = HS_MID_WAY;
+  const other = v.subjects.flatMap((s) => s.courses).find((c) => c.key === "english-3")!;
+  const extra = { ...other.tasks.find((t) => t.kind === "lesson")!, key: "english-3-final", title: "Final exam", kind: "exam" as const, status: "pending_review" as const, reportedScorePercent: 80, courseKey: other.key, courseTitle: other.title };
+  return { ...v, awaitingGrade: [...v.awaitingGrade, extra] };
+})();

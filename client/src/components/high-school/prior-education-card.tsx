@@ -2,11 +2,12 @@
 import React from "react";
 import { History } from "lucide-react";
 import type { StudentHighSchoolView } from "@shared/high-school-contract";
-import { creditsLabel, claimStatusView, priorEducationStatusLabel } from "@/pages/high-school-presentation";
+import { claimAcceptedLabel, claimStatusView, cleanCourseTitle, creditsLabel, priorEducationStatusLabel, recordedTransferTitles, type ClaimView } from "@/pages/high-school-presentation";
 import { StatusPill } from "@/components/student-progress/student-ui";
 import { Panel } from "./hs-ui";
 
-export function PriorEducationCard({ items }: { items: StudentHighSchoolView["priorEducation"] }) {
+export function PriorEducationCard({ items, subjects = [] }: { items: StudentHighSchoolView["priorEducation"]; subjects?: StudentHighSchoolView["subjects"] }) {
+  const recorded = recordedTransferTitles(subjects);
   return (
     <Panel title="Earlier schooling" headingId="hs-prior" testId="prior-education">
       <p className="flex items-start gap-2 text-sm leading-relaxed text-student-muted">
@@ -24,11 +25,15 @@ export function PriorEducationCard({ items }: { items: StudentHighSchoolView["pr
               {p.claims.length > 0 && (
                 <ul className="divide-y divide-student-line" aria-label={`Courses claimed from ${p.schoolLabel}`}>
                   {p.claims.map((c) => {
-                    const st = claimStatusView(c.status);
+                    const claim: ClaimView = c;
+                    const isRecorded = recorded.has(cleanCourseTitle(c.courseTitle).toLowerCase());
+                    const st = claimStatusView(c.status, isRecorded);
+                    const accepted = claimAcceptedLabel(claim);
                     return (
                       <li key={c.id} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 py-2" data-testid="claim-row" data-claim-status={c.status}>
-                        <span className="text-sm text-student-ink">
+                        <span className="min-w-0 text-sm text-student-ink">
                           {c.courseTitle} <span className="text-student-muted">· claimed {creditsLabel(c.claimedHalfUnits)}</span>
+                          {accepted && <span className="block text-xs text-student-muted" data-testid="claim-accepted">{accepted}</span>}
                         </span>
                         <StatusPill status={st.key} label={st.label} />
                       </li>

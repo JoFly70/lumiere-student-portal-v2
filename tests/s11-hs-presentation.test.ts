@@ -3,7 +3,19 @@ import { HS_SUBJECT_AREAS, formatHalfUnits } from "../shared/high-school-contrac
 import {
   barPercent,
   canReportTask,
+  claimAcceptedLabel,
   claimStatusView,
+  cleanCourseTitle,
+  courseTitleView,
+  journeyAttention,
+  outstandingWorkLabel,
+  paceBar,
+  recordedTransferTitles,
+  reportedWaitingLabel,
+  targetDateLine,
+  taskListTitles,
+  uniqueTasks,
+  hasOpenProject,
   courseStatusView,
   creditsLabel,
   creditsOfLabel,
@@ -21,7 +33,6 @@ import {
   sortedCourses,
   supportKeyFor,
   tabFromHash,
-  targetProgress,
   taskStatusView,
   transcriptRequestState,
 } from "../client/src/pages/high-school-presentation";
@@ -65,6 +76,7 @@ describe("S11 credit wording", () => {
     expect(creditsOfLabel(21, 42)).toBe("10.5 of 21 credits");
     expect(creditsOfLabel(1, 42)).toBe("0.5 of 21 credits");
     expect(creditsLabel(2)).toBe("1 credit");
+    expect(creditsOfLabel(0, 2)).toBe("0 of 1 credit");
     expect(creditsLabel(1)).toBe("0.5 credits");
     expect(barPercent(83, 84)).toBe(98); // floored, never 100 early
   });
@@ -88,10 +100,13 @@ describe("S11 subjects", () => {
 
 describe("S11 status language", () => {
   it("separates pending review from official and never colours alone", () => {
-    expect(taskStatusView("pending_review")).toEqual({ key: "submitted", label: "Pending school review" });
+    expect(taskStatusView("pending_review")).toEqual({ key: "submitted", label: "You marked this submitted" });
     expect(taskStatusView("official_passed").label).toMatch(/^Official/);
     expect(taskStatusView("retake_required").key).toBe("attention");
-    expect(courseStatusView("awaiting_school").label).toBe("Awaiting school confirmation");
+    expect(courseStatusView("awaiting_school").label).toBe("All work sent — waiting for the school");
+    for (const st of ["not_started", "in_progress", "pending_review", "official_passed", "official_failed", "retake_required"] as const) {
+      expect(taskStatusView(st).label).not.toMatch(/pending school review/i);
+    }
   });
   it("official results are locked; others can be reported", () => {
     expect(canReportTask({ status: "official_passed" }, "in_progress")).toBe(false);
@@ -123,22 +138,20 @@ describe("S11 pace and target wording", () => {
     expect(paceView(HS_MID_WAY.pace).label).toBe("Behind target");
     expect(paceView(HS_NEW_STUDENT.pace).label).toBe("Target not set yet");
   });
-  it("estimates progress toward the planned date without promising it", () => {
-    const t = targetProgress(HS_MID_WAY, HS_TODAY);
-    expect(t.timePercent).toBeGreaterThan(0);
-    expect(t.timePercent).toBeLessThan(100);
-    expect(t.detail).toMatch(/target, not a guarantee/);
-    expect(t.creditPercent).toBe(50);
-    expect(targetProgress(HS_AWAITING_REVIEW, HS_TODAY).headline).toBe("All required credits are official");
-    expect(targetProgress({ ...HS_MID_WAY, enrollment: { ...HS_MID_WAY.enrollment, targetCompletionDate: null } }, HS_TODAY).headline).toBe("No completion target set yet");
+  it("shows ONE pace measure: official credits against the expected-by-now tick", () => {
+    const bar = paceBar(HS_MID_WAY);
+    expect(bar.officialPercent).toBe(50);
+    expect(bar.expectedPercent).toBe(61); // 13 of 21, floored
+    expect(bar.summary).toBe("10.5 official credits · the plan expected 13 by now");
+    expect(paceBar(HS_NEW_STUDENT).expectedPercent).toBeNull();
+    expect(Object.keys(bar)).not.toContain("timePercent");
   });
-  it("never contradicts a configured pace: behind plan is never worded as keeping pace", () => {
-    expect(HS_MID_WAY.pace.status).toBe("behind");
-    const t = targetProgress(HS_MID_WAY, HS_TODAY);
-    expect(t.detail).not.toMatch(/keeping (pace|up)/i);
-    expect(t.detail).toMatch(/behind/);
-    const onTrack = targetProgress({ ...HS_MID_WAY, pace: { ...HS_MID_WAY.pace, status: "on_track" } }, HS_TODAY);
-    expect(onTrack.detail).not.toMatch(/behind/);
+  it("keeps the target-not-a-guarantee wording and never promises", () => {
+    const line = targetDateLine(HS_MID_WAY, formatShortDate);
+    expect(line).toContain("Jun 30, 2027");
+    expect(line).toMatch(/target, not a guarantee/);
+    expect(targetDateLine({ ...HS_MID_WAY, enrollment: { ...HS_MID_WAY.enrollment, targetCompletionDate: null } }, formatShortDate)).toMatch(/Lumière will set/);
+    expect(targetDateLine(HS_AWAITING_REVIEW, formatShortDate)).toMatch(/All required credits are official/);
   });
   it("date helpers", () => {
     expect(daysUntil("2026-10-28", "2026-10-26")).toBe(2);
@@ -181,6 +194,11 @@ describe("S11 graduation", () => {
     expect(reviewStatusView(HS_ELIGIBLE.graduation).label).toBe("Eligibility confirmed by the school");
     expect(reviewStatusView(HS_GRADUATED.graduation).label).toBe("Diploma conferred");
   });
+  it("phrases outstanding work encouragingly", () => {
+    expect(outstandingWorkLabel({ outstandingExams: 11, outstandingProjects: 4 })).toBe("11 exams and 4 projects left in your plan");
+    expect(outstandingWorkLabel({ outstandingExams: 1, outstandingProjects: 0 })).toBe("1 exam left in your plan");
+    expect(outstandingWorkLabel({ outstandingExams: 0, outstandingProjects: 0 })).toBeNull();
+  });
   it("financial clearance only speaks when a value is known", () => {
     expect(financialClearanceView(null).detail).toBe("Not available here. Ask Lumière.");
     expect(financialClearanceView("cleared").label).toBe("Cleared");
@@ -198,10 +216,25 @@ describe("S11 guardians and claims", () => {
     expect(guardianSharingLabel(GUARDIANS_ALL[1])).toBe("Lumière does not discuss grades or billing with this person.");
   });
   it("transfer claims are never credit until the school accepts", () => {
-    expect(claimStatusView("claimed").label).toBe("Under review by the school");
+    expect(claimStatusView("claimed").label).toBe("Not sent to the school yet");
     expect(claimStatusView("submitted_to_school").label).toBe("Under review by the school");
-    expect(claimStatusView("accepted").label).toBe("Accepted by the school");
+    expect(claimStatusView("accepted").label).toBe("Accepted by the school — credit not recorded yet");
+    expect(claimStatusView("partially_accepted").label).toBe("Accepted by the school — credit not recorded yet");
     expect(claimStatusView("declined").key).toBe("attention");
+  });
+  it("claims never use the official status key unless the credit is recorded as transfer_credit", () => {
+    for (const st of ["claimed", "submitted_to_school", "accepted", "partially_accepted", "declined"] as const) {
+      expect(claimStatusView(st).key).not.toBe("official");
+      expect(claimStatusView(st, false).key).not.toBe("official");
+    }
+    expect(claimStatusView("accepted", true)).toEqual({ key: "official", label: "Transfer credit recorded" });
+    const recorded = recordedTransferTitles(HS_MID_WAY.subjects);
+    expect(recorded.has("spanish 1")).toBe(true);
+    expect(recorded.has("chemistry 1")).toBe(false);
+  });
+  it("shows the accepted amount when the school provided it", () => {
+    expect(claimAcceptedLabel({ status: "partially_accepted", courseTitle: "x", claimedHalfUnits: 2, acceptedHalfUnits: 1 })).toBe("Accepted: 0.5 of 1 credit");
+    expect(claimAcceptedLabel({ status: "accepted", courseTitle: "x", claimedHalfUnits: 2 })).toBeNull();
   });
 });
 
@@ -211,5 +244,36 @@ describe("S11 misc", () => {
     expect(tabFromHash("#nope")).toBeNull();
     expect(tabFromHash(null)).toBeNull();
     expect(supportKeyFor("english-3", "abc")).toMatch(/^[A-Za-z0-9_-]{16,100}$/);
+  });
+});
+
+describe("S11 titles and lists", () => {
+  it("shows template placeholders as plain titles with a to-be-confirmed flag", () => {
+    expect(courseTitleView("Mathematics course 3 (confirmed per enrollment)")).toEqual({ title: "Mathematics course 3", toBeConfirmed: true });
+    expect(courseTitleView("English 3")).toEqual({ title: "English 3", toBeConfirmed: false });
+    expect(cleanCourseTitle("Social Studies course 2 (confirmed per enrollment)")).toBe("Social Studies course 2");
+  });
+  it("suffixes a repeated task title with its course and de-duplicates tasks", () => {
+    const a = { key: "e", courseKey: "c1", courseTitle: "Biology", title: "Final exam" };
+    const b = { key: "e", courseKey: "c2", courseTitle: "Math course 3 (confirmed per enrollment)", title: "Final exam" };
+    const c = { key: "l", courseKey: "c1", courseTitle: "Biology", title: "Lessons" };
+    const t = taskListTitles([a, b, c]);
+    expect(t.get("c1:e")).toBe("Final exam (Biology)");
+    expect(t.get("c2:e")).toBe("Final exam (Math course 3)");
+    expect(t.get("c1:l")).toBe("Lessons");
+    expect(uniqueTasks([a, a, b])).toHaveLength(2);
+  });
+  it("Journey attention drops what other cards already say (next task, pace)", () => {
+    const kinds = journeyAttention(HS_MID_WAY).map((a) => a.kind);
+    expect(kinds).toEqual(["documents_requested"]);
+  });
+  it("reported-but-unconfirmed work is plain text, never credit", () => {
+    expect(reportedWaitingLabel(2)).toBe("1 credit of work you reported is waiting for the school");
+    expect(reportedWaitingLabel(0)).toBeNull();
+  });
+  it("flags courses with a written project still open", () => {
+    const all = HS_MID_WAY.subjects.flatMap((s) => s.courses);
+    expect(all.filter(hasOpenProject).map((c) => c.key)).toEqual(expect.arrayContaining(["english-3"]));
+    expect(hasOpenProject(all.find((c) => c.status === "replaced")!)).toBe(false);
   });
 });

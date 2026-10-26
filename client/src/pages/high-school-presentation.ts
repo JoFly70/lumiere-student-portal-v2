@@ -53,7 +53,7 @@ export function creditsLabel(half: HalfUnits): string {
 
 /** "10.5 of 21 credits". */
 export function creditsOfLabel(earned: HalfUnits, required: HalfUnits): string {
-  return `${formatHalfUnits(earned)} of ${formatHalfUnits(required)} credits`;
+  return `${formatHalfUnits(earned)} of ${formatHalfUnits(required)} ${required === 2 ? "credit" : "credits"}`;
 }
 
 /** Whole-number percent for sizing a graphic, floored (never rounds up to 100). */
@@ -61,9 +61,53 @@ export function barPercent(part: HalfUnits, whole: HalfUnits): number {
   return halfUnitPercent(part, whole);
 }
 
-export function awaitingConfirmationLabel(half: HalfUnits): string | null {
+/**
+ * Work the student reported as finished but the school has not confirmed. Plain text only:
+ * it is never drawn as credit (not in the ring, not in a bar).
+ */
+export function reportedWaitingLabel(half: HalfUnits): string | null {
   if (half <= 0) return null;
-  return `${creditsLabel(half)} awaiting school confirmation`;
+  return `${creditsLabel(half)} of work you reported is waiting for the school`;
+}
+
+// ── Titles ──────────────────────────────────────────────────────────────────
+
+const PLACEHOLDER_SUFFIX = /\s*\((?:confirmed per enrollment|to be confirmed)\)\s*$/i;
+
+/** Template placeholders such as "Mathematics course 3 (confirmed per enrollment)" show as "Mathematics course 3". */
+export function courseTitleView(title: string): { title: string; toBeConfirmed: boolean } {
+  const clean = title.replace(PLACEHOLDER_SUFFIX, "").trim();
+  return { title: clean || title, toBeConfirmed: clean !== title.trim() };
+}
+
+export function cleanCourseTitle(title: string): string {
+  return courseTitleView(title).title;
+}
+
+/** Titles for tasks listed together: a repeated title gets its course name so rows are distinguishable. */
+export function taskListTitles<T extends { key: string; title: string; courseKey: string; courseTitle: string }>(tasks: readonly T[]): Map<string, string> {
+  const counts = new Map<string, number>();
+  for (const t of tasks) counts.set(t.title, (counts.get(t.title) ?? 0) + 1);
+  const out = new Map<string, string>();
+  for (const t of tasks) out.set(`${t.courseKey}:${t.key}`, (counts.get(t.title) ?? 0) > 1 ? `${t.title} (${cleanCourseTitle(t.courseTitle)})` : t.title);
+  return out;
+}
+
+/** Each task once, first occurrence wins. */
+export function uniqueTasks<T extends { key: string; courseKey: string }>(tasks: readonly T[]): T[] {
+  const seen = new Set<string>();
+  return tasks.filter((t) => {
+    const k = `${t.courseKey}:${t.key}`;
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+}
+
+/** Courses the student can still work on that have a written project the school has not confirmed. */
+export function hasOpenProject(course: HsCourseView): boolean {
+  if (course.status === "replaced" || course.status === "transfer_credit" || course.status === "official_complete") return false;
+  return course.tasks.some((t) => t.kind === "project" && t.status !== "official_passed");
 }
 
 // ── Subjects ────────────────────────────────────────────────────────────────
@@ -91,7 +135,7 @@ const COURSE_ORDER: Record<HsCourseDisplayStatus, number> = {
   replaced: 6,
 };
 
-/** Active work first, finished next, replaced last (still visible, keeps history). */
+/** Active work first, finished next, replaced last (the UI tucks replaced ones into "Earlier plan"). */
 export function sortedCourses(courses: readonly HsCourseView[]): HsCourseView[] {
   return [...courses]
     .map((c, i) => ({ c, i }))
@@ -131,7 +175,8 @@ export function taskStatusView(status: HsTaskDisplayStatus): StatusView {
     case "official_passed": return { key: "official", label: "Official: passed" };
     case "official_failed": return { key: "attention", label: "Official: not passed" };
     case "retake_required": return { key: "attention", label: "Official: retake needed" };
-    case "pending_review": return { key: "submitted", label: "Pending school review" };
+    // Produced purely by the student marking "Submitted" or typing a score: never worded as the school's step.
+    case "pending_review": return { key: "submitted", label: "You marked this submitted" };
     case "in_progress": return { key: "progress", label: "In progress" };
     default: return { key: "notstarted", label: "Not started" };
   }
@@ -141,7 +186,7 @@ export function courseStatusView(status: HsCourseDisplayStatus): StatusView {
   switch (status) {
     case "official_complete": return { key: "official", label: "Official: completed" };
     case "transfer_credit": return { key: "official", label: "Transfer credit (accepted by the school)" };
-    case "awaiting_school": return { key: "submitted", label: "Awaiting school confirmation" };
+    case "awaiting_school": return { key: "submitted", label: "All work sent — waiting for the school" };
     case "in_progress": return { key: "progress", label: "In progress" };
     case "not_passed": return { key: "attention", label: "Official: not passed" };
     case "replaced": return { key: "notstarted", label: "Replaced in your updated plan" };
@@ -254,64 +299,39 @@ export function paceView(pace: StudentHighSchoolView["pace"]): PaceView {
   }
 }
 
-export function expectedByNowLabel(pace: StudentHighSchoolView["pace"]): string | null {
-  if (pace.expectedByNowHalfUnits === null) return null;
-  return `The plan expected ${creditsLabel(pace.expectedByNowHalfUnits)} by now`;
-}
-
 export function nextMilestoneLabel(pace: StudentHighSchoolView["pace"]): string | null {
   const m = pace.nextMilestone;
   if (!m) return null;
   return `By ${monthLabel(m.month)}: ${creditsLabel(m.cumulativeHalfUnits)} in total`;
 }
 
-export interface TargetProgress {
-  /** Share of the planned time window that has passed (0-100, floored). */
-  readonly timePercent: number | null;
-  readonly creditPercent: number;
-  readonly daysLeft: number | null;
-  readonly headline: string;
-  readonly detail: string;
+export interface PaceBar {
+  /** Official credit, as a floored percent of the requirement. */
+  readonly officialPercent: number;
+  /** Where the plan expected the student to be by now; null when no milestones are configured. */
+  readonly expectedPercent: number | null;
+  readonly summary: string;
+  readonly ariaLabel: string;
 }
 
-/**
- * Credit progress next to time passed toward the planned completion target. It is an estimate, not a promise.
- * When staff configured a pace (milestones), that plan is the only judgement shown, so this card never says
- * "keeping pace" next to a "Behind target" pill; the calendar comparison is used only without a configured pace.
- */
-export function targetProgress(
-  view: Pick<StudentHighSchoolView, "enrollment" | "credits"> & { readonly pace?: Pick<StudentHighSchoolView["pace"], "status"> },
-  today: string,
-): TargetProgress {
-  const { startedOn, targetCompletionDate } = view.enrollment;
-  const creditPercent = view.credits.percentComplete;
-  const start = parseDay(startedOn);
-  const end = parseDay(targetCompletionDate);
-  const now = parseDay(today);
-  const daysLeft = daysUntil(targetCompletionDate, today);
-  if (view.credits.remainingHalfUnits === 0) {
-    return { timePercent: null, creditPercent, daysLeft, headline: "All required credits are official", detail: "The school's graduation review is the next step." };
-  }
-  if (!targetCompletionDate || end === null) {
-    return { timePercent: null, creditPercent, daysLeft: null, headline: "No completion target set yet", detail: "Lumière will set a target date with you." };
-  }
-  let timePercent: number | null = null;
-  if (start !== null && now !== null && end > start) timePercent = Math.max(0, Math.min(100, Math.floor(((now - start) * 100) / (end - start))));
-  const weeks = daysLeft === null ? null : Math.ceil(daysLeft / 7);
-  const headline =
-    daysLeft === null ? "Planned completion target"
-    : daysLeft < 0 ? "Your target date has passed"
-    : weeks !== null && weeks <= 1 ? "Your target date is this week"
-    : `About ${weeks} weeks to your target date`;
-  const gap = timePercent === null ? null : creditPercent - timePercent;
-  const planStatus = view.pace?.status ?? "not_configured";
-  const detail =
-    planStatus === "behind" ? "Your plan's milestones show you a little behind. The date is a target, not a guarantee, and your plan can be adjusted."
-    : planStatus === "on_track" || planStatus === "ahead" ? "You are keeping up with your plan's milestones. The date is a target, not a guarantee."
-    : gap === null ? "This date is a target, not a guarantee."
-    : gap >= 0 ? "Credits are keeping pace with the calendar. The date is a target, not a guarantee."
-    : "Credits are a little behind the calendar. The date is a target, not a guarantee, and your plan can be adjusted.";
-  return { timePercent, creditPercent, daysLeft, headline, detail };
+/** ONE measure: official credits against what the plan's milestones expected by now. No calendar bar. */
+export function paceBar(view: Pick<StudentHighSchoolView, "credits" | "pace">): PaceBar {
+  const { earnedHalfUnits: earned, requiredHalfUnits: required } = view.credits;
+  const expected = view.pace.expectedByNowHalfUnits;
+  const officialPercent = barPercent(earned, required);
+  const expectedPercent = expected === null ? null : barPercent(Math.min(expected, required), required);
+  const summary = expected === null
+    ? `${creditsOfLabel(earned, required)} official`
+    : `${formatHalfUnits(earned)} official ${earned === 2 ? "credit" : "credits"} · the plan expected ${formatHalfUnits(expected)} by now`;
+  return { officialPercent, expectedPercent, summary, ariaLabel: `${summary}` };
+}
+
+/** The target date line. A date is a target, never a guarantee. */
+export function targetDateLine(view: Pick<StudentHighSchoolView, "enrollment" | "credits">, formatDate: (iso: string | null) => string | null): string {
+  if (view.credits.remainingHalfUnits === 0) return "All required credits are official. The school's graduation review is the next step.";
+  const when = formatDate(view.enrollment.targetCompletionDate);
+  if (!when) return "Lumière will set a completion target with you. The date is a target, not a guarantee.";
+  return `Target completion: ${when}. The date is a target, not a guarantee.`;
 }
 
 // ── Next step ───────────────────────────────────────────────────────────────
@@ -338,7 +358,7 @@ export function nextStep(view: StudentHighSchoolView, today: string, formatDate:
     return {
       tone: "task",
       title: t.title,
-      detail: `${t.courseTitle}${when ? ` · ${when}` : ""}`,
+      detail: `${cleanCourseTitle(t.courseTitle)}${when ? ` · ${when}` : ""}`,
       courseKey: t.courseKey,
       taskKey: t.key,
       action: { label: "Open this course", tab: "subjects" },
@@ -348,7 +368,7 @@ export function nextStep(view: StudentHighSchoolView, today: string, formatDate:
     return { tone: "graduation", title: "Your school confirmed you are eligible", detail: "You can request your transcript while the school finishes your diploma.", courseKey: null, taskKey: null, action: { label: "Go to My Graduation", tab: "graduation" } };
   }
   if (view.awaitingGrade.length > 0) {
-    return { tone: "review", title: "Waiting for your school to grade your work", detail: `${view.awaitingGrade.length} ${view.awaitingGrade.length === 1 ? "task is" : "tasks are"} pending school review. Nothing more to do on these right now.`, courseKey: null, taskKey: null, action: { label: "See what is pending", tab: "subjects" } };
+    return { tone: "review", title: "Waiting for your school's grade", detail: `You sent ${view.awaitingGrade.length} ${view.awaitingGrade.length === 1 ? "task" : "tasks"} to your school. Nothing more to do on ${view.awaitingGrade.length === 1 ? "it" : "these"} right now.`, courseKey: null, taskKey: null, action: { label: "See your subjects", tab: "subjects" } };
   }
   if (view.graduation.creditsSatisfied) {
     return { tone: "graduation", title: "All required credits are official", detail: "Your school is doing its official completion review.", courseKey: null, taskKey: null, action: { label: "Go to My Graduation", tab: "graduation" } };
@@ -362,6 +382,15 @@ export function nextStep(view: StudentHighSchoolView, today: string, formatDate:
     taskKey: null,
     action: { label: "Open My Subjects", tab: "subjects" },
   };
+}
+
+/**
+ * Attention items for the Journey next-step card. Items already shown elsewhere on the tab are dropped:
+ * the next task itself (its card says so) and pace (the pace card says so).
+ */
+export function journeyAttention(view: Pick<StudentHighSchoolView, "attention" | "current">): HsAttentionItem[] {
+  const nextKey = view.current.nextTask?.key ?? null;
+  return view.attention.filter((a) => a.kind !== "behind_pace" && !(nextKey !== null && a.taskKey === nextKey));
 }
 
 export function attentionLabel(kind: HsAttentionItem["kind"]): string {
@@ -390,6 +419,15 @@ export function reviewStatusView(g: HsGraduationView): ReviewStatusView {
     return { key: "submitted", label: "Review by the school pending", detail: "Your credits look complete. Only the school can confirm that you are eligible to graduate." };
   }
   return { key: "notstarted", label: "Not ready for review yet", detail: "The school reviews your record once all required credits, exams and projects are official." };
+}
+
+/** Outstanding work phrased as what is left in the plan. null when nothing is left. */
+export function outstandingWorkLabel(g: Pick<HsGraduationView, "outstandingExams" | "outstandingProjects">): string | null {
+  const parts: string[] = [];
+  if (g.outstandingExams > 0) parts.push(`${g.outstandingExams} ${g.outstandingExams === 1 ? "exam" : "exams"}`);
+  if (g.outstandingProjects > 0) parts.push(`${g.outstandingProjects} ${g.outstandingProjects === 1 ? "project" : "projects"}`);
+  if (parts.length === 0) return null;
+  return `${parts.join(" and ")} left in your plan`;
 }
 
 export function financialClearanceView(value: HsGraduationView["financialClearance"]): { key: StatusKey; label: string; detail: string } {
@@ -456,15 +494,36 @@ export function priorEducationStatusLabel(s: PriorEducationStatus): string {
   }
 }
 
-/** Claims are never shown as credit; only the school's decision is described. */
-export function claimStatusView(s: TransferClaimStatus): StatusView {
+export type ClaimView = { readonly status: TransferClaimStatus; readonly courseTitle: string; readonly claimedHalfUnits: HalfUnits; readonly acceptedHalfUnits?: HalfUnits | null };
+
+/** Titles of courses the school recorded as transfer credit (the only proof that a claim became credit). */
+export function recordedTransferTitles(subjects: readonly HsSubjectView[]): ReadonlySet<string> {
+  const out = new Set<string>();
+  for (const s of subjects) for (const c of s.courses) if (c.status === "transfer_credit") out.add(cleanCourseTitle(c.title).toLowerCase());
+  return out;
+}
+
+/**
+ * A claim is the student's / Lumière's statement, never credit. Only a course that appears in the subjects
+ * with status transfer_credit shows the official badge; every other state uses a non-official style.
+ */
+export function claimStatusView(s: TransferClaimStatus, recorded = false): StatusView {
   switch (s) {
-    case "claimed": return { key: "notstarted", label: "Under review by the school" };
+    case "claimed": return { key: "notstarted", label: "Not sent to the school yet" };
     case "submitted_to_school": return { key: "submitted", label: "Under review by the school" };
-    case "accepted": return { key: "official", label: "Accepted by the school" };
-    case "partially_accepted": return { key: "official", label: "Partly accepted by the school" };
+    case "accepted":
+    case "partially_accepted":
+      return recorded
+        ? { key: "official", label: "Transfer credit recorded" }
+        : { key: "applied", label: "Accepted by the school — credit not recorded yet" };
     default: return { key: "attention", label: "Not accepted by the school" };
   }
+}
+
+/** "Accepted: 1 of 1.5 credits" when the school's accepted amount is known. */
+export function claimAcceptedLabel(c: ClaimView): string | null {
+  if (c.acceptedHalfUnits === undefined || c.acceptedHalfUnits === null) return null;
+  return `Accepted: ${formatHalfUnits(c.acceptedHalfUnits)} of ${creditsLabel(c.claimedHalfUnits)}`;
 }
 
 // ── Guardians ───────────────────────────────────────────────────────────────
@@ -490,16 +549,18 @@ export const GUARDIAN_EXPLAINER =
   "Verification does not give anyone access to your portal account. Lumière discusses grades or billing only with verified guardians who have that permission.";
 
 export const GOVERNANCE_COPY = {
-  headline: "Your school confirms grades, credits and your diploma. Lumière plans and supports.",
-  detail: "Anything you report here helps Lumière support you, but it only becomes official once the school confirms it.",
+  /** The single short trust line in the header. */
+  headline: "Only your school confirms grades, credits and your diploma.",
+  /** Two sentences, behind the "What's official?" disclosure. */
+  detail: "Lumière plans and supports you. Anything you report here helps us help you, but it only becomes official once your school confirms it.",
 } as const;
 
 // ── Support ─────────────────────────────────────────────────────────────────
 
 export function supportDraft(course: Pick<HsCourseView, "title" | "key">, schoolLine: string): { subject: string; description: string } {
   return {
-    subject: `High school help: ${course.title}`,
-    description: `Hi Lumière, I would like help with "${course.title}" in my high school plan (${schoolLine}). `,
+    subject: `High school help: ${cleanCourseTitle(course.title)}`,
+    description: `Hi Lumière, I would like help with "${cleanCourseTitle(course.title)}" in my high school plan (${schoolLine}). `,
   };
 }
 

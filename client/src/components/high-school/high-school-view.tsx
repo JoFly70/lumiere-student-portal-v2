@@ -3,7 +3,7 @@
  * actions come from HsActionsProvider, so it renders from fixtures.
  */
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { GraduationCap, School, ShieldCheck } from "lucide-react";
+import { ChevronDown, GraduationCap, School, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { StudentHighSchoolView } from "@shared/high-school-contract";
 import { formatShortDate } from "@/pages/student-roadmap-presentation";
@@ -19,12 +19,9 @@ import { HsNoRoadmap } from "./states";
 function Header({ view }: { view: StudentHighSchoolView }) {
   const e = view.enrollment;
   const started = formatShortDate(e.startedOn);
+  const [open, setOpen] = useState(false);
   return (
-    <header className="space-y-3" data-testid="hs-header">
-      <p className="flex items-center gap-2.5 text-xs font-semibold uppercase tracking-[0.16em] text-student-gold-ink">
-        <span aria-hidden="true" className="h-px w-6 bg-student-gold" />
-        High school pathway
-      </p>
+    <header className="space-y-2" data-testid="hs-header">
       <h1 className="font-serif text-3xl tracking-tight text-student-ink sm:text-4xl">My High School Journey</h1>
       <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-student-muted" data-testid="school-line">
         <School className="h-4 w-4 shrink-0 text-student-gold-ink" aria-hidden="true" />
@@ -33,12 +30,26 @@ function Header({ view }: { view: StudentHighSchoolView }) {
         <span>{e.programTitle}</span>
         {started && (<><span aria-hidden="true">·</span><span>Started {started}</span></>)}
       </p>
-      <p className="flex max-w-3xl items-start gap-2 text-sm leading-relaxed text-student-ink" data-testid="governance-note" role="note">
-        <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-student-gold-ink" aria-hidden="true" />
-        <span>
-          <strong className="font-semibold">{GOVERNANCE_COPY.headline}</strong> <span className="text-student-muted">{GOVERNANCE_COPY.detail}</span>
-        </span>
-      </p>
+      <div data-testid="governance-note" role="note">
+        <p className="flex items-start gap-2 text-sm text-student-ink sm:items-center">
+          <ShieldCheck className="mt-3 h-4 w-4 shrink-0 text-student-gold-ink sm:mt-0" aria-hidden="true" />
+          <span>{GOVERNANCE_COPY.headline}{" "}
+          <button
+            type="button"
+            aria-expanded={open}
+            aria-controls="hs-official-explainer"
+            onClick={() => setOpen((o) => !o)}
+            className="inline-flex min-h-[44px] items-center gap-1 rounded-md font-medium text-student-gold-ink underline underline-offset-4 hover:no-underline"
+            data-testid="button-whats-official"
+          >
+            What&apos;s official?
+            <ChevronDown className={cn("h-4 w-4 transition-transform", open && "rotate-180")} aria-hidden="true" />
+          </button></span>
+        </p>
+        <p id="hs-official-explainer" hidden={!open} className="max-w-2xl pb-1 text-sm leading-relaxed text-student-muted" data-testid="official-explainer">
+          {GOVERNANCE_COPY.detail}
+        </p>
+      </div>
     </header>
   );
 }
@@ -53,7 +64,7 @@ function GraduatedBanner({ view }: { view: StudentHighSchoolView }) {
       <div className="space-y-1">
         <h2 id="hs-graduated" className="font-serif text-2xl tracking-tight text-student-ink">Congratulations, you graduated</h2>
         <p className="text-sm leading-relaxed text-student-ink">
-          {view.enrollment.schoolDisplayName} conferred your diploma{on ? ` on ${on}` : ""}. Every credit you see here was confirmed by your school. Well done.
+          {view.enrollment.schoolDisplayName} conferred your diploma{on ? ` on ${on}` : ""}. Well done.
         </p>
       </div>
     </section>
@@ -121,7 +132,7 @@ export function HighSchoolPageView({
           <div className="space-y-4 sm:space-y-6">
             <HsNoRoadmap />
             <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
-              <PriorEducationCard items={view.priorEducation} />
+              <PriorEducationCard items={view.priorEducation} subjects={view.subjects} />
               <FamilyCard guardians={view.guardians} />
             </div>
           </div>

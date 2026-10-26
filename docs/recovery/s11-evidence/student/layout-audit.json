@@ -1,152 +1,358 @@
-[
-  {
-    "scene": "journey",
-    "width": 1440,
-    "overflow": false,
-    "problems": [],
-    "smallTargets": []
+{
+  "journeyHeightPx": {
+    "390": 1442.5,
+    "768": 1482.5,
+    "1024": 986.25,
+    "1440": 863.5
   },
-  {
-    "scene": "journey",
-    "width": 1024,
-    "overflow": false,
-    "problems": [],
-    "smallTargets": []
-  },
-  {
-    "scene": "journey",
-    "width": 768,
-    "overflow": false,
-    "problems": [],
-    "smallTargets": []
-  },
-  {
-    "scene": "journey",
-    "width": 390,
-    "overflow": false,
-    "problems": [],
-    "smallTargets": [
-      "button \"Toggle theme\" 36x36"
-    ]
-  },
-  {
-    "scene": "subjects",
-    "width": 1440,
-    "overflow": false,
-    "problems": [],
-    "smallTargets": []
-  },
-  {
-    "scene": "subjects",
-    "width": 1024,
-    "overflow": false,
-    "problems": [],
-    "smallTargets": []
-  },
-  {
-    "scene": "subjects",
-    "width": 768,
-    "overflow": false,
-    "problems": [],
-    "smallTargets": []
-  },
-  {
-    "scene": "subjects",
-    "width": 390,
-    "overflow": false,
-    "problems": [],
-    "smallTargets": [
-      "button \"Toggle theme\" 36x36"
-    ]
-  },
-  {
-    "scene": "graduation",
-    "width": 1440,
-    "overflow": false,
-    "problems": [],
-    "smallTargets": []
-  },
-  {
-    "scene": "graduation",
-    "width": 1024,
-    "overflow": false,
-    "problems": [],
-    "smallTargets": []
-  },
-  {
-    "scene": "graduation",
-    "width": 768,
-    "overflow": false,
-    "problems": [],
-    "smallTargets": []
-  },
-  {
-    "scene": "graduation",
-    "width": 390,
-    "overflow": false,
-    "problems": [],
-    "smallTargets": [
-      "button \"Toggle theme\" 36x36"
-    ]
-  },
-  {
-    "scene": "no-enrollment",
-    "width": 1440,
-    "overflow": false,
-    "problems": [],
-    "smallTargets": []
-  },
-  {
-    "scene": "no-enrollment",
-    "width": 1024,
-    "overflow": false,
-    "problems": [],
-    "smallTargets": []
-  },
-  {
-    "scene": "no-enrollment",
-    "width": 768,
-    "overflow": false,
-    "problems": [],
-    "smallTargets": []
-  },
-  {
-    "scene": "no-enrollment",
-    "width": 390,
-    "overflow": false,
-    "problems": [],
-    "smallTargets": [
-      "button \"Toggle theme\" 36x36"
-    ]
-  },
-  {
-    "scene": "graduated",
-    "width": 1440,
-    "overflow": false,
-    "problems": [],
-    "smallTargets": []
-  },
-  {
-    "scene": "graduated",
-    "width": 1024,
-    "overflow": false,
-    "problems": [],
-    "smallTargets": []
-  },
-  {
-    "scene": "graduated",
-    "width": 768,
-    "overflow": false,
-    "problems": [],
-    "smallTargets": []
-  },
-  {
-    "scene": "graduated",
-    "width": 390,
-    "overflow": false,
-    "problems": [],
-    "smallTargets": [
-      "button \"Toggle theme\" 36x36"
-    ]
-  }
-]
+  "entries": [
+    {
+      "scene": "journey",
+      "theme": "light",
+      "width": 1440,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [],
+      "lowContrast": []
+    },
+    {
+      "scene": "journey",
+      "theme": "light",
+      "width": 1024,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [],
+      "lowContrast": []
+    },
+    {
+      "scene": "journey",
+      "theme": "light",
+      "width": 768,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [],
+      "lowContrast": []
+    },
+    {
+      "scene": "journey",
+      "theme": "light",
+      "width": 390,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [
+        "button \"Toggle theme\" 36x36"
+      ],
+      "lowContrast": []
+    },
+    {
+      "scene": "journey",
+      "theme": "dark",
+      "width": 1440,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [],
+      "lowContrast": []
+    },
+    {
+      "scene": "journey",
+      "theme": "dark",
+      "width": 390,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [
+        "button \"Toggle theme\" 36x36"
+      ],
+      "lowContrast": []
+    },
+    {
+      "scene": "subjects",
+      "theme": "light",
+      "width": 1440,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [],
+      "lowContrast": []
+    },
+    {
+      "scene": "subjects",
+      "theme": "light",
+      "width": 1024,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [],
+      "lowContrast": []
+    },
+    {
+      "scene": "subjects",
+      "theme": "light",
+      "width": 768,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [],
+      "lowContrast": []
+    },
+    {
+      "scene": "subjects",
+      "theme": "light",
+      "width": 390,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [
+        "button \"Toggle theme\" 36x36"
+      ],
+      "lowContrast": []
+    },
+    {
+      "scene": "subjects",
+      "theme": "dark",
+      "width": 1440,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [],
+      "lowContrast": []
+    },
+    {
+      "scene": "subjects",
+      "theme": "dark",
+      "width": 390,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [
+        "button \"Toggle theme\" 36x36"
+      ],
+      "lowContrast": []
+    },
+    {
+      "scene": "graduation",
+      "theme": "light",
+      "width": 1440,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [],
+      "lowContrast": []
+    },
+    {
+      "scene": "graduation",
+      "theme": "light",
+      "width": 1024,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [],
+      "lowContrast": []
+    },
+    {
+      "scene": "graduation",
+      "theme": "light",
+      "width": 768,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [],
+      "lowContrast": []
+    },
+    {
+      "scene": "graduation",
+      "theme": "light",
+      "width": 390,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [
+        "button \"Toggle theme\" 36x36"
+      ],
+      "lowContrast": []
+    },
+    {
+      "scene": "graduation",
+      "theme": "dark",
+      "width": 1440,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [],
+      "lowContrast": []
+    },
+    {
+      "scene": "graduation",
+      "theme": "dark",
+      "width": 390,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [
+        "button \"Toggle theme\" 36x36"
+      ],
+      "lowContrast": []
+    },
+    {
+      "scene": "no-enrollment",
+      "theme": "light",
+      "width": 1440,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [],
+      "lowContrast": []
+    },
+    {
+      "scene": "no-enrollment",
+      "theme": "light",
+      "width": 1024,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [],
+      "lowContrast": []
+    },
+    {
+      "scene": "no-enrollment",
+      "theme": "light",
+      "width": 768,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [],
+      "lowContrast": []
+    },
+    {
+      "scene": "no-enrollment",
+      "theme": "light",
+      "width": 390,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [
+        "button \"Toggle theme\" 36x36"
+      ],
+      "lowContrast": []
+    },
+    {
+      "scene": "no-enrollment",
+      "theme": "dark",
+      "width": 1440,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [],
+      "lowContrast": []
+    },
+    {
+      "scene": "no-enrollment",
+      "theme": "dark",
+      "width": 390,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [
+        "button \"Toggle theme\" 36x36"
+      ],
+      "lowContrast": []
+    },
+    {
+      "scene": "graduated",
+      "theme": "light",
+      "width": 1440,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [],
+      "lowContrast": []
+    },
+    {
+      "scene": "graduated",
+      "theme": "light",
+      "width": 1024,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [],
+      "lowContrast": []
+    },
+    {
+      "scene": "graduated",
+      "theme": "light",
+      "width": 768,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [],
+      "lowContrast": []
+    },
+    {
+      "scene": "graduated",
+      "theme": "light",
+      "width": 390,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [
+        "button \"Toggle theme\" 36x36"
+      ],
+      "lowContrast": []
+    },
+    {
+      "scene": "graduated",
+      "theme": "dark",
+      "width": 1440,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [],
+      "lowContrast": []
+    },
+    {
+      "scene": "graduated",
+      "theme": "dark",
+      "width": 390,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [
+        "button \"Toggle theme\" 36x36"
+      ],
+      "lowContrast": []
+    },
+    {
+      "scene": "eligible",
+      "theme": "light",
+      "width": 1440,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [],
+      "lowContrast": []
+    },
+    {
+      "scene": "eligible",
+      "theme": "light",
+      "width": 1024,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [],
+      "lowContrast": []
+    },
+    {
+      "scene": "eligible",
+      "theme": "light",
+      "width": 768,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [],
+      "lowContrast": []
+    },
+    {
+      "scene": "eligible",
+      "theme": "light",
+      "width": 390,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [
+        "button \"Toggle theme\" 36x36"
+      ],
+      "lowContrast": []
+    },
+    {
+      "scene": "eligible",
+      "theme": "dark",
+      "width": 1440,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [],
+      "lowContrast": []
+    },
+    {
+      "scene": "eligible",
+      "theme": "dark",
+      "width": 390,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [
+        "button \"Toggle theme\" 36x36"
+      ],
+      "lowContrast": []
+    }
+  ]
+}

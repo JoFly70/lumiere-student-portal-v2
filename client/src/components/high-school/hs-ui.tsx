@@ -6,7 +6,7 @@
 import React from "react";
 import { cn } from "@/lib/utils";
 import { formatHalfUnits, type HalfUnits } from "@shared/high-school-contract";
-import { barPercent, creditsLabel, creditsOfLabel } from "@/pages/high-school-presentation";
+import { barPercent, creditsOfLabel } from "@/pages/high-school-presentation";
 import { cardClass } from "@/components/student-progress/student-ui";
 
 /** Section card with an optional heading. */
@@ -45,47 +45,30 @@ export function Panel({
 }
 
 /**
- * Credit ring: official credit as a solid arc, credit awaiting school
- * confirmation as a separate dashed, lighter arc after it. Text carries the
- * exact numbers (formatHalfUnits), the arcs only size the graphic.
+ * Credit ring: OFFICIAL credit only, as one solid arc. Work the student reported
+ * but the school has not confirmed is never drawn here. Text carries the exact
+ * numbers (formatHalfUnits); the arc only sizes the graphic.
  */
 export function CreditRing({
   earned,
   required,
-  awaiting,
-  size = 176,
+  size = 148,
   className,
 }: {
   earned: HalfUnits;
   required: HalfUnits;
-  awaiting: HalfUnits;
   size?: number;
   className?: string;
 }) {
-  const stroke = 14;
+  const stroke = 13;
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
   const earnedFrac = required > 0 ? Math.min(1, earned / required) : 0;
-  const awaitFrac = required > 0 ? Math.min(1 - earnedFrac, awaiting / required) : 0;
-  const label = `${creditsOfLabel(earned, required)} official${awaiting > 0 ? `, plus ${creditsLabel(awaiting)} awaiting school confirmation` : ""}`;
+  const label = `${creditsOfLabel(earned, required)} official`;
   return (
     <div className={cn("relative mx-auto shrink-0", className)} style={{ width: size, height: size }} role="img" aria-label={label} data-testid="credit-ring" data-percent={barPercent(earned, required)}>
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden="true">
         <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="hsl(var(--s-line))" strokeWidth={stroke} />
-        {awaitFrac > 0 && (
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={r}
-            fill="none"
-            stroke="hsl(var(--st-submitted))"
-            strokeOpacity="0.55"
-            strokeWidth={stroke - 4}
-            strokeDasharray={`${c * awaitFrac - 3} ${c}`}
-            strokeDashoffset={-c * earnedFrac}
-            transform={`rotate(-90 ${size / 2} ${size / 2})`}
-          />
-        )}
         {earnedFrac > 0 && (
           <circle
             cx={size / 2}
@@ -101,31 +84,28 @@ export function CreditRing({
         )}
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center text-center" aria-hidden="true">
-        <span className="font-serif text-5xl leading-none tracking-tight text-student-ink">{formatHalfUnits(earned)}</span>
-        <span className="mt-1 text-sm text-student-muted">of {formatHalfUnits(required)} credits</span>
+        <span className="font-serif text-4xl leading-none tracking-tight text-student-ink">{formatHalfUnits(earned)}</span>
+        <span className="mt-1 text-xs text-student-muted">of {formatHalfUnits(required)} {required === 2 ? "credit" : "credits"}</span>
       </div>
     </div>
   );
 }
 
-/** Horizontal meter with an optional second (awaiting) segment. Numbers are always shown beside it by the caller. */
+/** Horizontal meter of OFFICIAL credit. Numbers are always shown beside it by the caller. */
 export function Meter({
   value,
   total,
-  extra = 0,
   label,
   className,
   tone = "gold",
 }: {
   value: HalfUnits;
   total: HalfUnits;
-  extra?: HalfUnits;
   label: string;
   className?: string;
   tone?: "gold" | "ink";
 }) {
   const a = barPercent(value, total);
-  const b = Math.min(100 - a, barPercent(extra, total));
   return (
     <div
       className={cn("flex h-2.5 w-full overflow-hidden rounded-full bg-student-line", className)}
@@ -137,7 +117,42 @@ export function Meter({
       aria-valuetext={creditsOfLabel(value, total)}
     >
       <div className={cn("h-full", tone === "gold" ? "bg-student-gold" : "bg-student-seal")} style={{ width: `${a}%` }} />
-      {b > 0 && <div className="h-full bg-st-submitted/50" style={{ width: `${b}%` }} />}
+    </div>
+  );
+}
+
+/** The single pace measure: official credits as a bar, with a tick where the plan expected the student to be by now. */
+export function PaceMeter({ officialPercent, expectedPercent, ariaLabel }: { officialPercent: number; expectedPercent: number | null; ariaLabel: string }) {
+  return (
+    <div className="relative pb-5 pt-1" data-testid="pace-meter">
+      <div className="relative h-3 w-full overflow-hidden rounded-full bg-student-line" role="img" aria-label={ariaLabel}>
+        <div className="h-full bg-student-gold" style={{ width: `${officialPercent}%` }} />
+      </div>
+      {expectedPercent !== null && (
+        <div className="pointer-events-none absolute inset-y-0 w-0" style={{ left: `${expectedPercent}%` }} data-testid="pace-tick" aria-hidden="true">
+          <div className="absolute -top-0.5 h-[18px] w-0.5 -translate-x-1/2 rounded bg-student-ink" />
+          <span className={cn("absolute top-[22px] whitespace-nowrap text-xs text-student-muted", expectedPercent > 70 ? "-translate-x-full pr-1" : "-translate-x-1/2")}>Expected by now</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Shows the first `max` items and tucks the rest behind a native "and N more" disclosure. */
+export function MoreList<T>({ items, max, render, label, testId, listClass, ariaLabel }: { items: readonly T[]; max: number; render: (item: T, i: number) => React.ReactNode; label?: string; testId?: string; listClass?: string; ariaLabel?: string }) {
+  const head = items.slice(0, max);
+  const rest = items.slice(max);
+  return (
+    <div data-testid={testId}>
+      <ul className={listClass} aria-label={ariaLabel}>{head.map((t, i) => render(t, i))}</ul>
+      {rest.length > 0 && (
+        <details className="group" data-testid={testId ? `${testId}-more` : undefined}>
+          <summary className="flex min-h-[44px] cursor-pointer list-none items-center gap-1.5 text-sm font-medium text-student-gold-ink underline underline-offset-4 [&::-webkit-details-marker]:hidden">
+            {label ?? `and ${rest.length} more`}
+          </summary>
+          <ul className={listClass} aria-label={ariaLabel ? `${ariaLabel}, more` : undefined}>{rest.map((t, i) => render(t, head.length + i))}</ul>
+        </details>
+      )}
     </div>
   );
 }
@@ -154,3 +169,6 @@ export function Fact({ label, children, className }: { label: string; children: 
 
 export const linkButton =
   "inline-flex min-h-[44px] items-center gap-1.5 rounded-md text-sm font-medium text-student-gold-ink underline underline-offset-4 hover:no-underline";
+
+/** Full-contrast action buttons: a pending state keeps the colour (aria-disabled), never a faded 2:1 look. */
+export const solidButton = "disabled:opacity-100 aria-disabled:cursor-wait";

@@ -10,6 +10,7 @@ import {
   deliveryLabel,
   diplomaDeliveryLabel,
   financialClearanceView,
+  outstandingWorkLabel,
   reviewStatusView,
   transcriptRequestState,
 } from "@/pages/high-school-presentation";
@@ -17,6 +18,8 @@ import { StatusPill, buttonClass } from "@/components/student-progress/student-u
 import { useHsActions } from "./hs-actions";
 import { Meter, Panel } from "./hs-ui";
 import type { TabProps } from "./journey-tab";
+import { FamilyCard } from "./family-card";
+import { PriorEducationCard } from "./prior-education-card";
 
 function Row({ done, label, value, testId }: { done: boolean; label: string; value: React.ReactNode; testId?: string }) {
   const Icon = done ? Check : Circle;
@@ -44,6 +47,7 @@ export function GraduationTab({ view }: TabProps) {
   const conferred = g.status === "diploma_conferred";
   const confirmed = formatShortDate(g.eligibilityConfirmedAt ? g.eligibilityConfirmedAt.slice(0, 10) : null);
   const conferredOn = formatShortDate(g.diploma.conferredOn);
+  const outstanding = outstandingWorkLabel(g);
   return (
     <div className="space-y-4 sm:space-y-6" data-testid="tab-graduation">
       <div className="grid gap-4 sm:gap-6 lg:grid-cols-5">
@@ -63,8 +67,7 @@ export function GraduationTab({ view }: TabProps) {
                 }
               />
             ))}
-            <Row done={g.outstandingExams === 0} label="Exams" testId="req-exams" value={g.outstandingExams === 0 ? "All required exams are official." : `${g.outstandingExams} ${g.outstandingExams === 1 ? "exam is" : "exams are"} still outstanding.`} />
-            <Row done={g.outstandingProjects === 0} label="Written projects" testId="req-projects" value={g.outstandingProjects === 0 ? "All required projects are official." : `${g.outstandingProjects} ${g.outstandingProjects === 1 ? "project is" : "projects are"} still outstanding.`} />
+            <Row done={outstanding === null} label="Exams and written projects" testId="req-work" value={outstanding === null ? "All required exams and projects are official." : `${outstanding}.`} />
           </ul>
         </Panel>
 
@@ -72,22 +75,15 @@ export function GraduationTab({ view }: TabProps) {
           <Panel title="Completion review" headingId="hs-grad-review" testId="completion-review">
             <StatusPill status={review.key} label={review.label} data-testid="review-status" />
             <p className="text-sm leading-relaxed text-student-muted">{review.detail}</p>
-            {confirmed && <p className="text-sm text-student-ink">Confirmed on {confirmed}.</p>}
+            {confirmed && <p className="text-sm text-student-ink" data-testid="eligibility-date">Eligibility confirmed on {confirmed}.</p>}
           </Panel>
 
-          <Panel title="Financial clearance" headingId="hs-grad-fin" testId="financial-clearance">
-            {fin === null ? (
-              <p className="text-sm text-student-muted" data-testid="financial-unavailable">
-                Not available here — ask Lumière.{" "}
-                <Link href="/support" className="inline-flex min-h-[44px] items-center font-medium text-student-gold-ink underline underline-offset-4">Contact Support</Link>
-              </p>
-            ) : (
-              <>
-                <StatusPill status={fin.key} label={fin.label} data-testid="financial-status" />
-                <p className="text-sm text-student-muted">{fin.detail}</p>
-              </>
-            )}
-          </Panel>
+          {fin !== null && (
+            <Panel title="Financial clearance" headingId="hs-grad-fin" testId="financial-clearance">
+              <StatusPill status={fin.key} label={fin.label} data-testid="financial-status" />
+              <p className="text-sm text-student-muted">{fin.detail}</p>
+            </Panel>
+          )}
         </div>
       </div>
 
@@ -97,37 +93,38 @@ export function GraduationTab({ view }: TabProps) {
             <ScrollText className="h-4 w-4 text-student-gold-ink" aria-hidden="true" />
             {transcript.statusLabel}
           </p>
-          {g.transcript.status === "not_requested" ? (
-          <button
-              type="button"
-              className={buttonClass.primary}
-              disabled={!transcript.enabled || actions.transcriptPending}
-              aria-describedby="hs-transcript-reason"
-              onClick={() => void actions.requestTranscript()}
-              data-testid="button-request-transcript"
-            >
+          {transcript.enabled && (
+            <button type="button" className={cn(buttonClass.primary, "disabled:opacity-100")} aria-disabled={actions.transcriptPending} aria-describedby="hs-transcript-reason" onClick={() => { if (!actions.transcriptPending) void actions.requestTranscript(); }} data-testid="button-request-transcript">
               {actions.transcriptPending ? "Sending…" : "Request my transcript"}
             </button>
-          ) : null}
+          )}
           <p id="hs-transcript-reason" className="text-sm text-student-muted" data-testid="transcript-reason">{transcript.reason}</p>
         </Panel>
 
         <Panel title="Diploma" headingId="hs-grad-diploma" testId="diploma-card">
-          <p className="flex items-center gap-2 text-sm font-medium text-student-ink" data-testid="diploma-status">
-            <GraduationCap className="h-4 w-4 text-student-gold-ink" aria-hidden="true" />
-            {diplomaDeliveryLabel(g.diploma)}
-          </p>
-          <dl className="grid grid-cols-2 gap-3 text-sm">
-            <div><dt className="text-xs uppercase tracking-[0.1em] text-student-muted">Conferred</dt><dd className="font-medium text-student-ink">{conferredOn ?? "Not yet"}</dd></div>
-            <div><dt className="text-xs uppercase tracking-[0.1em] text-student-muted">Delivery</dt><dd className="font-medium text-student-ink">{deliveryLabel(g.diploma.status)}</dd></div>
-          </dl>
-          <p className="text-sm text-student-muted">Only your school can issue your diploma. Lumière will tell you here when it moves forward.</p>
+          {conferred ? (
+            <>
+              <p className="flex items-center gap-2 text-sm font-medium text-student-ink" data-testid="diploma-status">
+                <GraduationCap className="h-4 w-4 text-student-gold-ink" aria-hidden="true" />
+                Diploma conferred{conferredOn ? ` on ${conferredOn}` : ""}
+              </p>
+              <p className="text-sm text-student-muted" data-testid="diploma-delivery">{deliveryLabel(g.diploma.status)}</p>
+            </>
+          ) : (
+            <>
+              <p className="flex items-center gap-2 text-sm font-medium text-student-ink" data-testid="diploma-status">
+                <GraduationCap className="h-4 w-4 text-student-gold-ink" aria-hidden="true" />
+                {diplomaDeliveryLabel(g.diploma)}
+              </p>
+              <p className="text-sm text-student-muted">Only your school can issue your diploma. Lumière will tell you here when it moves forward.</p>
+            </>
+          )}
         </Panel>
       </div>
 
       <Panel title="Official files" headingId="hs-grad-docs" testId="official-files">
         <p className="text-sm text-student-muted">
-          Your diploma and transcript files live in Documents, the same place as the rest of your records. {conferred || g.transcript.documentId || g.diploma.documentId ? "Look for the files the school issued." : "They appear there once the school issues them."}
+          {conferred || g.transcript.documentId || g.diploma.documentId ? "The files the school issued are in Documents." : "Files the school issues will appear in Documents."}
         </p>
         <Link href="/documents" className={buttonClass.outline} data-testid="link-documents">
           <FileText className="h-4 w-4" aria-hidden="true" />
@@ -135,6 +132,14 @@ export function GraduationTab({ view }: TabProps) {
           <ArrowRight className="h-4 w-4" aria-hidden="true" />
         </Link>
       </Panel>
+
+      <section className="space-y-3 pt-2 sm:space-y-4" aria-labelledby="hs-your-file" data-testid="your-file">
+        <h3 id="hs-your-file" className="font-serif text-2xl tracking-tight text-student-ink">Your file</h3>
+        <div className="grid items-start gap-4 sm:gap-6 lg:grid-cols-2">
+          <PriorEducationCard items={view.priorEducation} subjects={view.subjects} />
+          <FamilyCard guardians={view.guardians} />
+        </div>
+      </section>
     </div>
   );
 }
