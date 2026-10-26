@@ -2,7 +2,8 @@
  * Student Profile API Routes
  */
 
-import { Router } from 'express';
+import { Router, type NextFunction, type Request, type Response } from 'express';
+import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import multer from 'multer';
 import { requireAuth, requireStaff } from '../middleware/auth';
@@ -13,110 +14,72 @@ import {
   updateStudent,
   getStudentWithRelations,
   listStudents,
-  getStudentContacts,
-  addStudentContact,
-  updateStudentContact,
+  getStudentContact,
+  addStudentContact as _unusedAddStudentContact,
   deleteStudentContact,
   getEnglishProof,
   upsertEnglishProof,
 } from '../services/student-service';
 import {
   insertStudentSchema,
-  insertStudentContactSchema,
   insertEnglishProofSchema,
 } from '@shared/schema';
+import {
+  CORRECTION_STATUSES,
+  PROFILE_ERROR_CODES,
+  createIdentityCorrectionSchema,
+  resolveContactAuthoritySchema,
+  resolveIdentityCorrectionSchema,
+  studentContactInputSchema,
+  studentSelfServiceUpdateSchema,
+  type CorrectionStatus,
+} from '@shared/student-profile-contract';
 import { logger } from '../lib/logger';
 import { supabaseAdmin } from '../lib/supabase';
 import { studentOwnsProfile, isAdminOrStaff } from '../lib/resource-ownership';
+import {
+  PHOTO_BUCKET,
+  PHOTO_MAX_BYTES,
+  STORED_PHOTO_PREFIX,
+  detectImageType,
+  resolvePhotoUrl,
+  storedPhotoPath,
+  validatePhotoUpload,
+} from '../lib/profile-photo';
+import {
+  ProfileHttpError,
+  assertContactDeletable,
+  assertStudentMayUpdate,
+  changedIdentityFields,
+  createContact,
+  createIdentityCorrection,
+  listContactViews,
+  listCorrectionQueue,
+  listOwnCorrections,
+  listStudentCorrectionsForStaff,
+  loadStudentProfileView,
+  maskStudentRecord,
+  partitionStudentProfileUpdate,
+  prepareStaffProfileUpdate,
+  resolveContactAuthority,
+  resolveIdentityCorrection,
+  updateContact,
+  withdrawCorrection,
+} from '../services/student-profile-service';
+
+// Re-exported for tests and callers that used the previous locations.
+export { STORED_PHOTO_PREFIX, resolvePhotoUrl, detectImageType, validatePhotoUpload, partitionStudentProfileUpdate };
+export { STUDENT_EDITABLE_PROFILE_FIELDS } from '@shared/student-profile-contract';
 
 /**
- * Profile fields a student may change on their own record (identity, contact,
- * address, communication preferences). All other fields — status, residency
- * and high-school eligibility, prior credits/transcripts, program intent,
- * consent signature, photo URL, user link — are staff-controlled.
+ * Staff may edit staff-controlled and identity fields (identity edits are
+ * audited as material changes). Never editable through this API by anyone:
+ * user_id, student_code, photo_url (upload endpoint only) and the login email.
  */
-export const STUDENT_EDITABLE_PROFILE_FIELDS = [
-  'first_name',
-  'middle_name',
-  'last_name',
-  'preferred_name',
-  'dob',
-  'sex',
-  'nationality',
-  'gov_id_type',
-  'gov_id_number',
-  'email',
-  'phone_primary',
-  'phone_secondary',
-  'whatsapp_primary',
-  'timezone',
-  'preferred_contact_channel',
-  'address_country',
-  'address_state',
-  'address_city',
-  'address_postal',
-  'address_line1',
-  'address_line2',
-  'marketing_opt_in',
-  'media_release',
-] as const;
-
-const staffProfileUpdateSchema = insertStudentSchema.omit({ user_id: true }).partial().strict();
-
-function normalizeComparable(value: unknown): unknown {
-  return value === '' || value === undefined ? null : value;
-}
-
-function sameStoredValue(submitted: unknown, stored: unknown): boolean {
-  return JSON.stringify(normalizeComparable(submitted)) === JSON.stringify(normalizeComparable(stored));
-}
-
-/**
- * Split a validated student-initiated update into the editable subset. A
- * controlled field is tolerated only when it equals the stored value (forms
- * resubmit whole sections); any change to it is returned as forbidden.
- */
-export function partitionStudentProfileUpdate(
-  updates: Record<string, unknown>,
-  stored: Record<string, unknown>,
-): { allowed: Record<string, unknown>; forbidden: string[] } {
-  const editable = new Set<string>(STUDENT_EDITABLE_PROFILE_FIELDS);
-  const allowed: Record<string, unknown> = {};
-  const forbidden: string[] = [];
-  for (const [key, value] of Object.entries(updates)) {
-    if (editable.has(key)) {
-      allowed[key] = value;
-    } else if (!sameStoredValue(value, stored[key])) {
-      forbidden.push(key);
-    }
-  }
-  return { allowed, forbidden };
-}
-
-// Profile photos live in the private student-documents bucket. The row stores
-// a bucket-relative reference; responses carry a short-lived signed URL.
-const PHOTO_BUCKET = 'student-documents';
-export const STORED_PHOTO_PREFIX = 'storage:student-documents/';
-const PHOTO_URL_TTL_SECONDS = 3600;
-
-export async function resolvePhotoUrl(photoUrl: unknown): Promise<unknown> {
-  if (typeof photoUrl !== 'string' || !photoUrl.startsWith(STORED_PHOTO_PREFIX)) {
-    return photoUrl;
-  }
-  const path = photoUrl.slice(STORED_PHOTO_PREFIX.length);
-  if (!/^profile-photos\/[A-Za-z0-9_-]+\.(png|jpg|webp|gif)$/.test(path)) {
-    return null;
-  }
-  try {
-    const { data, error } = await supabaseAdmin.storage
-      .from(PHOTO_BUCKET)
-      .createSignedUrl(path, PHOTO_URL_TTL_SECONDS);
-    if (error || !data?.signedUrl) return null;
-    return data.signedUrl;
-  } catch {
-    return null;
-  }
-}
+const staffProfileUpdateSchema = insertStudentSchema
+  .omit({ user_id: true, photo_url: true, email: true })
+  .partial()
+  .strict();
 
 async function withSignedPhoto<T>(student: T): Promise<T> {
   const row = student as unknown as { photo_url?: unknown } | null;
@@ -124,26 +87,61 @@ async function withSignedPhoto<T>(student: T): Promise<T> {
   return { ...row, photo_url: await resolvePhotoUrl(row.photo_url) } as unknown as T;
 }
 
-async function canAccessStudent(req: import('express').Request, studentId: string): Promise<boolean> {
+/** Student record as returned to clients: signed photo, raw government id never included. */
+async function presentStudent<T extends object>(student: T): Promise<T> {
+  return withSignedPhoto(maskStudentRecord(student));
+}
+
+async function canAccessStudent(req: Request, studentId: string): Promise<boolean> {
   return !!req.user && (await studentOwnsProfile(req.user, studentId));
+}
+
+function sendProfileError(res: Response, error: unknown): boolean {
+  if (error instanceof ProfileHttpError) {
+    res.status(error.status).json({ error: error.message, message: error.message, code: error.code, ...error.extra });
+    return true;
+  }
+  if (error instanceof z.ZodError) {
+    res.status(400).json({ error: 'Validation failed', code: 'VALIDATION_FAILED', details: error.errors });
+    return true;
+  }
+  return false;
+}
+
+function actorIdOf(req: Request): string | null {
+  return req.audit?.actorId || req.user?.id || null;
 }
 
 const router = Router();
 
-// Configure multer for memory storage
+// Photo upload: memory storage, 5 MB cap. Content is validated by magic bytes
+// in the handler, not by the client-declared MIME type.
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB
-  },
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only image files are allowed'));
-    }
-  },
+  limits: { fileSize: PHOTO_MAX_BYTES, files: 1 },
 });
+
+function parsePhotoUpload(req: Request, res: Response, next: NextFunction) {
+  upload.single('photo')(req, res, (err: unknown) => {
+    if (!err) return next();
+    if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(413).json({ error: 'The photo is larger than 5 MB', code: PROFILE_ERROR_CODES.PHOTO_INVALID });
+    }
+    return res.status(400).json({ error: 'The upload could not be read', code: PROFILE_ERROR_CODES.PHOTO_INVALID });
+  });
+}
+
+async function requirePhotoOwner(req: Request, res: Response, next: NextFunction) {
+  try {
+    if (!(await canAccessStudent(req, req.params.id))) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+    return next();
+  } catch (error) {
+    logger.error('Photo ownership check error', { studentId: req.params.id, error });
+    return res.status(500).json({ error: 'Failed to upload photo' });
+  }
+}
 
 // Apply auth to all routes
 router.use(requireAuth);
