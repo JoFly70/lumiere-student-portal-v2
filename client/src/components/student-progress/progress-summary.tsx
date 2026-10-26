@@ -12,6 +12,7 @@ import {
   countsSentence,
   currentPhase,
   phaseSummaryLine,
+  primaryObjectiveTitle,
   segmentFraction,
 } from "@/pages/student-roadmap-presentation";
 import { buttonClass, cardClass } from "./student-ui";
@@ -50,7 +51,7 @@ export function ProgressSummary({
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-student-gold-ink">Your roadmap</p>
           )}
           <h2 id="progress-summary-title" className="font-serif text-xl text-student-ink sm:text-2xl">
-            {variant === "flight-deck" ? (view.plan?.title ?? "Your roadmap") : "Where you are"}
+            {variant === "flight-deck" ? (primaryObjectiveTitle(view) ?? "Your roadmap") : "Where you are"}
           </h2>
           <p className="mt-0.5 text-sm text-student-muted" data-testid="summary-scope">
             Counts for your whole plan, all phases: {view.counts.itemsTotal} {view.counts.itemsTotal === 1 ? "item" : "items"}.
@@ -93,7 +94,7 @@ export function ProgressSummary({
         ))}
       </ul>
 
-      {phase && (
+      {phase && variant === "flight-deck" && (
         <p className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-student-line pt-3 text-sm text-student-muted" data-testid="current-phase-line">
           <MapPin className="h-4 w-4 text-student-gold-ink" aria-hidden="true" />
           <span>

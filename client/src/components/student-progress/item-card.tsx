@@ -29,6 +29,9 @@ import {
   objectiveKindLabel,
   rowKey,
   stagePresentation,
+  stageLabelFor,
+  blockedReasonText,
+  blockedReasonShort,
   taskProgressPhrase,
 } from "@/pages/student-roadmap-presentation";
 import { Pill, buttonClass } from "./student-ui";
@@ -49,20 +52,18 @@ export function LaneChip({ objective }: { objective: StudentRoadmapObjectiveView
 }
 
 function ItemBadges({ item }: { item: StudentRoadmapItemView }) {
+  const blocked = blockedReasonText(item);
   const badges: React.ReactNode[] = [];
-  if (item.planStatus === "hold") {
+  if (blocked) {
+    const hold = item.reportBlockedReason === "on_hold";
     badges.push(
-      <p key="hold" className="flex items-start gap-2 rounded-lg border border-student-attn bg-student-attn-soft px-3 py-2 text-sm text-student-attn" data-testid="badge-hold">
-        <PauseCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-        <span><strong className="font-semibold">On hold.</strong> {item.holdReason ?? "Lumière has paused this item."}</span>
-      </p>,
-    );
-  }
-  if (item.approval?.required && item.approval.status === "pending") {
-    badges.push(
-      <p key="approval" className="flex items-start gap-2 rounded-lg border border-student-attn bg-student-attn-soft px-3 py-2 text-sm text-student-attn" data-testid="badge-approval">
-        <UserCheck className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-        <span><strong className="font-semibold">Advisor approval pending.</strong> Your advisor must approve this before you start.</span>
+      <p
+        key="blocked"
+        className="flex items-start gap-2 rounded-lg border border-student-attn bg-student-attn-soft px-3 py-2 text-sm text-student-attn"
+        data-testid={hold ? "badge-hold" : "badge-approval"}
+      >
+        {hold ? <PauseCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" /> : <UserCheck className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />}
+        <span>{blocked}</span>
       </p>,
     );
   }
@@ -80,6 +81,7 @@ function ItemBadges({ item }: { item: StudentRoadmapItemView }) {
 function ItemActions({ item }: { item: StudentRoadmapItemView }) {
   const actions = useRoadmapActions();
   const saving = actions.isPending(rowKey(item.key, null));
+  if (!item.canReport && item.stage !== "officially_accepted") return null;
   if (item.stage === "officially_accepted") {
     return (
       <p className="flex items-start gap-2 rounded-lg bg-student-seal px-3 py-2.5 text-sm text-student-seal-ink" data-testid="official-note">
@@ -115,7 +117,7 @@ function ItemActions({ item }: { item: StudentRoadmapItemView }) {
             <AlertDialogFooter>
               <AlertDialogCancel>{PROVIDER_COMPLETE_CONFIRM.cancel}</AlertDialogCancel>
               <AlertDialogAction
-                onClick={() => void actions.report(itemUpdate(item, "provider_complete"), `you reported ${item.title} finished at the provider`)}
+                onClick={() => void actions.report(itemUpdate(item, "provider_complete"), `you reported ${item.title} finished at the provider`, item.itemStatus)}
               >
                 {PROVIDER_COMPLETE_CONFIRM.confirm}
               </AlertDialogAction>
@@ -160,84 +162,66 @@ export function ItemCard({
   const dates = itemDateLabel(item);
   const credits = itemCreditsLabel(item);
   const official = item.stage === "officially_accepted";
-  const meta = [item.provider, item.institution].filter(Boolean).join(" · ");
+  const meta = [item.provider, item.institution, credits].filter(Boolean).join(" · ");
   const stage = stagePresentation(item.stage);
+  const stageLabel = stageLabelFor(item);
+  const blockedShort = blockedReasonShort(item);
 
   return (
     <article
       id={`item-${item.key}`}
-      className={cn(
-        "scroll-mt-28 rounded-xl border bg-student-card p-4",
-        official ? "border-student-seal" : "border-student-line",
-      )}
+      className={cn("scroll-mt-28 rounded-xl border bg-student-card", official ? "border-student-seal" : "border-student-line")}
       data-testid="item-card"
       data-item-key={item.key}
       data-stage={item.stage}
       aria-labelledby={`${panelId}-title`}
     >
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div className="min-w-0 space-y-1">
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls={panelId}
+        onClick={() => setOpen((o) => !o)}
+        className="flex w-full items-start gap-3 rounded-xl p-4 text-left"
+        data-testid="item-toggle"
+      >
+        <span className="min-w-0 flex-1 space-y-1.5">
           {showLane && objective && <LaneChip objective={objective} />}
-          <h4 id={`${panelId}-title`} className="text-base font-semibold leading-snug text-student-ink">
+          <span id={`${panelId}-title`} className="block text-base font-semibold leading-snug text-student-ink">
             {item.code && <span className="mr-2 font-mono text-sm font-medium text-student-muted">{item.code}</span>}
             {item.title}
-          </h4>
-          {meta && <p className="text-sm text-student-muted">{meta}</p>}
-        </div>
-        {credits && <p className="text-sm text-student-muted" data-testid="item-credits">{credits}</p>}
-      </div>
-
-      <div className="mt-3">
-        <StageTrack stage={item.stage} />
-      </div>
-
-      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
-        {phrase && (
-          <div className="flex items-center gap-2">
-            <TaskRing done={item.taskCounts.graded} total={item.taskCounts.total} size={36} />
-            <p className="text-sm font-medium text-student-ink" data-testid="task-phrase">{phrase}</p>
-          </div>
-        )}
-        {dates && (
-          <p className="flex items-center gap-1.5 text-sm text-student-muted">
-            <CalendarDays className="h-4 w-4" aria-hidden="true" />
-            {dates}
-          </p>
-        )}
-      </div>
-
-      {(item.planStatus === "hold" || item.waitingOn.length > 0 || item.approval?.status === "pending") && (
-        <div className="mt-3">
-          <ItemBadges item={item} />
-        </div>
-      )}
-
-      <div className="mt-2 border-t border-student-line pt-1">
-        <button
-          type="button"
-          aria-expanded={open}
-          aria-controls={panelId}
-          onClick={() => setOpen((o) => !o)}
-          className="flex min-h-[44px] w-full items-center justify-between gap-3 rounded-lg text-left text-sm font-medium text-student-gold-ink"
-          data-testid="item-toggle"
-        >
-          <span>
-            {item.tasks.length > 0 ? "Tasks and details" : "Details"}
-            <span className="sr-only"> for {item.title}</span>
           </span>
-          <ChevronDown className={cn("h-4 w-4 shrink-0 transition-transform", open && "rotate-180")} aria-hidden="true" />
-        </button>
-        <div id={panelId} hidden={!open} className="space-y-4 pb-2" data-testid="item-panel">
-          <p className="text-sm text-student-muted"><span className="font-medium text-student-ink">{stage.label}.</span> {stage.help}</p>
-          {item.studentNote && (
-            <p className="rounded-lg bg-student-gold-soft px-3 py-2 text-sm text-student-ink" data-testid="student-note">
-              <span className="font-medium">Note from Lumière: </span>
-              {item.studentNote}
+          <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-student-muted">
+            <Pill tone={official ? "seal" : item.stage === "provider_complete" ? "gold" : "neutral"} data-testid="stage-pill">{stageLabel}</Pill>
+            {phrase && <span data-testid="task-phrase">{phrase}</span>}
+            {blockedShort && <Pill tone="attn">{blockedShort}</Pill>}
+          </span>
+        </span>
+        <ChevronDown className={cn("mt-1 h-5 w-5 shrink-0 text-student-gold-ink transition-transform", open && "rotate-180")} aria-hidden="true" />
+        <span className="sr-only">{open ? "Hide" : "Show"} tasks and details for {item.title}</span>
+      </button>
+
+      <div id={panelId} hidden={!open} className="space-y-4 px-4 pb-4" data-testid="item-panel">
+        {meta && <p className="text-sm text-student-muted" data-testid="item-credits">{meta}</p>}
+        <StageTrack stage={item.stage} label={stageLabel} />
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          {phrase && <TaskRing done={item.taskCounts.graded} total={item.taskCounts.total} size={36} />}
+          {dates && (
+            <p className="flex items-center gap-1.5 text-sm text-student-muted">
+              <CalendarDays className="h-4 w-4" aria-hidden="true" />
+              {dates}
             </p>
           )}
-          <TaskList item={item} collapseDone />
-          <ItemActions item={item} />
         </div>
+        <ItemBadges item={item} />
+        <p className="text-sm text-student-muted"><span className="font-medium text-student-ink">{stageLabel}.</span> {stage.help}</p>
+        {item.studentNote && (
+          <p className="rounded-lg bg-student-gold-soft px-3 py-2 text-sm text-student-ink" data-testid="student-note">
+            <span className="font-medium">Note from Lumière: </span>
+            {item.studentNote}
+          </p>
+        )}
+        <TaskList item={item} collapseDone />
+        <ItemActions item={item} />
       </div>
     </article>
   );

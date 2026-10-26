@@ -57,7 +57,7 @@ function StageMarker({ index, current }: { index: number; current: number }) {
 }
 
 /** Six-stage track. The last stage (official acceptance) is a diamond seal reached only by Lumière. */
-export function StageTrack({ stage }: { stage: StudentItemStage }) {
+export function StageTrack({ stage, label }: { stage: StudentItemStage; label?: string }) {
   const current = stageIndex(stage);
   return (
     <div role="img" aria-label={stageAriaLabel(stage)} className="w-full" data-testid="stage-track" data-stage={stage}>
@@ -85,7 +85,7 @@ export function StageTrack({ stage }: { stage: StudentItemStage }) {
         ))}
       </ol>
       <p className="mt-1.5 text-xs font-medium text-student-ink" aria-hidden="true">
-        {STAGES[current].label}
+        {label ?? STAGES[current].label}
       </p>
     </div>
   );

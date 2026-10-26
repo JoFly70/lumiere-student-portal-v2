@@ -117,11 +117,13 @@ export function Pill({
   tone = "neutral",
   className,
   icon,
+  "data-testid": testId,
 }: {
   children: React.ReactNode;
   tone?: "neutral" | "gold" | "attn" | "seal" | "dashed";
   className?: string;
   icon?: React.ReactNode;
+  "data-testid"?: string;
 }) {
   const tones = {
     neutral: "border-student-line-strong text-student-muted",
@@ -137,6 +139,7 @@ export function Pill({
         tones[tone],
         className,
       )}
+      data-testid={testId}
     >
       {icon}
       {children}

@@ -164,7 +164,8 @@
           },
           "stage": "provider_complete",
           "official": null,
-          "canReport": true
+          "canReport": true,
+          "reportBlockedReason": null
         },
         {
           "key": "rc-psy-201",
@@ -278,7 +279,8 @@
           },
           "stage": "in_progress",
           "official": null,
-          "canReport": true
+          "canReport": true,
+          "reportBlockedReason": null
         },
         {
           "key": "rc-soc-310",
@@ -316,7 +318,8 @@
           },
           "stage": "not_started",
           "official": null,
-          "canReport": true
+          "canReport": true,
+          "reportBlockedReason": null
         },
         {
           "key": "rc-cap-490",
@@ -357,7 +360,8 @@
           },
           "stage": "not_started",
           "official": null,
-          "canReport": true
+          "canReport": false,
+          "reportBlockedReason": "approval_pending"
         }
       ],
       "counts": {
@@ -461,7 +465,8 @@
           },
           "stage": "not_started",
           "official": null,
-          "canReport": true
+          "canReport": true,
+          "reportBlockedReason": null
         },
         {
           "key": "rc-anp-2",
@@ -548,7 +553,8 @@
           },
           "stage": "not_started",
           "official": null,
-          "canReport": true
+          "canReport": true,
+          "reportBlockedReason": null
         },
         {
           "key": "rc-micro",
@@ -627,7 +633,8 @@
           },
           "stage": "not_started",
           "official": null,
-          "canReport": true
+          "canReport": true,
+          "reportBlockedReason": null
         },
         {
           "key": "rc-chem",
@@ -733,7 +740,8 @@
           },
           "stage": "not_started",
           "official": null,
-          "canReport": true
+          "canReport": true,
+          "reportBlockedReason": null
         },
         {
           "key": "rc-stats",
@@ -863,7 +871,8 @@
           },
           "stage": "not_started",
           "official": null,
-          "canReport": true
+          "canReport": true,
+          "reportBlockedReason": null
         }
       ],
       "counts": {
@@ -934,7 +943,8 @@
           },
           "stage": "not_started",
           "official": null,
-          "canReport": true
+          "canReport": false,
+          "reportBlockedReason": "approval_pending"
         },
         {
           "key": "rc-application",
@@ -972,7 +982,8 @@
           },
           "stage": "not_started",
           "official": null,
-          "canReport": true
+          "canReport": true,
+          "reportBlockedReason": null
         }
       ],
       "counts": {

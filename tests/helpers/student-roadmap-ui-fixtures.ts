@@ -41,6 +41,14 @@ function item(spec: ItemSpec): StudentRoadmapItemView {
   const count = (s: StudentTaskStatus) => t.filter((x) => x.status === s).length;
   const itemStatus: StudentItemStatus =
     spec.itemStatus ?? (spec.stage === "provider_complete" ? "provider_complete" : spec.stage === "not_started" ? "not_started" : "in_progress");
+  const blocked: StudentRoadmapItemView["reportBlockedReason"] =
+    spec.planStatus === "hold"
+      ? "on_hold"
+      : spec.approval?.required && spec.approval.status === "pending"
+        ? "approval_pending"
+        : spec.planStatus === "alternative" || spec.planStatus === "dropped"
+          ? "not_active"
+          : null;
   return {
     objectiveKey: "bba",
     sequence: 0,
@@ -59,7 +67,8 @@ function item(spec: ItemSpec): StudentRoadmapItemView {
     waitingOn: [],
     itemRevision: itemStatus === "not_started" ? 0 : 1,
     official: null,
-    canReport: true,
+    canReport: blocked === null,
+    reportBlockedReason: blocked,
     ...spec,
     itemStatus,
     tasks: t,
@@ -125,10 +134,11 @@ const FOUNDATION: StudentFoundationView = {
   ],
   ladder: {
     // reported = verified + provisional; verified = applied + surplus. Credentials below account for all of it.
-    reported: "69.00",
+    // Credentials list 60 verified + 9 waiting; the other 6 verified credits come from other courses on record.
+    reported: "75.00",
     provisional: "9.00",
-    verified: "60.00",
-    applied: "57.00",
+    verified: "66.00",
+    applied: "63.00",
     surplus: "3.00",
     planned: "27.00",
     required: "120.00",
@@ -183,8 +193,7 @@ const p2Items = [
   }),
   item({
     key: "bba-fin330-alt", phaseKey: "business-core", sequence: 5, code: "FIN331", title: "Managerial Finance (alternative)",
-    stage: "not_started", planStatus: "alternative", alternativeOf: "bba-fin330", canReport: false,
-    provider: "Study.com", credits: "3.00",
+    stage: "not_started", planStatus: "alternative", alternativeOf: "bba-fin330",     provider: "Study.com", credits: "3.00",
   }),
 ];
 
@@ -217,7 +226,7 @@ export const RICH_MID_JOURNEY: StudentRoadmapView = (() => {
   const phases = [
     phase({ key: "foundation-courses", title: "Foundation Courses", sequence: 1, startDate: "2026-01-12", endDate: "2026-04-03", state: "complete", items: p1Items, description: "General education requirements that unlock the business core." }),
     phase({ key: "business-core", title: "Business Core", sequence: 2, startDate: "2026-09-14", endDate: "2027-04-30", state: "current", items: p2Items, description: "The courses at the heart of your degree." }),
-    phase({ key: "nursing-prerequisites", title: "Nursing Prerequisites", sequence: 3, objectiveKey: "rn-prereq", startDate: "2026-10-12", endDate: "2027-04-09", state: "upcoming", items: p3Items }),
+    phase({ key: "nursing-prerequisites", title: "Nursing Prerequisites", sequence: 3, objectiveKey: "rn-prereq", startDate: "2026-10-12", endDate: "2027-04-09", state: "current", items: p3Items }),
     phase({ key: "capstone", title: "Capstone & Graduation", sequence: 4, startDate: "2027-05-03", endDate: "2027-08-27", state: "upcoming", items: p4Items }),
   ];
   const all = phases.flatMap((p) => [...p.items]);
@@ -249,7 +258,7 @@ export const RICH_MID_JOURNEY: StudentRoadmapView = (() => {
     today: {
       focusItemKeys: ["bba-mkt300", "bba-acct210", "rn-anat"],
       headline: "Finish your Marketing challenges, then submit Touchstone 3",
-      detail: "Principles of Marketing is due to finish on Nov 27, 2026. Three tasks are left before the final exam.",
+      detail: "Principles of Marketing is due to finish on Nov 27, 2026.",
       nextMilestoneKey: "ms-core",
     },
     foundation: FOUNDATION,

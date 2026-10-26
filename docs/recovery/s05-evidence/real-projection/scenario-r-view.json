@@ -160,7 +160,8 @@
           },
           "stage": "provider_complete",
           "official": null,
-          "canReport": true
+          "canReport": true,
+          "reportBlockedReason": null
         },
         {
           "key": "r-bus-110",
@@ -258,7 +259,8 @@
           },
           "stage": "in_progress",
           "official": null,
-          "canReport": true
+          "canReport": true,
+          "reportBlockedReason": null
         }
       ],
       "counts": {
@@ -402,7 +404,8 @@
           },
           "stage": "in_progress",
           "official": null,
-          "canReport": true
+          "canReport": true,
+          "reportBlockedReason": null
         },
         {
           "key": "r-econ-102",
@@ -524,7 +527,8 @@
           },
           "stage": "not_started",
           "official": null,
-          "canReport": true
+          "canReport": true,
+          "reportBlockedReason": null
         }
       ],
       "counts": {
@@ -537,7 +541,7 @@
         "tasksGraded": 0,
         "tasksSubmitted": 0
       },
-      "state": "upcoming"
+      "state": "current"
     },
     {
       "key": "week-3",
@@ -644,7 +648,8 @@
           },
           "stage": "not_started",
           "official": null,
-          "canReport": true
+          "canReport": true,
+          "reportBlockedReason": null
         },
         {
           "key": "r-mgt-201",
@@ -742,7 +747,8 @@
           },
           "stage": "not_started",
           "official": null,
-          "canReport": true
+          "canReport": true,
+          "reportBlockedReason": null
         }
       ],
       "counts": {
@@ -894,7 +900,8 @@
           },
           "stage": "not_started",
           "official": null,
-          "canReport": true
+          "canReport": true,
+          "reportBlockedReason": null
         },
         {
           "key": "r-bus-220",
@@ -1000,7 +1007,8 @@
           },
           "stage": "not_started",
           "official": null,
-          "canReport": true
+          "canReport": true,
+          "reportBlockedReason": null
         }
       ],
       "counts": {
@@ -1144,7 +1152,8 @@
           },
           "stage": "not_started",
           "official": null,
-          "canReport": true
+          "canReport": true,
+          "reportBlockedReason": null
         },
         {
           "key": "r-bus-230",
@@ -1242,7 +1251,8 @@
           },
           "stage": "not_started",
           "official": null,
-          "canReport": true
+          "canReport": true,
+          "reportBlockedReason": null
         }
       ],
       "counts": {
@@ -1362,7 +1372,8 @@
           },
           "stage": "not_started",
           "official": null,
-          "canReport": true
+          "canReport": true,
+          "reportBlockedReason": null
         },
         {
           "key": "r-ops-301",
@@ -1484,7 +1495,8 @@
           },
           "stage": "not_started",
           "official": null,
-          "canReport": true
+          "canReport": true,
+          "reportBlockedReason": null
         }
       ],
       "counts": {
@@ -1604,7 +1616,8 @@
           },
           "stage": "not_started",
           "official": null,
-          "canReport": true
+          "canReport": true,
+          "reportBlockedReason": null
         },
         {
           "key": "r-info-301",
@@ -1718,7 +1731,8 @@
           },
           "stage": "not_started",
           "official": null,
-          "canReport": true
+          "canReport": true,
+          "reportBlockedReason": null
         }
       ],
       "counts": {
@@ -1862,7 +1876,8 @@
           },
           "stage": "not_started",
           "official": null,
-          "canReport": true
+          "canReport": true,
+          "reportBlockedReason": null
         },
         {
           "key": "r-bus-490",
@@ -2005,7 +2020,8 @@
           },
           "stage": "not_started",
           "official": null,
-          "canReport": true
+          "canReport": true,
+          "reportBlockedReason": null
         }
       ],
       "counts": {

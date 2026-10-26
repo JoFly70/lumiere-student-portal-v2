@@ -61,7 +61,7 @@ export function HorizonSection({ view }: { view: StudentRoadmapView }) {
                       {next?.key === m.key && <Pill tone="gold">Next</Pill>}
                     </p>
                     <p className="text-sm text-student-muted">
-                      {[milestoneKindLabel(m.kind), formatShortDate(m.targetDate) ? `Target ${formatShortDate(m.targetDate)}` : "Date to be set", milestoneStatusLine(m)].join(" · ")}
+                      {[milestoneKindLabel(m.kind), formatShortDate(m.targetDate) ? `Target ${formatShortDate(m.targetDate)}` : "Date to be set", milestoneStatusLine(m, view)].filter(Boolean).join(" · ")}
                     </p>
                   </div>
                 </li>
@@ -108,7 +108,7 @@ export function HorizonSummary({ view }: { view: StudentRoadmapView }) {
                 {m.key === next.key && <Pill tone="gold">Next</Pill>}
               </p>
               <p className="text-sm text-student-muted">
-                {[milestoneKindLabel(m.kind), formatShortDate(m.targetDate) ? `Target ${formatShortDate(m.targetDate)}` : "Date to be set", milestoneStatusLine(m)].join(" · ")}
+                {[milestoneKindLabel(m.kind), formatShortDate(m.targetDate) ? `Target ${formatShortDate(m.targetDate)}` : "Date to be set", milestoneStatusLine(m, view)].filter(Boolean).join(" · ")}
               </p>
             </div>
           </li>

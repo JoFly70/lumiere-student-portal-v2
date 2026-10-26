@@ -168,10 +168,10 @@ async function main() {
       { file: "02-flight-deck-390-light.png", route: "/flight-deck", o: { theme: "light", width: 390, height: 844 }, sel: '[data-testid="flight-deck"]', axe: true },
       { file: "03-flight-deck-1440-dark.png", route: "/flight-deck", o: { theme: "dark", width: 1440, height: 900 }, sel: '[data-testid="flight-deck"]', axe: true },
       { file: "04-flight-deck-390-dark.png", route: "/flight-deck", o: { theme: "dark", width: 390, height: 844 }, sel: '[data-testid="flight-deck"]', axe: true },
-      { file: "05-roadmap-1440-light.png", route: "/roadmap", o: { theme: "light", width: 1440, height: 900 }, sel: '[data-testid="roadmap-page"]', open: true, axe: true },
-      { file: "06-roadmap-390-light.png", route: "/roadmap", o: { theme: "light", width: 390, height: 844 }, sel: '[data-testid="roadmap-page"]', open: true, axe: true },
-      { file: "07-roadmap-1440-dark.png", route: "/roadmap", o: { theme: "dark", width: 1440, height: 900 }, sel: '[data-testid="roadmap-page"]', open: true, axe: true },
-      { file: "08-roadmap-390-dark.png", route: "/roadmap", o: { theme: "dark", width: 390, height: 844 }, sel: '[data-testid="roadmap-page"]', open: true, axe: true },
+      { file: "05-roadmap-1440-light.png", route: "/roadmap", o: { theme: "light", width: 1440, height: 900 }, sel: '[data-testid="roadmap-page"]', axe: true },
+      { file: "06-roadmap-390-light.png", route: "/roadmap", o: { theme: "light", width: 390, height: 844 }, sel: '[data-testid="roadmap-page"]', axe: true },
+      { file: "07-roadmap-1440-dark.png", route: "/roadmap", o: { theme: "dark", width: 1440, height: 900 }, sel: '[data-testid="roadmap-page"]', axe: true },
+      { file: "08-roadmap-390-dark.png", route: "/roadmap", o: { theme: "dark", width: 390, height: 844 }, sel: '[data-testid="roadmap-page"]', axe: true },
       { file: "09-flight-deck-not-published-1440.png", route: "/flight-deck", o: { theme: "light", width: 1440, height: 900, fixture: NOT_PUBLISHED }, sel: '[data-testid="flight-deck"]', axe: true },
       { file: "10-roadmap-not-published-390.png", route: "/roadmap", o: { theme: "light", width: 390, height: 844, fixture: NOT_PUBLISHED }, sel: '[data-testid="roadmap-page"]', axe: true },
     ];
@@ -195,11 +195,11 @@ async function main() {
         await jump.click();
         await page.waitForTimeout(900);
       }
-      const card = page.locator('article[data-item-key]:has([data-testid="task-row"]:visible)').first();
+      const card = page.locator('article[data-item-key]:has(select:visible)').first();
       await card.waitFor({ timeout: 10_000 });
-      const box = card.locator('input[type="checkbox"]:not(:checked):visible').first();
-      if (await box.count()) await box.click();
-      else await card.locator('input[type="radio"]:visible').nth(1).click({ force: true });
+      // Every task row has the same control: a labelled status menu. Report the first task done.
+      const menu = card.locator("select:not([disabled])").first();
+      await menu.selectOption("graded");
       await page.waitForTimeout(700);
       await card.scrollIntoViewIfNeeded();
       await page.screenshot({ path: path.join(OUT, "11-roadmap-390-task-interaction.png") });

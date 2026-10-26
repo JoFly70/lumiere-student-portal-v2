@@ -1,18 +1,16 @@
 /**
- * Task rows and their status controls. Real inputs only: a checkbox for
- * done/not-done tasks and a radio group for tasks with a submit/grade cycle.
- * Nothing here can award credit; "graded" means the student reports it graded.
+ * Task rows. Every row has the same single control, a labelled status menu
+ * (native select), or a read-only readout when reporting is closed.
+ * Nothing here can award credit: "Done" means the student reports the work done.
  */
-import React, { useId } from "react";
-import { Check, Loader2, Play } from "lucide-react";
+import React from "react";
+import { Check, ChevronDown, CircleDashed, Loader2, Play, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { StudentRoadmapItemView, StudentTaskStatus, StudentTaskView } from "@shared/student-roadmap-contract";
 import {
-  TASK_STATUS_OPTIONS,
   controlsEnabled,
-  doneToggleTarget,
   rowKey,
-  taskControlKind,
+  statusOptionsFor,
   taskKindLabel,
   taskSavedLabel,
   taskStatusLabel,
@@ -30,94 +28,99 @@ function Saving() {
   );
 }
 
+const STATUS_ICON = {
+  not_started: CircleDashed,
+  in_progress: Play,
+  submitted: Send,
+  graded: Check,
+} as const;
+
+function statusStyle(status: StudentTaskStatus): string {
+  if (status === "graded") return "border-2 border-student-gold-ink bg-student-gold-soft font-semibold text-student-gold-ink";
+  if (status === "submitted" || status === "in_progress") return "border-2 border-student-gold bg-student-card font-semibold text-student-ink";
+  return "border border-student-line-strong bg-student-card text-student-muted";
+}
+
+/** The one control every task row uses: a labelled status menu (native select). */
+function StatusSelect({
+  item,
+  task,
+  disabled,
+  onChange,
+}: {
+  item: StudentRoadmapItemView;
+  task: StudentTaskView;
+  disabled: boolean;
+  onChange: (status: StudentTaskStatus) => void;
+}) {
+  const Icon = STATUS_ICON[task.status];
+  return (
+    <span className="relative inline-flex min-w-0 shrink-0">
+      <Icon className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-student-gold-ink" strokeWidth={task.status === "graded" ? 3 : 2} aria-hidden="true" />
+      <select
+        value={task.status}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.value as StudentTaskStatus)}
+        aria-label={`${task.title}: status ${taskStatusLabel(task.status)}. Change status`}
+        className={cn(
+          "min-h-[40px] w-[9.5rem] max-w-full cursor-pointer appearance-none rounded-lg py-1 pl-8 pr-8 text-sm disabled:cursor-not-allowed disabled:opacity-60",
+          statusStyle(task.status),
+        )}
+        data-testid={`task-status-${task.key}`}
+        data-item-key={item.key}
+      >
+        {statusOptionsFor(task).map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+      <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-student-muted" aria-hidden="true" />
+    </span>
+  );
+}
+
+/** Recorded progress shown without any control (gated, accepted or alternative items). */
+function StatusReadout({ task }: { task: StudentTaskView }) {
+  const Icon = STATUS_ICON[task.status];
+  return (
+    <span className="inline-flex shrink-0 items-center gap-1.5 text-sm text-student-muted" data-testid="status-readout">
+      <Icon className="h-3.5 w-3.5 text-student-gold-ink" aria-hidden="true" />
+      {taskStatusLabel(task.status)}
+      <span className="sr-only"> (recorded, cannot be changed right now)</span>
+    </span>
+  );
+}
+
 export function TaskRow({ item, task }: { item: StudentRoadmapItemView; task: StudentTaskView }) {
   const actions = useRoadmapActions();
-  const groupId = useId();
   const key = rowKey(item.key, task.key);
   const saving = actions.isPending(key);
   const enabled = controlsEnabled(item);
-  const disabled = !enabled || saving;
-  const set = (status: StudentTaskStatus) =>
-    actions.report(taskUpdate(item, task, status), taskSavedLabel(task, status));
-  const kind = taskControlKind(task.kind);
-
-  if (kind === "toggle") {
-    const done = task.status === "graded";
-    const inProgress = task.status === "in_progress";
-    return (
-      <li className="s-cq flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 py-0.5" data-testid="task-row" data-task-status={task.status} aria-busy={saving}>
-        <label className="flex min-h-[44px] min-w-0 flex-1 cursor-pointer items-center gap-3 text-sm text-student-ink">
-          <input
-            type="checkbox"
-            checked={done}
-            disabled={disabled}
-            onChange={() => void set(doneToggleTarget(task))}
-            className="h-5 w-5 shrink-0 cursor-pointer accent-[hsl(var(--s-gold-ink))] disabled:cursor-not-allowed"
-            data-testid={`task-check-${task.key}`}
-          />
-          <span className={cn(done && "text-student-muted line-through decoration-student-line-strong")}>
-            {task.title}
-            <span className="sr-only"> ({taskKindLabel(task.kind)}, {taskStatusLabel(task.status)})</span>
-          </span>
-        </label>
-        {saving && <Saving />}
-        {!done && enabled && (
-          <button
-            type="button"
-            aria-pressed={inProgress}
-            disabled={disabled}
-            onClick={() => void set(inProgress ? "not_started" : "in_progress")}
-            className={cn(
-              "inline-flex min-h-[36px] shrink-0 items-center gap-1.5 rounded-full border-2 px-3 text-xs font-semibold disabled:opacity-60",
-              inProgress
-                ? "border-student-gold-ink bg-student-gold-soft text-student-gold-ink"
-                : "border-student-line-strong bg-student-card text-student-ink hover:bg-student-gold-soft",
-            )}
-            data-testid={`task-started-${task.key}`}
-          >
-            {inProgress ? <Check className="h-3.5 w-3.5" strokeWidth={3} aria-hidden="true" /> : <Play className="h-3 w-3" aria-hidden="true" />}
-            {inProgress ? "Started" : "Mark started"}
-            <span className="sr-only"> {task.title}</span>
-          </button>
-        )}
-      </li>
-    );
-  }
-
   return (
-    <li className="s-cq min-w-0 py-1.5" data-testid="task-row" data-task-status={task.status} aria-busy={saving}>
-      <fieldset disabled={disabled} className="m-0 flex min-w-0 flex-col gap-2 border-0 p-0">
-        <legend className="sr-only">Status of {task.title}</legend>
-        <span className="flex items-center gap-2 text-sm text-student-ink" aria-hidden="true">
-          {task.title}
-          {saving && <Saving />}
-        </span>
-        <div className="s-seg">
-          {TASK_STATUS_OPTIONS.map((opt) => (
-            <label key={opt.value} className="relative min-w-0">
-              <input
-                type="radio"
-                name={`${groupId}-${key}`}
-                value={opt.value}
-                checked={task.status === opt.value}
-                onChange={() => void set(opt.value)}
-                className="peer sr-only"
-              />
-              <span
-                className={cn(
-                  "flex min-h-[40px] cursor-pointer items-center justify-center gap-1 rounded-lg border border-student-line-strong px-2 text-xs font-medium text-student-muted",
-                  "peer-checked:border-2 peer-checked:border-student-gold-ink peer-checked:bg-student-gold-soft peer-checked:font-semibold peer-checked:text-student-gold-ink",
-                  "peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-student-gold-ink",
-                  "peer-disabled:cursor-not-allowed peer-disabled:opacity-60",
-                )}
-              >
-                {task.status === opt.value && <Check className="h-3 w-3 shrink-0" strokeWidth={3} aria-hidden="true" />}
-                {opt.label}
-              </span>
-            </label>
-          ))}
-        </div>
-      </fieldset>
+    <li
+      className="s-cq flex min-h-[48px] min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-1.5 py-1.5"
+      data-testid="task-row"
+      data-task-status={task.status}
+      aria-busy={saving}
+    >
+      <span className="min-w-0 flex-1 basis-40 text-sm text-student-ink">
+        {task.title}
+        <span className="sr-only"> ({taskKindLabel(task.kind)})</span>
+      </span>
+      <span className="flex items-center gap-2">
+        {saving && <Saving />}
+        {enabled ? (
+          <StatusSelect
+            item={item}
+            task={task}
+            disabled={saving}
+            onChange={(status) => void actions.report(taskUpdate(item, task, status), taskSavedLabel(task, status), task.status)}
+          />
+        ) : (
+          <StatusReadout task={task} />
+        )}
+      </span>
     </li>
   );
 }

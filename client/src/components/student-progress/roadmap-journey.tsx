@@ -9,7 +9,6 @@ import type { StudentRoadmapPhaseView, StudentRoadmapView } from "@shared/studen
 import {
   ALL_LANES,
   alternativeTargetTitle,
-  creditsText,
   dateRangeLabel,
   formatShortDate,
   horizonMilestones,
@@ -185,8 +184,8 @@ export function RoadmapJourney({ view, targetItemKey = null, defaultOpenKey = nu
           <p className="font-serif text-xl text-student-ink">Your starting point</p>
           <p className="text-sm text-student-muted">
             {view.foundation.credentials.length > 0
-              ? `${view.foundation.credentials.length} prior ${view.foundation.credentials.length === 1 ? "credential" : "credentials"} · ${creditsText(view.foundation.ladder.verified)} verified. `
-              : `${creditsText(view.foundation.ladder.verified)} verified. `}
+              ? `${view.foundation.credentials.length} prior ${view.foundation.credentials.length === 1 ? "credential" : "credentials"} on record. `
+              : "Where your journey begins. "}
             <a href="#section-foundation" className="font-medium text-student-gold-ink underline underline-offset-4">See your foundation</a>
           </p>
         </li>

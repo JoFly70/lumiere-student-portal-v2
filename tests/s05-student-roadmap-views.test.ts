@@ -52,10 +52,29 @@ describe("S05 Roadmap page", () => {
   it("states the scope of every count and the cumulative ladder", () => {
     expect(markup).toContain('data-testid="summary-scope"');
     expect(t).toContain("Counts for your whole plan, all phases: 9 items");
+    expect(markup).not.toContain("Target Dec 11, 2027 · 7 items");
     expect(t).toContain("In this phase:");
-    expect(t).toContain("69 credits reported in total: 60 of them verified, 9 waiting for Lumière to verify.");
+    expect(t).toContain("75 credits reported in total: 66 of them verified, 9 waiting for Lumière to verify.");
     expect(t).not.toContain("Preliminary");
     expect(t).toContain("Waiting for verification");
+  });
+  it("titles the page by the primary program, not the staff plan title", () => {
+    expect(text(markup)).toContain("Bachelor of Business Administration");
+    expect(markup).toMatch(/<h1[^>]*>Bachelor of Business Administration<\/h1>/);
+    expect(markup).not.toMatch(/<h1[^>]*>Bachelor of Business Administration pathway/);
+  });
+  it("has a single Now target for the Today nav and no separate Today block", () => {
+    expect(markup).toContain('id="section-today"');
+    expect(count(markup, 'id="section-today"')).toBe(1);
+    expect(markup).not.toContain('data-testid="today-section"');
+    expect(markup).toContain('data-testid="jump-menu"');
+    expect(markup).not.toContain('data-testid="current-phase-line"');
+  });
+  it("accounts for credit outside listed credentials and shows still-to-plan", () => {
+    expect(markup).toContain('data-testid="other-credit-note"');
+    expect(t).toContain("Plus 6 more verified credits from other courses on your record.");
+    expect(markup).toContain('data-rung="still"');
+    expect(t).toContain("63 credits applied (solid) + 3 credits surplus (hatched)");
   });
   it("never offers 'Graded' as a student action", () => {
     expect(t).not.toMatch(/\bGraded\b/);
@@ -64,8 +83,9 @@ describe("S05 Roadmap page", () => {
   it("renders phases with the current one expanded and others collapsed", () => {
     expect(count(markup, 'data-testid="phase"')).toBe(4);
     const toggles = markup.match(/<button[^>]*data-testid="phase-toggle"/g)!;
-    expect(toggles.filter((b) => b.includes('aria-expanded="true"'))).toHaveLength(1);
-    expect(toggles.filter((b) => b.includes('aria-expanded="false"'))).toHaveLength(3);
+    // Business Core and Nursing Prerequisites are both current (activity in each); the rest are collapsed.
+    expect(toggles.filter((b) => b.includes('aria-expanded="true"'))).toHaveLength(2);
+    expect(toggles.filter((b) => b.includes('aria-expanded="false"'))).toHaveLength(2);
     expect(markup).toContain('data-phase-state="current"');
   });
 
@@ -113,8 +133,9 @@ describe("S05 Roadmap page", () => {
   });
 
   it("uses real, labelled controls with aria-expanded disclosures", () => {
-    expect(markup).toContain('type="checkbox"');
-    expect(markup).toContain('type="radio"');
+    expect(markup).toContain("<select");
+    expect(markup).not.toContain('type="checkbox"');
+    expect(markup).toContain("Change status");
     expect(markup).toMatch(/<button[^>]*aria-expanded="false"[^>]*data-testid="item-toggle"/);
     expect(markup).toContain('data-testid="task-list"');
   });
@@ -135,8 +156,8 @@ describe("S05 Flight Deck", () => {
   });
   it("takes credit numbers from the ladder only", () => {
     expect(markup).toContain('data-testid="rung-verified"');
-    expect(t).toMatch(/Verified 60/);
-    expect(t).toMatch(/Applied 57/);
+    expect(t).toMatch(/Verified 66/);
+    expect(t).toMatch(/Applied 63/);
     expect(t).toContain("Surplus: 3 credits");
   });
   it("does not repeat the headline", () => {
@@ -169,7 +190,7 @@ describe("S05 building blocks", () => {
     expect(m).toContain('data-reached="false"');
     expect(html(React.createElement(StageTrack, { stage: "officially_accepted" }))).toContain('data-reached="true"');
   });
-  it("ItemCard disables nothing for reportable items and hides item actions for accepted ones", () => {
+  it("ItemCard: reportable items keep their controls; gated and accepted ones show none", () => {
     const items = itemsByKey(V);
     const open = html(React.createElement(ItemCard, { item: items.get("bba-mkt300")!, defaultOpen: true }));
     expect(open).toContain('data-testid="button-provider-complete"');
@@ -178,23 +199,33 @@ describe("S05 building blocks", () => {
     expect(text(open)).toContain("6 done · show");
     const accepted = html(React.createElement(ItemCard, { item: items.get("bba-eng101")!, defaultOpen: true }));
     expect(accepted).not.toContain('data-testid="button-provider-complete"');
-    expect(accepted).toContain("disabled");
+    expect(accepted).not.toContain("<select");
+    expect(accepted).toContain('data-testid="status-readout"');
+    for (const key of ["bba-fin330", "bba-mgmt320"]) {
+      const gated = html(React.createElement(ItemCard, { item: items.get(key)!, defaultOpen: true }));
+      expect(gated).not.toContain("<select");
+      expect(gated).not.toContain('data-testid="button-provider-complete"');
+      expect(gated).not.toContain("Mark started");
+      expect(gated).toContain('data-testid="status-readout"');
+    }
+    expect(text(html(React.createElement(ItemCard, { item: items.get("bba-fin330")!, defaultOpen: true })))).toContain("Reporting reopens when Lumière lifts the hold.");
+    expect(text(html(React.createElement(ItemCard, { item: items.get("bba-mgmt320")!, defaultOpen: true })))).toContain("Waiting for advisor approval before you start.");
     const undo = html(React.createElement(ItemCard, { item: items.get("bba-stat200")!, defaultOpen: true }));
     expect(undo).toContain('data-testid="button-undo-provider-complete"');
   });
-  it("TaskRow renders a checkbox for challenges and a status group for touchstones", () => {
+  it("TaskRow uses one labelled status menu for every task kind", () => {
     const item = itemsByKey(V).get("bba-mkt300")!;
     const challenge = html(React.createElement("ul", null, React.createElement(TaskRow, { item, task: item.tasks[5] })));
-    expect(challenge).toContain('type="checkbox"');
+    expect(challenge).toContain('aria-label="Challenge 6: status Started. Change status"');
+    expect(count(challenge, "<select")).toBe(1);
+    expect(challenge).not.toContain('type="checkbox"');
+    expect(challenge).not.toContain("Mark started");
     const ts = item.tasks.find((x) => x.kind === "touchstone")!;
     const seg = html(React.createElement("ul", null, React.createElement(TaskRow, { item, task: ts })));
-    expect(count(seg, 'type="radio"')).toBe(4);
-    expect(seg).toContain("<legend");
+    expect(count(seg, "<select")).toBe(1);
+    expect(count(seg, "<option")).toBe(4);
     expect(text(seg)).toContain("Done");
     expect(text(seg)).not.toContain("Graded");
-    const started = html(React.createElement("ul", null, React.createElement(TaskRow, { item, task: item.tasks[6] })));
-    expect(text(started)).toContain("Mark started");
-    expect(text(started)).not.toMatch(/In progress/);
   });
   it("CreditLadder shows Under review for a withheld applied figure", () => {
     const m = html(React.createElement(CreditLadder, { ladder: { ...V.foundation.ladder, applied: null, surplus: null } }));

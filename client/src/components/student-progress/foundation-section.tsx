@@ -22,6 +22,8 @@ import {
   ladderScale,
   ladderTotalsSentence,
   credentialStandingLabel,
+  stillToPlan,
+  otherCreditNote,
 } from "@/pages/student-roadmap-presentation";
 import { formatAsOf, formatDecimal } from "@/pages/student-progress-presentation";
 import { Disclosure, Pill, SectionHeading, buttonClass, cardClass } from "./student-ui";
@@ -36,6 +38,7 @@ const SEG: Record<string, React.CSSProperties> = {
   applied: { background: "hsl(var(--s-seal))" },
   surplus: { background: HATCH("--s-seal"), boxShadow: "inset 0 0 0 1.5px hsl(var(--s-seal))" },
   planned: { border: "1.5px dashed hsl(var(--s-gold-ink))", background: "transparent" },
+  still: { border: "1.5px dotted hsl(var(--s-line-strong))", background: "transparent" },
 };
 
 /** Each bar is drawn as the segments it is made of, so "cumulative" is visible. */
@@ -57,6 +60,14 @@ function barSegments(key: string, ladder: Ladder, scale: number): { style: strin
       { style: "surplus", start: applied, width: surplus },
     ];
   }
+  if (key === "planned" || key === "still") {
+    // Planned starts where Applied ends; "Still to plan" follows it up to what the degree requires.
+    const base = applied;
+    const planned = f(ladder.planned);
+    const start = key === "planned" ? base : Math.min(1, base + planned);
+    const width = key === "planned" ? planned : f(stillToPlan(ladder));
+    return [{ style: key, start, width: Math.min(width, Math.max(0, 1 - start)) }];
+  }
   const single: Record<string, [string, number]> = {
     reported: ["reported", f(ladder.reported)],
     provisional: ["waiting", waiting],
@@ -76,7 +87,10 @@ export function CreditLadder({ ladder, compact = false }: { ladder: Ladder; comp
   const rows = [
     ...rungs.map((r) => ({ ...r })),
     ...(!compact
-      ? [{ key: "planned" as const, label: "Planned (not credit yet)", value: ladder.planned, help: "On your roadmap, not yet accepted. A separate figure, not part of the total above." }]
+      ? [{ key: "planned" as const, label: "Planned (not credit yet)", value: ladder.planned, help: "On your roadmap, not yet accepted. It starts where Applied ends and is not part of the total above." }]
+      : []),
+    ...(!compact && stillToPlan(ladder)
+      ? [{ key: "still" as const, label: "Still to plan", value: stillToPlan(ladder), help: "What your degree still needs that no roadmap item covers yet. Lumière may add items." }]
       : []),
   ];
   return (
@@ -112,6 +126,11 @@ export function CreditLadder({ ladder, compact = false }: { ladder: Ladder; comp
               )}
             </div>
             {!compact && <p className="mt-1 text-xs text-student-muted">{r.help}</p>}
+            {r.key === "verified" && hasPositive(ladder.surplus) && hasPositive(ladder.applied) && (
+              <p className="mt-0.5 text-xs font-medium text-student-ink" data-testid="verified-split">
+                {creditsText(ladder.applied)} applied (solid) + {creditsText(ladder.surplus)} surplus (hatched)
+              </p>
+            )}
           </li>
         ))}
       </ol>
@@ -181,6 +200,11 @@ export function FoundationSection({
           <div className={cn(cardClass, "lg:col-span-3")}>
             <h3 className="mb-1 text-sm font-semibold text-student-ink">Prior degrees and credentials</h3>
             <CredentialsList foundation={foundation} />
+            {otherCreditNote(foundation) && (
+              <p className="mt-2 border-t border-student-line pt-3 text-sm text-student-muted" data-testid="other-credit-note">
+                {otherCreditNote(foundation)}
+              </p>
+            )}
           </div>
         )}
         <div className={cn(cardClass, foundation.credentials.length > 0 ? "lg:col-span-2" : "lg:col-span-5")}>

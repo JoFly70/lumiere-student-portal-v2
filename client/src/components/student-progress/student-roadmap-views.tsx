@@ -3,9 +3,10 @@
  * data; actions come from RoadmapActionsContext so these render from fixtures.
  */
 import React, { useEffect, useState } from "react";
+import { ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { StudentRoadmapView } from "@shared/student-roadmap-contract";
-import { BRAND_NAME, ROADMAP_SECTIONS, isPublished } from "@/pages/student-roadmap-presentation";
+import { BRAND_NAME, ROADMAP_SECTIONS, isPublished, primaryObjectiveTitle } from "@/pages/student-roadmap-presentation";
 import { formatAsOf } from "@/pages/student-progress-presentation";
 import { StudentSurface } from "./student-ui";
 import { ProgressSummary } from "./progress-summary";
@@ -56,7 +57,7 @@ export function SectionNav({ sections }: { sections: readonly { id: string; labe
   return (
     <nav
       aria-label="Roadmap sections"
-      className="[contain:inline-size] sticky top-0 z-30 -mx-4 border-b border-student-line bg-student-bg px-4 shadow-sm sm:-mx-6 sm:px-6 md:-mx-8 md:px-8"
+      className="[contain:inline-size] md:sticky md:top-0 z-30 -mx-4 border-b border-student-line bg-student-bg px-4 shadow-sm sm:-mx-6 sm:px-6 md:-mx-8 md:px-8"
       data-testid="section-nav"
     >
       <ul className="mx-auto flex max-w-6xl gap-1 overflow-x-auto py-1.5">
@@ -76,6 +77,39 @@ export function SectionNav({ sections }: { sections: readonly { id: string; labe
         ))}
       </ul>
     </nav>
+  );
+}
+
+/** Mobile only: one compact floating "Jump to" menu, so no second sticky bar covers titles. */
+export function JumpMenu({ sections }: { sections: readonly { id: string; label: string }[] }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="student-surface fixed bottom-4 right-4 z-40 md:hidden" data-testid="jump-menu">
+      {open && (
+        <ul className="mb-2 overflow-hidden rounded-xl border border-student-line bg-student-card shadow-lg" aria-label="Jump to section">
+          {sections.map((s) => (
+            <li key={s.id}>
+              <a
+                href={`#${s.id}`}
+                onClick={() => setOpen(false)}
+                className="flex min-h-[44px] items-center px-4 text-sm font-medium text-student-ink hover:bg-student-gold-soft"
+              >
+                {s.label}
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+        className="ml-auto flex min-h-[44px] items-center gap-2 rounded-full bg-student-seal px-4 text-sm font-semibold text-student-seal-ink shadow-lg"
+      >
+        Jump to
+        <ChevronUp className={cn("h-4 w-4 transition-transform", !open && "rotate-180")} aria-hidden="true" />
+      </button>
+    </div>
   );
 }
 
@@ -113,9 +147,10 @@ export function RoadmapPageView({
     <StudentSurface testId="roadmap-page">
       <div data-state="PUBLISHED">
         <div className="mx-auto w-full max-w-6xl pb-6">
-          <PageHeader eyebrow={BRAND_NAME} title={view.plan!.title} subtitle={planSubtitle(view)} />
+          <PageHeader eyebrow={BRAND_NAME} title={primaryObjectiveTitle(view) ?? view.plan!.title} subtitle={planSubtitle(view)} />
         </div>
         <SectionNav sections={ROADMAP_SECTIONS} />
+        <JumpMenu sections={ROADMAP_SECTIONS} />
         <div className="mx-auto mt-6 w-full max-w-6xl space-y-8">
           <NowStrip view={view} onJump={(key) => setTargetItemKey(key)} />
           <ProgressSummary view={view} variant="roadmap" />
@@ -143,7 +178,7 @@ export function FlightDeckRoadmapView({ view }: { view: StudentRoadmapView }) {
   return (
     <StudentSurface testId="flight-deck">
       <div className="mx-auto w-full max-w-6xl space-y-8" data-state="PUBLISHED">
-        <PageHeader eyebrow={BRAND_NAME} title="Your Flight Deck" subtitle={view.plan!.title} />
+        <PageHeader eyebrow={BRAND_NAME} title="Your Flight Deck" subtitle={primaryObjectiveTitle(view)} />
         <TodaySection view={view} />
         <ProgressSummary view={view} showRoadmapLink />
         <div className="grid gap-6 md:grid-cols-2">

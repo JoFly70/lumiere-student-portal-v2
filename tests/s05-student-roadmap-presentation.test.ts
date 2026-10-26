@@ -27,6 +27,14 @@ import {
   phaseSummaryLine,
   TASK_STATUS_OPTIONS,
   nowTarget,
+  blockedReasonText,
+  blockedReasonShort,
+  statusOptionsFor,
+  stageLabelFor,
+  milestoneStatusLine,
+  primaryObjectiveTitle,
+  stillToPlan,
+  otherCreditNote,
   barFraction,
   nextMilestone,
   nextTasks,
@@ -45,6 +53,7 @@ import {
   interpretProgressError,
   isRoadmapMissingRecord,
 } from "../client/src/lib/student-roadmap-queries";
+import { revisionIn } from "../client/src/components/student-progress/roadmap-actions";
 import { COMPLETED, NOT_PUBLISHED, RICH_MID_JOURNEY as V } from "./helpers/student-roadmap-ui-fixtures";
 
 const item = (key: string) => itemsByKey(V).get(key)!;
@@ -157,7 +166,7 @@ describe("S05 roadmap presentation: credit ladder", () => {
   it("lists reported -> provisional -> verified -> applied from the ladder only", () => {
     const rungs = ladderRungs(V.foundation.ladder);
     expect(rungs.map((r) => [r.key, r.value])).toEqual([
-      ["reported", "69.00"], ["provisional", "9.00"], ["verified", "60.00"], ["applied", "57.00"],
+      ["reported", "75.00"], ["provisional", "9.00"], ["verified", "66.00"], ["applied", "63.00"],
     ]);
   });
   it("keeps applied null while under review", () => {
@@ -168,7 +177,7 @@ describe("S05 roadmap presentation: credit ladder", () => {
   it("sizes bars against one scale and explains the terms in plain language", () => {
     const scale = ladderScale(V.foundation.ladder);
     expect(scale).toBe(120);
-    expect(ladderTotalsSentence(V.foundation.ladder)).toBe("69 credits reported in total: 60 of them verified, 9 waiting for Lumière to verify.");
+    expect(ladderTotalsSentence(V.foundation.ladder)).toBe("75 credits reported in total: 66 of them verified, 9 waiting for Lumière to verify.");
     expect(barFraction("60.00", scale)).toBe(0.5);
     expect(barFraction(null, scale)).toBe(0);
     expect(SURPLUS_EXPLANATION).toMatch(/don't move you closer to graduation/);
@@ -226,5 +235,53 @@ describe("S05 student wording: the student never grades", () => {
   it("jumps to the first focus item from the Now strip", () => {
     expect(nowTarget(V)!.key).toBe("bba-mkt300");
     expect(nowTarget(NOT_PUBLISHED)).toBeNull();
+  });
+});
+
+describe("S05 final pass: gating, numbers, titles", () => {
+  it("explains why gated courses cannot be reported, in the student's words", () => {
+    const hold = item("bba-fin330");
+    expect(hold.canReport).toBe(false);
+    expect(controlsEnabled(hold)).toBe(false);
+    expect(blockedReasonText(hold)).toBe("On hold: Waiting for your advisor to confirm the provider for this course. Reporting reopens when Lumière lifts the hold.");
+    expect(blockedReasonShort(hold)).toBe("On hold");
+    const approval = item("bba-mgmt320");
+    expect(blockedReasonText(approval)).toBe("Waiting for advisor approval before you start.");
+    expect(canMarkProviderComplete(approval)).toBe(false);
+    expect(blockedReasonText(item("bba-mkt300"))).toBeNull();
+  });
+  it("offers the same four statuses for ceremony tasks and no 'submitted' step for challenges", () => {
+    const i = item("bba-mkt300");
+    const challenge = i.tasks.find((t) => t.kind === "challenge")!;
+    const touch = i.tasks.find((t) => t.kind === "touchstone")!;
+    expect(statusOptionsFor(challenge).map((o) => o.label)).toEqual(["Not started", "Started", "Done"]);
+    expect(statusOptionsFor(touch).map((o) => o.label)).toEqual(["Not started", "Started", "Submitted", "Done"]);
+  });
+  it("says Started, not In progress, while no task is done", () => {
+    expect(stageLabelFor({ ...item("bba-mkt300"), stage: "in_progress", taskCounts: { ...item("bba-mkt300").taskCounts, graded: 0 } })).toBe("Started");
+    expect(stageLabelFor(item("bba-mkt300"))).toBe("In progress");
+  });
+  it("derives still-to-plan and the other-credit note from ladder and credentials", () => {
+    expect(stillToPlan(V.foundation.ladder)).toBe("30");
+    expect(stillToPlan({ ...V.foundation.ladder, planned: "60.00" })).toBeNull();
+    expect(stillToPlan({ ...V.foundation.ladder, applied: null })).toBeNull();
+    expect(otherCreditNote(V.foundation)).toBe("Plus 6 more verified credits from other courses on your record.");
+    expect(otherCreditNote({ ...V.foundation, ladder: { ...V.foundation.ladder, verified: "60.00", provisional: "9.00" } })).toBeNull();
+  });
+  it("states milestone scope and omits a count that only repeats the whole plan", () => {
+    const [core, , , grad] = V.milestones;
+    expect(milestoneStatusLine(core, V)).toBe("4 items to finish first");
+    expect(milestoneStatusLine(grad, V)).toBeNull();
+    expect(milestoneStatusLine({ ...core, reached: true }, V)).toBe("Reached");
+  });
+  it("titles the student view by the primary objective's program", () => {
+    expect(primaryObjectiveTitle(V)).toBe("Bachelor of Business Administration");
+    expect(primaryObjectiveTitle(NOT_PUBLISHED)).toBeNull();
+  });
+  it("reads the new revision for an undo from the authoritative view", () => {
+    const task = item("bba-mkt300").tasks[5];
+    expect(revisionIn(V, { itemKey: "bba-mkt300", taskKey: task.key, status: "graded", expectedRevision: 0 })).toBe(task.revision);
+    expect(revisionIn(V, { itemKey: "bba-mkt300", taskKey: null, status: "in_progress", expectedRevision: 0 })).toBe(item("bba-mkt300").itemRevision);
+    expect(revisionIn(V, { itemKey: "nope", taskKey: null, status: "in_progress", expectedRevision: 0 })).toBeNull();
   });
 });

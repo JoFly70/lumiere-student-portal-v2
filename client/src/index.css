@@ -393,8 +393,8 @@
 }
 .dark .student-surface {
   color-scheme: dark;
-  --s-bg: 30 8% 8%;
-  --s-card: 30 7% 11%;
+  --s-bg: 33 17% 10%;
+  --s-card: 33 14% 13%;
   --s-ink: 43 25% 92%;
   --s-muted: 40 10% 70%;
   --s-gold-fill: 40 60% 38%;

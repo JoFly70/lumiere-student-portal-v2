@@ -71,6 +71,12 @@ export function stagePresentation(stage: StudentItemStage): StagePresentation {
   return STAGES[stageIndex(stage)];
 }
 
+/** "Started" instead of "In progress" while no task is done yet. */
+export function stageLabelFor(item: StudentRoadmapItemView): string {
+  if (item.stage === "in_progress" && item.taskCounts.graded === 0) return "Started";
+  return stagePresentation(item.stage).label;
+}
+
 export function stageAriaLabel(stage: StudentItemStage): string {
   return `Stage ${stageIndex(stage) + 1} of ${STAGES.length}: ${stagePresentation(stage).label}`;
 }
@@ -99,13 +105,19 @@ export function taskControlKind(kind: RoadmapTaskKind): TaskControlKind {
   return kind === "touchstone" || kind === "paper" || kind === "milestone" ? "segmented" : "toggle";
 }
 
-/** Student-facing wording. The API value "graded" means "I report this done"; the student never grades. */
+/** Student-facing wording. The API value "graded" is shown as "Done": the student reports work done and never grades. */
 export const TASK_STATUS_OPTIONS: readonly { value: StudentTaskStatus; label: string; reported: string }[] = [
   { value: "not_started", label: "Not started", reported: "not started" },
   { value: "in_progress", label: "Started", reported: "started" },
   { value: "submitted", label: "Submitted", reported: "submitted" },
   { value: "graded", label: "Done", reported: "done" },
 ];
+
+/** Status choices offered for a task. Challenges/quizzes/exams have no "submitted" step unless already there. */
+export function statusOptionsFor(task: StudentTaskView): readonly { value: StudentTaskStatus; label: string; reported: string }[] {
+  if (taskControlKind(task.kind) === "segmented" || task.status === "submitted") return TASK_STATUS_OPTIONS;
+  return TASK_STATUS_OPTIONS.filter((o) => o.value !== "submitted");
+}
 
 export function taskStatusLabel(status: StudentTaskStatus): string {
   return TASK_STATUS_OPTIONS.find((o) => o.value === status)?.label ?? status;
@@ -132,6 +144,24 @@ export function nextTasks(item: StudentRoadmapItemView, limit = 3): StudentTaskV
 /** Reporting is allowed unless the item is dropped/alternative or already officially accepted. */
 export function controlsEnabled(item: StudentRoadmapItemView): boolean {
   return item.canReport && item.stage !== "officially_accepted";
+}
+
+/** Why reporting is closed for this item, in the student\'s words; null when it is open or not applicable. */
+export function blockedReasonText(item: StudentRoadmapItemView): string | null {
+  if (item.canReport || item.stage === "officially_accepted") return null;
+  if (item.reportBlockedReason === "on_hold") {
+    const why = item.holdReason ? `${item.holdReason.replace(/[.\s]+$/, "")}. ` : "";
+    return `On hold: ${why}Reporting reopens when Lumière lifts the hold.`;
+  }
+  if (item.reportBlockedReason === "approval_pending") return "Waiting for advisor approval before you start.";
+  return null;
+}
+
+export function blockedReasonShort(item: StudentRoadmapItemView): string | null {
+  if (item.canReport || item.stage === "officially_accepted") return null;
+  if (item.reportBlockedReason === "on_hold") return "On hold";
+  if (item.reportBlockedReason === "approval_pending") return "Awaiting approval";
+  return null;
 }
 
 export function doneToggleTarget(task: StudentTaskView): StudentTaskStatus {
@@ -297,10 +327,18 @@ export function milestoneKindLabel(kind: StudentRoadmapMilestoneView["kind"]): s
   return MILESTONE_KIND_LABELS[kind];
 }
 
-export function milestoneStatusLine(m: StudentRoadmapMilestoneView): string {
+/**
+ * Scope-stated, and omitted when it would only repeat the whole-plan count
+ * (every unfinished item is before this milestone).
+ */
+export function milestoneStatusLine(m: StudentRoadmapMilestoneView, view?: StudentRoadmapView): string | null {
   if (m.reached) return "Reached";
   if (m.remainingItems === 0) return "Waiting for Lumière to confirm";
-  return `${m.remainingItems} ${m.remainingItems === 1 ? "item" : "items"} to go`;
+  if (view) {
+    const unfinished = view.counts.itemsTotal - view.counts.itemsOfficiallyAccepted - view.counts.itemsProviderComplete;
+    if (m.remainingItems === unfinished) return null;
+  }
+  return `${m.remainingItems} ${m.remainingItems === 1 ? "item" : "items"} to finish first`;
 }
 
 // ── Dates ───────────────────────────────────────────────────────────────────
@@ -533,4 +571,36 @@ export function credentialStandingLabel(standing: StudentFoundationView["credent
 /** The reportable item to jump to from the "Now" strip: first focus item. */
 export function nowTarget(view: StudentRoadmapView): StudentRoadmapItemView | null {
   return focusItems(view)[0] ?? null;
+}
+
+/** Student-facing program name: the primary objective's canonical program, else its title. */
+export function primaryObjectiveTitle(view: StudentRoadmapView): string | null {
+  const primary = view.objectives.find((o) => o.kind === "primary");
+  return primary ? (primary.canonicalProgramName ?? primary.title) : null;
+}
+
+/** Credits the degree still needs that no roadmap item covers: required - applied - planned, only when > 0. */
+export function stillToPlan(ladder: StudentFoundationView["ladder"]): string | null {
+  const req = toHundredths(ladder.required);
+  const applied = toHundredths(ladder.applied);
+  const planned = toHundredths(ladder.planned);
+  if (req === null || applied === null || planned === null) return null;
+  const gap = req - applied - planned;
+  return gap > 0 ? fromHundredths(gap) : null;
+}
+
+/**
+ * Credit on the ladder that belongs to no listed credential (credit from other
+ * courses on the record). Derived only from ladder + credential amounts.
+ */
+export function otherCreditNote(f: StudentFoundationView): string | null {
+  const sum = (xs: (string | null)[]) => xs.reduce<number>((n, v) => n + (toHundredths(v) ?? 0), 0);
+  const verifiedListed = sum(f.credentials.filter((c) => c.standing === "VERIFIED_APPLIED" || c.standing === "VERIFIED_NOT_APPLIED").map((c) => c.awardedCredits));
+  const waitingListed = sum(f.credentials.filter((c) => c.standing === "PENDING_VERIFICATION" || c.standing === "NEEDS_REVIEW").map((c) => c.reportedCredits));
+  const verifiedOther = (toHundredths(f.ladder.verified) ?? 0) - verifiedListed;
+  const waitingOther = (toHundredths(f.ladder.provisional) ?? 0) - waitingListed;
+  const parts: string[] = [];
+  if (verifiedOther > 0) parts.push(`${fromHundredths(verifiedOther)} more verified ${fromHundredths(verifiedOther) === "1" ? "credit" : "credits"}`);
+  if (waitingOther > 0) parts.push(`${fromHundredths(waitingOther)} ${fromHundredths(waitingOther) === "1" ? "credit" : "credits"} waiting for verification`);
+  return parts.length ? `Plus ${parts.join(" and ")} from other courses on your record.` : null;
 }
