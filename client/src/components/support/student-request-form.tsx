@@ -31,6 +31,7 @@ export function NewRequestForm({
   defaultItemKey,
   submitting,
   serverError,
+  serverErrorMayHaveSaved,
   onSubmit,
   onCancel,
 }: {
@@ -38,6 +39,8 @@ export function NewRequestForm({
   defaultItemKey?: string | null;
   submitting?: boolean;
   serverError?: string | null;
+  /** True when the request may have been received despite the error (network loss, unconfirmed rollback). */
+  serverErrorMayHaveSaved?: boolean;
   onSubmit: (values: NewRequestValues) => void;
   onCancel: () => void;
 }) {
@@ -215,7 +218,10 @@ export function NewRequestForm({
 
       {serverError && (
         <div role="alert" className="rounded-xl border border-student-attn bg-student-attn-soft p-4 text-sm text-student-ink" data-testid="submit-error">
-          {serverError} Your request has not been sent. Nothing you wrote has been lost, so you can try again.
+          {serverError}{" "}
+          {serverErrorMayHaveSaved
+            ? "It may have been received. Sending it again is safe: we will not create a duplicate. Nothing you wrote has been lost."
+            : "Your request has not been sent. Nothing you wrote has been lost, so you can try again."}
         </div>
       )}
 

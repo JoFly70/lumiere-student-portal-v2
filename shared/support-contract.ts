@@ -220,6 +220,13 @@ export interface SupportContext {
 // Request bodies
 // ---------------------------------------------------------------------------
 
+/**
+ * Client-generated idempotency key for ticket creation (one per form
+ * submission, reused on retry). Stored in support_tickets.metadata and scoped
+ * to the reporting student by the server.
+ */
+export const SUPPORT_IDEMPOTENCY_KEY_PATTERN = /^[A-Za-z0-9_-]{16,100}$/;
+
 export const createTicketInputSchema = z.object({
   subject: z.string().trim().min(5).max(200),
   description: z.string().trim().min(10).max(5000),
@@ -229,6 +236,7 @@ export const createTicketInputSchema = z.object({
   /** Accepted only from staff creating on behalf; ignored (forced to medium) for students. */
   priority: z.enum(TICKET_PRIORITIES).optional(),
   context: supportContextInputSchema.optional(),
+  idempotencyKey: z.string().regex(SUPPORT_IDEMPOTENCY_KEY_PATTERN).optional(),
 }).strict().refine((v) => !!v.topic || !!v.category, { message: "topic is required", path: ["topic"] });
 export type CreateTicketInput = z.infer<typeof createTicketInputSchema>;
 
@@ -400,4 +408,5 @@ export type SupportErrorCode =
   | "ATTACHMENT_TYPE_NOT_ALLOWED"
   | "ATTACHMENT_PATH_INVALID"
   | "STORAGE_UNAVAILABLE"
-  | "SUPPORT_UNAVAILABLE";
+  | "SUPPORT_UNAVAILABLE"
+  | "SUPPORT_CREATE_INCOMPLETE";

@@ -601,9 +601,44 @@ export function createTicketsRouter(deps: TicketsRouterDeps): Router {
       }
     } catch { /* fall back to session values */ }
 
+    const idempotencyKey = input.idempotencyKey;
+
+    // Idempotent retry: the lookup is scoped to THIS student, so a key can never
+    // reveal or return another student's ticket.
+    if (idempotencyKey) {
+      const { data: existingRows, error: lookupError } = await db()
+        .from("support_tickets")
+        .select("*")
+        .eq("reporter_id", viewer.id)
+        .eq("metadata->>idempotency_key", idempotencyKey)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      if (lookupError) return dbFail(res, "idempotency lookup failed", lookupError);
+      const existing = firstRow(existingRows);
+      if (existing) {
+        const { data: opening, error: openingError } = await db()
+          .from("ticket_comments")
+          .select("id")
+          .eq("ticket_id", existing.id)
+          .limit(1);
+        if (openingError) return dbFail(res, "idempotent opening-message lookup failed", openingError);
+        if (firstRow(opening)) {
+          // Complete ticket from an earlier attempt: return it, create nothing.
+          return res.status(200).json({ ticket: await detailFor(existing, viewer), replayed: true });
+        }
+        // Incomplete leftover (a failed rollback): remove it and create cleanly.
+        const { error: purgeError } = await db().from("support_tickets").delete().eq("id", existing.id).eq("reporter_id", viewer.id);
+        if (purgeError) {
+          logger.error("Support: could not remove incomplete ticket before retry", { ticketId: existing.id, error: purgeError.message });
+          return fail(res, 503, "SUPPORT_CREATE_INCOMPLETE", "We could not save your request. Please try again in a moment.");
+        }
+      }
+    }
+
     const nowIso = deps.now().toISOString();
     const metadata: Record<string, unknown> = { topic, awaiting_since: nowIso };
     if (context) metadata.context = context;
+    if (idempotencyKey) metadata.idempotency_key = idempotencyKey;
 
     const { data: created, error } = await db()
       .from("support_tickets")
@@ -631,7 +666,28 @@ export function createTicketsRouter(deps: TicketsRouterDeps): Router {
       content: input.description,
       is_internal: false,
     });
-    if (commentError) logger.warn("Support: opening message not recorded", { error: commentError.message });
+    if (commentError) {
+      // Never report success for a half-created request: roll the ticket back
+      // (compensating delete; PostgREST has no multi-statement transaction).
+      logger.error("Support: opening message not recorded; rolling back ticket", { ticketId: ticket.id, error: commentError.message });
+      const { error: rollbackError } = await db().from("support_tickets").delete().eq("id", ticket.id).eq("reporter_id", viewer.id);
+      if (rollbackError) {
+        logger.error("Support: ROLLBACK FAILED, incomplete ticket remains", { ticketId: ticket.id, error: rollbackError.message });
+      }
+      await auditTicket(req, "support.ticket_created", ticket, "Support ticket creation failed: opening message not saved", {
+        outcome: rollbackError ? "rollback_failed" : "rolled_back",
+        failedStep: "opening_comment",
+      }, rollbackError ? "critical" : "error");
+      return fail(
+        res,
+        503,
+        "SUPPORT_CREATE_INCOMPLETE",
+        rollbackError
+          ? "We could not confirm your request was saved. It may appear in your list; please check before sending it again."
+          : "We could not save your request. Nothing was sent. Please try again.",
+        { saved: false, mayHaveSaved: !!rollbackError },
+      );
+    }
 
     await auditTicket(req, "support.ticket_created", ticket, "Support ticket created", {
       category,

@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiRequest } from '@/lib/api';
+import { apiRequest, ApiError } from '@/lib/api';
 
 import type {
   SupportAttachment,
@@ -46,6 +46,28 @@ export interface CreateTicketInput {
   category?: TicketCategory;
   priority?: TicketPriority;
   context?: { roadmapItemKey: string };
+  /** Stable per form submission; reused on retry so a retry never duplicates the request. */
+  idempotencyKey?: string;
+}
+
+/** A new random idempotency key (matches SUPPORT_IDEMPOTENCY_KEY_PATTERN). */
+export function newIdempotencyKey(): string {
+  const c: Crypto | undefined = typeof crypto !== 'undefined' ? crypto : undefined;
+  if (c && typeof c.randomUUID === 'function') return c.randomUUID();
+  return `k${Date.now().toString(36)}${Math.random().toString(36).slice(2)}${Math.random().toString(36).slice(2)}`;
+}
+
+/**
+ * Truthful wording for a failed create: only claim "not sent" when the server
+ * said so. A network failure or an unconfirmed rollback may have saved it.
+ */
+export function describeCreateFailure(error: unknown): { message: string; mayHaveSaved: boolean } {
+  if (error instanceof ApiError) {
+    const details = error.details as { mayHaveSaved?: boolean } | undefined;
+    if (error.code === 'SUPPORT_CREATE_INCOMPLETE' && details?.mayHaveSaved) return { message: error.message, mayHaveSaved: true };
+    return { message: error.message, mayHaveSaved: false };
+  }
+  return { message: 'We could not confirm that your request was received.', mayHaveSaved: true };
 }
 
 export interface UpdateTicketInput {

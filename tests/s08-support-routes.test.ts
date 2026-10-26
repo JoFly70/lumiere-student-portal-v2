@@ -754,6 +754,30 @@ describe("12. external failures", () => {
     expect(h.fake.rows("support_tickets")).toHaveLength(0);
   });
 
+  it("S10: context is verified against the CALLER's own CURRENT published roadmap (another student's key and a superseded-version key are rejected)", async () => {
+    const h = build();
+    const withItem = (key: string, versionNumber: number) => {
+      const v: any = roadmapView();
+      v.plan = { ...v.plan, versionNumber };
+      v.phases[0].items = [{ ...v.phases[0].items[0], key }];
+      return v as StudentRoadmapView;
+    };
+    // Student B's current plan holds an item A does not have; A's current plan is v4,
+    // where the v3 item "item-old-v3" no longer exists.
+    h.loadPublishedRoadmap.mockImplementation(async (studentId: string) =>
+      studentId === "stu-b" ? withItem("item-only-in-b", 2) : withItem("item-current-v4", 4));
+    for (const key of ["item-only-in-b", "item-old-v3"]) {
+      const res = await as(h, "studentA").post("/api/tickets", { ...VALID_CREATE, context: { roadmapItemKey: key } });
+      expect(res.status).toBe(400);
+      expect(res.body.code).toBe("CONTEXT_NOT_IN_PLAN");
+    }
+    expect(h.fake.rows("support_tickets")).toHaveLength(0);
+    const ok = await as(h, "studentA").post("/api/tickets", { ...VALID_CREATE, context: { roadmapItemKey: "item-current-v4" } });
+    expect(ok.status).toBe(201);
+    expect(ok.body.ticket.context).toMatchObject({ itemKey: "item-current-v4", planVersion: 4 });
+    expect(h.loadPublishedRoadmap.mock.calls.every((c) => c[0] === "stu-a")).toBe(true);
+  });
+
   it("verified context is stored as a snapshot and shown on the ticket; browser cannot supply ids or titles", async () => {
     const h = build();
     const ok = await as(h, "studentA").post("/api/tickets", { ...VALID_CREATE, context: { roadmapItemKey: "item-eng101" } });
@@ -824,13 +848,112 @@ describe("12. external failures", () => {
     expect(h.fake.rows("ticket_comments")).toHaveLength(0);
   });
 
-  it("opening-comment insert failure is best effort: ticket is kept (description lives on the ticket) and 201 is returned", async () => {
+  // ---- S10: truthful creation (compensating rollback + idempotent retry) ----
+  const KEY = "form-submission-key-0001";
+  const auditCalls = (h: Harness) => h.audit.mock.calls.map((c) => c[0] as any);
+
+  it("S10: opening-comment failure -> 503 SUPPORT_CREATE_INCOMPLETE, no orphan ticket, failure audited, no notification", async () => {
     const h = build();
     h.fake.failTable("ticket_comments", { message: "boom", code: "XX000" }, "insert");
     const res = await as(h, "studentA").post("/api/tickets", VALID_CREATE);
-    expect(res.status).toBe(201);
-    expect(res.body.ticket.description).toBe(VALID_CREATE.description);
+    expect(res.status).toBe(503);
+    expect(res.body.code).toBe("SUPPORT_CREATE_INCOMPLETE");
+    expect(res.body.details).toEqual({ saved: false, mayHaveSaved: false });
+    expect(res.body.ticket).toBeUndefined();
+    expect(bodyText(res)).not.toContain("boom");
+    expect(h.fake.rows("support_tickets")).toHaveLength(0);
+    expect(h.fake.rows("ticket_comments")).toHaveLength(0);
+    expect(h.fake.opsOn("support_tickets", "delete")).toHaveLength(1);
+    const audits = auditCalls(h);
+    expect(audits).toHaveLength(1);
+    expect(audits[0]).toMatchObject({ eventType: "support.ticket_created", severity: "error", metadata: { outcome: "rolled_back", failedStep: "opening_comment" } });
+    expect(JSON.stringify(audits[0])).not.toContain(VALID_CREATE.description);
+    expect(h.notify.ticketCreated).not.toHaveBeenCalled();
+  });
+
+  it("S10: compensating delete also fails -> 503 telling the student it may have saved, critical audit, orphan only on delete failure", async () => {
+    const h = build();
+    h.fake.failTable("ticket_comments", { message: "boom", code: "XX000" }, "insert");
+    h.fake.failTable("support_tickets", { message: "delete refused", code: "XX001" }, "delete");
+    const res = await as(h, "studentA").post("/api/tickets", VALID_CREATE);
+    expect(res.status).toBe(503);
+    expect(res.body.code).toBe("SUPPORT_CREATE_INCOMPLETE");
+    expect(res.body.details).toEqual({ saved: false, mayHaveSaved: true });
+    expect(res.body.error).toMatch(/may appear|could not confirm/i);
+    expect(bodyText(res)).not.toContain("delete refused");
+    expect(h.fake.rows("support_tickets")).toHaveLength(1); // the orphan the audit/log point at
+    expect(auditCalls(h)[0]).toMatchObject({ severity: "critical", metadata: { outcome: "rollback_failed" } });
+    expect(h.notify.ticketCreated).not.toHaveBeenCalled();
+  });
+
+  it("S10: retry with the same key after a rolled-back failure creates exactly one complete ticket", async () => {
+    const h = build();
+    h.fake.failTable("ticket_comments", { message: "boom", code: "XX000" }, "insert", 1);
+    const first = await as(h, "studentA").post("/api/tickets", { ...VALID_CREATE, idempotencyKey: KEY });
+    expect(first.status).toBe(503);
+    const second = await as(h, "studentA").post("/api/tickets", { ...VALID_CREATE, idempotencyKey: KEY });
+    expect(second.status).toBe(201);
     expect(h.fake.rows("support_tickets")).toHaveLength(1);
+    expect(h.fake.rows("ticket_comments")).toHaveLength(1);
+  });
+
+  it("S10: retry after a FAILED rollback removes the incomplete leftover and recreates cleanly", async () => {
+    const h = build();
+    h.fake.failTable("ticket_comments", { message: "boom", code: "XX000" }, "insert", 1);
+    h.fake.failTable("support_tickets", { message: "delete refused", code: "XX001" }, "delete", 1);
+    const first = await as(h, "studentA").post("/api/tickets", { ...VALID_CREATE, idempotencyKey: KEY });
+    expect(first.body.details.mayHaveSaved).toBe(true);
+    expect(h.fake.rows("support_tickets")).toHaveLength(1);
+    const orphanId = h.fake.rows("support_tickets")[0].id;
+    const second = await as(h, "studentA").post("/api/tickets", { ...VALID_CREATE, idempotencyKey: KEY });
+    expect(second.status).toBe(201);
+    expect(second.body.ticket.id).not.toBe(orphanId);
+    expect(h.fake.rows("support_tickets")).toHaveLength(1);
+    expect(h.fake.rows("ticket_comments")).toHaveLength(1);
+  });
+
+  it("S10: retry with the same key after success returns the existing ticket (200, same id), no duplicate, no second notification", async () => {
+    const h = build();
+    const first = await as(h, "studentA").post("/api/tickets", { ...VALID_CREATE, idempotencyKey: KEY });
+    expect(first.status).toBe(201);
+    const again = await as(h, "studentA").post("/api/tickets", { ...VALID_CREATE, idempotencyKey: KEY });
+    expect(again.status).toBe(200);
+    expect(again.body.replayed).toBe(true);
+    expect(again.body.ticket.id).toBe(first.body.ticket.id);
+    expect(h.fake.rows("support_tickets")).toHaveLength(1);
+    expect(h.fake.rows("ticket_comments")).toHaveLength(1);
+    expect(h.notify.ticketCreated).toHaveBeenCalledTimes(1);
+    expect(auditCalls(h).filter((a) => a.eventType === "support.ticket_created")).toHaveLength(1);
+  });
+
+  it("S10: the same key from a different student never returns or reveals the first student's ticket", async () => {
+    const h = build();
+    const a = await as(h, "studentA").post("/api/tickets", { ...VALID_CREATE, subject: "Ada private subject", idempotencyKey: KEY });
+    const b = await as(h, "studentB").post("/api/tickets", { ...VALID_CREATE, subject: "Ben own subject", idempotencyKey: KEY });
+    expect(b.status).toBe(201);
+    expect(b.body.ticket.id).not.toBe(a.body.ticket.id);
+    expect(bodyText(b)).not.toContain("Ada private subject");
+    expect(h.fake.rows("support_tickets")).toHaveLength(2);
+    expect(h.fake.rows("support_tickets").find((t) => t.id === b.body.ticket.id)?.reporter_id).toBe(U.studentB.id);
+  });
+
+  it("S10: requests without a key behave as before; malformed keys are rejected; the key is never exposed to students", async () => {
+    const h = build();
+    const plain = await as(h, "studentA").post("/api/tickets", VALID_CREATE);
+    const plain2 = await as(h, "studentA").post("/api/tickets", VALID_CREATE);
+    expect([plain.status, plain2.status]).toEqual([201, 201]);
+    expect(h.fake.rows("support_tickets")).toHaveLength(2);
+    expect((await as(h, "studentA").post("/api/tickets", { ...VALID_CREATE, idempotencyKey: "short" })).status).toBe(400);
+    const keyed = await as(h, "studentA").post("/api/tickets", { ...VALID_CREATE, idempotencyKey: KEY });
+    expect(bodyText(keyed)).not.toContain(KEY);
+    expect(h.fake.rows("support_tickets").find((t) => t.id === keyed.body.ticket.id)?.metadata.idempotency_key).toBe(KEY);
+  });
+
+  it("S10: creating a ticket (with academic context) writes only support tables and never touches academic data", async () => {
+    const h = build();
+    const res = await as(h, "studentA").post("/api/tickets", { ...VALID_CREATE, context: { roadmapItemKey: "item-eng101" }, idempotencyKey: KEY });
+    expect(res.status).toBe(201);
+    expect([...h.fake.writtenTables()].sort()).toEqual(["support_tickets", "ticket_comments"]);
   });
 });
 

@@ -19,6 +19,20 @@ export function getCsrfToken(): string | null {
   return csrfToken;
 }
 
+/** Error thrown for non-2xx responses; keeps the machine-readable `code` and `details` the API sends. */
+export class ApiError extends Error {
+  readonly status: number;
+  readonly code?: string;
+  readonly details?: unknown;
+  constructor(message: string, status: number, code?: string, details?: unknown) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.code = code;
+    this.details = details;
+  }
+}
+
 export async function apiRequest<T = any>(
   url: string,
   options: RequestInit = {}
@@ -52,7 +66,12 @@ export async function apiRequest<T = any>(
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: 'Request failed' }));
-    throw new Error(error.error || `HTTP ${response.status}: ${response.statusText}`);
+    throw new ApiError(
+      error.error || `HTTP ${response.status}: ${response.statusText}`,
+      response.status,
+      typeof error.code === 'string' ? error.code : undefined,
+      error.details,
+    );
   }
 
   // 204 No Content (e.g. DELETE) has no JSON body.
