@@ -96,7 +96,7 @@ const summary = {
         // allow-list: any other provider text (e.g. a note row mis-read as an item) is bucketed, never echoed
         itemsByProvider: count(c.items, (i) => {
           const p = i.provider ?? "(none)";
-          return /^(sophia|study\.com|csm learn|coopersmith|tesu online|tesu tecep|tesu residency|dallas college|\(none\))$/i.test(p) ? p : "(other/unrecognised text)";
+          return /^(sophia|study\.com|csm learn|coopersmith|tesu online|tesu e-pack|tesu tecep|tesu residency|dallas college|\(none\))$/i.test(p) ? p : "(other/unrecognised text)";
         }),
         tasks: c.items.reduce((n, i) => n + i.tasks.length, 0),
         tasksByKind: count(c.items.flatMap((i) => i.tasks), (t) => t.kind),
