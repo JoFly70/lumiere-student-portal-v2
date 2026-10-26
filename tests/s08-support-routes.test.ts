@@ -824,6 +824,42 @@ describe("12. external failures", () => {
     expect(h.fake.rows("support_tickets")[0].status).toBe("waiting_on_student");
   });
 
+  it("S10: missing ticket_attachments table -> registering is 503 (no fake success, no leak); download is 404; list stays 200", async () => {
+    const h = build();
+    const t = seedTicket(h);
+    const path = `tickets/${t.id}/${U.studentA.id}/1700000000-abcd12.pdf`;
+    h.fake.addStorageObject(path);
+    h.fake.missingTable("ticket_attachments");
+    const rec = await as(h, "studentA").post(`/api/tickets/${t.id}/attachments`, {
+      file_name: "transcript.pdf", file_size: 2048, file_type: "application/pdf", storage_path: path,
+    });
+    expect(rec.status).toBe(503);
+    expect(rec.body.code).toBe("SUPPORT_UNAVAILABLE");
+    expect(bodyText(rec)).not.toMatch(/ticket_attachments|42P01|relation|does not exist|schema cache/i);
+    expect(rec.body).not.toHaveProperty("attachment");
+    expect(h.fake.rows("ticket_attachments")).toHaveLength(0);
+
+    const dl = await as(h, "studentA").get(`/api/tickets/${t.id}/attachments/00000000-0000-4000-8000-000000000001/download-url`);
+    expect(dl.status).toBe(404);
+    expect(bodyText(dl)).not.toMatch(/downloadUrl|signed|ticket_attachments|42P01|relation/i);
+
+    const list = await as(h, "studentA").get("/api/tickets");
+    expect(list.status).toBe(200);
+  });
+
+  it("S10: a missing support_tickets table is a generic 5xx with a code, never a success or a relation name", async () => {
+    const h = build();
+    h.fake.missingTable("support_tickets");
+    const list = await as(h, "studentA").get("/api/tickets");
+    expect(list.status).toBeGreaterThanOrEqual(500);
+    expect(typeof list.body.code).toBe("string");
+    expect(bodyText(list)).not.toMatch(/support_tickets|42P01|relation|does not exist|schema cache/i);
+    const create = await as(h, "studentA").post("/api/tickets", VALID_CREATE);
+    expect(create.status).toBeGreaterThanOrEqual(500);
+    expect(create.body).not.toHaveProperty("ticket");
+    expect(bodyText(create)).not.toMatch(/support_tickets|42P01|relation|does not exist/i);
+  });
+
   it("a rejecting notifier does not turn a 201 into a failure and the response claims no email delivery", async () => {
     const h = build();
     for (const fn of Object.values(h.notify)) fn.mockRejectedValue(new Error("smtp down"));
