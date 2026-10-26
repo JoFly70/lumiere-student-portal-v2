@@ -25,6 +25,7 @@ import {
   type ProjectionAcademicRecord,
   type ProjectionRequirementLabel,
 } from '@shared/student-degree-progress-projection';
+import type { StudentDegreeProgressView } from '@shared/student-degree-progress-view';
 
 export interface StudentDegreeProgressDependencies {
   readonly getStudentByUserId: (userId: string) => Promise<{ readonly id: string } | null>;
@@ -72,6 +73,55 @@ export const defaultStudentDegreeProgressDependencies: StudentDegreeProgressDepe
   getRequirementLabels: loadRequirementLabels,
 };
 
+/**
+ * Canonical degree progress for one student, projected into the student-safe
+ * view. Reusable by other student-facing read models (e.g. the S05 roadmap
+ * foundation); the caller is responsible for resolving studentId from the
+ * authenticated user.
+ */
+export async function loadStudentDegreeProgressView(
+  studentId: string,
+  deps: Pick<
+    StudentDegreeProgressDependencies,
+    'getAcademicRecord' | 'resolveContext' | 'getProgress' | 'getRequirementLabels'
+  > = defaultStudentDegreeProgressDependencies,
+): Promise<StudentDegreeProgressView> {
+  const record = await deps.getAcademicRecord(studentId);
+  const context = record.activeProgramAssignment
+    ? await deps.resolveContext(studentId)
+    : null;
+
+  if (context === null) {
+    return projectStudentDegreeProgress({
+      report: null,
+      record: { ...record, activeProgramAssignment: null, programVersion: null },
+      requirementLabels: {},
+    });
+  }
+  if (context.studentId !== studentId) {
+    throw new Error('degree progress context does not match the authenticated student');
+  }
+
+  const report = await deps.getProgress(context);
+  if (
+    report.snapshot?.context
+    && report.snapshot.context.studentId !== studentId
+  ) {
+    throw new Error('degree progress report does not match the authenticated student');
+  }
+  const requirementIds = report.status === 'COMPOSED'
+    && report.phase3Output.compositionKind === 'COMPOSED'
+    ? report.phase3Output.results
+      .map((result) => result.requirementId)
+      .filter((id): id is string => typeof id === 'string' && id.length > 0)
+    : [];
+  const requirementLabels = requirementIds.length > 0
+    ? await deps.getRequirementLabels(context.programVersionId, requirementIds)
+    : {};
+
+  return projectStudentDegreeProgress({ report, record, requirementLabels });
+}
+
 export function createStudentDegreeProgressRouter(
   deps: StudentDegreeProgressDependencies = defaultStudentDegreeProgressDependencies,
 ) {
@@ -104,40 +154,7 @@ export function createStudentDegreeProgressRouter(
           });
         }
 
-        const record = await deps.getAcademicRecord(student.id);
-        const context = record.activeProgramAssignment
-          ? await deps.resolveContext(student.id)
-          : null;
-
-        if (context === null) {
-          return res.json(projectStudentDegreeProgress({
-            report: null,
-            record: { ...record, activeProgramAssignment: null, programVersion: null },
-            requirementLabels: {},
-          }));
-        }
-        if (context.studentId !== student.id) {
-          throw new Error('degree progress context does not match the authenticated student');
-        }
-
-        const report = await deps.getProgress(context);
-        if (
-          report.snapshot?.context
-          && report.snapshot.context.studentId !== student.id
-        ) {
-          throw new Error('degree progress report does not match the authenticated student');
-        }
-        const requirementIds = report.status === 'COMPOSED'
-          && report.phase3Output.compositionKind === 'COMPOSED'
-          ? report.phase3Output.results
-            .map((result) => result.requirementId)
-            .filter((id): id is string => typeof id === 'string' && id.length > 0)
-          : [];
-        const requirementLabels = requirementIds.length > 0
-          ? await deps.getRequirementLabels(context.programVersionId, requirementIds)
-          : {};
-
-        return res.json(projectStudentDegreeProgress({ report, record, requirementLabels }));
+        return res.json(await loadStudentDegreeProgressView(student.id, deps));
       } catch (error) {
         logger.error('Student degree progress failed', {
           userId: req.user?.id,

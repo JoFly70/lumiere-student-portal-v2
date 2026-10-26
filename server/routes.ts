@@ -64,6 +64,33 @@ async function getUserFromToken(
   return null;
 }
 
+/** Fail closed: an unknown or missing user row is treated as a student. */
+async function getUserRole(userId: string): Promise<string> {
+  const [row] = await db.select({ role: users.role }).from(users).where(eq(users.id, userId)).limit(1);
+  return row?.role ?? 'student';
+}
+
+/**
+ * S05: the assigned plan is staff-managed. A student may not create or delete
+ * enrollments and may only change coursework-activity fields on an existing one.
+ */
+const STUDENT_ENROLLMENT_ACTIVITY_FIELDS = new Set(['status', 'notes', 'proofUrl', 'proofUri']);
+
+function roadmapStaffManaged(res: import('express').Response, fields?: string[]) {
+  return res.status(403).json({
+    error: {
+      code: 'ROADMAP_STAFF_MANAGED',
+      message: 'Your roadmap is managed by Lumière staff. You can report coursework activity only.',
+      ...(fields && fields.length > 0 ? { fields } : {}),
+    },
+  });
+}
+
+function normalizeEnrollmentValue(value: unknown): unknown {
+  if (value === undefined || value === '') return null;
+  return value instanceof Date ? value.toISOString() : value;
+}
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -748,6 +775,10 @@ window.ENV = {
         return res.status(401).json({ error: "Not authenticated" });
       }
 
+      if ((await getUserRole(user.id)) === 'student') {
+        return roadmapStaffManaged(res);
+      }
+
       // Validate and create enrollment
       const validatedData = insertEnrollmentSchema.parse({
         ...req.body,
@@ -791,6 +822,22 @@ window.ENV = {
         return res.status(401).json({ error: "Not authenticated" });
       }
 
+      if ((await getUserRole(user.id)) === 'student') {
+        const { getEnrollment } = await import('./services/enrollment-service.js');
+        const existing = await getEnrollment(id, user.id);
+        if (!existing) {
+          return res.status(404).json({ error: "Enrollment not found" });
+        }
+        const changedIdentity = Object.entries(req.body ?? {})
+          .filter(([key]) => !STUDENT_ENROLLMENT_ACTIVITY_FIELDS.has(key))
+          .filter(([key, value]) => JSON.stringify(normalizeEnrollmentValue(value))
+            !== JSON.stringify(normalizeEnrollmentValue((existing as Record<string, unknown>)[key])))
+          .map(([key]) => key);
+        if (changedIdentity.length > 0) {
+          return roadmapStaffManaged(res, changedIdentity);
+        }
+      }
+
       const enrollment = await updateEnrollment(id, user.id, req.body);
       
       if (!enrollment) {
@@ -822,6 +869,10 @@ window.ENV = {
 
       if (!user) {
         return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      if ((await getUserRole(user.id)) === 'student') {
+        return roadmapStaffManaged(res);
       }
 
       const success = await deleteEnrollment(id, user.id);
@@ -1287,12 +1338,21 @@ window.ENV = {
   const studentAcademicRouter = (await import('./routes/student-academic')).default;
   app.use('/api/admin/student-academic', studentAcademicRouter);
   app.use('/api/admin/degree-progress', adminDegreeProgressRouter);
+  // S05 staff roadmap API. Applies auth/role per route (staff + admin; publish is
+  // admin-only), so it must be mounted BEFORE the admin-only router-wide guards
+  // of the workspace / placement / generic admin routers below.
+  const adminStudentRoadmapRouter = (await import('./routes/admin-student-roadmap')).default;
+  app.use('/api/admin', adminStudentRoadmapRouter);
   app.use('/api/admin', adminStudentWorkspaceRouter);
   app.use('/api/admin', adminStudentCreditPlacementRouter);
 
   // Student self-read endpoint (student role only, own record only)
   const { studentSelfRouter } = await import('./routes/student-academic');
   app.use('/api/student', studentSelfRouter);
+
+  // S05 student roadmap (published version + coursework activity reporting)
+  const studentRoadmapRouter = (await import('./routes/student-roadmap')).default;
+  app.use('/api/student', studentRoadmapRouter);
 
   app.use('/api/admin', adminRouter);
   app.use('/api', programsRouter);

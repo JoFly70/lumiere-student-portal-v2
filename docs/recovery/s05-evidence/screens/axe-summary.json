@@ -1,0 +1,242 @@
+{
+  "generatedAt": "2026-10-26T17:52:17.958Z",
+  "fixture": "built-in rich fixture",
+  "results": [
+    {
+      "screen": "01-flight-deck-1440-light.png",
+      "violations": [
+        {
+          "id": "meta-viewport",
+          "impact": "critical",
+          "help": "Zooming and scaling must not be disabled",
+          "nodes": 1,
+          "sample": [
+            {
+              "target": "meta[name=\"viewport\"]",
+              "summary": "Fix any of the following:   maximum-scale on <meta> tag disables zooming on mobile devices"
+            }
+          ]
+        },
+        {
+          "id": "region",
+          "impact": "moderate",
+          "help": "All page content should be contained by landmarks",
+          "nodes": 10,
+          "sample": [
+            {
+              "target": "div[data-slot=\"sidebar-header\"] > .gap-3:nth-child(1)",
+              "summary": "Fix any of the following:   Some page content is not contained by landmarks"
+            },
+            {
+              "target": "div[aria-label=\"User profile\"]",
+              "summary": "Fix any of the following:   Some page content is not contained by landmarks"
+            },
+            {
+              "target": ".text-sidebar-foreground\\/70",
+              "summary": "Fix any of the following:   Some page content is not contained by landmarks"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "screen": "03-flight-deck-1440-dark.png",
+      "violations": [
+        {
+          "id": "meta-viewport",
+          "impact": "critical",
+          "help": "Zooming and scaling must not be disabled",
+          "nodes": 1,
+          "sample": [
+            {
+              "target": "meta[name=\"viewport\"]",
+              "summary": "Fix any of the following:   maximum-scale on <meta> tag disables zooming on mobile devices"
+            }
+          ]
+        },
+        {
+          "id": "region",
+          "impact": "moderate",
+          "help": "All page content should be contained by landmarks",
+          "nodes": 10,
+          "sample": [
+            {
+              "target": "div[data-slot=\"sidebar-header\"] > .gap-3:nth-child(1)",
+              "summary": "Fix any of the following:   Some page content is not contained by landmarks"
+            },
+            {
+              "target": "div[aria-label=\"User profile\"]",
+              "summary": "Fix any of the following:   Some page content is not contained by landmarks"
+            },
+            {
+              "target": ".text-sidebar-foreground\\/70",
+              "summary": "Fix any of the following:   Some page content is not contained by landmarks"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "screen": "05-roadmap-1440-light.png",
+      "violations": [
+        {
+          "id": "meta-viewport",
+          "impact": "critical",
+          "help": "Zooming and scaling must not be disabled",
+          "nodes": 1,
+          "sample": [
+            {
+              "target": "meta[name=\"viewport\"]",
+              "summary": "Fix any of the following:   maximum-scale on <meta> tag disables zooming on mobile devices"
+            }
+          ]
+        },
+        {
+          "id": "region",
+          "impact": "moderate",
+          "help": "All page content should be contained by landmarks",
+          "nodes": 10,
+          "sample": [
+            {
+              "target": "div[data-slot=\"sidebar-header\"] > .gap-3:nth-child(1)",
+              "summary": "Fix any of the following:   Some page content is not contained by landmarks"
+            },
+            {
+              "target": "div[aria-label=\"User profile\"]",
+              "summary": "Fix any of the following:   Some page content is not contained by landmarks"
+            },
+            {
+              "target": ".text-sidebar-foreground\\/70",
+              "summary": "Fix any of the following:   Some page content is not contained by landmarks"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "screen": "06-roadmap-390-light.png",
+      "violations": [
+        {
+          "id": "meta-viewport",
+          "impact": "critical",
+          "help": "Zooming and scaling must not be disabled",
+          "nodes": 1,
+          "sample": [
+            {
+              "target": "meta[name=\"viewport\"]",
+              "summary": "Fix any of the following:   maximum-scale on <meta> tag disables zooming on mobile devices"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "screen": "07-roadmap-1440-dark.png",
+      "violations": [
+        {
+          "id": "meta-viewport",
+          "impact": "critical",
+          "help": "Zooming and scaling must not be disabled",
+          "nodes": 1,
+          "sample": [
+            {
+              "target": "meta[name=\"viewport\"]",
+              "summary": "Fix any of the following:   maximum-scale on <meta> tag disables zooming on mobile devices"
+            }
+          ]
+        },
+        {
+          "id": "region",
+          "impact": "moderate",
+          "help": "All page content should be contained by landmarks",
+          "nodes": 10,
+          "sample": [
+            {
+              "target": "div[data-slot=\"sidebar-header\"] > .gap-3:nth-child(1)",
+              "summary": "Fix any of the following:   Some page content is not contained by landmarks"
+            },
+            {
+              "target": "div[aria-label=\"User profile\"]",
+              "summary": "Fix any of the following:   Some page content is not contained by landmarks"
+            },
+            {
+              "target": ".text-sidebar-foreground\\/70",
+              "summary": "Fix any of the following:   Some page content is not contained by landmarks"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "screen": "08-roadmap-390-dark.png",
+      "violations": [
+        {
+          "id": "meta-viewport",
+          "impact": "critical",
+          "help": "Zooming and scaling must not be disabled",
+          "nodes": 1,
+          "sample": [
+            {
+              "target": "meta[name=\"viewport\"]",
+              "summary": "Fix any of the following:   maximum-scale on <meta> tag disables zooming on mobile devices"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "screen": "09-flight-deck-not-published-1440.png",
+      "violations": [
+        {
+          "id": "meta-viewport",
+          "impact": "critical",
+          "help": "Zooming and scaling must not be disabled",
+          "nodes": 1,
+          "sample": [
+            {
+              "target": "meta[name=\"viewport\"]",
+              "summary": "Fix any of the following:   maximum-scale on <meta> tag disables zooming on mobile devices"
+            }
+          ]
+        },
+        {
+          "id": "region",
+          "impact": "moderate",
+          "help": "All page content should be contained by landmarks",
+          "nodes": 10,
+          "sample": [
+            {
+              "target": "div[data-slot=\"sidebar-header\"] > .gap-3.items-center.flex:nth-child(1)",
+              "summary": "Fix any of the following:   Some page content is not contained by landmarks"
+            },
+            {
+              "target": "div[aria-label=\"User profile\"]",
+              "summary": "Fix any of the following:   Some page content is not contained by landmarks"
+            },
+            {
+              "target": ".text-sidebar-foreground\\/70",
+              "summary": "Fix any of the following:   Some page content is not contained by landmarks"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "screen": "10-roadmap-not-published-390.png",
+      "violations": [
+        {
+          "id": "meta-viewport",
+          "impact": "critical",
+          "help": "Zooming and scaling must not be disabled",
+          "nodes": 1,
+          "sample": [
+            {
+              "target": "meta[name=\"viewport\"]",
+              "summary": "Fix any of the following:   maximum-scale on <meta> tag disables zooming on mobile devices"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

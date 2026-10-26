@@ -366,3 +366,55 @@
     inset: -1px;
   }
 }
+/* ------------------------------------------------------------------------- */
+/* Student-facing surface (S05): gold, ivory and charcoal.                    */
+/* Scoped to .student-surface so admin pages and the global --primary stay    */
+/* untouched. Contrast: ink/muted/gold-ink >= 4.5:1 on bg and card (text),    */
+/* gold and line >= 3:1 on bg and card (graphics, control boundaries).        */
+/* ------------------------------------------------------------------------- */
+.student-surface {
+  --s-bg: 43 45% 96%;
+  --s-card: 45 60% 99%;
+  --s-ink: 30 10% 13%;
+  --s-muted: 30 6% 33%;
+  --s-gold: 38 62% 40%;
+  --s-gold-ink: 33 70% 26%;
+  --s-gold-soft: 42 62% 90%;
+  --s-line: 40 20% 86%;
+  --s-line-strong: 35 10% 48%;
+  --s-attn: 22 80% 32%;
+  --s-attn-soft: 30 90% 93%;
+  --s-seal: 30 10% 16%;
+  --s-seal-ink: 43 60% 80%;
+  background-color: hsl(var(--s-bg));
+  color: hsl(var(--s-ink));
+}
+.dark .student-surface {
+  --s-bg: 30 8% 8%;
+  --s-card: 30 7% 11%;
+  --s-ink: 43 25% 92%;
+  --s-muted: 40 10% 70%;
+  --s-gold: 41 60% 58%;
+  --s-gold-ink: 41 66% 72%;
+  --s-gold-soft: 38 25% 17%;
+  --s-line: 35 8% 22%;
+  --s-line-strong: 35 8% 50%;
+  --s-attn: 30 85% 66%;
+  --s-attn-soft: 28 30% 16%;
+  --s-seal: 43 60% 80%;
+  --s-seal-ink: 30 10% 12%;
+}
+.student-surface :focus-visible {
+  outline: 2px solid hsl(var(--s-gold-ink));
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .student-surface * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+@keyframes student-pulse {
+  0%, 100% { opacity: 0.35; transform: scale(1); }
+  50% { opacity: 0.1; transform: scale(1.5); }
+}

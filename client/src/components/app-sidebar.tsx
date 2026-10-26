@@ -103,12 +103,13 @@ export function AppSidebar() {
         <div className="flex items-center gap-3">
           <img
             src={lumiereLogo}
-            alt="Lumiere College Accelerator"
+            alt="Lumière Higher-Ed Pathways"
             className="h-12 w-12 object-contain"
             data-testid="img-lumiere-logo"
           />
           <div>
-            <h1 className="text-lg font-bold">Lumiere</h1>
+            <p className="text-lg font-bold leading-tight">Lumière</p>
+            <p className="text-xs text-muted-foreground">Higher-Ed Pathways</p>
             <p className="text-xs text-muted-foreground">{portalLabel}</p>
           </div>
         </div>
@@ -166,7 +167,7 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter className="p-6">
-        <p className="text-xs text-muted-foreground text-center">(c) 2026 Lumiere College</p>
+        <p className="text-xs text-muted-foreground text-center">© 2026 Lumière Higher-Ed Pathways</p>
       </SidebarFooter>
     </Sidebar>
   );
