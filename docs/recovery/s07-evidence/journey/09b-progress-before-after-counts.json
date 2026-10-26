@@ -1,0 +1,42 @@
+{
+  "before": {
+    "itemsTotal": 23,
+    "itemsOfficiallyAccepted": 0,
+    "itemsProviderComplete": 0,
+    "itemsInProgress": 0,
+    "itemsNotStarted": 23,
+    "tasksTotal": 39,
+    "tasksGraded": 0,
+    "tasksSubmitted": 0
+  },
+  "after": {
+    "itemsTotal": 23,
+    "itemsOfficiallyAccepted": 0,
+    "itemsProviderComplete": 0,
+    "itemsInProgress": 4,
+    "itemsNotStarted": 19,
+    "tasksTotal": 39,
+    "tasksGraded": 0,
+    "tasksSubmitted": 2
+  },
+  "beforeToday": {
+    "focusItemKeys": [
+      "u-s-government-american-government",
+      "u-s-history-i",
+      "u-s-history-ii"
+    ],
+    "headline": "Next: Milestone 1 in U.S. Government / American Government",
+    "detail": "2 tasks remaining.",
+    "nextMilestoneKey": "orientation"
+  },
+  "afterToday": {
+    "focusItemKeys": [
+      "u-s-history-i",
+      "business-103",
+      "business-308"
+    ],
+    "headline": "Next: Milestone 1 in U.S. History I",
+    "detail": "2 tasks remaining.",
+    "nextMilestoneKey": "orientation"
+  }
+}

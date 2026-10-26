@@ -1,0 +1,564 @@
+{
+  "schedule": {
+    "label": "42-WEEK EXECUTION PLAN · WEEKS 1–42 · Prepared 2026-08-24",
+    "weeks": 42,
+    "startsOn": "2026-08-31",
+    "preparedOn": "2026-08-24"
+  },
+  "reportedHistory": [
+    {
+      "key": "credit-baseline-reported",
+      "kind": "credit_baseline",
+      "note": "Stated in the workbook (sheet \"Master Plan\"). Not verified.",
+      "title": "Credits reported as already earned",
+      "provider": null,
+      "provenance": [
+        {
+          "row": 1,
+          "file": "eph-master-v1.xlsx",
+          "role": "master",
+          "sheet": "Master Plan"
+        }
+      ],
+      "completedOn": null,
+      "institution": null,
+      "reportedStatus": "reported",
+      "reportedCredits": "51"
+    },
+    {
+      "key": "english-composition-i-sophia",
+      "kind": "course",
+      "note": "Existing credit",
+      "title": "English Composition I",
+      "provider": "Sophia",
+      "provenance": [
+        {
+          "row": 4,
+          "file": "eph-master-v1.xlsx",
+          "role": "master",
+          "sheet": "Completed Credits"
+        },
+        {
+          "row": 4,
+          "file": "eph-master-v1.xlsx",
+          "role": "master",
+          "sheet": "General Education"
+        }
+      ],
+      "completedOn": null,
+      "institution": null,
+      "reportedStatus": "completed",
+      "reportedCredits": "3"
+    },
+    {
+      "key": "english-composition-ii-sophia",
+      "kind": "course",
+      "note": "Existing credit",
+      "title": "English Composition II",
+      "provider": "Sophia",
+      "provenance": [
+        {
+          "row": 5,
+          "file": "eph-master-v1.xlsx",
+          "role": "master",
+          "sheet": "Completed Credits"
+        },
+        {
+          "row": 5,
+          "file": "eph-master-v1.xlsx",
+          "role": "master",
+          "sheet": "General Education"
+        }
+      ],
+      "completedOn": null,
+      "institution": null,
+      "reportedStatus": "completed",
+      "reportedCredits": "3"
+    },
+    {
+      "key": "college-algebra-sophia",
+      "kind": "course",
+      "note": "Existing credit",
+      "title": "College Algebra",
+      "provider": "Sophia",
+      "provenance": [
+        {
+          "row": 6,
+          "file": "eph-master-v1.xlsx",
+          "role": "master",
+          "sheet": "Completed Credits"
+        },
+        {
+          "row": 6,
+          "file": "eph-master-v1.xlsx",
+          "role": "master",
+          "sheet": "General Education"
+        }
+      ],
+      "completedOn": null,
+      "institution": null,
+      "reportedStatus": "completed",
+      "reportedCredits": "3"
+    },
+    {
+      "key": "introduction-to-ethics-sophia",
+      "kind": "course",
+      "note": "Existing credit",
+      "title": "Introduction to Ethics",
+      "provider": "Sophia",
+      "provenance": [
+        {
+          "row": 7,
+          "file": "eph-master-v1.xlsx",
+          "role": "master",
+          "sheet": "Completed Credits"
+        },
+        {
+          "row": 7,
+          "file": "eph-master-v1.xlsx",
+          "role": "master",
+          "sheet": "General Education"
+        }
+      ],
+      "completedOn": null,
+      "institution": null,
+      "reportedStatus": "completed",
+      "reportedCredits": "3"
+    },
+    {
+      "key": "introduction-to-sociology-sophia",
+      "kind": "course",
+      "note": "Existing credit",
+      "title": "Introduction to Sociology",
+      "provider": "Sophia",
+      "provenance": [
+        {
+          "row": 8,
+          "file": "eph-master-v1.xlsx",
+          "role": "master",
+          "sheet": "Completed Credits"
+        },
+        {
+          "row": 8,
+          "file": "eph-master-v1.xlsx",
+          "role": "master",
+          "sheet": "General Education"
+        }
+      ],
+      "completedOn": null,
+      "institution": null,
+      "reportedStatus": "completed",
+      "reportedCredits": "3"
+    },
+    {
+      "key": "human-biology-sophia",
+      "kind": "course",
+      "note": "Existing credit",
+      "title": "Human Biology",
+      "provider": "Sophia",
+      "provenance": [
+        {
+          "row": 9,
+          "file": "eph-master-v1.xlsx",
+          "role": "master",
+          "sheet": "Completed Credits"
+        },
+        {
+          "row": 9,
+          "file": "eph-master-v1.xlsx",
+          "role": "master",
+          "sheet": "General Education"
+        }
+      ],
+      "completedOn": null,
+      "institution": null,
+      "reportedStatus": "completed",
+      "reportedCredits": "3"
+    },
+    {
+      "key": "introduction-to-nutrition-sophia",
+      "kind": "course",
+      "note": "Existing credit",
+      "title": "Introduction to Nutrition",
+      "provider": "Sophia",
+      "provenance": [
+        {
+          "row": 10,
+          "file": "eph-master-v1.xlsx",
+          "role": "master",
+          "sheet": "Completed Credits"
+        },
+        {
+          "row": 10,
+          "file": "eph-master-v1.xlsx",
+          "role": "master",
+          "sheet": "General Education"
+        }
+      ],
+      "completedOn": null,
+      "institution": null,
+      "reportedStatus": "completed",
+      "reportedCredits": "3"
+    },
+    {
+      "key": "lifespan-development-sophia",
+      "kind": "course",
+      "note": "Existing credit",
+      "title": "Lifespan Development",
+      "provider": "Sophia",
+      "provenance": [
+        {
+          "row": 11,
+          "file": "eph-master-v1.xlsx",
+          "role": "master",
+          "sheet": "Completed Credits"
+        },
+        {
+          "row": 11,
+          "file": "eph-master-v1.xlsx",
+          "role": "master",
+          "sheet": "General Education"
+        }
+      ],
+      "completedOn": null,
+      "institution": null,
+      "reportedStatus": "completed",
+      "reportedCredits": "3"
+    },
+    {
+      "key": "introduction-to-statistics-sophia",
+      "kind": "course",
+      "note": "Existing credit",
+      "title": "Introduction to Statistics",
+      "provider": "Sophia",
+      "provenance": [
+        {
+          "row": 12,
+          "file": "eph-master-v1.xlsx",
+          "role": "master",
+          "sheet": "Completed Credits"
+        },
+        {
+          "row": 4,
+          "file": "eph-master-v1.xlsx",
+          "role": "master",
+          "sheet": "Business Core"
+        }
+      ],
+      "completedOn": null,
+      "institution": null,
+      "reportedStatus": "completed",
+      "reportedCredits": "3"
+    },
+    {
+      "key": "microeconomics-sophia",
+      "kind": "course",
+      "note": "Existing credit",
+      "title": "Microeconomics",
+      "provider": "Sophia",
+      "provenance": [
+        {
+          "row": 13,
+          "file": "eph-master-v1.xlsx",
+          "role": "master",
+          "sheet": "Completed Credits"
+        },
+        {
+          "row": 5,
+          "file": "eph-master-v1.xlsx",
+          "role": "master",
+          "sheet": "Business Core"
+        }
+      ],
+      "completedOn": null,
+      "institution": null,
+      "reportedStatus": "completed",
+      "reportedCredits": "3"
+    },
+    {
+      "key": "principles-of-finance-sophia",
+      "kind": "course",
+      "note": "Completed but awaiting institutional coding. EVALUATION-WATCH: completed, but TESU has not been shown to post it as FIN-3010.",
+      "title": "Principles of Finance",
+      "provider": "Sophia",
+      "provenance": [
+        {
+          "row": 14,
+          "file": "eph-master-v1.xlsx",
+          "role": "master",
+          "sheet": "Completed Credits"
+        },
+        {
+          "row": 6,
+          "file": "eph-master-v1.xlsx",
+          "role": "master",
+          "sheet": "Business Core"
+        }
+      ],
+      "completedOn": null,
+      "institution": null,
+      "reportedStatus": "reported",
+      "reportedCredits": "3"
+    },
+    {
+      "key": "financial-accounting-sophia",
+      "kind": "course",
+      "note": "Existing credit",
+      "title": "Financial Accounting",
+      "provider": "Sophia",
+      "provenance": [
+        {
+          "row": 15,
+          "file": "eph-master-v1.xlsx",
+          "role": "master",
+          "sheet": "Completed Credits"
+        },
+        {
+          "row": 7,
+          "file": "eph-master-v1.xlsx",
+          "role": "master",
+          "sheet": "Business Core"
+        },
+        {
+          "row": 4,
+          "file": "eph-master-v1.xlsx",
+          "role": "master",
+          "sheet": "CPA Audit"
+        }
+      ],
+      "completedOn": null,
+      "institution": null,
+      "reportedStatus": "completed",
+      "reportedCredits": "3"
+    },
+    {
+      "key": "managerial-accounting-sophia",
+      "kind": "course",
+      "note": "Existing credit",
+      "title": "Managerial Accounting",
+      "provider": "Sophia",
+      "provenance": [
+        {
+          "row": 16,
+          "file": "eph-master-v1.xlsx",
+          "role": "master",
+          "sheet": "Completed Credits"
+        },
+        {
+          "row": 8,
+          "file": "eph-master-v1.xlsx",
+          "role": "master",
+          "sheet": "Business Core"
+        },
+        {
+          "row": 5,
+          "file": "eph-master-v1.xlsx",
+          "role": "master",
+          "sheet": "CPA Audit"
+        }
+      ],
+      "completedOn": null,
+      "institution": null,
+      "reportedStatus": "completed",
+      "reportedCredits": "3"
+    },
+    {
+      "key": "introduction-to-business-sophia",
+      "kind": "course",
+      "note": "Existing credit",
+      "title": "Introduction to Business",
+      "provider": "Sophia",
+      "provenance": [
+        {
+          "row": 17,
+          "file": "eph-master-v1.xlsx",
+          "role": "master",
+          "sheet": "Completed Credits"
+        },
+        {
+          "row": 4,
+          "file": "eph-master-v1.xlsx",
+          "role": "master",
+          "sheet": "Electives"
+        }
+      ],
+      "completedOn": null,
+      "institution": null,
+      "reportedStatus": "completed",
+      "reportedCredits": "3"
+    },
+    {
+      "key": "conflict-resolution-sophia",
+      "kind": "course",
+      "note": "Existing credit",
+      "title": "Conflict Resolution",
+      "provider": "Sophia",
+      "provenance": [
+        {
+          "row": 18,
+          "file": "eph-master-v1.xlsx",
+          "role": "master",
+          "sheet": "Completed Credits"
+        },
+        {
+          "row": 5,
+          "file": "eph-master-v1.xlsx",
+          "role": "master",
+          "sheet": "Electives"
+        }
+      ],
+      "completedOn": null,
+      "institution": null,
+      "reportedStatus": "completed",
+      "reportedCredits": "3"
+    },
+    {
+      "key": "environmental-science-sophia",
+      "kind": "course",
+      "note": "Existing credit",
+      "title": "Environmental Science",
+      "provider": "Sophia",
+      "provenance": [
+        {
+          "row": 19,
+          "file": "eph-master-v1.xlsx",
+          "role": "master",
+          "sheet": "Completed Credits"
+        },
+        {
+          "row": 6,
+          "file": "eph-master-v1.xlsx",
+          "role": "master",
+          "sheet": "Electives"
+        }
+      ],
+      "completedOn": null,
+      "institution": null,
+      "reportedStatus": "completed",
+      "reportedCredits": "3"
+    },
+    {
+      "key": "macroeconomics-dallas-college",
+      "kind": "transfer",
+      "note": "CONTROL: Dallas College replaces planned Sophia Macro",
+      "title": "Macroeconomics",
+      "provider": "Dallas College",
+      "provenance": [
+        {
+          "row": 20,
+          "file": "eph-master-v1.xlsx",
+          "role": "master",
+          "sheet": "Completed Credits"
+        },
+        {
+          "row": 9,
+          "file": "eph-master-v1.xlsx",
+          "role": "master",
+          "sheet": "Business Core"
+        }
+      ],
+      "completedOn": null,
+      "institution": "Dallas College",
+      "reportedStatus": "completed",
+      "reportedCredits": "3"
+    }
+  ],
+  "planItemKeys": [
+    {
+      "key": "u-s-government-american-government",
+      "planStatus": "planned"
+    },
+    {
+      "key": "u-s-history-i",
+      "planStatus": "planned"
+    },
+    {
+      "key": "u-s-history-ii",
+      "planStatus": "planned"
+    },
+    {
+      "key": "business-103",
+      "planStatus": "planned"
+    },
+    {
+      "key": "business-101",
+      "planStatus": "planned"
+    },
+    {
+      "key": "quantitative-skills-for-business",
+      "planStatus": "hold"
+    },
+    {
+      "key": "accounting-201",
+      "planStatus": "planned"
+    },
+    {
+      "key": "accounting-202",
+      "planStatus": "planned"
+    },
+    {
+      "key": "accounting-303",
+      "planStatus": "planned"
+    },
+    {
+      "key": "accounting-302",
+      "planStatus": "planned"
+    },
+    {
+      "key": "business-308",
+      "planStatus": "planned"
+    },
+    {
+      "key": "acc-352",
+      "planStatus": "hold"
+    },
+    {
+      "key": "acc-375",
+      "planStatus": "hold"
+    },
+    {
+      "key": "acc-301",
+      "planStatus": "alternative"
+    },
+    {
+      "key": "com-2090",
+      "planStatus": "planned"
+    },
+    {
+      "key": "psy-3500",
+      "planStatus": "planned"
+    },
+    {
+      "key": "phi-1300",
+      "planStatus": "planned"
+    },
+    {
+      "key": "cis-1070",
+      "planStatus": "planned"
+    },
+    {
+      "key": "mkt-2010",
+      "planStatus": "planned"
+    },
+    {
+      "key": "man-3730",
+      "planStatus": "planned"
+    },
+    {
+      "key": "fin-3310",
+      "planStatus": "planned"
+    },
+    {
+      "key": "opm-3010",
+      "planStatus": "planned"
+    },
+    {
+      "key": "sos-1100",
+      "planStatus": "planned"
+    },
+    {
+      "key": "bus-4210",
+      "planStatus": "planned"
+    }
+  ]
+}

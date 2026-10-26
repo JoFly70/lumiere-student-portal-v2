@@ -1,0 +1,228 @@
+{
+  "generatedAt": "2026-10-26T19:41:46.258Z",
+  "screensChecked": 23,
+  "screensWithOverflow": 2,
+  "results": [
+    {
+      "screen": "a1-staff-v1-draft-review-1440.png",
+      "width": 1440,
+      "theme": "light",
+      "pageOverflowPx": 0,
+      "mainOverflowPx": 0,
+      "spills": [],
+      "ok": true
+    },
+    {
+      "screen": "a2-staff-v1-draft-review-390.png",
+      "width": 390,
+      "theme": "light",
+      "pageOverflowPx": 0,
+      "mainOverflowPx": 0,
+      "spills": [],
+      "ok": true
+    },
+    {
+      "screen": "b-staff-v2-reimport-diff-1440.png",
+      "width": 1440,
+      "theme": "light",
+      "pageOverflowPx": 0,
+      "mainOverflowPx": 0,
+      "spills": [],
+      "ok": true
+    },
+    {
+      "screen": "c-staff-v1-student-preview-1440.png",
+      "width": 1440,
+      "theme": "light",
+      "pageOverflowPx": 0,
+      "mainOverflowPx": 0,
+      "spills": [],
+      "ok": true
+    },
+    {
+      "screen": "d1-flight-deck-published-1440-light.png",
+      "width": 1440,
+      "theme": "light",
+      "pageOverflowPx": 0,
+      "mainOverflowPx": 0,
+      "spills": [],
+      "ok": true
+    },
+    {
+      "screen": "d1-flight-deck-published-390-light.png",
+      "width": 390,
+      "theme": "light",
+      "pageOverflowPx": 0,
+      "mainOverflowPx": 76,
+      "spills": [
+        "DIV.flex flex-col lg:col-span-3 +92px",
+        "P.flex items-center gap-2.5 text-xs font-s +92px",
+        "H2.mt-3 max-w-3xl font-serif text-3xl leadi +92px",
+        "P.mt-3 max-w-xl text-base leading-relaxed  +92px",
+        "DIV.mt-4 flex flex-wrap items-center gap-x-4 +92px",
+        "DIV.mt-6 +92px"
+      ],
+      "ok": false
+    },
+    {
+      "screen": "d1-flight-deck-published-1440-dark.png",
+      "width": 1440,
+      "theme": "dark",
+      "pageOverflowPx": 0,
+      "mainOverflowPx": 0,
+      "spills": [],
+      "ok": true
+    },
+    {
+      "screen": "d1-flight-deck-published-390-dark.png",
+      "width": 390,
+      "theme": "dark",
+      "pageOverflowPx": 0,
+      "mainOverflowPx": 76,
+      "spills": [
+        "DIV.flex flex-col lg:col-span-3 +92px",
+        "P.flex items-center gap-2.5 text-xs font-s +92px",
+        "H2.mt-3 max-w-3xl font-serif text-3xl leadi +92px",
+        "P.mt-3 max-w-xl text-base leading-relaxed  +92px",
+        "DIV.mt-4 flex flex-wrap items-center gap-x-4 +92px",
+        "DIV.mt-6 +92px"
+      ],
+      "ok": false
+    },
+    {
+      "screen": "d2-roadmap-published-1440-light.png",
+      "width": 1440,
+      "theme": "light",
+      "pageOverflowPx": 0,
+      "mainOverflowPx": 0,
+      "spills": [],
+      "ok": true
+    },
+    {
+      "screen": "d2-roadmap-published-390-light.png",
+      "width": 390,
+      "theme": "light",
+      "pageOverflowPx": 0,
+      "mainOverflowPx": 0,
+      "spills": [],
+      "ok": true
+    },
+    {
+      "screen": "d2-roadmap-published-1440-dark.png",
+      "width": 1440,
+      "theme": "dark",
+      "pageOverflowPx": 0,
+      "mainOverflowPx": 0,
+      "spills": [],
+      "ok": true
+    },
+    {
+      "screen": "d2-roadmap-published-390-dark.png",
+      "width": 390,
+      "theme": "dark",
+      "pageOverflowPx": 0,
+      "mainOverflowPx": 0,
+      "spills": [],
+      "ok": true
+    },
+    {
+      "screen": "d3-flight-deck-after-progress-1440-light.png",
+      "width": 1440,
+      "theme": "light",
+      "pageOverflowPx": 0,
+      "mainOverflowPx": 0,
+      "spills": [],
+      "ok": true
+    },
+    {
+      "screen": "d3-flight-deck-after-progress-390-light.png",
+      "width": 390,
+      "theme": "light",
+      "pageOverflowPx": 0,
+      "mainOverflowPx": 0,
+      "spills": [],
+      "ok": true
+    },
+    {
+      "screen": "d3-flight-deck-after-progress-1440-dark.png",
+      "width": 1440,
+      "theme": "dark",
+      "pageOverflowPx": 0,
+      "mainOverflowPx": 0,
+      "spills": [],
+      "ok": true
+    },
+    {
+      "screen": "d3-flight-deck-after-progress-390-dark.png",
+      "width": 390,
+      "theme": "dark",
+      "pageOverflowPx": 0,
+      "mainOverflowPx": 0,
+      "spills": [],
+      "ok": true
+    },
+    {
+      "screen": "d4-roadmap-after-progress-1440-light.png",
+      "width": 1440,
+      "theme": "light",
+      "pageOverflowPx": 0,
+      "mainOverflowPx": 0,
+      "spills": [],
+      "ok": true
+    },
+    {
+      "screen": "d4-roadmap-after-progress-390-light.png",
+      "width": 390,
+      "theme": "light",
+      "pageOverflowPx": 0,
+      "mainOverflowPx": 0,
+      "spills": [],
+      "ok": true
+    },
+    {
+      "screen": "d4-roadmap-after-progress-1440-dark.png",
+      "width": 1440,
+      "theme": "dark",
+      "pageOverflowPx": 0,
+      "mainOverflowPx": 0,
+      "spills": [],
+      "ok": true
+    },
+    {
+      "screen": "d4-roadmap-after-progress-390-dark.png",
+      "width": 390,
+      "theme": "dark",
+      "pageOverflowPx": 0,
+      "mainOverflowPx": 0,
+      "spills": [],
+      "ok": true
+    },
+    {
+      "screen": "e-roadmap-v2-1440-light.png",
+      "width": 1440,
+      "theme": "light",
+      "pageOverflowPx": 0,
+      "mainOverflowPx": 0,
+      "spills": [],
+      "ok": true
+    },
+    {
+      "screen": "e-roadmap-v2-390-light.png",
+      "width": 390,
+      "theme": "light",
+      "pageOverflowPx": 0,
+      "mainOverflowPx": 0,
+      "spills": [],
+      "ok": true
+    },
+    {
+      "screen": "f-rut-roadmap-sophia-studycom-tasks-1440-light.png",
+      "width": 1440,
+      "theme": "light",
+      "pageOverflowPx": 0,
+      "mainOverflowPx": 0,
+      "spills": [],
+      "ok": true
+    }
+  ]
+}

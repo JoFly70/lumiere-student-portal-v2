@@ -1,0 +1,57 @@
+{
+  "contractVersion": "student-degree-progress/1",
+  "state": "UNDER_REVIEW",
+  "asOf": "2026-10-26T19:40:27.972Z",
+  "program": {
+    "programName": "BA Liberal Studies mvpnvnpk4",
+    "programCode": "BA-LS-mvpnvnpk4",
+    "versionLabel": "2026 Catalog",
+    "institutionName": "Pathways State University mvpnvnpk4",
+    "cohortLabel": "Synthetic cohort"
+  },
+  "totals": null,
+  "requirements": [],
+  "credits": [
+    {
+      "creditRecordId": "5b43a393-ffaa-4bbb-882c-86a15bf9f90a",
+      "courseCode": "SYN101",
+      "title": "Synthetic Composition",
+      "term": "Fall 2025",
+      "completedOn": "2025-12-15",
+      "recordType": "course",
+      "reportedCredits": "3",
+      "awardedCredits": "3",
+      "standing": "VERIFIED_NOT_APPLIED",
+      "sourceId": "37f5ddb5-df56-419a-aeae-036d2cd4d17e",
+      "appliedToRequirementIds": []
+    }
+  ],
+  "sources": [
+    {
+      "sourceId": "37f5ddb5-df56-419a-aeae-036d2cd4d17e",
+      "title": "Synthetic transcript",
+      "sourceType": "transcript",
+      "status": "verified",
+      "sourceDate": "2026-01-15",
+      "receivedAt": "2026-10-26T19:40:25.167Z",
+      "creditRecordCount": 1
+    }
+  ],
+  "attention": [
+    {
+      "kind": "PROGRESS_UNDER_REVIEW",
+      "owner": "staff",
+      "title": "Your progress is being reviewed",
+      "detail": "Our team is reviewing your academic record before showing your totals. No action is needed from you."
+    }
+  ],
+  "milestones": [],
+  "nextSteps": [
+    {
+      "kind": "CONTACT_ADVISOR",
+      "title": "Questions about your progress?",
+      "detail": "Your advisor can tell you where your review stands.",
+      "href": "/support"
+    }
+  ]
+}

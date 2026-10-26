@@ -1,0 +1,221 @@
+{
+  "generatedAt": "2026-10-26T19:41:46.257Z",
+  "rules": "wcag2a, wcag2aa, wcag21aa, best-practice (axe-core)",
+  "screensChecked": 23,
+  "screensWithViolations": 4,
+  "results": [
+    {
+      "screen": "a1-staff-v1-draft-review-1440.png",
+      "width": 1440,
+      "theme": "light",
+      "violationCount": 1,
+      "violations": [
+        {
+          "id": "heading-order",
+          "impact": "moderate",
+          "help": "Heading levels should only increase by one",
+          "nodes": 1,
+          "sample": [
+            {
+              "target": "h3",
+              "summary": "Fix any of the following:   Heading order invalid"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "screen": "a2-staff-v1-draft-review-390.png",
+      "width": 390,
+      "theme": "light",
+      "violationCount": 1,
+      "violations": [
+        {
+          "id": "heading-order",
+          "impact": "moderate",
+          "help": "Heading levels should only increase by one",
+          "nodes": 1,
+          "sample": [
+            {
+              "target": "h3",
+              "summary": "Fix any of the following:   Heading order invalid"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "screen": "b-staff-v2-reimport-diff-1440.png",
+      "width": 1440,
+      "theme": "light",
+      "violationCount": 1,
+      "violations": [
+        {
+          "id": "heading-order",
+          "impact": "moderate",
+          "help": "Heading levels should only increase by one",
+          "nodes": 1,
+          "sample": [
+            {
+              "target": "div[role=\"group\"] > .mb-2",
+              "summary": "Fix any of the following:   Heading order invalid"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "screen": "c-staff-v1-student-preview-1440.png",
+      "width": 1440,
+      "theme": "light",
+      "violationCount": 1,
+      "violations": [
+        {
+          "id": "heading-order",
+          "impact": "moderate",
+          "help": "Heading levels should only increase by one",
+          "nodes": 1,
+          "sample": [
+            {
+              "target": "div[role=\"group\"] > h3",
+              "summary": "Fix any of the following:   Heading order invalid"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "screen": "d1-flight-deck-published-1440-light.png",
+      "width": 1440,
+      "theme": "light",
+      "violationCount": 0,
+      "violations": []
+    },
+    {
+      "screen": "d1-flight-deck-published-390-light.png",
+      "width": 390,
+      "theme": "light",
+      "violationCount": 0,
+      "violations": []
+    },
+    {
+      "screen": "d1-flight-deck-published-1440-dark.png",
+      "width": 1440,
+      "theme": "dark",
+      "violationCount": 0,
+      "violations": []
+    },
+    {
+      "screen": "d1-flight-deck-published-390-dark.png",
+      "width": 390,
+      "theme": "dark",
+      "violationCount": 0,
+      "violations": []
+    },
+    {
+      "screen": "d2-roadmap-published-1440-light.png",
+      "width": 1440,
+      "theme": "light",
+      "violationCount": 0,
+      "violations": []
+    },
+    {
+      "screen": "d2-roadmap-published-390-light.png",
+      "width": 390,
+      "theme": "light",
+      "violationCount": 0,
+      "violations": []
+    },
+    {
+      "screen": "d2-roadmap-published-1440-dark.png",
+      "width": 1440,
+      "theme": "dark",
+      "violationCount": 0,
+      "violations": []
+    },
+    {
+      "screen": "d2-roadmap-published-390-dark.png",
+      "width": 390,
+      "theme": "dark",
+      "violationCount": 0,
+      "violations": []
+    },
+    {
+      "screen": "d3-flight-deck-after-progress-1440-light.png",
+      "width": 1440,
+      "theme": "light",
+      "violationCount": 0,
+      "violations": []
+    },
+    {
+      "screen": "d3-flight-deck-after-progress-390-light.png",
+      "width": 390,
+      "theme": "light",
+      "violationCount": 0,
+      "violations": []
+    },
+    {
+      "screen": "d3-flight-deck-after-progress-1440-dark.png",
+      "width": 1440,
+      "theme": "dark",
+      "violationCount": 0,
+      "violations": []
+    },
+    {
+      "screen": "d3-flight-deck-after-progress-390-dark.png",
+      "width": 390,
+      "theme": "dark",
+      "violationCount": 0,
+      "violations": []
+    },
+    {
+      "screen": "d4-roadmap-after-progress-1440-light.png",
+      "width": 1440,
+      "theme": "light",
+      "violationCount": 0,
+      "violations": []
+    },
+    {
+      "screen": "d4-roadmap-after-progress-390-light.png",
+      "width": 390,
+      "theme": "light",
+      "violationCount": 0,
+      "violations": []
+    },
+    {
+      "screen": "d4-roadmap-after-progress-1440-dark.png",
+      "width": 1440,
+      "theme": "dark",
+      "violationCount": 0,
+      "violations": []
+    },
+    {
+      "screen": "d4-roadmap-after-progress-390-dark.png",
+      "width": 390,
+      "theme": "dark",
+      "violationCount": 0,
+      "violations": []
+    },
+    {
+      "screen": "e-roadmap-v2-1440-light.png",
+      "width": 1440,
+      "theme": "light",
+      "violationCount": 0,
+      "violations": []
+    },
+    {
+      "screen": "e-roadmap-v2-390-light.png",
+      "width": 390,
+      "theme": "light",
+      "violationCount": 0,
+      "violations": []
+    },
+    {
+      "screen": "f-rut-roadmap-sophia-studycom-tasks-1440-light.png",
+      "width": 1440,
+      "theme": "light",
+      "violationCount": 0,
+      "violations": []
+    }
+  ]
+}

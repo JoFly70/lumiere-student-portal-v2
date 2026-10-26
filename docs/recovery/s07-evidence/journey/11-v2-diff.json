@@ -1,0 +1,162 @@
+{
+  "diff": {
+    "baseVersionNumber": 1,
+    "added": [
+      {
+        "itemKey": "business-324",
+        "title": "Managerial Communication"
+      },
+      {
+        "itemKey": "introduction-to-chemistry",
+        "title": "Introduction to Chemistry"
+      }
+    ],
+    "removed": [
+      {
+        "itemKey": "business-308",
+        "title": "International Management",
+        "hasProgress": true
+      },
+      {
+        "itemKey": "opm-3010",
+        "title": "Operations Management",
+        "hasProgress": true
+      }
+    ],
+    "changed": [
+      {
+        "itemKey": "business-103",
+        "title": "Business Law",
+        "fields": [
+          "plannedStart",
+          "plannedEnd",
+          "taskSchedule"
+        ],
+        "rescheduleOnly": true
+      },
+      {
+        "itemKey": "acc-352",
+        "title": "Federal Taxation of Business Entities",
+        "fields": [
+          "sequence"
+        ],
+        "rescheduleOnly": true
+      },
+      {
+        "itemKey": "acc-375",
+        "title": "Auditing of Financial Statements",
+        "fields": [
+          "sequence"
+        ],
+        "rescheduleOnly": true
+      },
+      {
+        "itemKey": "acc-301",
+        "title": "Intermediate Accounting I",
+        "fields": [
+          "sequence"
+        ],
+        "rescheduleOnly": true
+      },
+      {
+        "itemKey": "com-2090",
+        "title": "Public Speaking",
+        "fields": [
+          "sequence"
+        ],
+        "rescheduleOnly": true
+      },
+      {
+        "itemKey": "psy-3500",
+        "title": "Abnormal Psychology",
+        "fields": [
+          "sequence"
+        ],
+        "rescheduleOnly": true
+      },
+      {
+        "itemKey": "phi-1300",
+        "title": "Critical Reasoning",
+        "fields": [
+          "sequence"
+        ],
+        "rescheduleOnly": true
+      },
+      {
+        "itemKey": "cis-1070",
+        "title": "Computer Concepts",
+        "fields": [
+          "sequence"
+        ],
+        "rescheduleOnly": true
+      },
+      {
+        "itemKey": "mkt-2010",
+        "title": "Introduction to Marketing",
+        "fields": [
+          "sequence"
+        ],
+        "rescheduleOnly": true
+      },
+      {
+        "itemKey": "man-3730",
+        "title": "Managerial Communications",
+        "fields": [
+          "sequence"
+        ],
+        "rescheduleOnly": true
+      },
+      {
+        "itemKey": "fin-3310",
+        "title": "Financial Institutions & Markets",
+        "fields": [
+          "sequence"
+        ],
+        "rescheduleOnly": true
+      }
+    ],
+    "unchangedCount": 11,
+    "objectivesAdded": [],
+    "objectivesRemoved": [],
+    "objectivesChanged": [],
+    "phasesChanged": false,
+    "milestonesChanged": false
+  },
+  "progressWarnings": [
+    {
+      "key": "PROGRESS_ON_REMOVED_ITEM:business-308",
+      "code": "PROGRESS_ON_REMOVED_ITEM",
+      "severity": "warning",
+      "message": "\"International Management\" is removed from the plan but the student has recorded progress on it. The progress is preserved in history and is NOT transferred to any replacement item.",
+      "ref": {
+        "itemKey": "business-308"
+      }
+    },
+    {
+      "key": "PROGRESS_ON_REMOVED_ITEM:opm-3010",
+      "code": "PROGRESS_ON_REMOVED_ITEM",
+      "severity": "warning",
+      "message": "\"Operations Management\" is removed from the plan but the student has recorded progress on it. The progress is preserved in history and is NOT transferred to any replacement item.",
+      "ref": {
+        "itemKey": "opm-3010"
+      }
+    }
+  ],
+  "exceptionCounts": {
+    "SHEET_NOT_RECOGNISED/info": 3,
+    "REPORTED_HISTORY_NOT_CREDIT/warning": 1,
+    "OBJECTIVE_CREATED_FROM_ROW/info": 1,
+    "REPORTED_HISTORY_NOT_CREDIT/info": 1,
+    "CONDITIONAL_ALLOCATION/warning": 8,
+    "COMPANION_ROW_UNMATCHED/warning": 1,
+    "COMPANION_ITEM_MERGED/info": 20,
+    "DEADLINE_CONFLICT/warning": 2,
+    "PROGRESS_ON_REMOVED_ITEM/warning": 2,
+    "REGISTRATION_GATE_UNDOCUMENTED/warning": 1,
+    "EXAM_AFTER_TERM_DEADLINE/warning": 14,
+    "REGISTRATION_AFTER_DEADLINE/warning": 9,
+    "STARTING_CREDITS_UNVERIFIED/warning": 17,
+    "EQUIVALENCY_CONDITIONAL/warning": 7,
+    "LICENSING_CREDIT_SEPARATE/warning": 16
+  }
+}

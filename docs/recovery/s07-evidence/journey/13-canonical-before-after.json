@@ -1,0 +1,74 @@
+{
+  "note": "Row counts and md5 digests of the canonical credit tables before step 1 and after all staff publications and student activity (synthetic data).",
+  "tables": [
+    "student_credit_records",
+    "student_credit_decisions",
+    "student_credit_verification_events",
+    "student_program_assignments"
+  ],
+  "before": {
+    "student_credit_records": {
+      "count": 1,
+      "digest": "f8e50ce57ad4e06604e72cc492a7c3a6"
+    },
+    "student_credit_decisions": {
+      "count": 1,
+      "digest": "e5bc89cbf975576a2d97f71e5435da74"
+    },
+    "student_credit_verification_events": {
+      "count": 1,
+      "digest": "3819947701a62d648756c67c72a62423"
+    },
+    "student_program_assignments": {
+      "count": 1,
+      "digest": "bd1271ea8dba331215c369daa75ec62e"
+    }
+  },
+  "after": {
+    "student_credit_records": {
+      "count": 1,
+      "digest": "f8e50ce57ad4e06604e72cc492a7c3a6"
+    },
+    "student_credit_decisions": {
+      "count": 1,
+      "digest": "e5bc89cbf975576a2d97f71e5435da74"
+    },
+    "student_credit_verification_events": {
+      "count": 1,
+      "digest": "3819947701a62d648756c67c72a62423"
+    },
+    "student_program_assignments": {
+      "count": 1,
+      "digest": "bd1271ea8dba331215c369daa75ec62e"
+    }
+  },
+  "identical": true,
+  "foundationLadderV1": {
+    "reported": "3.00",
+    "provisional": "0.00",
+    "verified": "3.00",
+    "applied": null,
+    "surplus": null,
+    "planned": "69.00",
+    "required": null
+  },
+  "foundationLadderAfterProgress": {
+    "reported": "3.00",
+    "provisional": "0.00",
+    "verified": "3.00",
+    "applied": null,
+    "surplus": null,
+    "planned": "69.00",
+    "required": null
+  },
+  "foundationLadderV2": {
+    "reported": "3.00",
+    "provisional": "0.00",
+    "verified": "3.00",
+    "applied": null,
+    "surplus": null,
+    "planned": "69.00",
+    "required": null
+  },
+  "degreeState": "UNDER_REVIEW"
+}

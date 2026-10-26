@@ -1,0 +1,1452 @@
+{
+  "contractVersion": "student-roadmap/1",
+  "state": "PUBLISHED",
+  "preview": false,
+  "plan": {
+    "title": "TESU BSBA in Accounting roadmap",
+    "summary": null,
+    "versionNumber": 1,
+    "publishedAt": "2026-10-26T19:40:27.915Z"
+  },
+  "objectives": [
+    {
+      "key": "tesu-bsba-in-accounting",
+      "title": "TESU BSBA in Accounting",
+      "kind": "primary",
+      "institution": "TESU",
+      "credentialLabel": null,
+      "status": "active",
+      "note": null,
+      "canonicalProgramName": "BA Liberal Studies mvpnvnpk4",
+      "counts": {
+        "itemsTotal": 23,
+        "itemsOfficiallyAccepted": 0,
+        "itemsProviderComplete": 0,
+        "itemsInProgress": 0,
+        "itemsNotStarted": 23,
+        "tasksTotal": 39,
+        "tasksGraded": 0,
+        "tasksSubmitted": 0
+      }
+    },
+    {
+      "key": "licensing-planning",
+      "title": "Washington State CPA licensing planning",
+      "kind": "secondary",
+      "institution": null,
+      "credentialLabel": null,
+      "status": "active",
+      "note": "Planning only. Whether coursework qualifies for licensure is decided by the licensing board; it is never counted as degree credit.",
+      "canonicalProgramName": null,
+      "counts": {
+        "itemsTotal": 0,
+        "itemsOfficiallyAccepted": 0,
+        "itemsProviderComplete": 0,
+        "itemsInProgress": 0,
+        "itemsNotStarted": 0,
+        "tasksTotal": 0,
+        "tasksGraded": 0,
+        "tasksSubmitted": 0
+      }
+    }
+  ],
+  "phases": [
+    {
+      "key": "phase-1-external",
+      "title": "Phase 1 — External",
+      "sequence": 1,
+      "objectiveKey": null,
+      "startDate": null,
+      "endDate": null,
+      "description": null,
+      "items": [
+        {
+          "key": "u-s-government-american-government",
+          "phaseKey": "phase-1-external",
+          "objectiveKey": "tesu-bsba-in-accounting",
+          "sequence": 1,
+          "kind": "course",
+          "code": null,
+          "title": "U.S. Government / American Government",
+          "provider": "Sophia",
+          "institution": "TESU",
+          "credits": "3",
+          "plannedStart": "2026-08-31",
+          "plannedEnd": "2026-09-11",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "assignment-1",
+              "kind": "assignment",
+              "title": "Milestone 1",
+              "dueDate": "2026-09-04",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "assignment-2",
+              "kind": "assignment",
+              "title": "Milestone 2",
+              "dueDate": "2026-09-11",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 2,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 2
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true,
+          "reportBlockedReason": null
+        },
+        {
+          "key": "u-s-history-i",
+          "phaseKey": "phase-1-external",
+          "objectiveKey": "tesu-bsba-in-accounting",
+          "sequence": 2,
+          "kind": "course",
+          "code": null,
+          "title": "U.S. History I",
+          "provider": "Sophia",
+          "institution": "TESU",
+          "credits": "3",
+          "plannedStart": "2026-09-14",
+          "plannedEnd": "2026-09-25",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "assignment-1",
+              "kind": "assignment",
+              "title": "Milestone 1",
+              "dueDate": "2026-09-18",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "assignment-2",
+              "kind": "assignment",
+              "title": "Milestone 2",
+              "dueDate": "2026-09-25",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 2,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 2
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true,
+          "reportBlockedReason": null
+        },
+        {
+          "key": "u-s-history-ii",
+          "phaseKey": "phase-1-external",
+          "objectiveKey": "tesu-bsba-in-accounting",
+          "sequence": 3,
+          "kind": "course",
+          "code": null,
+          "title": "U.S. History II",
+          "provider": "Sophia",
+          "institution": "TESU",
+          "credits": "3",
+          "plannedStart": "2026-09-28",
+          "plannedEnd": "2026-10-09",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "assignment-1",
+              "kind": "assignment",
+              "title": "Milestone 1",
+              "dueDate": "2026-10-02",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "assignment-2",
+              "kind": "assignment",
+              "title": "Milestone 2",
+              "dueDate": "2026-10-09",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 2,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 2
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true,
+          "reportBlockedReason": null
+        },
+        {
+          "key": "business-103",
+          "phaseKey": "phase-1-external",
+          "objectiveKey": "tesu-bsba-in-accounting",
+          "sequence": 4,
+          "kind": "course",
+          "code": "Business 103",
+          "title": "Business Law",
+          "provider": "Study.com",
+          "institution": "TESU",
+          "credits": "3",
+          "plannedStart": "2026-10-12",
+          "plannedEnd": "2026-10-30",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "final-exam",
+              "kind": "exam",
+              "title": "Final exam",
+              "dueDate": "2026-10-30",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "assignment-1",
+              "kind": "assignment",
+              "title": "Assignment 1",
+              "dueDate": "2026-10-23",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 2,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 2
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true,
+          "reportBlockedReason": null
+        },
+        {
+          "key": "business-101",
+          "phaseKey": "phase-1-external",
+          "objectiveKey": "tesu-bsba-in-accounting",
+          "sequence": 5,
+          "kind": "course",
+          "code": "Business 101",
+          "title": "Principles of Management",
+          "provider": "Study.com",
+          "institution": "TESU",
+          "credits": "3",
+          "plannedStart": "2026-10-26",
+          "plannedEnd": "2026-11-13",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "final-exam",
+              "kind": "exam",
+              "title": "Final exam",
+              "dueDate": "2026-11-13",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "assignment-1",
+              "kind": "assignment",
+              "title": "Assignment 1",
+              "dueDate": "2026-11-06",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 2,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 2
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true,
+          "reportBlockedReason": null
+        },
+        {
+          "key": "quantitative-skills-for-business",
+          "phaseKey": "phase-1-external",
+          "objectiveKey": "tesu-bsba-in-accounting",
+          "sequence": 6,
+          "kind": "course",
+          "code": null,
+          "title": "Quantitative Skills for Business",
+          "provider": "CSM Learn",
+          "institution": "TESU",
+          "credits": "3",
+          "plannedStart": null,
+          "plannedEnd": null,
+          "planStatus": "hold",
+          "holdReason": "NO VALIDATED MAP HOLD. Not a validated TESU map. Keep the 3-credit hole visible. DO NOT BUY until TESU confirms this fills BUS-2100.",
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "final-exam",
+              "kind": "exam",
+              "title": "Provider assessment",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 1,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 1
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": false,
+          "reportBlockedReason": "on_hold"
+        },
+        {
+          "key": "accounting-201",
+          "phaseKey": "phase-1-external",
+          "objectiveKey": "tesu-bsba-in-accounting",
+          "sequence": 7,
+          "kind": "course",
+          "code": "Accounting 201",
+          "title": "Intermediate Financial Accounting I",
+          "provider": "Study.com",
+          "institution": "TESU",
+          "credits": "3",
+          "plannedStart": "2026-11-16",
+          "plannedEnd": "2026-12-04",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "assignment-1",
+              "kind": "assignment",
+              "title": "Assignment 1",
+              "dueDate": "2026-11-27",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "final-exam",
+              "kind": "exam",
+              "title": "Final exam",
+              "dueDate": "2026-12-04",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 2,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 2
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true,
+          "reportBlockedReason": null
+        },
+        {
+          "key": "accounting-202",
+          "phaseKey": "phase-1-external",
+          "objectiveKey": "tesu-bsba-in-accounting",
+          "sequence": 8,
+          "kind": "course",
+          "code": "Accounting 202",
+          "title": "Intermediate Financial Accounting II",
+          "provider": "Study.com",
+          "institution": "TESU",
+          "credits": "3",
+          "plannedStart": "2026-12-07",
+          "plannedEnd": "2026-12-25",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [
+            {
+              "itemKey": "accounting-201",
+              "title": "Intermediate Financial Accounting I"
+            }
+          ],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "final-exam",
+              "kind": "exam",
+              "title": "Final exam",
+              "dueDate": "2026-12-20",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "assignment-1",
+              "kind": "assignment",
+              "title": "Assignment 1",
+              "dueDate": "2026-12-18",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 2,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 2
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true,
+          "reportBlockedReason": null
+        },
+        {
+          "key": "accounting-303",
+          "phaseKey": "phase-1-external",
+          "objectiveKey": "tesu-bsba-in-accounting",
+          "sequence": 9,
+          "kind": "course",
+          "code": "Accounting 303",
+          "title": "Cost Accounting",
+          "provider": "Study.com",
+          "institution": "TESU",
+          "credits": "3",
+          "plannedStart": "2026-12-28",
+          "plannedEnd": "2027-01-22",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "assignment-1",
+              "kind": "assignment",
+              "title": "Assignment 1",
+              "dueDate": "2027-01-08",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "assignment-2",
+              "kind": "assignment",
+              "title": "Assignment 2",
+              "dueDate": "2027-01-15",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "assignment-3",
+              "kind": "assignment",
+              "title": "Assignment 3",
+              "dueDate": "2027-01-22",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "final-exam",
+              "kind": "exam",
+              "title": "Final exam",
+              "dueDate": "2027-01-22",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 4,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 4
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true,
+          "reportBlockedReason": null
+        },
+        {
+          "key": "accounting-302",
+          "phaseKey": "phase-1-external",
+          "objectiveKey": "tesu-bsba-in-accounting",
+          "sequence": 10,
+          "kind": "course",
+          "code": "Accounting 302",
+          "title": "Advanced Financial Accounting II",
+          "provider": "Study.com",
+          "institution": "TESU",
+          "credits": "3",
+          "plannedStart": "2027-01-25",
+          "plannedEnd": "2027-02-12",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "assignment-1",
+              "kind": "assignment",
+              "title": "Assignment 1",
+              "dueDate": "2027-02-05",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "assignment-2",
+              "kind": "assignment",
+              "title": "Assignment 2",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "assignment-3",
+              "kind": "assignment",
+              "title": "Assignment 3",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "final-exam",
+              "kind": "exam",
+              "title": "Final exam",
+              "dueDate": "2027-02-12",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 4,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 4
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true,
+          "reportBlockedReason": null
+        },
+        {
+          "key": "business-308",
+          "phaseKey": "phase-1-external",
+          "objectiveKey": "tesu-bsba-in-accounting",
+          "sequence": 11,
+          "kind": "course",
+          "code": "Business 308",
+          "title": "International Management",
+          "provider": "Study.com",
+          "institution": "TESU",
+          "credits": "3",
+          "plannedStart": "2026-11-02",
+          "plannedEnd": "2026-11-20",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "final-exam",
+              "kind": "exam",
+              "title": "Final exam",
+              "dueDate": "2026-11-20",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "assignment-1",
+              "kind": "assignment",
+              "title": "Assignment 1",
+              "dueDate": "2026-11-13",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 2,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 2
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true,
+          "reportBlockedReason": null
+        }
+      ],
+      "counts": {
+        "itemsTotal": 11,
+        "itemsOfficiallyAccepted": 0,
+        "itemsProviderComplete": 0,
+        "itemsInProgress": 0,
+        "itemsNotStarted": 11,
+        "tasksTotal": 25,
+        "tasksGraded": 0,
+        "tasksSubmitted": 0
+      },
+      "state": "current"
+    },
+    {
+      "key": "phase-2-coopersmith",
+      "title": "Phase 2 — Coopersmith",
+      "sequence": 2,
+      "objectiveKey": null,
+      "startDate": null,
+      "endDate": null,
+      "description": null,
+      "items": [
+        {
+          "key": "acc-352",
+          "phaseKey": "phase-2-coopersmith",
+          "objectiveKey": "tesu-bsba-in-accounting",
+          "sequence": 12,
+          "kind": "course",
+          "code": "ACC-352",
+          "title": "Federal Taxation of Business Entities",
+          "provider": "Coopersmith",
+          "institution": "TESU",
+          "credits": "3",
+          "plannedStart": null,
+          "plannedEnd": null,
+          "planStatus": "hold",
+          "holdReason": "HOLD — preapprove ACC-352 as ACC-4210 before purchase. PREAPPROVE / verify current TESU posting before taking",
+          "approval": {
+            "required": true,
+            "status": "pending"
+          },
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "final-exam",
+              "kind": "exam",
+              "title": "Provider assessment",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 1,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 1
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": false,
+          "reportBlockedReason": "on_hold"
+        },
+        {
+          "key": "acc-375",
+          "phaseKey": "phase-2-coopersmith",
+          "objectiveKey": "tesu-bsba-in-accounting",
+          "sequence": 13,
+          "kind": "course",
+          "code": "ACC-375",
+          "title": "Auditing of Financial Statements",
+          "provider": "Coopersmith",
+          "institution": "TESU",
+          "credits": "3",
+          "plannedStart": null,
+          "plannedEnd": null,
+          "planStatus": "hold",
+          "holdReason": "HOLD — preapprove ACC-375 as ACC-4110 before purchase. PREAPPROVE / verify current TESU posting before taking",
+          "approval": {
+            "required": true,
+            "status": "pending"
+          },
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "final-exam",
+              "kind": "exam",
+              "title": "Provider assessment",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 1,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 1
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": false,
+          "reportBlockedReason": "on_hold"
+        },
+        {
+          "key": "acc-301",
+          "phaseKey": "phase-2-coopersmith",
+          "objectiveKey": "tesu-bsba-in-accounting",
+          "sequence": 14,
+          "kind": "course",
+          "code": "ACC-301",
+          "title": "Intermediate Accounting I",
+          "provider": "Coopersmith",
+          "institution": "TESU",
+          "credits": "3",
+          "plannedStart": null,
+          "plannedEnd": null,
+          "planStatus": "alternative",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": "accounting-201",
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "final-exam",
+              "kind": "exam",
+              "title": "Provider assessment",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 1,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 1
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": false,
+          "reportBlockedReason": "not_active"
+        }
+      ],
+      "counts": {
+        "itemsTotal": 2,
+        "itemsOfficiallyAccepted": 0,
+        "itemsProviderComplete": 0,
+        "itemsInProgress": 0,
+        "itemsNotStarted": 2,
+        "tasksTotal": 2,
+        "tasksGraded": 0,
+        "tasksSubmitted": 0
+      },
+      "state": "upcoming"
+    },
+    {
+      "key": "phase-3-tecep",
+      "title": "Phase 3 — TECEP",
+      "sequence": 3,
+      "objectiveKey": null,
+      "startDate": null,
+      "endDate": null,
+      "description": null,
+      "items": [
+        {
+          "key": "com-2090",
+          "phaseKey": "phase-3-tecep",
+          "objectiveKey": "tesu-bsba-in-accounting",
+          "sequence": 15,
+          "kind": "exam",
+          "code": "COM-2090",
+          "title": "Public Speaking",
+          "provider": "TESU TECEP",
+          "institution": "TESU",
+          "credits": "3",
+          "plannedStart": "2027-02-08",
+          "plannedEnd": "2027-02-09",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "final-exam",
+              "kind": "exam",
+              "title": "TECEP exam",
+              "dueDate": "2027-02-09",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 1,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 1
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true,
+          "reportBlockedReason": null
+        },
+        {
+          "key": "psy-3500",
+          "phaseKey": "phase-3-tecep",
+          "objectiveKey": "tesu-bsba-in-accounting",
+          "sequence": 16,
+          "kind": "exam",
+          "code": "PSY-3500",
+          "title": "Abnormal Psychology",
+          "provider": "TESU TECEP",
+          "institution": "TESU",
+          "credits": "3",
+          "plannedStart": "2027-02-08",
+          "plannedEnd": "2027-02-12",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "final-exam",
+              "kind": "exam",
+              "title": "TECEP exam",
+              "dueDate": "2027-02-12",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 1,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 1
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true,
+          "reportBlockedReason": null
+        },
+        {
+          "key": "phi-1300",
+          "phaseKey": "phase-3-tecep",
+          "objectiveKey": "tesu-bsba-in-accounting",
+          "sequence": 17,
+          "kind": "exam",
+          "code": "PHI-1300",
+          "title": "Critical Reasoning",
+          "provider": "TESU TECEP",
+          "institution": "TESU",
+          "credits": "3",
+          "plannedStart": "2027-02-15",
+          "plannedEnd": "2027-02-16",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "final-exam",
+              "kind": "exam",
+              "title": "TECEP exam",
+              "dueDate": "2027-02-16",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 1,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 1
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true,
+          "reportBlockedReason": null
+        },
+        {
+          "key": "cis-1070",
+          "phaseKey": "phase-3-tecep",
+          "objectiveKey": "tesu-bsba-in-accounting",
+          "sequence": 18,
+          "kind": "exam",
+          "code": "CIS-1070",
+          "title": "Computer Concepts",
+          "provider": "TESU TECEP",
+          "institution": "TESU",
+          "credits": "3",
+          "plannedStart": "2027-02-08",
+          "plannedEnd": "2027-02-12",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "final-exam",
+              "kind": "exam",
+              "title": "TECEP exam",
+              "dueDate": "2027-02-19",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 1,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 1
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true,
+          "reportBlockedReason": null
+        },
+        {
+          "key": "mkt-2010",
+          "phaseKey": "phase-3-tecep",
+          "objectiveKey": "tesu-bsba-in-accounting",
+          "sequence": 19,
+          "kind": "exam",
+          "code": "MKT-2010",
+          "title": "Introduction to Marketing",
+          "provider": "TESU TECEP",
+          "institution": "TESU",
+          "credits": "3",
+          "plannedStart": "2027-02-15",
+          "plannedEnd": "2027-02-18",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "final-exam",
+              "kind": "exam",
+              "title": "TECEP exam",
+              "dueDate": "2027-02-18",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 1,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 1
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true,
+          "reportBlockedReason": null
+        },
+        {
+          "key": "man-3730",
+          "phaseKey": "phase-3-tecep",
+          "objectiveKey": "tesu-bsba-in-accounting",
+          "sequence": 20,
+          "kind": "exam",
+          "code": "MAN-3730",
+          "title": "Managerial Communications",
+          "provider": "TESU TECEP",
+          "institution": "TESU",
+          "credits": "3",
+          "plannedStart": "2027-02-22",
+          "plannedEnd": "2027-02-23",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "final-exam",
+              "kind": "exam",
+              "title": "TECEP exam",
+              "dueDate": "2027-02-23",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 1,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 1
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true,
+          "reportBlockedReason": null
+        },
+        {
+          "key": "fin-3310",
+          "phaseKey": "phase-3-tecep",
+          "objectiveKey": "tesu-bsba-in-accounting",
+          "sequence": 21,
+          "kind": "exam",
+          "code": "FIN-3310",
+          "title": "Financial Institutions & Markets",
+          "provider": "TESU TECEP",
+          "institution": "TESU",
+          "credits": "3",
+          "plannedStart": "2027-02-22",
+          "plannedEnd": "2027-02-25",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "final-exam",
+              "kind": "exam",
+              "title": "TECEP exam",
+              "dueDate": "2027-02-25",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 1,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 1
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true,
+          "reportBlockedReason": null
+        },
+        {
+          "key": "opm-3010",
+          "phaseKey": "phase-3-tecep",
+          "objectiveKey": "tesu-bsba-in-accounting",
+          "sequence": 22,
+          "kind": "exam",
+          "code": "OPM-3010",
+          "title": "Operations Management",
+          "provider": "TESU TECEP",
+          "institution": "TESU",
+          "credits": "3",
+          "plannedStart": "2027-02-22",
+          "plannedEnd": "2027-02-26",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "final-exam",
+              "kind": "exam",
+              "title": "TECEP exam",
+              "dueDate": "2027-02-26",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 1,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 1
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true,
+          "reportBlockedReason": null
+        }
+      ],
+      "counts": {
+        "itemsTotal": 8,
+        "itemsOfficiallyAccepted": 0,
+        "itemsProviderComplete": 0,
+        "itemsInProgress": 0,
+        "itemsNotStarted": 8,
+        "tasksTotal": 8,
+        "tasksGraded": 0,
+        "tasksSubmitted": 0
+      },
+      "state": "upcoming"
+    },
+    {
+      "key": "phase-4-tesu-term",
+      "title": "Phase 4 — TESU term",
+      "sequence": 4,
+      "objectiveKey": null,
+      "startDate": null,
+      "endDate": null,
+      "description": null,
+      "items": [
+        {
+          "key": "sos-1100",
+          "phaseKey": "phase-4-tesu-term",
+          "objectiveKey": "tesu-bsba-in-accounting",
+          "sequence": 23,
+          "kind": "course",
+          "code": "SOS-1100",
+          "title": "Fact, Fiction, or Fake?",
+          "provider": "TESU Online",
+          "institution": "TESU",
+          "credits": "3",
+          "plannedStart": "2027-03-08",
+          "plannedEnd": "2027-04-23",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "assignment-1",
+              "kind": "assignment",
+              "title": "Assignment 1",
+              "dueDate": "2027-04-02",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "assignment-2",
+              "kind": "assignment",
+              "title": "Assignment 2",
+              "dueDate": "2027-04-23",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 2,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 2
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true,
+          "reportBlockedReason": null
+        },
+        {
+          "key": "bus-4210",
+          "phaseKey": "phase-4-tesu-term",
+          "objectiveKey": "tesu-bsba-in-accounting",
+          "sequence": 24,
+          "kind": "course",
+          "code": "BUS-4210",
+          "title": "Business Administration Capstone",
+          "provider": "TESU Online",
+          "institution": "TESU",
+          "credits": "3",
+          "plannedStart": "2027-04-05",
+          "plannedEnd": "2027-05-28",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [
+            {
+              "itemKey": "sos-1100",
+              "title": "Fact, Fiction, or Fake?"
+            }
+          ],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "assignment-1",
+              "kind": "assignment",
+              "title": "Assignment 1",
+              "dueDate": "2027-04-30",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "assignment-2",
+              "kind": "assignment",
+              "title": "Assignment 2",
+              "dueDate": "2027-05-28",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 2,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 2
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true,
+          "reportBlockedReason": null
+        }
+      ],
+      "counts": {
+        "itemsTotal": 2,
+        "itemsOfficiallyAccepted": 0,
+        "itemsProviderComplete": 0,
+        "itemsInProgress": 0,
+        "itemsNotStarted": 2,
+        "tasksTotal": 4,
+        "tasksGraded": 0,
+        "tasksSubmitted": 0
+      },
+      "state": "upcoming"
+    }
+  ],
+  "milestones": [
+    {
+      "key": "orientation",
+      "title": "Orientation",
+      "kind": "checkpoint",
+      "targetDate": "2026-09-02",
+      "objectiveKey": "tesu-bsba-in-accounting",
+      "reached": false,
+      "remainingItems": 23
+    },
+    {
+      "key": "apply-for-graduation",
+      "title": "Apply for graduation",
+      "kind": "application",
+      "targetDate": "2027-05-04",
+      "objectiveKey": "tesu-bsba-in-accounting",
+      "reached": false,
+      "remainingItems": 23
+    },
+    {
+      "key": "degree-conferral",
+      "title": "Degree conferral",
+      "kind": "graduation",
+      "targetDate": "2027-06-18",
+      "objectiveKey": "tesu-bsba-in-accounting",
+      "reached": false,
+      "remainingItems": 23
+    },
+    {
+      "key": "tesu-graduation-filing-conferral",
+      "title": "TESU graduation filing / conferral",
+      "kind": "graduation",
+      "targetDate": null,
+      "objectiveKey": "tesu-bsba-in-accounting",
+      "reached": false,
+      "remainingItems": 23
+    },
+    {
+      "key": "order-official-tesu-transcript-washington-cpa-education-evaluation",
+      "title": "Order official TESU transcript + Washington CPA education evaluation",
+      "kind": "checkpoint",
+      "targetDate": null,
+      "objectiveKey": "licensing-planning",
+      "reached": false,
+      "remainingItems": 0
+    }
+  ],
+  "counts": {
+    "itemsTotal": 23,
+    "itemsOfficiallyAccepted": 0,
+    "itemsProviderComplete": 0,
+    "itemsInProgress": 0,
+    "itemsNotStarted": 23,
+    "tasksTotal": 39,
+    "tasksGraded": 0,
+    "tasksSubmitted": 0
+  },
+  "today": {
+    "focusItemKeys": [
+      "u-s-government-american-government",
+      "u-s-history-i",
+      "u-s-history-ii"
+    ],
+    "headline": "Next: Milestone 1 in U.S. Government / American Government",
+    "detail": "2 tasks remaining.",
+    "nextMilestoneKey": "orientation"
+  },
+  "foundation": {
+    "credentials": [],
+    "sources": [
+      {
+        "sourceId": "37f5ddb5-df56-419a-aeae-036d2cd4d17e",
+        "title": "Synthetic transcript",
+        "sourceType": "transcript",
+        "status": "verified",
+        "creditRecordCount": 1
+      }
+    ],
+    "ladder": {
+      "reported": "3.00",
+      "provisional": "0.00",
+      "verified": "3.00",
+      "applied": null,
+      "surplus": null,
+      "planned": "69.00",
+      "required": null
+    },
+    "degreeState": "UNDER_REVIEW"
+  },
+  "history": {
+    "previousVersions": [],
+    "retiredProgress": []
+  }
+}

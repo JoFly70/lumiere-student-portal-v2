@@ -1,0 +1,2497 @@
+{
+  "studentId": "5fc8946b-b90f-4219-a079-6c997fb6c3ac",
+  "planId": "1d3e0f49-89e8-49fc-aa08-6e248ed83db8",
+  "published": {
+    "versionId": "74145c15-89ba-49e8-8e6f-c9faf97a1c0a",
+    "versionNumber": 1,
+    "status": "published",
+    "title": "TESU BSBA in Accounting roadmap",
+    "createdAt": "2026-10-26T19:40:27.413Z",
+    "createdBy": "01e9fedf-5b8a-4926-8c73-18bb3cc04b30",
+    "publishedAt": "2026-10-26T19:40:27.915Z",
+    "publishedBy": "8f1daa21-1a76-49b4-aba6-3d03529ea175",
+    "importId": "58770955-8cfa-4c21-a3fa-afbe6f1be21b",
+    "content": {
+      "items": [
+        {
+          "key": "u-s-government-american-government",
+          "code": null,
+          "hold": null,
+          "kind": "course",
+          "tasks": [
+            {
+              "key": "assignment-1",
+              "kind": "assignment",
+              "week": 1,
+              "title": "Milestone 1",
+              "dueDate": "2026-09-04",
+              "sequence": 1
+            },
+            {
+              "key": "assignment-2",
+              "kind": "assignment",
+              "week": 2,
+              "title": "Milestone 2",
+              "dueDate": "2026-09-11",
+              "sequence": 2
+            }
+          ],
+          "title": "U.S. Government / American Government",
+          "credits": "3",
+          "approval": null,
+          "phaseKey": "phase-1-external",
+          "provider": "Sophia",
+          "sequence": 1,
+          "condition": null,
+          "creditUse": null,
+          "dependsOn": [],
+          "staffNote": "New Sophia Phase 1 external",
+          "planStatus": "planned",
+          "plannedEnd": "2026-09-11",
+          "provenance": [
+            {
+              "row": 14,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "General Education"
+            },
+            {
+              "row": 4,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "External Courses"
+            },
+            {
+              "row": 4,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Execution Order"
+            },
+            {
+              "row": 4,
+              "file": "eph-execution-v1.xlsx",
+              "role": "execution",
+              "sheet": "Weekly Plan"
+            },
+            {
+              "row": 5,
+              "file": "eph-execution-v1.xlsx",
+              "role": "execution",
+              "sheet": "Weekly Plan"
+            },
+            {
+              "row": 7,
+              "file": "eph-execution-v1.xlsx",
+              "role": "execution",
+              "sheet": "Weekly Plan"
+            }
+          ],
+          "equivalency": null,
+          "institution": "TESU",
+          "studentNote": null,
+          "objectiveKey": "tesu-bsba-in-accounting",
+          "plannedStart": "2026-08-31",
+          "registration": null,
+          "alternativeOf": null,
+          "registrationGate": null
+        },
+        {
+          "key": "u-s-history-i",
+          "code": null,
+          "hold": null,
+          "kind": "course",
+          "tasks": [
+            {
+              "key": "assignment-1",
+              "kind": "assignment",
+              "week": 3,
+              "title": "Milestone 1",
+              "dueDate": "2026-09-18",
+              "sequence": 1
+            },
+            {
+              "key": "assignment-2",
+              "kind": "assignment",
+              "week": 4,
+              "title": "Milestone 2",
+              "dueDate": "2026-09-25",
+              "sequence": 2
+            }
+          ],
+          "title": "U.S. History I",
+          "credits": "3",
+          "approval": null,
+          "phaseKey": "phase-1-external",
+          "provider": "Sophia",
+          "sequence": 2,
+          "condition": null,
+          "creditUse": null,
+          "dependsOn": [],
+          "staffNote": "New Sophia Phase 1 external",
+          "planStatus": "planned",
+          "plannedEnd": "2026-09-25",
+          "provenance": [
+            {
+              "row": 15,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "General Education"
+            },
+            {
+              "row": 5,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "External Courses"
+            },
+            {
+              "row": 5,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Execution Order"
+            },
+            {
+              "row": 8,
+              "file": "eph-execution-v1.xlsx",
+              "role": "execution",
+              "sheet": "Weekly Plan"
+            },
+            {
+              "row": 9,
+              "file": "eph-execution-v1.xlsx",
+              "role": "execution",
+              "sheet": "Weekly Plan"
+            },
+            {
+              "row": 10,
+              "file": "eph-execution-v1.xlsx",
+              "role": "execution",
+              "sheet": "Weekly Plan"
+            }
+          ],
+          "equivalency": null,
+          "institution": "TESU",
+          "studentNote": null,
+          "objectiveKey": "tesu-bsba-in-accounting",
+          "plannedStart": "2026-09-14",
+          "registration": null,
+          "alternativeOf": null,
+          "registrationGate": null
+        },
+        {
+          "key": "u-s-history-ii",
+          "code": null,
+          "hold": null,
+          "kind": "course",
+          "tasks": [
+            {
+              "key": "assignment-1",
+              "kind": "assignment",
+              "week": 5,
+              "title": "Milestone 1",
+              "dueDate": "2026-10-02",
+              "sequence": 1
+            },
+            {
+              "key": "assignment-2",
+              "kind": "assignment",
+              "week": 6,
+              "title": "Milestone 2",
+              "dueDate": "2026-10-09",
+              "sequence": 2
+            }
+          ],
+          "title": "U.S. History II",
+          "credits": "3",
+          "approval": null,
+          "phaseKey": "phase-1-external",
+          "provider": "Sophia",
+          "sequence": 3,
+          "condition": null,
+          "creditUse": null,
+          "dependsOn": [],
+          "staffNote": "New Sophia Phase 1 external after History I preferred",
+          "planStatus": "planned",
+          "plannedEnd": "2026-10-09",
+          "provenance": [
+            {
+              "row": 16,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "General Education"
+            },
+            {
+              "row": 6,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "External Courses"
+            },
+            {
+              "row": 6,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Execution Order"
+            },
+            {
+              "row": 11,
+              "file": "eph-execution-v1.xlsx",
+              "role": "execution",
+              "sheet": "Weekly Plan"
+            },
+            {
+              "row": 12,
+              "file": "eph-execution-v1.xlsx",
+              "role": "execution",
+              "sheet": "Weekly Plan"
+            },
+            {
+              "row": 13,
+              "file": "eph-execution-v1.xlsx",
+              "role": "execution",
+              "sheet": "Weekly Plan"
+            }
+          ],
+          "equivalency": null,
+          "institution": "TESU",
+          "studentNote": null,
+          "objectiveKey": "tesu-bsba-in-accounting",
+          "plannedStart": "2026-09-28",
+          "registration": null,
+          "alternativeOf": null,
+          "registrationGate": null
+        },
+        {
+          "key": "business-103",
+          "code": "Business 103",
+          "hold": null,
+          "kind": "course",
+          "tasks": [
+            {
+              "key": "final-exam",
+              "kind": "exam",
+              "week": 9,
+              "title": "Final exam",
+              "dueDate": "2026-10-30",
+              "sequence": 1
+            },
+            {
+              "key": "assignment-1",
+              "kind": "assignment",
+              "week": 8,
+              "title": "Assignment 1",
+              "dueDate": "2026-10-23",
+              "sequence": 2
+            }
+          ],
+          "title": "Business Law",
+          "credits": "3",
+          "approval": null,
+          "phaseKey": "phase-1-external",
+          "provider": "Study.com",
+          "sequence": 4,
+          "condition": null,
+          "creditUse": "degree_and_licensing",
+          "dependsOn": [],
+          "staffNote": "New Study.com Phase 1 external",
+          "planStatus": "planned",
+          "plannedEnd": "2026-10-30",
+          "provenance": [
+            {
+              "row": 11,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Business Core"
+            },
+            {
+              "row": 7,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "External Courses"
+            },
+            {
+              "row": 7,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Execution Order"
+            },
+            {
+              "row": 14,
+              "file": "eph-execution-v1.xlsx",
+              "role": "execution",
+              "sheet": "Weekly Plan"
+            },
+            {
+              "row": 15,
+              "file": "eph-execution-v1.xlsx",
+              "role": "execution",
+              "sheet": "Weekly Plan"
+            },
+            {
+              "row": 16,
+              "file": "eph-execution-v1.xlsx",
+              "role": "execution",
+              "sheet": "Weekly Plan"
+            }
+          ],
+          "equivalency": null,
+          "institution": "TESU",
+          "studentNote": null,
+          "objectiveKey": "tesu-bsba-in-accounting",
+          "plannedStart": "2026-10-12",
+          "registration": null,
+          "alternativeOf": null,
+          "registrationGate": null
+        },
+        {
+          "key": "business-101",
+          "code": "Business 101",
+          "hold": null,
+          "kind": "course",
+          "tasks": [
+            {
+              "key": "final-exam",
+              "kind": "exam",
+              "week": 11,
+              "title": "Final exam",
+              "dueDate": "2026-11-13",
+              "sequence": 1
+            },
+            {
+              "key": "assignment-1",
+              "kind": "assignment",
+              "week": 10,
+              "title": "Assignment 1",
+              "dueDate": "2026-11-06",
+              "sequence": 2
+            }
+          ],
+          "title": "Principles of Management",
+          "credits": "3",
+          "approval": null,
+          "phaseKey": "phase-1-external",
+          "provider": "Study.com",
+          "sequence": 5,
+          "condition": null,
+          "creditUse": "degree_and_licensing",
+          "dependsOn": [],
+          "staffNote": "New Study.com Phase 1 external",
+          "planStatus": "planned",
+          "plannedEnd": "2026-11-13",
+          "provenance": [
+            {
+              "row": 12,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Business Core"
+            },
+            {
+              "row": 8,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "External Courses"
+            },
+            {
+              "row": 8,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Execution Order"
+            },
+            {
+              "row": 17,
+              "file": "eph-execution-v1.xlsx",
+              "role": "execution",
+              "sheet": "Weekly Plan"
+            },
+            {
+              "row": 18,
+              "file": "eph-execution-v1.xlsx",
+              "role": "execution",
+              "sheet": "Weekly Plan"
+            },
+            {
+              "row": 20,
+              "file": "eph-execution-v1.xlsx",
+              "role": "execution",
+              "sheet": "Weekly Plan"
+            }
+          ],
+          "equivalency": null,
+          "institution": "TESU",
+          "studentNote": null,
+          "objectiveKey": "tesu-bsba-in-accounting",
+          "plannedStart": "2026-10-26",
+          "registration": null,
+          "alternativeOf": null,
+          "registrationGate": null
+        },
+        {
+          "key": "quantitative-skills-for-business",
+          "code": null,
+          "hold": {
+            "reason": "NO VALIDATED MAP HOLD. Not a validated TESU map. Keep the 3-credit hole visible. DO NOT BUY until TESU confirms this fills BUS-2100."
+          },
+          "kind": "course",
+          "tasks": [
+            {
+              "key": "final-exam",
+              "kind": "exam",
+              "title": "Provider assessment",
+              "sequence": 1
+            }
+          ],
+          "title": "Quantitative Skills for Business",
+          "credits": "3",
+          "approval": null,
+          "phaseKey": "phase-1-external",
+          "provider": "CSM Learn",
+          "sequence": 6,
+          "condition": "DO NOT BUY until TESU confirms this fills BUS-2100.",
+          "creditUse": "degree_and_licensing",
+          "dependsOn": [],
+          "staffNote": "NO VALIDATED MAP HOLD. Not a validated TESU map. Keep the 3-credit hole visible. DO NOT BUY until TESU confirms this fills BUS-2100.",
+          "planStatus": "hold",
+          "plannedEnd": null,
+          "provenance": [
+            {
+              "row": 14,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Business Core"
+            },
+            {
+              "row": 9,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "External Courses"
+            },
+            {
+              "row": 9,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Execution Order"
+            }
+          ],
+          "equivalency": {
+            "note": "NO VALIDATED MAP HOLD.",
+            "mapsTo": "Quantitative Skills for Business",
+            "status": "conditional"
+          },
+          "institution": "TESU",
+          "studentNote": null,
+          "objectiveKey": "tesu-bsba-in-accounting",
+          "plannedStart": null,
+          "registration": null,
+          "alternativeOf": null,
+          "registrationGate": null
+        },
+        {
+          "key": "accounting-201",
+          "code": "Accounting 201",
+          "hold": null,
+          "kind": "course",
+          "tasks": [
+            {
+              "key": "assignment-1",
+              "kind": "assignment",
+              "week": 13,
+              "title": "Assignment 1",
+              "dueDate": "2026-11-27",
+              "sequence": 1
+            },
+            {
+              "key": "final-exam",
+              "kind": "exam",
+              "week": 14,
+              "title": "Final exam",
+              "dueDate": "2026-12-04",
+              "sequence": 2
+            }
+          ],
+          "title": "Intermediate Financial Accounting I",
+          "credits": "3",
+          "approval": null,
+          "phaseKey": "phase-1-external",
+          "provider": "Study.com",
+          "sequence": 7,
+          "condition": null,
+          "creditUse": "degree_and_licensing",
+          "dependsOn": [],
+          "staffNote": "PROVISIONAL required AOS. Preferred validated-map route; verify current TESU posting before enrollment",
+          "planStatus": "planned",
+          "plannedEnd": "2026-12-04",
+          "provenance": [
+            {
+              "row": 4,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Accounting AOS"
+            },
+            {
+              "row": 10,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "External Courses"
+            },
+            {
+              "row": 10,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Execution Order"
+            },
+            {
+              "row": 6,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "CPA Audit"
+            },
+            {
+              "row": 22,
+              "file": "eph-execution-v1.xlsx",
+              "role": "execution",
+              "sheet": "Weekly Plan"
+            },
+            {
+              "row": 24,
+              "file": "eph-execution-v1.xlsx",
+              "role": "execution",
+              "sheet": "Weekly Plan"
+            },
+            {
+              "row": 25,
+              "file": "eph-execution-v1.xlsx",
+              "role": "execution",
+              "sheet": "Weekly Plan"
+            }
+          ],
+          "equivalency": {
+            "note": "PROVISIONAL required AOS.",
+            "mapsTo": "ACC-2010 Intermediate Accounting I",
+            "status": "conditional"
+          },
+          "institution": "TESU",
+          "studentNote": null,
+          "objectiveKey": "tesu-bsba-in-accounting",
+          "plannedStart": "2026-11-16",
+          "registration": null,
+          "alternativeOf": null,
+          "registrationGate": null
+        },
+        {
+          "key": "accounting-202",
+          "code": "Accounting 202",
+          "hold": null,
+          "kind": "course",
+          "tasks": [
+            {
+              "key": "final-exam",
+              "kind": "exam",
+              "week": 16,
+              "title": "Final exam",
+              "dueDate": "2026-12-20",
+              "sequence": 1
+            },
+            {
+              "key": "assignment-1",
+              "kind": "assignment",
+              "week": 16,
+              "title": "Assignment 1",
+              "dueDate": "2026-12-18",
+              "sequence": 2
+            }
+          ],
+          "title": "Intermediate Financial Accounting II",
+          "credits": "3",
+          "approval": null,
+          "phaseKey": "phase-1-external",
+          "provider": "Study.com",
+          "sequence": 8,
+          "condition": null,
+          "creditUse": "degree_and_licensing",
+          "dependsOn": [
+            "accounting-201"
+          ],
+          "staffNote": "PROVISIONAL required AOS. After ACC-2010; verify current TESU posting before enrollment",
+          "planStatus": "planned",
+          "plannedEnd": "2026-12-25",
+          "provenance": [
+            {
+              "row": 5,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Accounting AOS"
+            },
+            {
+              "row": 11,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "External Courses"
+            },
+            {
+              "row": 11,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Execution Order"
+            },
+            {
+              "row": 7,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "CPA Audit"
+            },
+            {
+              "row": 27,
+              "file": "eph-execution-v1.xlsx",
+              "role": "execution",
+              "sheet": "Weekly Plan"
+            },
+            {
+              "row": 28,
+              "file": "eph-execution-v1.xlsx",
+              "role": "execution",
+              "sheet": "Weekly Plan"
+            },
+            {
+              "row": 29,
+              "file": "eph-execution-v1.xlsx",
+              "role": "execution",
+              "sheet": "Weekly Plan"
+            }
+          ],
+          "equivalency": {
+            "note": "PROVISIONAL required AOS.",
+            "mapsTo": "ACC-2020 Intermediate Accounting II",
+            "status": "conditional"
+          },
+          "institution": "TESU",
+          "studentNote": null,
+          "objectiveKey": "tesu-bsba-in-accounting",
+          "plannedStart": "2026-12-07",
+          "registration": null,
+          "alternativeOf": null,
+          "registrationGate": null
+        },
+        {
+          "key": "accounting-303",
+          "code": "Accounting 303",
+          "hold": null,
+          "kind": "course",
+          "tasks": [
+            {
+              "key": "assignment-1",
+              "kind": "assignment",
+              "week": 19,
+              "title": "Assignment 1",
+              "dueDate": "2027-01-08",
+              "sequence": 1
+            },
+            {
+              "key": "assignment-2",
+              "kind": "assignment",
+              "week": 20,
+              "title": "Assignment 2",
+              "dueDate": "2027-01-15",
+              "sequence": 2
+            },
+            {
+              "key": "assignment-3",
+              "kind": "assignment",
+              "week": 21,
+              "title": "Assignment 3",
+              "dueDate": "2027-01-22",
+              "sequence": 3
+            },
+            {
+              "key": "final-exam",
+              "kind": "exam",
+              "week": 21,
+              "title": "Final exam",
+              "dueDate": "2027-01-22",
+              "sequence": 4
+            }
+          ],
+          "title": "Cost Accounting",
+          "credits": "3",
+          "approval": null,
+          "phaseKey": "phase-1-external",
+          "provider": "Study.com",
+          "sequence": 9,
+          "condition": null,
+          "creditUse": "degree_and_licensing",
+          "dependsOn": [],
+          "staffNote": "PROVISIONAL named select. Verify current TESU posting before enrollment",
+          "planStatus": "planned",
+          "plannedEnd": "2027-01-22",
+          "provenance": [
+            {
+              "row": 6,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Accounting AOS"
+            },
+            {
+              "row": 12,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "External Courses"
+            },
+            {
+              "row": 12,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Execution Order"
+            },
+            {
+              "row": 8,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "CPA Audit"
+            },
+            {
+              "row": 31,
+              "file": "eph-execution-v1.xlsx",
+              "role": "execution",
+              "sheet": "Weekly Plan"
+            },
+            {
+              "row": 32,
+              "file": "eph-execution-v1.xlsx",
+              "role": "execution",
+              "sheet": "Weekly Plan"
+            },
+            {
+              "row": 33,
+              "file": "eph-execution-v1.xlsx",
+              "role": "execution",
+              "sheet": "Weekly Plan"
+            }
+          ],
+          "equivalency": {
+            "note": "PROVISIONAL named select.",
+            "mapsTo": "ACC-3030 Cost Accounting",
+            "status": "conditional"
+          },
+          "institution": "TESU",
+          "studentNote": null,
+          "objectiveKey": "tesu-bsba-in-accounting",
+          "plannedStart": "2026-12-28",
+          "registration": null,
+          "alternativeOf": null,
+          "registrationGate": null
+        },
+        {
+          "key": "accounting-302",
+          "code": "Accounting 302",
+          "hold": null,
+          "kind": "course",
+          "tasks": [
+            {
+              "key": "assignment-1",
+              "kind": "assignment",
+              "week": 23,
+              "title": "Assignment 1",
+              "dueDate": "2027-02-05",
+              "sequence": 1
+            },
+            {
+              "key": "assignment-2",
+              "kind": "assignment",
+              "title": "Assignment 2",
+              "sequence": 2
+            },
+            {
+              "key": "assignment-3",
+              "kind": "assignment",
+              "title": "Assignment 3",
+              "sequence": 3
+            },
+            {
+              "key": "final-exam",
+              "kind": "exam",
+              "week": 24,
+              "title": "Final exam",
+              "dueDate": "2027-02-12",
+              "sequence": 4
+            }
+          ],
+          "title": "Advanced Financial Accounting II",
+          "credits": "3",
+          "approval": null,
+          "phaseKey": "phase-1-external",
+          "provider": "Study.com",
+          "sequence": 10,
+          "condition": null,
+          "creditUse": "degree_and_licensing",
+          "dependsOn": [],
+          "staffNote": "PROVISIONAL named select. Not Coopersmith ACC-400. Validated-map strongest current route; after intermediate sequence",
+          "planStatus": "planned",
+          "plannedEnd": "2027-02-12",
+          "provenance": [
+            {
+              "row": 7,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Accounting AOS"
+            },
+            {
+              "row": 13,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "External Courses"
+            },
+            {
+              "row": 13,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Execution Order"
+            },
+            {
+              "row": 9,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "CPA Audit"
+            },
+            {
+              "row": 36,
+              "file": "eph-execution-v1.xlsx",
+              "role": "execution",
+              "sheet": "Weekly Plan"
+            },
+            {
+              "row": 37,
+              "file": "eph-execution-v1.xlsx",
+              "role": "execution",
+              "sheet": "Weekly Plan"
+            },
+            {
+              "row": 44,
+              "file": "eph-execution-v1.xlsx",
+              "role": "execution",
+              "sheet": "Weekly Plan"
+            }
+          ],
+          "equivalency": {
+            "note": "PROVISIONAL named select.",
+            "mapsTo": "ACC-4010 Advanced Accounting I",
+            "status": "conditional"
+          },
+          "institution": "TESU",
+          "studentNote": null,
+          "objectiveKey": "tesu-bsba-in-accounting",
+          "plannedStart": "2027-01-25",
+          "registration": null,
+          "alternativeOf": null,
+          "registrationGate": null
+        },
+        {
+          "key": "business-308",
+          "code": "Business 308",
+          "hold": null,
+          "kind": "course",
+          "tasks": [
+            {
+              "key": "final-exam",
+              "kind": "exam",
+              "week": 12,
+              "title": "Final exam",
+              "dueDate": "2026-11-20",
+              "sequence": 1
+            },
+            {
+              "key": "assignment-1",
+              "kind": "assignment",
+              "week": 11,
+              "title": "Assignment 1",
+              "dueDate": "2026-11-13",
+              "sequence": 2
+            }
+          ],
+          "title": "International Management",
+          "credits": "3",
+          "approval": null,
+          "phaseKey": "phase-1-external",
+          "provider": "Study.com",
+          "sequence": 11,
+          "condition": null,
+          "creditUse": "degree_and_licensing",
+          "dependsOn": [],
+          "staffNote": "New Study.com Phase 1 external; verify equivalency before enrollment",
+          "planStatus": "planned",
+          "plannedEnd": "2026-11-20",
+          "provenance": [
+            {
+              "row": 17,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Business Core"
+            },
+            {
+              "row": 14,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "External Courses"
+            },
+            {
+              "row": 14,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Execution Order"
+            },
+            {
+              "row": 19,
+              "file": "eph-execution-v1.xlsx",
+              "role": "execution",
+              "sheet": "Weekly Plan"
+            },
+            {
+              "row": 21,
+              "file": "eph-execution-v1.xlsx",
+              "role": "execution",
+              "sheet": "Weekly Plan"
+            },
+            {
+              "row": 23,
+              "file": "eph-execution-v1.xlsx",
+              "role": "execution",
+              "sheet": "Weekly Plan"
+            }
+          ],
+          "equivalency": {
+            "note": "verify equivalency before enrollment",
+            "mapsTo": "International Management",
+            "status": "conditional"
+          },
+          "institution": "TESU",
+          "studentNote": null,
+          "objectiveKey": "tesu-bsba-in-accounting",
+          "plannedStart": "2026-11-02",
+          "registration": null,
+          "alternativeOf": null,
+          "registrationGate": null
+        },
+        {
+          "key": "acc-352",
+          "code": "ACC-352",
+          "hold": {
+            "reason": "HOLD — preapprove ACC-352 as ACC-4210 before purchase. PREAPPROVE / verify current TESU posting before taking"
+          },
+          "kind": "course",
+          "tasks": [
+            {
+              "key": "final-exam",
+              "kind": "exam",
+              "title": "Provider assessment",
+              "sequence": 1
+            }
+          ],
+          "title": "Federal Taxation of Business Entities",
+          "credits": "3",
+          "approval": {
+            "note": "HOLD — preapprove ACC-352 as ACC-4210 before purchase.",
+            "status": "pending",
+            "required": true
+          },
+          "phaseKey": "phase-2-coopersmith",
+          "provider": "Coopersmith",
+          "sequence": 12,
+          "condition": "HOLD — preapprove ACC-352 as ACC-4210 before purchase.",
+          "creditUse": "degree_and_licensing",
+          "dependsOn": [],
+          "staffNote": "HOLD — preapprove ACC-352 as ACC-4210 before purchase. PREAPPROVE / verify current TESU posting before taking",
+          "planStatus": "hold",
+          "plannedEnd": null,
+          "provenance": [
+            {
+              "row": 8,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Accounting AOS"
+            },
+            {
+              "row": 4,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Coopersmith Plan"
+            },
+            {
+              "row": 15,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Execution Order"
+            },
+            {
+              "row": 10,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "CPA Audit"
+            }
+          ],
+          "equivalency": {
+            "note": "HOLD — preapprove ACC-352 as ACC-4210 before purchase.",
+            "mapsTo": "ACC-4210 Federal Income Taxation",
+            "status": "conditional"
+          },
+          "institution": "TESU",
+          "studentNote": null,
+          "objectiveKey": "tesu-bsba-in-accounting",
+          "plannedStart": null,
+          "registration": null,
+          "alternativeOf": null,
+          "registrationGate": null
+        },
+        {
+          "key": "acc-375",
+          "code": "ACC-375",
+          "hold": {
+            "reason": "HOLD — preapprove ACC-375 as ACC-4110 before purchase. PREAPPROVE / verify current TESU posting before taking"
+          },
+          "kind": "course",
+          "tasks": [
+            {
+              "key": "final-exam",
+              "kind": "exam",
+              "title": "Provider assessment",
+              "sequence": 1
+            }
+          ],
+          "title": "Auditing of Financial Statements",
+          "credits": "3",
+          "approval": {
+            "note": "HOLD — preapprove ACC-375 as ACC-4110 before purchase.",
+            "status": "pending",
+            "required": true
+          },
+          "phaseKey": "phase-2-coopersmith",
+          "provider": "Coopersmith",
+          "sequence": 13,
+          "condition": "HOLD — preapprove ACC-375 as ACC-4110 before purchase.",
+          "creditUse": "degree_and_licensing",
+          "dependsOn": [],
+          "staffNote": "HOLD — preapprove ACC-375 as ACC-4110 before purchase. PREAPPROVE / verify current TESU posting before taking",
+          "planStatus": "hold",
+          "plannedEnd": null,
+          "provenance": [
+            {
+              "row": 9,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Accounting AOS"
+            },
+            {
+              "row": 5,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Coopersmith Plan"
+            },
+            {
+              "row": 16,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Execution Order"
+            },
+            {
+              "row": 11,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "CPA Audit"
+            }
+          ],
+          "equivalency": {
+            "note": "HOLD — preapprove ACC-375 as ACC-4110 before purchase.",
+            "mapsTo": "ACC-4110 Auditing",
+            "status": "conditional"
+          },
+          "institution": "TESU",
+          "studentNote": null,
+          "objectiveKey": "tesu-bsba-in-accounting",
+          "plannedStart": null,
+          "registration": null,
+          "alternativeOf": null,
+          "registrationGate": null
+        },
+        {
+          "key": "acc-301",
+          "code": "ACC-301",
+          "hold": null,
+          "kind": "course",
+          "tasks": [
+            {
+              "key": "final-exam",
+              "kind": "exam",
+              "title": "Provider assessment",
+              "sequence": 1
+            }
+          ],
+          "title": "Intermediate Accounting I",
+          "credits": "3",
+          "approval": null,
+          "phaseKey": "phase-2-coopersmith",
+          "provider": "Coopersmith",
+          "sequence": 14,
+          "condition": null,
+          "creditUse": "degree_and_licensing",
+          "dependsOn": [],
+          "staffNote": "Alternative for Accounting 201 if the Study.com mapping is not confirmed. Historical advisor map only",
+          "planStatus": "alternative",
+          "plannedEnd": null,
+          "provenance": [
+            {
+              "row": 10,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Accounting AOS"
+            },
+            {
+              "row": 17,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Execution Order"
+            },
+            {
+              "row": 12,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "CPA Audit"
+            }
+          ],
+          "equivalency": null,
+          "institution": "TESU",
+          "studentNote": null,
+          "objectiveKey": "tesu-bsba-in-accounting",
+          "plannedStart": null,
+          "registration": null,
+          "alternativeOf": "accounting-201",
+          "registrationGate": null
+        },
+        {
+          "key": "com-2090",
+          "code": "COM-2090",
+          "hold": null,
+          "kind": "exam",
+          "tasks": [
+            {
+              "key": "final-exam",
+              "kind": "exam",
+              "week": 24,
+              "title": "TECEP exam",
+              "dueDate": "2027-02-09",
+              "sequence": 1
+            }
+          ],
+          "title": "Public Speaking",
+          "credits": "3",
+          "approval": null,
+          "phaseKey": "phase-3-tecep",
+          "provider": "TESU TECEP",
+          "sequence": 15,
+          "condition": null,
+          "creditUse": null,
+          "dependsOn": [],
+          "staffNote": "Exact TECEP set Confirm TECEP available in registration window",
+          "planStatus": "planned",
+          "plannedEnd": "2027-02-09",
+          "provenance": [
+            {
+              "row": 12,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "General Education"
+            },
+            {
+              "row": 4,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "TECEP Plan"
+            },
+            {
+              "row": 18,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Execution Order"
+            },
+            {
+              "row": 38,
+              "file": "eph-execution-v1.xlsx",
+              "role": "execution",
+              "sheet": "Weekly Plan"
+            },
+            {
+              "row": 39,
+              "file": "eph-execution-v1.xlsx",
+              "role": "execution",
+              "sheet": "Weekly Plan"
+            }
+          ],
+          "equivalency": null,
+          "institution": "TESU",
+          "studentNote": null,
+          "objectiveKey": "tesu-bsba-in-accounting",
+          "plannedStart": "2027-02-08",
+          "registration": {
+            "termLabel": "TESU Spring 2027",
+            "termStart": "2027-01-11",
+            "finalExamDate": "2027-01-31",
+            "registrationDeadline": "2026-12-28"
+          },
+          "alternativeOf": null,
+          "registrationGate": null
+        },
+        {
+          "key": "psy-3500",
+          "code": "PSY-3500",
+          "hold": null,
+          "kind": "exam",
+          "tasks": [
+            {
+              "key": "final-exam",
+              "kind": "exam",
+              "week": 24,
+              "title": "TECEP exam",
+              "dueDate": "2027-02-12",
+              "sequence": 1
+            }
+          ],
+          "title": "Abnormal Psychology",
+          "credits": "3",
+          "approval": null,
+          "phaseKey": "phase-3-tecep",
+          "provider": "TESU TECEP",
+          "sequence": 16,
+          "condition": null,
+          "creditUse": null,
+          "dependsOn": [],
+          "staffNote": "Exact TECEP set Confirm TECEP available in registration window",
+          "planStatus": "planned",
+          "plannedEnd": "2027-02-12",
+          "provenance": [
+            {
+              "row": 17,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "General Education"
+            },
+            {
+              "row": 5,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "TECEP Plan"
+            },
+            {
+              "row": 19,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Execution Order"
+            },
+            {
+              "row": 40,
+              "file": "eph-execution-v1.xlsx",
+              "role": "execution",
+              "sheet": "Weekly Plan"
+            },
+            {
+              "row": 41,
+              "file": "eph-execution-v1.xlsx",
+              "role": "execution",
+              "sheet": "Weekly Plan"
+            }
+          ],
+          "equivalency": null,
+          "institution": "TESU",
+          "studentNote": null,
+          "objectiveKey": "tesu-bsba-in-accounting",
+          "plannedStart": "2027-02-08",
+          "registration": {
+            "termLabel": "TESU Spring 2027",
+            "termStart": "2027-01-11",
+            "finalExamDate": "2027-01-31",
+            "registrationDeadline": "2026-12-28"
+          },
+          "alternativeOf": null,
+          "registrationGate": null
+        },
+        {
+          "key": "phi-1300",
+          "code": "PHI-1300",
+          "hold": null,
+          "kind": "exam",
+          "tasks": [
+            {
+              "key": "final-exam",
+              "kind": "exam",
+              "week": 25,
+              "title": "TECEP exam",
+              "dueDate": "2027-02-16",
+              "sequence": 1
+            }
+          ],
+          "title": "Critical Reasoning",
+          "credits": "3",
+          "approval": null,
+          "phaseKey": "phase-3-tecep",
+          "provider": "TESU TECEP",
+          "sequence": 17,
+          "condition": null,
+          "creditUse": null,
+          "dependsOn": [],
+          "staffNote": "Exact TECEP set Confirm TECEP available in registration window",
+          "planStatus": "planned",
+          "plannedEnd": "2027-02-16",
+          "provenance": [
+            {
+              "row": 18,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "General Education"
+            },
+            {
+              "row": 6,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "TECEP Plan"
+            },
+            {
+              "row": 20,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Execution Order"
+            },
+            {
+              "row": 45,
+              "file": "eph-execution-v1.xlsx",
+              "role": "execution",
+              "sheet": "Weekly Plan"
+            },
+            {
+              "row": 46,
+              "file": "eph-execution-v1.xlsx",
+              "role": "execution",
+              "sheet": "Weekly Plan"
+            }
+          ],
+          "equivalency": null,
+          "institution": "TESU",
+          "studentNote": null,
+          "objectiveKey": "tesu-bsba-in-accounting",
+          "plannedStart": "2027-02-15",
+          "registration": {
+            "termLabel": "TESU Spring 2027",
+            "termStart": "2027-01-11",
+            "finalExamDate": "2027-01-31",
+            "registrationDeadline": "2026-12-28"
+          },
+          "alternativeOf": null,
+          "registrationGate": null
+        },
+        {
+          "key": "cis-1070",
+          "code": "CIS-1070",
+          "hold": null,
+          "kind": "exam",
+          "tasks": [
+            {
+              "key": "final-exam",
+              "kind": "exam",
+              "week": 24,
+              "title": "TECEP exam",
+              "dueDate": "2027-02-19",
+              "sequence": 1
+            }
+          ],
+          "title": "Computer Concepts",
+          "credits": "3",
+          "approval": null,
+          "phaseKey": "phase-3-tecep",
+          "provider": "TESU TECEP",
+          "sequence": 18,
+          "condition": null,
+          "creditUse": "degree_and_licensing",
+          "dependsOn": [],
+          "staffNote": "Exact TECEP set Confirm TECEP available in registration window",
+          "planStatus": "planned",
+          "plannedEnd": "2027-02-12",
+          "provenance": [
+            {
+              "row": 10,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Business Core"
+            },
+            {
+              "row": 7,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "TECEP Plan"
+            },
+            {
+              "row": 21,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Execution Order"
+            },
+            {
+              "row": 42,
+              "file": "eph-execution-v1.xlsx",
+              "role": "execution",
+              "sheet": "Weekly Plan"
+            },
+            {
+              "row": 43,
+              "file": "eph-execution-v1.xlsx",
+              "role": "execution",
+              "sheet": "Weekly Plan"
+            }
+          ],
+          "equivalency": null,
+          "institution": "TESU",
+          "studentNote": null,
+          "objectiveKey": "tesu-bsba-in-accounting",
+          "plannedStart": "2027-02-08",
+          "registration": {
+            "termLabel": "TESU Spring 2027",
+            "termStart": "2027-01-11",
+            "finalExamDate": "2027-01-31",
+            "registrationDeadline": "2026-12-28"
+          },
+          "alternativeOf": null,
+          "registrationGate": null
+        },
+        {
+          "key": "mkt-2010",
+          "code": "MKT-2010",
+          "hold": null,
+          "kind": "exam",
+          "tasks": [
+            {
+              "key": "final-exam",
+              "kind": "exam",
+              "week": 25,
+              "title": "TECEP exam",
+              "dueDate": "2027-02-18",
+              "sequence": 1
+            }
+          ],
+          "title": "Introduction to Marketing",
+          "credits": "3",
+          "approval": null,
+          "phaseKey": "phase-3-tecep",
+          "provider": "TESU TECEP",
+          "sequence": 19,
+          "condition": null,
+          "creditUse": "degree_and_licensing",
+          "dependsOn": [],
+          "staffNote": "Exact TECEP set Confirm TECEP available in registration window",
+          "planStatus": "planned",
+          "plannedEnd": "2027-02-18",
+          "provenance": [
+            {
+              "row": 13,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Business Core"
+            },
+            {
+              "row": 8,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "TECEP Plan"
+            },
+            {
+              "row": 22,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Execution Order"
+            },
+            {
+              "row": 47,
+              "file": "eph-execution-v1.xlsx",
+              "role": "execution",
+              "sheet": "Weekly Plan"
+            },
+            {
+              "row": 48,
+              "file": "eph-execution-v1.xlsx",
+              "role": "execution",
+              "sheet": "Weekly Plan"
+            }
+          ],
+          "equivalency": null,
+          "institution": "TESU",
+          "studentNote": null,
+          "objectiveKey": "tesu-bsba-in-accounting",
+          "plannedStart": "2027-02-15",
+          "registration": {
+            "termLabel": "TESU Spring 2027",
+            "termStart": "2027-01-11",
+            "finalExamDate": "2027-01-31",
+            "registrationDeadline": "2026-12-28"
+          },
+          "alternativeOf": null,
+          "registrationGate": null
+        },
+        {
+          "key": "man-3730",
+          "code": "MAN-3730",
+          "hold": null,
+          "kind": "exam",
+          "tasks": [
+            {
+              "key": "final-exam",
+              "kind": "exam",
+              "week": 26,
+              "title": "TECEP exam",
+              "dueDate": "2027-02-23",
+              "sequence": 1
+            }
+          ],
+          "title": "Managerial Communications",
+          "credits": "3",
+          "approval": null,
+          "phaseKey": "phase-3-tecep",
+          "provider": "TESU TECEP",
+          "sequence": 20,
+          "condition": "Fallback: Study.com Business 324 if the TECEP is not passed by March.",
+          "creditUse": "degree_and_licensing",
+          "dependsOn": [],
+          "staffNote": "Fallback: Study.com Business 324 if the TECEP is not passed by March. Default TESU-side fill.",
+          "planStatus": "planned",
+          "plannedEnd": "2027-02-23",
+          "provenance": [
+            {
+              "row": 15,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Business Core"
+            },
+            {
+              "row": 9,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "TECEP Plan"
+            },
+            {
+              "row": 23,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Execution Order"
+            },
+            {
+              "row": 49,
+              "file": "eph-execution-v1.xlsx",
+              "role": "execution",
+              "sheet": "Weekly Plan"
+            },
+            {
+              "row": 50,
+              "file": "eph-execution-v1.xlsx",
+              "role": "execution",
+              "sheet": "Weekly Plan"
+            }
+          ],
+          "equivalency": null,
+          "institution": "TESU",
+          "studentNote": null,
+          "objectiveKey": "tesu-bsba-in-accounting",
+          "plannedStart": "2027-02-22",
+          "registration": {
+            "termLabel": "TESU Spring 2027",
+            "termStart": "2027-01-11",
+            "finalExamDate": "2027-01-31",
+            "registrationDeadline": "2026-12-28"
+          },
+          "alternativeOf": null,
+          "registrationGate": null
+        },
+        {
+          "key": "fin-3310",
+          "code": "FIN-3310",
+          "hold": null,
+          "kind": "exam",
+          "tasks": [
+            {
+              "key": "final-exam",
+              "kind": "exam",
+              "week": 26,
+              "title": "TECEP exam",
+              "dueDate": "2027-02-25",
+              "sequence": 1
+            }
+          ],
+          "title": "Financial Institutions & Markets",
+          "credits": "3",
+          "approval": null,
+          "phaseKey": "phase-3-tecep",
+          "provider": "TESU TECEP",
+          "sequence": 21,
+          "condition": null,
+          "creditUse": "degree_and_licensing",
+          "dependsOn": [],
+          "staffNote": "Exact TECEP set Confirm TECEP available in registration window",
+          "planStatus": "planned",
+          "plannedEnd": "2027-02-25",
+          "provenance": [
+            {
+              "row": 7,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Electives"
+            },
+            {
+              "row": 10,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "TECEP Plan"
+            },
+            {
+              "row": 24,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Execution Order"
+            },
+            {
+              "row": 51,
+              "file": "eph-execution-v1.xlsx",
+              "role": "execution",
+              "sheet": "Weekly Plan"
+            },
+            {
+              "row": 52,
+              "file": "eph-execution-v1.xlsx",
+              "role": "execution",
+              "sheet": "Weekly Plan"
+            }
+          ],
+          "equivalency": null,
+          "institution": "TESU",
+          "studentNote": null,
+          "objectiveKey": "tesu-bsba-in-accounting",
+          "plannedStart": "2027-02-22",
+          "registration": {
+            "termLabel": "TESU Spring 2027",
+            "termStart": "2027-01-11",
+            "finalExamDate": "2027-01-31",
+            "registrationDeadline": "2026-12-28"
+          },
+          "alternativeOf": null,
+          "registrationGate": null
+        },
+        {
+          "key": "opm-3010",
+          "code": "OPM-3010",
+          "hold": null,
+          "kind": "exam",
+          "tasks": [
+            {
+              "key": "final-exam",
+              "kind": "exam",
+              "week": 26,
+              "title": "TECEP exam",
+              "dueDate": "2027-02-26",
+              "sequence": 1
+            }
+          ],
+          "title": "Operations Management",
+          "credits": "3",
+          "approval": null,
+          "phaseKey": "phase-3-tecep",
+          "provider": "TESU TECEP",
+          "sequence": 22,
+          "condition": null,
+          "creditUse": "degree_and_licensing",
+          "dependsOn": [],
+          "staffNote": "Exact TECEP set Confirm TECEP available in registration window",
+          "planStatus": "planned",
+          "plannedEnd": "2027-02-26",
+          "provenance": [
+            {
+              "row": 8,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Electives"
+            },
+            {
+              "row": 11,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "TECEP Plan"
+            },
+            {
+              "row": 25,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Execution Order"
+            },
+            {
+              "row": 53,
+              "file": "eph-execution-v1.xlsx",
+              "role": "execution",
+              "sheet": "Weekly Plan"
+            },
+            {
+              "row": 54,
+              "file": "eph-execution-v1.xlsx",
+              "role": "execution",
+              "sheet": "Weekly Plan"
+            }
+          ],
+          "equivalency": null,
+          "institution": "TESU",
+          "studentNote": null,
+          "objectiveKey": "tesu-bsba-in-accounting",
+          "plannedStart": "2027-02-22",
+          "registration": {
+            "termLabel": "TESU Spring 2027",
+            "termStart": "2027-01-11",
+            "finalExamDate": "2027-01-31",
+            "registrationDeadline": "2026-12-28"
+          },
+          "alternativeOf": null,
+          "registrationGate": null
+        },
+        {
+          "key": "sos-1100",
+          "code": "SOS-1100",
+          "hold": null,
+          "kind": "course",
+          "tasks": [
+            {
+              "key": "assignment-1",
+              "kind": "assignment",
+              "week": 31,
+              "title": "Assignment 1",
+              "dueDate": "2027-04-02",
+              "sequence": 1
+            },
+            {
+              "key": "assignment-2",
+              "kind": "assignment",
+              "week": 34,
+              "title": "Assignment 2",
+              "dueDate": "2027-04-23",
+              "sequence": 2
+            }
+          ],
+          "title": "Fact, Fiction, or Fake?",
+          "credits": "3",
+          "approval": null,
+          "phaseKey": "phase-4-tesu-term",
+          "provider": "TESU Online",
+          "sequence": 23,
+          "condition": null,
+          "creditUse": null,
+          "dependsOn": [],
+          "staffNote": "Actual TESU course — not a TECEP One of two actual TESU courses; Edison Accelerate if available",
+          "planStatus": "planned",
+          "plannedEnd": "2027-04-23",
+          "provenance": [
+            {
+              "row": 13,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "General Education"
+            },
+            {
+              "row": 4,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "TESU Courses"
+            },
+            {
+              "row": 26,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Execution Order"
+            },
+            {
+              "row": 55,
+              "file": "eph-execution-v1.xlsx",
+              "role": "execution",
+              "sheet": "Weekly Plan"
+            },
+            {
+              "row": 56,
+              "file": "eph-execution-v1.xlsx",
+              "role": "execution",
+              "sheet": "Weekly Plan"
+            },
+            {
+              "row": 58,
+              "file": "eph-execution-v1.xlsx",
+              "role": "execution",
+              "sheet": "Weekly Plan"
+            }
+          ],
+          "equivalency": null,
+          "institution": "TESU",
+          "studentNote": null,
+          "objectiveKey": "tesu-bsba-in-accounting",
+          "plannedStart": "2027-03-08",
+          "registration": {
+            "termLabel": "TESU Spring 2027",
+            "termStart": "2027-01-11",
+            "finalExamDate": "2027-01-31",
+            "registrationDeadline": "2026-12-28"
+          },
+          "alternativeOf": null,
+          "registrationGate": null
+        },
+        {
+          "key": "bus-4210",
+          "code": "BUS-4210",
+          "hold": null,
+          "kind": "course",
+          "tasks": [
+            {
+              "key": "assignment-1",
+              "kind": "assignment",
+              "week": 35,
+              "title": "Assignment 1",
+              "dueDate": "2027-04-30",
+              "sequence": 1
+            },
+            {
+              "key": "assignment-2",
+              "kind": "assignment",
+              "week": 39,
+              "title": "Assignment 2",
+              "dueDate": "2027-05-28",
+              "sequence": 2
+            }
+          ],
+          "title": "Business Administration Capstone",
+          "credits": "3",
+          "approval": null,
+          "phaseKey": "phase-4-tesu-term",
+          "provider": "TESU Online",
+          "sequence": 24,
+          "condition": null,
+          "creditUse": "degree_and_licensing",
+          "dependsOn": [
+            "sos-1100"
+          ],
+          "staffNote": "Actual TESU course — Edison Accelerate if available LAST actual TESU course. After SOS-1100 and all transfer/TECEP credit is posted.",
+          "planStatus": "planned",
+          "plannedEnd": "2027-05-28",
+          "provenance": [
+            {
+              "row": 16,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Business Core"
+            },
+            {
+              "row": 5,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "TESU Courses"
+            },
+            {
+              "row": 27,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Execution Order"
+            },
+            {
+              "row": 57,
+              "file": "eph-execution-v1.xlsx",
+              "role": "execution",
+              "sheet": "Weekly Plan"
+            },
+            {
+              "row": 59,
+              "file": "eph-execution-v1.xlsx",
+              "role": "execution",
+              "sheet": "Weekly Plan"
+            },
+            {
+              "row": 61,
+              "file": "eph-execution-v1.xlsx",
+              "role": "execution",
+              "sheet": "Weekly Plan"
+            }
+          ],
+          "equivalency": null,
+          "institution": "TESU",
+          "studentNote": null,
+          "objectiveKey": "tesu-bsba-in-accounting",
+          "plannedStart": "2027-04-05",
+          "registration": {
+            "termLabel": "TESU Spring 2027",
+            "termStart": "2027-01-11",
+            "finalExamDate": "2027-01-31",
+            "registrationDeadline": "2026-12-28"
+          },
+          "alternativeOf": null,
+          "registrationGate": {
+            "evidence": "not_documented",
+            "requirement": "LAST actual TESU course. After SOS-1100 and all transfer/TECEP credit is posted."
+          }
+        }
+      ],
+      "title": "TESU BSBA in Accounting roadmap",
+      "phases": [
+        {
+          "key": "phase-1-external",
+          "title": "Phase 1 — External",
+          "sequence": 1
+        },
+        {
+          "key": "phase-2-coopersmith",
+          "title": "Phase 2 — Coopersmith",
+          "sequence": 2
+        },
+        {
+          "key": "phase-3-tecep",
+          "title": "Phase 3 — TECEP",
+          "sequence": 3
+        },
+        {
+          "key": "phase-4-tesu-term",
+          "title": "Phase 4 — TESU term",
+          "sequence": 4
+        }
+      ],
+      "summary": null,
+      "schedule": {
+        "label": "42-WEEK EXECUTION PLAN · WEEKS 1–42 · Prepared 2026-08-24",
+        "weeks": 42,
+        "startsOn": "2026-08-31",
+        "preparedOn": "2026-08-24"
+      },
+      "milestones": [
+        {
+          "key": "tesu-graduation-filing-conferral",
+          "kind": "graduation",
+          "title": "TESU graduation filing / conferral",
+          "targetDate": null,
+          "objectiveKey": "tesu-bsba-in-accounting",
+          "afterItemKeys": []
+        },
+        {
+          "key": "order-official-tesu-transcript-washington-cpa-education-evaluation",
+          "kind": "checkpoint",
+          "title": "Order official TESU transcript + Washington CPA education evaluation",
+          "targetDate": null,
+          "objectiveKey": "licensing-planning",
+          "afterItemKeys": []
+        },
+        {
+          "key": "orientation",
+          "kind": "checkpoint",
+          "title": "Orientation",
+          "targetDate": "2026-09-02",
+          "objectiveKey": "tesu-bsba-in-accounting",
+          "afterItemKeys": []
+        },
+        {
+          "key": "apply-for-graduation",
+          "kind": "application",
+          "title": "Apply for graduation",
+          "targetDate": "2027-05-04",
+          "objectiveKey": "tesu-bsba-in-accounting",
+          "afterItemKeys": []
+        },
+        {
+          "key": "degree-conferral",
+          "kind": "graduation",
+          "title": "Degree conferral",
+          "targetDate": "2027-06-18",
+          "objectiveKey": "tesu-bsba-in-accounting",
+          "afterItemKeys": []
+        }
+      ],
+      "objectives": [
+        {
+          "key": "tesu-bsba-in-accounting",
+          "kind": "primary",
+          "note": null,
+          "title": "TESU BSBA in Accounting",
+          "status": "active",
+          "institution": "TESU",
+          "credentialLabel": null,
+          "linkedToProgramAssignment": true
+        },
+        {
+          "key": "licensing-planning",
+          "kind": "secondary",
+          "note": "Planning only. Whether coursework qualifies for licensure is decided by the licensing board; it is never counted as degree credit.",
+          "title": "Washington State CPA licensing planning",
+          "status": "active",
+          "institution": null,
+          "credentialLabel": null,
+          "linkedToProgramAssignment": false
+        }
+      ],
+      "contentVersion": "roadmap-content/1",
+      "reportedHistory": [
+        {
+          "key": "credit-baseline-reported",
+          "kind": "credit_baseline",
+          "note": "Stated in the workbook (sheet \"Master Plan\"). Not verified.",
+          "title": "Credits reported as already earned",
+          "provider": null,
+          "provenance": [
+            {
+              "row": 1,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Master Plan"
+            }
+          ],
+          "completedOn": null,
+          "institution": null,
+          "reportedStatus": "reported",
+          "reportedCredits": "51"
+        },
+        {
+          "key": "english-composition-i-sophia",
+          "kind": "course",
+          "note": "Existing credit",
+          "title": "English Composition I",
+          "provider": "Sophia",
+          "provenance": [
+            {
+              "row": 4,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Completed Credits"
+            },
+            {
+              "row": 4,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "General Education"
+            }
+          ],
+          "completedOn": null,
+          "institution": null,
+          "reportedStatus": "completed",
+          "reportedCredits": "3"
+        },
+        {
+          "key": "english-composition-ii-sophia",
+          "kind": "course",
+          "note": "Existing credit",
+          "title": "English Composition II",
+          "provider": "Sophia",
+          "provenance": [
+            {
+              "row": 5,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Completed Credits"
+            },
+            {
+              "row": 5,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "General Education"
+            }
+          ],
+          "completedOn": null,
+          "institution": null,
+          "reportedStatus": "completed",
+          "reportedCredits": "3"
+        },
+        {
+          "key": "college-algebra-sophia",
+          "kind": "course",
+          "note": "Existing credit",
+          "title": "College Algebra",
+          "provider": "Sophia",
+          "provenance": [
+            {
+              "row": 6,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Completed Credits"
+            },
+            {
+              "row": 6,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "General Education"
+            }
+          ],
+          "completedOn": null,
+          "institution": null,
+          "reportedStatus": "completed",
+          "reportedCredits": "3"
+        },
+        {
+          "key": "introduction-to-ethics-sophia",
+          "kind": "course",
+          "note": "Existing credit",
+          "title": "Introduction to Ethics",
+          "provider": "Sophia",
+          "provenance": [
+            {
+              "row": 7,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Completed Credits"
+            },
+            {
+              "row": 7,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "General Education"
+            }
+          ],
+          "completedOn": null,
+          "institution": null,
+          "reportedStatus": "completed",
+          "reportedCredits": "3"
+        },
+        {
+          "key": "introduction-to-sociology-sophia",
+          "kind": "course",
+          "note": "Existing credit",
+          "title": "Introduction to Sociology",
+          "provider": "Sophia",
+          "provenance": [
+            {
+              "row": 8,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Completed Credits"
+            },
+            {
+              "row": 8,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "General Education"
+            }
+          ],
+          "completedOn": null,
+          "institution": null,
+          "reportedStatus": "completed",
+          "reportedCredits": "3"
+        },
+        {
+          "key": "human-biology-sophia",
+          "kind": "course",
+          "note": "Existing credit",
+          "title": "Human Biology",
+          "provider": "Sophia",
+          "provenance": [
+            {
+              "row": 9,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Completed Credits"
+            },
+            {
+              "row": 9,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "General Education"
+            }
+          ],
+          "completedOn": null,
+          "institution": null,
+          "reportedStatus": "completed",
+          "reportedCredits": "3"
+        },
+        {
+          "key": "introduction-to-nutrition-sophia",
+          "kind": "course",
+          "note": "Existing credit",
+          "title": "Introduction to Nutrition",
+          "provider": "Sophia",
+          "provenance": [
+            {
+              "row": 10,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Completed Credits"
+            },
+            {
+              "row": 10,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "General Education"
+            }
+          ],
+          "completedOn": null,
+          "institution": null,
+          "reportedStatus": "completed",
+          "reportedCredits": "3"
+        },
+        {
+          "key": "lifespan-development-sophia",
+          "kind": "course",
+          "note": "Existing credit",
+          "title": "Lifespan Development",
+          "provider": "Sophia",
+          "provenance": [
+            {
+              "row": 11,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Completed Credits"
+            },
+            {
+              "row": 11,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "General Education"
+            }
+          ],
+          "completedOn": null,
+          "institution": null,
+          "reportedStatus": "completed",
+          "reportedCredits": "3"
+        },
+        {
+          "key": "introduction-to-statistics-sophia",
+          "kind": "course",
+          "note": "Existing credit",
+          "title": "Introduction to Statistics",
+          "provider": "Sophia",
+          "provenance": [
+            {
+              "row": 12,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Completed Credits"
+            },
+            {
+              "row": 4,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Business Core"
+            }
+          ],
+          "completedOn": null,
+          "institution": null,
+          "reportedStatus": "completed",
+          "reportedCredits": "3"
+        },
+        {
+          "key": "microeconomics-sophia",
+          "kind": "course",
+          "note": "Existing credit",
+          "title": "Microeconomics",
+          "provider": "Sophia",
+          "provenance": [
+            {
+              "row": 13,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Completed Credits"
+            },
+            {
+              "row": 5,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Business Core"
+            }
+          ],
+          "completedOn": null,
+          "institution": null,
+          "reportedStatus": "completed",
+          "reportedCredits": "3"
+        },
+        {
+          "key": "principles-of-finance-sophia",
+          "kind": "course",
+          "note": "Completed but awaiting institutional coding. EVALUATION-WATCH: completed, but TESU has not been shown to post it as FIN-3010.",
+          "title": "Principles of Finance",
+          "provider": "Sophia",
+          "provenance": [
+            {
+              "row": 14,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Completed Credits"
+            },
+            {
+              "row": 6,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Business Core"
+            }
+          ],
+          "completedOn": null,
+          "institution": null,
+          "reportedStatus": "reported",
+          "reportedCredits": "3"
+        },
+        {
+          "key": "financial-accounting-sophia",
+          "kind": "course",
+          "note": "Existing credit",
+          "title": "Financial Accounting",
+          "provider": "Sophia",
+          "provenance": [
+            {
+              "row": 15,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Completed Credits"
+            },
+            {
+              "row": 7,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Business Core"
+            },
+            {
+              "row": 4,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "CPA Audit"
+            }
+          ],
+          "completedOn": null,
+          "institution": null,
+          "reportedStatus": "completed",
+          "reportedCredits": "3"
+        },
+        {
+          "key": "managerial-accounting-sophia",
+          "kind": "course",
+          "note": "Existing credit",
+          "title": "Managerial Accounting",
+          "provider": "Sophia",
+          "provenance": [
+            {
+              "row": 16,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Completed Credits"
+            },
+            {
+              "row": 8,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Business Core"
+            },
+            {
+              "row": 5,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "CPA Audit"
+            }
+          ],
+          "completedOn": null,
+          "institution": null,
+          "reportedStatus": "completed",
+          "reportedCredits": "3"
+        },
+        {
+          "key": "introduction-to-business-sophia",
+          "kind": "course",
+          "note": "Existing credit",
+          "title": "Introduction to Business",
+          "provider": "Sophia",
+          "provenance": [
+            {
+              "row": 17,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Completed Credits"
+            },
+            {
+              "row": 4,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Electives"
+            }
+          ],
+          "completedOn": null,
+          "institution": null,
+          "reportedStatus": "completed",
+          "reportedCredits": "3"
+        },
+        {
+          "key": "conflict-resolution-sophia",
+          "kind": "course",
+          "note": "Existing credit",
+          "title": "Conflict Resolution",
+          "provider": "Sophia",
+          "provenance": [
+            {
+              "row": 18,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Completed Credits"
+            },
+            {
+              "row": 5,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Electives"
+            }
+          ],
+          "completedOn": null,
+          "institution": null,
+          "reportedStatus": "completed",
+          "reportedCredits": "3"
+        },
+        {
+          "key": "environmental-science-sophia",
+          "kind": "course",
+          "note": "Existing credit",
+          "title": "Environmental Science",
+          "provider": "Sophia",
+          "provenance": [
+            {
+              "row": 19,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Completed Credits"
+            },
+            {
+              "row": 6,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Electives"
+            }
+          ],
+          "completedOn": null,
+          "institution": null,
+          "reportedStatus": "completed",
+          "reportedCredits": "3"
+        },
+        {
+          "key": "macroeconomics-dallas-college",
+          "kind": "transfer",
+          "note": "CONTROL: Dallas College replaces planned Sophia Macro",
+          "title": "Macroeconomics",
+          "provider": "Dallas College",
+          "provenance": [
+            {
+              "row": 20,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Completed Credits"
+            },
+            {
+              "row": 9,
+              "file": "eph-master-v1.xlsx",
+              "role": "master",
+              "sheet": "Business Core"
+            }
+          ],
+          "completedOn": null,
+          "institution": "Dallas College",
+          "reportedStatus": "completed",
+          "reportedCredits": "3"
+        }
+      ]
+    }
+  },
+  "draft": null,
+  "versions": [
+    {
+      "versionId": "74145c15-89ba-49e8-8e6f-c9faf97a1c0a",
+      "versionNumber": 1,
+      "status": "published",
+      "title": "TESU BSBA in Accounting roadmap",
+      "createdAt": "2026-10-26T19:40:27.413Z",
+      "createdBy": "01e9fedf-5b8a-4926-8c73-18bb3cc04b30",
+      "publishedAt": "2026-10-26T19:40:27.915Z",
+      "publishedBy": "8f1daa21-1a76-49b4-aba6-3d03529ea175",
+      "importId": "58770955-8cfa-4c21-a3fa-afbe6f1be21b"
+    }
+  ]
+}

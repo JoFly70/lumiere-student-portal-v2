@@ -1,0 +1,3328 @@
+{
+  "contractVersion": "student-roadmap/1",
+  "state": "PUBLISHED",
+  "preview": false,
+  "plan": {
+    "title": "TESU BA in Liberal Studies roadmap",
+    "summary": null,
+    "versionNumber": 1,
+    "publishedAt": "2026-10-26T19:40:28.103Z"
+  },
+  "objectives": [
+    {
+      "key": "tesu-ba-in-liberal-studies",
+      "title": "TESU BA in Liberal Studies",
+      "kind": "primary",
+      "institution": "TESU",
+      "credentialLabel": null,
+      "status": "active",
+      "note": null,
+      "canonicalProgramName": null,
+      "counts": {
+        "itemsTotal": 20,
+        "itemsOfficiallyAccepted": 0,
+        "itemsProviderComplete": 0,
+        "itemsInProgress": 0,
+        "itemsNotStarted": 20,
+        "tasksTotal": 276,
+        "tasksGraded": 0,
+        "tasksSubmitted": 0
+      }
+    }
+  ],
+  "phases": [
+    {
+      "key": "liberal-studies-aos",
+      "title": "Liberal Studies AOS",
+      "sequence": 1,
+      "objectiveKey": null,
+      "startDate": null,
+      "endDate": null,
+      "description": null,
+      "items": [
+        {
+          "key": "psychology-310",
+          "phaseKey": "liberal-studies-aos",
+          "objectiveKey": "tesu-ba-in-liberal-studies",
+          "sequence": 1,
+          "kind": "course",
+          "code": "Psychology 310",
+          "title": "Psychology of Personality",
+          "provider": "Study.com",
+          "institution": "TESU",
+          "credits": "3",
+          "plannedStart": "2026-09-12",
+          "plannedEnd": "2026-09-15",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "assignment-1",
+              "kind": "assignment",
+              "title": "Assignment 1",
+              "dueDate": "2026-09-12",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "final-exam",
+              "kind": "exam",
+              "title": "Final exam",
+              "dueDate": "2026-09-15",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 2,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 2
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true,
+          "reportBlockedReason": null
+        },
+        {
+          "key": "sociology-305",
+          "phaseKey": "liberal-studies-aos",
+          "objectiveKey": "tesu-ba-in-liberal-studies",
+          "sequence": 2,
+          "kind": "course",
+          "code": "Sociology 305",
+          "title": "Sociology of Work",
+          "provider": "Study.com",
+          "institution": "TESU",
+          "credits": "3",
+          "plannedStart": "2026-09-12",
+          "plannedEnd": "2026-09-30",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "assignment-1",
+              "kind": "assignment",
+              "title": "Assignment 1",
+              "dueDate": "2026-09-20",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "assignment-2",
+              "kind": "assignment",
+              "title": "Assignment 2",
+              "dueDate": "2026-09-26",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "final-exam",
+              "kind": "exam",
+              "title": "Final exam",
+              "dueDate": "2026-09-30",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 3,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 3
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true,
+          "reportBlockedReason": null
+        },
+        {
+          "key": "criminal-justice-305",
+          "phaseKey": "liberal-studies-aos",
+          "objectiveKey": "tesu-ba-in-liberal-studies",
+          "sequence": 3,
+          "kind": "course",
+          "code": "Criminal Justice 305",
+          "title": "The Juvenile Justice System",
+          "provider": "Study.com",
+          "institution": "TESU",
+          "credits": "3",
+          "plannedStart": "2026-09-28",
+          "plannedEnd": "2026-10-16",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "assignment-1",
+              "kind": "assignment",
+              "title": "Assignment 1",
+              "dueDate": "2026-10-10",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "assignment-2",
+              "kind": "assignment",
+              "title": "Assignment 2",
+              "dueDate": "2026-10-13",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "final-exam",
+              "kind": "exam",
+              "title": "Final exam",
+              "dueDate": "2026-10-16",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 3,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 3
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true,
+          "reportBlockedReason": null
+        },
+        {
+          "key": "psychology-312",
+          "phaseKey": "liberal-studies-aos",
+          "objectiveKey": "tesu-ba-in-liberal-studies",
+          "sequence": 4,
+          "kind": "course",
+          "code": "Psychology 312",
+          "title": "History & Systems of Psychology",
+          "provider": "Study.com",
+          "institution": "TESU",
+          "credits": "3",
+          "plannedStart": "2026-10-12",
+          "plannedEnd": "2026-11-03",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "assignment-1",
+              "kind": "assignment",
+              "title": "Assignment 1",
+              "dueDate": "2026-10-25",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "assignment-2",
+              "kind": "assignment",
+              "title": "Assignment 2",
+              "dueDate": "2026-10-30",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "final-exam",
+              "kind": "exam",
+              "title": "Final exam",
+              "dueDate": "2026-11-03",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 3,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 3
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true,
+          "reportBlockedReason": null
+        },
+        {
+          "key": "business-310",
+          "phaseKey": "liberal-studies-aos",
+          "objectiveKey": "tesu-ba-in-liberal-studies",
+          "sequence": 5,
+          "kind": "course",
+          "code": "Business 310",
+          "title": "Advanced Business Ethics",
+          "provider": "Study.com",
+          "institution": "TESU",
+          "credits": "3",
+          "plannedStart": "2026-10-30",
+          "plannedEnd": "2026-11-23",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "assignment-1",
+              "kind": "assignment",
+              "title": "Assignment 1",
+              "dueDate": "2026-11-15",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "assignment-2",
+              "kind": "assignment",
+              "title": "Assignment 2",
+              "dueDate": "2026-11-19",
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 2,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 2
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true,
+          "reportBlockedReason": null
+        },
+        {
+          "key": "introduction-to-physics",
+          "phaseKey": "liberal-studies-aos",
+          "objectiveKey": "tesu-ba-in-liberal-studies",
+          "sequence": 6,
+          "kind": "course",
+          "code": null,
+          "title": "Introduction to Physics",
+          "provider": "Sophia",
+          "institution": "TESU",
+          "credits": "3",
+          "plannedStart": "2026-11-24",
+          "plannedEnd": "2026-11-30",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "challenge-1",
+              "kind": "challenge",
+              "title": "Challenge 1",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-2",
+              "kind": "challenge",
+              "title": "Challenge 2",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-3",
+              "kind": "challenge",
+              "title": "Challenge 3",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-4",
+              "kind": "challenge",
+              "title": "Challenge 4",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-5",
+              "kind": "challenge",
+              "title": "Challenge 5",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-6",
+              "kind": "challenge",
+              "title": "Challenge 6",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-7",
+              "kind": "challenge",
+              "title": "Challenge 7",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-8",
+              "kind": "challenge",
+              "title": "Challenge 8",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-9",
+              "kind": "challenge",
+              "title": "Challenge 9",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-10",
+              "kind": "challenge",
+              "title": "Challenge 10",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-11",
+              "kind": "challenge",
+              "title": "Challenge 11",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-12",
+              "kind": "challenge",
+              "title": "Challenge 12",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-13",
+              "kind": "challenge",
+              "title": "Challenge 13",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-14",
+              "kind": "challenge",
+              "title": "Challenge 14",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-15",
+              "kind": "challenge",
+              "title": "Challenge 15",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-16",
+              "kind": "challenge",
+              "title": "Challenge 16",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-17",
+              "kind": "challenge",
+              "title": "Challenge 17",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-18",
+              "kind": "challenge",
+              "title": "Challenge 18",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-1",
+              "kind": "milestone",
+              "title": "Milestone 1",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-2",
+              "kind": "milestone",
+              "title": "Milestone 2",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-3",
+              "kind": "milestone",
+              "title": "Milestone 3",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-4",
+              "kind": "milestone",
+              "title": "Milestone 4",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-5",
+              "kind": "milestone",
+              "title": "Milestone 5",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-6",
+              "kind": "milestone",
+              "title": "Milestone 6",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-7",
+              "kind": "milestone",
+              "title": "Milestone 7",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 25,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 25
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true,
+          "reportBlockedReason": null
+        },
+        {
+          "key": "liberal-arts-capstone",
+          "phaseKey": "liberal-studies-aos",
+          "objectiveKey": "tesu-ba-in-liberal-studies",
+          "sequence": 7,
+          "kind": "course",
+          "code": null,
+          "title": "Liberal Arts Capstone",
+          "provider": "TESU Online",
+          "institution": "TESU",
+          "credits": "3",
+          "plannedStart": null,
+          "plannedEnd": null,
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [],
+          "taskCounts": {
+            "total": 0,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 0
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true,
+          "reportBlockedReason": null
+        },
+        {
+          "key": "sos-1100",
+          "phaseKey": "liberal-studies-aos",
+          "objectiveKey": "tesu-ba-in-liberal-studies",
+          "sequence": 8,
+          "kind": "course",
+          "code": "SOS-1100",
+          "title": "Fact, Fiction, or Fake?",
+          "provider": "TESU Online",
+          "institution": "TESU",
+          "credits": "3",
+          "plannedStart": null,
+          "plannedEnd": null,
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [],
+          "taskCounts": {
+            "total": 0,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 0
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true,
+          "reportBlockedReason": null
+        }
+      ],
+      "counts": {
+        "itemsTotal": 8,
+        "itemsOfficiallyAccepted": 0,
+        "itemsProviderComplete": 0,
+        "itemsInProgress": 0,
+        "itemsNotStarted": 8,
+        "tasksTotal": 38,
+        "tasksGraded": 0,
+        "tasksSubmitted": 0
+      },
+      "state": "current"
+    },
+    {
+      "key": "sophia-courses",
+      "title": "Sophia courses",
+      "sequence": 2,
+      "objectiveKey": null,
+      "startDate": null,
+      "endDate": null,
+      "description": null,
+      "items": [
+        {
+          "key": "introduction-to-statistics",
+          "phaseKey": "sophia-courses",
+          "objectiveKey": "tesu-ba-in-liberal-studies",
+          "sequence": 9,
+          "kind": "course",
+          "code": null,
+          "title": "Introduction to Statistics",
+          "provider": "Sophia",
+          "institution": "TESU",
+          "credits": null,
+          "plannedStart": "2026-09-01",
+          "plannedEnd": "2026-09-07",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "challenge-1",
+              "kind": "challenge",
+              "title": "Challenge 1",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-2",
+              "kind": "challenge",
+              "title": "Challenge 2",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-3",
+              "kind": "challenge",
+              "title": "Challenge 3",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-4",
+              "kind": "challenge",
+              "title": "Challenge 4",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-5",
+              "kind": "challenge",
+              "title": "Challenge 5",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-6",
+              "kind": "challenge",
+              "title": "Challenge 6",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-7",
+              "kind": "challenge",
+              "title": "Challenge 7",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-8",
+              "kind": "challenge",
+              "title": "Challenge 8",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-9",
+              "kind": "challenge",
+              "title": "Challenge 9",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-10",
+              "kind": "challenge",
+              "title": "Challenge 10",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-11",
+              "kind": "challenge",
+              "title": "Challenge 11",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-12",
+              "kind": "challenge",
+              "title": "Challenge 12",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-13",
+              "kind": "challenge",
+              "title": "Challenge 13",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-14",
+              "kind": "challenge",
+              "title": "Challenge 14",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-15",
+              "kind": "challenge",
+              "title": "Challenge 15",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-16",
+              "kind": "challenge",
+              "title": "Challenge 16",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-17",
+              "kind": "challenge",
+              "title": "Challenge 17",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-18",
+              "kind": "challenge",
+              "title": "Challenge 18",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-19",
+              "kind": "challenge",
+              "title": "Challenge 19",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-20",
+              "kind": "challenge",
+              "title": "Challenge 20",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-1",
+              "kind": "milestone",
+              "title": "Milestone 1",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-2",
+              "kind": "milestone",
+              "title": "Milestone 2",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-3",
+              "kind": "milestone",
+              "title": "Milestone 3",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-4",
+              "kind": "milestone",
+              "title": "Milestone 4",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-5",
+              "kind": "milestone",
+              "title": "Milestone 5",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-6",
+              "kind": "milestone",
+              "title": "Milestone 6",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 26,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 26
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true,
+          "reportBlockedReason": null
+        },
+        {
+          "key": "macroeconomics",
+          "phaseKey": "sophia-courses",
+          "objectiveKey": "tesu-ba-in-liberal-studies",
+          "sequence": 10,
+          "kind": "course",
+          "code": null,
+          "title": "Macroeconomics",
+          "provider": "Sophia",
+          "institution": "TESU",
+          "credits": null,
+          "plannedStart": "2026-09-08",
+          "plannedEnd": "2026-09-14",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "challenge-1",
+              "kind": "challenge",
+              "title": "Challenge 1",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-2",
+              "kind": "challenge",
+              "title": "Challenge 2",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-3",
+              "kind": "challenge",
+              "title": "Challenge 3",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-4",
+              "kind": "challenge",
+              "title": "Challenge 4",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-5",
+              "kind": "challenge",
+              "title": "Challenge 5",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-6",
+              "kind": "challenge",
+              "title": "Challenge 6",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-7",
+              "kind": "challenge",
+              "title": "Challenge 7",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-8",
+              "kind": "challenge",
+              "title": "Challenge 8",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-9",
+              "kind": "challenge",
+              "title": "Challenge 9",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-10",
+              "kind": "challenge",
+              "title": "Challenge 10",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-1",
+              "kind": "milestone",
+              "title": "Milestone 1",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-2",
+              "kind": "milestone",
+              "title": "Milestone 2",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-3",
+              "kind": "milestone",
+              "title": "Milestone 3",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-4",
+              "kind": "milestone",
+              "title": "Milestone 4",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-5",
+              "kind": "milestone",
+              "title": "Milestone 5",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 15,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 15
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true,
+          "reportBlockedReason": null
+        },
+        {
+          "key": "introduction-to-chemistry",
+          "phaseKey": "sophia-courses",
+          "objectiveKey": "tesu-ba-in-liberal-studies",
+          "sequence": 11,
+          "kind": "course",
+          "code": null,
+          "title": "Introduction to Chemistry",
+          "provider": "Sophia",
+          "institution": "TESU",
+          "credits": null,
+          "plannedStart": "2026-09-15",
+          "plannedEnd": "2026-09-21",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "challenge-1",
+              "kind": "challenge",
+              "title": "Challenge 1",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-2",
+              "kind": "challenge",
+              "title": "Challenge 2",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-3",
+              "kind": "challenge",
+              "title": "Challenge 3",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-4",
+              "kind": "challenge",
+              "title": "Challenge 4",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-5",
+              "kind": "challenge",
+              "title": "Challenge 5",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-6",
+              "kind": "challenge",
+              "title": "Challenge 6",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-7",
+              "kind": "challenge",
+              "title": "Challenge 7",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-8",
+              "kind": "challenge",
+              "title": "Challenge 8",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-9",
+              "kind": "challenge",
+              "title": "Challenge 9",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-10",
+              "kind": "challenge",
+              "title": "Challenge 10",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-11",
+              "kind": "challenge",
+              "title": "Challenge 11",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-12",
+              "kind": "challenge",
+              "title": "Challenge 12",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-1",
+              "kind": "milestone",
+              "title": "Milestone 1",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-2",
+              "kind": "milestone",
+              "title": "Milestone 2",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-3",
+              "kind": "milestone",
+              "title": "Milestone 3",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-4",
+              "kind": "milestone",
+              "title": "Milestone 4",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 16,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 16
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true,
+          "reportBlockedReason": null
+        },
+        {
+          "key": "microeconomics",
+          "phaseKey": "sophia-courses",
+          "objectiveKey": "tesu-ba-in-liberal-studies",
+          "sequence": 12,
+          "kind": "course",
+          "code": null,
+          "title": "Microeconomics",
+          "provider": "Sophia",
+          "institution": "TESU",
+          "credits": null,
+          "plannedStart": "2026-09-22",
+          "plannedEnd": "2026-09-28",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "challenge-1",
+              "kind": "challenge",
+              "title": "Challenge 1",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-2",
+              "kind": "challenge",
+              "title": "Challenge 2",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-3",
+              "kind": "challenge",
+              "title": "Challenge 3",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-4",
+              "kind": "challenge",
+              "title": "Challenge 4",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-5",
+              "kind": "challenge",
+              "title": "Challenge 5",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-6",
+              "kind": "challenge",
+              "title": "Challenge 6",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-7",
+              "kind": "challenge",
+              "title": "Challenge 7",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-8",
+              "kind": "challenge",
+              "title": "Challenge 8",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-9",
+              "kind": "challenge",
+              "title": "Challenge 9",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-10",
+              "kind": "challenge",
+              "title": "Challenge 10",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-11",
+              "kind": "challenge",
+              "title": "Challenge 11",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-12",
+              "kind": "challenge",
+              "title": "Challenge 12",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-1",
+              "kind": "milestone",
+              "title": "Milestone 1",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-2",
+              "kind": "milestone",
+              "title": "Milestone 2",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-3",
+              "kind": "milestone",
+              "title": "Milestone 3",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-4",
+              "kind": "milestone",
+              "title": "Milestone 4",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 16,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 16
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true,
+          "reportBlockedReason": null
+        },
+        {
+          "key": "precalculus",
+          "phaseKey": "sophia-courses",
+          "objectiveKey": "tesu-ba-in-liberal-studies",
+          "sequence": 13,
+          "kind": "course",
+          "code": null,
+          "title": "Precalculus",
+          "provider": "Sophia",
+          "institution": "TESU",
+          "credits": null,
+          "plannedStart": "2026-09-29",
+          "plannedEnd": "2026-10-05",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "challenge-1",
+              "kind": "challenge",
+              "title": "Challenge 1",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-2",
+              "kind": "challenge",
+              "title": "Challenge 2",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-3",
+              "kind": "challenge",
+              "title": "Challenge 3",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-4",
+              "kind": "challenge",
+              "title": "Challenge 4",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-5",
+              "kind": "challenge",
+              "title": "Challenge 5",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-6",
+              "kind": "challenge",
+              "title": "Challenge 6",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-7",
+              "kind": "challenge",
+              "title": "Challenge 7",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-8",
+              "kind": "challenge",
+              "title": "Challenge 8",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-9",
+              "kind": "challenge",
+              "title": "Challenge 9",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-10",
+              "kind": "challenge",
+              "title": "Challenge 10",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-11",
+              "kind": "challenge",
+              "title": "Challenge 11",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-12",
+              "kind": "challenge",
+              "title": "Challenge 12",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-13",
+              "kind": "challenge",
+              "title": "Challenge 13",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-14",
+              "kind": "challenge",
+              "title": "Challenge 14",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-15",
+              "kind": "challenge",
+              "title": "Challenge 15",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-16",
+              "kind": "challenge",
+              "title": "Challenge 16",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-17",
+              "kind": "challenge",
+              "title": "Challenge 17",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-1",
+              "kind": "milestone",
+              "title": "Milestone 1",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-2",
+              "kind": "milestone",
+              "title": "Milestone 2",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-3",
+              "kind": "milestone",
+              "title": "Milestone 3",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-4",
+              "kind": "milestone",
+              "title": "Milestone 4",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-5",
+              "kind": "milestone",
+              "title": "Milestone 5",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-6",
+              "kind": "milestone",
+              "title": "Milestone 6",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 23,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 23
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true,
+          "reportBlockedReason": null
+        },
+        {
+          "key": "financial-accounting",
+          "phaseKey": "sophia-courses",
+          "objectiveKey": "tesu-ba-in-liberal-studies",
+          "sequence": 14,
+          "kind": "course",
+          "code": null,
+          "title": "Financial Accounting",
+          "provider": "Sophia",
+          "institution": "TESU",
+          "credits": null,
+          "plannedStart": "2026-10-06",
+          "plannedEnd": "2026-10-12",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "challenge-1",
+              "kind": "challenge",
+              "title": "Challenge 1",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-2",
+              "kind": "challenge",
+              "title": "Challenge 2",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-3",
+              "kind": "challenge",
+              "title": "Challenge 3",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-4",
+              "kind": "challenge",
+              "title": "Challenge 4",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-5",
+              "kind": "challenge",
+              "title": "Challenge 5",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-6",
+              "kind": "challenge",
+              "title": "Challenge 6",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-7",
+              "kind": "challenge",
+              "title": "Challenge 7",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-8",
+              "kind": "challenge",
+              "title": "Challenge 8",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-9",
+              "kind": "challenge",
+              "title": "Challenge 9",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-1",
+              "kind": "milestone",
+              "title": "Milestone 1",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-2",
+              "kind": "milestone",
+              "title": "Milestone 2",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-3",
+              "kind": "milestone",
+              "title": "Milestone 3",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-4",
+              "kind": "milestone",
+              "title": "Milestone 4",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-5",
+              "kind": "milestone",
+              "title": "Milestone 5",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 14,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 14
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true,
+          "reportBlockedReason": null
+        },
+        {
+          "key": "managerial-accounting",
+          "phaseKey": "sophia-courses",
+          "objectiveKey": "tesu-ba-in-liberal-studies",
+          "sequence": 15,
+          "kind": "course",
+          "code": null,
+          "title": "Managerial Accounting",
+          "provider": "Sophia",
+          "institution": "TESU",
+          "credits": null,
+          "plannedStart": "2026-10-13",
+          "plannedEnd": "2026-10-19",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "challenge-1",
+              "kind": "challenge",
+              "title": "Challenge 1",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-2",
+              "kind": "challenge",
+              "title": "Challenge 2",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-3",
+              "kind": "challenge",
+              "title": "Challenge 3",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-4",
+              "kind": "challenge",
+              "title": "Challenge 4",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-5",
+              "kind": "challenge",
+              "title": "Challenge 5",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-6",
+              "kind": "challenge",
+              "title": "Challenge 6",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-7",
+              "kind": "challenge",
+              "title": "Challenge 7",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-8",
+              "kind": "challenge",
+              "title": "Challenge 8",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-9",
+              "kind": "challenge",
+              "title": "Challenge 9",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-10",
+              "kind": "challenge",
+              "title": "Challenge 10",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-11",
+              "kind": "challenge",
+              "title": "Challenge 11",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-12",
+              "kind": "challenge",
+              "title": "Challenge 12",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-13",
+              "kind": "challenge",
+              "title": "Challenge 13",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-14",
+              "kind": "challenge",
+              "title": "Challenge 14",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-1",
+              "kind": "milestone",
+              "title": "Milestone 1",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-2",
+              "kind": "milestone",
+              "title": "Milestone 2",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-3",
+              "kind": "milestone",
+              "title": "Milestone 3",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-4",
+              "kind": "milestone",
+              "title": "Milestone 4",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-5",
+              "kind": "milestone",
+              "title": "Milestone 5",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 19,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 19
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true,
+          "reportBlockedReason": null
+        },
+        {
+          "key": "anatomy-physiology-i",
+          "phaseKey": "sophia-courses",
+          "objectiveKey": "tesu-ba-in-liberal-studies",
+          "sequence": 16,
+          "kind": "course",
+          "code": null,
+          "title": "Anatomy & Physiology I",
+          "provider": "Sophia",
+          "institution": "TESU",
+          "credits": null,
+          "plannedStart": "2026-10-20",
+          "plannedEnd": "2026-10-26",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "challenge-1",
+              "kind": "challenge",
+              "title": "Challenge 1",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-2",
+              "kind": "challenge",
+              "title": "Challenge 2",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-3",
+              "kind": "challenge",
+              "title": "Challenge 3",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-4",
+              "kind": "challenge",
+              "title": "Challenge 4",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-5",
+              "kind": "challenge",
+              "title": "Challenge 5",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-6",
+              "kind": "challenge",
+              "title": "Challenge 6",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-7",
+              "kind": "challenge",
+              "title": "Challenge 7",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-8",
+              "kind": "challenge",
+              "title": "Challenge 8",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-9",
+              "kind": "challenge",
+              "title": "Challenge 9",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-10",
+              "kind": "challenge",
+              "title": "Challenge 10",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-11",
+              "kind": "challenge",
+              "title": "Challenge 11",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-12",
+              "kind": "challenge",
+              "title": "Challenge 12",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-13",
+              "kind": "challenge",
+              "title": "Challenge 13",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-14",
+              "kind": "challenge",
+              "title": "Challenge 14",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-15",
+              "kind": "challenge",
+              "title": "Challenge 15",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-16",
+              "kind": "challenge",
+              "title": "Challenge 16",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-17",
+              "kind": "challenge",
+              "title": "Challenge 17",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-1",
+              "kind": "milestone",
+              "title": "Milestone 1",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-2",
+              "kind": "milestone",
+              "title": "Milestone 2",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-3",
+              "kind": "milestone",
+              "title": "Milestone 3",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-4",
+              "kind": "milestone",
+              "title": "Milestone 4",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-5",
+              "kind": "milestone",
+              "title": "Milestone 5",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 22,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 22
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true,
+          "reportBlockedReason": null
+        },
+        {
+          "key": "anatomy-physiology-ii",
+          "phaseKey": "sophia-courses",
+          "objectiveKey": "tesu-ba-in-liberal-studies",
+          "sequence": 17,
+          "kind": "course",
+          "code": null,
+          "title": "Anatomy & Physiology II",
+          "provider": "Sophia",
+          "institution": "TESU",
+          "credits": null,
+          "plannedStart": "2026-10-27",
+          "plannedEnd": "2026-11-02",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "challenge-1",
+              "kind": "challenge",
+              "title": "Challenge 1",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-2",
+              "kind": "challenge",
+              "title": "Challenge 2",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-3",
+              "kind": "challenge",
+              "title": "Challenge 3",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-4",
+              "kind": "challenge",
+              "title": "Challenge 4",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-5",
+              "kind": "challenge",
+              "title": "Challenge 5",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-6",
+              "kind": "challenge",
+              "title": "Challenge 6",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-7",
+              "kind": "challenge",
+              "title": "Challenge 7",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-8",
+              "kind": "challenge",
+              "title": "Challenge 8",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-9",
+              "kind": "challenge",
+              "title": "Challenge 9",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-10",
+              "kind": "challenge",
+              "title": "Challenge 10",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-11",
+              "kind": "challenge",
+              "title": "Challenge 11",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-12",
+              "kind": "challenge",
+              "title": "Challenge 12",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-13",
+              "kind": "challenge",
+              "title": "Challenge 13",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-1",
+              "kind": "milestone",
+              "title": "Milestone 1",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-2",
+              "kind": "milestone",
+              "title": "Milestone 2",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-3",
+              "kind": "milestone",
+              "title": "Milestone 3",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-4",
+              "kind": "milestone",
+              "title": "Milestone 4",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 17,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 17
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true,
+          "reportBlockedReason": null
+        },
+        {
+          "key": "intro-to-relational-databases",
+          "phaseKey": "sophia-courses",
+          "objectiveKey": "tesu-ba-in-liberal-studies",
+          "sequence": 18,
+          "kind": "course",
+          "code": null,
+          "title": "Intro to Relational Databases",
+          "provider": "Sophia",
+          "institution": "TESU",
+          "credits": null,
+          "plannedStart": "2026-11-03",
+          "plannedEnd": "2026-11-09",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "challenge-1",
+              "kind": "challenge",
+              "title": "Challenge 1",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-2",
+              "kind": "challenge",
+              "title": "Challenge 2",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-3",
+              "kind": "challenge",
+              "title": "Challenge 3",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-4",
+              "kind": "challenge",
+              "title": "Challenge 4",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-5",
+              "kind": "challenge",
+              "title": "Challenge 5",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-6",
+              "kind": "challenge",
+              "title": "Challenge 6",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-7",
+              "kind": "challenge",
+              "title": "Challenge 7",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-8",
+              "kind": "challenge",
+              "title": "Challenge 8",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-9",
+              "kind": "challenge",
+              "title": "Challenge 9",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-10",
+              "kind": "challenge",
+              "title": "Challenge 10",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-11",
+              "kind": "challenge",
+              "title": "Challenge 11",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-12",
+              "kind": "challenge",
+              "title": "Challenge 12",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-13",
+              "kind": "challenge",
+              "title": "Challenge 13",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-14",
+              "kind": "challenge",
+              "title": "Challenge 14",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-15",
+              "kind": "challenge",
+              "title": "Challenge 15",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-16",
+              "kind": "challenge",
+              "title": "Challenge 16",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-17",
+              "kind": "challenge",
+              "title": "Challenge 17",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-18",
+              "kind": "challenge",
+              "title": "Challenge 18",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-19",
+              "kind": "challenge",
+              "title": "Challenge 19",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-1",
+              "kind": "milestone",
+              "title": "Milestone 1",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-2",
+              "kind": "milestone",
+              "title": "Milestone 2",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-3",
+              "kind": "milestone",
+              "title": "Milestone 3",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-4",
+              "kind": "milestone",
+              "title": "Milestone 4",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-5",
+              "kind": "milestone",
+              "title": "Milestone 5",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-6",
+              "kind": "milestone",
+              "title": "Milestone 6",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 25,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 25
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true,
+          "reportBlockedReason": null
+        },
+        {
+          "key": "microbiology",
+          "phaseKey": "sophia-courses",
+          "objectiveKey": "tesu-ba-in-liberal-studies",
+          "sequence": 19,
+          "kind": "course",
+          "code": null,
+          "title": "Microbiology",
+          "provider": "Sophia",
+          "institution": "TESU",
+          "credits": null,
+          "plannedStart": "2026-11-10",
+          "plannedEnd": "2026-11-16",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "challenge-1",
+              "kind": "challenge",
+              "title": "Challenge 1",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-2",
+              "kind": "challenge",
+              "title": "Challenge 2",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-3",
+              "kind": "challenge",
+              "title": "Challenge 3",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-4",
+              "kind": "challenge",
+              "title": "Challenge 4",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-5",
+              "kind": "challenge",
+              "title": "Challenge 5",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-6",
+              "kind": "challenge",
+              "title": "Challenge 6",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-7",
+              "kind": "challenge",
+              "title": "Challenge 7",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-8",
+              "kind": "challenge",
+              "title": "Challenge 8",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-9",
+              "kind": "challenge",
+              "title": "Challenge 9",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-10",
+              "kind": "challenge",
+              "title": "Challenge 10",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-11",
+              "kind": "challenge",
+              "title": "Challenge 11",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-12",
+              "kind": "challenge",
+              "title": "Challenge 12",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-13",
+              "kind": "challenge",
+              "title": "Challenge 13",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-14",
+              "kind": "challenge",
+              "title": "Challenge 14",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-15",
+              "kind": "challenge",
+              "title": "Challenge 15",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-16",
+              "kind": "challenge",
+              "title": "Challenge 16",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-17",
+              "kind": "challenge",
+              "title": "Challenge 17",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-18",
+              "kind": "challenge",
+              "title": "Challenge 18",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-19",
+              "kind": "challenge",
+              "title": "Challenge 19",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-1",
+              "kind": "milestone",
+              "title": "Milestone 1",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-2",
+              "kind": "milestone",
+              "title": "Milestone 2",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-3",
+              "kind": "milestone",
+              "title": "Milestone 3",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-4",
+              "kind": "milestone",
+              "title": "Milestone 4",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-5",
+              "kind": "milestone",
+              "title": "Milestone 5",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-6",
+              "kind": "milestone",
+              "title": "Milestone 6",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 25,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 25
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true,
+          "reportBlockedReason": null
+        },
+        {
+          "key": "principles-of-finance",
+          "phaseKey": "sophia-courses",
+          "objectiveKey": "tesu-ba-in-liberal-studies",
+          "sequence": 20,
+          "kind": "course",
+          "code": null,
+          "title": "Principles of Finance",
+          "provider": "Sophia",
+          "institution": "TESU",
+          "credits": null,
+          "plannedStart": "2026-11-17",
+          "plannedEnd": "2026-11-23",
+          "planStatus": "planned",
+          "holdReason": null,
+          "approval": null,
+          "alternativeOf": null,
+          "studentNote": null,
+          "waitingOn": [],
+          "itemStatus": "not_started",
+          "itemRevision": 0,
+          "tasks": [
+            {
+              "key": "challenge-1",
+              "kind": "challenge",
+              "title": "Challenge 1",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-2",
+              "kind": "challenge",
+              "title": "Challenge 2",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-3",
+              "kind": "challenge",
+              "title": "Challenge 3",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-4",
+              "kind": "challenge",
+              "title": "Challenge 4",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-5",
+              "kind": "challenge",
+              "title": "Challenge 5",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-6",
+              "kind": "challenge",
+              "title": "Challenge 6",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-7",
+              "kind": "challenge",
+              "title": "Challenge 7",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-8",
+              "kind": "challenge",
+              "title": "Challenge 8",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-9",
+              "kind": "challenge",
+              "title": "Challenge 9",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-10",
+              "kind": "challenge",
+              "title": "Challenge 10",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-11",
+              "kind": "challenge",
+              "title": "Challenge 11",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-12",
+              "kind": "challenge",
+              "title": "Challenge 12",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-13",
+              "kind": "challenge",
+              "title": "Challenge 13",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-14",
+              "kind": "challenge",
+              "title": "Challenge 14",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "challenge-15",
+              "kind": "challenge",
+              "title": "Challenge 15",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-1",
+              "kind": "milestone",
+              "title": "Milestone 1",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-2",
+              "kind": "milestone",
+              "title": "Milestone 2",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-3",
+              "kind": "milestone",
+              "title": "Milestone 3",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-4",
+              "kind": "milestone",
+              "title": "Milestone 4",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            },
+            {
+              "key": "milestone-5",
+              "kind": "milestone",
+              "title": "Milestone 5",
+              "dueDate": null,
+              "status": "not_started",
+              "revision": 0,
+              "updatedAt": null
+            }
+          ],
+          "taskCounts": {
+            "total": 20,
+            "graded": 0,
+            "submitted": 0,
+            "inProgress": 0,
+            "notStarted": 20
+          },
+          "stage": "not_started",
+          "official": null,
+          "canReport": true,
+          "reportBlockedReason": null
+        }
+      ],
+      "counts": {
+        "itemsTotal": 12,
+        "itemsOfficiallyAccepted": 0,
+        "itemsProviderComplete": 0,
+        "itemsInProgress": 0,
+        "itemsNotStarted": 12,
+        "tasksTotal": 238,
+        "tasksGraded": 0,
+        "tasksSubmitted": 0
+      },
+      "state": "upcoming"
+    }
+  ],
+  "milestones": [
+    {
+      "key": "orientation",
+      "title": "Orientation",
+      "kind": "checkpoint",
+      "targetDate": "2026-08-31",
+      "objectiveKey": "tesu-ba-in-liberal-studies",
+      "reached": false,
+      "remainingItems": 20
+    },
+    {
+      "key": "apply-for-graduation",
+      "title": "Apply for graduation",
+      "kind": "application",
+      "targetDate": "2027-03-15",
+      "objectiveKey": "tesu-ba-in-liberal-studies",
+      "reached": false,
+      "remainingItems": 20
+    },
+    {
+      "key": "degree-conferral",
+      "title": "Degree conferral",
+      "kind": "graduation",
+      "targetDate": "2027-04-30",
+      "objectiveKey": "tesu-ba-in-liberal-studies",
+      "reached": false,
+      "remainingItems": 20
+    }
+  ],
+  "counts": {
+    "itemsTotal": 20,
+    "itemsOfficiallyAccepted": 0,
+    "itemsProviderComplete": 0,
+    "itemsInProgress": 0,
+    "itemsNotStarted": 20,
+    "tasksTotal": 276,
+    "tasksGraded": 0,
+    "tasksSubmitted": 0
+  },
+  "today": {
+    "focusItemKeys": [
+      "introduction-to-statistics",
+      "psychology-310",
+      "macroeconomics"
+    ],
+    "headline": "Next: Challenge 1 in Introduction to Statistics",
+    "detail": "26 tasks remaining.",
+    "nextMilestoneKey": "orientation"
+  },
+  "foundation": {
+    "credentials": [],
+    "sources": [],
+    "ladder": {
+      "reported": "0.00",
+      "provisional": "0.00",
+      "verified": "0.00",
+      "applied": null,
+      "surplus": null,
+      "planned": "24.00",
+      "required": null
+    },
+    "degreeState": "NO_ACTIVE_PROGRAM"
+  },
+  "history": {
+    "previousVersions": [],
+    "retiredProgress": []
+  }
+}

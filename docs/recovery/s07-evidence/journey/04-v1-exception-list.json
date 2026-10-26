@@ -1,0 +1,1068 @@
+{
+  "note": "Exception codes produced by the real importer + plan review for the EPH master + execution v1 pair (synthetic data).",
+  "total": 108,
+  "countsByCodeAndSeverity": {
+    "SHEET_NOT_RECOGNISED/info": 3,
+    "REPORTED_HISTORY_NOT_CREDIT/warning": 1,
+    "OBJECTIVE_CREATED_FROM_ROW/info": 1,
+    "REPORTED_HISTORY_NOT_CREDIT/info": 1,
+    "CONDITIONAL_ALLOCATION/warning": 9,
+    "COMPANION_ROW_UNMATCHED/warning": 1,
+    "COMPANION_ITEM_MERGED/info": 20,
+    "DEADLINE_CONFLICT/warning": 2,
+    "REGISTRATION_GATE_UNDOCUMENTED/warning": 1,
+    "EXAM_AFTER_TERM_DEADLINE/warning": 16,
+    "REGISTRATION_AFTER_DEADLINE/warning": 10,
+    "STARTING_CREDITS_UNVERIFIED/warning": 17,
+    "EQUIVALENCY_CONDITIONAL/warning": 8,
+    "LICENSING_CREDIT_SEPARATE/warning": 17,
+    "SCHEDULE_STALE/warning": 1
+  },
+  "exceptions": [
+    {
+      "key": "SHEET_NOT_RECOGNISED:licensing-audit:cpa",
+      "ref": {
+        "path": "licensing-audit"
+      },
+      "code": "SHEET_NOT_RECOGNISED",
+      "message": "Licensing audit sheet read as planning context only: 9 course(s) flagged as also relevant to licensing, 0 row(s) without a plan item were not added. Licensing qualification is decided by the licensing board, never by degree credit.",
+      "severity": "info"
+    },
+    {
+      "key": "REPORTED_HISTORY_NOT_CREDIT:Master Plan!1:credit-baseline-reported",
+      "ref": {
+        "row": 1,
+        "path": "reportedHistory.credit-baseline-reported",
+        "sheet": "Master Plan"
+      },
+      "code": "REPORTED_HISTORY_NOT_CREDIT",
+      "message": "The workbook states 51 credits already earned. This is recorded as reported history only; it does not add credit. Verify it against the student's canonical record.",
+      "severity": "warning"
+    },
+    {
+      "key": "OBJECTIVE_CREATED_FROM_ROW:objectives.licensing-planning:licensing-planning",
+      "ref": {
+        "path": "objectives.licensing-planning"
+      },
+      "code": "OBJECTIVE_CREATED_FROM_ROW",
+      "message": "A separate secondary objective \"Washington State CPA licensing planning\" was created for licensing planning; it carries no degree credit.",
+      "severity": "info"
+    },
+    {
+      "key": "REPORTED_HISTORY_NOT_CREDIT:reportedHistory:completed-courses",
+      "ref": {
+        "path": "reportedHistory"
+      },
+      "code": "REPORTED_HISTORY_NOT_CREDIT",
+      "message": "17 completed course/exam row(s) were recorded as staff-only reported history, not as plan items and not as credit. The canonical student record remains the only credit authority.",
+      "severity": "info"
+    },
+    {
+      "key": "CONDITIONAL_ALLOCATION:quantitative-skills-for-business:condition",
+      "ref": {
+        "row": 14,
+        "sheet": "Business Core",
+        "itemKey": "quantitative-skills-for-business"
+      },
+      "code": "CONDITIONAL_ALLOCATION",
+      "message": "\"Quantitative Skills for Business\" is conditional in the workbook (the transfer mapping is not confirmed): DO NOT BUY until TESU confirms this fills BUS-2100. Confirm the plan and what the student is told.",
+      "severity": "warning"
+    },
+    {
+      "key": "CONDITIONAL_ALLOCATION:accounting-201:condition",
+      "ref": {
+        "row": 4,
+        "sheet": "Accounting AOS",
+        "itemKey": "accounting-201"
+      },
+      "code": "CONDITIONAL_ALLOCATION",
+      "message": "\"Intermediate Financial Accounting I\" is conditional in the workbook (the transfer mapping is not confirmed): PROVISIONAL required AOS. Confirm the plan and what the student is told.",
+      "severity": "warning"
+    },
+    {
+      "key": "CONDITIONAL_ALLOCATION:accounting-202:condition",
+      "ref": {
+        "row": 5,
+        "sheet": "Accounting AOS",
+        "itemKey": "accounting-202"
+      },
+      "code": "CONDITIONAL_ALLOCATION",
+      "message": "\"Intermediate Financial Accounting II\" is conditional in the workbook (the transfer mapping is not confirmed): PROVISIONAL required AOS. Confirm the plan and what the student is told.",
+      "severity": "warning"
+    },
+    {
+      "key": "CONDITIONAL_ALLOCATION:accounting-303:condition",
+      "ref": {
+        "row": 6,
+        "sheet": "Accounting AOS",
+        "itemKey": "accounting-303"
+      },
+      "code": "CONDITIONAL_ALLOCATION",
+      "message": "\"Cost Accounting\" is conditional in the workbook (the transfer mapping is not confirmed): PROVISIONAL named select. Confirm the plan and what the student is told.",
+      "severity": "warning"
+    },
+    {
+      "key": "CONDITIONAL_ALLOCATION:accounting-302:condition",
+      "ref": {
+        "row": 7,
+        "sheet": "Accounting AOS",
+        "itemKey": "accounting-302"
+      },
+      "code": "CONDITIONAL_ALLOCATION",
+      "message": "\"Advanced Financial Accounting II\" is conditional in the workbook (the transfer mapping is not confirmed): PROVISIONAL named select. Confirm the plan and what the student is told.",
+      "severity": "warning"
+    },
+    {
+      "key": "CONDITIONAL_ALLOCATION:business-308:condition",
+      "ref": {
+        "row": 17,
+        "sheet": "Business Core",
+        "itemKey": "business-308"
+      },
+      "code": "CONDITIONAL_ALLOCATION",
+      "message": "\"International Management\" is conditional in the workbook (the transfer mapping is not confirmed): verify equivalency before enrollment. Confirm the plan and what the student is told.",
+      "severity": "warning"
+    },
+    {
+      "key": "CONDITIONAL_ALLOCATION:acc-352:condition",
+      "ref": {
+        "row": 8,
+        "sheet": "Accounting AOS",
+        "itemKey": "acc-352"
+      },
+      "code": "CONDITIONAL_ALLOCATION",
+      "message": "\"Federal Taxation of Business Entities\" is conditional in the workbook (the transfer mapping is not confirmed): HOLD — preapprove ACC-352 as ACC-4210 before purchase. Confirm the plan and what the student is told.",
+      "severity": "warning"
+    },
+    {
+      "key": "CONDITIONAL_ALLOCATION:acc-375:condition",
+      "ref": {
+        "row": 9,
+        "sheet": "Accounting AOS",
+        "itemKey": "acc-375"
+      },
+      "code": "CONDITIONAL_ALLOCATION",
+      "message": "\"Auditing of Financial Statements\" is conditional in the workbook (the transfer mapping is not confirmed): HOLD — preapprove ACC-375 as ACC-4110 before purchase. Confirm the plan and what the student is told.",
+      "severity": "warning"
+    },
+    {
+      "key": "CONDITIONAL_ALLOCATION:man-3730:condition",
+      "ref": {
+        "row": 15,
+        "sheet": "Business Core",
+        "itemKey": "man-3730"
+      },
+      "code": "CONDITIONAL_ALLOCATION",
+      "message": "\"Managerial Communications\" is conditional in the workbook: Fallback: Study.com Business 324 if the TECEP is not passed by March. Confirm the plan and what the student is told.",
+      "severity": "warning"
+    },
+    {
+      "key": "SHEET_NOT_RECOGNISED:Master Plan!:sheet",
+      "ref": {
+        "sheet": "Master Plan"
+      },
+      "code": "SHEET_NOT_RECOGNISED",
+      "message": "Sheet \"Master Plan\" has no course table that this importer recognises (summary, validation or narrative sheets are not read as plan data).",
+      "severity": "info"
+    },
+    {
+      "key": "SHEET_NOT_RECOGNISED:Validation!:sheet",
+      "ref": {
+        "sheet": "Validation"
+      },
+      "code": "SHEET_NOT_RECOGNISED",
+      "message": "Sheet \"Validation\" has no course table that this importer recognises (summary, validation or narrative sheets are not read as plan data).",
+      "severity": "info"
+    },
+    {
+      "key": "COMPANION_ROW_UNMATCHED:Weekly Plan!26",
+      "ref": {
+        "row": 26,
+        "sheet": "Weekly Plan"
+      },
+      "code": "COMPANION_ROW_UNMATCHED",
+      "message": "Execution workbook row 26 (Weekly Plan) looks like a course (\"Business 205 Business Statistics\") but matches no course in the master workbook. It was NOT added to the plan. Add it to the master workbook, or confirm it should not be scheduled.",
+      "severity": "warning"
+    },
+    {
+      "key": "COMPANION_ITEM_MERGED:u-s-government-american-government",
+      "ref": {
+        "row": 4,
+        "sheet": "Weekly Plan",
+        "itemKey": "u-s-government-american-government"
+      },
+      "code": "COMPANION_ITEM_MERGED",
+      "message": "Execution schedule merged into \"U.S. Government / American Government\": 2026-08-31 to 2026-09-11, 2 scheduled task(s).",
+      "severity": "info"
+    },
+    {
+      "key": "COMPANION_ITEM_MERGED:u-s-history-i",
+      "ref": {
+        "row": 8,
+        "sheet": "Weekly Plan",
+        "itemKey": "u-s-history-i"
+      },
+      "code": "COMPANION_ITEM_MERGED",
+      "message": "Execution schedule merged into \"U.S. History I\": 2026-09-14 to 2026-09-25, 2 scheduled task(s).",
+      "severity": "info"
+    },
+    {
+      "key": "COMPANION_ITEM_MERGED:u-s-history-ii",
+      "ref": {
+        "row": 11,
+        "sheet": "Weekly Plan",
+        "itemKey": "u-s-history-ii"
+      },
+      "code": "COMPANION_ITEM_MERGED",
+      "message": "Execution schedule merged into \"U.S. History II\": 2026-09-28 to 2026-10-09, 2 scheduled task(s).",
+      "severity": "info"
+    },
+    {
+      "key": "COMPANION_ITEM_MERGED:business-103",
+      "ref": {
+        "row": 14,
+        "sheet": "Weekly Plan",
+        "itemKey": "business-103"
+      },
+      "code": "COMPANION_ITEM_MERGED",
+      "message": "Execution schedule merged into \"Business Law\": 2026-10-12 to 2026-10-30, 2 scheduled task(s).",
+      "severity": "info"
+    },
+    {
+      "key": "COMPANION_ITEM_MERGED:business-101",
+      "ref": {
+        "row": 17,
+        "sheet": "Weekly Plan",
+        "itemKey": "business-101"
+      },
+      "code": "COMPANION_ITEM_MERGED",
+      "message": "Execution schedule merged into \"Principles of Management\": 2026-10-26 to 2026-11-13, 2 scheduled task(s).",
+      "severity": "info"
+    },
+    {
+      "key": "COMPANION_ITEM_MERGED:business-308",
+      "ref": {
+        "row": 19,
+        "sheet": "Weekly Plan",
+        "itemKey": "business-308"
+      },
+      "code": "COMPANION_ITEM_MERGED",
+      "message": "Execution schedule merged into \"International Management\": 2026-11-02 to 2026-11-20, 2 scheduled task(s).",
+      "severity": "info"
+    },
+    {
+      "key": "COMPANION_ITEM_MERGED:accounting-201",
+      "ref": {
+        "row": 22,
+        "sheet": "Weekly Plan",
+        "itemKey": "accounting-201"
+      },
+      "code": "COMPANION_ITEM_MERGED",
+      "message": "Execution schedule merged into \"Intermediate Financial Accounting I\": 2026-11-16 to 2026-12-04, 2 scheduled task(s).",
+      "severity": "info"
+    },
+    {
+      "key": "COMPANION_ITEM_MERGED:accounting-202",
+      "ref": {
+        "row": 27,
+        "sheet": "Weekly Plan",
+        "itemKey": "accounting-202"
+      },
+      "code": "COMPANION_ITEM_MERGED",
+      "message": "Execution schedule merged into \"Intermediate Financial Accounting II\": 2026-12-07 to 2026-12-25, 2 scheduled task(s).",
+      "severity": "info"
+    },
+    {
+      "key": "COMPANION_ITEM_MERGED:accounting-303",
+      "ref": {
+        "row": 31,
+        "sheet": "Weekly Plan",
+        "itemKey": "accounting-303"
+      },
+      "code": "COMPANION_ITEM_MERGED",
+      "message": "Execution schedule merged into \"Cost Accounting\": 2026-12-28 to 2027-01-22, 4 scheduled task(s).",
+      "severity": "info"
+    },
+    {
+      "key": "COMPANION_ITEM_MERGED:accounting-302",
+      "ref": {
+        "row": 36,
+        "sheet": "Weekly Plan",
+        "itemKey": "accounting-302"
+      },
+      "code": "COMPANION_ITEM_MERGED",
+      "message": "Execution schedule merged into \"Advanced Financial Accounting II\": 2027-01-25 to 2027-02-12, 2 scheduled task(s).",
+      "severity": "info"
+    },
+    {
+      "key": "COMPANION_ITEM_MERGED:com-2090",
+      "ref": {
+        "row": 38,
+        "sheet": "Weekly Plan",
+        "itemKey": "com-2090"
+      },
+      "code": "COMPANION_ITEM_MERGED",
+      "message": "Execution schedule merged into \"Public Speaking\": 2027-02-08 to 2027-02-14, 1 scheduled task(s).",
+      "severity": "info"
+    },
+    {
+      "key": "COMPANION_ITEM_MERGED:psy-3500",
+      "ref": {
+        "row": 40,
+        "sheet": "Weekly Plan",
+        "itemKey": "psy-3500"
+      },
+      "code": "COMPANION_ITEM_MERGED",
+      "message": "Execution schedule merged into \"Abnormal Psychology\": 2027-02-08 to 2027-02-14, 1 scheduled task(s).",
+      "severity": "info"
+    },
+    {
+      "key": "DEADLINE_CONFLICT:cis-1070:end",
+      "ref": {
+        "row": 42,
+        "sheet": "Weekly Plan",
+        "itemKey": "cis-1070"
+      },
+      "code": "DEADLINE_CONFLICT",
+      "message": "\"Computer Concepts\": the master workbook ends/examines it on 2027-02-12 but the execution workbook says 2027-02-19. The master date was kept; confirm which is correct.",
+      "severity": "warning"
+    },
+    {
+      "key": "COMPANION_ITEM_MERGED:cis-1070",
+      "ref": {
+        "row": 42,
+        "sheet": "Weekly Plan",
+        "itemKey": "cis-1070"
+      },
+      "code": "COMPANION_ITEM_MERGED",
+      "message": "Execution schedule merged into \"Computer Concepts\": 2027-02-08 to 2027-02-19, 1 scheduled task(s).",
+      "severity": "info"
+    },
+    {
+      "key": "COMPANION_ITEM_MERGED:phi-1300",
+      "ref": {
+        "row": 45,
+        "sheet": "Weekly Plan",
+        "itemKey": "phi-1300"
+      },
+      "code": "COMPANION_ITEM_MERGED",
+      "message": "Execution schedule merged into \"Critical Reasoning\": 2027-02-15 to 2027-02-21, 1 scheduled task(s).",
+      "severity": "info"
+    },
+    {
+      "key": "COMPANION_ITEM_MERGED:mkt-2010",
+      "ref": {
+        "row": 47,
+        "sheet": "Weekly Plan",
+        "itemKey": "mkt-2010"
+      },
+      "code": "COMPANION_ITEM_MERGED",
+      "message": "Execution schedule merged into \"Introduction to Marketing\": 2027-02-15 to 2027-02-21, 1 scheduled task(s).",
+      "severity": "info"
+    },
+    {
+      "key": "COMPANION_ITEM_MERGED:man-3730",
+      "ref": {
+        "row": 49,
+        "sheet": "Weekly Plan",
+        "itemKey": "man-3730"
+      },
+      "code": "COMPANION_ITEM_MERGED",
+      "message": "Execution schedule merged into \"Managerial Communications\": 2027-02-22 to 2027-02-28, 1 scheduled task(s).",
+      "severity": "info"
+    },
+    {
+      "key": "COMPANION_ITEM_MERGED:fin-3310",
+      "ref": {
+        "row": 51,
+        "sheet": "Weekly Plan",
+        "itemKey": "fin-3310"
+      },
+      "code": "COMPANION_ITEM_MERGED",
+      "message": "Execution schedule merged into \"Financial Institutions & Markets\": 2027-02-22 to 2027-02-28, 1 scheduled task(s).",
+      "severity": "info"
+    },
+    {
+      "key": "COMPANION_ITEM_MERGED:opm-3010",
+      "ref": {
+        "row": 53,
+        "sheet": "Weekly Plan",
+        "itemKey": "opm-3010"
+      },
+      "code": "COMPANION_ITEM_MERGED",
+      "message": "Execution schedule merged into \"Operations Management\": 2027-02-22 to 2027-02-28, 1 scheduled task(s).",
+      "severity": "info"
+    },
+    {
+      "key": "COMPANION_ITEM_MERGED:sos-1100",
+      "ref": {
+        "row": 55,
+        "sheet": "Weekly Plan",
+        "itemKey": "sos-1100"
+      },
+      "code": "COMPANION_ITEM_MERGED",
+      "message": "Execution schedule merged into \"Fact, Fiction, or Fake?\": 2027-03-08 to 2027-04-23, 2 scheduled task(s).",
+      "severity": "info"
+    },
+    {
+      "key": "COMPANION_ITEM_MERGED:bus-4210",
+      "ref": {
+        "row": 57,
+        "sheet": "Weekly Plan",
+        "itemKey": "bus-4210"
+      },
+      "code": "COMPANION_ITEM_MERGED",
+      "message": "Execution schedule merged into \"Business Administration Capstone\": 2027-04-05 to 2027-05-28, 2 scheduled task(s).",
+      "severity": "info"
+    },
+    {
+      "key": "DEADLINE_CONFLICT:accounting-202:\"Final exam\":2026-12-20:2026-12-25",
+      "ref": {
+        "row": 30,
+        "sheet": "Weekly Plan",
+        "itemKey": "accounting-202"
+      },
+      "code": "DEADLINE_CONFLICT",
+      "message": "The execution workbook gives two different dates for \"Final exam\" of \"Intermediate Financial Accounting II\": 2026-12-20 and 2026-12-25. The earlier row was kept; confirm the date.",
+      "severity": "warning"
+    },
+    {
+      "key": "REGISTRATION_GATE_UNDOCUMENTED:bus-4210",
+      "code": "REGISTRATION_GATE_UNDOCUMENTED",
+      "severity": "warning",
+      "message": "\"Business Administration Capstone\" is planned with a registration prerequisite (\"LAST actual TESU course. After SOS-1100 and all transfer/TECEP credit is posted.\") that has no documented evidence of being met. Confirm the prerequisite with the institution and record the evidence before publishing.",
+      "ref": {
+        "itemKey": "bus-4210"
+      }
+    },
+    {
+      "key": "EXAM_AFTER_TERM_DEADLINE:com-2090",
+      "code": "EXAM_AFTER_TERM_DEADLINE",
+      "severity": "warning",
+      "message": "\"Public Speaking\" is planned to end 2027-02-09, after the final exam date 2027-01-31 entered for TESU Spring 2027. Re-date the exam or move it to a later term.",
+      "ref": {
+        "itemKey": "com-2090"
+      }
+    },
+    {
+      "key": "EXAM_AFTER_TERM_DEADLINE:com-2090:final-exam",
+      "code": "EXAM_AFTER_TERM_DEADLINE",
+      "severity": "warning",
+      "message": "Exam task \"TECEP exam\" of \"Public Speaking\" is due 2027-02-09, after the final exam date 2027-01-31 entered for TESU Spring 2027.",
+      "ref": {
+        "itemKey": "com-2090",
+        "taskKey": "final-exam"
+      }
+    },
+    {
+      "key": "REGISTRATION_AFTER_DEADLINE:com-2090",
+      "code": "REGISTRATION_AFTER_DEADLINE",
+      "severity": "warning",
+      "message": "\"Public Speaking\" is planned to start 2027-02-08, after the registration deadline 2026-12-28 entered for TESU Spring 2027. Registration may already be closed for that term.",
+      "ref": {
+        "itemKey": "com-2090"
+      }
+    },
+    {
+      "key": "EXAM_AFTER_TERM_DEADLINE:psy-3500",
+      "code": "EXAM_AFTER_TERM_DEADLINE",
+      "severity": "warning",
+      "message": "\"Abnormal Psychology\" is planned to end 2027-02-12, after the final exam date 2027-01-31 entered for TESU Spring 2027. Re-date the exam or move it to a later term.",
+      "ref": {
+        "itemKey": "psy-3500"
+      }
+    },
+    {
+      "key": "EXAM_AFTER_TERM_DEADLINE:psy-3500:final-exam",
+      "code": "EXAM_AFTER_TERM_DEADLINE",
+      "severity": "warning",
+      "message": "Exam task \"TECEP exam\" of \"Abnormal Psychology\" is due 2027-02-12, after the final exam date 2027-01-31 entered for TESU Spring 2027.",
+      "ref": {
+        "itemKey": "psy-3500",
+        "taskKey": "final-exam"
+      }
+    },
+    {
+      "key": "REGISTRATION_AFTER_DEADLINE:psy-3500",
+      "code": "REGISTRATION_AFTER_DEADLINE",
+      "severity": "warning",
+      "message": "\"Abnormal Psychology\" is planned to start 2027-02-08, after the registration deadline 2026-12-28 entered for TESU Spring 2027. Registration may already be closed for that term.",
+      "ref": {
+        "itemKey": "psy-3500"
+      }
+    },
+    {
+      "key": "EXAM_AFTER_TERM_DEADLINE:phi-1300",
+      "code": "EXAM_AFTER_TERM_DEADLINE",
+      "severity": "warning",
+      "message": "\"Critical Reasoning\" is planned to end 2027-02-16, after the final exam date 2027-01-31 entered for TESU Spring 2027. Re-date the exam or move it to a later term.",
+      "ref": {
+        "itemKey": "phi-1300"
+      }
+    },
+    {
+      "key": "EXAM_AFTER_TERM_DEADLINE:phi-1300:final-exam",
+      "code": "EXAM_AFTER_TERM_DEADLINE",
+      "severity": "warning",
+      "message": "Exam task \"TECEP exam\" of \"Critical Reasoning\" is due 2027-02-16, after the final exam date 2027-01-31 entered for TESU Spring 2027.",
+      "ref": {
+        "itemKey": "phi-1300",
+        "taskKey": "final-exam"
+      }
+    },
+    {
+      "key": "REGISTRATION_AFTER_DEADLINE:phi-1300",
+      "code": "REGISTRATION_AFTER_DEADLINE",
+      "severity": "warning",
+      "message": "\"Critical Reasoning\" is planned to start 2027-02-15, after the registration deadline 2026-12-28 entered for TESU Spring 2027. Registration may already be closed for that term.",
+      "ref": {
+        "itemKey": "phi-1300"
+      }
+    },
+    {
+      "key": "EXAM_AFTER_TERM_DEADLINE:cis-1070",
+      "code": "EXAM_AFTER_TERM_DEADLINE",
+      "severity": "warning",
+      "message": "\"Computer Concepts\" is planned to end 2027-02-12, after the final exam date 2027-01-31 entered for TESU Spring 2027. Re-date the exam or move it to a later term.",
+      "ref": {
+        "itemKey": "cis-1070"
+      }
+    },
+    {
+      "key": "EXAM_AFTER_TERM_DEADLINE:cis-1070:final-exam",
+      "code": "EXAM_AFTER_TERM_DEADLINE",
+      "severity": "warning",
+      "message": "Exam task \"TECEP exam\" of \"Computer Concepts\" is due 2027-02-19, after the final exam date 2027-01-31 entered for TESU Spring 2027.",
+      "ref": {
+        "itemKey": "cis-1070",
+        "taskKey": "final-exam"
+      }
+    },
+    {
+      "key": "REGISTRATION_AFTER_DEADLINE:cis-1070",
+      "code": "REGISTRATION_AFTER_DEADLINE",
+      "severity": "warning",
+      "message": "\"Computer Concepts\" is planned to start 2027-02-08, after the registration deadline 2026-12-28 entered for TESU Spring 2027. Registration may already be closed for that term.",
+      "ref": {
+        "itemKey": "cis-1070"
+      }
+    },
+    {
+      "key": "EXAM_AFTER_TERM_DEADLINE:mkt-2010",
+      "code": "EXAM_AFTER_TERM_DEADLINE",
+      "severity": "warning",
+      "message": "\"Introduction to Marketing\" is planned to end 2027-02-18, after the final exam date 2027-01-31 entered for TESU Spring 2027. Re-date the exam or move it to a later term.",
+      "ref": {
+        "itemKey": "mkt-2010"
+      }
+    },
+    {
+      "key": "EXAM_AFTER_TERM_DEADLINE:mkt-2010:final-exam",
+      "code": "EXAM_AFTER_TERM_DEADLINE",
+      "severity": "warning",
+      "message": "Exam task \"TECEP exam\" of \"Introduction to Marketing\" is due 2027-02-18, after the final exam date 2027-01-31 entered for TESU Spring 2027.",
+      "ref": {
+        "itemKey": "mkt-2010",
+        "taskKey": "final-exam"
+      }
+    },
+    {
+      "key": "REGISTRATION_AFTER_DEADLINE:mkt-2010",
+      "code": "REGISTRATION_AFTER_DEADLINE",
+      "severity": "warning",
+      "message": "\"Introduction to Marketing\" is planned to start 2027-02-15, after the registration deadline 2026-12-28 entered for TESU Spring 2027. Registration may already be closed for that term.",
+      "ref": {
+        "itemKey": "mkt-2010"
+      }
+    },
+    {
+      "key": "EXAM_AFTER_TERM_DEADLINE:man-3730",
+      "code": "EXAM_AFTER_TERM_DEADLINE",
+      "severity": "warning",
+      "message": "\"Managerial Communications\" is planned to end 2027-02-23, after the final exam date 2027-01-31 entered for TESU Spring 2027. Re-date the exam or move it to a later term.",
+      "ref": {
+        "itemKey": "man-3730"
+      }
+    },
+    {
+      "key": "EXAM_AFTER_TERM_DEADLINE:man-3730:final-exam",
+      "code": "EXAM_AFTER_TERM_DEADLINE",
+      "severity": "warning",
+      "message": "Exam task \"TECEP exam\" of \"Managerial Communications\" is due 2027-02-23, after the final exam date 2027-01-31 entered for TESU Spring 2027.",
+      "ref": {
+        "itemKey": "man-3730",
+        "taskKey": "final-exam"
+      }
+    },
+    {
+      "key": "REGISTRATION_AFTER_DEADLINE:man-3730",
+      "code": "REGISTRATION_AFTER_DEADLINE",
+      "severity": "warning",
+      "message": "\"Managerial Communications\" is planned to start 2027-02-22, after the registration deadline 2026-12-28 entered for TESU Spring 2027. Registration may already be closed for that term.",
+      "ref": {
+        "itemKey": "man-3730"
+      }
+    },
+    {
+      "key": "EXAM_AFTER_TERM_DEADLINE:fin-3310",
+      "code": "EXAM_AFTER_TERM_DEADLINE",
+      "severity": "warning",
+      "message": "\"Financial Institutions & Markets\" is planned to end 2027-02-25, after the final exam date 2027-01-31 entered for TESU Spring 2027. Re-date the exam or move it to a later term.",
+      "ref": {
+        "itemKey": "fin-3310"
+      }
+    },
+    {
+      "key": "EXAM_AFTER_TERM_DEADLINE:fin-3310:final-exam",
+      "code": "EXAM_AFTER_TERM_DEADLINE",
+      "severity": "warning",
+      "message": "Exam task \"TECEP exam\" of \"Financial Institutions & Markets\" is due 2027-02-25, after the final exam date 2027-01-31 entered for TESU Spring 2027.",
+      "ref": {
+        "itemKey": "fin-3310",
+        "taskKey": "final-exam"
+      }
+    },
+    {
+      "key": "REGISTRATION_AFTER_DEADLINE:fin-3310",
+      "code": "REGISTRATION_AFTER_DEADLINE",
+      "severity": "warning",
+      "message": "\"Financial Institutions & Markets\" is planned to start 2027-02-22, after the registration deadline 2026-12-28 entered for TESU Spring 2027. Registration may already be closed for that term.",
+      "ref": {
+        "itemKey": "fin-3310"
+      }
+    },
+    {
+      "key": "EXAM_AFTER_TERM_DEADLINE:opm-3010",
+      "code": "EXAM_AFTER_TERM_DEADLINE",
+      "severity": "warning",
+      "message": "\"Operations Management\" is planned to end 2027-02-26, after the final exam date 2027-01-31 entered for TESU Spring 2027. Re-date the exam or move it to a later term.",
+      "ref": {
+        "itemKey": "opm-3010"
+      }
+    },
+    {
+      "key": "EXAM_AFTER_TERM_DEADLINE:opm-3010:final-exam",
+      "code": "EXAM_AFTER_TERM_DEADLINE",
+      "severity": "warning",
+      "message": "Exam task \"TECEP exam\" of \"Operations Management\" is due 2027-02-26, after the final exam date 2027-01-31 entered for TESU Spring 2027.",
+      "ref": {
+        "itemKey": "opm-3010",
+        "taskKey": "final-exam"
+      }
+    },
+    {
+      "key": "REGISTRATION_AFTER_DEADLINE:opm-3010",
+      "code": "REGISTRATION_AFTER_DEADLINE",
+      "severity": "warning",
+      "message": "\"Operations Management\" is planned to start 2027-02-22, after the registration deadline 2026-12-28 entered for TESU Spring 2027. Registration may already be closed for that term.",
+      "ref": {
+        "itemKey": "opm-3010"
+      }
+    },
+    {
+      "key": "REGISTRATION_AFTER_DEADLINE:sos-1100",
+      "code": "REGISTRATION_AFTER_DEADLINE",
+      "severity": "warning",
+      "message": "\"Fact, Fiction, or Fake?\" is planned to start 2027-03-08, after the registration deadline 2026-12-28 entered for TESU Spring 2027. Registration may already be closed for that term.",
+      "ref": {
+        "itemKey": "sos-1100"
+      }
+    },
+    {
+      "key": "REGISTRATION_AFTER_DEADLINE:bus-4210",
+      "code": "REGISTRATION_AFTER_DEADLINE",
+      "severity": "warning",
+      "message": "\"Business Administration Capstone\" is planned to start 2027-04-05, after the registration deadline 2026-12-28 entered for TESU Spring 2027. Registration may already be closed for that term.",
+      "ref": {
+        "itemKey": "bus-4210"
+      }
+    },
+    {
+      "key": "STARTING_CREDITS_UNVERIFIED:credit-baseline-reported",
+      "code": "STARTING_CREDITS_UNVERIFIED",
+      "severity": "warning",
+      "message": "The workbook reports 51 credits for \"Credits reported as already earned\", but the canonical degree progress is still under staff review. Reported history is not credit; verify the source documents through the canonical record. No credit figure was changed.",
+      "ref": {
+        "path": "reportedHistory.credit-baseline-reported"
+      }
+    },
+    {
+      "key": "STARTING_CREDITS_UNVERIFIED:english-composition-i-sophia",
+      "code": "STARTING_CREDITS_UNVERIFIED",
+      "severity": "warning",
+      "message": "The workbook reports 3 credits for \"English Composition I\", but the canonical degree progress is still under staff review. Reported history is not credit; verify the source documents through the canonical record. No credit figure was changed.",
+      "ref": {
+        "path": "reportedHistory.english-composition-i-sophia"
+      }
+    },
+    {
+      "key": "STARTING_CREDITS_UNVERIFIED:english-composition-ii-sophia",
+      "code": "STARTING_CREDITS_UNVERIFIED",
+      "severity": "warning",
+      "message": "The workbook reports 3 credits for \"English Composition II\", but the canonical degree progress is still under staff review. Reported history is not credit; verify the source documents through the canonical record. No credit figure was changed.",
+      "ref": {
+        "path": "reportedHistory.english-composition-ii-sophia"
+      }
+    },
+    {
+      "key": "STARTING_CREDITS_UNVERIFIED:college-algebra-sophia",
+      "code": "STARTING_CREDITS_UNVERIFIED",
+      "severity": "warning",
+      "message": "The workbook reports 3 credits for \"College Algebra\", but the canonical degree progress is still under staff review. Reported history is not credit; verify the source documents through the canonical record. No credit figure was changed.",
+      "ref": {
+        "path": "reportedHistory.college-algebra-sophia"
+      }
+    },
+    {
+      "key": "STARTING_CREDITS_UNVERIFIED:introduction-to-ethics-sophia",
+      "code": "STARTING_CREDITS_UNVERIFIED",
+      "severity": "warning",
+      "message": "The workbook reports 3 credits for \"Introduction to Ethics\", but the canonical degree progress is still under staff review. Reported history is not credit; verify the source documents through the canonical record. No credit figure was changed.",
+      "ref": {
+        "path": "reportedHistory.introduction-to-ethics-sophia"
+      }
+    },
+    {
+      "key": "STARTING_CREDITS_UNVERIFIED:introduction-to-sociology-sophia",
+      "code": "STARTING_CREDITS_UNVERIFIED",
+      "severity": "warning",
+      "message": "The workbook reports 3 credits for \"Introduction to Sociology\", but the canonical degree progress is still under staff review. Reported history is not credit; verify the source documents through the canonical record. No credit figure was changed.",
+      "ref": {
+        "path": "reportedHistory.introduction-to-sociology-sophia"
+      }
+    },
+    {
+      "key": "STARTING_CREDITS_UNVERIFIED:human-biology-sophia",
+      "code": "STARTING_CREDITS_UNVERIFIED",
+      "severity": "warning",
+      "message": "The workbook reports 3 credits for \"Human Biology\", but the canonical degree progress is still under staff review. Reported history is not credit; verify the source documents through the canonical record. No credit figure was changed.",
+      "ref": {
+        "path": "reportedHistory.human-biology-sophia"
+      }
+    },
+    {
+      "key": "STARTING_CREDITS_UNVERIFIED:introduction-to-nutrition-sophia",
+      "code": "STARTING_CREDITS_UNVERIFIED",
+      "severity": "warning",
+      "message": "The workbook reports 3 credits for \"Introduction to Nutrition\", but the canonical degree progress is still under staff review. Reported history is not credit; verify the source documents through the canonical record. No credit figure was changed.",
+      "ref": {
+        "path": "reportedHistory.introduction-to-nutrition-sophia"
+      }
+    },
+    {
+      "key": "STARTING_CREDITS_UNVERIFIED:lifespan-development-sophia",
+      "code": "STARTING_CREDITS_UNVERIFIED",
+      "severity": "warning",
+      "message": "The workbook reports 3 credits for \"Lifespan Development\", but the canonical degree progress is still under staff review. Reported history is not credit; verify the source documents through the canonical record. No credit figure was changed.",
+      "ref": {
+        "path": "reportedHistory.lifespan-development-sophia"
+      }
+    },
+    {
+      "key": "STARTING_CREDITS_UNVERIFIED:introduction-to-statistics-sophia",
+      "code": "STARTING_CREDITS_UNVERIFIED",
+      "severity": "warning",
+      "message": "The workbook reports 3 credits for \"Introduction to Statistics\", but the canonical degree progress is still under staff review. Reported history is not credit; verify the source documents through the canonical record. No credit figure was changed.",
+      "ref": {
+        "path": "reportedHistory.introduction-to-statistics-sophia"
+      }
+    },
+    {
+      "key": "STARTING_CREDITS_UNVERIFIED:microeconomics-sophia",
+      "code": "STARTING_CREDITS_UNVERIFIED",
+      "severity": "warning",
+      "message": "The workbook reports 3 credits for \"Microeconomics\", but the canonical degree progress is still under staff review. Reported history is not credit; verify the source documents through the canonical record. No credit figure was changed.",
+      "ref": {
+        "path": "reportedHistory.microeconomics-sophia"
+      }
+    },
+    {
+      "key": "STARTING_CREDITS_UNVERIFIED:principles-of-finance-sophia",
+      "code": "STARTING_CREDITS_UNVERIFIED",
+      "severity": "warning",
+      "message": "The workbook reports 3 credits for \"Principles of Finance\", but the canonical degree progress is still under staff review. Reported history is not credit; verify the source documents through the canonical record. No credit figure was changed.",
+      "ref": {
+        "path": "reportedHistory.principles-of-finance-sophia"
+      }
+    },
+    {
+      "key": "STARTING_CREDITS_UNVERIFIED:financial-accounting-sophia",
+      "code": "STARTING_CREDITS_UNVERIFIED",
+      "severity": "warning",
+      "message": "The workbook reports 3 credits for \"Financial Accounting\", but the canonical degree progress is still under staff review. Reported history is not credit; verify the source documents through the canonical record. No credit figure was changed.",
+      "ref": {
+        "path": "reportedHistory.financial-accounting-sophia"
+      }
+    },
+    {
+      "key": "STARTING_CREDITS_UNVERIFIED:managerial-accounting-sophia",
+      "code": "STARTING_CREDITS_UNVERIFIED",
+      "severity": "warning",
+      "message": "The workbook reports 3 credits for \"Managerial Accounting\", but the canonical degree progress is still under staff review. Reported history is not credit; verify the source documents through the canonical record. No credit figure was changed.",
+      "ref": {
+        "path": "reportedHistory.managerial-accounting-sophia"
+      }
+    },
+    {
+      "key": "STARTING_CREDITS_UNVERIFIED:introduction-to-business-sophia",
+      "code": "STARTING_CREDITS_UNVERIFIED",
+      "severity": "warning",
+      "message": "The workbook reports 3 credits for \"Introduction to Business\", but the canonical degree progress is still under staff review. Reported history is not credit; verify the source documents through the canonical record. No credit figure was changed.",
+      "ref": {
+        "path": "reportedHistory.introduction-to-business-sophia"
+      }
+    },
+    {
+      "key": "STARTING_CREDITS_UNVERIFIED:conflict-resolution-sophia",
+      "code": "STARTING_CREDITS_UNVERIFIED",
+      "severity": "warning",
+      "message": "The workbook reports 3 credits for \"Conflict Resolution\", but the canonical degree progress is still under staff review. Reported history is not credit; verify the source documents through the canonical record. No credit figure was changed.",
+      "ref": {
+        "path": "reportedHistory.conflict-resolution-sophia"
+      }
+    },
+    {
+      "key": "STARTING_CREDITS_UNVERIFIED:environmental-science-sophia",
+      "code": "STARTING_CREDITS_UNVERIFIED",
+      "severity": "warning",
+      "message": "The workbook reports 3 credits for \"Environmental Science\", but the canonical degree progress is still under staff review. Reported history is not credit; verify the source documents through the canonical record. No credit figure was changed.",
+      "ref": {
+        "path": "reportedHistory.environmental-science-sophia"
+      }
+    },
+    {
+      "key": "EQUIVALENCY_CONDITIONAL:quantitative-skills-for-business",
+      "code": "EQUIVALENCY_CONDITIONAL",
+      "severity": "warning",
+      "message": "The transfer equivalency for \"Quantitative Skills for Business\" (maps to Quantitative Skills for Business) is conditional. It is not confirmed until the institution accepts it.",
+      "ref": {
+        "itemKey": "quantitative-skills-for-business"
+      }
+    },
+    {
+      "key": "EQUIVALENCY_CONDITIONAL:accounting-201",
+      "code": "EQUIVALENCY_CONDITIONAL",
+      "severity": "warning",
+      "message": "The transfer equivalency for \"Intermediate Financial Accounting I\" (maps to ACC-2010 Intermediate Accounting I) is conditional. It is not confirmed until the institution accepts it.",
+      "ref": {
+        "itemKey": "accounting-201"
+      }
+    },
+    {
+      "key": "EQUIVALENCY_CONDITIONAL:accounting-202",
+      "code": "EQUIVALENCY_CONDITIONAL",
+      "severity": "warning",
+      "message": "The transfer equivalency for \"Intermediate Financial Accounting II\" (maps to ACC-2020 Intermediate Accounting II) is conditional. It is not confirmed until the institution accepts it.",
+      "ref": {
+        "itemKey": "accounting-202"
+      }
+    },
+    {
+      "key": "EQUIVALENCY_CONDITIONAL:accounting-303",
+      "code": "EQUIVALENCY_CONDITIONAL",
+      "severity": "warning",
+      "message": "The transfer equivalency for \"Cost Accounting\" (maps to ACC-3030 Cost Accounting) is conditional. It is not confirmed until the institution accepts it.",
+      "ref": {
+        "itemKey": "accounting-303"
+      }
+    },
+    {
+      "key": "EQUIVALENCY_CONDITIONAL:accounting-302",
+      "code": "EQUIVALENCY_CONDITIONAL",
+      "severity": "warning",
+      "message": "The transfer equivalency for \"Advanced Financial Accounting II\" (maps to ACC-4010 Advanced Accounting I) is conditional. It is not confirmed until the institution accepts it.",
+      "ref": {
+        "itemKey": "accounting-302"
+      }
+    },
+    {
+      "key": "EQUIVALENCY_CONDITIONAL:business-308",
+      "code": "EQUIVALENCY_CONDITIONAL",
+      "severity": "warning",
+      "message": "The transfer equivalency for \"International Management\" (maps to International Management) is conditional. It is not confirmed until the institution accepts it.",
+      "ref": {
+        "itemKey": "business-308"
+      }
+    },
+    {
+      "key": "EQUIVALENCY_CONDITIONAL:acc-352",
+      "code": "EQUIVALENCY_CONDITIONAL",
+      "severity": "warning",
+      "message": "The transfer equivalency for \"Federal Taxation of Business Entities\" (maps to ACC-4210 Federal Income Taxation) is conditional. It is not confirmed until the institution accepts it.",
+      "ref": {
+        "itemKey": "acc-352"
+      }
+    },
+    {
+      "key": "EQUIVALENCY_CONDITIONAL:acc-375",
+      "code": "EQUIVALENCY_CONDITIONAL",
+      "severity": "warning",
+      "message": "The transfer equivalency for \"Auditing of Financial Statements\" (maps to ACC-4110 Auditing) is conditional. It is not confirmed until the institution accepts it.",
+      "ref": {
+        "itemKey": "acc-375"
+      }
+    },
+    {
+      "key": "LICENSING_CREDIT_SEPARATE:business-103",
+      "code": "LICENSING_CREDIT_SEPARATE",
+      "severity": "warning",
+      "message": "\"Business Law\" is planned for degree and licensing credit. Professional-licensing qualification is a separate determination by the licensing board; degree credit is not licensing-qualified credit, and this plan does not count it as such.",
+      "ref": {
+        "itemKey": "business-103"
+      }
+    },
+    {
+      "key": "LICENSING_CREDIT_SEPARATE:business-101",
+      "code": "LICENSING_CREDIT_SEPARATE",
+      "severity": "warning",
+      "message": "\"Principles of Management\" is planned for degree and licensing credit. Professional-licensing qualification is a separate determination by the licensing board; degree credit is not licensing-qualified credit, and this plan does not count it as such.",
+      "ref": {
+        "itemKey": "business-101"
+      }
+    },
+    {
+      "key": "LICENSING_CREDIT_SEPARATE:quantitative-skills-for-business",
+      "code": "LICENSING_CREDIT_SEPARATE",
+      "severity": "warning",
+      "message": "\"Quantitative Skills for Business\" is planned for degree and licensing credit. Professional-licensing qualification is a separate determination by the licensing board; degree credit is not licensing-qualified credit, and this plan does not count it as such.",
+      "ref": {
+        "itemKey": "quantitative-skills-for-business"
+      }
+    },
+    {
+      "key": "LICENSING_CREDIT_SEPARATE:accounting-201",
+      "code": "LICENSING_CREDIT_SEPARATE",
+      "severity": "warning",
+      "message": "\"Intermediate Financial Accounting I\" is planned for degree and licensing credit. Professional-licensing qualification is a separate determination by the licensing board; degree credit is not licensing-qualified credit, and this plan does not count it as such.",
+      "ref": {
+        "itemKey": "accounting-201"
+      }
+    },
+    {
+      "key": "LICENSING_CREDIT_SEPARATE:accounting-202",
+      "code": "LICENSING_CREDIT_SEPARATE",
+      "severity": "warning",
+      "message": "\"Intermediate Financial Accounting II\" is planned for degree and licensing credit. Professional-licensing qualification is a separate determination by the licensing board; degree credit is not licensing-qualified credit, and this plan does not count it as such.",
+      "ref": {
+        "itemKey": "accounting-202"
+      }
+    },
+    {
+      "key": "LICENSING_CREDIT_SEPARATE:accounting-303",
+      "code": "LICENSING_CREDIT_SEPARATE",
+      "severity": "warning",
+      "message": "\"Cost Accounting\" is planned for degree and licensing credit. Professional-licensing qualification is a separate determination by the licensing board; degree credit is not licensing-qualified credit, and this plan does not count it as such.",
+      "ref": {
+        "itemKey": "accounting-303"
+      }
+    },
+    {
+      "key": "LICENSING_CREDIT_SEPARATE:accounting-302",
+      "code": "LICENSING_CREDIT_SEPARATE",
+      "severity": "warning",
+      "message": "\"Advanced Financial Accounting II\" is planned for degree and licensing credit. Professional-licensing qualification is a separate determination by the licensing board; degree credit is not licensing-qualified credit, and this plan does not count it as such.",
+      "ref": {
+        "itemKey": "accounting-302"
+      }
+    },
+    {
+      "key": "LICENSING_CREDIT_SEPARATE:business-308",
+      "code": "LICENSING_CREDIT_SEPARATE",
+      "severity": "warning",
+      "message": "\"International Management\" is planned for degree and licensing credit. Professional-licensing qualification is a separate determination by the licensing board; degree credit is not licensing-qualified credit, and this plan does not count it as such.",
+      "ref": {
+        "itemKey": "business-308"
+      }
+    },
+    {
+      "key": "LICENSING_CREDIT_SEPARATE:acc-352",
+      "code": "LICENSING_CREDIT_SEPARATE",
+      "severity": "warning",
+      "message": "\"Federal Taxation of Business Entities\" is planned for degree and licensing credit. Professional-licensing qualification is a separate determination by the licensing board; degree credit is not licensing-qualified credit, and this plan does not count it as such.",
+      "ref": {
+        "itemKey": "acc-352"
+      }
+    },
+    {
+      "key": "LICENSING_CREDIT_SEPARATE:acc-375",
+      "code": "LICENSING_CREDIT_SEPARATE",
+      "severity": "warning",
+      "message": "\"Auditing of Financial Statements\" is planned for degree and licensing credit. Professional-licensing qualification is a separate determination by the licensing board; degree credit is not licensing-qualified credit, and this plan does not count it as such.",
+      "ref": {
+        "itemKey": "acc-375"
+      }
+    },
+    {
+      "key": "LICENSING_CREDIT_SEPARATE:cis-1070",
+      "code": "LICENSING_CREDIT_SEPARATE",
+      "severity": "warning",
+      "message": "\"Computer Concepts\" is planned for degree and licensing credit. Professional-licensing qualification is a separate determination by the licensing board; degree credit is not licensing-qualified credit, and this plan does not count it as such.",
+      "ref": {
+        "itemKey": "cis-1070"
+      }
+    },
+    {
+      "key": "LICENSING_CREDIT_SEPARATE:mkt-2010",
+      "code": "LICENSING_CREDIT_SEPARATE",
+      "severity": "warning",
+      "message": "\"Introduction to Marketing\" is planned for degree and licensing credit. Professional-licensing qualification is a separate determination by the licensing board; degree credit is not licensing-qualified credit, and this plan does not count it as such.",
+      "ref": {
+        "itemKey": "mkt-2010"
+      }
+    },
+    {
+      "key": "LICENSING_CREDIT_SEPARATE:man-3730",
+      "code": "LICENSING_CREDIT_SEPARATE",
+      "severity": "warning",
+      "message": "\"Managerial Communications\" is planned for degree and licensing credit. Professional-licensing qualification is a separate determination by the licensing board; degree credit is not licensing-qualified credit, and this plan does not count it as such.",
+      "ref": {
+        "itemKey": "man-3730"
+      }
+    },
+    {
+      "key": "LICENSING_CREDIT_SEPARATE:fin-3310",
+      "code": "LICENSING_CREDIT_SEPARATE",
+      "severity": "warning",
+      "message": "\"Financial Institutions & Markets\" is planned for degree and licensing credit. Professional-licensing qualification is a separate determination by the licensing board; degree credit is not licensing-qualified credit, and this plan does not count it as such.",
+      "ref": {
+        "itemKey": "fin-3310"
+      }
+    },
+    {
+      "key": "LICENSING_CREDIT_SEPARATE:opm-3010",
+      "code": "LICENSING_CREDIT_SEPARATE",
+      "severity": "warning",
+      "message": "\"Operations Management\" is planned for degree and licensing credit. Professional-licensing qualification is a separate determination by the licensing board; degree credit is not licensing-qualified credit, and this plan does not count it as such.",
+      "ref": {
+        "itemKey": "opm-3010"
+      }
+    },
+    {
+      "key": "LICENSING_CREDIT_SEPARATE:bus-4210",
+      "code": "LICENSING_CREDIT_SEPARATE",
+      "severity": "warning",
+      "message": "\"Business Administration Capstone\" is planned for degree and licensing credit. Professional-licensing qualification is a separate determination by the licensing board; degree credit is not licensing-qualified credit, and this plan does not count it as such.",
+      "ref": {
+        "itemKey": "bus-4210"
+      }
+    },
+    {
+      "key": "LICENSING_CREDIT_SEPARATE:objective:licensing-planning",
+      "code": "LICENSING_CREDIT_SEPARATE",
+      "severity": "warning",
+      "message": "Objective \"Washington State CPA licensing planning\" looks like licensing planning (matched by wording). Professional-licensing qualification is a separate determination by the licensing board; degree credit is not licensing-qualified credit, and this plan does not count it as such.",
+      "ref": {
+        "path": "objectives.licensing-planning"
+      }
+    },
+    {
+      "key": "SCHEDULE_STALE:plan",
+      "code": "SCHEDULE_STALE",
+      "severity": "warning",
+      "message": "The schedule dates from 2026-08-24 (more than 21 days before 2026-10-26); 4 planned item(s) are past due and the student has recorded no progress. Rebaseline the schedule before publishing.",
+      "ref": {
+        "path": "schedule"
+      }
+    }
+  ]
+}
