@@ -65,8 +65,9 @@ function compareCourses(content: RoadmapContent | null, expected: Expected[]) {
       matchedItems.add(hit);
     } else missing.push(e);
   }
-  const spurious = items.filter((i) => !matchedItems.has(i));
-  return { preserved, missing, spurious };
+  const spurious = items.filter((i) => !matchedItems.has(i) && i.planStatus !== "dropped");
+  const dropped = items.filter((i) => i.planStatus === "dropped");
+  return { preserved, missing, spurious, dropped };
 }
 
 function execStats(c: ConversionResult) {
@@ -124,6 +125,7 @@ async function ephPair(label: string, masterFile: string) {
   row("PRESERVED expected plan courses", `${cmp.preserved.length} of ${plan.length}`);
   row("MISSING expected plan courses", `${cmp.missing.length}${cmp.missing.length ? " (" + refsOf(cmp.missing) + ")" : ""}`);
   row("SPURIOUS items (not a real course: totals / note / footer rows)", `${cmp.spurious.length}`);
+  row('"Do not take" backup rows kept as planStatus dropped (0 credits, not planned)', cmp.dropped.length);
   row("completed ledger rows expected -> reportedHistory courses", `${m.completed.rows} (${m.completed.credits} cr) -> ${s.reportedHistoryCourses}`);
   row("completed courses leaked as plan items (must be 0)", leaked);
   row("conditional / working / watch plan courses expected vs items flagged", `${m.conditionalPlanCourses} vs ${s.itemsConditional}`);
