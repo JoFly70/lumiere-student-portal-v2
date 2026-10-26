@@ -138,8 +138,12 @@ describe.skipIf(!ready)("S05 roadmap — real HTTP end to end", () => {
       expect(res.body.contractVersion).toBe("student-roadmap/1");
     });
 
+    // Built once: the zip container embeds the build time, so rebuilding is not byte-identical.
+    let scenarioRBytes: Awaited<ReturnType<typeof scenarioR.workbook.build>>;
+
     it("staff uploads the scenario R .xlsx (multipart) -> 201 with a draft", async () => {
-      const res = await upload(student.id, staff, await xlsx(await scenarioR.workbook.build(), scenarioR.workbook.fileName));
+      scenarioRBytes = await scenarioR.workbook.build();
+      const res = await upload(student.id, staff, await xlsx(scenarioRBytes, scenarioR.workbook.fileName));
       expect(res.status).toBe(201);
       expect(res.body.draft.content.items).toHaveLength(16);
       expect(res.body.draft.import.fileName).toBe(scenarioR.workbook.fileName);
@@ -148,7 +152,7 @@ describe.skipIf(!ready)("S05 roadmap — real HTTP end to end", () => {
     });
 
     it("the identical upload again is a 200 replay with the same draft", async () => {
-      const res = await upload(student.id, staff, await xlsx(await scenarioR.workbook.build(), "renamed.xlsx"));
+      const res = await upload(student.id, staff, await xlsx(scenarioRBytes, "renamed.xlsx"));
       expect(res.status).toBe(200);
       expect(res.body.draft.versionNumber).toBe(1);
     });

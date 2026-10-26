@@ -262,11 +262,8 @@ describe("S07 licensing credit never adds to degree figures", () => {
     }
   });
 
-  // KNOWN GAP (reported to the lead, projection is outside this change's ownership):
-  // `planned` currently sums item.credits regardless of creditUse, so a licensing-only item inflates
-  // the student's "planned toward the degree" figure. `it.fails` pins the desired behaviour and will
-  // start failing (forcing removal of `.fails`) once the projection excludes creditUse "licensing".
-  it.fails("planned (degree) credit excludes licensing-only items", () => {
+  // Licensing-only planned credit is not degree credit (fixed in the S07 projection).
+  it("planned (degree) credit excludes licensing-only items", () => {
     const degreeOnly = view([{ key: "d", title: "Degree course", credits: "3.00" }]).foundation.ladder.planned;
     const withLicensing = view([
       { key: "d", title: "Degree course", credits: "3.00" },
