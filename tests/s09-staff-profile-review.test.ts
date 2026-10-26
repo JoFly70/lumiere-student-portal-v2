@@ -143,6 +143,10 @@ describe("S09 staff profile review — decisions", () => {
     const verified = html(profile({ contacts: [contact({ authorityStatus: "verified", effectiveScopes: ["emergency", "academic"] })] }));
     expect(verified).toContain("Revoke…");
     expect(verified).not.toContain("Verify authority…");
+    // A never-granted request is declined, not "revoked".
+    const pending = html(profile({ contacts: [contact({ authorityStatus: "pending_verification", requestedScopes: ["emergency", "financial"], effectiveScopes: ["emergency"] })] }));
+    expect(pending).toContain("Decline request…");
+    expect(pending).not.toContain("Revoke…");
   });
   it("maps failures to calm messages and uses the contract endpoints", () => {
     expect(classifyResolveFailure(409).kind).toBe("conflict");

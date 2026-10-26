@@ -162,7 +162,47 @@ Existing tests changed (they asserted behaviour the contract now forbids, or the
 
 See `docs/recovery/s09-evidence/screens/`. These are renders of the real page code from synthetic fixtures with stubbed APIs, not a deployment. `axe-summary.json`, `layout-audit.json` and `../keyboard-pass.md` sit alongside them.
 
-DESIGN_REVIEW_PLACEHOLDER
+### Accessibility and layout
+
+- **axe-core:** 0 violations on all 10 student screens, in light and dark, including both dialogs and the mobile jump menu. The staff screens are clean except `12-staff-profile-review-1440-dark` (1 `color-contrast`), which is the existing workspace eyebrow "Lumière / student workspace" and is not S09 code.
+- **Layout audit (1440 / 1024 / 768 / 390):** the student profile shows no horizontal overflow. The staff workspace overflows at 768, and it still does with the S09 panel hidden, so it comes from the existing shell.
+- **Keyboard pass (`keyboard-pass.md`):** Tab reaches every interactive element in a logical order, and every element has a visible focus indicator. One icon-only shell button was not matched by the script's name-matching. The Radix dialogs trap focus and the confirmations use `AlertDialog`.
+- **Mobile screenshot length:** the 390px captures are cut off at 7,000px tall, so the Account section has no mobile screenshot.
+
+### Independent design reviews (actual scores, not the 9/10 target)
+
+Three blind reviews were run, each by a separate reviewer that had not seen the build, reading the PNGs.
+
+| Round | Student profile (beauty / graphics / organization / clarity / usability) | Staff panel |
+|---|---|---|
+| 1 | 7 / 6 / 7 / 7 / 6, about **6.5** | 5 / 5 / 5 / 6 / 6, about **5.5** |
+| 2, after fixes | 7 / 7 / 8 / 8 / 7, about **7.4** | 5 / 6 / 6 / 6 / 7, about **6** |
+| 3, after fixes | 7 / 6 / 7 / 8 / 7, **7** | 5 / 5 / 6 / 7 / 6, **6** |
+
+**The 9/10 target was not met.**
+
+Fixed between rounds:
+- the readiness panel contradicted the listed contacts;
+- the scroll-spy highlighted the wrong section;
+- dialog actions fell below the fold;
+- the staff decision was buried below the program cards;
+- the "Verify" action appeared on contacts that had requested no authority;
+- raw enum values were shown;
+- the staff panel did not say plainly whether identity was verified;
+- the "verified" colour was the same as the warning colour;
+- a duplicate avatar;
+- inconsistent date formats;
+- a blue focus ring inside dialogs;
+- "Revoke" was offered on authority that had never been granted (now "Decline request…").
+
+Still open from round 3:
+- **Correction dialog at 390px (08):** page text shows below the dialog footer. It should be a full-height sheet.
+- **Page length:** the page is about 4,700px at 1440. The student page also has three navigation systems (tab bar, section numbers and the mobile jump menu), and the tab bar sits above the header, whereas Roadmap puts the header first.
+- **New-student state (05):** it needs direct "Add phone" / "Add address" / "Upload government ID" actions, and "Missing" items need more visual weight.
+- **Staff panel:**
+  - **Styling and buttons:** it still uses the plain admin styling, and its buttons are about 28px tall.
+  - **Duplicate links:** two document links do the same thing.
+  - **Palette:** the orange "Needs a decision" accent and the blue buttons don't fit the Lumière palette. Restyling the admin workspace as a whole is S07's area.
 
 ## Remaining gaps and open acceptance gates
 

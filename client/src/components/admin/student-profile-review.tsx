@@ -133,7 +133,7 @@ function DecisionDialog({ decision, studentId, onClose, onDone }: { decision: De
   const noteRequired = decision.kind === "authority" || decision.decision === "reject";
   const title = decision.kind === "correction"
     ? decision.decision === "approve" ? "Approve identity correction?" : "Reject identity correction?"
-    : decision.decision === "verify" ? "Verify guardian authority?" : "Revoke guardian authority?";
+    : decision.decision === "verify" ? "Verify guardian authority?" : decision.contact.authorityStatus === "verified" ? "Revoke guardian authority?" : "Decline authority request?";
   const description = decision.kind === "correction"
     ? decision.decision === "approve"
       ? "Approving applies the requested values to the student's legal identity record. This is recorded in the audit log."
@@ -195,7 +195,7 @@ function ContactActions({ c, canDecide, onDecide }: { c: StudentContactView; can
   }
   return <div className="flex flex-wrap gap-2">
     {verify ? <Button type="button" size="sm" className={PRIMARY_ACTION} disabled={!canDecide} onClick={() => onDecide?.({ kind: "authority", decision: "verify", contact: c })}>Verify authority…</Button> : null}
-    {actions.canRevoke ? <Button type="button" size="sm" variant="outline" disabled={!canDecide} onClick={() => onDecide?.({ kind: "authority", decision: "revoke", contact: c })}>Revoke…</Button> : null}
+    {actions.canRevoke ? <Button type="button" size="sm" variant="outline" disabled={!canDecide} onClick={() => onDecide?.({ kind: "authority", decision: "revoke", contact: c })}>{c.authorityStatus === "verified" ? "Revoke…" : "Decline request…"}</Button> : null}
   </div>;
 }
 
