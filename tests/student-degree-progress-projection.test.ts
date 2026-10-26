@@ -264,3 +264,27 @@ describe("projectStudentDegreeProgress", () => {
     }
   });
 });
+
+describe("totals never let surplus on one requirement hide another's shortfall", () => {
+  it("caps each requirement's applied credits at its required amount", async () => {
+    const { projectStudentDegreeProgress } = await import("../shared/student-degree-progress-projection");
+    const { composedMidProgressInput } = await import("./fixtures/student-degree-progress-fixtures");
+    const base = composedMidProgressInput.report as any;
+    const results = [
+      { ...base.phase3Output.results[0], requirementId: base.phase3Output.results[0].requirementId,
+        status: "SATISFIED", requiredAmount: "6", appliedAmount: "12", remainingAmount: "0" },
+      { ...base.phase3Output.results[1], requirementId: base.phase3Output.results[1].requirementId,
+        status: "MISSING", requiredAmount: "6", appliedAmount: "0", remainingAmount: "6" },
+    ];
+    const view = projectStudentDegreeProgress({
+      ...composedMidProgressInput,
+      report: { ...base, phase3Output: { ...base.phase3Output, results } },
+    } as any);
+    expect(view.totals).not.toBeNull();
+    expect(view.totals!.requiredCredits).toBe("12");
+    expect(view.totals!.appliedCredits).toBe("6");
+    expect(view.totals!.remainingCredits).toBe("6");
+    // Per-requirement amounts are still shown exactly as the engine produced them.
+    expect(view.requirements.map((r) => r.appliedAmount)).toEqual(expect.arrayContaining(["12", "0"]));
+  });
+});

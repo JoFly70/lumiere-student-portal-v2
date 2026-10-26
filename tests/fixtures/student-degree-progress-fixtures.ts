@@ -169,8 +169,10 @@ export const composedCompleteView: StudentDegreeProgressView = projectStudentDeg
     snapshot: { asOf: "2025-12-20T12:00:00.000Z" },
     phase3Output: {
       results: [
-        result("req-0001", "SATISFIED", "6.00", "6.00", "0", ["cr-0001"]),
-        result("req-0002", "SATISFIED", "9.00", "9.50", "0", ["cr-0002"]),
+        // Consistent with the record: only verified, accepted credits apply.
+        // req-0001 has 0.5 surplus, which totals must not count.
+        result("req-0001", "SATISFIED", "6.00", "6.50", "0", ["cr-0001", "cr-0002"]),
+        result("req-0003", "SATISFIED", "2.00", "2.00", "0", ["cr-0003"]),
       ],
     },
   },

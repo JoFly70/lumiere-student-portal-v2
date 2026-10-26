@@ -243,7 +243,9 @@ export function projectStudentDegreeProgress(
       const applied = toHundredths(r.appliedAmount);
       if (r.unit !== PLAIN_UNIT || required === null || applied === null) return false;
       requiredSum += required;
-      appliedSum += applied;
+      // Credit beyond one requirement's need cannot offset another's
+      // shortfall, so each requirement counts at most its required amount.
+      appliedSum += applied < required ? applied : required;
       return true;
     });
 
@@ -490,8 +492,8 @@ export function projectStudentDegreeProgress(
       nextSteps.push({
         kind: "DEGREE_REQUIREMENTS_MET",
         title: "Degree requirements met",
-        detail: "All of your degree requirements are satisfied on your record.",
-        href: null,
+        detail: "All of your degree requirements are satisfied on your record. Contact your advisor to begin your graduation review.",
+        href: "/support",
       });
     }
   }

@@ -41,9 +41,13 @@ export interface StudentProgressTotals {
   readonly unit: "credit";
   /** Sum of required credits across evaluated credit requirements. */
   readonly requiredCredits: string;
-  /** Credits the canonical engine applied toward those requirements. */
+  /**
+   * Credits the canonical engine applied toward those requirements, counting
+   * each requirement at most up to its required amount (surplus on one
+   * requirement never offsets a shortfall on another).
+   */
   readonly appliedCredits: string;
-  /** requiredCredits − appliedCredits, never negative. */
+  /** requiredCredits − appliedCredits: the sum of per-requirement remaining. */
   readonly remainingCredits: string;
   /** Distinct credit records that are verified with an accepted decision. */
   readonly verifiedCreditsOnRecord: string;
