@@ -556,3 +556,12 @@ export function programSummary(p: StaffGraduateProgramView): { verified: number;
     openQuestions: p.openQuestions.length,
   };
 }
+
+/** Thesis topic decision: PATCH { outcome }. Only thesis_topic records take an outcome through tracking. */
+export const TOPIC_DECISIONS = { approved: "Approve topic", changes_requested: "Request changes" } as const;
+export function buildTopicDecisionBody(outcome: keyof typeof TOPIC_DECISIONS): { outcome: string } {
+  return { outcome };
+}
+export function canDecideTopic(rec: { kind: string }): boolean {
+  return rec.kind === "thesis_topic";
+}

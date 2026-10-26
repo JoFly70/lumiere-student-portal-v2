@@ -137,7 +137,7 @@ describe.skipIf(!ready)("S12 graduate programmes — real HTTP end to end", () =
         path: url.replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g, ":id"),
         actor: actor ? (roleOf.get(actor.id) ?? actor.role) : "anonymous",
         status: res.status,
-        assertion,
+        assertion: assertion || `${res.status}${res.body?.error?.code ? ` ${res.body.error.code}` : ""}${res.body?.error?.missing ? ` missing=[${res.body.error.missing.join(",")}]` : ""}`,
       });
     }
     return res;
@@ -510,6 +510,13 @@ describe.skipIf(!ready)("S12 graduate programmes — real HTTP end to end", () =
     activeJourney.step = "8. thesis submitted, then passed";
     const plan = await call("put", `/api/student/graduate/programs/${programId}/thesis`, user, { topic: "Data governance maturity in mid-sized European retailers", milestones: [{ label: "Outline", due: "2026-06-01", done: true }] }, "student plans the thesis");
     expect(plan.status).toBe(200);
+    const topicRec = (await recordsOf(programId)).find((r) => r.kind === "thesis_topic")!.id as string;
+    expect((await call("patch", `${P}/records/${topicRec}`, user, { outcome: "approved" })).status).toBe(403);
+    expect((await call("patch", `${P}/records/${topicRec}`, staff, { outcome: "approved" }, "staff approves the thesis topic")).status).toBe(200);
+    const locked = await call("put", `/api/student/graduate/programs/${programId}/thesis`, user, { topic: "A different topic entirely" }, "approved topic is locked");
+    expect(locked.status).toBe(409);
+    expect(code(locked)).toBe("GRADUATE_THESIS_TOPIC_LOCKED");
+    expect((await studentView(user, programId)).thesis.topicApproval).toBe("approved");
     const submission = await addRecord(programId, "thesis_submission", { trackingStatus: "submitted", details: { wordCount: 12850, originalityConfirmed: true } });
     expect(submission).toBeTruthy();
     const submitted = (await studentView(user, programId)).thesis;

@@ -236,3 +236,15 @@ describe("S12 staff graduate panel render", () => {
     expect(adminOut).not.toContain("can only be confirmed by a Lumière administrator");
   });
 });
+
+describe("S12 staff topic decision", () => {
+  it("builds a PATCH outcome body and the panel offers approve / request changes on thesis topics", async () => {
+    const { buildTopicDecisionBody, canDecideTopic } = await import("@/components/admin/graduate-program-review-logic");
+    expect(buildTopicDecisionBody("approved")).toEqual({ outcome: "approved" });
+    expect(canDecideTopic({ kind: "thesis_topic" })).toBe(true);
+    expect(canDecideTopic({ kind: "thesis_result" })).toBe(false);
+    const out = html(workspace([staffView(journeyB("assessments"), "rs-2026")]));
+    expect(out).toContain("Approve topic");
+    expect(out).toContain("Request changes");
+  });
+});

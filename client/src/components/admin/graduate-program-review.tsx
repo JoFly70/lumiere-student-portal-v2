@@ -40,6 +40,9 @@ import {
 import {
   STAFF_GRADUATE_PATHS,
   STAFF_GRADUATE_QUERY_KEY,
+  TOPIC_DECISIONS,
+  buildTopicDecisionBody,
+  canDecideTopic,
   activeRuleSets,
   addableKinds,
   buildCreditBody,
@@ -85,6 +88,7 @@ export type PanelDialog =
   | { t: "enroll" }
   | { t: "verify"; program: StaffGraduateProgramView; record: StaffRecordView }
   | { t: "track"; program: StaffGraduateProgramView; record: StaffRecordView | null; kind?: StaffRecordView["kind"] }
+  | { t: "topic"; record: StaffRecordView; outcome: keyof typeof TOPIC_DECISIONS }
   | { t: "subject"; program: StaffGraduateProgramView }
   | { t: "result"; program: StaffGraduateProgramView; subject: SubjectRecord }
   | { t: "credit"; program: StaffGraduateProgramView };
@@ -148,6 +152,7 @@ function RecordCard({ program, rec, role, onDialog, canEdit }: { program: StaffG
     </div>
     {canEdit ? <div className="flex flex-wrap gap-2">
       <Button type="button" size="sm" variant="outline" className="min-h-11" onClick={() => onDialog?.({ t: "track", program, record: rec })}>Update tracking…</Button>
+      {canDecideTopic(rec) && rec.details.topic ? (Object.keys(TOPIC_DECISIONS) as Array<keyof typeof TOPIC_DECISIONS>).map((o) => <Button key={o} type="button" size="sm" variant="outline" className="min-h-11" disabled={rec.outcome === o} onClick={() => onDialog?.({ t: "topic", record: rec, outcome: o })}>{TOPIC_DECISIONS[o]}…</Button>) : null}
       {canOfferVerify(rec) ? <Button type="button" size="sm" className="min-h-11" disabled={!gate.enabled} onClick={() => onDialog?.({ t: "verify", program, record: rec })}>Verify…</Button> : null}
       {!gate.enabled && canOfferVerify(rec) ? <p className="self-center text-xs text-muted-foreground">{gate.reason}</p> : null}
     </div> : null}
@@ -329,6 +334,11 @@ function TrackDialog({ program, record, kind, send, onClose }: { program: StaffG
   </FormDialog>;
 }
 
+function TopicDialog({ record, outcome, send, onClose }: { record: StaffRecordView; outcome: keyof typeof TOPIC_DECISIONS; send: (method: string, url: string, body: unknown) => Promise<void>; onClose: () => void }) {
+  return <FormDialog title={`${TOPIC_DECISIONS[outcome]}?`} description={`Topic: ${record.details.topic ?? ""}. An approved topic is locked for the student.`} submitLabel="Confirm" gate={{ ok: true, reason: null }}
+    onSubmit={() => send("PATCH", STAFF_GRADUATE_PATHS.trackRecord(record.id), buildTopicDecisionBody(outcome))} onClose={onClose}><span /></FormDialog>;
+}
+
 function ResultDialog({ subject, send, onClose }: { subject: SubjectRecord; send: (method: string, url: string, body: unknown) => Promise<void>; onClose: () => void }) {
   const [f, setF] = useState<ResultForm>(() => emptyResultForm(subject.authority));
   const set = <K extends keyof ResultForm>(k: K, v: ResultForm[K]) => setF((s) => ({ ...s, [k]: v }));
@@ -424,6 +434,7 @@ export default function GraduateProgramReview({ studentId }: { studentId: string
     {dialog?.t === "enroll" ? <EnrollDialog workspace={query.data} send={send} onClose={close} /> : null}
     {dialog?.t === "verify" ? <VerifyDialog record={dialog.record} role={role} send={send} onClose={close} /> : null}
     {dialog?.t === "track" ? <TrackDialog program={dialog.program} record={dialog.record} kind={dialog.kind} send={send} onClose={close} /> : null}
+    {dialog?.t === "topic" ? <TopicDialog record={dialog.record} outcome={dialog.outcome} send={send} onClose={close} /> : null}
     {dialog?.t === "subject" ? <SubjectDialog program={dialog.program} send={send} onClose={close} /> : null}
     {dialog?.t === "result" ? <ResultDialog subject={dialog.subject} send={send} onClose={close} /> : null}
     {dialog?.t === "credit" ? <CreditDialog program={dialog.program} send={send} onClose={close} /> : null}

@@ -11,7 +11,7 @@
           "path": "/api/admin/students/:id/graduate/programs",
           "actor": "staff",
           "status": 201,
-          "assertion": ""
+          "assertion": "201"
         },
         {
           "step": "1. eligibility review",
@@ -19,7 +19,7 @@
           "path": "/api/student/graduate",
           "actor": "student",
           "status": 200,
-          "assertion": ""
+          "assertion": "200"
         },
         {
           "step": "2. ENEB subjects: results with evidence",
@@ -27,7 +27,7 @@
           "path": "/api/admin/graduate/programs/:id/subjects",
           "actor": "staff",
           "status": 201,
-          "assertion": ""
+          "assertion": "201"
         },
         {
           "step": "2. ENEB subjects: results with evidence",
@@ -35,7 +35,7 @@
           "path": "/api/admin/graduate/programs/:id/subjects",
           "actor": "staff",
           "status": 201,
-          "assertion": ""
+          "assertion": "201"
         },
         {
           "step": "2. ENEB subjects: results with evidence",
@@ -43,7 +43,7 @@
           "path": "/api/admin/graduate/programs/:id/subjects",
           "actor": "staff",
           "status": 201,
-          "assertion": ""
+          "assertion": "201"
         },
         {
           "step": "2. ENEB subjects: results with evidence",
@@ -67,7 +67,7 @@
           "path": "/api/admin/graduate/subjects/:id/result",
           "actor": "staff",
           "status": 200,
-          "assertion": ""
+          "assertion": "200"
         },
         {
           "step": "2. ENEB subjects: results with evidence",
@@ -75,7 +75,7 @@
           "path": "/api/admin/graduate/subjects/:id/result",
           "actor": "staff",
           "status": 200,
-          "assertion": ""
+          "assertion": "200"
         },
         {
           "step": "2. ENEB subjects: results with evidence",
@@ -83,7 +83,7 @@
           "path": "/api/admin/graduate/subjects/:id/result",
           "actor": "staff",
           "status": 200,
-          "assertion": ""
+          "assertion": "200"
         },
         {
           "step": "3. ENEB completion and certificate (no university records)",
@@ -91,7 +91,7 @@
           "path": "/api/admin/graduate/programs/:id/records",
           "actor": "staff",
           "status": 201,
-          "assertion": ""
+          "assertion": "201"
         },
         {
           "step": "3. ENEB completion and certificate (no university records)",
@@ -123,7 +123,7 @@
           "path": "/api/admin/graduate/programs/:id/records",
           "actor": "staff",
           "status": 201,
-          "assertion": ""
+          "assertion": "201"
         },
         {
           "step": "3. ENEB completion and certificate (no university records)",
@@ -131,7 +131,7 @@
           "path": "/api/admin/graduate/records/:id/verify",
           "actor": "staff",
           "status": 200,
-          "assertion": ""
+          "assertion": "200"
         },
         {
           "step": "3. ENEB completion and certificate (no university records)",
@@ -139,7 +139,7 @@
           "path": "/api/admin/graduate/programs/:id/records",
           "actor": "staff",
           "status": 201,
-          "assertion": ""
+          "assertion": "201"
         },
         {
           "step": "3. ENEB completion and certificate (no university records)",
@@ -147,7 +147,7 @@
           "path": "/api/admin/graduate/programs/:id/credits",
           "actor": "staff",
           "status": 201,
-          "assertion": ""
+          "assertion": "201"
         },
         {
           "step": "4. university steps are impossible",
@@ -195,7 +195,7 @@
           "path": "/api/admin/graduate/programs/:id/credits",
           "actor": "staff",
           "status": 422,
-          "assertion": ""
+          "assertion": "422 GRADUATE_EVIDENCE_REQUIRED missing=[ROUTE_HAS_NO_UNIVERSITY]"
         },
         {
           "step": "5. student view",
@@ -203,7 +203,7 @@
           "path": "/api/student/graduate",
           "actor": "student",
           "status": 200,
-          "assertion": ""
+          "assertion": "200"
         }
       ]
     },
@@ -216,7 +216,7 @@
           "path": "/api/admin/students/:id/graduate/programs",
           "actor": "staff",
           "status": 201,
-          "assertion": ""
+          "assertion": "201"
         },
         {
           "step": "setup",
@@ -224,7 +224,7 @@
           "path": "/api/admin/graduate/programs/:id/subjects",
           "actor": "staff",
           "status": 201,
-          "assertion": ""
+          "assertion": "201"
         },
         {
           "step": "setup",
@@ -232,7 +232,7 @@
           "path": "/api/admin/graduate/programs/:id/subjects",
           "actor": "staff",
           "status": 201,
-          "assertion": ""
+          "assertion": "201"
         },
         {
           "step": "1. eligibility review",
@@ -240,7 +240,7 @@
           "path": "/api/admin/graduate/programs/:id/records",
           "actor": "staff",
           "status": 201,
-          "assertion": ""
+          "assertion": "201"
         },
         {
           "step": "1. eligibility review",
@@ -280,7 +280,7 @@
           "path": "/api/admin/graduate/programs/:id/records",
           "actor": "staff",
           "status": 201,
-          "assertion": ""
+          "assertion": "201"
         },
         {
           "step": "2. undergraduate documents and apostille",
@@ -312,7 +312,7 @@
           "path": "/api/student/graduate",
           "actor": "student",
           "status": 200,
-          "assertion": ""
+          "assertion": "200"
         },
         {
           "step": "2. undergraduate documents and apostille",
@@ -320,7 +320,7 @@
           "path": "/api/admin/graduate/programs/:id/records",
           "actor": "staff",
           "status": 201,
-          "assertion": ""
+          "assertion": "201"
         },
         {
           "step": "2. undergraduate documents and apostille",
@@ -336,7 +336,7 @@
           "path": "/api/admin/graduate/records/:id/verify",
           "actor": "staff",
           "status": 200,
-          "assertion": ""
+          "assertion": "200"
         },
         {
           "step": "3. university admission",
@@ -344,7 +344,7 @@
           "path": "/api/admin/graduate/programs/:id/records",
           "actor": "staff",
           "status": 201,
-          "assertion": ""
+          "assertion": "201"
         },
         {
           "step": "3. university admission",
@@ -360,7 +360,7 @@
           "path": "/api/admin/graduate/programs/:id/records",
           "actor": "staff",
           "status": 201,
-          "assertion": ""
+          "assertion": "201"
         },
         {
           "step": "3. university admission",
@@ -368,7 +368,7 @@
           "path": "/api/admin/graduate/programs/:id/records",
           "actor": "staff",
           "status": 201,
-          "assertion": ""
+          "assertion": "201"
         },
         {
           "step": "3. university admission",
@@ -400,7 +400,7 @@
           "path": "/api/student/graduate",
           "actor": "student",
           "status": 200,
-          "assertion": ""
+          "assertion": "200"
         },
         {
           "step": "4. university registration (matricola)",
@@ -424,7 +424,7 @@
           "path": "/api/student/graduate",
           "actor": "student",
           "status": 200,
-          "assertion": ""
+          "assertion": "200"
         },
         {
           "step": "5. recognition request is not approval",
@@ -432,7 +432,7 @@
           "path": "/api/admin/graduate/programs/:id/records",
           "actor": "staff",
           "status": 201,
-          "assertion": ""
+          "assertion": "201"
         },
         {
           "step": "5. recognition request is not approval",
@@ -440,7 +440,7 @@
           "path": "/api/admin/graduate/programs/:id/credits",
           "actor": "staff",
           "status": 201,
-          "assertion": ""
+          "assertion": "201"
         },
         {
           "step": "5. recognition request is not approval",
@@ -456,7 +456,7 @@
           "path": "/api/student/graduate",
           "actor": "student",
           "status": 200,
-          "assertion": ""
+          "assertion": "200"
         },
         {
           "step": "6. authoritative partial decision with conditions",
@@ -464,7 +464,7 @@
           "path": "/api/admin/graduate/programs/:id/records",
           "actor": "staff",
           "status": 201,
-          "assertion": ""
+          "assertion": "201"
         },
         {
           "step": "6. authoritative partial decision with conditions",
@@ -480,7 +480,7 @@
           "path": "/api/student/graduate",
           "actor": "student",
           "status": 200,
-          "assertion": ""
+          "assertion": "200"
         },
         {
           "step": "6. authoritative partial decision with conditions",
@@ -496,7 +496,7 @@
           "path": "/api/admin/graduate/programs/:id/credits",
           "actor": "staff",
           "status": 201,
-          "assertion": ""
+          "assertion": "201"
         },
         {
           "step": "6. authoritative partial decision with conditions",
@@ -504,7 +504,7 @@
           "path": "/api/admin/graduate/programs/:id/credits",
           "actor": "staff",
           "status": 201,
-          "assertion": ""
+          "assertion": "201"
         },
         {
           "step": "6. authoritative partial decision with conditions",
@@ -512,7 +512,7 @@
           "path": "/api/admin/graduate/programs/:id/credits",
           "actor": "staff",
           "status": 201,
-          "assertion": ""
+          "assertion": "201"
         },
         {
           "step": "6. authoritative partial decision with conditions",
@@ -520,7 +520,7 @@
           "path": "/api/student/graduate",
           "actor": "student",
           "status": 200,
-          "assertion": ""
+          "assertion": "200"
         },
         {
           "step": "7. remaining assessments and thesis",
@@ -528,7 +528,7 @@
           "path": "/api/admin/graduate/programs/:id/subjects",
           "actor": "staff",
           "status": 201,
-          "assertion": ""
+          "assertion": "201"
         },
         {
           "step": "7. remaining assessments and thesis",
@@ -536,7 +536,7 @@
           "path": "/api/admin/graduate/programs/:id/subjects",
           "actor": "staff",
           "status": 201,
-          "assertion": ""
+          "assertion": "201"
         },
         {
           "step": "7. remaining assessments and thesis",
@@ -544,7 +544,7 @@
           "path": "/api/student/graduate/programs/:id/subjects/:id/progress",
           "actor": "student",
           "status": 200,
-          "assertion": ""
+          "assertion": "200"
         },
         {
           "step": "7. remaining assessments and thesis",
@@ -552,7 +552,7 @@
           "path": "/api/student/graduate/programs/:id/subjects/:id/progress",
           "actor": "student",
           "status": 200,
-          "assertion": ""
+          "assertion": "200"
         },
         {
           "step": "7. remaining assessments and thesis",
@@ -568,7 +568,7 @@
           "path": "/api/admin/graduate/subjects/:id/result",
           "actor": "staff",
           "status": 200,
-          "assertion": ""
+          "assertion": "200"
         },
         {
           "step": "7. remaining assessments and thesis",
@@ -576,7 +576,7 @@
           "path": "/api/admin/graduate/subjects/:id/result",
           "actor": "staff",
           "status": 200,
-          "assertion": ""
+          "assertion": "200"
         },
         {
           "step": "7. remaining assessments and thesis",
@@ -584,7 +584,7 @@
           "path": "/api/admin/graduate/subjects/:id/result",
           "actor": "staff",
           "status": 200,
-          "assertion": ""
+          "assertion": "200"
         },
         {
           "step": "7. remaining assessments and thesis",
@@ -592,7 +592,7 @@
           "path": "/api/admin/graduate/subjects/:id/result",
           "actor": "staff",
           "status": 200,
-          "assertion": ""
+          "assertion": "200"
         },
         {
           "step": "8. thesis submitted, then passed",
@@ -604,11 +604,27 @@
         },
         {
           "step": "8. thesis submitted, then passed",
-          "method": "POST",
-          "path": "/api/admin/graduate/programs/:id/records",
+          "method": "PATCH",
+          "path": "/api/admin/graduate/records/:id",
+          "actor": "student",
+          "status": 403,
+          "assertion": "403"
+        },
+        {
+          "step": "8. thesis submitted, then passed",
+          "method": "PATCH",
+          "path": "/api/admin/graduate/records/:id",
           "actor": "staff",
-          "status": 201,
-          "assertion": ""
+          "status": 200,
+          "assertion": "staff approves the thesis topic"
+        },
+        {
+          "step": "8. thesis submitted, then passed",
+          "method": "PUT",
+          "path": "/api/student/graduate/programs/:id/thesis",
+          "actor": "student",
+          "status": 409,
+          "assertion": "approved topic is locked"
         },
         {
           "step": "8. thesis submitted, then passed",
@@ -616,7 +632,23 @@
           "path": "/api/student/graduate",
           "actor": "student",
           "status": 200,
-          "assertion": ""
+          "assertion": "200"
+        },
+        {
+          "step": "8. thesis submitted, then passed",
+          "method": "POST",
+          "path": "/api/admin/graduate/programs/:id/records",
+          "actor": "staff",
+          "status": 201,
+          "assertion": "201"
+        },
+        {
+          "step": "8. thesis submitted, then passed",
+          "method": "GET",
+          "path": "/api/student/graduate",
+          "actor": "student",
+          "status": 200,
+          "assertion": "200"
         },
         {
           "step": "8. thesis submitted, then passed",
@@ -632,7 +664,7 @@
           "path": "/api/admin/graduate/programs/:id/records",
           "actor": "staff",
           "status": 201,
-          "assertion": ""
+          "assertion": "201"
         },
         {
           "step": "8. thesis submitted, then passed",
@@ -648,7 +680,7 @@
           "path": "/api/student/graduate",
           "actor": "student",
           "status": 200,
-          "assertion": ""
+          "assertion": "200"
         },
         {
           "step": "8. thesis submitted, then passed",
@@ -664,7 +696,7 @@
           "path": "/api/student/graduate",
           "actor": "student",
           "status": 200,
-          "assertion": ""
+          "assertion": "200"
         },
         {
           "step": "9. graduation formalities",
@@ -672,7 +704,7 @@
           "path": "/api/admin/graduate/programs/:id/records",
           "actor": "staff",
           "status": 201,
-          "assertion": ""
+          "assertion": "201"
         },
         {
           "step": "9. graduation formalities",
@@ -680,7 +712,7 @@
           "path": "/api/admin/graduate/programs/:id/records",
           "actor": "staff",
           "status": 201,
-          "assertion": ""
+          "assertion": "201"
         },
         {
           "step": "9. graduation formalities",
@@ -688,7 +720,7 @@
           "path": "/api/student/graduate",
           "actor": "student",
           "status": 200,
-          "assertion": ""
+          "assertion": "200"
         },
         {
           "step": "10. formal conferral (admin only)",
@@ -696,7 +728,7 @@
           "path": "/api/admin/graduate/programs/:id/records",
           "actor": "staff",
           "status": 201,
-          "assertion": ""
+          "assertion": "201"
         },
         {
           "step": "10. formal conferral (admin only)",
@@ -720,7 +752,7 @@
           "path": "/api/student/graduate",
           "actor": "student",
           "status": 200,
-          "assertion": ""
+          "assertion": "200"
         },
         {
           "step": "10. formal conferral (admin only)",
@@ -736,7 +768,7 @@
           "path": "/api/student/graduate",
           "actor": "student",
           "status": 200,
-          "assertion": ""
+          "assertion": "200"
         },
         {
           "step": "11. official documents received and verified",
@@ -744,7 +776,7 @@
           "path": "/api/admin/graduate/programs/:id/records",
           "actor": "staff",
           "status": 201,
-          "assertion": ""
+          "assertion": "201"
         },
         {
           "step": "11. official documents received and verified",
@@ -752,7 +784,7 @@
           "path": "/api/admin/graduate/programs/:id/records",
           "actor": "staff",
           "status": 201,
-          "assertion": ""
+          "assertion": "201"
         },
         {
           "step": "11. official documents received and verified",
@@ -760,7 +792,7 @@
           "path": "/api/student/graduate",
           "actor": "student",
           "status": 200,
-          "assertion": ""
+          "assertion": "200"
         },
         {
           "step": "11. official documents received and verified",
@@ -776,7 +808,7 @@
           "path": "/api/admin/graduate/programs/:id/records",
           "actor": "staff",
           "status": 201,
-          "assertion": ""
+          "assertion": "201"
         },
         {
           "step": "11. official documents received and verified",
@@ -792,7 +824,7 @@
           "path": "/api/admin/graduate/programs/:id/credits",
           "actor": "staff",
           "status": 201,
-          "assertion": ""
+          "assertion": "201"
         },
         {
           "step": "11. official documents received and verified",
@@ -808,7 +840,7 @@
           "path": "/api/admin/graduate/programs/:id/records",
           "actor": "staff",
           "status": 201,
-          "assertion": ""
+          "assertion": "201"
         },
         {
           "step": "11. official documents received and verified",
@@ -816,7 +848,7 @@
           "path": "/api/admin/graduate/programs/:id/records",
           "actor": "staff",
           "status": 201,
-          "assertion": ""
+          "assertion": "201"
         },
         {
           "step": "11. official documents received and verified",
@@ -832,7 +864,7 @@
           "path": "/api/student/graduate",
           "actor": "student",
           "status": 200,
-          "assertion": ""
+          "assertion": "200"
         }
       ]
     }
