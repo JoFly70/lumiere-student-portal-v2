@@ -93,6 +93,7 @@ export default {
           ink: "hsl(var(--s-ink) / <alpha-value>)",
           muted: "hsl(var(--s-muted) / <alpha-value>)",
           gold: "hsl(var(--s-gold) / <alpha-value>)",
+          "gold-fill": "hsl(var(--s-gold-fill) / <alpha-value>)",
           "gold-ink": "hsl(var(--s-gold-ink) / <alpha-value>)",
           "gold-soft": "hsl(var(--s-gold-soft) / <alpha-value>)",
           line: "hsl(var(--s-line) / <alpha-value>)",

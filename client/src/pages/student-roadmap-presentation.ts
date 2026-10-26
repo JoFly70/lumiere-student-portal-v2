@@ -45,8 +45,8 @@ export interface StagePresentation {
 export const STAGES: readonly StagePresentation[] = [
   { stage: "not_started", label: "Not started", help: "Nothing has been reported on this yet." },
   { stage: "in_progress", label: "In progress", help: "You have started the work." },
-  { stage: "submitted", label: "Submitted", help: "Every task is submitted or graded." },
-  { stage: "graded", label: "Graded", help: "Every task is graded." },
+  { stage: "submitted", label: "Submitted", help: "Every task is submitted or done." },
+  { stage: "graded", label: "All tasks done", help: "You have reported every task done." },
   {
     stage: "provider_complete",
     label: "Complete at provider",
@@ -99,15 +99,20 @@ export function taskControlKind(kind: RoadmapTaskKind): TaskControlKind {
   return kind === "touchstone" || kind === "paper" || kind === "milestone" ? "segmented" : "toggle";
 }
 
-export const TASK_STATUS_OPTIONS: readonly { value: StudentTaskStatus; label: string }[] = [
-  { value: "not_started", label: "Not started" },
-  { value: "in_progress", label: "In progress" },
-  { value: "submitted", label: "Submitted" },
-  { value: "graded", label: "Graded" },
+/** Student-facing wording. The API value "graded" means "I report this done"; the student never grades. */
+export const TASK_STATUS_OPTIONS: readonly { value: StudentTaskStatus; label: string; reported: string }[] = [
+  { value: "not_started", label: "Not started", reported: "not started" },
+  { value: "in_progress", label: "Started", reported: "started" },
+  { value: "submitted", label: "Submitted", reported: "submitted" },
+  { value: "graded", label: "Done", reported: "done" },
 ];
 
 export function taskStatusLabel(status: StudentTaskStatus): string {
   return TASK_STATUS_OPTIONS.find((o) => o.value === status)?.label ?? status;
+}
+
+export function taskReportedPhrase(status: StudentTaskStatus): string {
+  return TASK_STATUS_OPTIONS.find((o) => o.value === status)?.reported ?? status;
 }
 
 /** "5 of 8 challenges done"; mixed kinds read "5 of 8 tasks done". Null with no tasks. */
@@ -165,10 +170,12 @@ export function canUndoProviderComplete(item: StudentRoadmapItemView): boolean {
 }
 
 export const PROVIDER_COMPLETE_CONFIRM = {
-  title: "Mark this course complete at the provider?",
+  title: "Did you finish this at the provider?",
   body:
-    "Only do this if the provider shows the course as finished. This tells Lumière you have finished it; it does not award credit. Our team verifies it before it counts, and you can undo this until then.",
-  confirm: "Yes, it is complete",
+    "Only say yes if the provider shows the course as finished. This tells Lumière you have finished it; it does not award credit. Our team reviews it before it counts, and you can undo this until then.",
+  confirm: "Yes, I finished it",
+  button: "I finished this at the provider",
+  preNote: "Lumière will review it. Telling us you finished does not award credit.",
   cancel: "Not yet",
 } as const;
 
@@ -177,7 +184,7 @@ export function savedMessage(label: string): string {
 }
 
 export function taskSavedLabel(task: StudentTaskView, status: StudentTaskStatus): string {
-  return `${task.title} marked ${taskStatusLabel(status).toLowerCase()}`;
+  return `you reported ${task.title} ${taskReportedPhrase(status)}`;
 }
 
 // ── Counts (never a weighted percentage) ────────────────────────────────────
@@ -205,14 +212,15 @@ export function segmentFraction(value: number, counts: StudentRoadmapCounts): nu
 
 export function countsSentence(counts: StudentRoadmapCounts): string {
   const noun = counts.itemsTotal === 1 ? "item" : "items";
-  return `${counts.itemsTotal} ${noun} on your roadmap: ${countSegments(counts)
+  return `Across your whole plan, ${counts.itemsTotal} ${noun}: ${countSegments(counts)
     .map((s) => `${s.value} ${s.label.toLowerCase()}`)
     .join(", ")}.`;
 }
 
+/** Counts for ONE phase. Always scoped in the wording ("In this phase"). */
 export function phaseSummaryLine(phase: StudentRoadmapPhaseView): string {
   const finished = phase.counts.itemsOfficiallyAccepted + phase.counts.itemsProviderComplete;
-  const parts = [`${finished} of ${phase.counts.itemsTotal} ${phase.counts.itemsTotal === 1 ? "item" : "items"} finished`];
+  const parts = [`In this phase: ${finished} of ${phase.counts.itemsTotal} ${phase.counts.itemsTotal === 1 ? "item" : "items"} finished`];
   if (phase.counts.tasksTotal > 0) {
     parts.push(`${phase.counts.tasksGraded} of ${phase.counts.tasksTotal} tasks done`);
   }
@@ -413,14 +421,14 @@ export const APPLIED_VS_VERIFIED =
 
 export function ladderRungs(ladder: Ladder): LadderRung[] {
   return [
-    { key: "reported", label: "Reported", value: ladder.reported, help: "Credits on documents you provided, not yet checked." },
-    { key: "provisional", label: "Provisional", value: ladder.provisional, help: "Reported credits waiting for Lumière to verify." },
-    { key: "verified", label: "Verified", value: ladder.verified, help: "Checked and accepted by Lumière staff." },
+    { key: "reported", label: "Reported", value: ladder.reported, help: "Everything on the documents you provided. The two rows below split it into waiting and verified." },
+    { key: "provisional", label: "Waiting for verification", value: ladder.provisional, help: "Part of the reported total that Lumière has not verified yet." },
+    { key: "verified", label: "Verified", value: ladder.verified, help: "Part of the reported total that Lumière has checked and accepted." },
     {
       key: "applied",
       label: "Applied",
       value: ladder.applied,
-      help: ladder.applied === null ? "Shown once Lumière finishes reviewing your record." : "Verified credits counted toward your degree requirements.",
+      help: ladder.applied === null ? "Shown once Lumière finishes reviewing your record." : "Part of the verified total that counts toward your degree requirements.",
     },
   ];
 }
@@ -503,4 +511,26 @@ export function requirementLine(req: StudentRequirementView): RequirementLine | 
     };
   }
   return { text: `${fromHundredths(applied)} of ${fromHundredths(required)} credits`, surplusNote: null };
+}
+
+/** "69 reported in total: 60 of them verified, 9 waiting for Lumière." Cumulative, never additive across rungs. */
+export function ladderTotalsSentence(ladder: Ladder): string {
+  const rep = creditsText(ladder.reported) ?? "0 credits";
+  const ver = formatDecimal(ladder.verified) ?? "0";
+  const wait = formatDecimal(ladder.provisional) ?? "0";
+  return `${rep} reported in total: ${ver} of them verified, ${wait} waiting for Lumière to verify.`;
+}
+
+export function credentialStandingLabel(standing: StudentFoundationView["credentials"][number]["standing"]): {
+  label: string;
+  verified: boolean;
+} {
+  if (standing === "VERIFIED_APPLIED" || standing === "VERIFIED_NOT_APPLIED") return { label: "Verified", verified: true };
+  if (standing === "NOT_ACCEPTED") return { label: "Not accepted", verified: false };
+  return { label: "Waiting for verification", verified: false };
+}
+
+/** The reportable item to jump to from the "Now" strip: first focus item. */
+export function nowTarget(view: StudentRoadmapView): StudentRoadmapItemView | null {
+  return focusItems(view)[0] ?? null;
 }

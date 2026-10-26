@@ -20,24 +20,55 @@ import {
   ladderAriaLabel,
   ladderRungs,
   ladderScale,
+  ladderTotalsSentence,
+  credentialStandingLabel,
 } from "@/pages/student-roadmap-presentation";
-import { creditStandingPresentation, formatAsOf, formatDecimal } from "@/pages/student-progress-presentation";
+import { formatAsOf, formatDecimal } from "@/pages/student-progress-presentation";
 import { Disclosure, Pill, SectionHeading, buttonClass, cardClass } from "./student-ui";
 
 type Ladder = StudentFoundationView["ladder"];
 
-const RUNG_BAR: Record<string, React.CSSProperties> = {
+const HATCH = (c: string) => `repeating-linear-gradient(135deg, transparent 0 4px, hsl(var(${c}) / 0.75) 4px 6px)`;
+const SEG: Record<string, React.CSSProperties> = {
   reported: { boxShadow: "inset 0 0 0 1.5px hsl(var(--s-line-strong))", background: "transparent" },
-  provisional: {
-    background: "repeating-linear-gradient(135deg, hsl(var(--s-gold-soft)) 0 5px, hsl(var(--s-gold) / 0.55) 5px 7px)",
-    boxShadow: "inset 0 0 0 1.5px hsl(var(--s-gold))",
-  },
-  verified: { background: "hsl(var(--s-gold))" },
+  waiting: { background: HATCH("--s-gold-ink"), boxShadow: "inset 0 0 0 1.5px hsl(var(--s-gold-ink))" },
+  verified: { background: "hsl(var(--s-gold-fill))" },
   applied: { background: "hsl(var(--s-seal))" },
+  surplus: { background: HATCH("--s-seal"), boxShadow: "inset 0 0 0 1.5px hsl(var(--s-seal))" },
   planned: { border: "1.5px dashed hsl(var(--s-gold-ink))", background: "transparent" },
 };
 
-/** Credit ladder: bars share one scale; a tick marks what the degree requires. */
+/** Each bar is drawn as the segments it is made of, so "cumulative" is visible. */
+function barSegments(key: string, ladder: Ladder, scale: number): { style: string; start: number; width: number }[] {
+  const f = (v: string | null) => barFraction(v, scale);
+  const verified = f(ladder.verified);
+  const waiting = f(ladder.provisional);
+  const applied = f(ladder.applied);
+  const surplus = f(ladder.surplus);
+  if (key === "reported" && hasPositive(ladder.verified) && hasPositive(ladder.provisional)) {
+    return [
+      { style: "verified", start: 0, width: verified },
+      { style: "waiting", start: verified, width: waiting },
+    ];
+  }
+  if (key === "verified" && hasPositive(ladder.applied) && hasPositive(ladder.surplus)) {
+    return [
+      { style: "applied", start: 0, width: applied },
+      { style: "surplus", start: applied, width: surplus },
+    ];
+  }
+  const single: Record<string, [string, number]> = {
+    reported: ["reported", f(ladder.reported)],
+    provisional: ["waiting", waiting],
+    verified: ["verified", verified],
+    applied: ["applied", applied],
+    planned: ["planned", f(ladder.planned)],
+  };
+  const [style, width] = single[key] ?? ["reported", 0];
+  return [{ style, start: 0, width }];
+}
+
+/** Credit ladder: cumulative. Bars share one scale; a tick marks what the degree requires. */
 export function CreditLadder({ ladder, compact = false }: { ladder: Ladder; compact?: boolean }) {
   const scale = ladderScale(ladder);
   const rungs = ladderRungs(ladder).filter((r) => !compact || r.key === "verified" || r.key === "applied");
@@ -45,11 +76,12 @@ export function CreditLadder({ ladder, compact = false }: { ladder: Ladder; comp
   const rows = [
     ...rungs.map((r) => ({ ...r })),
     ...(!compact
-      ? [{ key: "planned" as const, label: "Planned", value: ladder.planned, help: "On your roadmap, not yet accepted." }]
+      ? [{ key: "planned" as const, label: "Planned (not credit yet)", value: ladder.planned, help: "On your roadmap, not yet accepted. A separate figure, not part of the total above." }]
       : []),
   ];
   return (
     <div data-testid="credit-ladder" role="group" aria-label={`Credit ladder: ${ladderAriaLabel(ladder)}`}>
+      <p className="mb-3 text-sm font-medium text-student-ink" data-testid="ladder-totals">{ladderTotalsSentence(ladder)}</p>
       <ol className="space-y-3">
         {rows.map((r) => (
           <li key={r.key} data-rung={r.key}>
@@ -60,10 +92,18 @@ export function CreditLadder({ ladder, compact = false }: { ladder: Ladder; comp
               </span>
             </div>
             <div className="relative mt-1 h-3 w-full rounded-full bg-student-line/60" aria-hidden="true">
-              <span
-                className="absolute inset-y-0 left-0 rounded-full"
-                style={{ width: `${Math.round(barFraction(r.value, scale) * 1000) / 10}%`, ...RUNG_BAR[r.key] }}
-              />
+              {barSegments(r.key, ladder, scale).map((seg, i) => (
+                <span
+                  key={i}
+                  className="absolute inset-y-0"
+                  style={{
+                    left: `${Math.round(seg.start * 1000) / 10}%`,
+                    width: `${Math.round(seg.width * 1000) / 10}%`,
+                    borderRadius: i === 0 ? "9999px 0 0 9999px" : "0 9999px 9999px 0",
+                    ...SEG[seg.style],
+                  }}
+                />
+              ))}
               {ladder.required && (
                 <span
                   className="absolute -top-1 bottom-[-4px] w-0.5 bg-student-ink"
@@ -83,7 +123,7 @@ export function CreditLadder({ ladder, compact = false }: { ladder: Ladder; comp
       )}
       {hasPositive(ladder.surplus) && (
         <p className="mt-3 rounded-lg bg-student-gold-soft px-3 py-2.5 text-sm text-student-ink" data-testid="surplus-note">
-          <strong className="font-semibold">Surplus: {creditsText(ladder.surplus)}.</strong> {SURPLUS_EXPLANATION}
+          <strong className="font-semibold">Surplus: {creditsText(ladder.surplus)}</strong> (the hatched end of the Verified bar). {SURPLUS_EXPLANATION}
         </p>
       )}
     </div>
@@ -95,7 +135,7 @@ export function CredentialsList({ foundation }: { foundation: StudentFoundationV
   return (
     <ul className="divide-y divide-student-line" aria-label="Prior degrees and credentials" data-testid="credentials-list">
       {foundation.credentials.map((c) => {
-        const standing = creditStandingPresentation(c.standing);
+        const standing = credentialStandingLabel(c.standing);
         const amount = c.awardedCredits ?? c.reportedCredits;
         const done = formatAsOf(c.completedOn);
         return (
@@ -136,7 +176,7 @@ export function FoundationSection({
         title={foundationHeadline(foundation)}
         description="Where you begin: the degrees and credit you already hold. Only Lumière staff can verify credit and apply it to your degree."
       />
-      <div className="grid gap-4 lg:grid-cols-5">
+      <div className="grid items-start gap-4 lg:grid-cols-5">
         {foundation.credentials.length > 0 && (
           <div className={cn(cardClass, "lg:col-span-3")}>
             <h3 className="mb-1 text-sm font-semibold text-student-ink">Prior degrees and credentials</h3>

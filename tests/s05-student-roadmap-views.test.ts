@@ -41,9 +41,24 @@ describe("S05 Roadmap page", () => {
     expect(t).not.toMatch(/\d\s?%/);
   });
 
-  it("renders Today once with its headline and up to three focus items", () => {
-    expect(count(markup, 'data-testid="focus-item"')).toBe(3);
+  it("keeps ONE compact Now strip on the roadmap; task lists live on the Flight Deck", () => {
+    expect(count(markup, 'data-testid="now-strip"')).toBe(1);
+    expect(count(markup, 'data-testid="focus-item"')).toBe(0);
+    expect(count(markup, 'data-testid="now-jump"')).toBe(1);
     expect(count(t, "Finish your Marketing challenges, then submit Touchstone 3")).toBe(1);
+    expect(count(t, "Next up")).toBe(0);
+    expect(count(t.toLowerCase(), "your roadmap")).toBeLessThanOrEqual(3);
+  });
+  it("states the scope of every count and the cumulative ladder", () => {
+    expect(markup).toContain('data-testid="summary-scope"');
+    expect(t).toContain("Counts for your whole plan, all phases: 9 items");
+    expect(t).toContain("In this phase:");
+    expect(t).toContain("69 credits reported in total: 60 of them verified, 9 waiting for Lumière to verify.");
+    expect(t).not.toContain("Preliminary");
+    expect(t).toContain("Waiting for verification");
+  });
+  it("never offers 'Graded' as a student action", () => {
+    expect(t).not.toMatch(/\bGraded\b/);
   });
 
   it("renders phases with the current one expanded and others collapsed", () => {
@@ -81,6 +96,7 @@ describe("S05 Roadmap page", () => {
   it("explains the foundation credit ladder in plain language", () => {
     expect(markup).toContain('data-testid="credit-ladder"');
     expect(t).toContain("Verified credits beyond what any requirement needs; they're on your record but don't move you closer to graduation.");
+    expect(t).toContain("Part of the reported total that Lumière has checked and accepted");
     expect(t).toContain("Applied means that credit is counted toward a degree requirement");
     for (const r of ["reported", "provisional", "verified", "applied", "planned"]) expect(markup).toContain(`data-rung="${r}"`);
   });
@@ -112,14 +128,16 @@ describe("S05 Flight Deck", () => {
     expect(count(markup, 'data-testid="progress-summary"')).toBe(1);
     expect(markup).toContain('data-testid="foundation-summary"');
     expect(markup).toContain('data-testid="horizon-summary"');
+    expect(count(markup, 'data-testid="horizon-milestone"')).toBe(3);
+    expect(count(markup, 'data-testid="now-strip"')).toBe(0);
     expect(markup).toContain('href="/roadmap"');
     expect(t).toContain("Current phase: Business Core");
   });
   it("takes credit numbers from the ladder only", () => {
     expect(markup).toContain('data-testid="rung-verified"');
-    expect(t).toMatch(/Verified 69/);
-    expect(t).toMatch(/Applied 63/);
-    expect(t).toContain("Surplus: 6 credits.");
+    expect(t).toMatch(/Verified 60/);
+    expect(t).toMatch(/Applied 57/);
+    expect(t).toContain("Surplus: 3 credits");
   });
   it("does not repeat the headline", () => {
     expect(count(t, "Finish your Marketing challenges")).toBe(1);
@@ -155,6 +173,9 @@ describe("S05 building blocks", () => {
     const items = itemsByKey(V);
     const open = html(React.createElement(ItemCard, { item: items.get("bba-mkt300")!, defaultOpen: true }));
     expect(open).toContain('data-testid="button-provider-complete"');
+    expect(text(open)).toContain("Lumière will review it. Telling us you finished does not award credit.");
+    expect(text(open)).toContain("I finished this at the provider");
+    expect(text(open)).toContain("6 done · show");
     const accepted = html(React.createElement(ItemCard, { item: items.get("bba-eng101")!, defaultOpen: true }));
     expect(accepted).not.toContain('data-testid="button-provider-complete"');
     expect(accepted).toContain("disabled");
@@ -169,6 +190,11 @@ describe("S05 building blocks", () => {
     const seg = html(React.createElement("ul", null, React.createElement(TaskRow, { item, task: ts })));
     expect(count(seg, 'type="radio"')).toBe(4);
     expect(seg).toContain("<legend");
+    expect(text(seg)).toContain("Done");
+    expect(text(seg)).not.toContain("Graded");
+    const started = html(React.createElement("ul", null, React.createElement(TaskRow, { item, task: item.tasks[6] })));
+    expect(text(started)).toContain("Mark started");
+    expect(text(started)).not.toMatch(/In progress/);
   });
   it("CreditLadder shows Under review for a withheld applied figure", () => {
     const m = html(React.createElement(CreditLadder, { ladder: { ...V.foundation.ladder, applied: null, surplus: null } }));

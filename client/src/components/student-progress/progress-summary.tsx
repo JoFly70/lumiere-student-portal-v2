@@ -18,7 +18,7 @@ import { buttonClass, cardClass } from "./student-ui";
 
 const SEGMENT_STYLE: Record<string, React.CSSProperties> = {
   accepted: { background: "hsl(var(--s-seal))" },
-  provider: { background: "hsl(var(--s-gold))" },
+  provider: { background: "hsl(var(--s-gold-fill))" },
   progress: {
     background:
       "repeating-linear-gradient(135deg, hsl(var(--s-gold-soft)) 0 5px, hsl(var(--s-gold) / 0.55) 5px 7px)",
@@ -31,17 +31,30 @@ function Swatch({ kind }: { kind: string }) {
   return <span aria-hidden="true" className="inline-block h-3.5 w-3.5 rounded-sm" style={SEGMENT_STYLE[kind]} />;
 }
 
-export function ProgressSummary({ view, showRoadmapLink = false }: { view: StudentRoadmapView; showRoadmapLink?: boolean }) {
+export function ProgressSummary({
+  view,
+  showRoadmapLink = false,
+  variant = "flight-deck",
+}: {
+  view: StudentRoadmapView;
+  showRoadmapLink?: boolean;
+  variant?: "flight-deck" | "roadmap";
+}) {
   const segments = countSegments(view.counts);
   const phase = currentPhase(view);
   return (
     <section aria-labelledby="progress-summary-title" className={cardClass} data-testid="progress-summary">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-student-gold-ink">Your roadmap</p>
+          {variant === "flight-deck" && (
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-student-gold-ink">Your roadmap</p>
+          )}
           <h2 id="progress-summary-title" className="font-serif text-xl text-student-ink sm:text-2xl">
-            {view.plan?.title ?? "Your roadmap"}
+            {variant === "flight-deck" ? (view.plan?.title ?? "Your roadmap") : "Where you are"}
           </h2>
+          <p className="mt-0.5 text-sm text-student-muted" data-testid="summary-scope">
+            Counts for your whole plan, all phases: {view.counts.itemsTotal} {view.counts.itemsTotal === 1 ? "item" : "items"}.
+          </p>
         </div>
         {showRoadmapLink && (
           <Link href="/roadmap" className={buttonClass.link} data-testid="link-full-roadmap">
@@ -87,7 +100,7 @@ export function ProgressSummary({ view, showRoadmapLink = false }: { view: Stude
             {phase.state === "current" ? "Current phase" : phase.state === "complete" ? "Last phase" : "Next phase"}:{" "}
             <strong className="font-semibold text-student-ink">{phase.title}</strong>
           </span>
-          <span className={cn("hidden sm:inline")}>· {phaseSummaryLine(phase)}</span>
+          <span>· {phaseSummaryLine(phase)}</span>
         </p>
       )}
     </section>

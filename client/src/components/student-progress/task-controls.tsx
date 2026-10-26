@@ -4,7 +4,7 @@
  * Nothing here can award credit; "graded" means the student reports it graded.
  */
 import React, { useId } from "react";
-import { Clock, Loader2 } from "lucide-react";
+import { Check, Loader2, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { StudentRoadmapItemView, StudentTaskStatus, StudentTaskView } from "@shared/student-roadmap-contract";
 import {
@@ -19,6 +19,7 @@ import {
   taskUpdate,
 } from "@/pages/student-roadmap-presentation";
 import { useRoadmapActions } from "./roadmap-actions";
+import { Disclosure } from "./student-ui";
 
 function Saving() {
   return (
@@ -44,7 +45,7 @@ export function TaskRow({ item, task }: { item: StudentRoadmapItemView; task: St
     const done = task.status === "graded";
     const inProgress = task.status === "in_progress";
     return (
-      <li className="flex flex-wrap items-center gap-x-3 gap-y-1 py-0.5" data-testid="task-row" data-task-status={task.status} aria-busy={saving}>
+      <li className="s-cq flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 py-0.5" data-testid="task-row" data-task-status={task.status} aria-busy={saving}>
         <label className="flex min-h-[44px] min-w-0 flex-1 cursor-pointer items-center gap-3 text-sm text-student-ink">
           <input
             type="checkbox"
@@ -67,15 +68,16 @@ export function TaskRow({ item, task }: { item: StudentRoadmapItemView; task: St
             disabled={disabled}
             onClick={() => void set(inProgress ? "not_started" : "in_progress")}
             className={cn(
-              "inline-flex min-h-[36px] items-center gap-1.5 rounded-full border px-3 text-xs font-medium disabled:opacity-60",
+              "inline-flex min-h-[36px] shrink-0 items-center gap-1.5 rounded-full border-2 px-3 text-xs font-semibold disabled:opacity-60",
               inProgress
-                ? "border-student-gold bg-student-gold-soft text-student-gold-ink"
-                : "border-transparent text-student-muted hover:border-student-line-strong hover:bg-student-gold-soft",
+                ? "border-student-gold-ink bg-student-gold-soft text-student-gold-ink"
+                : "border-student-line-strong bg-student-card text-student-ink hover:bg-student-gold-soft",
             )}
+            data-testid={`task-started-${task.key}`}
           >
-            <Clock className="h-3.5 w-3.5" aria-hidden="true" />
-            In progress
-            <span className="sr-only">: {task.title}</span>
+            {inProgress ? <Check className="h-3.5 w-3.5" strokeWidth={3} aria-hidden="true" /> : <Play className="h-3 w-3" aria-hidden="true" />}
+            {inProgress ? "Started" : "Mark started"}
+            <span className="sr-only"> {task.title}</span>
           </button>
         )}
       </li>
@@ -83,16 +85,16 @@ export function TaskRow({ item, task }: { item: StudentRoadmapItemView; task: St
   }
 
   return (
-    <li className="py-1.5" data-testid="task-row" data-task-status={task.status} aria-busy={saving}>
-      <fieldset disabled={disabled} className="min-w-0 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+    <li className="s-cq min-w-0 py-1.5" data-testid="task-row" data-task-status={task.status} aria-busy={saving}>
+      <fieldset disabled={disabled} className="m-0 flex min-w-0 flex-col gap-2 border-0 p-0">
         <legend className="sr-only">Status of {task.title}</legend>
         <span className="flex items-center gap-2 text-sm text-student-ink" aria-hidden="true">
           {task.title}
           {saving && <Saving />}
         </span>
-        <div className="grid grid-cols-2 gap-1 sm:flex">
+        <div className="s-seg">
           {TASK_STATUS_OPTIONS.map((opt) => (
-            <label key={opt.value} className="relative">
+            <label key={opt.value} className="relative min-w-0">
               <input
                 type="radio"
                 name={`${groupId}-${key}`}
@@ -103,12 +105,13 @@ export function TaskRow({ item, task }: { item: StudentRoadmapItemView; task: St
               />
               <span
                 className={cn(
-                  "flex min-h-[40px] cursor-pointer items-center justify-center rounded-lg border border-student-line-strong px-3 text-xs font-medium text-student-muted",
-                  "peer-checked:border-student-gold-ink peer-checked:bg-student-gold-soft peer-checked:text-student-gold-ink",
+                  "flex min-h-[40px] cursor-pointer items-center justify-center gap-1 rounded-lg border border-student-line-strong px-2 text-xs font-medium text-student-muted",
+                  "peer-checked:border-2 peer-checked:border-student-gold-ink peer-checked:bg-student-gold-soft peer-checked:font-semibold peer-checked:text-student-gold-ink",
                   "peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-student-gold-ink",
                   "peer-disabled:cursor-not-allowed peer-disabled:opacity-60",
                 )}
               >
+                {task.status === opt.value && <Check className="h-3 w-3 shrink-0" strokeWidth={3} aria-hidden="true" />}
                 {opt.label}
               </span>
             </label>
@@ -119,14 +122,37 @@ export function TaskRow({ item, task }: { item: StudentRoadmapItemView; task: St
   );
 }
 
-export function TaskList({ item, tasks }: { item: StudentRoadmapItemView; tasks?: readonly StudentTaskView[] }) {
-  const list = tasks ?? item.tasks;
-  if (list.length === 0) return null;
+function PlainList({ item, tasks, label }: { item: StudentRoadmapItemView; tasks: readonly StudentTaskView[]; label: string }) {
   return (
-    <ul className="divide-y divide-student-line" data-testid="task-list" aria-label={`Tasks for ${item.title}`}>
-      {list.map((t) => (
+    <ul className="divide-y divide-student-line" data-testid="task-list" aria-label={label}>
+      {tasks.map((t) => (
         <TaskRow key={t.key} item={item} task={t} />
       ))}
     </ul>
+  );
+}
+
+/** Tasks still to do stay visible; finished ones fold into "N done · show". */
+export function TaskList({
+  item,
+  tasks,
+  collapseDone = false,
+}: {
+  item: StudentRoadmapItemView;
+  tasks?: readonly StudentTaskView[];
+  collapseDone?: boolean;
+}) {
+  const list = tasks ?? item.tasks;
+  if (list.length === 0) return null;
+  const done = collapseDone ? list.filter((t) => t.status === "graded") : [];
+  if (done.length === 0) return <PlainList item={item} tasks={list} label={`Tasks for ${item.title}`} />;
+  const todo = list.filter((t) => t.status !== "graded");
+  return (
+    <div>
+      {todo.length > 0 && <PlainList item={item} tasks={todo} label={`Tasks left for ${item.title}`} />}
+      <Disclosure label={`${done.length} done · show`} testId="done-tasks" buttonClassName="min-h-[40px]">
+        <PlainList item={item} tasks={done} label={`Finished tasks for ${item.title}`} />
+      </Disclosure>
+    </div>
   );
 }

@@ -3,7 +3,7 @@
  * approvals, dependencies. Task checklist and item actions live in a
  * disclosure so the journey stays scannable.
  */
-import React, { useId, useState } from "react";
+import React, { useEffect, useId, useState } from "react";
 import { CalendarDays, ChevronDown, GitBranch, Hourglass, Layers, PauseCircle, ShieldCheck, UserCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { StudentRoadmapItemView, StudentRoadmapObjectiveView } from "@shared/student-roadmap-contract";
@@ -98,10 +98,12 @@ function ItemActions({ item }: { item: StudentRoadmapItemView }) {
         </p>
       )}
       {canMarkProviderComplete(item) && (
+        <div className="space-y-1.5">
+          <p className="text-sm text-student-muted" data-testid="provider-precopy">{PROVIDER_COMPLETE_CONFIRM.preNote}</p>
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <button type="button" className={buttonClass.outline} disabled={saving} data-testid="button-provider-complete">
-              Mark complete at provider
+              {PROVIDER_COMPLETE_CONFIRM.button}
               <span className="sr-only">: {item.title}</span>
             </button>
           </AlertDialogTrigger>
@@ -113,23 +115,24 @@ function ItemActions({ item }: { item: StudentRoadmapItemView }) {
             <AlertDialogFooter>
               <AlertDialogCancel>{PROVIDER_COMPLETE_CONFIRM.cancel}</AlertDialogCancel>
               <AlertDialogAction
-                onClick={() => void actions.report(itemUpdate(item, "provider_complete"), `${item.title} marked complete at provider`)}
+                onClick={() => void actions.report(itemUpdate(item, "provider_complete"), `you reported ${item.title} finished at the provider`)}
               >
                 {PROVIDER_COMPLETE_CONFIRM.confirm}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+        </div>
       )}
       {canUndoProviderComplete(item) && (
         <button
           type="button"
           className={buttonClass.outline}
           disabled={saving}
-          onClick={() => void actions.report(itemUpdate(item, "in_progress"), `${item.title} moved back to in progress`)}
+          onClick={() => void actions.report(itemUpdate(item, "in_progress"), `you moved ${item.title} back to started`)}
           data-testid="button-undo-provider-complete"
         >
-          Undo: back to in progress
+          Undo: not finished after all
           <span className="sr-only"> for {item.title}</span>
         </button>
       )}
@@ -149,6 +152,9 @@ export function ItemCard({
   defaultOpen?: boolean;
 }) {
   const [open, setOpen] = useState(defaultOpen);
+  useEffect(() => {
+    if (defaultOpen) setOpen(true);
+  }, [defaultOpen]);
   const panelId = useId();
   const phrase = taskProgressPhrase(item);
   const dates = itemDateLabel(item);
@@ -229,7 +235,7 @@ export function ItemCard({
               {item.studentNote}
             </p>
           )}
-          <TaskList item={item} />
+          <TaskList item={item} collapseDone />
           <ItemActions item={item} />
         </div>
       </div>

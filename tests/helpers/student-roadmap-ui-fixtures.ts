@@ -124,11 +124,12 @@ const FOUNDATION: StudentFoundationView = {
     { sourceId: "src2", title: "Certificate of completion", sourceType: "certificate", status: "received", creditRecordCount: 1 },
   ],
   ladder: {
-    reported: "78.00",
+    // reported = verified + provisional; verified = applied + surplus. Credentials below account for all of it.
+    reported: "69.00",
     provisional: "9.00",
-    verified: "69.00",
-    applied: "63.00",
-    surplus: "6.00",
+    verified: "60.00",
+    applied: "57.00",
+    surplus: "3.00",
     planned: "27.00",
     required: "120.00",
   },
@@ -287,6 +288,6 @@ export const COMPLETED: StudentRoadmapView = (() => {
     milestones: [{ key: "ms-grad", title: "Graduation", kind: "graduation", targetDate: "2027-12-11", objectiveKey: "bba", reached: true, remainingItems: 0 }],
     counts: counts(done),
     today: { focusItemKeys: [], headline: "Your roadmap is complete", detail: "Every item on your roadmap is officially accepted. Congratulations.", nextMilestoneKey: null },
-    foundation: { ...FOUNDATION, ladder: { ...FOUNDATION.ladder, planned: "0.00", applied: "120.00", surplus: "6.00", verified: "126.00" } },
+    foundation: { ...FOUNDATION, ladder: { ...FOUNDATION.ladder, reported: "123.00", provisional: "0.00", planned: "0.00", applied: "120.00", surplus: "3.00", verified: "123.00" } },
   };
 })();

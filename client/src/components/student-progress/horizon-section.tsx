@@ -89,18 +89,31 @@ export function HorizonSection({ view }: { view: StudentRoadmapView }) {
   );
 }
 
-/** Flight Deck: just the next milestone. */
+/** Flight Deck: the next few milestones. */
 export function HorizonSummary({ view }: { view: StudentRoadmapView }) {
   const next = nextMilestone(view);
   if (!next) return null;
-  const date = formatShortDate(next.targetDate);
+  const upcoming = horizonMilestones(view).filter((m) => !m.reached).slice(0, 3);
   return (
     <section aria-labelledby="horizon-summary-title" className={cardClass} data-testid="horizon-summary">
       <p className="text-xs font-semibold uppercase tracking-[0.14em] text-student-gold-ink">The horizon</p>
-      <h2 id="horizon-summary-title" className="font-serif text-xl text-student-ink">{next.title}</h2>
-      <p className="mt-1 text-sm text-student-muted">
-        {[milestoneKindLabel(next.kind), date ? `Target ${date}` : "Date to be set", milestoneStatusLine(next)].join(" · ")}
-      </p>
+      <h2 id="horizon-summary-title" className="font-serif text-xl text-student-ink">What is next</h2>
+      <ol className="mt-3 space-y-3">
+        {upcoming.map((m) => (
+          <li key={m.key} className="flex gap-3" data-testid="horizon-milestone">
+            <MilestoneMarker m={m} />
+            <div className="min-w-0">
+              <p className="flex flex-wrap items-center gap-2 text-sm font-semibold text-student-ink">
+                {m.title}
+                {m.key === next.key && <Pill tone="gold">Next</Pill>}
+              </p>
+              <p className="text-sm text-student-muted">
+                {[milestoneKindLabel(m.kind), formatShortDate(m.targetDate) ? `Target ${formatShortDate(m.targetDate)}` : "Date to be set", milestoneStatusLine(m)].join(" · ")}
+              </p>
+            </div>
+          </li>
+        ))}
+      </ol>
       <Link href="/roadmap#section-horizon" className={`${buttonClass.link} mt-2`} data-testid="link-horizon">
         See what is ahead <ArrowRight className="h-4 w-4" aria-hidden="true" />
       </Link>

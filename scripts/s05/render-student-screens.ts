@@ -165,9 +165,9 @@ async function main() {
   try {
     const scenarios: { file: string; route: string; o: Opts; sel: string; open?: boolean; axe?: boolean }[] = [
       { file: "01-flight-deck-1440-light.png", route: "/flight-deck", o: { theme: "light", width: 1440, height: 900 }, sel: '[data-testid="flight-deck"]', axe: true },
-      { file: "02-flight-deck-390-light.png", route: "/flight-deck", o: { theme: "light", width: 390, height: 844 }, sel: '[data-testid="flight-deck"]' },
+      { file: "02-flight-deck-390-light.png", route: "/flight-deck", o: { theme: "light", width: 390, height: 844 }, sel: '[data-testid="flight-deck"]', axe: true },
       { file: "03-flight-deck-1440-dark.png", route: "/flight-deck", o: { theme: "dark", width: 1440, height: 900 }, sel: '[data-testid="flight-deck"]', axe: true },
-      { file: "04-flight-deck-390-dark.png", route: "/flight-deck", o: { theme: "dark", width: 390, height: 844 }, sel: '[data-testid="flight-deck"]' },
+      { file: "04-flight-deck-390-dark.png", route: "/flight-deck", o: { theme: "dark", width: 390, height: 844 }, sel: '[data-testid="flight-deck"]', axe: true },
       { file: "05-roadmap-1440-light.png", route: "/roadmap", o: { theme: "light", width: 1440, height: 900 }, sel: '[data-testid="roadmap-page"]', open: true, axe: true },
       { file: "06-roadmap-390-light.png", route: "/roadmap", o: { theme: "light", width: 390, height: 844 }, sel: '[data-testid="roadmap-page"]', open: true, axe: true },
       { file: "07-roadmap-1440-dark.png", route: "/roadmap", o: { theme: "dark", width: 1440, height: 900 }, sel: '[data-testid="roadmap-page"]', open: true, axe: true },
@@ -185,21 +185,68 @@ async function main() {
       await ctx.close();
     }
 
-    // Mobile interaction: open an item, tick a challenge, see the saved confirmation and updated counts.
+    // Mobile interaction: jump to the current item from the "Now" strip, report one task, see the saved confirmation.
     {
       const { page, ctx } = await newPage(browser, { theme: "light", width: 390, height: 844 });
       await page.goto(BASE + "/roadmap");
       await settle(page, '[data-testid="roadmap-page"]');
-      const card = page.locator('article[data-item-key="bba-mkt300"]').first();
-      await card.scrollIntoViewIfNeeded();
-      await card.locator('[data-testid="item-toggle"]').click();
-      await card.locator('[data-testid="task-check-challenge-7"]').click();
+      const jump = page.locator('[data-testid="now-jump"]');
+      if (await jump.count()) {
+        await jump.click();
+        await page.waitForTimeout(900);
+      }
+      const card = page.locator('article[data-item-key]:has([data-testid="task-row"]:visible)').first();
+      await card.waitFor({ timeout: 10_000 });
+      const box = card.locator('input[type="checkbox"]:not(:checked):visible').first();
+      if (await box.count()) await box.click();
+      else await card.locator('input[type="radio"]:visible').nth(1).click({ force: true });
       await page.waitForTimeout(700);
       await card.scrollIntoViewIfNeeded();
       await page.screenshot({ path: path.join(OUT, "11-roadmap-390-task-interaction.png") });
       console.log("wrote 11-roadmap-390-task-interaction.png");
+      await runAxe(page, "11-roadmap-390-task-interaction.png", axeResults);
       await ctx.close();
     }
+
+    // Layout audit: nothing may spill out of its card or the viewport at any width.
+    const audit: any[] = [];
+    for (const width of [1440, 1280, 1024, 768, 390]) {
+      for (const route of ["/flight-deck", "/roadmap"]) {
+        const { page, ctx } = await newPage(browser, { theme: "light", width, height: 900 });
+        await page.goto(BASE + route);
+        await settle(page, route === "/roadmap" ? '[data-testid="roadmap-page"]' : '[data-testid="flight-deck"]');
+        // Expand everything so hidden panels are measured too.
+        for (const sel of ['[data-testid="item-toggle"]', '[data-testid="phase-toggle"]', '[data-testid="done-tasks"] button']) {
+          const loc = page.locator(sel);
+          const n = await loc.count();
+          for (let i = 0; i < n; i++) {
+            const el = loc.nth(i);
+            if ((await el.getAttribute("aria-expanded")) === "false") await el.click({ force: true }).catch(() => {});
+          }
+        }
+        await page.waitForTimeout(300);
+        const res = await page.evaluate(() => {
+          const out: string[] = [];
+          const doc = document.documentElement;
+          const main = document.querySelector("main") as HTMLElement;
+          if (main.scrollWidth > main.clientWidth + 1) out.push(`main scrolls horizontally: ${main.scrollWidth} > ${main.clientWidth}`);
+          if (doc.scrollWidth > doc.clientWidth + 1) out.push(`page scrolls horizontally`);
+          main.querySelectorAll("article, [data-testid='focus-item'], section").forEach((card) => {
+            const cr = (card as HTMLElement).getBoundingClientRect();
+            card.querySelectorAll("*").forEach((el) => {
+              const r = (el as HTMLElement).getBoundingClientRect();
+              if (r.width === 0 || (el as HTMLElement).closest("[hidden]")) return;
+              if (r.right > cr.right + 1 && out.length < 8) out.push(`${(el as HTMLElement).tagName}.${String((el as HTMLElement).className).slice(0, 40)} spills ${Math.round(r.right - cr.right)}px`);
+            });
+          });
+          return out;
+        });
+        audit.push({ width, route, problems: res });
+        console.log("layout", width, route, res.length ? res.join(" | ") : "ok");
+        await ctx.close();
+      }
+    }
+    fs.writeFileSync(path.join(OUT, "layout-audit.json"), JSON.stringify(audit, null, 2));
     fs.writeFileSync(path.join(OUT, "axe-summary.json"), JSON.stringify({ generatedAt: new Date().toISOString(), fixture: process.env.S05_ROADMAP_FIXTURE ?? "built-in rich fixture", results: axeResults }, null, 2));
   } finally {
     await browser.close();

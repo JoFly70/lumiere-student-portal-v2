@@ -9,7 +9,7 @@ import { BRAND_NAME, ROADMAP_SECTIONS, isPublished } from "@/pages/student-roadm
 import { formatAsOf } from "@/pages/student-progress-presentation";
 import { StudentSurface } from "./student-ui";
 import { ProgressSummary } from "./progress-summary";
-import { TodaySection } from "./today-section";
+import { NowStrip, TodaySection } from "./today-section";
 import { RoadmapJourney } from "./roadmap-journey";
 import { FoundationSection, FoundationSummary } from "./foundation-section";
 import { HorizonSection, HorizonSummary } from "./horizon-section";
@@ -56,18 +56,18 @@ export function SectionNav({ sections }: { sections: readonly { id: string; labe
   return (
     <nav
       aria-label="Roadmap sections"
-      className="[contain:inline-size] sticky top-2 z-30 rounded-full border border-student-line bg-student-card/95 px-2 shadow-sm backdrop-blur"
+      className="[contain:inline-size] sticky top-0 z-30 -mx-4 border-b border-student-line bg-student-bg px-4 shadow-sm sm:-mx-6 sm:px-6 md:-mx-8 md:px-8"
       data-testid="section-nav"
     >
-      <ul className="flex gap-1 overflow-x-auto py-1.5">
+      <ul className="mx-auto flex max-w-6xl gap-1 overflow-x-auto py-1.5">
         {sections.map((s) => (
           <li key={s.id} className="shrink-0">
             <a
               href={`#${s.id}`}
               aria-current={active === s.id ? "location" : undefined}
               className={cn(
-                "inline-flex min-h-[44px] items-center rounded-full px-3 text-sm font-medium",
-                active === s.id ? "bg-student-gold-soft text-student-gold-ink ring-1 ring-student-gold" : "text-student-muted hover:text-student-ink",
+                "inline-flex min-h-[44px] items-center gap-1.5 rounded-full px-3 text-sm font-medium",
+                active === s.id ? "border-2 border-student-gold-ink bg-student-gold-soft text-student-gold-ink" : "border-2 border-transparent text-student-muted hover:text-student-ink",
               )}
             >
               {s.label}
@@ -94,26 +94,35 @@ export function RoadmapPageView({
 
   if (!isPublished(view)) {
     return (
-      <StudentSurface testId="roadmap-page" className="">
-        <div className="mx-auto w-full max-w-6xl space-y-8" data-state="NOT_PUBLISHED">
-          <PageHeader eyebrow={BRAND_NAME} title="Your roadmap" />
+      <StudentSurface testId="roadmap-page">
+        <div data-state="NOT_PUBLISHED">
+          <div className="mx-auto w-full max-w-6xl pb-6">
+            <PageHeader eyebrow={BRAND_NAME} title="Your roadmap" />
+          </div>
           <SectionNav sections={[ROADMAP_SECTIONS[0], ROADMAP_SECTIONS[2]]} />
-          <RoadmapNotPublished view={view} requirementDetails={requirementDetails} />
+          <div className="mx-auto mt-6 w-full max-w-6xl">
+            <RoadmapNotPublished view={view} requirementDetails={requirementDetails} />
+          </div>
         </div>
       </StudentSurface>
     );
   }
 
+  const firstFocus = view.today.focusItemKeys[0] ?? null;
   return (
     <StudentSurface testId="roadmap-page">
-      <div className="mx-auto w-full max-w-6xl space-y-8" data-state="PUBLISHED">
-        <PageHeader eyebrow={BRAND_NAME} title={view.plan!.title} subtitle={planSubtitle(view)} />
+      <div data-state="PUBLISHED">
+        <div className="mx-auto w-full max-w-6xl pb-6">
+          <PageHeader eyebrow={BRAND_NAME} title={view.plan!.title} subtitle={planSubtitle(view)} />
+        </div>
         <SectionNav sections={ROADMAP_SECTIONS} />
-        <ProgressSummary view={view} />
-        <TodaySection view={view} linkItems={false} />
-        <RoadmapJourney view={view} targetItemKey={targetItemKey} />
-        <FoundationSection foundation={view.foundation} requirementDetails={requirementDetails} />
-        <HorizonSection view={view} />
+        <div className="mx-auto mt-6 w-full max-w-6xl space-y-8">
+          <NowStrip view={view} onJump={(key) => setTargetItemKey(key)} />
+          <ProgressSummary view={view} variant="roadmap" />
+          <RoadmapJourney view={view} targetItemKey={targetItemKey} defaultOpenKey={firstFocus} />
+          <FoundationSection foundation={view.foundation} requirementDetails={requirementDetails} />
+          <HorizonSection view={view} />
+        </div>
       </div>
     </StudentSurface>
   );

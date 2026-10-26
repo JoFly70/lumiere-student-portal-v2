@@ -21,6 +21,12 @@ import {
   laneOptions,
   ladderRungs,
   ladderScale,
+  ladderTotalsSentence,
+  credentialStandingLabel,
+  taskSavedLabel,
+  phaseSummaryLine,
+  TASK_STATUS_OPTIONS,
+  nowTarget,
   barFraction,
   nextMilestone,
   nextTasks,
@@ -110,7 +116,7 @@ describe("S05 roadmap presentation: counts", () => {
     const segs = countSegments(V.counts);
     expect(segs.map((s) => s.label)).toEqual(["Officially accepted", "Complete at provider", "In progress", "Not started"]);
     expect(countsSentence(V.counts)).not.toMatch(/%/);
-    expect(countsSentence(V.counts)).toContain("items on your roadmap");
+    expect(countsSentence(V.counts)).toContain("Across your whole plan, 9 items");
   });
 });
 
@@ -151,7 +157,7 @@ describe("S05 roadmap presentation: credit ladder", () => {
   it("lists reported -> provisional -> verified -> applied from the ladder only", () => {
     const rungs = ladderRungs(V.foundation.ladder);
     expect(rungs.map((r) => [r.key, r.value])).toEqual([
-      ["reported", "78.00"], ["provisional", "9.00"], ["verified", "69.00"], ["applied", "63.00"],
+      ["reported", "69.00"], ["provisional", "9.00"], ["verified", "60.00"], ["applied", "57.00"],
     ]);
   });
   it("keeps applied null while under review", () => {
@@ -162,6 +168,7 @@ describe("S05 roadmap presentation: credit ladder", () => {
   it("sizes bars against one scale and explains the terms in plain language", () => {
     const scale = ladderScale(V.foundation.ladder);
     expect(scale).toBe(120);
+    expect(ladderTotalsSentence(V.foundation.ladder)).toBe("69 credits reported in total: 60 of them verified, 9 waiting for Lumière to verify.");
     expect(barFraction("60.00", scale)).toBe(0.5);
     expect(barFraction(null, scale)).toBe(0);
     expect(SURPLUS_EXPLANATION).toMatch(/don't move you closer to graduation/);
@@ -196,5 +203,28 @@ describe("S05 progress error handling", () => {
     expect(isRoadmapMissingRecord(new RoadmapApiError(404, "ROADMAP_STUDENT_NOT_FOUND", "no"))).toBe(true);
     expect(isRoadmapMissingRecord(new RoadmapApiError(404, "ROADMAP_NOT_FOUND", "no"))).toBe(false);
     expect(isRoadmapMissingRecord(new Error("404"))).toBe(false);
+  });
+});
+
+describe("S05 student wording: the student never grades", () => {
+  it("labels the segmented statuses without 'Graded' and the stage track 'All tasks done'", () => {
+    expect(TASK_STATUS_OPTIONS.map((o) => o.label)).toEqual(["Not started", "Started", "Submitted", "Done"]);
+    expect(TASK_STATUS_OPTIONS.map((o) => o.label).join(" ")).not.toMatch(/Graded/);
+    expect(STAGES.find((s) => s.stage === "graded")!.label).toBe("All tasks done");
+  });
+  it("words save confirmations as what the student reported", () => {
+    const i = item("bba-mkt300");
+    expect(taskSavedLabel(i.tasks[5], "graded")).toBe("you reported Challenge 6 done");
+    expect(taskSavedLabel(i.tasks[5], "in_progress")).toBe("you reported Challenge 6 started");
+  });
+  it("scopes phase counts and uses one word for preliminary credit", () => {
+    expect(phaseSummaryLine(V.phases[1])).toMatch(/^In this phase:/);
+    expect(credentialStandingLabel("PENDING_VERIFICATION").label).toBe("Waiting for verification");
+    expect(credentialStandingLabel("NEEDS_REVIEW").label).toBe("Waiting for verification");
+    expect(credentialStandingLabel("VERIFIED_APPLIED").label).toBe("Verified");
+  });
+  it("jumps to the first focus item from the Now strip", () => {
+    expect(nowTarget(V)!.key).toBe("bba-mkt300");
+    expect(nowTarget(NOT_PUBLISHED)).toBeNull();
   });
 });

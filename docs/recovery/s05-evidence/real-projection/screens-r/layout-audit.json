@@ -1,0 +1,52 @@
+[
+  {
+    "width": 1440,
+    "route": "/flight-deck",
+    "problems": []
+  },
+  {
+    "width": 1440,
+    "route": "/roadmap",
+    "problems": []
+  },
+  {
+    "width": 1280,
+    "route": "/flight-deck",
+    "problems": []
+  },
+  {
+    "width": 1280,
+    "route": "/roadmap",
+    "problems": []
+  },
+  {
+    "width": 1024,
+    "route": "/flight-deck",
+    "problems": []
+  },
+  {
+    "width": 1024,
+    "route": "/roadmap",
+    "problems": []
+  },
+  {
+    "width": 768,
+    "route": "/flight-deck",
+    "problems": []
+  },
+  {
+    "width": 768,
+    "route": "/roadmap",
+    "problems": []
+  },
+  {
+    "width": 390,
+    "route": "/flight-deck",
+    "problems": []
+  },
+  {
+    "width": 390,
+    "route": "/roadmap",
+    "problems": []
+  }
+]

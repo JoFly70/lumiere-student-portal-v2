@@ -378,6 +378,7 @@
   --s-ink: 30 10% 13%;
   --s-muted: 30 6% 33%;
   --s-gold: 38 62% 40%;
+  --s-gold-fill: 38 62% 40%;
   --s-gold-ink: 33 70% 26%;
   --s-gold-soft: 42 62% 90%;
   --s-line: 40 20% 86%;
@@ -388,12 +389,15 @@
   --s-seal-ink: 43 60% 80%;
   background-color: hsl(var(--s-bg));
   color: hsl(var(--s-ink));
+  color-scheme: light;
 }
 .dark .student-surface {
+  color-scheme: dark;
   --s-bg: 30 8% 8%;
   --s-card: 30 7% 11%;
   --s-ink: 43 25% 92%;
   --s-muted: 40 10% 70%;
+  --s-gold-fill: 40 60% 38%;
   --s-gold: 41 60% 58%;
   --s-gold-ink: 41 66% 72%;
   --s-gold-soft: 38 25% 17%;
@@ -417,4 +421,11 @@
 @keyframes student-pulse {
   0%, 100% { opacity: 0.35; transform: scale(1); }
   50% { opacity: 0.1; transform: scale(1.5); }
+}
+
+/* Container-query layout for task controls: never wider than their card. */
+.s-cq { container-type: inline-size; min-width: 0; }
+.s-seg { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.25rem; min-width: 0; }
+@container (min-width: 26rem) {
+  .s-seg { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }

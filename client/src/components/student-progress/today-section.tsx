@@ -3,7 +3,7 @@ import React from "react";
 import { Link } from "wouter";
 import { ArrowRight } from "lucide-react";
 import type { StudentRoadmapView } from "@shared/student-roadmap-contract";
-import { focusItems, nextTasks, stagePresentation, taskProgressPhrase } from "@/pages/student-roadmap-presentation";
+import { focusItems, nextTasks, nowTarget, stagePresentation, taskProgressPhrase } from "@/pages/student-roadmap-presentation";
 import { SectionHeading, buttonClass, cardClass } from "./student-ui";
 import { TaskList } from "./task-controls";
 import { TaskRing } from "./journey-graphics";
@@ -11,7 +11,7 @@ import { TaskRing } from "./journey-graphics";
 export function TodaySection({ view, linkItems = true }: { view: StudentRoadmapView; linkItems?: boolean }) {
   const items = focusItems(view);
   return (
-    <section aria-labelledby="today-title" id="section-today" className="scroll-mt-28 space-y-4" data-testid="today-section">
+    <section aria-labelledby="today-title" id="section-today" className="scroll-mt-20 space-y-4" data-testid="today-section">
       <SectionHeading id="today-title" eyebrow="Today" title={view.today.headline} description={view.today.detail} />
       {items.length > 0 && (
         <ul className="grid gap-4 lg:grid-cols-3" aria-label="What to work on now">
@@ -53,6 +53,32 @@ export function TodaySection({ view, linkItems = true }: { view: StudentRoadmapV
           })}
         </ul>
       )}
+    </section>
+  );
+}
+
+/** Roadmap page: ONE compact "Now" strip; the task lists live on the Flight Deck. */
+export function NowStrip({ view, onJump }: { view: StudentRoadmapView; onJump?: (itemKey: string) => void }) {
+  const target = nowTarget(view);
+  return (
+    <section
+      aria-labelledby="now-title"
+      id="section-today"
+      className="scroll-mt-20 rounded-2xl border border-student-line bg-student-gold-soft p-4 sm:p-5"
+      data-testid="now-strip"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0 space-y-0.5">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-student-gold-ink">Now</p>
+          <h2 id="now-title" className="font-serif text-lg leading-snug text-student-ink sm:text-xl">{view.today.headline}</h2>
+          <p className="text-sm text-student-muted">{view.today.detail}</p>
+        </div>
+        {target && (
+          <button type="button" onClick={() => onJump?.(target.key)} className={buttonClass.outline} data-testid="now-jump">
+            Go to {target.code ?? target.title} <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          </button>
+        )}
+      </div>
     </section>
   );
 }

@@ -52,7 +52,7 @@ async function fetchMyProfile(accessToken: string | null): Promise<Student | nul
 const studentMenuItems = [
   { title: "Flight Deck", url: "/flight-deck", icon: Gauge },
   { title: "Student Profile", url: "/profile", icon: User },
-  { title: "Degree Roadmap", url: "/roadmap", icon: BookOpen },
+  { title: "Your Roadmap", url: "/roadmap", icon: BookOpen },
   { title: "Documents", url: "/documents", icon: FileText },
   { title: "Billing", url: "/billing", icon: CreditCard },
   { title: "Support", url: "/support", icon: HelpCircle },
@@ -100,7 +100,7 @@ export function AppSidebar() {
   return (
     <Sidebar>
       <SidebarHeader className="p-6">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3" role="region" aria-label="Lumière Higher-Ed Pathways">
           <img
             src={lumiereLogo}
             alt="Lumière Higher-Ed Pathways"
@@ -115,6 +115,7 @@ export function AppSidebar() {
         </div>
 
         <div className="mt-3 border-t border-sidebar-border"></div>
+        <div role="region" aria-label="Your account">
         <div
           className="mt-2 px-3 py-2 flex items-center gap-3 rounded-xl hover-elevate transition-colors"
           aria-label="User profile"
@@ -142,8 +143,10 @@ export function AppSidebar() {
           <LogOut className="h-4 w-4" />
           <span>Log out</span>
         </button>
+        </div>
       </SidebarHeader>
       <SidebarContent>
+        <nav aria-label="Main">
         <SidebarGroup>
           <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
@@ -165,8 +168,9 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+        </nav>
       </SidebarContent>
-      <SidebarFooter className="p-6">
+      <SidebarFooter className="p-6" role="contentinfo">
         <p className="text-xs text-muted-foreground text-center">© 2026 Lumière Higher-Ed Pathways</p>
       </SidebarFooter>
     </Sidebar>

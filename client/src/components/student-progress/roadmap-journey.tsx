@@ -3,7 +3,7 @@
  * graduation. Phases are collapsible (current one open); items are cards.
  */
 import React, { useEffect, useId, useState } from "react";
-import { ChevronDown, GraduationCap } from "lucide-react";
+import { Check, ChevronDown, GraduationCap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { StudentRoadmapPhaseView, StudentRoadmapView } from "@shared/student-roadmap-contract";
 import {
@@ -32,6 +32,7 @@ function PhaseBlock({
   lane,
   openOverride,
   targetItemKey,
+  defaultOpenKey,
   last,
 }: {
   phase: StudentRoadmapPhaseView;
@@ -39,13 +40,17 @@ function PhaseBlock({
   lane: string;
   openOverride: boolean;
   targetItemKey: string | null;
+  defaultOpenKey: string | null;
   last: boolean;
 }) {
   const [open, setOpen] = useState(phase.state === "current");
   const panelId = useId();
   const { main, alternatives } = phaseItems(phase, lane);
   const showLane = view.objectives.length > 1;
-  const isOpen = open || openOverride;
+  useEffect(() => {
+    if (openOverride) setOpen(true);
+  }, [openOverride]);
+  const isOpen = open;
   const dates = dateRangeLabel(phase.startDate, phase.endDate);
   return (
     <li className="relative pl-12 sm:pl-14" data-testid="phase" data-phase-state={phase.state} data-phase-key={phase.key}>
@@ -94,7 +99,7 @@ function PhaseBlock({
               item={item}
               objective={objectiveFor(view, item.objectiveKey)}
               showLane={showLane}
-              defaultOpen={targetItemKey === item.key}
+              defaultOpen={targetItemKey === item.key || (!targetItemKey && defaultOpenKey === item.key)}
             />
           ))}
           </div>
@@ -114,7 +119,7 @@ function PhaseBlock({
   );
 }
 
-export function RoadmapJourney({ view, targetItemKey = null }: { view: StudentRoadmapView; targetItemKey?: string | null }) {
+export function RoadmapJourney({ view, targetItemKey = null, defaultOpenKey = null }: { view: StudentRoadmapView; targetItemKey?: string | null; defaultOpenKey?: string | null }) {
   const [lane, setLane] = useState<string>(ALL_LANES);
   const lanes = laneOptions(view);
   const phases = sortedPhases(view).filter((p) => lane === ALL_LANES || phaseItems(p, lane).main.length + phaseItems(p, lane).alternatives.length > 0);
@@ -123,7 +128,8 @@ export function RoadmapJourney({ view, targetItemKey = null }: { view: StudentRo
 
   useEffect(() => {
     if (!targetItemKey) return;
-    document.getElementById(`item-${targetItemKey}`)?.scrollIntoView({ block: "start" });
+    const t = setTimeout(() => document.getElementById(`item-${targetItemKey}`)?.scrollIntoView({ block: "start", behavior: "smooth" }), 60);
+    return () => clearTimeout(t);
   }, [targetItemKey]);
 
   const targetPhaseKey = targetItemKey
@@ -131,7 +137,7 @@ export function RoadmapJourney({ view, targetItemKey = null }: { view: StudentRo
     : null;
 
   return (
-    <section aria-labelledby="roadmap-title" id="section-roadmap" className="scroll-mt-28 space-y-5" data-testid="roadmap-journey">
+    <section aria-labelledby="roadmap-title" id="section-roadmap" className="scroll-mt-20 space-y-5" data-testid="roadmap-journey">
       <SectionHeading
         id="roadmap-title"
         eyebrow="Your roadmap"
@@ -149,12 +155,13 @@ export function RoadmapJourney({ view, targetItemKey = null }: { view: StudentRo
                 aria-pressed={lane === l.key}
                 onClick={() => setLane(l.key)}
                 className={cn(
-                  "min-h-[44px] rounded-full border px-4 text-sm font-medium",
+                  "inline-flex min-h-[44px] items-center gap-1.5 rounded-full border px-4 text-sm font-medium",
                   lane === l.key
-                    ? "border-student-gold-ink bg-student-gold-soft text-student-gold-ink"
+                    ? "border-2 border-student-gold-ink bg-student-gold-soft font-semibold text-student-gold-ink"
                     : "border-student-line-strong bg-student-card text-student-muted hover:bg-student-gold-soft",
                 )}
               >
+                {lane === l.key && <Check className="h-3.5 w-3.5" strokeWidth={3} aria-hidden="true" />}
                 {l.label}
                 {l.kindLabel && <span className="ml-1.5 text-xs font-normal">({l.kindLabel})</span>}
               </button>
@@ -191,6 +198,7 @@ export function RoadmapJourney({ view, targetItemKey = null }: { view: StudentRo
             lane={lane}
             openOverride={targetPhaseKey === p.key}
             targetItemKey={targetItemKey}
+            defaultOpenKey={defaultOpenKey}
             last={false}
           />
         ))}
