@@ -4,6 +4,7 @@ import { HelpCircle } from "lucide-react";
 import type { StudentGraduateProgramView } from "@shared/graduate-program-contract";
 import { cn } from "@/lib/utils";
 import { Pill, SectionHeading, cardClass } from "@/components/student-progress/student-ui";
+import { FinishedSection } from "./graduate-ui";
 import { SECTION_IDS, conditionalLabel, creditAmountLabel, creditIsUnknown, isUnconfirmedBasis, studentBasis, visibleCreditLayers } from "./graduate-presentation";
 
 type Program = StudentGraduateProgramView;
@@ -11,12 +12,10 @@ type Program = StudentGraduateProgramView;
 const norm = (v: string) => v.trim().replace(/[.\s]+$/, "").toLowerCase();
 const sameText = (a: string, b: string) => norm(a) === norm(b);
 
-export function AssessmentSection({ assessment }: { assessment: Program["assessment"] }) {
+export function AssessmentSection({ assessment, summary }: { assessment: Program["assessment"]; summary?: string | null }) {
   const unconfirmed = isUnconfirmedBasis(assessment.basis);
-  return (
-    <section aria-labelledby="graduate-assessment-title" id={SECTION_IDS.assessment} className="scroll-mt-24 space-y-4" data-testid="graduate-assessment">
-      <SectionHeading id="graduate-assessment-title" title="How you are assessed" description="This is the rule for your own cohort only." />
-      <div className={cn(cardClass, "space-y-3")}>
+  const body = (
+    <div className={cn(cardClass, "space-y-3")}>
         <div className="flex flex-wrap items-center gap-2">
           <h3 className="font-serif text-lg text-student-ink" data-testid="assessment-mode">{assessment.mode}</h3>
           {unconfirmed && <Pill tone="attn" icon={<HelpCircle className="h-3 w-3" aria-hidden="true" />} data-testid="assessment-unconfirmed">Not confirmed by the university</Pill>}
@@ -35,6 +34,18 @@ export function AssessmentSection({ assessment }: { assessment: Program["assessm
           </div>
         </dl>
       </div>
+  );
+  if (summary) {
+    return (
+      <FinishedSection id="graduate-assessment-title" sectionId={SECTION_IDS.assessment} title="How you are assessed" summary={summary} testId="graduate-assessment">
+        {body}
+      </FinishedSection>
+    );
+  }
+  return (
+    <section aria-labelledby="graduate-assessment-title" id={SECTION_IDS.assessment} className="scroll-mt-24 space-y-4" data-testid="graduate-assessment">
+      <SectionHeading id="graduate-assessment-title" title="How you are assessed" description="This is the rule for your own cohort only." />
+      {body}
     </section>
   );
 }

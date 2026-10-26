@@ -16,6 +16,8 @@ type Graduation = NonNullable<StudentGraduateProgramView["graduation"]>;
 
 function MilestoneItem({ m, last }: { m: MilestoneView; last: boolean }) {
   const d = milestoneDisplay(m);
+  // A done, officially confirmed step gets ONE chip, not "Confirmed" plus "Confirmed from university document".
+  const singleChip = m.state === "done" && m.official;
   const date = formatDate(m.date);
   return (
     <li className="relative flex gap-3 pb-5 last:pb-0" data-testid="milestone" data-key={m.key} data-state={m.state} data-official={m.official}>
@@ -28,9 +30,13 @@ function MilestoneItem({ m, last }: { m: MilestoneView; last: boolean }) {
       <div className="min-w-0 flex-1 space-y-1">
         <p className="font-medium text-student-ink">{m.label}</p>
         <div className="flex flex-wrap items-center gap-2">
-          <StatePill status={d.status} label={d.label} glyph={d.glyph} />
+          {!singleChip && <StatePill status={d.status} label={d.label} glyph={d.glyph} />}
           {m.official && (
-            <Pill tone="gold" icon={<ShieldCheck className="h-3 w-3" aria-hidden="true" />} data-testid="official-marker">Confirmed from university document</Pill>
+            singleChip ? (
+              <StatusPill status="official" label="Confirmed from university document" data-testid="official-marker" />
+            ) : (
+              <Pill tone="gold" icon={<ShieldCheck className="h-3 w-3" aria-hidden="true" />} data-testid="official-marker">Confirmed from university document</Pill>
+            )
           )}
           {date && (
             <span className="text-xs text-student-muted">
@@ -74,7 +80,7 @@ export function WorkVsDegreeCallout({ graduation }: { graduation: Graduation }) 
           {graduation.awardConferred ? (
             <StatusPill status="official" label={conferred ? `Degree conferred on ${conferred}` : "Degree conferred"} />
           ) : (
-            <StatusPill status="notstarted" label="Degree not yet conferred" />
+            <StatePill status="notstarted" label="Degree not yet conferred" glyph="later" />
           )}
         </div>
       </div>

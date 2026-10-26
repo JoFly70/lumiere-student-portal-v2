@@ -8,7 +8,7 @@ import type { ModuleView, StudentGraduateProgramView, StudentProgress } from "@s
 import { cn } from "@/lib/utils";
 import { Disclosure, Pill, SectionHeading, cardClass } from "@/components/student-progress/student-ui";
 import { useGraduateActions } from "./graduate-actions";
-import { StatePill } from "./graduate-ui";
+import { FinishedSection, StatePill } from "./graduate-ui";
 import { PROGRESS_OPTIONS, SECTION_IDS, progressDisplay, resultDisplay } from "./graduate-presentation";
 
 type Program = StudentGraduateProgramView;
@@ -160,9 +160,22 @@ function Group({ title, note, programId, modules, collapsePassed = false }: { ti
   );
 }
 
-export function ModulesSection({ program }: { program: Program }) {
+export function ModulesSection({ program, summary }: { program: Program; summary?: string | null }) {
   const eneb = program.modules.filter((m) => m.authority === "eneb");
   const uni = program.modules.filter((m) => m.authority === "unimarconi");
+  const body = (
+    <div className="space-y-4">
+      <Group title="ENEB subjects" note="Assessed by ENEB. These count toward your ENEB qualification." programId={program.programId} modules={eneb} collapsePassed />
+      <Group title="University subjects" note="Assessed by the university. Only the university's results count toward the university degree." programId={program.programId} modules={uni} />
+    </div>
+  );
+  if (summary && program.modules.length > 0) {
+    return (
+      <FinishedSection id="graduate-modules-title" sectionId={SECTION_IDS.modules} title="My modules" summary={summary} testId="graduate-modules">
+        {body}
+      </FinishedSection>
+    );
+  }
   return (
     <section aria-labelledby="graduate-modules-title" id={SECTION_IDS.modules} className="scroll-mt-24 space-y-4" data-testid="graduate-modules">
       <SectionHeading
@@ -170,14 +183,7 @@ export function ModulesSection({ program }: { program: Program }) {
         title="My modules"
         description="You can mark your own progress. Results and grades are recorded by Lumière from official documents and cannot be edited here."
       />
-      {program.modules.length === 0 ? (
-        <p className={cn(cardClass, "text-sm text-student-muted")}>No modules are listed for this programme yet.</p>
-      ) : (
-        <div className="space-y-4">
-          <Group title="ENEB subjects" note="Assessed by ENEB. These count toward your ENEB qualification." programId={program.programId} modules={eneb} collapsePassed />
-          <Group title="University subjects" note="Assessed by the university. Only the university's results count toward the university degree." programId={program.programId} modules={uni} />
-        </div>
-      )}
+      {program.modules.length === 0 ? <p className={cn(cardClass, "text-sm text-student-muted")}>No modules are listed for this programme yet.</p> : body}
     </section>
   );
 }

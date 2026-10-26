@@ -5,6 +5,7 @@ import type { StudentGraduateProgramView } from "@shared/graduate-program-contra
 import { cn } from "@/lib/utils";
 import { Pill, SectionHeading, StatusPill, buttonClass, cardClass } from "@/components/student-progress/student-ui";
 import { useGraduateActions } from "./graduate-actions";
+import { FinishedSection } from "./graduate-ui";
 import { SECTION_IDS, TOPIC_APPROVAL_LABEL, studentBasis, formatCount, formatDate, thesisOutcomeDisplay, thesisStrip, validateTopic } from "./graduate-presentation";
 
 type Thesis = NonNullable<StudentGraduateProgramView["thesis"]>;
@@ -140,15 +141,13 @@ export function ThesisStatusStrip({ thesis }: { thesis: Thesis }) {
   );
 }
 
-export function ThesisSection({ programId, thesis }: { programId: string; thesis: Thesis }) {
+export function ThesisSection({ programId, thesis, summary }: { programId: string; thesis: Thesis; summary?: string | null }) {
   const approval = TOPIC_APPROVAL_LABEL[thesis.topicApproval];
   const deadline = formatDate(thesis.deadline);
   const submitted = formatDate(thesis.submittedOn);
   const result = thesis.result ? thesisOutcomeDisplay(thesis.result.outcome) : null;
-  return (
-    <section aria-labelledby="graduate-thesis-title" id={SECTION_IDS.thesis} className="scroll-mt-24 space-y-4" data-testid="graduate-thesis">
-      <SectionHeading id="graduate-thesis-title" title="My thesis" description="The terms below are your cohort's terms, not a rule for every student." />
-      <div className={cn(cardClass, "space-y-5")}>
+  const body = (
+    <div className={cn(cardClass, "space-y-5")}>
         <ThesisStatusStrip thesis={thesis} />
 
         <div className="space-y-2">
@@ -195,7 +194,7 @@ export function ThesisSection({ programId, thesis }: { programId: string; thesis
           {thesis.gradingStatus === "not_submitted" && <p className="text-sm text-student-muted">Not submitted yet.</p>}
           {thesis.gradingStatus === "submitted" && (
             <div className="space-y-1">
-              <StatusPill status="submitted" label="Submitted, not graded yet" data-testid="thesis-submitted" />
+              <StatusPill status="progress" label="Submitted, not graded yet" data-testid="thesis-submitted" />
               {submitted && <p className="text-sm text-student-ink">Submitted on <time dateTime={thesis.submittedOn ?? undefined}>{submitted}</time>.</p>}
               <p className="text-sm font-medium text-student-ink">Submitted is not passed. Your result appears here once it is graded.</p>
             </div>
@@ -213,6 +212,18 @@ export function ThesisSection({ programId, thesis }: { programId: string; thesis
           {thesis.resubmission && <p className="text-xs leading-relaxed text-student-muted" data-testid="thesis-resubmission">{thesis.resubmission}</p>}
         </div>
       </div>
+  );
+  if (summary) {
+    return (
+      <FinishedSection id="graduate-thesis-title" sectionId={SECTION_IDS.thesis} title="My thesis" summary={summary} testId="graduate-thesis">
+        {body}
+      </FinishedSection>
+    );
+  }
+  return (
+    <section aria-labelledby="graduate-thesis-title" id={SECTION_IDS.thesis} className="scroll-mt-24 space-y-4" data-testid="graduate-thesis">
+      <SectionHeading id="graduate-thesis-title" title="My thesis" description="The terms below are your cohort's terms, not a rule for every student." />
+      {body}
     </section>
   );
 }

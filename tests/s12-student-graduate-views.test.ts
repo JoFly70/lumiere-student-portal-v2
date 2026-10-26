@@ -5,7 +5,7 @@ import { Router } from "wouter";
 import { describe, expect, it } from "vitest";
 import { EVALUATION_FRAMING, buildEvaluationView, buildStudentGraduateProgramView, type CredentialEvaluationRecord, type StudentGraduateView } from "../shared/graduate-program-contract";
 import { GraduateEmptyState, GraduateErrorState, GraduatePageView, GraduateSkeleton } from "../client/src/components/graduate/graduate-page-view";
-import { buildTrackModel, creditAmountLabel, formatDate, isUnconfirmedBasis, validateTopic, visibleCreditLayers } from "../client/src/components/graduate/graduate-presentation";
+import { buildThenList, buildTrackModel, completeActions, milestoneDisplay, creditAmountLabel, formatDate, isUnconfirmedBasis, validateTopic, visibleCreditLayers } from "../client/src/components/graduate/graduate-presentation";
 import { conditionalLabel, studentBasis, waitingHint } from "../client/src/components/graduate/graduate-presentation";
 import { JOURNEY_B_STAGES, RULE_SET_2025, journeyA, journeyB } from "./helpers/s12-graduate-fixtures";
 
@@ -427,5 +427,118 @@ describe("S12 student graduate: international recognition", () => {
     expect(i("graduate-evaluations")).toBeLessThan(i("graduate-credits"));
     const legacy = html(React.createElement(GraduatePageView, { view: { programs: [buildStudentGraduateProgramView(journeyB("complete"))] } as unknown as StudentGraduateView }));
     expect(legacy).toContain('data-testid="evaluations-empty"');
+  });
+});
+
+describe("S12 student graduate: polish round (next-step Then list, chips, collapsing)", () => {
+  const wesCaRequested = buildEvaluationView(ev({ id: "w3", evaluator: "wes_canada", destinationCountry: "CA", evaluationType: "completed_report", status: "requested", reportDate: null, conclusion: null, conclusionText: null, verificationStatus: "unverified", intendedUse: "immigration" }));
+
+  it("next step shows a Then list of upcoming items that excludes the current step", () => {
+    for (const stage of ["eligibility", "registered", "partial_recognition", "thesis_submitted", "procedure_done", "conferred"] as const) {
+      const program = buildStudentGraduateProgramView(journeyB(stage));
+      const then = buildThenList(program);
+      expect(then.length).toBeLessThanOrEqual(3);
+      for (const item of then) expect(item.label.toLowerCase()).not.toBe(program.nextStep.title.toLowerCase());
+    }
+    const early = render(journeyB("partial_recognition"));
+    const card = early.markup.slice(early.markup.indexOf('data-testid="graduate-next-step"'), early.markup.indexOf('data-testid="graduate-progress"'));
+    expect(card).toContain('data-testid="next-then"');
+    expect(count(card, 'data-testid="then-item"')).toBeGreaterThanOrEqual(2);
+    expect(text(card)).toContain("Continue Advanced Data Governance");
+    expect(text(card.slice(card.indexOf('data-testid="next-then"')))).not.toContain("Continue Advanced Data Governance");
+  });
+
+  it("complete state offers verification-letter and international-evaluation actions, no Then list", () => {
+    const { markup } = render(journeyB("complete"));
+    expect(markup).toContain('data-testid="complete-actions"');
+    expect(markup).not.toContain('data-testid="next-then"');
+    expect(markup).toContain('data-testid="complete-action-verification-letter"');
+    expect(markup).toContain('data-testid="complete-action-international-evaluation"');
+    expect(text(markup)).toContain("Ask Support for a verification letter");
+    expect(text(markup)).toContain("Ask about an international evaluation");
+    expect(completeActions(buildStudentGraduateProgramView(journeyB("registered")), 0)).toEqual([]);
+  });
+
+  it("does not repeat the Documents CTA when the next step already goes there", () => {
+    const { markup } = render(journeyB("eligibility"));
+    expect(count(markup, 'href="/documents"')).toBe(2); // next-step button + the page-end help links
+    expect(markup).not.toContain('data-testid="pending-documents-link"');
+    expect(markup).toContain('data-testid="pending-documents"');
+  });
+
+  it("Not recognized is a solid decision chip, never the dashed pending style", () => {
+    const { markup } = render(journeyB("partial_recognition"));
+    const row = markup.split('data-testid="decision-item"').slice(1).find((c) => c.includes("Marketing Management"))!;
+    const el = row.slice(row.lastIndexOf("<span", row.indexOf('data-testid="decision-item-outcome"')), row.indexOf("</span>", row.indexOf('data-testid="decision-item-outcome"')));
+    expect(text(el)).toContain("Not recognized");
+    expect(el).not.toContain("border-dashed");
+    expect(el).toContain('data-status="decision"');
+  });
+
+  it("milestone wording: Not graded yet, After your academic work, After conferral, Ordered not issued", () => {
+    const early = render(journeyB("registered"));
+    const ms = (m: string, key: string) => text(m.split('data-testid="milestone"').find((c) => c.includes(`data-key="${key}"`))!);
+    expect(ms(early.markup, "thesis")).toContain("Not graded yet");
+    expect(ms(early.markup, "conferral")).toContain("After your academic work");
+    expect(ms(early.markup, "conferral")).not.toContain("After conferral");
+    expect(ms(early.markup, "transcript")).toContain("After conferral");
+    expect(ms(early.markup, "diploma")).toContain("After conferral");
+    expect(ms(early.markup, "verification")).toContain("After conferral");
+    const conferred = render(journeyB("conferred"));
+    expect(ms(conferred.markup, "diploma")).toContain("Ordered, not issued");
+    expect(milestoneDisplay({ state: "in_progress", official: false, key: "diploma", detail: "Ordered. An order is not an issued diploma." }).label).toBe("Ordered, not issued");
+  });
+
+  it("an empty university subjects bar reads Not started, not a zero bar", () => {
+    const { markup } = render(journeyB("eligibility"));
+    const bar = markup.split('data-testid="progress-bar"').find((c) => c.includes("University subjects passed"))!;
+    expect(text(bar.slice(0, 400))).toContain("Not started");
+    expect(bar.slice(0, 400)).not.toContain('data-segment');
+    expect(text(bar.slice(0, 300))).not.toContain("0 of 3");
+  });
+
+  it("confirmed milestones show 'Confirmed from university document' exactly once, with no extra Confirmed chip", () => {
+    const { markup } = render(journeyB("complete"));
+    const items = markup.split('data-testid="milestone"').filter((c) => c.includes('data-official="true"') && c.includes('data-state="done"'));
+    expect(items.length).toBe(5);
+    for (const c of items) {
+      const t = text(c);
+      expect(count(t, "Confirmed from university document")).toBe(1);
+      expect(count(c, "data-status=")).toBe(1); // a single chip, no second "Confirmed" pill
+    }
+  });
+
+  it("header has a single merged ENEB chip and a legend appears once on the two-track card", () => {
+    const { markup } = render(journeyB("complete"));
+    expect(count(markup, 'data-testid="eneb-qualification"')).toBe(1);
+    expect(markup).not.toContain('data-testid="eneb-status"');
+    expect(text(markup.slice(markup.indexOf('data-testid="eneb-qualification"'), markup.indexOf('data-testid="eneb-qualification"') + 500))).toContain("ENEB status:");
+    expect(count(markup, 'data-testid="track-legend"')).toBe(1);
+    expect(markup.indexOf('data-testid="track-legend"')).toBeGreaterThan(markup.indexOf('data-testid="two-track"'));
+  });
+
+  it("b-complete collapses finished sections behind disclosures; Graduation, International recognition and Credits stay open", () => {
+    const { markup, t } = render(journeyB("complete"));
+    for (const id of ["graduate-modules", "graduate-learning", "graduate-thesis", "graduate-assessment"]) {
+      const sec = markup.slice(markup.indexOf(`data-testid="${id}"`));
+      expect(sec.slice(0, 200)).toContain('data-collapsed="true"');
+      const btn = sec.slice(sec.indexOf("<button"), sec.indexOf("<button") + 250);
+      expect(btn).toContain('aria-expanded="false"');
+      expect(btn).toMatch(/aria-controls="[^"]+"/);
+    }
+    expect(t).toContain("11 of 11 subjects passed");
+    for (const id of ["graduate-graduation", "graduate-evaluations", "graduate-credits"]) {
+      const sec = markup.slice(markup.indexOf(`data-testid="${id}"`), markup.indexOf(`data-testid="${id}"`) + 300);
+      expect(sec).not.toContain("data-collapsed");
+    }
+    // unfinished journeys stay fully open
+    expect(render(journeyB("thesis_submitted")).markup).not.toContain("data-collapsed");
+  });
+
+  it("a requested WES Canada report is labelled as requested, not issued", () => {
+    const { t } = renderWith([wesCaRequested], journeyB("complete"));
+    expect(t).toContain("Official evaluation report (requested, not yet issued)");
+    expect(t).toContain("WES Canada");
+    expect(t).toContain("Canada");
   });
 });

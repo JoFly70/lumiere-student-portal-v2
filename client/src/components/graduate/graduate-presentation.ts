@@ -105,29 +105,30 @@ export const PROVENANCE_PLAIN = {
   stated: "Stated by the institution, not yet checked",
 } as const;
 
-export function milestoneDisplay(m: Pick<MilestoneView, "state" | "official">): StateDisplay {
+export function milestoneDisplay(m: Pick<MilestoneView, "state" | "official"> & Partial<Pick<MilestoneView, "key" | "detail">>): StateDisplay {
   switch (m.state) {
     case "done":
       return m.official ? { status: "official", label: "Confirmed" } : { status: "applied", label: "Done" };
     case "in_progress":
+      if (m.key === "diploma") return { status: "progress", label: /^Ordered/i.test(m.detail ?? "") ? "Ordered, not issued" : "Issued, being delivered" };
       return { status: "progress", label: "In progress" };
     case "waiting":
-      return { status: "submitted", label: "Waiting for the university" };
+      return { status: "progress", label: "Waiting for the university" };
     case "attention":
       return { status: "attention", label: "Needs attention" };
     case "not_applicable":
       return { status: "notstarted", label: "Not applicable" };
     case "later":
-      return { status: "notstarted", label: "After conferral", glyph: "later" };
+      return { status: "notstarted", label: m.key === "conferral" ? "After your academic work" : "After conferral", glyph: "later" };
     default:
-      return { status: "notstarted", label: "Not started" };
+      return { status: "notstarted", label: m.key === "thesis" ? "Not graded yet" : "Not started" };
   }
 }
 
 export function resultDisplay(m: Pick<ModuleView, "result" | "resultLabel" | "verification" | "progress">): StateDisplay {
   if (m.result === "passed") return m.verification === "verified" ? { status: "official", label: m.resultLabel } : { status: "provider", label: m.resultLabel, glyph: "stated" };
   if (m.result === "failed" || m.result === "reassessment_required") return { status: "attention", label: m.resultLabel };
-  if (m.progress === "submitted") return { status: "submitted", label: "Submitted, no result yet" };
+  if (m.progress === "submitted") return { status: "progress", label: "Submitted, no result yet" };
   return { status: "notstarted", label: m.resultLabel };
 }
 
@@ -138,14 +139,14 @@ export const PROGRESS_OPTIONS: readonly { value: StudentProgress; label: string 
 ];
 
 export function progressDisplay(p: StudentProgress): StateDisplay {
-  if (p === "submitted") return { status: "submitted", label: "You marked it submitted" };
+  if (p === "submitted") return { status: "progress", label: "You marked it submitted" };
   if (p === "in_progress") return { status: "progress", label: "You are working on it" };
   return { status: "notstarted", label: "Not started" };
 }
 
 export const TOPIC_APPROVAL_LABEL: Record<NonNullable<Program["thesis"]>["topicApproval"], StateDisplay> = {
   not_proposed: { status: "notstarted", label: "No topic proposed yet" },
-  proposed: { status: "submitted", label: "Topic proposed, awaiting approval" },
+  proposed: { status: "progress", label: "Topic proposed, awaiting approval" },
   approved: { status: "official", label: "Topic approved" },
   changes_requested: { status: "attention", label: "Changes requested to your topic" },
   rejected: { status: "attention", label: "Topic not accepted" },
@@ -158,10 +159,12 @@ export function thesisOutcomeDisplay(outcome: string): StateDisplay {
   return { status: "notstarted", label: outcome };
 }
 
+export const isNotRecognized = (outcome: string) => outcome === "Not recognized";
+
 export function recognitionItemStatus(outcome: string): StatusKey {
   if (outcome === "Recognized") return "official";
   if (outcome === "Recognized with conditions") return "attention";
-  return "notstarted";
+  return "attention";
 }
 
 // ── Two-track graphic ───────────────────────────────────────────────────────
@@ -184,7 +187,7 @@ const node = (key: string, label: string, d: StateDisplay): TrackNode => ({ key,
 
 function subjectsNode(passed: number, total: number, verified: number): StateDisplay {
   if (total === 0) return { status: "notstarted", label: "Not started" };
-  if (passed === total) return verified === total ? { status: "applied", label: "All passed" } : { status: "provider", label: verified === 0 ? "All passed, not yet checked" : "All passed, some not yet checked", glyph: "stated" };
+  if (passed === total) return verified === total ? { status: "official", label: "All passed" } : { status: "provider", label: verified === 0 ? "All passed, not yet checked" : "All passed, some not yet checked", glyph: "stated" };
   return passed > 0 ? { status: "progress", label: `${passed} of ${total} passed` } : { status: "progress", label: "In progress" };
 }
 
@@ -204,14 +207,14 @@ export function buildTrackModel(p: Program): TrackModel {
 
   const reg = p.registration;
   const registration: StateDisplay =
-    reg.state === "verified" ? { status: "official", label: "Registered" } : reg.state === "in_progress" ? { status: "submitted", label: "In progress" } : { status: "notstarted", label: "Not yet" };
+    reg.state === "verified" ? { status: "official", label: "Registered" } : reg.state === "in_progress" ? { status: "progress", label: "In progress" } : { status: "notstarted", label: "Not yet" };
   const rl = p.previousLearning;
   const recognition: StateDisplay = !rl
     ? { status: "notstarted", label: "Not yet" }
     : rl.requestState === "decided"
-      ? { status: rl.decision?.outcome === "none" ? "attention" : rl.decision?.outcome === "partial" ? "provider" : "official", label: rl.decision?.outcomeLabel ?? "Decided" }
+      ? { status: rl.decision?.outcome === "full" ? "official" : "attention", label: rl.decision?.outcomeLabel ?? "Decided" }
       : rl.requestState === "under_review"
-        ? { status: "submitted", label: "With the university" }
+        ? { status: "progress", label: "With the university" }
         : rl.requestState === "requested"
           ? { status: "progress", label: "Being prepared" }
           : { status: "notstarted", label: "Not requested" };
@@ -231,19 +234,19 @@ export function buildTrackModel(p: Program): TrackModel {
       : t.result
         ? { status: "attention", label: thesisOutcomeDisplay(t.result.outcome).label }
         : t.gradingStatus === "submitted"
-          ? { status: "submitted", label: "Submitted, not graded" }
+          ? { status: "progress", label: "Submitted, not graded" }
           : t.topicApproval === "not_proposed"
             ? { status: "notstarted", label: "Not started" }
             : { status: "progress", label: "In progress" };
   const g = p.graduation;
-  const conferral: StateDisplay = g?.awardConferred ? { status: "official", label: "Conferred" } : g?.academicWorkComplete ? { status: "submitted", label: "Waiting for the university" } : { status: "notstarted", label: "Not yet" };
+  const conferral: StateDisplay = g?.awardConferred ? { status: "official", label: "Conferred" } : g?.academicWorkComplete ? { status: "progress", label: "Waiting for the university" } : { status: "notstarted", label: "Not yet" };
   const docMilestones = (g?.milestones ?? []).filter((m) => ["transcript", "diploma", "verification"].includes(m.key));
   const docsDone = docMilestones.filter((m) => m.state === "done").length;
   const docs: StateDisplay =
     docMilestones.length > 0 && docsDone === docMilestones.length
       ? { status: "official", label: "All issued" }
       : docsDone > 0 || docMilestones.some((m) => m.state === "in_progress")
-        ? { status: "progress", label: "In progress" }
+      ? { status: "progress", label: docMilestones.some((m) => m.key === "diploma" && m.state === "in_progress" && /^Ordered/i.test(m.detail)) ? "Diploma ordered, not issued" : "In progress" }
         : { status: "notstarted", label: "Not yet" };
   const university: TrackNode[] = [
     node("uni-registration", "Registration", registration),
@@ -314,4 +317,98 @@ export function validateTopic(raw: string): string | null {
   if (v.length < 5) return "Give your topic at least 5 characters.";
   if (v.length > 300) return "Keep your topic to 300 characters or fewer.";
   return null;
+}
+
+// ── "Then" list and complete-state actions ──────────────────────────────────
+
+export interface ThenItem {
+  readonly key: string;
+  readonly label: string;
+  readonly hint: string;
+}
+
+const norm = (v: string) => v.trim().replace(/[.\s]+$/, "").toLowerCase();
+
+export function isProgrammeComplete(step: Program["nextStep"]): boolean {
+  return !step.href && /^Your (university degree|ENEB programme) is complete/i.test(step.title);
+}
+
+/**
+ * The next two or three things after the current step, derived only from what is not
+ * yet done. The current step itself is never repeated.
+ */
+export function buildThenList(p: Program, max = 3): ThenItem[] {
+  const step = p.nextStep;
+  if (isProgrammeComplete(step) || /^This programme is closed/i.test(step.title)) return [];
+  const items: ThenItem[] = [];
+  const add = (item: ThenItem) => {
+    if (norm(item.label) === norm(step.title)) return;
+    if (items.some((i) => i.key === item.key)) return;
+    items.push(item);
+  };
+
+  if (p.route === "eneb_unimarconi" && p.registration.state !== "verified" && /admission decision/i.test(step.title)) {
+    add({ key: "registration", label: "University registration", hint: "You get your matricola once the university registers you." });
+  }
+  for (const d of p.pendingDocuments.slice(1)) add({ key: `doc-${d.key}`, label: `Send ${d.label.toLowerCase()}`, hint: d.detail });
+
+  const hasUni = p.modules.some((m) => m.authority === "unimarconi");
+  const open = p.modules.filter((m) => m.result !== "passed" && (p.route !== "eneb_unimarconi" || !hasUni || m.authority === "unimarconi"));
+  const current = /^Continue /.test(step.title) ? open.find((m) => `Continue ${m.title}` === step.title) : undefined;
+  const rest = open.filter((m) => m !== current);
+  if (rest.length === 1) add({ key: "modules", label: rest[0].title, hint: rest[0].assessment });
+  else if (rest.length > 1) add({ key: "modules", label: `Finish ${rest.length} more subjects`, hint: "Your own progress is tracked under My modules." });
+
+  const t = p.thesis;
+  if (t && t.gradingStatus !== "graded") {
+    if (t.gradingStatus === "submitted") add({ key: "thesis", label: "Thesis graded by the university", hint: "Submitted is not passed. The result appears here." });
+    else if (t.topicApproval === "not_proposed") add({ key: "thesis", label: "Propose your thesis topic", hint: "A working title, for approval." });
+    else add({ key: "thesis", label: "Finish and submit your thesis", hint: t.minWords ? `At least ${formatCount(t.minWords)} words.` : "Check the length with your academic contact." });
+  } else if (t?.result && t.result.outcome !== "passed") {
+    add({ key: "thesis", label: "Resubmit your thesis", hint: t.resubmission ?? "Your thesis needs another submission." });
+  }
+
+  const conferTitle = /confer/i.test(step.title);
+  for (const m of p.graduation?.milestones ?? []) {
+    if (m.state === "done" || m.state === "not_applicable" || m.key === "assessments" || m.key === "thesis") continue;
+    if (norm(m.label) === norm(step.title) || (m.key === "conferral" && conferTitle)) continue;
+    add({ key: `m-${m.key}`, label: m.label, hint: m.key === "conferral" ? "Only the university can do this." : m.state === "later" ? "Comes after the steps before it." : m.detail });
+  }
+  if (!p.graduation && p.enebQualification.state !== "completed_verified" && !/ENEB to confirm/i.test(step.title)) {
+    add({ key: "eneb-qualification", label: "ENEB confirms your qualification", hint: "Lumière records your ENEB certificate when it arrives." });
+  }
+  return items.slice(0, max);
+}
+
+export interface CompleteAction {
+  readonly key: string;
+  readonly label: string;
+  readonly href: string;
+}
+
+/** Useful things to do once everything is finished. */
+export function completeActions(p: Program, evaluationsCount: number): CompleteAction[] {
+  if (!isProgrammeComplete(p.nextStep)) return [];
+  const actions: CompleteAction[] = [{ key: "verification-letter", label: "Ask Support for a verification letter", href: "/support" }];
+  if (p.route === "eneb_unimarconi") {
+    actions.push({ key: "international-evaluation", label: evaluationsCount > 0 ? "Ask about another international evaluation" : "Ask about an international evaluation", href: "/support" });
+  }
+  return actions;
+}
+
+/** One-line summaries for sections that are fully finished and collapsed. */
+export function finishedSummaries(p: Program): { modules: string; learning: string | null; thesis: string | null; assessment: string } | null {
+  const conferred = !!p.graduation?.awardConferred;
+  const enebOnlyDone = !p.graduation && p.enebQualification.state === "completed_verified" && p.modules.length > 0 && p.modules.every((m) => m.result === "passed");
+  if (!conferred && !enebOnlyDone) return null;
+  const passed = p.modules.filter((m) => m.result === "passed").length;
+  const l = p.previousLearning;
+  const t = p.thesis;
+  const date = formatDate(l?.decision?.decisionDate);
+  return {
+    modules: `${passed} of ${p.modules.length} subjects passed`,
+    learning: l && l.decision ? `${l.decision.outcomeLabel}${date ? `, decided ${date}` : ""}` : null,
+    thesis: t && t.gradingStatus === "graded" && t.result?.outcome === "passed" ? `Passed${t.result.grade ? ` · ${t.result.grade}` : ""}` : null,
+    assessment: `${p.assessment.mode}${p.assessment.passing ? ` · passing mark ${p.assessment.passing}` : ""}`,
+  };
 }

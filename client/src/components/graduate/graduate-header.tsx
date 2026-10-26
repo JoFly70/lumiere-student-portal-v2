@@ -5,12 +5,12 @@
  */
 import React from "react";
 import { Link } from "wouter";
-import { ArrowRight, FileText, GraduationCap, Landmark } from "lucide-react";
+import { ArrowRight, Circle, FileText, GraduationCap, Landmark } from "lucide-react";
 import type { StudentGraduateProgramView } from "@shared/graduate-program-contract";
 import { cn } from "@/lib/utils";
 import { Eyebrow, Pill, StatusPill, buttonClass, cardClass, STATUS_STYLE } from "@/components/student-progress/student-ui";
-import { PROVENANCE_PLAIN, SECTION_IDS, buildTrackModel, formatDate, isInternalPath, nextStepActionLabel, sectionNav, waitingHint, type TrackNode } from "./graduate-presentation";
-import { GlyphIcon } from "./graduate-ui";
+import { PROVENANCE_PLAIN, SECTION_IDS, buildThenList, buildTrackModel, completeActions, formatDate, isInternalPath, nextStepActionLabel, sectionNav, waitingHint, type TrackNode } from "./graduate-presentation";
+import { GlyphIcon, HATCHED_STYLE } from "./graduate-ui";
 
 type Program = StudentGraduateProgramView;
 
@@ -42,8 +42,9 @@ function TrackSteps({ nodes, label, offset = 0 }: { nodes: readonly TrackNode[];
             aria-hidden="true"
             className={cn(
               "mb-2 block h-1.5 rounded-full",
-              n.status === "notstarted" ? "border border-dashed border-st-notstarted bg-transparent" : STATUS_STYLE[n.status].fill,
+              n.status === "notstarted" ? "border border-dashed border-st-notstarted bg-transparent" : n.glyph === "stated" ? "border border-student-gold" : STATUS_STYLE[n.status].fill,
             )}
+            style={n.glyph === "stated" ? STATED_STYLE : undefined}
           />
           <p className="flex items-center gap-1.5 text-sm font-semibold text-student-ink">
             <span className="text-xs font-medium text-student-muted">{i + 1 + offset}</span>
@@ -59,6 +60,18 @@ function TrackSteps({ nodes, label, offset = 0 }: { nodes: readonly TrackNode[];
   );
 }
 
+function TrackLegend() {
+  const swatch = "h-2 w-5 shrink-0 rounded-full";
+  return (
+    <ul className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-student-muted" aria-label="What the bars and colours mean" data-testid="track-legend">
+      <li className="flex items-center gap-1.5"><span aria-hidden="true" className={cn(swatch, "bg-st-official")} />Done and checked</li>
+      <li className="flex items-center gap-1.5"><span aria-hidden="true" className={cn(swatch, "border border-student-gold")} style={STATED_STYLE} />Stated, not yet checked</li>
+      <li className="flex items-center gap-1.5"><span aria-hidden="true" className={cn(swatch, "bg-st-progress")} />In progress or waiting</li>
+      <li className="flex items-center gap-1.5"><span aria-hidden="true" className={cn(swatch, "border border-dashed border-st-notstarted")} />Later or not started</li>
+    </ul>
+  );
+}
+
 /** Two tracks, two authorities. The ENEB qualification is never the end of the university track. */
 export function TwoTrackGraphic({ program }: { program: Program }) {
   const model = buildTrackModel(program);
@@ -66,22 +79,27 @@ export function TwoTrackGraphic({ program }: { program: Program }) {
     <section aria-labelledby="graduate-tracks-title" className={cn(cardClass, "space-y-5")} data-testid="two-track">
       <div>
         <h2 id="graduate-tracks-title" className="font-serif text-xl text-student-ink">Where you are on each track</h2>
+        <div className="mt-2"><TrackLegend /></div>
       </div>
       <div role="group" aria-label="ENEB track" className="space-y-3" data-testid="track-eneb">
-        <p className="flex items-center gap-2 text-sm font-semibold text-student-ink">
-          <GraduationCap className="h-4 w-4 text-student-gold-ink" aria-hidden="true" />
-          ENEB track
-          <span className="text-xs font-normal text-student-muted">Subjects, then your ENEB qualification: a record kept apart from the university degree</span>
-        </p>
+        <div>
+          <p className="flex items-center gap-2 text-sm font-semibold text-student-ink">
+            <GraduationCap className="h-4 w-4 shrink-0 text-student-gold-ink" aria-hidden="true" />
+            ENEB track
+          </p>
+          <p className="text-xs text-student-muted sm:pl-6">Subjects, then your ENEB qualification: a record kept apart from the university degree</p>
+        </div>
         <TrackSteps nodes={model.eneb} label="ENEB track steps" />
       </div>
       {model.university ? (
         <div role="group" aria-label="University track" className="space-y-3 border-t border-student-line pt-5" data-testid="track-university">
-          <p className="flex items-center gap-2 text-sm font-semibold text-student-ink">
-            <Landmark className="h-4 w-4 text-student-gold-ink" aria-hidden="true" />
-            University track
-            <span className="text-xs font-normal text-student-muted">Decided and recorded by the university</span>
-          </p>
+          <div>
+            <p className="flex items-center gap-2 text-sm font-semibold text-student-ink">
+              <Landmark className="h-4 w-4 shrink-0 text-student-gold-ink" aria-hidden="true" />
+              University track
+            </p>
+            <p className="text-xs text-student-muted sm:pl-6">Decided and recorded by the university</p>
+          </div>
           <TrackSteps nodes={model.university} label="University track steps" />
         </div>
       ) : (
@@ -93,7 +111,16 @@ export function TwoTrackGraphic({ program }: { program: Program }) {
   );
 }
 
-function NextStepCard({ step }: { step: Program["nextStep"] }) {
+function CtaLink({ href, children, className, testId }: { href: string; children: React.ReactNode; className?: string; testId?: string }) {
+  return isInternalPath(href) ? (
+    <Link href={href} className={className} data-testid={testId}>{children}</Link>
+  ) : (
+    <a href={href} className={className} data-testid={testId}>{children}</a>
+  );
+}
+
+function NextStepCard({ program, evaluationsCount }: { program: Program; evaluationsCount: number }) {
+  const step = program.nextStep;
   const body = (
     <>
       <span>{step.href ? nextStepActionLabel(step.href) : ""}</span>
@@ -101,21 +128,18 @@ function NextStepCard({ step }: { step: Program["nextStep"] }) {
     </>
   );
   const hint = waitingHint(step);
+  const then = buildThenList(program);
+  const actions = completeActions(program, evaluationsCount);
   return (
     <section aria-labelledby="graduate-next-title" className={cn(cardClass, "flex flex-col gap-3 border-student-gold")} data-testid="graduate-next-step">
       <Eyebrow>Your next step</Eyebrow>
       <h2 id="graduate-next-title" className="font-serif text-xl leading-snug text-student-ink sm:text-2xl">{step.title}</h2>
       <p className="text-sm leading-relaxed text-student-muted">{step.detail}</p>
-      {step.href &&
-        (isInternalPath(step.href) ? (
-          <Link href={step.href} className={cn(buttonClass.primary, "w-full sm:w-fit")} data-testid="graduate-next-action">
-            {body}
-          </Link>
-        ) : (
-          <a href={step.href} className={cn(buttonClass.primary, "w-full sm:w-fit")} data-testid="graduate-next-action">
-            {body}
-          </a>
-        ))}
+      {step.href && (
+        <CtaLink href={step.href} className={cn(buttonClass.primary, "w-full sm:w-fit")} testId="graduate-next-action">
+          {body}
+        </CtaLink>
+      )}
       {hint && (
         <p className="rounded-lg bg-student-gold-soft px-3 py-2 text-sm text-student-ink" data-testid="next-step-hint">
           <span className="font-semibold">What you can do now: </span>
@@ -123,19 +147,58 @@ function NextStepCard({ step }: { step: Program["nextStep"] }) {
           <Link href="/support" className="font-medium text-student-gold-ink underline underline-offset-4">Ask Support</Link>
         </p>
       )}
+      {then.length > 0 && (
+        <div className="mt-auto border-t border-student-line pt-3" data-testid="next-then">
+          <h3 className="text-xs font-semibold uppercase tracking-[0.14em] text-student-muted">Then</h3>
+          <ol className="mt-2 space-y-2.5">
+            {then.map((t) => (
+              <li key={t.key} className="flex items-start gap-2.5" data-testid="then-item">
+                <Circle className="mt-1 h-3 w-3 shrink-0 text-student-muted" aria-hidden="true" />
+                <span className="min-w-0 text-sm">
+                  <span className="block font-medium text-student-ink">{t.label}</span>
+                  <span className="block text-xs text-student-muted">{t.hint}</span>
+                </span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
+      {actions.length > 0 && (
+        <div className="mt-auto border-t border-student-line pt-3" data-testid="complete-actions">
+          <h3 className="text-xs font-semibold uppercase tracking-[0.14em] text-student-muted">Useful now</h3>
+          <ul className="mt-2 space-y-2">
+            {actions.map((a) => (
+              <li key={a.key}>
+                <CtaLink href={a.href} className={cn(buttonClass.outline, "w-full justify-between sm:w-fit")} testId={`complete-action-${a.key}`}>
+                  <span>{a.label}</span>
+                  <ArrowRight className="h-4 w-4 shrink-0" aria-hidden="true" />
+                </CtaLink>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </section>
   );
 }
 
-const STATED_STYLE: React.CSSProperties = {
-  backgroundImage: "repeating-linear-gradient(135deg, hsl(var(--s-gold)) 0 2px, transparent 2px 6px)",
-  backgroundColor: "hsl(var(--s-gold-soft))",
-};
+const STATED_STYLE = HATCHED_STYLE;
 
 /** Two segments: passes Lumière has checked (solid) and passes only stated by the institution (hatched). */
 function Bar({ passed, verified, total, label }: { passed: number; verified: number; total: number; label: string }) {
   const pct = (n: number) => (total > 0 ? Math.min(100, Math.round((n / total) * 100)) : 0);
   const stated = Math.max(0, passed - verified);
+  if (passed === 0) {
+    return (
+      <div data-testid="progress-bar" data-empty="true">
+        <div className="flex items-baseline justify-between gap-3 text-sm">
+          <span className="text-student-ink">{label}</span>
+          <span className="shrink-0 font-medium text-student-muted">Not started</span>
+        </div>
+        <p className="mt-1 text-xs text-student-muted">{total} to pass</p>
+      </div>
+    );
+  }
   return (
     <div data-testid="progress-bar">
       <div className="flex items-baseline justify-between gap-3 text-sm">
@@ -147,7 +210,7 @@ function Bar({ passed, verified, total, label }: { passed: number; verified: num
         role="img"
         aria-label={`${label}: ${passed} of ${total}. ${verified} checked by Lumière, ${stated} stated and not yet checked.`}
       >
-        <div className="h-full bg-student-gold" style={{ width: `${pct(verified)}%` }} data-segment="verified" />
+        <div className="h-full bg-st-official" style={{ width: `${pct(verified)}%` }} data-segment="verified" />
         <div className="h-full" style={{ width: `${pct(stated)}%`, ...STATED_STYLE }} data-segment="stated" />
       </div>
       <p className="mt-1 text-xs text-student-muted">
@@ -160,7 +223,7 @@ function Bar({ passed, verified, total, label }: { passed: number; verified: num
 function Legend() {
   return (
     <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-student-muted" aria-label="How to read the bars" data-testid="progress-legend">
-      <li className="flex items-center gap-1.5"><span aria-hidden="true" className="h-2.5 w-5 rounded-sm bg-student-gold" />{PROVENANCE_PLAIN.verified}</li>
+      <li className="flex items-center gap-1.5"><span aria-hidden="true" className="h-2.5 w-5 rounded-sm bg-st-official" />{PROVENANCE_PLAIN.verified}</li>
       <li className="flex items-center gap-1.5"><span aria-hidden="true" className="h-2.5 w-5 rounded-sm border border-student-gold" style={STATED_STYLE} />{PROVENANCE_PLAIN.stated}</li>
     </ul>
   );
@@ -188,7 +251,7 @@ function ProgressCard({ program }: { program: Program }) {
   );
 }
 
-function PendingDocuments({ items }: { items: Program["pendingDocuments"] }) {
+function PendingDocuments({ items, showLink = true }: { items: Program["pendingDocuments"]; showLink?: boolean }) {
   if (!items.length) return null;
   return (
     <section aria-labelledby="graduate-pending-title" className={cn(cardClass, "space-y-3 border-st-attention bg-student-attn-soft")} data-testid="pending-documents">
@@ -204,18 +267,26 @@ function PendingDocuments({ items }: { items: Program["pendingDocuments"] }) {
           </li>
         ))}
       </ul>
-      <Link href="/documents" className={buttonClass.outline} data-testid="pending-documents-link">Go to Documents</Link>
+      {showLink && <Link href="/documents" className={buttonClass.outline} data-testid="pending-documents-link">Go to Documents</Link>}
     </section>
   );
 }
 
-export function GraduateHeader({ program }: { program: Program }) {
+/** One chip for "ENEB status" and the ENEB qualification, without saying the same thing twice. */
+export function mergeEnebLabel(statusLabel: string, qualificationLabel: string): string {
+  const n = (v: string) => v.toLowerCase().replace(/[^a-z ]+/g, "").trim();
+  if (n(qualificationLabel).includes(n(statusLabel))) return `ENEB status: ${qualificationLabel}`;
+  return `ENEB status: ${statusLabel} \u00b7 ${qualificationLabel}`;
+}
+
+export function GraduateHeader({ program, evaluationsCount = 0 }: { program: Program; evaluationsCount?: number }) {
   const q = program.enebQualification;
   const reg = program.registration;
   const uni = program.route === "eneb_unimarconi";
   const conferred = program.graduation?.awardConferred ? program.graduation : null;
   const conferredOn = formatDate(conferred?.conferredOn);
   const qStatus = q.state === "completed_verified" ? "official" : q.state === "completed_reported" ? "provider" : "progress";
+  const enebChip = mergeEnebLabel(program.enebStatusLabel, q.label);
   return (
     <div className="space-y-5">
       <header id={SECTION_IDS.header} className="space-y-3" data-testid="graduate-header">
@@ -239,7 +310,7 @@ export function GraduateHeader({ program }: { program: Program }) {
             {!conferred && reg.state !== "not_applicable" && (
               <div className="flex flex-wrap items-center gap-2">
                 <StatusPill
-                  status={reg.state === "verified" ? "official" : reg.state === "in_progress" ? "submitted" : "notstarted"}
+                  status={reg.state === "verified" ? "official" : reg.state === "in_progress" ? "progress" : "notstarted"}
                   label={reg.label}
                   data-testid="registration-status"
                 />
@@ -251,15 +322,13 @@ export function GraduateHeader({ program }: { program: Program }) {
             )}
             <div className="flex flex-wrap items-center gap-2 text-sm text-student-muted" data-testid="eneb-record">
               <span className="font-medium text-student-ink">Separate ENEB record:</span>
-              <Pill tone="neutral" data-testid="eneb-status">ENEB status: {program.enebStatusLabel}</Pill>
-              <StatusPill status={qStatus} label={q.label} data-testid="eneb-qualification" />
+              <StatusPill status={qStatus} label={enebChip} className="max-w-full text-left" data-testid="eneb-qualification" />
               <span className="text-xs">It does not hold up your university degree.</span>
             </div>
           </div>
         ) : (
           <div className="flex flex-wrap items-center gap-2">
-            <Pill tone="neutral" data-testid="eneb-status">ENEB status: {program.enebStatusLabel}</Pill>
-            <StatusPill status={qStatus} label={q.label} data-testid="eneb-qualification" />
+            <StatusPill status={qStatus} label={enebChip} className="max-w-full text-left" data-testid="eneb-qualification" />
           </div>
         )}
         <dl className="flex flex-wrap gap-x-8 gap-y-1 text-sm">
@@ -274,10 +343,10 @@ export function GraduateHeader({ program }: { program: Program }) {
         </dl>
       </header>
       <div className="grid gap-4 lg:grid-cols-2">
-        <NextStepCard step={program.nextStep} />
+        <NextStepCard program={program} evaluationsCount={evaluationsCount} />
         <ProgressCard program={program} />
       </div>
-      <PendingDocuments items={program.pendingDocuments} />
+      <PendingDocuments items={program.pendingDocuments} showLink={program.nextStep.href !== "/documents"} />
       <TwoTrackGraphic program={program} />
     </div>
   );

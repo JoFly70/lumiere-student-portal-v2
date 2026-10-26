@@ -16,7 +16,7 @@ import { ThesisSection } from "./graduate-thesis";
 import { AssessmentSection, CreditsSection } from "./graduate-assessment-credits";
 import { GraduationSection } from "./graduate-graduation";
 import { EvaluationsSection } from "./graduate-evaluations";
-import { showEvaluations } from "./graduate-presentation";
+import { finishedSummaries, showEvaluations } from "./graduate-presentation";
 
 export function ProgramSwitcher({ programs, selectedId, onSelect }: { programs: readonly StudentGraduateProgramView[]; selectedId: string; onSelect: (id: string) => void }) {
   return (
@@ -48,14 +48,15 @@ export function ProgramSwitcher({ programs, selectedId, onSelect }: { programs: 
 
 export function GraduateProgramPanel({ program, evaluations = [] }: { program: StudentGraduateProgramView; evaluations?: readonly EvaluationView[] }) {
   const evals = showEvaluations(program, evaluations);
+  const done = finishedSummaries(program);
   return (
     <div className="space-y-8 sm:space-y-10" data-testid="graduate-program" data-route={program.route}>
-      <GraduateHeader program={program} />
+      <GraduateHeader program={program} evaluationsCount={evaluations.length} />
       <GraduateSectionNav program={program} evaluationsShown={evals} />
-      <ModulesSection program={program} />
-      {program.previousLearning && <PreviousLearningSection learning={program.previousLearning} />}
-      {program.thesis && <ThesisSection programId={program.programId} thesis={program.thesis} />}
-      <AssessmentSection assessment={program.assessment} />
+      <ModulesSection program={program} summary={done?.modules} />
+      {program.previousLearning && <PreviousLearningSection learning={program.previousLearning} summary={done?.learning} />}
+      {program.thesis && <ThesisSection programId={program.programId} thesis={program.thesis} summary={done?.thesis} />}
+      <AssessmentSection assessment={program.assessment} summary={done?.assessment} />
       {program.graduation && <GraduationSection graduation={program.graduation} />}
       {evals && <EvaluationsSection evaluations={evaluations} university={program.route === "eneb_unimarconi"} />}
       <CreditsSection program={program} />
