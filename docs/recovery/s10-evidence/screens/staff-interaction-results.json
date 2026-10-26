@@ -1,0 +1,277 @@
+{
+  "note": "Playwright against the real UI with stubbed API and fixed clock.",
+  "passed": 35,
+  "failed": 0,
+  "results": [
+    {
+      "name": "desk starts on Needs response with its tile pressed",
+      "pass": true
+    },
+    {
+      "name": "Needs response list length equals its tile",
+      "pass": true,
+      "detail": {
+        "rows": 5,
+        "tile": 5
+      }
+    },
+    {
+      "name": "Overdue tile filters the list: every row overdue, count equals tile",
+      "pass": true,
+      "detail": {
+        "overdueRows": 3,
+        "flagged": 3
+      }
+    },
+    {
+      "name": "pressed state moves to the Overdue tile and the queue title follows",
+      "pass": true
+    },
+    {
+      "name": "Unassigned tile: every row is Unassigned and count equals tile",
+      "pass": true,
+      "detail": {
+        "n": 2
+      }
+    },
+    {
+      "name": "Mine view: every row is assigned to the signed-in advisor",
+      "pass": true,
+      "detail": {
+        "n": 4
+      }
+    },
+    {
+      "name": "Resolved view lists only resolved or closed tickets",
+      "pass": true,
+      "detail": {
+        "n": 2
+      }
+    },
+    {
+      "name": "selecting \"Cannot open my course dashboard\": card and detail agree on the assignee (Camille Moreau)",
+      "pass": true,
+      "detail": {
+        "cardText": "Amélie Laurent Waiting 2 days Cannot open my course dashboard Account or technical issue · LP-1051 In progress Overdue High priority CM Assigned: Camille Moreau",
+        "selected": "Camille Moreau (staff)"
+      }
+    },
+    {
+      "name": "detail banner states who waits and for how long for \"Cannot open my course dashboard\"",
+      "pass": true,
+      "detail": "Overdue · Waiting 2 days\n\n1 day past the 1-day target. Owner: Camille Moreau."
+    },
+    {
+      "name": "row is marked current for \"Cannot open my course dashboard\"",
+      "pass": true
+    },
+    {
+      "name": "selecting \"Official transcript still not received\": card and detail agree on the assignee (Unassigned)",
+      "pass": true,
+      "detail": {
+        "cardText": "Noah Fraser Waiting 4 days Official transcript still not received by the registrar University or transfer credit · LP-1063 New Overdue Urgent ? Unassigned",
+        "selected": "Unassigned"
+      }
+    },
+    {
+      "name": "detail banner states who waits and for how long for \"Official transcript still not received\"",
+      "pass": true,
+      "detail": "Overdue · Waiting 4 days\n\n4 days past the 4-hour target. Nobody owns this request yet. Assign an advisor."
+    },
+    {
+      "name": "row is marked current for \"Official transcript still not received\"",
+      "pass": true
+    },
+    {
+      "name": "workspace opens on Overview",
+      "pass": true
+    },
+    {
+      "name": "clicking Documents switches the panel and the URL hash",
+      "pass": true,
+      "detail": "http://localhost:5210/admin/students/11111111-aaaa-4bbb-8ccc-000000000009#documents"
+    },
+    {
+      "name": "Documents panel shows the recorded documents",
+      "pass": true
+    },
+    {
+      "name": "ArrowRight moves to Support (selected, focused, panel switched)",
+      "pass": true
+    },
+    {
+      "name": "Home returns to Overview",
+      "pass": true
+    },
+    {
+      "name": "End moves to the last tab",
+      "pass": true
+    },
+    {
+      "name": "only the selected tab is in the tab order (roving tabindex)",
+      "pass": true
+    },
+    {
+      "name": "tab badges equal the Needs-attention rows (one count, no contradiction)",
+      "pass": true
+    },
+    {
+      "name": "Needs-attention Review button opens the Documents tab",
+      "pass": true
+    },
+    {
+      "name": "deep link #profile opens the profile tab",
+      "pass": true,
+      "detail": "Profile & identity\n2\ndecisions waiting"
+    },
+    {
+      "name": "deep link #workspace-documents opens the documents tab",
+      "pass": true,
+      "detail": "Documents\n2\nwaiting for review"
+    },
+    {
+      "name": "deep link #workspace-support opens the support tab",
+      "pass": true,
+      "detail": "Support\n2\nwaiting for a response"
+    },
+    {
+      "name": "deep link #documents opens the documents tab",
+      "pass": true,
+      "detail": "Documents\n2\nwaiting for review"
+    },
+    {
+      "name": "keyboard: Enter on a row opens its conversation and Tab reaches the status, assignee, priority controls and composer",
+      "pass": true,
+      "detail": [
+        "button: Mateo SilvaWaiting 2 daysIs my English pro",
+        "button: Priya RamanWaiting 23 hoursPayment plan qu",
+        "button: Amélie LaurentWaiting 30 minutesQuestion a",
+        "select: In progressWaiting on studentResolvedClose",
+        "select: UnassignedCamille Moreau (staff)Jonas Webe",
+        "select: LowMediumHighUrgent",
+        "button: Public reply",
+        "button: Internal note",
+        "textarea: Write your reply to the student…",
+        "input: Attach files",
+        "button: Attach file",
+        "body",
+        "a: Skip to main content",
+        "a: Support"
+      ]
+    },
+    {
+      "name": "mobile drill-in: focus moves to the conversation title when a ticket opens",
+      "pass": true,
+      "detail": "h2: Official transcript still not received by "
+    },
+    {
+      "name": "mobile drill-in: Back to queue returns focus to the row that was open",
+      "pass": true,
+      "detail": "button: Noah FraserWaiting 4 daysOfficial transcri"
+    },
+    {
+      "name": "dialog focus trap: 9 Tab presses never leave the dialog",
+      "pass": true,
+      "detail": [
+        "button: Cancel",
+        "button: Confirm",
+        "button: Close",
+        "textarea: profile-decision-note",
+        "button: Cancel",
+        "button: Confirm",
+        "button: Close",
+        "textarea: profile-decision-note",
+        "button: Cancel"
+      ]
+    },
+    {
+      "name": "Escape closes the dialog",
+      "pass": true
+    },
+    {
+      "name": "focus returns to the Approve button that opened the dialog",
+      "pass": true,
+      "detail": "button: Approve…"
+    },
+    {
+      "name": "768px: sidebar is a 48px icon rail, not 256px",
+      "pass": true,
+      "detail": 48
+    },
+    {
+      "name": "390px: the navigation drawer traps focus",
+      "pass": true,
+      "detail": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "name": "390px: Escape closes the drawer",
+      "pass": true
+    }
+  ],
+  "keyboard": {
+    "deskTabOrder": [
+      "a: Skip to main content",
+      "a: Support",
+      "button: Log out",
+      "button: Toggle navigation",
+      "button: Toggle theme",
+      "button: Needs responseShowing5Waiting on Lumière",
+      "button: Overdue3Past the response target",
+      "button: Unassigned2No advisor yet",
+      "button: Waiting on student2Ball is with the studen",
+      "input: Search by subject…",
+      "button: Mine",
+      "button: Resolved",
+      "button: All",
+      "button: Noah FraserWaiting 4 daysOfficial transcri",
+      "button: Amélie LaurentWaiting 2 daysCannot open my",
+      "button: Mateo SilvaWaiting 2 daysIs my English pro",
+      "button: Priya RamanWaiting 23 hoursPayment plan qu",
+      "button: Amélie LaurentWaiting 30 minutesQuestion a",
+      "body",
+      "a: Skip to main content",
+      "a: Support",
+      "button: Log out",
+      "button: Toggle navigation",
+      "button: Toggle theme"
+    ],
+    "afterSelectTabOrder": [
+      "button: Mateo SilvaWaiting 2 daysIs my English pro",
+      "button: Priya RamanWaiting 23 hoursPayment plan qu",
+      "button: Amélie LaurentWaiting 30 minutesQuestion a",
+      "select: In progressWaiting on studentResolvedClose",
+      "select: UnassignedCamille Moreau (staff)Jonas Webe",
+      "select: LowMediumHighUrgent",
+      "button: Public reply",
+      "button: Internal note",
+      "textarea: Write your reply to the student…",
+      "input: Attach files",
+      "button: Attach file",
+      "body",
+      "a: Skip to main content",
+      "a: Support"
+    ],
+    "mobileFocusAfterOpen": "h2: Official transcript still not received by ",
+    "mobileFocusAfterBack": "button: Noah FraserWaiting 4 daysOfficial transcri",
+    "dialogTabSequence": [
+      "button: Cancel",
+      "button: Confirm",
+      "button: Close",
+      "textarea: profile-decision-note",
+      "button: Cancel",
+      "button: Confirm",
+      "button: Close",
+      "textarea: profile-decision-note",
+      "button: Cancel"
+    ],
+    "dialogFocusReturn": "button: Approve…",
+    "sidebarWidth768": "48"
+  }
+}

@@ -7,6 +7,7 @@ import {
   STUDENT_REOPEN_WINDOW_DAYS,
   SUPPORT_ATTACHMENT_MAX_BYTES,
   SUPPORT_STATUS_LABEL,
+  SUPPORT_TARGET_HOURS,
   SUPPORT_TOPICS,
   SUPPORT_TOPIC_INFO,
   attachmentTypeAllowed,
@@ -15,8 +16,10 @@ import {
   type SupportComment,
   type SupportContext,
   type SupportTopic,
+  type TicketPriority,
   type TicketStatus,
 } from "@shared/support-contract";
+import type { StatusKey } from "@/pages/student-roadmap-presentation";
 
 export const SUBJECT_MIN = 5;
 export const SUBJECT_MAX = 200;
@@ -319,3 +322,63 @@ export function staffQueueFilters(key: StaffQueueKey): Record<string, string | b
 export function assigneeSelectValue(t: { readonly assigned_to?: string | null; readonly assignee?: { readonly id: string } | null }): string {
   return t.assigned_to ?? t.assignee?.id ?? "";
 }
+
+// ---------------------------------------------------------------------------
+// Staff desk (S10 staff pass): one status vocabulary, ticket urgency and age.
+// ---------------------------------------------------------------------------
+
+/**
+ * Ticket status in the shared Lumiere status language (index.css --st-*). The
+ * WORDS still come from SUPPORT_STATUS_LABEL; only the colour/icon family is chosen
+ * here. New work is "submitted" (waiting to be picked up), staff working on it is
+ * "progress", a ball in the student's court is the quiet dashed "not started",
+ * done is green. Overdue and urgent are expressed by their own pills, not here.
+ */
+export function ticketStatusKey(status: TicketStatus): StatusKey {
+  switch (status) {
+    case "open": return "submitted";
+    case "in_progress": return "progress";
+    case "resolved": return "applied";
+    default: return "notstarted";
+  }
+}
+
+/** The response target for a priority, in words ("24-hour target", "2-day target"). */
+export function targetLabel(priority: TicketPriority): string {
+  const h = SUPPORT_TARGET_HOURS[priority];
+  return h % 24 === 0 ? `${h / 24}-day target` : `${h}-hour target`;
+}
+
+/**
+ * "2 days past the 24-hour target" for a ticket awaiting staff that is overdue,
+ * otherwise null. Computed from the same clock and target the server's overdue flag uses.
+ */
+export function overdueByLabel(
+  t: { readonly awaiting: "staff" | "student" | "none"; readonly awaiting_since: string; readonly priority: TicketPriority; readonly is_overdue?: boolean },
+  now: Date,
+): string | null {
+  if (!t.is_overdue || t.awaiting !== "staff") return null;
+  const since = new Date(t.awaiting_since).getTime();
+  if (Number.isNaN(since)) return null;
+  const over = now.getTime() - since - SUPPORT_TARGET_HOURS[t.priority] * 3_600_000;
+  if (over <= 0) return null;
+  return `${formatDistanceStrict(0, over)} past the ${targetLabel(t.priority)}`;
+}
+
+/** Initials for an avatar chip: "Camille Moreau" -> "CM". */
+export function initials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  return ((parts[0][0] ?? "") + (parts.length > 1 ? (parts[parts.length - 1][0] ?? "") : "")).toUpperCase();
+}
+
+/** Every queue the desk offers, with plain-language help. The first three are also KPI tiles. */
+export const STAFF_QUEUES: readonly { readonly key: StaffQueueKey; readonly label: string; readonly help: string }[] = [
+  { key: "needs", label: "Needs response", help: "Waiting on Lumière" },
+  { key: "overdue", label: "Overdue", help: "Past the response target" },
+  { key: "unassigned", label: "Unassigned", help: "No advisor yet" },
+  { key: "waiting", label: "Waiting on student", help: "Ball is with the student" },
+  { key: "mine", label: "Mine", help: "Assigned to you" },
+  { key: "resolved", label: "Resolved", help: "Finished" },
+  { key: "all", label: "All", help: "Everything" },
+];

@@ -1,10 +1,26 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
 import { useParams, Link } from "wouter";
-import { AlertCircle, ArrowLeft, ChevronDown, Database, FileCheck2, FileText, Fingerprint, LifeBuoy, RefreshCw, ShieldCheck } from "lucide-react";
+import { AlertCircle, ArrowLeft, ArrowRight, ChevronDown, Database, FileCheck2, FileText, Fingerprint, LayoutDashboard, LifeBuoy, RefreshCw, Route, ShieldCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  StaffCard,
+  StaffNotice,
+  StaffPage,
+  StaffPageHeader,
+  StaffPill,
+  StaffSectionHeader,
+  StaffTabList,
+  StaffTabPanel,
+  StatusPill,
+  staffBtn,
+  staffLabel,
+  useHashTab,
+  type StaffTab,
+} from "@/components/staff/staff-ui";
+import { ticketStatusKey } from "@/components/support/support-presentation";
 import {
   PlacementActionDialog,
   type PlacementActionFeedback,
@@ -19,6 +35,10 @@ import {
   isDiagnosticAttentionItem,
   selectWorkspaceState,
   academicCreditRows,
+  creditRecordStanding,
+  creditRecordStandingCounts,
+  documentNeedsReview,
+  documentStatusKey,
   resolveWorkspaceStudentIdentity,
   workspaceStudentIdFromData,
   formatWorkspaceDateTime,
@@ -36,11 +56,22 @@ import {
   placementRequirementLabel,
   validSnapshotFingerprint,
 } from "./controlled-placement-workflow";
-import StudentProfileReview from "@/components/admin/student-profile-review";
+import StudentProfileReview, { useStaffProfileData } from "@/components/admin/student-profile-review";
+import { profileDecisionCount } from "@/components/admin/student-profile-review-logic";
 import { useDocuments } from "@/hooks/use-documents";
 import { useTickets, type Ticket } from "@/hooks/use-tickets";
-import { SUPPORT_TOPIC_INFO, staffStatusLabel, topicForTicket } from "@shared/support-contract";
+import { SUPPORT_TOPIC_INFO, awaitingFor, staffStatusLabel, topicForTicket } from "@shared/support-contract";
 import { docStatusLabel, docTypeLabel } from "@/lib/document-type-labels";
+
+const WORKSPACE_TABS = ["overview", "profile", "documents", "support"] as const;
+type WorkspaceTab = typeof WORKSPACE_TABS[number];
+/** Older anchors (#workspace-documents, ...) keep working as deep links. */
+const WORKSPACE_TAB_ALIASES: Readonly<Record<string, WorkspaceTab>> = {
+  "workspace-overview": "overview",
+  "workspace-profile": "profile",
+  "workspace-documents": "documents",
+  "workspace-support": "support",
+};
 
 function value(row: unknown, ...keys: string[]) {
   const record = row && typeof row === "object" && !Array.isArray(row) ? row as WorkspaceRecord : {};
@@ -119,6 +150,8 @@ export default function AdminStudentWorkspace() {
   const canonicalStudentId = workspaceStudentIdFromData(query.data) ?? null;
   const documentsQuery = useDocuments(canonicalStudentId);
   const ticketsQuery = useTickets({ studentId: canonicalStudentId });
+  const { profileQuery } = useStaffProfileData(canonicalStudentId ?? "");
+  const [tab, setTab] = useHashTab(WORKSPACE_TABS, "overview", WORKSPACE_TAB_ALIASES);
   const state = selectWorkspaceState(query);
   if (state.kind === "loading") return <div role={state.role} aria-live={state.ariaLive} className="space-y-4"><span className="sr-only">Loading student workspace</span><div className="h-8 w-64 animate-pulse rounded bg-muted" /><div className="h-32 animate-pulse rounded-lg bg-muted" /><div className="h-64 animate-pulse rounded-lg bg-muted" /></div>;
   if (state.kind === "error") return <Card><CardContent className="flex flex-col items-center gap-3 py-16 text-center"><AlertCircle className="h-8 w-8 text-destructive" /><h2 className="text-lg font-semibold">Workspace unavailable</h2><p className="text-sm text-muted-foreground">The canonical student workspace could not be loaded.</p><Button onClick={() => query.refetch()}><RefreshCw className="mr-2 h-4 w-4" />Retry</Button></CardContent></Card>;
@@ -132,6 +165,26 @@ export default function AdminStudentWorkspace() {
     return entry && typeof entry === "object" && !Array.isArray(entry) && typeof (entry as WorkspaceRecord).label === "string"
       ? String((entry as WorkspaceRecord).label) : undefined;
   };
+  const profileCount = profileQuery.data ? profileDecisionCount(profileQuery.data) : 0;
+  const docsPending = (documentsQuery.data ?? []).filter((d) => documentNeedsReview(d.status)).length;
+  const supportAwaiting = (ticketsQuery.data?.tickets ?? []).filter((t) => awaitingFor(t.status) === "staff").length;
+  // One count for everything waiting on staff, so the tabs, this list and the page agree.
+  const attentionTotal = profileCount + docsPending + supportAwaiting + vm.attention.total;
+  const standingCounts = creditRecordStandingCounts(vm.academicDetail.creditRecords);
+  const standingTotal = standingCounts.verified + standingCounts.waiting + standingCounts.not_accepted;
+  const reviewButton = (label: string, onClick: () => void) => <Button type="button" size="sm" variant="outline" className={staffBtn.outline} aria-label={`Review ${label}`} onClick={onClick}>Review<ArrowRight className="h-4 w-4" aria-hidden="true" /></Button>;
+  const attentionRows = [
+    { key: "profile", label: "Identity and guardian decisions", count: profileCount, detail: `${profileCount} waiting for a decision`, none: "No decisions waiting", action: reviewButton("identity and guardian decisions", () => setTab("profile")) },
+    { key: "documents", label: "Documents to review", count: docsPending, detail: `${docsPending} waiting for review`, none: "No documents waiting", action: reviewButton("documents", () => setTab("documents")) },
+    { key: "support", label: "Requests waiting on Lumière", count: supportAwaiting, detail: `${supportAwaiting} waiting for a response`, none: "No requests waiting", action: reviewButton("support requests", () => setTab("support")) },
+    { key: "report", label: "Academic report items", count: vm.attention.total, detail: `${vm.attention.total} manual-review, conflict, missing or partial`, none: "None reported", action: reviewButton("academic report items", () => document.getElementById("workspace-report-review")?.scrollIntoView({ block: "start" })) },
+  ];
+  const tabs: StaffTab[] = [
+    { key: "overview", label: "Overview", icon: <LayoutDashboard className="h-4 w-4" /> },
+    { key: "profile", label: "Profile & identity", icon: <Fingerprint className="h-4 w-4" />, count: profileCount, countLabel: "decisions waiting" },
+    { key: "documents", label: "Documents", icon: <FileText className="h-4 w-4" />, count: docsPending, countLabel: "waiting for review" },
+    { key: "support", label: "Support", icon: <LifeBuoy className="h-4 w-4" />, count: supportAwaiting, countLabel: "waiting for a response" },
+  ];
   const identity = resolveWorkspaceStudentIdentity(vm.student);
   const name = identity.name;
   const placementStudentId = identity.id;
@@ -176,39 +229,67 @@ export default function AdminStudentWorkspace() {
   const placementLabel = (placement: WorkspaceRecord) => {
     return placementRequirementLabel(placement, vm.labels);
   };
-  return <div className="mx-auto max-w-6xl space-y-6">
-    <Link href={ADMIN_STUDENTS_PATH} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" />Back to Students</Link>
-    <header className="flex flex-col justify-between gap-4 border-b border-border/70 pb-6 lg:flex-row lg:items-end">
-      <div className="min-w-0"><div className="student-surface mb-2 !bg-transparent"><p className="text-xs font-semibold uppercase tracking-[0.18em] text-student-gold-ink">Lumière / student workspace</p></div><h1 className="text-3xl font-semibold tracking-tight">{name}</h1><p className="mt-1 text-muted-foreground">{identity.email ?? "Not provided"} · <span className="font-mono">{identity.studentCode ?? "Not provided"}</span></p></div>
-      <Badge variant="outline" className="h-auto w-fit max-w-full gap-2 whitespace-normal"><ShieldCheck className="h-3.5 w-3.5" />Canonical view · controlled placement writes</Badge>
-    </header>
-     <nav aria-label="Student workspace sections" className="flex flex-wrap items-center gap-2 border-b pb-3"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Jump to</span>
-       <a href="#workspace-overview" className="rounded-md border px-3 py-2 text-sm font-medium hover:bg-muted">Overview</a>
-       <a href="#workspace-profile" className="rounded-md border px-3 py-2 text-sm font-medium hover:bg-muted"><Fingerprint className="mr-2 inline h-4 w-4" />Profile &amp; identity</a>
-       <a href="#workspace-documents" className="rounded-md border px-3 py-2 text-sm font-medium hover:bg-muted"><FileText className="mr-2 inline h-4 w-4" />Documents</a>
-       <a href="#workspace-support" className="rounded-md border px-3 py-2 text-sm font-medium hover:bg-muted"><LifeBuoy className="mr-2 inline h-4 w-4" />Support</a>
-       <Link href={`/admin/students/${encodeURIComponent(studentId)}/roadmap`} className="rounded-md border px-3 py-2 text-sm font-medium hover:bg-muted">Roadmap</Link>
-     </nav>
-     {canonicalStudentId ? <StudentProfileReview studentId={canonicalStudentId} /> : null}
-     <div id="workspace-overview" aria-label="Overview">
-    <section className="grid gap-4 md:grid-cols-3">
-       <Card><CardHeader><CardTitle className="text-sm text-muted-foreground">Current program</CardTitle></CardHeader><CardContent>{programName === "Not provided" ? <p className="text-lg font-semibold">No program assigned</p> : <><p className="text-lg font-semibold">{programName}</p>{programVersionName !== "Not provided" ? <p className="mt-1 text-sm text-muted-foreground">Version {programVersionName}</p> : null}</>}</CardContent></Card>
-       <Card><CardHeader><CardTitle className="text-sm text-muted-foreground">Progress status</CardTitle></CardHeader><CardContent><p className="break-words text-lg font-semibold">{workspaceProgressStatusLabel(vm.report?.status)}</p><p className="mt-1 text-sm text-muted-foreground">Canonical degree-progress result</p></CardContent></Card>
-       <Card><CardHeader><CardTitle className="text-sm text-muted-foreground">Snapshot</CardTitle></CardHeader><CardContent><p className="text-sm">{formatWorkspaceDateTime(snapshot.asOf ?? vm.asOf) ?? "No snapshot yet"}</p>{snapshotFingerprint ? <p className="mt-2 flex items-center gap-1 font-mono text-xs text-muted-foreground"><Fingerprint className="h-3.5 w-3.5 shrink-0" /><span className="min-w-0 truncate" title={snapshotFingerprint}>{snapshotFingerprint}</span></p> : null}</CardContent></Card>
+  return <StaffPage testId="admin-student-workspace">
+    <StaffPageHeader
+      back={<Link href={ADMIN_STUDENTS_PATH} className="inline-flex min-h-10 items-center gap-2 text-sm font-medium text-student-gold-ink underline-offset-4 hover:underline"><ArrowLeft className="h-4 w-4" aria-hidden="true" />Back to Students</Link>}
+      eyebrow="Staff Portal · Student workspace"
+      title={name}
+      description={<>{identity.email ?? "Not provided"} · <span className="font-mono">{identity.studentCode ?? "Not provided"}</span></>}
+      meta={<StaffPill tone="neutral" icon={<ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />}>Canonical view · controlled placement writes</StaffPill>}
+      actions={<Link href={`/admin/students/${encodeURIComponent(studentId)}/roadmap`} className={`${staffBtn.outline} inline-flex items-center justify-center border`} data-testid="link-student-roadmap"><Route className="h-4 w-4" aria-hidden="true" />View roadmap</Link>}
+    />
+    <StaffTabList tabs={tabs} active={tab} onChange={(key) => setTab(key as WorkspaceTab)} label="Student workspace sections" idPrefix="ws" />
+
+    <StaffTabPanel idPrefix="ws" tabKey="overview" active={tab === "overview"}>
+    <div id="workspace-overview" aria-label="Overview" className="space-y-6">
+    <section className="grid gap-4 md:grid-cols-3" aria-label="Summary">
+      <StaffCard as="div"><p className={staffLabel}>Current program</p>{programName === "Not provided" ? <p className="mt-2 font-serif text-xl text-student-ink">No program assigned</p> : <><p className="mt-2 font-serif text-xl leading-snug text-student-ink">{programName}</p>{programVersionName !== "Not provided" ? <p className="mt-1 text-sm text-student-muted">Version {programVersionName}</p> : null}</>}</StaffCard>
+      <StaffCard as="div">
+        <p className={staffLabel}>Progress status</p>
+        <p className="mt-2 break-words font-serif text-xl text-student-ink">{workspaceProgressStatusLabel(vm.report?.status)}</p>
+        <p className="mt-1 text-sm text-student-muted">Canonical degree-progress result</p>
+        {standingTotal > 0 ? <div className="mt-3 space-y-2" data-testid="credit-record-bar">
+          <div role="img" aria-label={`${standingTotal} credit records: ${standingCounts.verified} verified, ${standingCounts.waiting} waiting for verification, ${standingCounts.not_accepted} not accepted`} className="flex h-2.5 overflow-hidden rounded-full bg-student-line">
+            {standingCounts.verified > 0 ? <span className="bg-st-official" style={{ width: `${(standingCounts.verified / standingTotal) * 100}%` }} /> : null}
+            {standingCounts.waiting > 0 ? <span className="bg-st-submitted" style={{ width: `${(standingCounts.waiting / standingTotal) * 100}%` }} /> : null}
+            {standingCounts.not_accepted > 0 ? <span className="bg-st-attention" style={{ width: `${(standingCounts.not_accepted / standingTotal) * 100}%` }} /> : null}
+          </div>
+          <ul className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-student-muted">
+            {standingCounts.verified > 0 ? <li><span className="font-semibold text-student-ink">{standingCounts.verified}</span> verified</li> : null}
+            {standingCounts.waiting > 0 ? <li><span className="font-semibold text-student-ink">{standingCounts.waiting}</span> waiting for verification</li> : null}
+            {standingCounts.not_accepted > 0 ? <li><span className="font-semibold text-student-ink">{standingCounts.not_accepted}</span> not accepted</li> : null}
+          </ul>
+        </div> : null}
+      </StaffCard>
+      <StaffCard as="div"><p className={staffLabel}>Snapshot</p><p className="mt-2 font-serif text-xl text-student-ink">{formatWorkspaceDateTime(snapshot.asOf ?? vm.asOf) ?? "No snapshot yet"}</p>{snapshotFingerprint ? <p className="mt-1 flex items-center gap-1 font-mono text-xs text-student-muted"><Fingerprint className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /><span className="min-w-0 truncate" title={snapshotFingerprint}>{snapshotFingerprint}</span></p> : null}</StaffCard>
     </section>
     {!snapshotFingerprint || snapshotUnavailable
-      ? <div role="status" className="flex flex-col gap-3 rounded-md border border-amber-500/40 bg-amber-500/5 px-4 py-3 text-sm text-amber-900 dark:text-amber-200 sm:flex-row sm:items-center sm:justify-between">
-          <span>Placement changes are paused: this student has no current academic snapshot yet. Refresh the workspace once the degree report has been generated.</span>
-          <Button type="button" size="sm" variant="outline" disabled={query.isFetching} onClick={() => void refreshCanonical()}>
-            <RefreshCw className={`mr-2 h-4 w-4 ${query.isFetching ? "animate-spin" : ""}`} />
+      ? <StaffNotice tone="attention" role="status" icon={<AlertCircle className="h-4 w-4" />} action={<Button type="button" size="sm" variant="outline" className={staffBtn.outline} disabled={query.isFetching} onClick={() => void refreshCanonical()}>
+            <RefreshCw className={`h-4 w-4 ${query.isFetching ? "animate-spin" : ""}`} />
             Refresh workspace
-          </Button>
-        </div>
+          </Button>}>
+          Placement changes are paused: this student has no current academic snapshot yet. Refresh the workspace once the degree report has been generated.
+        </StaffNotice>
       : null}
-      <Card className={vm.attention.hasAttention ? "border-amber-500/40" : ""}><CardHeader><div className="flex items-center justify-between"><div><CardTitle>Academic report review</CardTitle><p className="mt-1 text-sm text-muted-foreground">Manual-review, conflict, missing or partial items from the canonical degree report. Profile and identity decisions are listed above.</p></div><Badge variant={vm.attention.hasAttention ? "destructive" : "secondary"}>{vm.attention.total} {vm.attention.total === 1 ? "item" : "items"}</Badge></div></CardHeader><CardContent>{vm.attention.total === 0 ? <div className="rounded-md bg-muted/50 px-4 py-8 text-center text-sm text-muted-foreground">No manual-review, conflict, missing, or partial items reported.</div> : <div className="divide-y">{vm.attention.items.map((item, i) => <div key={i} className="py-3">{isDiagnosticAttentionItem(item) ? <div className="flex items-center gap-2">{diagnosticItemStatus(item) && <Badge variant="outline">{diagnosticItemStatus(item)}</Badge>}<span className="font-medium">{item.kind === "integration-diagnostic" ? "Integration diagnostic" : "Diagnostic"}</span><span className="text-sm text-muted-foreground">{typeof item.diagnostic === "object" ? JSON.stringify(item.diagnostic) : String(item.diagnostic)}</span></div> : <><div className="flex flex-wrap items-center gap-2">{attentionItemStatus(vm, item) && <Badge variant="outline">{attentionItemStatus(vm, item)}</Badge>}<span className="font-medium">{attentionItemLabel(vm.labels, item)}</span>{item.reason && <span className="text-sm text-muted-foreground">· {item.reason}</span>}</div><Evidence item={item} /></>}</div>)}</div>}</CardContent></Card>
+    <StaffCard tone={attentionTotal > 0 ? "attention" : "default"} aria-labelledby="needs-attention-heading" data-testid="needs-attention">
+      <StaffSectionHeader id="needs-attention-heading" title="Needs attention" description={attentionTotal > 0 ? "Everything waiting on a staff member for this student, in one list." : "Nothing is waiting on a staff member for this student."} actions={attentionTotal > 0 ? <StaffPill tone="attention">{attentionTotal} {attentionTotal === 1 ? "item" : "items"}</StaffPill> : null} />
+      <ul className="divide-y divide-student-line">
+        {attentionRows.map((row) => <li key={row.key} className="flex flex-wrap items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
+          <div className="min-w-0"><p className="text-sm font-semibold text-student-ink">{row.label}</p><p className="text-sm text-student-muted">{row.count > 0 ? row.detail : row.none}</p></div>
+          <div className="flex items-center gap-2">
+            <StaffPill tone={row.count > 0 ? "attention" : "neutral"}>{row.count}</StaffPill>
+            {row.count > 0 ? row.action : null}
+          </div>
+        </li>)}
+      </ul>
+    </StaffCard>
+    {vm.attention.total > 0 ? <StaffCard id="workspace-report-review" aria-labelledby="report-review-heading" tone="attention">
+      <StaffSectionHeader id="report-review-heading" title="Academic report review" description="Manual-review, conflict, missing or partial items from the canonical degree report." actions={<StaffPill tone="attention">{vm.attention.total} {vm.attention.total === 1 ? "item" : "items"}</StaffPill>} />
+      <div className="divide-y">{vm.attention.items.map((item, i) => <div key={i} className="py-3">{isDiagnosticAttentionItem(item) ? <div className="flex items-center gap-2">{diagnosticItemStatus(item) && <Badge variant="outline">{diagnosticItemStatus(item)}</Badge>}<span className="font-medium">{item.kind === "integration-diagnostic" ? "Integration diagnostic" : "Diagnostic"}</span><span className="text-sm text-muted-foreground">{typeof item.diagnostic === "object" ? JSON.stringify(item.diagnostic) : String(item.diagnostic)}</span></div> : <><div className="flex flex-wrap items-center gap-2">{attentionItemStatus(vm, item) && <Badge variant="outline">{attentionItemStatus(vm, item)}</Badge>}<span className="font-medium">{attentionItemLabel(vm.labels, item)}</span>{item.reason && <span className="text-sm text-muted-foreground">· {item.reason}</span>}</div><Evidence item={item} /></>}</div>)}</div>
+    </StaffCard> : null}
     <section aria-labelledby="operator-academic-detail" className="space-y-4">
       <div>
-        <h2 id="operator-academic-detail" className="text-xl font-semibold">Operator academic detail</h2>
+        <h2 id="operator-academic-detail" className="font-serif text-2xl tracking-tight text-student-ink">Operator academic detail</h2>
         <p className="mt-1 text-sm text-muted-foreground">Canonical source, credit, latest verification, latest decision, and placement records. No academic values are recomputed here.</p>
       </div>
       {academicRows.length === 0
@@ -219,17 +300,18 @@ export default function AdminStudentWorkspace() {
           const verification = row.latestVerification;
           const decision = row.latestDecision;
           const creditFeedbackKey = `credit:${String(credit.id)}`;
+          const standing = creditRecordStanding(credit.status);
           return <Card key={String(credit.id)}>
             <CardHeader className="space-y-2">
               <div className="flex flex-wrap items-start justify-between gap-3">
-                <div><CardTitle>{value(credit, "rawCourseCode") !== "Not provided" ? `${value(credit, "rawCourseCode")} · ${value(credit, "rawTitle")}` : value(credit, "rawTitle")}</CardTitle>{provided(value(credit, "term"), humanValue(credit, "recordType")) ? <p className="mt-1 text-sm text-muted-foreground">{provided(value(credit, "term"), humanValue(credit, "recordType"))}</p> : null}</div>
-                <Badge variant="outline">{humanValue(credit, "status")}</Badge>
+                <div><CardTitle className="font-serif text-xl font-normal tracking-tight">{value(credit, "rawCourseCode") !== "Not provided" ? `${value(credit, "rawCourseCode")} · ${value(credit, "rawTitle")}` : value(credit, "rawTitle")}</CardTitle>{provided(value(credit, "term"), humanValue(credit, "recordType")) ? <p className="mt-1 text-sm text-muted-foreground">{provided(value(credit, "term"), humanValue(credit, "recordType"))}</p> : null}</div>
+                <StatusPill status={standing.status} label={standing.label} />
               </div>
             </CardHeader>
             <CardContent className="space-y-5">
               <dl className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <DetailField label="Source"><span className="font-medium">{source ? value(source, "title") : "Source unavailable"}</span><span className="block text-muted-foreground">{source ? `${humanValue(source, "sourceType")} · ${humanValue(source, "status")}` : "Canonical source record not supplied"}</span></DetailField>
-                <DetailField label="Credit"><span className="font-medium">{value(credit, "normalizedCredits", "rawCredits")} credits</span>{provided(value(credit, "rawGrade") !== "Not provided" ? `Grade ${value(credit, "rawGrade")}` : "Not provided", value(credit, "normalizedLevel", "rawLevel") !== "Not provided" ? `Level ${value(credit, "normalizedLevel", "rawLevel")}` : "Not provided") ? <span className="block text-muted-foreground">{provided(value(credit, "rawGrade") !== "Not provided" ? `Grade ${value(credit, "rawGrade")}` : "Not provided", value(credit, "normalizedLevel", "rawLevel") !== "Not provided" ? `Level ${value(credit, "normalizedLevel", "rawLevel")}` : "Not provided")}</span> : null}</DetailField>
+                <DetailField label={standing.key === "verified" ? "Verified credit" : "Reported credit"}><span className="font-medium">{value(credit, "normalizedCredits", "rawCredits")} credits</span>{provided(value(credit, "rawGrade") !== "Not provided" ? `Grade ${value(credit, "rawGrade")}` : "Not provided", value(credit, "normalizedLevel", "rawLevel") !== "Not provided" ? `Level ${value(credit, "normalizedLevel", "rawLevel")}` : "Not provided") ? <span className="block text-muted-foreground">{provided(value(credit, "rawGrade") !== "Not provided" ? `Grade ${value(credit, "rawGrade")}` : "Not provided", value(credit, "normalizedLevel", "rawLevel") !== "Not provided" ? `Level ${value(credit, "normalizedLevel", "rawLevel")}` : "Not provided")}</span> : null}</DetailField>
                 <DetailField label="Latest verification">{verification ? <><Badge variant="secondary">{humanValue(verification, "action")}</Badge><span className="mt-1 block text-muted-foreground">{displayDate(verification.createdAt)}</span></> : "No verification recorded"}</DetailField>
                 <DetailField label="Latest decision">{decision ? <><Badge variant="secondary">{humanValue(decision, "action")}</Badge><span className="mt-1 block text-muted-foreground">{value(decision, "creditsAwarded")} credits awarded · {displayDate(decision.createdAt)}</span></> : "No decision for the active assignment"}</DetailField>
               </dl>
@@ -341,7 +423,7 @@ export default function AdminStudentWorkspace() {
     </section>
     {vm.academicDetail.placements.filter((placement) => !academicRows.some((row) => row.placements.includes(placement))).length > 0 && <Card>
       <CardHeader>
-        <CardTitle>Historical placement records</CardTitle>
+        <CardTitle className="font-serif text-xl font-normal tracking-tight">Historical placement records</CardTitle>
         <p className="text-sm text-muted-foreground">Placements retained for earlier decisions in this active assignment. An active record can still be revoked here.</p>
       </CardHeader>
       <CardContent className="divide-y">
@@ -390,19 +472,30 @@ export default function AdminStudentWorkspace() {
         })}
       </CardContent>
     </Card>}
-     <Card><CardHeader><CardTitle>Report provenance</CardTitle></CardHeader><CardContent className="grid gap-4 text-sm md:grid-cols-3"><div><p className="text-muted-foreground">Report status</p><p className="mt-1 font-medium">{workspaceProgressStatusLabel(vm.provenance.reportStatus)}</p></div><div><p className="text-muted-foreground">Reasons</p><p className="mt-1 font-medium">{vm.provenance.reasons.length || "None reported"}</p></div><div><p className="text-muted-foreground">Diagnostics</p><p className="mt-1 font-medium">{vm.provenance.integrationDiagnostics.length + vm.provenance.diagnostics.length || "None reported"}</p></div></CardContent></Card>
+     <Card><CardHeader><CardTitle className="font-serif text-xl font-normal tracking-tight">Report provenance</CardTitle></CardHeader><CardContent className="grid gap-4 text-sm md:grid-cols-3"><div><p className="text-muted-foreground">Report status</p><p className="mt-1 font-medium">{workspaceProgressStatusLabel(vm.provenance.reportStatus)}</p></div><div><p className="text-muted-foreground">Reasons</p><p className="mt-1 font-medium">{vm.provenance.reasons.length || "None reported"}</p></div><div><p className="text-muted-foreground">Diagnostics</p><p className="mt-1 font-medium">{vm.provenance.integrationDiagnostics.length + vm.provenance.diagnostics.length || "None reported"}</p></div></CardContent></Card>
      </div>
+    </StaffTabPanel>
+
+    <StaffTabPanel idPrefix="ws" tabKey="profile" active={tab === "profile"}>
+      {canonicalStudentId ? <StudentProfileReview studentId={canonicalStudentId} /> : null}
+    </StaffTabPanel>
+
+    <StaffTabPanel idPrefix="ws" tabKey="documents" active={tab === "documents"}>
      <section id="workspace-documents" aria-labelledby="workspace-documents-heading" className="space-y-4">
-       <div><h2 id="workspace-documents-heading" className="flex items-center gap-2 text-xl font-semibold"><FileText className="h-5 w-5" />Documents</h2><p className="mt-1 text-sm text-muted-foreground">Documents already recorded for this student. This workspace is read-only.</p></div>
+       <StaffSectionHeader id="workspace-documents-heading" icon={<FileText className="h-5 w-5" />} title="Documents" description="Documents already recorded for this student. This workspace is read-only." />
        <WorkspaceResourceState loading={documentsQuery.isLoading} error={documentsQuery.isError} empty={!documentsQuery.data?.length} onRetry={() => void documentsQuery.refetch()}>
-         <div className="grid gap-3 md:grid-cols-2">{documentsQuery.data?.map((document) => <Card key={document.id}><CardContent className="space-y-2 p-4"><div className="flex items-center justify-between gap-3"><p className="font-medium">{document.file_name}</p><Badge variant="outline">{docStatusLabel(document.status)}</Badge></div><p className="text-sm text-muted-foreground">{docTypeLabel(document.doc_type)}{document.issuer ? ` · ${document.issuer}` : ""}</p>{formatWorkspaceDateTime(document.uploaded_at ?? document.created_at) ? <p className="text-xs text-muted-foreground">Uploaded {formatWorkspaceDateTime(document.uploaded_at ?? document.created_at)}</p> : null}</CardContent></Card>)}</div>
+         <ul className="grid gap-3 md:grid-cols-2">{documentsQuery.data?.map((document) => <li key={document.id}><StaffCard as="div" className="space-y-2"><div className="flex flex-wrap items-start justify-between gap-3"><p className="min-w-0 break-words font-medium text-student-ink">{document.file_name}</p><StatusPill status={documentStatusKey(document.status)} label={docStatusLabel(document.status)} /></div><p className="text-sm text-student-muted">{docTypeLabel(document.doc_type)}{document.issuer ? ` · ${document.issuer}` : ""}</p>{formatWorkspaceDateTime(document.uploaded_at ?? document.created_at) ? <p className="text-xs text-student-muted">Uploaded {formatWorkspaceDateTime(document.uploaded_at ?? document.created_at)}</p> : null}</StaffCard></li>)}</ul>
        </WorkspaceResourceState>
      </section>
+    </StaffTabPanel>
+
+    <StaffTabPanel idPrefix="ws" tabKey="support" active={tab === "support"}>
      <section id="workspace-support" aria-labelledby="workspace-support-heading" className="space-y-4">
-       <div><h2 id="workspace-support-heading" className="flex items-center gap-2 text-xl font-semibold"><LifeBuoy className="h-5 w-5" />Support</h2><p className="mt-1 text-sm text-muted-foreground">Support tickets associated with this student. This workspace is read-only.</p></div>
+       <StaffSectionHeader id="workspace-support-heading" icon={<LifeBuoy className="h-5 w-5" />} title="Support" description="Support tickets associated with this student. This workspace is read-only; replies happen in the Support desk." actions={<Link href="/support" className={`${staffBtn.outline} inline-flex items-center justify-center border`}>Open Support desk</Link>} />
        <WorkspaceResourceState loading={ticketsQuery.isLoading} error={ticketsQuery.isError} empty={!ticketsQuery.data?.tickets.length} onRetry={() => void ticketsQuery.refetch()}>
-         <div className="space-y-3">{ticketsQuery.data?.tickets.map((ticket: Ticket) => <Card key={ticket.id}><CardContent className="space-y-2 p-4"><div className="flex flex-wrap items-center justify-between gap-3"><p className="font-medium">{ticket.subject}</p><div className="flex gap-2"><Badge variant="outline">{staffStatusLabel(ticket.status)}</Badge><Badge variant="secondary">{workspaceToken(ticket.priority) ?? ticket.priority}</Badge></div></div><p className="text-sm text-muted-foreground">{ticket.ticket_number} · {SUPPORT_TOPIC_INFO[ticket.topic ?? topicForTicket(null, ticket.category)].label}</p>{formatWorkspaceDateTime(ticket.created_at) ? <p className="text-xs text-muted-foreground">Opened {formatWorkspaceDateTime(ticket.created_at)}</p> : null}</CardContent></Card>)}</div>
+         <ul className="space-y-3">{ticketsQuery.data?.tickets.map((ticket: Ticket) => <li key={ticket.id}><StaffCard as="div" className="space-y-2"><div className="flex flex-wrap items-center justify-between gap-3"><p className="font-medium text-student-ink">{ticket.subject}</p><div className="flex flex-wrap gap-2"><StatusPill status={ticketStatusKey(ticket.status)} label={staffStatusLabel(ticket.status)} /><StaffPill tone={ticket.priority === "urgent" ? "urgent-solid" : ticket.priority === "high" ? "attention" : "neutral"}>{workspaceToken(ticket.priority) ?? ticket.priority}</StaffPill></div></div><p className="text-sm text-student-muted">{ticket.ticket_number} · {SUPPORT_TOPIC_INFO[ticket.topic ?? topicForTicket(null, ticket.category)].label}</p>{formatWorkspaceDateTime(ticket.created_at) ? <p className="text-xs text-student-muted">Opened {formatWorkspaceDateTime(ticket.created_at)}</p> : null}</StaffCard></li>)}</ul>
        </WorkspaceResourceState>
      </section>
-  </div>;
+    </StaffTabPanel>
+  </StaffPage>;
 }

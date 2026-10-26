@@ -1,6 +1,6 @@
-import { BookOpen, FileText, CreditCard, HelpCircle, LogOut, User, Gauge, ShieldCheck } from "lucide-react";
+import { BookOpen, FileText, CreditCard, GraduationCap, HelpCircle, LogOut, User, Gauge, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Link, useLocation } from "wouter";
+import { Link, useLocation, useSearch } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import {
   Sidebar,
@@ -16,6 +16,9 @@ import {
 } from "@/components/ui/sidebar";
 import { ProfileAvatarUpload } from "@/components/profile-avatar-upload";
 import { useAuth, useAuthToken } from "@/lib/auth";
+import { StaffAvatar } from "@/components/staff/staff-ui";
+import { staffRoleLabel } from "@/components/staff/staff-shell";
+import { ADMIN_STUDENTS_PATH, adminTabFromSearch } from "@/pages/admin-student-workspace-presentation";
 import lumiereLogo from "@assets/Lumiere Logo_1762534146530.webp";
 import type { Student } from "@shared/schema";
 
@@ -63,8 +66,11 @@ const studentMenuItems = [
 const studentJourneyItems = studentMenuItems.filter((i) => ["/flight-deck", "/roadmap"].includes(i.url));
 const studentFileItems = studentMenuItems.filter((i) => !["/flight-deck", "/roadmap"].includes(i.url));
 
+// Staff navigation. "Students" opens the existing admin Students list (admin only: the
+// list route is admin-gated). Staff and coaches work from the support desk.
 const adminMenuItems = [
   { title: "Admin Dashboard", url: "/admin", icon: ShieldCheck },
+  { title: "Students", url: ADMIN_STUDENTS_PATH, icon: GraduationCap },
   { title: "Support", url: "/support", icon: HelpCircle },
 ];
 
@@ -74,6 +80,7 @@ const staffMenuItems = [
 
 export function AppSidebar() {
   const [location] = useLocation();
+  const search = useSearch();
   const { user, logout } = useAuth();
   const accessToken = useAuthToken();
   const isStudent = user?.role === "student";
@@ -100,7 +107,8 @@ export function AppSidebar() {
     ? profile.email
     : user?.email || "";
 
-  const portalLabel = user?.role === "admin" ? "Admin Portal" : isStudent ? "Student Portal" : "Staff Portal";
+  // Admin, staff and coach all work in the Staff Portal; the role is shown on the account card.
+  const portalLabel = isStudent ? "Student Portal" : "Staff Portal";
 
   if (isStudent) {
     const renderItems = (items: typeof studentMenuItems) => (
@@ -155,7 +163,7 @@ export function AppSidebar() {
         </SidebarContent>
         <SidebarFooter className="gap-3 px-4 pb-5 pt-3" role="contentinfo">
           <div role="region" aria-label="Your account" className="space-y-2 rounded-xl border border-sidebar-border bg-sidebar-accent/40 p-3">
-            <div className="flex items-center gap-3" aria-label="User profile" data-testid="profile-user">
+            <div className="flex items-center gap-3" role="group" aria-label="User profile" data-testid="profile-user">
               <ProfileAvatarUpload
                 photoUrl={profile?.photo_url}
                 firstName={profile?.first_name}
@@ -184,81 +192,90 @@ export function AppSidebar() {
     );
   }
 
+  // Which staff item is current. Students is the admin dashboard's Students tab or any workspace.
+  const onStudents = location.startsWith("/admin/students") || (location === "/admin" && adminTabFromSearch(search) === "students");
+  const isActive = (url: string) => {
+    if (url === ADMIN_STUDENTS_PATH) return onStudents;
+    if (url === "/admin") return location.startsWith("/admin") && !onStudents;
+    return location === url;
+  };
+
   return (
-    <Sidebar>
-      <SidebarHeader className="p-6">
-        <div className="flex items-center gap-3" role="region" aria-label="Lumière Higher-Ed Pathways">
+    <Sidebar collapsible="icon">
+      <SidebarHeader className="px-4 pb-3 pt-6 group-data-[collapsible=icon]:px-1.5">
+        <div className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center" role="region" aria-label="Lumière Higher-Ed Pathways">
           <img
             src={lumiereLogo}
             alt="Lumière Higher-Ed Pathways"
-            className="h-12 w-12 object-contain"
+            className="h-10 w-10 shrink-0 object-contain"
             data-testid="img-lumiere-logo"
           />
-          <div>
-            <p className="text-lg font-bold leading-tight">Lumière</p>
-            <p className="text-xs text-muted-foreground">Higher-Ed Pathways</p>
-            <p className="text-xs text-muted-foreground">{portalLabel}</p>
+          <div className="min-w-0 group-data-[collapsible=icon]:hidden">
+            <p className="font-serif text-2xl leading-none tracking-tight text-sidebar-primary">Lumière</p>
+            <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-sidebar-foreground/70">Higher-Ed Pathways</p>
+            <p className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-sidebar-primary" data-testid="text-portal-label">{portalLabel}</p>
           </div>
         </div>
-
-        <div className="mt-3 border-t border-sidebar-border"></div>
-        <div role="region" aria-label="Your account">
-        <div
-          className="mt-2 px-3 py-2 flex items-center gap-3 rounded-xl hover-elevate transition-colors"
-          aria-label="User profile"
-          data-testid="profile-user"
-        >
-          <ProfileAvatarUpload
-            photoUrl={isStudent ? profile?.photo_url : undefined}
-            firstName={isStudent ? profile?.first_name : user?.name?.split(" ")[0]}
-            lastName={isStudent ? profile?.last_name : user?.name?.split(" ").slice(1).join(" ")}
-            size="md"
-            showUploadButton={false}
-          />
-          <div className="min-w-0 flex-1">
-            <div className="text-sm font-medium truncate" data-testid="text-username">{displayName}</div>
-            <div className="text-xs text-muted-foreground truncate" data-testid="text-email">{displayEmail}</div>
-          </div>
-        </div>
-
-        <button
-          onClick={() => void logout()}
-          className="mt-2 w-full px-3 py-2 flex items-center gap-2 text-sm rounded-xl hover-elevate transition-colors text-muted-foreground hover:text-foreground"
-          data-testid="button-logout"
-          aria-label="Log out"
-        >
-          <LogOut className="h-4 w-4" />
-          <span>Log out</span>
-        </button>
-        </div>
+        <div className="mt-4 h-px bg-gradient-to-r from-sidebar-primary/60 via-sidebar-primary/20 to-transparent" aria-hidden="true" />
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="px-2">
         <nav aria-label="Main">
-        <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={location === item.url || (item.url === "/admin" && location.startsWith("/admin/"))}
-                    data-testid={`link-${item.title.toLowerCase().replace(/\s+/g, "-")}`}
-                  >
-                    <Link href={item.url}>
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+          <SidebarGroup>
+            <SidebarGroupLabel className="text-[11px] font-semibold uppercase tracking-[0.16em]">Workspace</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {menuItems.map((item) => {
+                  const active = isActive(item.url);
+                  return (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={active}
+                        tooltip={item.title}
+                        className={cn(
+                          "h-11 gap-3 rounded-lg px-3 text-[15px] font-medium group-data-[collapsible=icon]:!h-10 group-data-[collapsible=icon]:!w-10 group-data-[collapsible=icon]:!justify-center group-data-[collapsible=icon]:!p-0",
+                          active && "relative bg-sidebar-accent text-sidebar-accent-foreground before:absolute before:inset-y-2 before:left-0 before:w-[3px] before:rounded-full before:bg-sidebar-primary",
+                        )}
+                        data-testid={`link-${item.title.toLowerCase().replace(/\s+/g, "-")}`}
+                      >
+                        <Link href={item.url} aria-label={item.title} aria-current={active ? "page" : undefined}>
+                          <item.icon className="h-[18px] w-[18px] shrink-0" aria-hidden="true" />
+                          <span className="group-data-[collapsible=icon]:hidden">{item.title}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
         </nav>
       </SidebarContent>
-      <SidebarFooter className="p-6" role="contentinfo">
-        <p className="text-xs text-muted-foreground text-center">© 2026 Lumière Higher-Ed Pathways</p>
+      <SidebarFooter className="gap-3 px-3 pb-4 pt-2 group-data-[collapsible=icon]:px-1.5" role="contentinfo">
+        <div
+          role="region"
+          aria-label="Your account"
+          className="space-y-2 rounded-xl border border-sidebar-border bg-sidebar-accent/40 p-3 group-data-[collapsible=icon]:border-0 group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:p-0"
+        >
+          <div className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center" role="group" aria-label="User profile" data-testid="profile-user">
+            <StaffAvatar name={displayName} size="lg" />
+            <div className="min-w-0 flex-1 group-data-[collapsible=icon]:hidden">
+              <div className="truncate text-sm font-semibold" data-testid="text-username">{displayName}</div>
+              <div className="truncate text-xs text-sidebar-foreground/80" data-testid="text-role">{staffRoleLabel(user?.role)}</div>
+              <div className="truncate text-xs text-sidebar-foreground/70" data-testid="text-email">{displayEmail}</div>
+            </div>
+          </div>
+          <button
+            onClick={() => void logout()}
+            className="flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-sidebar-border bg-sidebar text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:w-10"
+            data-testid="button-logout"
+            aria-label="Log out"
+          >
+            <LogOut className="h-4 w-4" aria-hidden="true" />
+            <span className="group-data-[collapsible=icon]:hidden">Log out</span>
+          </button>
+        </div>
+        <p className="text-center text-[11px] text-sidebar-foreground group-data-[collapsible=icon]:hidden">© 2026 Lumière Higher-Ed Pathways</p>
       </SidebarFooter>
     </Sidebar>
   );

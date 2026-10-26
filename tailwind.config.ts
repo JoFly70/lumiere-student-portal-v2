@@ -113,6 +113,8 @@ export default {
         "st-submitted": { DEFAULT: "hsl(var(--st-submitted) / <alpha-value>)", soft: "hsl(var(--st-submitted-soft) / <alpha-value>)" },
         "st-notstarted": { DEFAULT: "hsl(var(--st-notstarted) / <alpha-value>)", soft: "hsl(var(--st-notstarted-soft) / <alpha-value>)" },
         "st-attention": { DEFAULT: "hsl(var(--st-attention) / <alpha-value>)", soft: "hsl(var(--st-attention-soft) / <alpha-value>)" },
+        // Staff pass: real errors and urgent work only (never a progress state).
+        "st-urgent": { DEFAULT: "hsl(var(--st-urgent) / <alpha-value>)", soft: "hsl(var(--st-urgent-soft) / <alpha-value>)" },
         status: {
           online: "rgb(34 197 94)",
           away: "rgb(245 158 11)",

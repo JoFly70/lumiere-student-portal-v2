@@ -9,8 +9,11 @@ import { describe, expect, it } from "vitest";
 const css = fs.readFileSync(path.resolve(__dirname, "../client/src/index.css"), "utf8");
 
 function block(selector: string): Record<string, string> {
-  const start = css.indexOf(`\n${selector} {`);
-  expect(start).toBeGreaterThan(-1);
+  // The token layer is shared: `.student-surface, .staff-surface, body.staff-shell { ... }` is one rule.
+  const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const m = new RegExp(`\\n${escaped}(?:,[^{]*)? \\{`).exec(css);
+  expect(m).not.toBeNull();
+  const start = m!.index;
   const end = css.indexOf("\n}", start);
   const out: Record<string, string> = {};
   for (const m of css.slice(start, end).matchAll(/(--[a-z0-9-]+):\s*([^;]+);/g)) out[m[1]] = m[2].trim();
@@ -82,8 +85,16 @@ describe.each([
 
 describe("S07 admin tokens are untouched", () => {
   it("the global --primary is not redefined by the student rules", () => {
-    const studentRules = css.slice(css.indexOf("Student-facing surface (S05"));
+    const staffAt = css.indexOf("Staff shell (S10 staff pass)");
+    expect(staffAt).toBeGreaterThan(-1);
+    const studentRules = css.slice(css.indexOf("Student-facing surface (S05"), staffAt);
     expect(studentRules).not.toMatch(/\s--primary:/);
     expect(studentRules).not.toMatch(/\s--background:/);
+  });
+
+  it("the staff pass remaps the shadcn variables only under body.staff-shell, never on student scopes", () => {
+    const staffRules = css.slice(css.indexOf("Staff shell (S10 staff pass)"));
+    expect(staffRules).toMatch(/\nbody\.staff-shell \{[^}]*--primary: var\(--s-seal\)/);
+    expect(staffRules).not.toMatch(/\.student-(surface|shell)[^{]*\{[^}]*--primary:/);
   });
 });

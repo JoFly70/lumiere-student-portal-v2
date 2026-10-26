@@ -135,6 +135,111 @@
       "screen": "28-staff-profile-panel-768-light.png",
       "width": 768,
       "horizontalOverflow": []
+    },
+    {
+      "screen": "29-staff-desk-conversation-390-light.png",
+      "width": 390,
+      "horizontalOverflow": []
+    },
+    {
+      "screen": "30-staff-desk-queue-768-light.png",
+      "width": 768,
+      "horizontalOverflow": []
+    },
+    {
+      "screen": "31-staff-desk-conversation-768-light.png",
+      "width": 768,
+      "horizontalOverflow": []
+    },
+    {
+      "screen": "32-staff-desk-queue-1024-light.png",
+      "width": 1024,
+      "horizontalOverflow": []
+    },
+    {
+      "screen": "33-staff-desk-conversation-1024-light.png",
+      "width": 1024,
+      "horizontalOverflow": []
+    },
+    {
+      "screen": "34-staff-desk-overdue-filter-1440-light.png",
+      "width": 1440,
+      "horizontalOverflow": []
+    },
+    {
+      "screen": "35-staff-desk-queue-1440-light.png",
+      "width": 1440,
+      "horizontalOverflow": []
+    },
+    {
+      "screen": "36-staff-workspace-overview-390-light.png",
+      "width": 390,
+      "horizontalOverflow": []
+    },
+    {
+      "screen": "37-staff-workspace-overview-768-light.png",
+      "width": 768,
+      "horizontalOverflow": []
+    },
+    {
+      "screen": "38-staff-workspace-overview-1024-light.png",
+      "width": 1024,
+      "horizontalOverflow": []
+    },
+    {
+      "screen": "39-staff-workspace-overview-1440-light.png",
+      "width": 1440,
+      "horizontalOverflow": []
+    },
+    {
+      "screen": "40-staff-workspace-overview-1440-dark.png",
+      "width": 1440,
+      "horizontalOverflow": []
+    },
+    {
+      "screen": "41-staff-workspace-documents-1440-light.png",
+      "width": 1440,
+      "horizontalOverflow": []
+    },
+    {
+      "screen": "42-staff-workspace-support-1440-light.png",
+      "width": 1440,
+      "horizontalOverflow": []
+    },
+    {
+      "screen": "43-admin-home-1440-light.png",
+      "width": 1440,
+      "horizontalOverflow": []
+    },
+    {
+      "screen": "44-admin-home-1440-dark.png",
+      "width": 1440,
+      "horizontalOverflow": []
+    },
+    {
+      "screen": "45-admin-home-390-light.png",
+      "width": 390,
+      "horizontalOverflow": []
+    },
+    {
+      "screen": "46-admin-students-1440-light.png",
+      "width": 1440,
+      "horizontalOverflow": []
+    },
+    {
+      "screen": "47-admin-students-1024-light.png",
+      "width": 1024,
+      "horizontalOverflow": []
+    },
+    {
+      "screen": "48-admin-students-768-light.png",
+      "width": 768,
+      "horizontalOverflow": []
+    },
+    {
+      "screen": "49-admin-students-390-light.png",
+      "width": 390,
+      "horizontalOverflow": []
     }
   ]
 }

@@ -25,7 +25,9 @@ describe("Phase 5F production truth and routing", () => {
     expect(sidebar).toContain('title: "Admin Dashboard"');
     expect(sidebar).toContain('url: "/admin"');
     expect(sidebar).toContain('enabled: isStudent');
-    expect(sidebar).toContain('user?.role === "admin" ? "Admin Portal" : isStudent ? "Student Portal" : "Staff Portal"');
+    // S10 staff pass: admin, staff and coach all work in the "Staff Portal"; students never see that label.
+    expect(sidebar).toContain('isStudent ? "Student Portal" : "Staff Portal"');
+    expect(sidebar).not.toContain('"Admin Portal"');
   });
 
   it("does not present sample admin activity or fake trend percentages", () => {

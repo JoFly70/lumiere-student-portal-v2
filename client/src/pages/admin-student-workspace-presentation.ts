@@ -1,3 +1,4 @@
+import type { StatusKey } from "./student-roadmap-presentation";
 export const ADMIN_STUDENT_WORKSPACE_QUERY_KEY = (studentId: string) =>
   [`/api/admin/students/${encodeURIComponent(studentId)}/workspace`] as const;
 export const ADMIN_STUDENT_WORKSPACE_QUERY_OPTIONS = {
@@ -341,3 +342,47 @@ export function workspaceToken(raw: unknown): string | undefined {
 export function workspaceProgressStatusLabel(status: unknown): string {
   return workspaceToken(status) ?? "Not yet reported";
 }
+
+// ---------------------------------------------------------------------------
+// Staff pass: the student status vocabulary for credit records and documents.
+// ---------------------------------------------------------------------------
+
+export interface WorkspaceStanding {
+  readonly key: "verified" | "waiting" | "not_accepted";
+  readonly status: StatusKey;
+  /** Same words the student sees (credentialStandingLabel). */
+  readonly label: string;
+}
+
+/**
+ * A credit record's standing in the student's words. Only a verified record is
+ * "Verified" (the charcoal official seal); anything else the student reported is
+ * "Waiting for verification", never presented as official.
+ */
+export function creditRecordStanding(raw: unknown): WorkspaceStanding {
+  const token = typeof raw === "string" ? raw.trim().toLowerCase() : "";
+  if (["verified", "verified_applied", "verified_not_applied", "accepted"].includes(token)) return { key: "verified", status: "official", label: "Verified" };
+  if (["not_accepted", "rejected", "declined"].includes(token)) return { key: "not_accepted", status: "attention", label: "Not accepted" };
+  return { key: "waiting", status: "submitted", label: "Waiting for verification" };
+}
+
+/** Counts of credit records by standing (records, not credit amounts: nothing is recomputed). */
+export function creditRecordStandingCounts(records: readonly WorkspaceRecord[]): Record<WorkspaceStanding["key"], number> {
+  const counts = { verified: 0, waiting: 0, not_accepted: 0 };
+  for (const record of records) counts[creditRecordStanding(record.status).key] += 1;
+  return counts;
+}
+
+/** Document status in the shared status language (the words come from docStatusLabel). */
+export function documentStatusKey(status: unknown): StatusKey {
+  switch (status) {
+    case "verified": return "official";
+    case "pending": return "submitted";
+    case "rejected":
+    case "resubmit_requested": return "attention";
+    default: return "notstarted";
+  }
+}
+
+/** Documents that need a staff review decision. */
+export const documentNeedsReview = (status: unknown): boolean => status === "pending";
