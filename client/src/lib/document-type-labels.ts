@@ -5,7 +5,7 @@
 const DOC_TYPE_LABELS: Record<string, string> = {
   hs_transcript: "High-school transcript",
   hs_diploma: "High-school diploma",
-  id_gov: "Government ID",
+  id_gov: "Government-issued ID",
   college_transcript: "College transcript",
   foreign_eval: "Foreign credential evaluation",
   degree_certificate: "Degree certificate",

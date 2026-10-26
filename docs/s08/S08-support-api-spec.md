@@ -169,3 +169,31 @@ multi-statement transaction, so the route compensates instead of claiming succes
 ### S10 orchestrator addition: concurrent duplicate
 
 When the optional unique index `20261028100000_s10_support_idempotency_index.sql` is applied and two requests with the same `idempotencyKey` race, the loser receives `409 SUPPORT_CREATE_IN_PROGRESS` (no claim of success or failure; nothing duplicated). The client treats it as "may have saved" and a retry with the same key returns the completed ticket (`200 replayed:true`).
+
+## S10 addendum — one status vocabulary and queue/tile agreement
+
+### Status translation table (single source: `SUPPORT_STATUS_LABEL` in `shared/support-contract.ts`)
+
+| Internal status | Who acts next (`awaitingFor`) | Staff label (desk, workspace) | Student label |
+|---|---|---|---|
+| `open` | staff | New | Received |
+| `in_progress` | staff | In progress | With your advisor |
+| `waiting_on_student` | student | Waiting on student | Waiting for you |
+| `resolved` | none | Resolved | Resolved |
+| `closed` | none | Closed | Closed |
+
+Staff and students intentionally read different words for the same state; both come from this table
+(`staffStatusLabel`, `studentStatusLabel`). No screen prints the raw enum (`open`, `in_progress`, ...).
+
+### Queue filters, tiles and cards must agree
+
+- Each stats tile opens exactly one queue (`staffQueueFilters` in `support-presentation.ts`):
+  Awaiting staff -> `view=active&awaiting=staff`; Awaiting student -> `view=active&awaiting=student`;
+  Overdue -> `overdue=true`; Unassigned -> `view=active&awaiting=staff&assignedTo=unassigned`
+  (the same population `/stats/summary` counts as `unassigned`).
+- Overdue (`isOverdue`: awaiting staff longer than `SUPPORT_TARGET_HOURS[priority]`) is shown on the
+  card (`overdue-flag`) and on the ticket detail, and is counted by the Overdue tile.
+- The card's "Assigned: X" and the detail's "Assigned to" dropdown resolve the same person
+  (`assigneeSelectValue` falls back to `assignee.id` when `assigned_to` is absent).
+- A row's age is tied to what the clock measures (`staffRowAge`): "Waiting 2 days" (awaiting staff),
+  "Asked 1 day ago" (awaiting student), "Resolved 6 days ago" (done); never a stale `awaiting_since`.

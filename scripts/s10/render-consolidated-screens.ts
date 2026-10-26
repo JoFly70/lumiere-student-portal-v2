@@ -16,10 +16,13 @@ import { spawn, type ChildProcess } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { createRequire } from "node:module";
-import { COMPOSED } from "../../tests/helpers/student-progress-ui-fixtures";
 import { RICH_MID_JOURNEY } from "../../tests/helpers/student-roadmap-ui-fixtures";
-import { ALL_DETAILS, ALL_SUMMARIES, CONTEXT_OPTIONS, INTERNAL_NOTE_TEXT, TICKET_AWAITING_STUDENT, TICKET_RESOLVED, toSummary } from "../../tests/helpers/support-ui-fixtures";
-import { CONSOLIDATED_PROFILE, CONSOLIDATED_STUDENT, STAFF_OLD_REJECTED_CORRECTION, STAFF_PENDING_CORRECTION, STAFF_STUDENT_ID, staffReviewProfile, staffWorkspacePayload } from "../../tests/helpers/s09-profile-ui-fixtures";
+import { ALL_DETAILS, ALL_SUMMARIES, CONTEXT_OPTIONS, INTERNAL_NOTE_TEXT, SUPPORT_NOW, TICKET_AWAITING_STUDENT, TICKET_RESOLVED, toSummary } from "../../tests/helpers/support-ui-fixtures";
+import {
+  CANONICAL_ADVISOR, CANONICAL_ID, CANONICAL_STUDENT_ROW, canonicalCorrections, canonicalDegreeProgress, canonicalDocumentsApi,
+  canonicalProfileView, canonicalStudentMe, canonicalTicketDetails, canonicalWorkspacePayload,
+} from "../../tests/helpers/canonical-synthetic-student";
+import { queryStaffQueue, staffStats, withOverdue } from "../../tests/helpers/support-queue-sim";
 import type { SupportComment, SupportTicketDetail, SupportTicketSummary } from "../../shared/support-contract";
 
 const require = createRequire(import.meta.url);
@@ -50,27 +53,28 @@ function applyProgress(view: any, update: { itemKey?: string; taskKey?: string |
 }
 
 // ---- staff fixtures (derived from the S08 student fixtures + an internal note) ----
-const STAFF_ME = { id: "staff-1", name: "Camille Moreau", role: "staff" as const };
+const STAFF_ME = CANONICAL_ADVISOR;
+const STAFF_STUDENT_ID = CANONICAL_ID;
+const NOW = SUPPORT_NOW;
 const staffComment = (id: string, ticket_id: string, content: string, hoursAgo: number): SupportComment => ({
   id, ticket_id, author_id: STAFF_ME.id, author_name: STAFF_ME.name, author_role: "staff", author_kind: "staff", content, is_internal: true,
-  created_at: new Date(Date.parse("2026-10-26T15:00:00.000Z") - hoursAgo * 3_600_000).toISOString(),
+  created_at: new Date(NOW.getTime() - hoursAgo * 3_600_000).toISOString(),
 });
-const STAFF_DETAILS: SupportTicketDetail[] = ALL_DETAILS.filter((d) => d.id !== "t-leak").map((d, i) => ({
+// Staff view of the canonical tickets. T-2 is staff-side an older, high-priority request so the desk shows a real overdue flag.
+const STAFF_DETAILS: SupportTicketDetail[] = canonicalTicketDetails().filter((d) => d.id !== "t-leak").map((d) => ({
   ...d,
+  ...(d.id === "t-2" ? { priority: "high" as const, created_at: "2026-10-24T09:00:00.000Z", awaiting_since: "2026-10-24T09:00:00.000Z", last_public_reply_at: "2026-10-24T09:00:00.000Z" } : {}),
   permissions: { can_reply: true, can_attach: true, can_add_internal_note: true, can_assign: true, allowed_statuses: ["in_progress", "waiting_on_student", "resolved", "closed"], can_change_priority: true },
-  ticket_comments: i === 0 ? [...d.ticket_comments, staffComment("n1", d.id, "Checked her plan: MKT300 still pending at the provider. Confirm with admissions before promising acceptance.", 2)] : d.ticket_comments,
+  ticket_comments: d.id === "t-2"
+    ? [...d.ticket_comments.map((c) => ({ ...c, created_at: "2026-10-24T09:00:00.000Z" })), staffComment("n1", d.id, "Checked her plan: MKT300 still pending at the provider. Confirm with admissions before promising acceptance.", 2)]
+    : d.ticket_comments,
 })) as SupportTicketDetail[];
-void INTERNAL_NOTE_TEXT;
-const STAFF_SUMMARIES = STAFF_DETAILS.map((d) => toSummary(d) as SupportTicketSummary);
-const STAFF_STATS = { stats: { byStatus: { open: 2, in_progress: 1, waiting_on_student: 1, resolved: 1, closed: 0 }, byCategory: {}, awaitingStaff: 3, awaitingStudent: 1, overdue: 2, unassigned: 2, avgResolutionHours: 18, resolvedLast30Days: 6 } };
+void INTERNAL_NOTE_TEXT; void ALL_DETAILS;
+const STAFF_SUMMARIES = withOverdue(STAFF_DETAILS.map((d) => toSummary(d) as SupportTicketSummary), NOW);
 const STAFF_DIRECTORY = [STAFF_ME, { id: "coach-1", name: "Jonas Weber", role: "coach" }, { id: "admin-1", name: "Priya Nair", role: "admin" }];
 
-const DOCS = [
-  { id: "d1", student_id: "s1", doc_type: "hs_transcript", file_name: "high-school-transcript.pdf", file_size: 482113, mime_type: "application/pdf", status: "verified", verified_at: "2026-09-12T10:00:00Z", created_at: "2026-09-10T10:00:00Z", updated_at: "2026-09-12T10:00:00Z", notes: null },
-  { id: "d2", student_id: "s1", doc_type: "id_gov", file_name: "government-id.png", file_size: 912344, mime_type: "image/png", status: "pending", verified_at: null, created_at: "2026-10-20T10:00:00Z", updated_at: "2026-10-20T10:00:00Z", notes: null },
-  { id: "d3", student_id: "s1", doc_type: "college_transcript", file_name: "transfer-transcript.pdf", file_size: 733201, mime_type: "application/pdf", status: "pending", verified_at: null, created_at: "2026-10-22T10:00:00Z", updated_at: "2026-10-22T10:00:00Z", notes: null },
-];
-const PROFILE = { id: "s1", user_id: "u1", student_code: CONSOLIDATED_STUDENT.studentCode, first_name: CONSOLIDATED_STUDENT.firstName, last_name: CONSOLIDATED_STUDENT.lastName, email: CONSOLIDATED_STUDENT.email, phone: CONSOLIDATED_STUDENT.phone, photo_url: null, residency: "foreign", status: "active" };
+const DOCS = canonicalDocumentsApi();
+const PROFILE = canonicalStudentMe();
 
 function startVite(): Promise<ChildProcess> {
   const child = spawn(process.execPath, ["node_modules/vite/bin/vite.js", "--port", String(PORT), "--strictPort", "--host", "localhost"], {
@@ -85,21 +89,22 @@ function startVite(): Promise<ChildProcess> {
 }
 
 type Mode = "student" | "staff" | "admin";
-interface Opts { mode?: Mode; width: number; height: number; theme?: "light" | "dark" }
+interface Opts { mode?: Mode; width: number; height: number; theme?: "light" | "dark"; beforeCorrection?: boolean }
 
 async function newPage(browser: any, o: Opts) {
   const mode = o.mode ?? "student";
   const ctx = await browser.newContext({ viewport: { width: o.width, height: o.height }, deviceScaleFactor: 1 });
   const user = mode === "student"
-    ? { id: "u1", email: CONSOLIDATED_STUDENT.email, name: `${CONSOLIDATED_STUDENT.firstName} ${CONSOLIDATED_STUDENT.lastName}`, role: "student" }
+    ? { id: "u1", email: CANONICAL_STUDENT_ROW.email, name: `${CANONICAL_STUDENT_ROW.first_name} ${CANONICAL_STUDENT_ROW.last_name}`, role: "student" }
     : { id: STAFF_ME.id, email: "camille.moreau@synthetic.example", name: STAFF_ME.name, role: mode === "admin" ? "admin" : "staff" };
+  await ctx.clock.setFixedTime(NOW);
   await ctx.addInitScript(() => { (globalThis as any).__name = (f: unknown) => f; });
   await ctx.addInitScript(([theme, u]: [string, unknown]) => {
     localStorage.setItem("theme", theme);
     localStorage.setItem("lumiere_auth", JSON.stringify({ user: u, session: { access_token: "stub", expires_at: Math.floor(Date.now() / 1000) + 3600 } }));
   }, [o.theme ?? "light", user] as [string, unknown]);
   const details: SupportTicketDetail[] = mode === "student" ? [...ALL_DETAILS] : STAFF_DETAILS;
-  const summaries = mode === "student" ? [...ALL_SUMMARIES] : STAFF_SUMMARIES;
+  const summaries: SupportTicketSummary[] = mode === "student" ? [...ALL_SUMMARIES] : STAFF_SUMMARIES;
   await ctx.route(/.*/, async (route: any) => {
     const url = new URL(route.request().url());
     if (url.hostname !== "localhost") return route.abort();
@@ -108,10 +113,10 @@ async function newPage(browser: any, o: Opts) {
     const p = url.pathname;
     const method = route.request().method();
     if (p === "/api/students/me") return json(200, PROFILE);
-    if (p === "/api/students/me/profile") return json(200, CONSOLIDATED_PROFILE);
-    if (p === `/api/students/${STAFF_STUDENT_ID}/profile`) return json(200, staffReviewProfile());
-    if (p === `/api/students/${STAFF_STUDENT_ID}/identity-corrections`) return json(200, [STAFF_PENDING_CORRECTION, STAFF_OLD_REJECTED_CORRECTION]);
-    if (p === `/api/admin/students/${STAFF_STUDENT_ID}/workspace`) return json(200, staffWorkspacePayload());
+    if (p === "/api/students/me/profile") return json(200, canonicalProfileView({ withPendingCorrection: !o.beforeCorrection }));
+    if (p === `/api/students/${STAFF_STUDENT_ID}/profile`) return json(200, { ...canonicalProfileView(), account: { role: "staff", twoFactorAvailable: true } });
+    if (p === `/api/students/${STAFF_STUDENT_ID}/identity-corrections`) return json(200, canonicalCorrections());
+    if (p === `/api/admin/students/${STAFF_STUDENT_ID}/workspace`) return json(200, canonicalWorkspacePayload());
     if (p === "/api/student/roadmap") return json(200, rich);
     if (p === "/api/student/roadmap/progress") {
       // Mirror the real contract: POST returns the authoritative view AFTER the
@@ -120,13 +125,17 @@ async function newPage(browser: any, o: Opts) {
       if (method === "POST") rich = applyProgress(rich, JSON.parse(route.request().postData() ?? "{}"));
       return json(200, rich);
     }
-    if (p === "/api/student/degree-progress") return json(200, COMPOSED);
+    if (p === "/api/student/degree-progress") return json(200, canonicalDegreeProgress());
     if (p.startsWith("/api/documents/student/")) return json(200, DOCS);
     if (p.includes("/contacts")) return json(200, []);
     if (p === "/api/tickets/context-options") return json(200, CONTEXT_OPTIONS);
-    if (p === "/api/tickets/stats/summary") return json(200, STAFF_STATS);
+    if (p === "/api/tickets/stats/summary") return json(200, staffStats(STAFF_SUMMARIES, NOW));
     if (p === "/api/tickets/staff-directory") return json(200, { staff: STAFF_DIRECTORY });
-    if (p === "/api/tickets" && method === "GET") return json(200, { tickets: summaries, pagination: { total: summaries.length, limit: 50, offset: 0 } });
+    if (p === "/api/tickets" && method === "GET") {
+      // Staff queue honours the same filters as the server (view, awaiting, overdue, assignedTo, search).
+      const list = mode === "student" ? summaries : queryStaffQueue(summaries, url.searchParams, NOW, STAFF_ME.id);
+      return json(200, { tickets: list, pagination: { total: list.length, limit: 50, offset: 0 } });
+    }
     const m = p.match(/^\/api\/tickets\/([^/]+)$/);
     if (m && method === "GET") {
       const d = details.find((x) => x.id === m[1]);
@@ -239,7 +248,7 @@ async function main() {
     sel("21-profile-390-light.png", "/profile", { ...M }, '[data-testid="profile-header"]'),
     sel("23-profile-1440-dark.png", "/profile", { ...D, theme: "dark" }, '[data-testid="profile-header"]'),
     sel("24-profile-390-dark.png", "/profile", { ...M, theme: "dark" }, '[data-testid="profile-header"]'),
-    sel("25-profile-correction-dialog-390-light.png", "/profile", { ...M }, '[data-testid="button-request-correction"]', async (p) => {
+    sel("25-profile-correction-dialog-390-light.png", "/profile", { ...M, beforeCorrection: true }, '[data-testid="button-request-correction"]', async (p) => {
       await p.locator('[data-testid="button-request-correction"]').first().scrollIntoViewIfNeeded();
       await p.locator('[data-testid="button-request-correction"]').first().click();
       await p.waitForSelector('[role="dialog"]');

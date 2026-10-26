@@ -23,7 +23,7 @@ import {
   staffStatusLabel,
   topicForTicket,
 } from "@shared/support-contract";
-import { staffQueueFilters as queueFilters, type StaffQueueKey as QueueKey, staffRowAge } from "./support-presentation";
+import { assigneeSelectValue, staffQueueFilters as queueFilters, type StaffQueueKey as QueueKey, staffRowAge } from "./support-presentation";
 import {
   useAttachmentDownload,
   useCreateComment,
@@ -128,7 +128,7 @@ function StatsStrip({ stats, active, onPick }: { stats?: SupportStatsResponse["s
 // Ticket list
 // ---------------------------------------------------------------------------
 
-function TicketRow({ ticket, selected, onSelect }: { ticket: SupportTicketSummary; selected: boolean; onSelect: () => void }) {
+export function TicketRow({ ticket, selected, onSelect }: { ticket: SupportTicketSummary; selected: boolean; onSelect: () => void }) {
   const topic = SUPPORT_TOPIC_INFO[ticket.topic ?? topicForTicket(null, ticket.category)];
   return (
     <li>
@@ -330,7 +330,7 @@ function TicketDetailPane({ ticketId, staff, onBack }: { ticketId: string; staff
           {perms.can_assign ? (
             <select
               className={selectClass()}
-              value={ticket.assigned_to ?? ticket.assignee?.id ?? ""}
+              value={assigneeSelectValue(ticket)}
               disabled={busy}
               onChange={(e) => void run(() => update.mutateAsync({ assignedTo: e.target.value || null }), e.target.value ? "Ticket reassigned." : "Ticket unassigned.")}
             >

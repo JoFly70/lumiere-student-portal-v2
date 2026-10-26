@@ -77,6 +77,8 @@ export const TICKET_WITH_LUMIERE: SupportTicketDetail = {
   category: "technical",
   topic: "account_technical",
   status: "in_progress",
+  awaiting_since: "2026-10-26T08:00:00.000Z",
+  last_public_reply_at: "2026-10-26T08:00:00.000Z",
   created_at: "2026-10-26T08:00:00.000Z",
   updated_at: "2026-10-26T12:00:00.000Z",
   ticket_comments: [
@@ -95,6 +97,7 @@ export const TICKET_RESOLVED: SupportTicketDetail = {
   topic: "billing",
   status: "resolved",
   awaiting: "none",
+  awaiting_since: "2026-10-20T09:00:00.000Z",
   created_at: "2026-10-14T09:00:00.000Z",
   updated_at: "2026-10-20T09:00:00.000Z",
   resolved_at: "2026-10-20T09:00:00.000Z",
@@ -127,6 +130,8 @@ export const TICKET_WITH_CONTEXT: SupportTicketDetail = {
   topic: "course_assistance",
   status: "open",
   assignee: null,
+  awaiting_since: "2026-10-26T14:30:00.000Z",
+  last_public_reply_at: "2026-10-26T14:30:00.000Z",
   created_at: "2026-10-26T14:30:00.000Z",
   updated_at: "2026-10-26T14:30:00.000Z",
   context: {

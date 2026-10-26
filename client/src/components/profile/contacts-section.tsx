@@ -67,7 +67,7 @@ function ScopeLine({ contact }: { contact: StudentContactView }) {
       )}
       {pendingScopes.length > 0 && (
         <p className="text-xs text-student-muted" data-testid="scopes-inactive-note">
-          {scopeLabels(pendingScopes).join(", ")} {pendingScopes.length > 1 ? "do" : "does"} not apply until Lumière verifies authority.
+          Not in force until Lumière verifies authority: {scopeLabels(pendingScopes).join(", ")}.
         </p>
       )}
     </div>

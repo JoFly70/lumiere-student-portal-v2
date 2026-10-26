@@ -82,13 +82,17 @@ describe("S09 profile: rich profile", () => {
   it("separates 'Needs your attention' from 'Waiting on Lumière'", () => {
     const attn = markup.slice(markup.indexOf('data-testid="readiness-attention"'), markup.indexOf('data-testid="readiness-waiting"'));
     const wait = markup.slice(markup.indexOf('data-testid="readiness-waiting"'), markup.indexOf('id="section-identity"'));
-    expect(text(attn)).toContain("English proficiency proof needs a new upload");
+    expect(text(attn)).toContain("English proficiency proof needs to be resubmitted");
+    expect(text(attn)).toContain("Proof of residency needs to be resubmitted");
+    expect(text(attn)).toContain("Upload a signed consent for Ngozi Eze-Demo");
+    expect(text(attn)).toContain("Jordan Lake-Demo: authority was not approved");
     // Emergency contacts are on file, so nothing about them is "missing".
     expect(text(markup)).not.toContain("Add an emergency contact");
     expect(text(attn)).not.toContain("being reviewed");
-    expect(text(wait)).toContain("High school transcript is being reviewed");
-    expect(text(wait)).toContain("Guardian authority is not yet verified");
-    expect(count(markup, 'data-testid="readiness-item"')).toBe(3);
+    expect(text(wait)).toContain("High school transcript under review");
+    expect(text(wait)).toContain("Completed");
+    expect(text(wait)).toContain("Identity document verified");
+    expect(count(markup, 'data-testid="readiness-item"')).toBe(7);
     expect(markup).toContain('href="#section-eligibility"');
   });
 
@@ -106,7 +110,7 @@ describe("S09 profile: rich profile", () => {
     const pending = text(cards[1]);
     expect(pending).toContain("In force today: Emergency contact");
     expect(pending).toContain("You asked for: Emergency contact, Financial matters, Release of information");
-    expect(pending).toContain("do not apply until Lumière verifies authority");
+    expect(pending).toContain("Not in force until Lumière verifies authority: ");
     // verified: lock, no remove, contact-lumiere message
     expect(cards[0]).toContain('data-testid="contact-locked"');
     expect(cards[0]).not.toContain('data-testid="button-delete-contact"');
@@ -200,6 +204,18 @@ describe("S09 profile: pieces and helpers", () => {
     expect(m).toContain('data-testid="readiness-completed"');
     expect(m).not.toContain('data-testid="readiness-attention"');
     expect(text(m)).toContain("Done");
+  });
+  it("S10: the RICH fixture's readiness agrees with its own documents and contacts (nothing student-actionable is omitted)", () => {
+    const actions = RICH_PROFILE.readiness.filter((r) => r.kind === "action_required").map((r) => r.label).join(" | ");
+    for (const d of RICH_PROFILE.eligibility.documents) {
+      if (d.status === "rejected" || d.status === "resubmit_requested") expect(actions.toLowerCase()).toContain(d.label.toLowerCase().split(" ")[0]);
+    }
+    for (const c of RICH_PROFILE.contacts) {
+      if (c.authorityStatus === "pending_verification" || c.authorityStatus === "revoked") expect(actions).toContain(c.fullName);
+    }
+    // And the panel shows them, not "Nothing for you to do".
+    const m = html(React.createElement(ReadinessPanel, { items: RICH_PROFILE.readiness }));
+    expect(text(m)).not.toContain("Nothing for you to do");
   });
   it("S10: four groups, and requested documents (incl. guardian consent) are action required", () => {
     const items = [

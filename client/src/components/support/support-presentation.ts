@@ -309,3 +309,13 @@ export function staffQueueFilters(key: StaffQueueKey): Record<string, string | b
     default: return {};
   }
 }
+
+/**
+ * Value of the "Assigned to" dropdown. The list card shows `assignee`, so the
+ * dropdown must resolve the same person even when `assigned_to` is absent
+ * (it is optional in the contract); otherwise the card says "Assigned: X" while
+ * the dropdown says "Unassigned".
+ */
+export function assigneeSelectValue(t: { readonly assigned_to?: string | null; readonly assignee?: { readonly id: string } | null }): string {
+  return t.assigned_to ?? t.assignee?.id ?? "";
+}
