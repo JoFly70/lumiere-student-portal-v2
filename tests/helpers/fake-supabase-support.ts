@@ -241,7 +241,6 @@ export function createFakeSupportSupabase(options: FakeSupabaseOptions = {}) {
       if (cols && /[()]/.test(cols)) {
         // Embedded resources are outside the documented subset.
         this.cols = cols;
-        this.mode = this.mode;
         (this as any).__embedded = true;
       } else {
         this.cols = cols ?? "*";
