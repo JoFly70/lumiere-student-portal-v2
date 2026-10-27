@@ -38,7 +38,6 @@ export function LumiereCrest({
       decoding="async"
       draggable={false}
       className={cn("shrink-0 select-none object-contain", className)}
-      style={{ width, height }}
       data-testid="img-lumiere-crest"
     />
   );

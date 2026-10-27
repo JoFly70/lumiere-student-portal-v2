@@ -1,9 +1,11 @@
+import { useT, type Language } from "@/i18n";
+
 /**
  * S18 — every English string of the restored original Support UI, in one
  * object so it can be swapped for t("support.*") later. Re-exported from
  * original-student-support.tsx. Functions are used only for plurals/params.
  */
-export const SUPPORT_TEXT = {
+export const SUPPORT_TEXT_EN = {
   title: "Student Support Center",
   subtitle: "Submit and track your support requests",
   createTicket: "Create Ticket",
@@ -117,4 +119,46 @@ export const SUPPORT_TEXT = {
     fileFailed: (name: string, why: string) => `${name} was not added. ${why}`,
     dismiss: "Dismiss",
   },
-} as const;
+  topics: {
+    course_assistance: { label: "Course or assignment help", hint: "Questions about a course, an assignment or an exam" },
+    roadmap_question: { label: "Academic roadmap question", hint: "Your plan, sequencing or what comes next" },
+    transfer_credit: { label: "University or transfer credit", hint: "Credit transfer, applications or university requirements" },
+    transcript_document: { label: "Transcript or document problem", hint: "Transcripts, uploads or official documents" },
+    account_technical: { label: "Account or technical issue", hint: "Signing in, the Portal or something not working" },
+    billing: { label: "Billing question", hint: "Invoices, payments or plan charges" },
+    general: { label: "General support", hint: "Anything else we can help with" },
+  } as Record<string, { label: string; hint: string }>,
+  validation: {
+    topic: "Choose the topic that fits best so the right person sees it.",
+    subjectShort: (min: number) => `Add a short subject of at least ${min} characters.`,
+    subjectLong: (max: number, now: number) => `Please keep the subject under ${max} characters (now ${now}).`,
+    descriptionShort: (min: number) => `Tell us a little more, at least ${min} characters, so we can help properly.`,
+    descriptionLong: (max: number, now: number) => `Please keep the description under ${max} characters (now ${now}).`,
+  },
+  files: {
+    empty: "That file is empty.",
+    tooBig: (name: string, size: string) => `${name} is ${size}. Files can be up to 10 MB.`,
+    tooBigShort: "Files can be up to 10 MB. Please choose a smaller file.",
+    badType: (name: string, allowed: string) => `${name} is not a supported type. Please use ${allowed}.`,
+    badTypeShort: "This file type is not supported. Please use PDF, PNG, JPG, WebP, TXT, DOC or DOCX.",
+    allowed: "PDF, PNG, JPG, WebP, TXT, DOC or DOCX",
+    openFirst: "Open a request before attaching a file.",
+    prepareFailed: "Could not prepare the upload. Please try again.",
+    uploadOffline: "The file could not be uploaded. Check your connection and try again.",
+    uploadFailed: "The file could not be uploaded. Please try again.",
+    linkUnavailable: "The download link is not available right now. Please try again.",
+    notAdded: (name: string) => `${name} was not added.`,
+  },
+  reply: {
+    closed: "This request is closed, so replies are turned off. Start a new request if you need more help.",
+    expired: (days: number) => `This request was resolved more than ${days} days ago, so it can no longer be reopened. Please start a new request.`,
+    blocked: "You cannot reply to this request right now.",
+    reopens: "Sending a reply will reopen this request.",
+  },
+  errors: {
+    unconfirmed: "We could not confirm that your request was received.",
+    failedAttempt: "Your message has not been sent.",
+  },
+  units: { b: "B", kb: "KB", mb: "MB" },
+};
+export type SupportText = typeof SUPPORT_TEXT_EN;
