@@ -124,6 +124,7 @@ vi.mock('../shared/schema.js', () => ({
       partial: vi.fn(() => ({
         strict: vi.fn(() => ({ parse: vi.fn((v: any) => v) })),
       })),
+      strict: vi.fn(() => ({ parse: vi.fn((v: any) => v) })),
     })),
   },
   insertStudentContactSchema: {

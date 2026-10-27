@@ -34,6 +34,12 @@ vi.mock("@tanstack/react-query", () => ({
   useMutation: vi.fn(() => ({ isPending: false, mutate: vi.fn() })),
   useQueryClient: vi.fn(),
 }));
+vi.mock("@/components/admin/add-student-dialog", () => ({
+  AddStudentDialog: () => null,
+}));
+vi.mock("@/components/admin/student-portal-account-card", () => ({
+  StudentPortalAccountCard: () => null,
+}));
 vi.mock("@/lib/auth", () => ({
   useAuthFetch: vi.fn(() => vi.fn()),
 }));
