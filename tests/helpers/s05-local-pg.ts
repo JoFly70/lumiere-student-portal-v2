@@ -112,6 +112,10 @@ function migrationSequence(lineage: "full" | "production" = "full", exclude: rea
     "@inline:ALTER TABLE pricing_rules ADD COLUMN IF NOT EXISTS per_credit_price INTEGER",
     "scripts/disposable-env/60_s03_security_remediation.sql",
     "scripts/disposable-env/90_storage_buckets.sql",
+    // S18: guarded (to_regclass) and idempotent; it no-ops in the chain above because the disposable
+    // student_documents table only exists after 50_runtime_supplement. Re-run it here, as production
+    // (where the table exists) would apply it.
+    "supabase/migrations/20261030110000_s18_document_student_message.sql",
   ];
 }
 
