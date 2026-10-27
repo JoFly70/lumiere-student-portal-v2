@@ -1,15 +1,14 @@
 import { useLayoutEffect, useState } from 'react';
 import { useLocation } from 'wouter';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, MailCheck } from 'lucide-react';
+import { useT } from '@/i18n';
+import { AuthLayout } from '@/components/auth/auth-layout';
+import { AuthAlert, AuthField, AuthHeading, AuthStatus, AuthSubmit } from '@/components/auth/auth-parts';
 import { extractRecoveryToken, recoveryUrlWithoutCredentials } from '@/lib/recovery-token';
 
 export default function ResetPassword() {
   const [, setLocation] = useLocation();
+  const { t } = useT();
   const [email, setEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -42,12 +41,12 @@ export default function ResetPassword() {
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || 'Password reset failed');
+        throw new Error(data.error || t('auth.reset.failed'));
       }
 
       setSuccess(true);
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Password reset failed');
+      setError(error instanceof Error ? error.message : t('auth.reset.failed'));
     } finally {
       setLoading(false);
     }
@@ -58,7 +57,7 @@ export default function ResetPassword() {
     setError('');
 
     if (newPassword.length < 6) {
-      setError('Password must be at least 6 characters');
+      setError(t('auth.newPassword.tooShort'));
       return;
     }
 
@@ -77,147 +76,80 @@ export default function ResetPassword() {
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || 'Password update failed');
+        throw new Error(data.error || t('auth.newPassword.failed'));
       }
 
       setSuccess(true);
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Password update failed');
+      setError(error instanceof Error ? error.message : t('auth.newPassword.failed'));
     } finally {
       setLoading(false);
     }
   };
 
-  if (success) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold text-center">
-              {isRecoveryMode ? 'Password Updated' : 'Check Your Email'}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center justify-center text-green-600 dark:text-green-400">
-                <CheckCircle2 className="h-12 w-12" />
-              </div>
-              <div className="text-center space-y-2">
-                {isRecoveryMode ? (
-                  <p className="font-medium">Your password has been updated successfully</p>
-                ) : (
-                  <>
-                    <p className="font-medium">Check your email</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      We've sent a password reset link to <strong>{email}</strong>
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      The link will expire in 1 hour
-                    </p>
-                  </>
-                )}
-              </div>
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => setLocation('/login')}
-              >
-                Back to Login
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  if (isRecoveryMode) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold text-center">Set New Password</CardTitle>
-            <CardDescription className="text-center">
-              Enter your new password below
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handlePasswordUpdate} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="new-password">New Password</Label>
-                <Input
-                  id="new-password"
-                  type="password"
-                  placeholder="Enter new password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  required
-                  minLength={6}
-                  autoComplete="new-password"
-                />
-              </div>
-
-              {error && (
-                <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? 'Updating...' : 'Update Password'}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">Reset Password</CardTitle>
-          <CardDescription className="text-center">
-            Enter your email to receive a password reset link
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleEmailSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                autoComplete="email"
-              />
-            </div>
-
-            {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? 'Sending...' : 'Send Reset Link'}
-            </Button>
-
-            <Button
-              type="button"
-              variant="ghost"
-              className="w-full"
-              onClick={() => setLocation('/login')}
-            >
-              Back to Login
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+  const goLogin = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setLocation('/login');
+  };
+  const backLink = (
+    <a href="/login" className="auth-link" onClick={goLogin} data-testid="link-back-login">
+      {t('auth.backToSignin')}
+    </a>
   );
+
+  let body: React.ReactNode;
+  if (success) {
+    body = (
+      <AuthStatus
+        icon={isRecoveryMode ? <CheckCircle2 size={30} /> : <MailCheck size={30} />}
+        title={isRecoveryMode ? t('auth.newPassword.doneTitle') : t('auth.reset.sentTitle')}
+      >
+        <div data-testid={isRecoveryMode ? 'text-password-updated' : 'text-reset-sent'} className="auth-sub" style={{ margin: 0 }}>
+          {isRecoveryMode ? (
+            <p style={{ margin: 0 }}>{t('auth.newPassword.doneBody')}</p>
+          ) : (
+            <>
+              <p style={{ margin: 0 }}>{t('auth.reset.sentBody', { email })}</p>
+              <p className="auth-hint" style={{ marginTop: 6 }}>{t('auth.reset.sentExpiry')}</p>
+            </>
+          )}
+        </div>
+        <button type="button" className="auth-btn auth-btn-quiet" onClick={() => setLocation('/login')} data-testid="button-back-login">
+          {t('auth.backToSignin')}
+        </button>
+      </AuthStatus>
+    );
+  } else if (isRecoveryMode) {
+    body = (
+      <div className="auth-main">
+        <AuthHeading title={t('auth.newPassword.title')} subtitle={t('auth.newPassword.subtitle')} />
+        <form onSubmit={handlePasswordUpdate} className="auth-form auth-rise" style={{ ['--d' as string]: '100ms' }}>
+          <AuthField
+            id="new-password" name="new-password" password label={t('auth.newPassword.label')} placeholder={t('auth.newPassword.placeholder')}
+            hint={t('auth.field.passwordHint')} value={newPassword} onChange={(e) => setNewPassword(e.target.value)}
+            required minLength={6} autoComplete="new-password" testId="input-new-password"
+          />
+          {error && <AuthAlert testId="text-reset-error">{error}</AuthAlert>}
+          <AuthSubmit loading={loading} label={t('auth.newPassword.submit')} loadingLabel={t('auth.newPassword.loading')} testId="button-update-password" />
+        </form>
+      </div>
+    );
+  } else {
+    body = (
+      <div className="auth-main">
+        <AuthHeading title={t('auth.reset.title')} subtitle={t('auth.reset.subtitle')} />
+        <form onSubmit={handleEmailSubmit} className="auth-form auth-rise" style={{ ['--d' as string]: '100ms' }}>
+          <AuthField
+            id="email" name="email" type="email" label={t('auth.field.email')} placeholder={t('auth.field.emailPlaceholder')}
+            value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" testId="input-reset-email"
+          />
+          {error && <AuthAlert testId="text-reset-error">{error}</AuthAlert>}
+          <AuthSubmit loading={loading} label={t('auth.reset.submit')} loadingLabel={t('auth.reset.loading')} testId="button-send-reset" />
+        </form>
+        <div className="auth-foot">{backLink}</div>
+      </div>
+    );
+  }
+
+  return <AuthLayout>{body}</AuthLayout>;
 }

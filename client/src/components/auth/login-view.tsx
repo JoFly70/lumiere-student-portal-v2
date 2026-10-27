@@ -129,7 +129,7 @@ export function LoginView({ login, signup, onNavigate, initialInvite = "", initi
           >
             <AuthField
               id="login-email" name="email" type="email" label={t("auth.field.email")} placeholder={t("auth.field.emailPlaceholder")}
-              value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} required autoComplete="email" testId="input-login-email-field"
+              value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} required autoComplete="email" testId="input-signin-email"
             />
             <AuthField
               id="login-password" name="password" password label={t("auth.field.password")}
