@@ -1,0 +1,358 @@
+{
+  "journeyHeightPx": {
+    "390": 1471.5,
+    "768": 1508.75,
+    "1024": 930,
+    "1440": 780
+  },
+  "entries": [
+    {
+      "scene": "journey",
+      "theme": "light",
+      "width": 1440,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [],
+      "lowContrast": []
+    },
+    {
+      "scene": "journey",
+      "theme": "light",
+      "width": 1024,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [],
+      "lowContrast": []
+    },
+    {
+      "scene": "journey",
+      "theme": "light",
+      "width": 768,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [],
+      "lowContrast": []
+    },
+    {
+      "scene": "journey",
+      "theme": "light",
+      "width": 390,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [
+        "button \"Toggle theme\" 36x36"
+      ],
+      "lowContrast": []
+    },
+    {
+      "scene": "journey",
+      "theme": "dark",
+      "width": 1440,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [],
+      "lowContrast": []
+    },
+    {
+      "scene": "journey",
+      "theme": "dark",
+      "width": 390,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [
+        "button \"Toggle theme\" 36x36"
+      ],
+      "lowContrast": []
+    },
+    {
+      "scene": "subjects",
+      "theme": "light",
+      "width": 1440,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [],
+      "lowContrast": []
+    },
+    {
+      "scene": "subjects",
+      "theme": "light",
+      "width": 1024,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [],
+      "lowContrast": []
+    },
+    {
+      "scene": "subjects",
+      "theme": "light",
+      "width": 768,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [],
+      "lowContrast": []
+    },
+    {
+      "scene": "subjects",
+      "theme": "light",
+      "width": 390,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [
+        "button \"Toggle theme\" 36x36"
+      ],
+      "lowContrast": []
+    },
+    {
+      "scene": "subjects",
+      "theme": "dark",
+      "width": 1440,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [],
+      "lowContrast": []
+    },
+    {
+      "scene": "subjects",
+      "theme": "dark",
+      "width": 390,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [
+        "button \"Toggle theme\" 36x36"
+      ],
+      "lowContrast": []
+    },
+    {
+      "scene": "graduation",
+      "theme": "light",
+      "width": 1440,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [],
+      "lowContrast": []
+    },
+    {
+      "scene": "graduation",
+      "theme": "light",
+      "width": 1024,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [],
+      "lowContrast": []
+    },
+    {
+      "scene": "graduation",
+      "theme": "light",
+      "width": 768,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [],
+      "lowContrast": []
+    },
+    {
+      "scene": "graduation",
+      "theme": "light",
+      "width": 390,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [
+        "button \"Toggle theme\" 36x36"
+      ],
+      "lowContrast": []
+    },
+    {
+      "scene": "graduation",
+      "theme": "dark",
+      "width": 1440,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [],
+      "lowContrast": []
+    },
+    {
+      "scene": "graduation",
+      "theme": "dark",
+      "width": 390,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [
+        "button \"Toggle theme\" 36x36"
+      ],
+      "lowContrast": []
+    },
+    {
+      "scene": "no-enrollment",
+      "theme": "light",
+      "width": 1440,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [],
+      "lowContrast": []
+    },
+    {
+      "scene": "no-enrollment",
+      "theme": "light",
+      "width": 1024,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [],
+      "lowContrast": []
+    },
+    {
+      "scene": "no-enrollment",
+      "theme": "light",
+      "width": 768,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [],
+      "lowContrast": []
+    },
+    {
+      "scene": "no-enrollment",
+      "theme": "light",
+      "width": 390,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [
+        "button \"Toggle theme\" 36x36"
+      ],
+      "lowContrast": []
+    },
+    {
+      "scene": "no-enrollment",
+      "theme": "dark",
+      "width": 1440,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [],
+      "lowContrast": []
+    },
+    {
+      "scene": "no-enrollment",
+      "theme": "dark",
+      "width": 390,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [
+        "button \"Toggle theme\" 36x36"
+      ],
+      "lowContrast": []
+    },
+    {
+      "scene": "graduated",
+      "theme": "light",
+      "width": 1440,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [],
+      "lowContrast": []
+    },
+    {
+      "scene": "graduated",
+      "theme": "light",
+      "width": 1024,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [],
+      "lowContrast": []
+    },
+    {
+      "scene": "graduated",
+      "theme": "light",
+      "width": 768,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [],
+      "lowContrast": []
+    },
+    {
+      "scene": "graduated",
+      "theme": "light",
+      "width": 390,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [
+        "button \"Toggle theme\" 36x36"
+      ],
+      "lowContrast": []
+    },
+    {
+      "scene": "graduated",
+      "theme": "dark",
+      "width": 1440,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [],
+      "lowContrast": []
+    },
+    {
+      "scene": "graduated",
+      "theme": "dark",
+      "width": 390,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [
+        "button \"Toggle theme\" 36x36"
+      ],
+      "lowContrast": []
+    },
+    {
+      "scene": "eligible",
+      "theme": "light",
+      "width": 1440,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [],
+      "lowContrast": []
+    },
+    {
+      "scene": "eligible",
+      "theme": "light",
+      "width": 1024,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [],
+      "lowContrast": []
+    },
+    {
+      "scene": "eligible",
+      "theme": "light",
+      "width": 768,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [],
+      "lowContrast": []
+    },
+    {
+      "scene": "eligible",
+      "theme": "light",
+      "width": 390,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [
+        "button \"Toggle theme\" 36x36"
+      ],
+      "lowContrast": []
+    },
+    {
+      "scene": "eligible",
+      "theme": "dark",
+      "width": 1440,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [],
+      "lowContrast": []
+    },
+    {
+      "scene": "eligible",
+      "theme": "dark",
+      "width": 390,
+      "overflow": false,
+      "problems": [],
+      "smallTargets": [
+        "button \"Toggle theme\" 36x36"
+      ],
+      "lowContrast": []
+    }
+  ]
+}

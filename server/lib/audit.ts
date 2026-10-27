@@ -87,7 +87,22 @@ export type AuditEventType =
   | 'support.internal_note_added'
   | 'support.attachment_added'
   | 'support.attachment_downloaded'
-  | 'support.access_denied';
+  | 'support.access_denied'
+  // High school pathway events (S11). Must also exist in the Postgres audit_event_type enum
+  // (supabase/migrations/20261029110000_s11_high_school_audit_event_types.sql).
+  | 'high_school.enrollment_created'
+  | 'high_school.enrollment_updated'
+  | 'high_school.prior_education_recorded'
+  | 'high_school.transfer_claim_changed'
+  | 'high_school.roadmap_draft_saved'
+  | 'high_school.roadmap_published'
+  | 'high_school.progress_reported'
+  | 'high_school.official_result_recorded'
+  | 'high_school.credit_awarded'
+  | 'high_school.credit_voided'
+  | 'high_school.graduation_updated'
+  | 'high_school.guardian_note_added'
+  | 'high_school.access_denied';
 
 export type AuditSeverity = 'info' | 'warning' | 'error' | 'critical';
 

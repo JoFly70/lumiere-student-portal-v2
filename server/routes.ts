@@ -1343,6 +1343,9 @@ window.ENV = {
   // of the workspace / placement / generic admin routers below.
   const adminStudentRoadmapRouter = (await import('./routes/admin-student-roadmap')).default;
   app.use('/api/admin', adminStudentRoadmapRouter);
+  // S11 high school pathway staff API (per-route auth/role; admin-only actions inside).
+  const adminHighSchoolRouter = (await import('./routes/admin-high-school')).default;
+  app.use('/api/admin', adminHighSchoolRouter);
   app.use('/api/admin', adminStudentWorkspaceRouter);
   app.use('/api/admin', adminStudentCreditPlacementRouter);
 
@@ -1353,6 +1356,9 @@ window.ENV = {
   // S05 student roadmap (published version + coursework activity reporting)
   const studentRoadmapRouter = (await import('./routes/student-roadmap')).default;
   app.use('/api/student', studentRoadmapRouter);
+  // S11 high school pathway (student view, progress report, programs list)
+  const studentHighSchoolRouter = (await import('./routes/student-high-school')).default;
+  app.use('/api/student', studentHighSchoolRouter);
 
   app.use('/api/admin', adminRouter);
   app.use('/api', programsRouter);
