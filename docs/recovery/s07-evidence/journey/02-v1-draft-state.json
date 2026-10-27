@@ -1,9 +1,9 @@
 {
-  "studentId": "774833b3-4117-4612-a75e-b25988d4c0a9",
-  "planId": "497adf0a-b8d4-47e3-b3ef-67b656059e61",
+  "studentId": "1ca8f50f-1d01-4779-bc61-0617a9842f49",
+  "planId": "dc1e1e9b-eaf0-411d-9541-5b76da2c066e",
   "published": null,
   "draft": {
-    "versionId": "e297832a-bbb4-40ff-99ff-8e6dfaab2807",
+    "versionId": "6347ed72-ec5e-4bcd-bdc3-d0577987ec68",
     "versionNumber": 1,
     "draftRevision": 0,
     "baseVersionId": null,
@@ -3636,10 +3636,10 @@
       "milestonesChanged": false
     },
     "import": {
-      "importId": "249d8773-f01e-47cb-9e03-009ba8cbbc3c",
+      "importId": "59e3ead0-c2f0-4c44-abff-f6125b14de7f",
       "templateId": "lumiere-degree-master-v1+lumiere-execution-v1",
       "fileName": "eph-master-v1.xlsx + eph-execution-v1.xlsx",
-      "fileSha256": "28861fab9f96dfd1c2af189ffbcd90875c0d65bec2f7ad62a92b8e2f95e386a3",
+      "fileSha256": "e67f4f2126ef1b83b2a2afa8487a8f547bcf555edd1d8039c40b40f7aa23a3c9",
       "summary": {
         "kind": "workbook",
         "fileName": "eph-master-v1.xlsx + eph-execution-v1.xlsx",
@@ -3668,15 +3668,15 @@
   },
   "versions": [
     {
-      "versionId": "e297832a-bbb4-40ff-99ff-8e6dfaab2807",
+      "versionId": "6347ed72-ec5e-4bcd-bdc3-d0577987ec68",
       "versionNumber": 1,
       "status": "draft",
       "title": "TESU BSBA in Accounting roadmap",
-      "createdAt": "2026-10-27T23:05:36.332Z",
-      "createdBy": "96eb7f32-886c-40df-9814-a57d82487fbb",
+      "createdAt": "2026-10-27T21:37:33.852Z",
+      "createdBy": "e268b5f6-f527-4061-864f-8316bac4f018",
       "publishedAt": null,
       "publishedBy": null,
-      "importId": "249d8773-f01e-47cb-9e03-009ba8cbbc3c"
+      "importId": "59e3ead0-c2f0-4c44-abff-f6125b14de7f"
     }
   ]
 }

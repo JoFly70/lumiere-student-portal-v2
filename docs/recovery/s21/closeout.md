@@ -136,14 +136,15 @@ Owner boundary on every conversation, memory, retrieval, attachment and search q
 
 - `npx tsc --noEmit`: 0 errors.
 - ESLint on every file changed since S20: 0 errors (195 warnings, all `no-explicit-any`, same class as S20).
-- Full `npx vitest run`: see §23a.
+- Full `npx vitest run`: 3,261 passed / 0 failed (§23a).
 - 21 new S21 test files.
 - `npm run build`: passes.
 - `scripts/s21/verify-migrations.ts`: 79/79.
 - Browser simulation checks (`render-screens.ts`): 51/51.
 
 ### 23a. Full suite
-FULL_SUITE_PLACEHOLDER
+Final run after all fixes (`npx vitest run`): **169 files passed, 8 skipped; 3,261 tests passed, 192 skipped, 0 failed** (S20: 148 files / 2,926 tests; the 8 skipped files are the same opt-in suites as S20). `tsc` exit 0, build exit 0, `dist/public` scan: none.
+Historical evidence that some older suites rewrite when run (S07 journey JSON) was restored to its committed state; S20 evidence untouched.
 
 ## 24. Screenshots
 
