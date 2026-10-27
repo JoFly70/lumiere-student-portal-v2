@@ -191,7 +191,7 @@ function Actions({ actions }: { actions: CockpitAction[] }) {
 // ---------------------------------------------------------------------------------------------- subject drawer
 
 function SubjectSheet({ projection, subject, onClose }: { projection: AcademicProjection; subject: AcademicSubject | null; onClose: () => void }) {
-  const { t, fc } = useFormatters();
+  const { t, fc, day } = useFormatters();
   const tally = subject ? subjectTally(projection, subject) : null;
   const hu = (n: number) => t(n === 1 ? "cockpit.sheet.halfUnit" : "cockpit.sheet.halfUnits", { n });
   const areas = subject ? projection.credits.byArea.filter((a) => a.subject === subject.subject) : [];
@@ -232,7 +232,7 @@ function SubjectSheet({ projection, subject, onClose }: { projection: AcademicPr
                               {c.tasks.map((k) => (
                                 <li key={k.key} data-testid="sheet-task" data-overdue={k.overdue}>
                                   <span>{k.title}</span>
-                                  <span className="fdl-task-state">{k.dueDate ?? ""}{k.overdue ? ` · ${t("cockpit.sheet.overdue")}` : ""}</span>
+                                  <span className="fdl-task-state">{k.dueDate ? day(k.dueDate) : ""}{k.overdue ? ` · ${t("cockpit.sheet.overdue")}` : ""}</span>
                                 </li>
                               ))}
                             </ul></div>
