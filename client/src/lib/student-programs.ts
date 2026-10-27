@@ -52,19 +52,32 @@ export function useStudentPrograms(enabled = true) {
 }
 
 export const HIGH_SCHOOL_PATH = "/high-school";
-export const UNIVERSITY_ONLY_PATHS: readonly string[] = ["/flight-deck", "/roadmap"];
-/** Nav entries hidden for high-school-only students: billing is not connected for the high school program. The route itself stays. */
-export const HIGH_SCHOOL_ONLY_HIDDEN_PATHS: readonly string[] = ["/billing"];
+/** The Flight Deck path. High-school-only students get the High School Flight Deck here; everyone else the university one. */
+export const FLIGHT_DECK_PATH = "/flight-deck";
+/** Extra route for the High School Flight Deck, reachable by students who hold both programs (they keep the university deck at /flight-deck). */
+export const HIGH_SCHOOL_FLIGHT_DECK_PATH = "/high-school/flight-deck";
+/** The university roadmap exists only for university programs. A high school student's "roadmap" is /high-school. */
+export const UNIVERSITY_ONLY_PATHS: readonly string[] = ["/roadmap"];
+/** Nav entries hidden for high-school-only students. Billing is now shown to everyone (it has an honest not-connected state). */
+export const HIGH_SCHOOL_ONLY_HIDDEN_PATHS: readonly string[] = [];
 
-/** Where a student lands after sign-in. Unknown access (loading is handled by the caller) means the university dashboard. */
-export function studentLandingPath(access: ProgramAccess): string {
-  return access.highSchoolOnly ? HIGH_SCHOOL_PATH : "/flight-deck";
+export type FlightDeckVariant = "high_school" | "university";
+
+/** Which Flight Deck /flight-deck shows. Unknown access (loading is handled by the caller) means the university deck. */
+export function flightDeckVariant(access: ProgramAccess): FlightDeckVariant {
+  return access.highSchoolOnly ? "high_school" : "university";
+}
+
+/** Where a student lands after sign-in: always the Flight Deck; the variant decides which one. */
+export function studentLandingPath(_access: ProgramAccess): string {
+  return FLIGHT_DECK_PATH;
 }
 
 /**
  * Applies program awareness to a list of student nav entries (anything with a `url`):
- * High School appears only with a high school program and leads for high-school-only students;
- * Flight Deck, Roadmap and Billing are hidden for high-school-only students. Order is otherwise kept.
+ * High School appears only with a high school program; Roadmap is hidden for high-school-only students.
+ * Flight Deck stays for everyone (its content depends on `flightDeckVariant`). For high-school-only students
+ * the order is Flight Deck, High School, then the rest. Order is otherwise kept.
  */
 export function filterStudentNav<T extends { readonly url: string }>(items: readonly T[], access: ProgramAccess): T[] {
   const kept = items.filter((i) => {
@@ -73,5 +86,9 @@ export function filterStudentNav<T extends { readonly url: string }>(items: read
     return true;
   });
   if (!access.highSchoolOnly) return kept;
-  return [...kept.filter((i) => i.url === HIGH_SCHOOL_PATH), ...kept.filter((i) => i.url !== HIGH_SCHOOL_PATH)];
+  const lead = [FLIGHT_DECK_PATH, HIGH_SCHOOL_PATH];
+  return [
+    ...lead.flatMap((u) => kept.filter((i) => i.url === u)),
+    ...kept.filter((i) => !lead.includes(i.url)),
+  ];
 }

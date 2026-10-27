@@ -21,8 +21,8 @@ describe("program access", () => {
 });
 
 describe("landing", () => {
-  it("high-school-only students land on /high-school; everyone else (and failures) on /flight-deck", () => {
-    expect(studentLandingPath(programAccess(prog("high_school")))).toBe("/high-school");
+  it("every student (and failures) lands on /flight-deck; high-school-only students get the High School Flight Deck there (S18)", () => {
+    expect(studentLandingPath(programAccess(prog("high_school")))).toBe("/flight-deck");
     expect(studentLandingPath(programAccess(prog("high_school", "university_degree")))).toBe("/flight-deck");
     expect(studentLandingPath(programAccess(prog("university_degree")))).toBe("/flight-deck");
     expect(studentLandingPath(programAccess(undefined))).toBe("/flight-deck");
@@ -32,7 +32,7 @@ describe("landing", () => {
     expect(app).toContain("useStudentPrograms(isStudent)");
     expect(app).toContain("if (programs.isLoading)");
     expect(app).toContain("studentLandingPath(programs)");
-    expect(app).toContain("<UniversityOnly><FlightDeck /></UniversityOnly>");
+    expect(app).toContain("<FlightDeckRouter />");
     expect(app).toContain("<UniversityOnly><Roadmap /></UniversityOnly>");
     expect(read("client/src/pages/login.tsx")).not.toContain("'/flight-deck'");
   });
@@ -45,13 +45,11 @@ describe("navigation matrix", () => {
   it("both programs: High School appears alongside the university entries", () => {
     expect(urls(programAccess(prog("high_school", "university_degree")))).toEqual(NAV.map((i) => i.url));
   });
-  it("high-school-only: High School first, no Flight Deck, Roadmap or Billing, Profile/Documents/Support kept", () => {
+  it("high-school-only: Flight Deck then High School first, no Roadmap, Billing/Profile/Documents/Support kept (S18)", () => {
     const u = urls(programAccess(prog("high_school")));
-    expect(u[0]).toBe("/high-school");
-    expect(u).not.toContain("/flight-deck");
+    expect(u.slice(0, 2)).toEqual(["/flight-deck", "/high-school"]);
     expect(u).not.toContain("/roadmap");
-    expect(u).not.toContain("/billing");
-    for (const keep of ["/profile", "/documents", "/support"]) expect(u).toContain(keep);
+    for (const keep of ["/profile", "/documents", "/support", "/billing"]) expect(u).toContain(keep);
   });
   it("sidebar and mobile bar both use the filter; the theme toggle is 44px", () => {
     const sidebar = read("client/src/components/app-sidebar.tsx");

@@ -1,0 +1,88 @@
+/*
+ * Real High School Flight Deck (S18). Loaded together with flight-deck-preview.css (the shared instrument
+ * vocabulary: cards, gauge, bars, strips, timeline, sheet). Every colour is a --t-* theme token.
+ * This file only adds what the real page needs: the embedded (inside the student shell) root, two status
+ * encodings the preview did not have, expandable milestones, course tasks in the drawer, and the state panels.
+ */
+
+/* Embedded root: the app shell provides navigation, so no rail, no topbar, no own background. */
+.fdp.fdp-live {
+  display: block;
+  min-height: 0;
+  background: transparent;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+.fdp-live .fdp-page { padding: 4px 0 24px; max-width: none; }
+
+/* Status encodings: "official" is the old "verified"; "awaiting_school" is new (amber, dotted fill). */
+[data-s="official"].fdp-swatch, [data-s="official"].fdp-cell { background: var(--t-green); border: 1px solid var(--t-green); }
+[data-s="awaiting_school"].fdp-swatch, [data-s="awaiting_school"].fdp-cell {
+  border: 1px solid var(--t-amber);
+  background-image: radial-gradient(var(--t-amber) 1.1px, transparent 1.5px);
+  background-size: 5px 5px;
+  background-color: var(--t-amber-dim);
+}
+
+/* Header + reserved assistant slot */
+.fdl-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 14px 24px; margin-bottom: 16px; }
+.fdl-head-main { display: flex; align-items: flex-start; gap: 16px; min-width: 0; }
+/* Reserved for a future text assistant avatar. Empty on purpose: takes no space until something is rendered into it. */
+.fdl-assistant-slot:empty { display: none; }
+.fdl-assistant-slot { flex: none; }
+.fdl-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+.fdl-seg-note { font-size: 12.5px; color: var(--t-muted); max-width: 46ch; }
+
+.fdl-mode-note { margin: 0 0 16px !important; padding: 10px 14px; border-radius: var(--fdp-radius-sm); border: 1px solid var(--t-line-2); background: var(--t-panel-2); color: var(--t-text-2); font-size: 13px; }
+.fdl-mode-note b { color: var(--t-heading); }
+
+/* Official anchor line under the headline: always the official number, in either mode */
+.fdl-official-line { margin-top: 10px !important; display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--t-green) 45%, transparent); background: var(--t-green-dim); color: var(--t-heading); font-size: 13px; font-weight: 600; }
+
+/* Coverage by area */
+.fdl-areas { border-top: 1px solid var(--t-line); padding-top: 12px; }
+.fdl-areas summary { cursor: pointer; font-weight: 600; color: var(--t-heading); min-height: 32px; display: flex; align-items: center; justify-content: space-between; list-style: none; }
+.fdl-areas summary::-webkit-details-marker { display: none; }
+/* display:flex removes the native marker, so draw a chevron cue for the collapsed disclosure */
+.fdl-areas summary::after { content: ""; width: 8px; height: 8px; border-right: 2px solid var(--t-faint); border-bottom: 2px solid var(--t-faint); transform: rotate(45deg); margin-right: 4px; transition: transform 120ms ease; }
+.fdl-areas[open] summary::after { transform: rotate(-135deg); }
+.fdl-areas-list { display: grid; gap: 14px; padding-top: 12px; }
+
+/* Milestones: each is a disclosure button */
+.fdl-ms-btn { display: flex; width: 100%; align-items: flex-start; justify-content: space-between; gap: 8px; padding: 0; border: 0; background: transparent; text-align: left; cursor: pointer; min-height: 44px; }
+.fdl-ms-btn:hover .fdp-ms-title { text-decoration: underline; text-underline-offset: 3px; }
+.fdl-chev { flex: none; margin-top: 3px; color: var(--t-faint); transition: transform 120ms ease; }
+.fdl-ms-btn[aria-expanded="true"] .fdl-chev { transform: rotate(180deg); }
+.fdl-ms-detail { margin-top: 8px !important; padding: 10px 12px; border-radius: var(--fdp-radius-sm); background: var(--t-panel-2); border: 1px solid var(--t-line-2); font-size: 13px; color: var(--t-text-2); }
+
+/* Drawer: course tasks */
+.fdl-course { list-style: none; border-top: 1px solid var(--t-line); padding: 4px 0 10px; }
+.fdl-course:first-child { border-top: 0; }
+.fdl-tasks { padding-left: 26px; }
+.fdl-tasks-sum { font-size: 12.5px; color: var(--t-muted); }
+.fdl-tasks ul { margin-top: 6px; display: grid; gap: 4px; }
+.fdl-tasks li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 12px; font-size: 13px; color: var(--t-text); }
+.fdl-tasks li[data-overdue="true"] .fdl-task-state { color: var(--t-amber); font-weight: 600; }
+.fdl-task-state { color: var(--t-muted); font-size: 12.5px; }
+.fdl-sheet-link { display: inline-flex; align-items: center; min-height: 44px; margin-top: 8px; color: var(--t-accent-text); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+
+/* Provenance */
+.fdl-prov { display: grid; gap: 6px; font-size: 13px; color: var(--t-text-2); }
+.fdl-prov b { color: var(--t-heading); }
+.fdl-message { margin-top: 10px !important; padding: 10px 12px; border-left: 3px solid var(--t-accent-line); background: var(--t-panel-2); border-radius: 0 var(--fdp-radius-sm) var(--fdp-radius-sm) 0; font-size: 13px; color: var(--t-text); }
+
+/* State panels (not configured, no enrollment, empty actions) */
+.fdl-state { max-width: 640px; margin: 24px auto; padding: 28px 24px; border: 1px solid var(--t-line-2); border-radius: var(--fdp-radius); background: var(--t-panel); box-shadow: var(--t-shadow); }
+.fdl-state h1, .fdl-state h2 { font-size: 22px; font-weight: 600; letter-spacing: -0.015em; color: var(--t-heading); }
+.fdl-state p { margin-top: 8px !important; color: var(--t-muted); }
+.fdl-state-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+.fdl-btn { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid var(--t-line-3); background: var(--t-panel); color: var(--t-heading); font-weight: 600; cursor: pointer; }
+.fdl-btn:hover { background: var(--t-hover); }
+.fdl-btn[data-primary="true"] { background: var(--t-heading); color: var(--t-panel); border-color: var(--t-heading); }
+.fdl-empty { padding: 14px 20px 18px; color: var(--t-muted); font-size: 13.5px; }
+
+/* Loading skeleton */
+.fdl-skel { display: grid; gap: 16px; }
+.fdl-skel > div { border-radius: var(--fdp-radius); background: var(--t-panel-3); animation: fdl-pulse 1.4s ease-in-out infinite; }
+@keyframes fdl-pulse { 50% { opacity: 0.55; } }
+@media (prefers-reduced-motion: reduce) { .fdl-skel > div { animation: none; } }

@@ -15,7 +15,8 @@ import Login from "@/pages/login";
 import ResetPassword from "@/pages/reset-password";
 import VerifyEmail from "@/pages/verify-email";
 import StudentProfile from "@/pages/student-profile";
-import FlightDeck from "@/pages/flight-deck";
+import FlightDeckRouter from "@/pages/flight-deck-router";
+import HighSchoolFlightDeck from "@/pages/high-school-flight-deck";
 import Roadmap from "@/pages/roadmap";
 import Documents from "@/pages/documents";
 import Billing from "@/pages/billing";
@@ -105,7 +106,16 @@ function Router() {
       <Route path="/flight-deck">
         {() => (
           <ProtectedRoute requireRole="student">
-            <UniversityOnly><FlightDeck /></UniversityOnly>
+            {/* High-school-only students get the High School Flight Deck; everyone else the university one. */}
+            <FlightDeckRouter />
+          </ProtectedRoute>
+        )}
+      </Route>
+
+      <Route path="/high-school/flight-deck">
+        {() => (
+          <ProtectedRoute requireRole="student">
+            <HighSchoolFlightDeck />
           </ProtectedRoute>
         )}
       </Route>
