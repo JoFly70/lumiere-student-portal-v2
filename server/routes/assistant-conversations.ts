@@ -13,7 +13,8 @@ import { loadAssistantConfig } from '../services/academic-assistant/config';
 import {
   ConversationError, createConversationService, type AfterStudentMessageArgs, type ConversationService,
 } from '../services/assistant-conversations/service';
-import type { GenerateReplyFn } from '../services/assistant-conversations/reply';
+import { createIntegratedGenerateReply, type GenerateReplyFn } from '../services/assistant-conversations/reply';
+import { recordMemoryFromMessage, retrievePrivateContext } from '../services/assistant-memory';
 import type { Database } from '../services/assistant-conversations/store';
 
 const uuid = z.string().uuid();
@@ -135,5 +136,12 @@ export function createAssistantConversationsRouter(opts: AssistantConversationsR
   return router;
 }
 
-const assistantConversationsRouter = createAssistantConversationsRouter();
+// Production wiring (S21): private retrieval appended locally to the reply; deterministic memory extraction
+// after each new student message. Both are owner-scoped and never reach the model provider.
+const assistantConversationsRouter = createAssistantConversationsRouter({
+  generateReply: createIntegratedGenerateReply({ retrievePrivate: retrievePrivateContext, logger }),
+  afterStudentMessage: async ({ ownerUserId, messageId, content, language }) => {
+    await recordMemoryFromMessage({ ownerUserId, messageId, content, language });
+  },
+});
 export default assistantConversationsRouter;

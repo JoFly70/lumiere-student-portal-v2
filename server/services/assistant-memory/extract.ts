@@ -63,7 +63,7 @@ const INTENT_EN = String.raw`(?:i\s+(?:really\s+|do\s+|truly\s+)?(?:want|wish|ho
 const INTENT_FR = String.raw`(?:je\s+(?:veux|voudrais|souhaite|souhaiterais|compte|prevois|projette|desire|aimerais|aimerai|vais|envisage)(?:\s+bien)?|j'(?:aimerais|aimerai|envisage|ai\s+l'intention|ai\s+envie)|mon\s+(?:objectif|but)\s+est)\s+(?:de\s+|d')?`;
 const ARTICLE = String.raw`(?:the|a|an|my|some|des|les|la|le|l'|un|une|du|de\s+la|de\s+l'|d')`;
 
-const STOP_EN = String.raw`(?:after|at|in|because|so|but|and|when|before|once|if|with|for|from|then|while|since|or|as|to|this|next|starting|by)`;
+const STOP_EN = String.raw`(?:after|at|in|because|so|but|and|when|before|once|if|with|for|from|then|while|since|or|this|next|starting|by)`;
 const STOP_FR = String.raw`(?:apres|a|au|aux|dans|car|mais|et|quand|avant|des|parce|pour|chez|avec|ou|puis|depuis|en|cet|cette|comme|par)`;
 const REJECT_START = /^(?:in|at|to|abroad|there|here|online|hard|more|again|for|au|aux|en|a|dans|chez|and|et|it|that|this|something|quelque|ca|cela|ce|cette)\b/;
 const GENERIC_BAD = /^(?:it|that|this|something|anything|everything|more|quelque chose|ca|cela|tout)$/;

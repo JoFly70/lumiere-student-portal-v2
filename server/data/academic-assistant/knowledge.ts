@@ -157,6 +157,7 @@ export const KNOWLEDGE: KbEntry[] = [
   },
   {
     id: 'provider-tesu',
+    institution: 'TESU',
     topic: 'providers',
     title: { en: 'Thomas Edison State University (TESU) and transfer credit', fr: 'Thomas Edison State University (TESU) et transfert de crédits' },
     text: {
@@ -168,6 +169,7 @@ export const KNOWLEDGE: KbEntry[] = [
   },
   {
     id: 'provider-tesu-transcripts',
+    institution: 'TESU',
     topic: 'providers',
     title: { en: 'Sending ACE-reviewed course transcripts to TESU', fr: 'Envoyer des relevés de cours évalués par l’ACE à TESU' },
     text: {
@@ -179,6 +181,7 @@ export const KNOWLEDGE: KbEntry[] = [
   },
   {
     id: 'provider-sophia',
+    institution: 'Sophia',
     topic: 'providers',
     title: { en: 'Sophia Learning', fr: 'Sophia Learning' },
     text: {
@@ -190,6 +193,7 @@ export const KNOWLEDGE: KbEntry[] = [
   },
   {
     id: 'provider-studycom',
+    institution: 'Study.com',
     topic: 'providers',
     title: { en: 'Study.com', fr: 'Study.com' },
     text: {
@@ -201,6 +205,7 @@ export const KNOWLEDGE: KbEntry[] = [
   },
   {
     id: 'provider-pennfoster',
+    institution: 'Penn Foster',
     topic: 'providers',
     title: { en: 'Penn Foster High School', fr: 'Penn Foster High School' },
     text: {
@@ -392,6 +397,7 @@ export const KNOWLEDGE: KbEntry[] = [
   },
   {
     id: 'pennfoster-accreditation',
+    institution: 'Penn Foster',
     topic: 'providers',
     title: { en: 'Penn Foster High School: accreditation', fr: 'Penn Foster High School : accréditation' },
     text: {
@@ -403,6 +409,7 @@ export const KNOWLEDGE: KbEntry[] = [
   },
   {
     id: 'pennfoster-hs-transfer-credits',
+    institution: 'Penn Foster',
     topic: 'providers',
     title: { en: 'Penn Foster High School: transferring prior high-school credits in', fr: 'Penn Foster High School : transfert de crédits secondaires antérieurs' },
     text: {
@@ -415,6 +422,7 @@ export const KNOWLEDGE: KbEntry[] = [
   },
   {
     id: 'pennfoster-college-transfer',
+    institution: 'Penn Foster',
     topic: 'providers',
     title: { en: 'Penn Foster College: transfer-in rules', fr: 'Penn Foster College : règles de transfert entrant' },
     text: {
@@ -426,6 +434,7 @@ export const KNOWLEDGE: KbEntry[] = [
   },
   {
     id: 'pennfoster-sophia-partnership',
+    institution: 'Penn Foster',
     topic: 'providers',
     title: { en: 'Penn Foster graduates and Sophia', fr: 'Diplômés de Penn Foster et Sophia' },
     text: {
@@ -471,6 +480,7 @@ export const KNOWLEDGE: KbEntry[] = [
   },
   {
     id: 'tesu-transfer-limits',
+    institution: 'TESU',
     topic: 'providers',
     title: { en: 'TESU: transfer-in limits from colleges', fr: 'TESU : limites de transfert depuis des collèges' },
     text: {
@@ -482,6 +492,7 @@ export const KNOWLEDGE: KbEntry[] = [
   },
   {
     id: 'tesu-ace-nccrs-limits',
+    institution: 'TESU',
     topic: 'providers',
     title: { en: 'TESU: ACE and NCCRS credit limits and transcripts', fr: 'TESU : limites des crédits ACE et NCCRS et relevés' },
     text: {
@@ -493,6 +504,7 @@ export const KNOWLEDGE: KbEntry[] = [
   },
   {
     id: 'tesu-programmatic-accreditation',
+    institution: 'TESU',
     topic: 'providers',
     title: { en: 'TESU: programmes that may require programmatic accreditation', fr: 'TESU : programmes pouvant exiger une accréditation de programme' },
     text: {
@@ -504,6 +516,7 @@ export const KNOWLEDGE: KbEntry[] = [
   },
   {
     id: 'tesu-professional-training',
+    institution: 'TESU',
     topic: 'providers',
     title: { en: 'TESU: credit for professional training and apprenticeships', fr: 'TESU : crédit pour formation professionnelle et apprentissages' },
     text: {
@@ -515,6 +528,7 @@ export const KNOWLEDGE: KbEntry[] = [
   },
   {
     id: 'sophia-accreditation-status',
+    institution: 'Sophia',
     topic: 'providers',
     title: { en: 'Sophia Learning: accreditation and partner colleges', fr: 'Sophia Learning : accréditation et collèges partenaires' },
     text: {
@@ -526,6 +540,7 @@ export const KNOWLEDGE: KbEntry[] = [
   },
   {
     id: 'studycom-transcripts',
+    institution: 'Study.com',
     topic: 'providers',
     title: { en: 'Study.com: transcripts for credit at TESU', fr: 'Study.com : relevés pour des crédits à TESU' },
     text: {

@@ -1370,6 +1370,9 @@ window.ENV = {
   // SPARK_ASSISTANT_ENABLED=true, a server key exists and the role is eligible (never students).
   // S21: chat attachments reuse the student-documents bucket and rows (validated, quota-checked, indexed).
   app.use('/api/student/attachments', (await import('./routes/student-attachments')).default);
+  // S21: student academic memory (provenance, corrections) and owner/role-scoped global search.
+  app.use('/api/assistant/memory', (await import('./routes/assistant-memory')).default);
+  app.use('/api/search', (await import('./routes/search')).default);
   // S21: persistent, tamper-evident Lumière Guide conversations (owner-scoped; mounted before /api/assistant).
   app.use('/api/assistant/conversations', (await import('./routes/assistant-conversations')).default);
   app.use('/api/assistant', (await import('./routes/academic-assistant')).default);

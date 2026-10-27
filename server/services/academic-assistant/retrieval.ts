@@ -10,7 +10,7 @@ export function tokenize(text: string): string[] {
   return text
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
+    .replace(/[\u0300-\u036f]/g, '')
     .split(/[^a-z0-9]+/)
     .filter((t) => t.length > 1 && !STOP.has(t))
     .map(stem);
@@ -46,9 +46,31 @@ function build() {
   return { docs, df, avgLen };
 }
 
-export interface Hit { entry: KbEntry; score: number }
+export interface Hit { entry: KbEntry; score: number; /** Oldest verifiedAt among the entry's sources (null = no verified source). */ verifiedAt: string | null }
 
-export function searchKnowledge(query: string, limit = 2): Hit[] {
+/** Institution aliases (folded) used for exact institution matching in queries. */
+const INSTITUTION_ALIASES: Record<string, string[]> = {
+  tesu: ['tesu', 'thomas edison'],
+  'penn foster': ['penn foster', 'pennfoster'],
+  sophia: ['sophia'],
+  'study.com': ['study.com', 'study com', 'studycom'],
+};
+function fold(s: string): string { return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); }
+function institutionsIn(query: string): string[] {
+  const q = fold(query);
+  return Object.entries(INSTITUTION_ALIASES).filter(([, al]) => al.some((a) => q.includes(a))).map(([k]) => k);
+}
+function oldestVerified(entry: KbEntry): string | null {
+  const dates = (entry.sources ?? []).map((s) => s.verifiedAt).filter((d): d is string => !!d).sort();
+  return dates[0] ?? null;
+}
+function jaccard(a: Set<string>, b: Set<string>): number {
+  let inter = 0;
+  for (const x of a) if (b.has(x)) inter++;
+  return inter / Math.max(1, a.size + b.size - inter);
+}
+
+export function searchKnowledge(query: string, limit = 2, now: Date = new Date()): Hit[] {
   cache ??= build();
   const { docs, df, avgLen } = cache;
   const q = Array.from(new Set(tokenize(query)));
@@ -70,10 +92,37 @@ export function searchKnowledge(query: string, limit = 2): Hit[] {
     for (const kw of d.entry.keywords) {
       if (kw.length > 3 && lowered.includes(kw.toLowerCase())) score += 1.5;
     }
-    if (score > 0) scored.push({ entry: d.entry, score });
+    if (score > 0) scored.push({ entry: d.entry, score, verifiedAt: oldestVerified(d.entry) });
+  }
+  // Exact institution matching: a query that names an institution favours that institution's entries
+  // and demotes entries about a different institution.
+  const named = institutionsIn(query);
+  if (named.length > 0) {
+    for (const h of scored) {
+      const inst = h.entry.institution?.toLowerCase();
+      if (inst && named.includes(inst)) h.score += 2.5;
+      else if (inst) h.score *= 0.6;
+    }
+  }
+  // Source-date awareness: facts verified more than ~18 months ago rank slightly lower than fresh ones.
+  for (const h of scored) {
+    if (h.verifiedAt) {
+      const ageDays = (now.getTime() - Date.parse(h.verifiedAt)) / 86_400_000;
+      if (ageDays > 540) h.score *= 0.85;
+    }
   }
   scored.sort((a, c) => c.score - a.score);
   if (scored.length === 0 || scored[0].score < 1.2) return [];
   const top = scored[0].score;
-  return scored.filter((h, i) => i === 0 || h.score >= top * 0.6).slice(0, limit);
+  // Duplicate suppression: skip a hit whose wording is nearly identical to one already kept.
+  const kept: Hit[] = [];
+  const kept_tokens: Set<string>[] = [];
+  for (const h of scored.filter((x, i) => i === 0 || x.score >= top * 0.6)) {
+    const toks = new Set(tokenize(h.entry.title.en + ' ' + h.entry.text.en));
+    if (kept_tokens.some((k) => jaccard(k, toks) > 0.8)) continue;
+    kept.push(h);
+    kept_tokens.push(toks);
+    if (kept.length >= limit) break;
+  }
+  return kept;
 }
