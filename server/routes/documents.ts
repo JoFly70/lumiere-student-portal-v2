@@ -21,6 +21,7 @@ import { studentOwnsProfile, isAdminOrStaff } from "../lib/resource-ownership";
 import { getStudent } from '../services/student-service';
 import { docTypeEnum } from '@shared/schema';
 import { logger } from '../lib/logger';
+import { presentDocumentForViewer } from '../lib/document-presenter';
 
 /**
  * Map document-service policy errors (identified by name so this module does
@@ -33,6 +34,7 @@ function sendDocumentPolicyError(res: import('express').Response, error: unknown
     DocumentTransitionError: 409,
     DocumentInputError: 400,
     DocumentForbiddenError: 403,
+    DocumentStorageUnavailableError: 503,
   };
   if (typeof name === 'string' && name in statusByName) {
     res.status(statusByName[name]).json({ error: (error as Error).message });
@@ -92,7 +94,11 @@ router.get('/student/:studentId', async (req, res) => {
 
     const documents = await listStudentDocuments(studentId, filters);
 
-    return res.json(documents.filter((doc) => visibleToCaller(req.user, doc)));
+    return res.json(
+      documents
+        .filter((doc) => visibleToCaller(req.user, doc))
+        .map((doc) => presentDocumentForViewer(req.user, doc)),
+    );
   } catch (error) {
     logger.error('List documents error', { studentId: req.params.studentId, error });
     return res.status(500).json({ error: 'Failed to list documents' });
@@ -203,7 +209,7 @@ router.post('/student/:studentId', async (req, res) => {
       uploadedBy: req.user?.id,
     });
 
-    return res.status(201).json(document);
+    return res.status(201).json(presentDocumentForViewer(req.user, document));
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({
@@ -463,7 +469,7 @@ router.get('/:id', async (req, res) => {
     const downloadUrl = await generateDocumentDownload(id);
 
     return res.json({
-      ...document,
+      ...presentDocumentForViewer(req.user, document),
       download_url: downloadUrl.download_url,
       download_expires_in: downloadUrl.expires_in,
     });

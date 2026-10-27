@@ -1064,35 +1064,10 @@ window.ENV = {
     }
   });
 
-  // Programs API endpoint for Supabase test
-  app.get("/api/programs", async (req, res) => {
-    try {
-      if (!isSupabaseConfigured) {
-        return res.status(503).json({ error: "Database not configured" });
-      }
-
-      const user = await getUserFromToken(req.headers.authorization);
-      if (!user) {
-        return res.status(401).json({ error: "Authentication required" });
-      }
-
-      const { data, error } = await supabaseAdmin
-        .from('programs')
-        .select('id, title, catalog_year');
-
-      if (error) {
-        logger.error("Programs fetch error", { error: error.message });
-        return res.status(500).json({ error: "Failed to fetch programs" });
-      }
-
-      return res.json(data || []);
-    } catch (error) {
-      logger.error("Programs API error", { 
-        error: error instanceof Error ? error.message : String(error) 
-      });
-      return res.status(500).json({ error: "Internal server error" });
-    }
-  });
+  // NOTE (S17): the legacy inline GET /api/programs (reading a `programs` table that is
+  // not in the canonical supabase/migrations lineage) was removed. It shadowed the
+  // degree-programs router mounted at the end of this function and made the Programs
+  // screen fail or receive rows without name/code/credit fields.
 
   // Get degree templates
   app.get("/api/degree-templates", async (req, res) => {

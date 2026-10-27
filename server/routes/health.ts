@@ -115,6 +115,7 @@ export function registerHealthRoutes(app: Express) {
             try {
               const response = await fetch(`${supabaseUrl.replace(/\/$/, '')}/auth/v1/settings`, {
                 headers: { apikey: anonKey },
+                signal: AbortSignal.timeout(3000),
               });
               if (!response.ok) return false;
               const settings = await response.json() as {

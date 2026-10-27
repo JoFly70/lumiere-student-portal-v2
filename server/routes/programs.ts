@@ -7,6 +7,12 @@ import { requireRole } from '../middleware/rbac';
 
 const router = Router();
 
+/** Postgres undefined_table / PostgREST schema-cache miss: schema not applied here. */
+function isMissingRelation(error: unknown): boolean {
+  const code = (error as { code?: unknown } | null)?.code;
+  return code === '42P01' || code === 'PGRST205';
+}
+
 const degreeProgramSchema = z.object({
   name: z.string().min(1),
   code: z.string().min(1),
@@ -52,8 +58,12 @@ router.get('/programs', requireAuth, async (req, res) => {
 
     if (error) throw error;
 
-    res.json(data);
+    res.json(data ?? []);
   } catch (error) {
+    if (isMissingRelation(error)) {
+      console.error('degree_programs table is not available in this database');
+      return res.status(503).json({ error: 'Degree programs are not available in this environment', code: 'PROGRAMS_UNAVAILABLE' });
+    }
     console.error('Error fetching degree programs:', error);
     res.status(500).json({ error: 'Failed to fetch degree programs' });
   }

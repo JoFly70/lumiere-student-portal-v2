@@ -53,6 +53,15 @@ export class DocumentForbiddenError extends Error {
   }
 }
 
+/** Raised when storage cannot confirm an upload (maps to 503). */
+export class DocumentStorageUnavailableError extends Error {
+  readonly statusCode = 503;
+  constructor(message = 'File storage is temporarily unavailable') {
+    super(message);
+    this.name = 'DocumentStorageUnavailableError';
+  }
+}
+
 /**
  * Staff verification state machine. Verified documents are final; rejected
  * documents may only be reopened by requesting a resubmission.
@@ -246,6 +255,18 @@ export async function createDocumentRecord(
       docTypeEnum.options,
     )) {
       throw new DocumentInputError('storage_path was not issued for this student');
+    }
+
+    // Finalize only when the object was really uploaded to that path.
+    let uploaded: boolean;
+    try {
+      uploaded = await documentStorage.objectExists(validated.storage_path);
+    } catch (storageError) {
+      logger.error('Storage check failed while finalizing document', { studentId, error: storageError });
+      throw new DocumentStorageUnavailableError();
+    }
+    if (!uploaded) {
+      throw new DocumentInputError('The file has not been uploaded');
     }
 
     const record = {

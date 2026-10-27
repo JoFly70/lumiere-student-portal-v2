@@ -234,6 +234,25 @@ export async function generatePresignedUpload(
 }
 
 /**
+ * True when an object really exists at storagePath in the documents bucket.
+ * Throws on a storage error so callers can report "unavailable" instead of
+ * treating an outage as "missing".
+ */
+export async function objectExists(storagePath: string): Promise<boolean> {
+  if (!isSafeStoragePath(storagePath)) return false;
+  const slash = storagePath.lastIndexOf('/');
+  const folder = storagePath.slice(0, slash);
+  const name = storagePath.slice(slash + 1);
+  const { data, error } = await supabaseAdmin.storage
+    .from(STUDENT_DOCS_BUCKET)
+    .list(folder, { search: name });
+  if (error) {
+    throw new Error(`Failed to check uploaded object: ${error.message}`);
+  }
+  return Array.isArray(data) && data.some((o: { name?: string }) => o?.name === name);
+}
+
+/**
  * Generate presigned download URL for existing document
  * Returns temporary download URL
  */
@@ -353,6 +372,7 @@ export const documentStorage = {
   isSafeStoragePath,
   isStoragePathForStudent,
   storedObjectUrl,
+  objectExists,
   generatePresignedUpload,
   generatePresignedDownload,
   deleteDocument,

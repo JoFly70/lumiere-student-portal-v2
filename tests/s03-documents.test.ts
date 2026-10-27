@@ -12,6 +12,7 @@ const storageMock = vi.hoisted(() => ({
   createSignedUploadUrl: vi.fn(async () => ({ data: { signedUrl: "https://upload", token: "tok" }, error: null })),
   getPublicUrl: vi.fn((path: string) => ({ data: { publicUrl: `https://public/${path}` } })),
   remove: vi.fn(async () => ({ error: null })),
+  list: vi.fn(async (_folder: string, opts?: { search?: string }) => ({ data: [{ name: opts?.search }], error: null })),
 }));
 
 vi.mock("../server/lib/supabase", () => ({
