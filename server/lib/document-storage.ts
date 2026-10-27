@@ -4,6 +4,7 @@
  */
 
 import { supabaseAdmin } from './supabase';
+import { ATTACHMENT_TYPES, MAX_ATTACHMENT_BYTES } from './attachment-policy';
 
 // Storage bucket name for student documents
 const STUDENT_DOCS_BUCKET = 'student-documents';
@@ -347,8 +348,10 @@ export async function ensureBucketExists(): Promise<void> {
     if (!exists) {
       const { error } = await supabaseAdmin.storage.createBucket(STUDENT_DOCS_BUCKET, {
         public: false, // Private bucket - requires presigned URLs
-        fileSizeLimit: MAX_FILE_SIZE,
-        allowedMimeTypes: ALLOWED_MIME_TYPES,
+        // Bucket-level ceiling covers S21 chat attachments (up to 20MB, DOCX/XLSX/CSV/TXT);
+        // per-route validation keeps the stricter Documents-page limits.
+        fileSizeLimit: Math.max(MAX_FILE_SIZE, MAX_ATTACHMENT_BYTES),
+        allowedMimeTypes: Array.from(new Set([...ALLOWED_MIME_TYPES, ...ATTACHMENT_TYPES.flatMap((t) => [t.mime, ...t.acceptedMimes])])),
       });
 
       if (error) {

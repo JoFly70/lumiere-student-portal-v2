@@ -116,6 +116,8 @@ function migrationSequence(lineage: "full" | "production" = "full", exclude: rea
     // student_documents table only exists after 50_runtime_supplement. Re-run it here, as production
     // (where the table exists) would apply it.
     "supabase/migrations/20261030110000_s18_document_student_message.sql",
+    // S21 attachments: guarded DDL on student_documents only takes effect once the runtime supplement created it.
+    "supabase/migrations/20261102110000_s21_document_attachments.sql",
   ];
 }
 

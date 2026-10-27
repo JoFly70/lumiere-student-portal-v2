@@ -265,6 +265,7 @@ export async function listDocumentStatuses(studentId: string): Promise<DocumentS
            required_for_enrollment, updated_at
     FROM student_documents
     WHERE student_id = ${studentId} AND soft_deleted = false
+      AND doc_type::text <> 'chat_attachment' -- S21: chat attachments are not enrollment documents
     ORDER BY uploaded_at DESC, created_at DESC`);
   return (Array.from(rows as unknown as Array<Record<string, unknown>>)).map((r) => ({
     id: String(r.id),

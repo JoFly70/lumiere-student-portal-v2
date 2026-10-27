@@ -122,7 +122,8 @@ router.post('/student/:studentId/upload-url', async (req, res) => {
     // student_code is accepted for client compatibility but ignored: the
     // storage prefix is derived from the stored student row.
     const schema = z.object({
-      doc_type: docTypeEnum,
+      // Chat attachments are created only through /api/student/attachments (validated + quota-checked).
+      doc_type: docTypeEnum.exclude(["chat_attachment"]),
       file_name: z.string().min(1).max(255),
       file_size: z.number().int().positive(),
       mime_type: z.string(),

@@ -17,8 +17,8 @@ export const attachmentsEn = {
 
 export const attachmentsFr: Record<keyof typeof attachmentsEn, string> = {
   "documents.cat.chat.label": "Pièces jointes du chat",
-  "documents.cat.chat.short": "Chat",
-  "documents.fileKind.pdf": "PDF",
+  "documents.cat.chat.short": "Messagerie",
+  "documents.fileKind.pdf": "Fichier PDF",
   "documents.fileKind.image": "Image",
   "documents.fileKind.docx": "Document Word",
   "documents.fileKind.xlsx": "Feuille de calcul Excel",
