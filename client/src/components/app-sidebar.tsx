@@ -162,7 +162,7 @@ export function AppSidebar() {
     return (
       <Sidebar collapsible="icon">
         <SidebarHeader className="px-5 pb-3 pt-6 group-data-[collapsible=icon]:px-1.5">
-          <div className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center" role="region" aria-label="Lumière Higher-Ed Pathways">
+          <div className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center" role="region" aria-label="Lumière Student Portal">
             <LumiereCrest size={44} className="group-data-[collapsible=icon]:h-9 group-data-[collapsible=icon]:w-auto" />
             <div className="min-w-0 group-data-[collapsible=icon]:hidden" data-testid="img-lumiere-logo">
               <p className="font-display text-[26px] font-medium leading-none tracking-[0.01em] text-[var(--t-rail-head,hsl(var(--sidebar-primary)))]">{BRAND.name}</p>
@@ -219,7 +219,7 @@ export function AppSidebar() {
               <span className="group-data-[collapsible=icon]:hidden">{t("nav.logOut")}</span>
             </button>
           </div>
-          <p className="text-center text-[11px] text-sidebar-foreground/70 group-data-[collapsible=icon]:hidden">© 2026 Lumière Higher-Ed Pathways</p>
+          <p className="text-center text-[11px] text-sidebar-foreground/70 group-data-[collapsible=icon]:hidden">© 2026 Lumière Student Portal</p>
         </SidebarFooter>
       </Sidebar>
     );
@@ -237,7 +237,7 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="px-4 pb-3 pt-6 group-data-[collapsible=icon]:px-1.5">
-        <div className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center" role="region" aria-label="Lumière Higher-Ed Pathways">
+        <div className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center" role="region" aria-label="Lumière Student Portal">
           <LumiereCrest size={42} className="group-data-[collapsible=icon]:h-9 group-data-[collapsible=icon]:w-auto" />
           <div className="min-w-0 group-data-[collapsible=icon]:hidden" data-testid="img-lumiere-logo">
             <p className="font-display text-[26px] font-medium leading-none tracking-[0.01em] text-[var(--t-rail-head,hsl(var(--sidebar-primary)))]">{BRAND.name}</p>
@@ -304,7 +304,7 @@ export function AppSidebar() {
             <span className="group-data-[collapsible=icon]:hidden">Log out</span>
           </button>
         </div>
-        <p className="text-center text-[11px] text-sidebar-foreground group-data-[collapsible=icon]:hidden">© 2026 Lumière Higher-Ed Pathways</p>
+        <p className="text-center text-[11px] text-sidebar-foreground group-data-[collapsible=icon]:hidden">© 2026 Lumière Student Portal</p>
       </SidebarFooter>
     </Sidebar>
   );

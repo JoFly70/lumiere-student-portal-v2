@@ -12,11 +12,21 @@ export const ASSISTANT_API_BASE = 'https://api.meta.ai/v1' as const;
  * Source: https://dev.meta.ai/docs/pricing-rate-limits.md (retrieved 2026-10-27):
  * Contributor mode input $0.10, output $0.20, cached input $0.002. Cached-input
  * discounts are ignored (we price every input token at the full input rate: conservative).
- * Reasoning tokens are assumed to be included in usage.completion_tokens (OpenAI
- * convention); if Meta reports them separately the estimate would be low, so the
- * monthly budget default has headroom and output is hard-capped by max_completion_tokens.
+ * Reasoning tokens ARE included in usage.completion_tokens: confirmed by the live smoke
+ * test (2026-10-27, docs/recovery/s21/spark-live-smoke.json: completion_tokens 312 with
+ * completion_tokens_details.reasoning_tokens 297). Cost therefore uses completion_tokens
+ * as-is; reasoning_tokens is parsed for logging only and never added on top.
  */
 export const PRICE_PER_MILLION_USD = { input: 0.1, output: 0.2 } as const;
+
+/**
+ * Output-cap floor. Muse Spark always reasons and reasoning shares max_completion_tokens.
+ * Live evidence: a 200-token cap returned EMPTY content (finish_reason length, 198/200 spent on
+ * reasoning); the same prompt at 700 used 312 tokens and answered. 400 is the lowest value that
+ * leaves answer headroom above the observed ~300 reasoning tokens for a trivial prompt (knowledge-
+ * grounded answers reason more), so lower caps are unsafe and are clamped up. Default stays 700.
+ */
+export const MIN_OUTPUT_TOKENS = 400;
 
 export interface AssistantConfig {
   /** Only the literal string "true" enables live inference. */
@@ -65,10 +75,11 @@ export function loadAssistantConfig(): AssistantConfig {
     monthlyBudgetUsd: numEnv('SPARK_ASSISTANT_MONTHLY_BUDGET_USD', 2),
     maxInputTokens: intEnv('SPARK_ASSISTANT_MAX_INPUT_TOKENS', 2500, 200, 20000),
     // Muse Spark always reasons; reasoning tokens share this cap, so keep it comfortable.
-    maxOutputTokens: intEnv('SPARK_ASSISTANT_MAX_OUTPUT_TOKENS', 700, 100, 4000),
+    maxOutputTokens: intEnv('SPARK_ASSISTANT_MAX_OUTPUT_TOKENS', 700, MIN_OUTPUT_TOKENS, 4000),
     timeoutMs: intEnv('SPARK_ASSISTANT_TIMEOUT_MS', 15000, 1000, 60000),
     rateLimitPerMinute: intEnv('SPARK_ASSISTANT_RATE_LIMIT_PER_MINUTE', 6, 1, 120),
     liveRoles: parseLiveRoles(process.env.SPARK_ASSISTANT_LIVE_ROLES),
+    // Model and API base are code constants. No environment variable or request field can change them.
     apiBase: ASSISTANT_API_BASE,
     model: ASSISTANT_MODEL,
   };

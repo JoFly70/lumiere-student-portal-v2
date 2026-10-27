@@ -38,7 +38,7 @@ describe("S05 Roadmap page", () => {
     expect(markup).not.toContain('data-testid="horizon-section"');
     expect(markup).toContain('href="/flight-deck#section-foundation"');
     expect(markup).toContain('href="/flight-deck#section-horizon"');
-    expect(t).toContain("Lumière Higher-Ed Pathways");
+    expect(t).toContain("Lumière Student Portal");
   });
 
   it("draws overall progress once, on the Flight Deck, as scoped counts", () => {

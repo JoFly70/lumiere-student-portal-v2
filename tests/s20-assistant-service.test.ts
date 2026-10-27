@@ -74,7 +74,7 @@ describe('adapter', () => {
     expect(body.max_completion_tokens).toBe(321);
     expect(body.tools).toBeUndefined();
     expect(body.stream).toBe(false);
-    expect(r).toEqual({ text: 'A roadmap is a plan.', promptTokens: 500, completionTokens: 100 });
+    expect(r).toMatchObject({ text: 'A roadmap is a plan.', promptTokens: 500, completionTokens: 100 });
   });
   it('times out via abort and does not leak details', async () => {
     process.env.META_MODEL_API_KEY = KEY;

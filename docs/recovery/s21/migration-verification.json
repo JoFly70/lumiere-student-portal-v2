@@ -1,0 +1,339 @@
+{
+  "applied": [
+    "20261030100000_s18_billing_ledger.sql",
+    "20261030100100_s18_billing_audit_event_types.sql",
+    "20261030110000_s18_document_student_message.sql",
+    "20261031100000_s19_ticket_comment_idempotency.sql",
+    "20261031110000_s19_billing_corrections.sql",
+    "20261101100000_s20_billing_evidence_void.sql",
+    "20261101200000_s20_assistant_usage.sql",
+    "20261102100000_s21_assistant_conversations.sql",
+    "20261102110000_s21_document_attachments.sql",
+    "20261102120000_s21_student_memory.sql"
+  ],
+  "s20Discovered": [
+    "20261101100000_s20_billing_evidence_void.sql",
+    "20261101200000_s20_assistant_usage.sql"
+  ],
+  "s21Discovered": [
+    "20261102100000_s21_assistant_conversations.sql",
+    "20261102110000_s21_document_attachments.sql",
+    "20261102120000_s21_student_memory.sql"
+  ],
+  "total": 73,
+  "passed": 73,
+  "failed": 0,
+  "checks": [
+    {
+      "name": "all five S18/S19 files exist",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "every migration has a 14-digit timestamp prefix",
+      "pass": true
+    },
+    {
+      "name": "timestamps unique and strictly increasing in filename order",
+      "pass": true
+    },
+    {
+      "name": "the five S18/S19 files sort in the exact release order",
+      "pass": true,
+      "detail": "25,26,27,28,29"
+    },
+    {
+      "name": "the five are the latest pre-S20 files (they are the last five non-S20 migrations)",
+      "pass": true,
+      "detail": "20261030100000_s18_billing_ledger.sql,20261030100100_s18_billing_audit_event_types.sql,20261030110000_s18_document_student_message.sql,20261031100000_s19_ticket_comment_idempotency.sql,20261031110000_s19_billing_corrections.sql"
+    },
+    {
+      "name": "every S20 migration sorts after the S19 corrections file",
+      "pass": true,
+      "detail": "20261101100000_s20_billing_evidence_void.sql,20261101200000_s20_assistant_usage.sql"
+    },
+    {
+      "name": "S20 migration discovered (informational)",
+      "pass": true,
+      "detail": "20261101100000_s20_billing_evidence_void.sql,20261101200000_s20_assistant_usage.sql"
+    },
+    {
+      "name": "S21 migrations discovered (informational)",
+      "pass": true,
+      "detail": "20261102100000_s21_assistant_conversations.sql,20261102110000_s21_document_attachments.sql,20261102120000_s21_student_memory.sql"
+    },
+    {
+      "name": "every S21 migration sorts after the last S20 migration and after S19",
+      "pass": true,
+      "detail": "20261102100000_s21_assistant_conversations.sql,20261102110000_s21_document_attachments.sql,20261102120000_s21_student_memory.sql"
+    },
+    {
+      "name": "S21 migrations have unique timestamps",
+      "pass": true
+    },
+    {
+      "name": "S21 migrations are idempotent by construction (static: every CREATE TABLE/INDEX uses IF NOT EXISTS or a guard)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "S21 additive (static): no DROP TABLE / DROP COLUMN / TRUNCATE / DELETE / column type change",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "pre-state: billing tables absent",
+      "pass": true
+    },
+    {
+      "name": "dependency: S19 corrections refuse to apply before the S18 ledger",
+      "pass": true
+    },
+    {
+      "name": "dependency refusal left nothing behind",
+      "pass": true
+    },
+    {
+      "name": "S19 corrections reference the S18 ledger tables",
+      "pass": true
+    },
+    {
+      "name": "S18 audit-event file is enum-only (ADD VALUE needs its own file)",
+      "pass": true
+    },
+    {
+      "name": "applied twice, in order: 20261030100000_s18_billing_ledger.sql",
+      "pass": true
+    },
+    {
+      "name": "applied twice, in order: 20261030100100_s18_billing_audit_event_types.sql",
+      "pass": true
+    },
+    {
+      "name": "applied twice, in order: 20261030110000_s18_document_student_message.sql",
+      "pass": true
+    },
+    {
+      "name": "legacy document survives; student_message NULL, admin_notes intact",
+      "pass": true
+    },
+    {
+      "name": "student_message column writable",
+      "pass": true
+    },
+    {
+      "name": "amount columns are bigint",
+      "pass": true
+    },
+    {
+      "name": "zero / negative cents rejected",
+      "pass": true
+    },
+    {
+      "name": "bad currency rejected",
+      "pass": true
+    },
+    {
+      "name": "S18 audit event types present",
+      "pass": true
+    },
+    {
+      "name": "applied twice, in order: 20261031100000_s19_ticket_comment_idempotency.sql",
+      "pass": true
+    },
+    {
+      "name": "applied twice, in order: 20261031110000_s19_billing_corrections.sql",
+      "pass": true
+    },
+    {
+      "name": "S18 billing rows survive S19",
+      "pass": true,
+      "detail": "{\"r\":1,\"d\":1,\"i\":1,\"o\":1,\"v\":0}"
+    },
+    {
+      "name": "void without a reason rejected",
+      "pass": true
+    },
+    {
+      "name": "void with reason accepted; row kept",
+      "pass": true
+    },
+    {
+      "name": "PRE-S20 behaviour (S19 only): voided receipt still pins its evidence (documented limitation S20 fixes)",
+      "pass": true
+    },
+    {
+      "name": "S19 audit event types present",
+      "pass": true
+    },
+    {
+      "name": "RLS still enabled on every billing table",
+      "pass": true
+    },
+    {
+      "name": "applied twice, in order: 20261101100000_s20_billing_evidence_void.sql",
+      "pass": true
+    },
+    {
+      "name": "applied twice, in order: 20261101200000_s20_assistant_usage.sql",
+      "pass": true
+    },
+    {
+      "name": "S20: active-only unique index exists, old all-rows unique index gone",
+      "pass": true,
+      "detail": "student_billing_receipts_pkey,student_billing_receipts_student_idx,student_billing_receipts_evidence_active_uniq"
+    },
+    {
+      "name": "S20: active index is UNIQUE and partial (evidence_id IS NOT NULL AND voided_at IS NULL)",
+      "pass": true,
+      "detail": "((evidence_id IS NOT NULL) AND (voided_at IS NULL))"
+    },
+    {
+      "name": "S20: existing voided receipt kept with its evidence_id (history preserved)",
+      "pass": true
+    },
+    {
+      "name": "S20: after a void, the same evidence backs ONE new non-voided receipt",
+      "pass": true
+    },
+    {
+      "name": "S20: ...but never two non-voided receipts",
+      "pass": true
+    },
+    {
+      "name": "S20: voiding the replacement frees the evidence again (still max one active)",
+      "pass": true
+    },
+    {
+      "name": "S20: active receipt count for the evidence is exactly 1; voided history is 2",
+      "pass": true
+    },
+    {
+      "name": "S20: void still needs a reason",
+      "pass": true
+    },
+    {
+      "name": "S20: RLS still enabled on every billing table",
+      "pass": true
+    },
+    {
+      "name": "S20 assistant usage: table exists with RLS enabled and no policy",
+      "pass": true
+    },
+    {
+      "name": "S20 assistant usage: malformed month and negative cost rejected",
+      "pass": true
+    },
+    {
+      "name": "S20 assistant usage: holds no user id or message content",
+      "pass": true,
+      "detail": "cost_micro_usd,month,requests,updated_at"
+    },
+    {
+      "name": "S21 applied twice, in order: 20261102100000_s21_assistant_conversations.sql",
+      "pass": true
+    },
+    {
+      "name": "S21 applied twice, in order: 20261102110000_s21_document_attachments.sql",
+      "pass": true
+    },
+    {
+      "name": "S21 applied twice, in order: 20261102120000_s21_student_memory.sql",
+      "pass": true
+    },
+    {
+      "name": "S21 additive: no pre-existing column removed",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "S21 additive: no pre-existing column changed type",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "S21 additive: no pre-existing table removed",
+      "pass": true
+    },
+    {
+      "name": "S21 created new tables (informational)",
+      "pass": true,
+      "detail": "assistant_audit_events,assistant_conversations,assistant_integrity_checkpoints,assistant_memory_sources,assistant_message_attachments,assistant_messages,student_assistant_memory,student_document_text,student_storage_quota"
+    },
+    {
+      "name": "S21: RLS enabled on EVERY new table",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "S21: anon has no privilege on new tables (harness default privileges are NOT applied to anon here; informational on hosted)",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "name": "S21: legacy student_documents rows and users untouched",
+      "pass": true
+    },
+    {
+      "name": "S21: legacy document values byte-identical after S21",
+      "pass": true
+    },
+    {
+      "name": "S21 assistant_messages: first message accepted (seq 1, zero prev_hash)",
+      "pass": true
+    },
+    {
+      "name": "S21 assistant_messages: forked / skipped chain rejected (seq 3, wrong prev_hash)",
+      "pass": true
+    },
+    {
+      "name": "S21 assistant_messages: correctly chained reply accepted",
+      "pass": true
+    },
+    {
+      "name": "S21 append-only trigger: UPDATE of content rejected",
+      "pass": true
+    },
+    {
+      "name": "S21 append-only trigger: UPDATE of hash / seq / owner rejected",
+      "pass": true
+    },
+    {
+      "name": "S21 append-only trigger: DELETE rejected",
+      "pass": true
+    },
+    {
+      "name": "S21 append-only trigger: TRUNCATE rejected",
+      "pass": true
+    },
+    {
+      "name": "S21 append-only trigger: status-only UPDATE allowed",
+      "pass": true
+    },
+    {
+      "name": "S21 append-only: conversation delete rejected (archive instead)",
+      "pass": true
+    },
+    {
+      "name": "S21 append-only: messages untouched after all tamper attempts",
+      "pass": true
+    },
+    {
+      "name": "S21 assistant_audit_events immutable (UPDATE and DELETE rejected)",
+      "pass": true
+    },
+    {
+      "name": "S21: student_documents.id type matches assistant_message_attachments.document_id",
+      "pass": true
+    },
+    {
+      "name": "S21 attachments: legacy document defaulted to source='documents'",
+      "pass": true,
+      "detail": "documents"
+    },
+    {
+      "name": "S21: no table has a policy granting anon access",
+      "pass": true
+    }
+  ]
+}

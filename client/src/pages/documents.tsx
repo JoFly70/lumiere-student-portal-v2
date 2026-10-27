@@ -24,6 +24,7 @@ import {
   AlertCircle,
   FileImage,
   FileSpreadsheet,
+  MessageSquare,
   File,
   X,
   Loader2
@@ -48,7 +49,8 @@ type DocumentCategory =
   | "financial"
   | "identity"
   | "foreign_credentials"
-  | "transfer_credits";
+  | "transfer_credits"
+  | "chat";
 
 type DocumentStatus = "pending" | "verified" | "rejected";
 
@@ -83,6 +85,12 @@ const categoryConfig: Record<DocumentCategory, { label: string; short: string; i
     icon: BookOpen, 
     color: "text-student-gold-ink" 
   },
+  chat: {
+    label: "Chat attachments",
+    short: "Chat",
+    icon: MessageSquare,
+    color: "text-student-gold-ink"
+  },
 };
 
 const statusConfig: Record<DocumentStatus, { label: string; variant: "default" | "secondary" | "destructive"; icon: typeof CheckCircle2 }> = {
@@ -110,6 +118,8 @@ const categoryToDocType: Record<DocumentCategory, string> = {
   identity: "id_gov",
   foreign_credentials: "foreign_eval",
   transfer_credits: "college_transcript",
+  // Uploads from the Documents page never create chat attachments (those go through the chat flow).
+  chat: "other",
 };
 
 // Map backend doc_type to frontend categories
@@ -125,6 +135,7 @@ function mapDocTypeToCategory(docType: string): DocumentCategory {
     "residency_doc": "identity",
     "consent_form": "identity",
     "other": "financial",
+    "chat_attachment": "chat",
   };
   return mapping[docType] || "academic";
 }
@@ -148,14 +159,37 @@ function DocStatusPill({ status }: { status: DocumentStatus }) {
   );
 }
 
-const docMime = (fileName: string) =>
-  fileName.endsWith(".pdf") ? "application/pdf" : fileName.match(/\.(jpg|jpeg|png|gif)$/i) ? "image/jpeg" : "application/octet-stream";
+const docMime = (fileName: string) => {
+  const ext = fileName.slice(fileName.lastIndexOf(".") + 1).toLowerCase();
+  switch (ext) {
+    case "pdf": return "application/pdf";
+    case "docx": return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+    case "xlsx": return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    case "csv": return "text/csv";
+    case "txt": return "text/plain";
+    case "jpg": case "jpeg": case "gif": return "image/jpeg";
+    case "png": return "image/png";
+    case "webp": return "image/webp";
+    default: return "application/octet-stream";
+  }
+};
 
 function getFileIcon(mimeType: string) {
   if (mimeType.startsWith("image/")) return FileImage;
-  if (mimeType.includes("spreadsheet") || mimeType.includes("excel")) return FileSpreadsheet;
-  if (mimeType.includes("pdf")) return FileText;
+  if (mimeType.includes("spreadsheet") || mimeType.includes("excel") || mimeType === "text/csv") return FileSpreadsheet;
+  if (mimeType.includes("pdf") || mimeType.includes("wordprocessingml") || mimeType === "text/plain") return FileText;
   return File;
+}
+
+/** Human file-kind key for DOCX/XLSX/CSV/TXT/PDF/images (used as a tooltip on the file icon). */
+function fileKindKey(mimeType: string): TranslationKey {
+  if (mimeType.startsWith("image/")) return "documents.fileKind.image";
+  if (mimeType.includes("pdf")) return "documents.fileKind.pdf";
+  if (mimeType.includes("wordprocessingml")) return "documents.fileKind.docx";
+  if (mimeType.includes("spreadsheetml")) return "documents.fileKind.xlsx";
+  if (mimeType === "text/csv") return "documents.fileKind.csv";
+  if (mimeType === "text/plain") return "documents.fileKind.txt";
+  return "documents.fileKind.other";
 }
 
 function formatFileSize(bytes: number, language: Language): string {
@@ -174,6 +208,13 @@ function getFileSizeFromName(fileName: string): number {
     return unit === 'KB' ? size * 1024 : size * 1024 * 1024;
   }
   return 0;
+}
+
+/** Type label; chat attachments also show their file kind (Word, Excel, CSV...). */
+function docTypeDisplay(doc: { doc_type: string; file_name: string }, t: (key: TranslationKey) => string): string {
+  return doc.doc_type === "chat_attachment"
+    ? `${docTypeLabel(doc.doc_type)} · ${t(fileKindKey(docMime(doc.file_name)))}`
+    : docTypeLabel(doc.doc_type);
 }
 
 export default function Documents() {
@@ -577,6 +618,9 @@ export default function Documents() {
             </TabsList>
 
             <TabsContent value={activeTab} className="mt-0">
+              {activeTab === "chat" && (
+                <p className="mb-3 text-sm text-student-muted" data-testid="chat-attachments-note">{t("documents.chatAttachmentNote")}</p>
+              )}
               {filteredDocuments.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
                   <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -594,7 +638,7 @@ export default function Documents() {
                           <FileIcon className="mt-0.5 h-7 w-7 shrink-0 text-student-muted" aria-hidden="true" />
                           <div className="min-w-0 flex-1">
                             <p className="break-words font-medium text-student-ink">{doc.file_name}</p>
-                            <p className="text-sm text-student-muted">{docTypeLabel(doc.doc_type)} · {formatDocDate(doc.created_at, language)}</p>
+                            <p className="text-sm text-student-muted">{docTypeDisplay(doc, t)} · {formatDocDate(doc.created_at, language)}</p>
                             <div className="mt-2"><DocStatusPill status={doc.status as DocumentStatus} /></div>
                           </div>
                         </div>
@@ -646,7 +690,7 @@ export default function Documents() {
                                 </div>
                               </td>
                               <td className="p-4">
-                                <span className="text-sm">{docTypeLabel(doc.doc_type)}</span>
+                                <span className="text-sm">{docTypeDisplay(doc, t)}</span>
                               </td>
                               <td className="p-4 hidden lg:table-cell">
                                 <span className="text-sm text-muted-foreground">{formatDocDate(doc.created_at, language)}</span>

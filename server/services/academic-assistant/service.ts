@@ -179,8 +179,9 @@ export async function answerMessage(
   const context = searchKnowledge(message, 3).map((h) => h.entry);
   const messages = buildProviderMessages(message, lang, history, context, cfg.maxInputTokens);
   try {
-    const out = await callMuseSpark(messages, { maxOutputTokens: cfg.maxOutputTokens, timeoutMs: cfg.timeoutMs, fetchImpl: deps.fetchImpl });
+    const out = await callMuseSpark(messages, { maxOutputTokens: cfg.maxOutputTokens, timeoutMs: cfg.timeoutMs, fetchImpl: deps.fetchImpl, model: cfg.model, apiBase: cfg.apiBase });
     const actual = usdToMicro(estimateCostUsd(out.promptTokens, out.completionTokens));
+    if (out.reasoningTokens !== null) logger.info('Assistant provider usage', { promptTokens: out.promptTokens, completionTokens: out.completionTokens, reasoningTokens: out.reasoningTokens, finishReason: out.finishReason });
     try { await deps.budget.settle(month, reserveMicro, actual); } catch (e) { logger.error('Assistant budget settle failed', { error: (e as Error).message }); }
     let reply = out.text.slice(0, 2000);
     if (/transf|transfer|accept|cr[ée]dit/i.test(message + reply)) reply += `\n\n${T[lang].transferNote}`;
@@ -188,12 +189,17 @@ export async function answerMessage(
   } catch (err) {
     const kind = err instanceof ProviderError ? err.kind : 'unknown';
     const status = err instanceof ProviderError ? err.status : undefined;
+    const usage = err instanceof ProviderError ? err.usage : undefined;
     // Never log message content or provider bodies.
-    logger.warn('Assistant provider call failed', { kind, status });
+    logger.warn('Assistant provider call failed', { kind, status, ...(usage ? { promptTokens: usage.promptTokens, completionTokens: usage.completionTokens, reasoningTokens: usage.reasoningTokens } : {}) });
     const rejected = kind === 'http' && status !== undefined && status >= 400 && status < 500;
-    if (rejected || kind === 'not_configured') {
+    if (usage) {
+      // The provider returned usage, so it billed us: settle at actual cost (truncated / bad_response included).
+      const actual = usdToMicro(estimateCostUsd(usage.promptTokens, usage.completionTokens));
+      try { await deps.budget.settle(month, reserveMicro, actual); } catch { /* keep reservation: conservative */ }
+    } else if (rejected || kind === 'not_configured' || kind === 'model_rejected') {
       try { await deps.budget.settle(month, reserveMicro, 0); } catch { /* keep reservation: conservative */ }
-    } // timeouts/network/5xx keep the reservation (provider may have billed)
+    } // timeouts/network/5xx/no-usage bad_response keep the reservation (provider may have billed)
     return localAnswer(message, lang, T[lang].aiFail);
   }
 }

@@ -23,7 +23,7 @@ import type {
 import type { StudentRequirementView } from "@shared/student-degree-progress-view";
 import { formatDecimal } from "@/pages/student-progress-presentation";
 
-export const BRAND_NAME = "Lumière Higher-Ed Pathways";
+export const BRAND_NAME = "Lumière Student Portal";
 
 // ── Sections ────────────────────────────────────────────────────────────────
 

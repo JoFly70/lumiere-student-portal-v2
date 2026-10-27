@@ -12,7 +12,7 @@ import crest96 from "@/assets/brand/crest-96.webp";
 import crest192 from "@/assets/brand/crest-192.webp";
 import crest480 from "@/assets/brand/crest-480.webp";
 
-export const BRAND = { name: "Lumière", tagline: "Higher-Ed Pathways" } as const;
+export const BRAND = { name: "Lumière", tagline: "Student Portal" } as const;
 
 /** Intrinsic aspect ratio (w/h) of the cropped crest. */
 const ASPECT = 1083 / 1113;

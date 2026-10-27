@@ -12,6 +12,10 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { LanguageToggle } from "@/components/language-toggle";
 import { useT, type TranslationKey } from "@/i18n";
 import { filterStudentNav, useStudentPrograms } from "@/lib/student-programs";
+import { GlobalSearch } from "@/components/os/global-search";
+import { AccountMenu, type AccountIdentity } from "@/components/os/account-menu";
+import { useAuth } from "@/lib/auth";
+import { useMyStudent, usePhotoChanged } from "@/hooks/use-my-student";
 
 // `title` stays English (test ids); `labelKey` is the visible, translated label.
 const BAR_ITEMS: readonly { title: string; labelKey: TranslationKey; url: string; icon: typeof Gauge }[] = [
@@ -23,15 +27,33 @@ const BAR_ITEMS: readonly { title: string; labelKey: TranslationKey; url: string
 ];
 
 export function StudentHeader() {
+  const { user, logout } = useAuth();
+  const { data: me } = useMyStudent();
+  const photoChanged = usePhotoChanged();
+  const fullName = `${me?.first_name ?? ""} ${me?.last_name ?? ""}`.trim();
+  const identity: AccountIdentity = {
+    studentId: me?.id,
+    firstName: me?.first_name,
+    lastName: me?.last_name,
+    name: fullName || user?.name || user?.email || "",
+    email: me?.email || user?.email,
+    photoUrl: me?.photo_url,
+  };
   return (
-    <header className="flex h-14 shrink-0 items-center justify-between border-b border-student-line bg-student-card px-3 sm:px-4">
-      <div className="flex items-center gap-3">
+    <header className="flex h-14 shrink-0 items-center gap-1 border-b border-student-line bg-student-card px-3 sm:gap-2 sm:px-4" data-testid="student-header">
+      <div className="flex shrink-0 items-center gap-3">
         <SidebarTrigger className="hidden md:inline-flex" data-testid="button-sidebar-toggle" />
         <div className="md:hidden" data-testid="text-header-brand"><LumiereWordmark variant="compact" tone="on-light" /></div>
       </div>
-      <div className="flex items-center gap-1">
-        <LanguageToggle />
-        <ThemeToggle className="h-11 w-11" />
+      <div className="ml-auto flex min-w-0 md:ml-0 md:flex-1 md:justify-center md:px-2">
+        <GlobalSearch audience="student" />
+      </div>
+      <div className="flex shrink-0 items-center gap-1">
+        <div className="hidden items-center gap-1 sm:flex" data-testid="header-prefs">
+          <LanguageToggle />
+          <ThemeToggle className="h-11 w-11" />
+        </div>
+        <AccountMenu identity={identity} onSignOut={() => void logout()} onPhotoChanged={photoChanged} />
       </div>
     </header>
   );

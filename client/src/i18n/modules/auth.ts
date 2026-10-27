@@ -8,9 +8,9 @@ export const authEn = {
   "auth.brand.eyebrow": "Welcome to Lumière",
   "auth.hero.title": "Your journey begins here.",
   "auth.hero.body":
-    "Higher-Ed Pathways, guided by advisors who know your story, from the first application to the final transcript.",
+    "Your Student Portal, guided by advisors who know your story, from the first application to the final transcript.",
   "auth.hero.footer": "Private student portal",
-  "auth.hero.footerRight": "Higher-Ed Pathways",
+  "auth.hero.footerRight": "Student Portal",
   "auth.mobile.welcome": "Your journey begins here.",
   "auth.language.label": "Language",
 
@@ -94,9 +94,9 @@ export const authFr: Record<keyof typeof authEn, string> = {
   "auth.brand.eyebrow": "Bienvenue chez Lumière",
   "auth.hero.title": "Votre parcours commence ici.",
   "auth.hero.body":
-    "Des parcours d’études supérieures, guidés par des conseillers qui connaissent votre histoire, de la première candidature au dernier relevé de notes.",
+    "Votre portail étudiant, guidé par des conseillers qui connaissent votre histoire, de la première candidature au dernier relevé de notes.",
   "auth.hero.footer": "Portail étudiant privé",
-  "auth.hero.footerRight": "Higher-Ed Pathways",
+  "auth.hero.footerRight": "Portail étudiant",
   "auth.mobile.welcome": "Votre parcours commence ici.",
   "auth.language.label": "Langue",
 

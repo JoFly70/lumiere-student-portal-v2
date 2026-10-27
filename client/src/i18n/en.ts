@@ -10,12 +10,16 @@ import { authEn } from "./modules/auth";
 import { cockpitEn } from "./modules/cockpit";
 import { staffEn } from "./modules/staff";
 import { assistantEn } from "./modules/assistant";
+import { attachmentsEn } from "./modules/attachments";
+import { studentOsEn } from "./modules/student-os";
 
 export const en = {
   ...authEn,
   ...cockpitEn,
   ...staffEn,
   ...assistantEn,
+  ...attachmentsEn,
+  ...studentOsEn,
   // Language
   "language.label": "Language",
   "language.en": "English",

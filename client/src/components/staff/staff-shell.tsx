@@ -13,6 +13,7 @@ import { LumiereWordmark } from "@/components/brand/lumiere-brand";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { StaffAvatar } from "@/components/staff/staff-ui";
+import { GlobalSearch } from "@/components/os/global-search";
 
 export const STAFF_SIDEBAR_OPEN_MIN_WIDTH = 1280;
 
@@ -53,7 +54,10 @@ export function StaffHeader({ name, role }: { name?: string; role?: string }) {
         <div className="md:hidden" data-testid="text-header-brand"><LumiereWordmark variant="compact" tone="on-light" /></div>
         <p className="hidden text-[11px] font-semibold uppercase tracking-[0.18em] text-student-muted md:block">Staff Portal</p>
       </div>
-      <div className="flex min-w-0 items-center gap-3">
+      <div className="ml-auto flex min-w-0 md:ml-0 md:flex-1 md:justify-center md:px-2" data-testid="staff-header-search">
+        <GlobalSearch audience="staff" />
+      </div>
+      <div className="flex min-w-0 shrink-0 items-center gap-3">
         {name && (
           <div className="hidden min-w-0 items-center gap-2.5 sm:flex" data-testid="staff-header-user">
             <StaffAvatar name={name} size="sm" />

@@ -578,7 +578,8 @@ export const docTypeEnum = z.enum([
   'english_cert',
   'residency_doc',
   'consent_form',
-  'other'
+  'other',
+  'chat_attachment', // S21: Lumière Guide chat attachment (source='chat'); never an enrollment requirement
 ]);
 export const docStatusEnum = z.enum(['pending', 'verified', 'rejected', 'resubmit_requested']);
 export const visibilityEnum = z.enum(['student_staff', 'staff_only', 'public']);

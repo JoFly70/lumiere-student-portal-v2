@@ -6,7 +6,7 @@ import { BRAND, LumiereCrest, LumiereWordmark } from "../client/src/components/b
 
 describe("S19 brand", () => {
   it("exports the agreed constants", () => {
-    expect(BRAND).toEqual({ name: "Lumière", tagline: "Higher-Ed Pathways" });
+    expect(BRAND).toEqual({ name: "Lumière", tagline: "Student Portal" });
   });
   it("crest: decorative by default, intrinsic size, srcset, no distortion", () => {
     const html = renderToStaticMarkup(createElement(LumiereCrest, { size: 40 }));
@@ -19,10 +19,10 @@ describe("S19 brand", () => {
   it("wordmark variants", () => {
     const full = renderToStaticMarkup(createElement(LumiereWordmark, {}));
     expect(full).toContain("Lumière");
-    expect(full).toContain("Higher-Ed Pathways");
+    expect(full).toContain("Student Portal");
     const compact = renderToStaticMarkup(createElement(LumiereWordmark, { variant: "compact" }));
     expect(compact).toContain("Lumière");
-    expect(compact).not.toContain("Higher-Ed Pathways");
+    expect(compact).not.toContain("Student Portal");
     const stacked = renderToStaticMarkup(createElement(LumiereWordmark, { variant: "stacked", tone: "on-dark" }));
     expect(stacked).toContain('data-variant="stacked"');
     expect(stacked).toContain("--t-rail-head");

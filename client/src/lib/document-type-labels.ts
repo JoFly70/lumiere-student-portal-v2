@@ -15,6 +15,7 @@ const DOC_TYPE_LABELS: Record<string, string> = {
   residency_proof: "Proof of residency",
   consent_form: "Consent form",
   other: "Other document",
+  chat_attachment: "Chat attachment",
 };
 
 /** "some_snake_case" or "SOME_ENUM" to "Some snake case". */

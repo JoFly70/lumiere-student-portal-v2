@@ -14,6 +14,7 @@ import {
 import { logger } from '../lib/logger';
 import { auditDocument, writeAuditLog } from '../lib/audit';
 import { getStudent } from './student-service';
+import { invalidateDocumentIndex } from './chat-attachments/invalidate';
 
 type DocStatus = StudentDocument['status'];
 
@@ -582,6 +583,9 @@ export async function softDeleteDocument(
 
     logger.info('Document soft deleted', { documentId });
 
+    // S21: drop the extracted text index of the deleted document (best-effort, never throws).
+    await invalidateDocumentIndex(documentId);
+
     // Write audit log
     if (actorId && doc) {
       writeAuditLog({
@@ -623,6 +627,9 @@ export async function hardDeleteDocument(documentId: string): Promise<void> {
     if (error) {
       throw error;
     }
+
+    // S21: drop the extracted text index (also covered by ON DELETE CASCADE where the FK exists).
+    await invalidateDocumentIndex(documentId);
 
     logger.info('Document permanently deleted', {
       documentId,

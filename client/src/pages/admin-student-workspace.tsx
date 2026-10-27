@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
 import { useParams, Link } from "wouter";
 import { AlertCircle, ArrowLeft, ArrowRight, ChevronDown, Database, FileCheck2, FileText, Fingerprint, LayoutDashboard, LifeBuoy, RefreshCw, Route, ShieldCheck } from "lucide-react";
@@ -59,6 +59,9 @@ import {
 import { StudentDocumentsReview } from "@/components/admin/student-documents-review";
 import { StudentPortalAccountCard } from "@/components/admin/student-portal-account-card";
 import StudentProfileReview, { useStaffProfileData } from "@/components/admin/student-profile-review";
+import { STAFF_PROFILE_QUERY_KEY } from "@/components/admin/student-profile-review-logic";
+import { PhotoDialog } from "@/components/os/account-menu";
+import { useT } from "@/i18n";
 import { profileDecisionCount } from "@/components/admin/student-profile-review-logic";
 import { useDocuments } from "@/hooks/use-documents";
 import { useTickets, type Ticket } from "@/hooks/use-tickets";
@@ -153,6 +156,9 @@ export default function AdminStudentWorkspace() {
   const documentsQuery = useDocuments(canonicalStudentId);
   const ticketsQuery = useTickets({ studentId: canonicalStudentId });
   const { profileQuery } = useStaffProfileData(canonicalStudentId ?? "");
+  const queryClient = useQueryClient();
+  const { t } = useT();
+  const [photoOpen, setPhotoOpen] = useState(false);
   const [tab, setTab] = useHashTab(WORKSPACE_TABS, "overview", WORKSPACE_TAB_ALIASES);
   const state = selectWorkspaceState(query);
   if (state.kind === "loading") return <div role={state.role} aria-live={state.ariaLive} className="space-y-4"><span className="sr-only">Loading student workspace</span><div className="h-8 w-64 animate-pulse rounded bg-muted" /><div className="h-32 animate-pulse rounded-lg bg-muted" /><div className="h-64 animate-pulse rounded-lg bg-muted" /></div>;
@@ -238,8 +244,19 @@ export default function AdminStudentWorkspace() {
       title={name}
       description={<>{identity.email ?? "Not provided"} · <span className="font-mono">{identity.studentCode ?? "Not provided"}</span></>}
       meta={<StaffPill tone="neutral" icon={<ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />}>Canonical view · controlled placement writes</StaffPill>}
-      actions={<><Link href={`/admin/students/${encodeURIComponent(studentId)}/roadmap`} className={`${staffBtn.outline} inline-flex items-center justify-center border`} data-testid="link-student-roadmap"><Route className="h-4 w-4" aria-hidden="true" />View roadmap</Link><Link href={`/admin/students/${encodeURIComponent(studentId)}/high-school`} className={`${staffBtn.outline} inline-flex items-center justify-center border`} data-testid="link-student-high-school">High school pathway</Link><Link href={`/admin/students/${encodeURIComponent(studentId)}/billing`} className={`${staffBtn.outline} inline-flex items-center justify-center border`} data-testid="link-student-billing">Billing</Link></>}
+      actions={<><Button type="button" variant="outline" size="sm" className={staffBtn.outline} onClick={() => setPhotoOpen(true)} data-testid="button-student-photo">{t("staff.photo.button")}</Button><Link href={`/admin/students/${encodeURIComponent(studentId)}/roadmap`} className={`${staffBtn.outline} inline-flex items-center justify-center border`} data-testid="link-student-roadmap"><Route className="h-4 w-4" aria-hidden="true" />View roadmap</Link><Link href={`/admin/students/${encodeURIComponent(studentId)}/high-school`} className={`${staffBtn.outline} inline-flex items-center justify-center border`} data-testid="link-student-high-school">High school pathway</Link><Link href={`/admin/students/${encodeURIComponent(studentId)}/billing`} className={`${staffBtn.outline} inline-flex items-center justify-center border`} data-testid="link-student-billing">Billing</Link></>}
     />
+    {identity.id ? <PhotoDialog
+      open={photoOpen}
+      onOpenChange={setPhotoOpen}
+      identity={{ studentId: identity.id, firstName: profileQuery.data?.identity.firstName, lastName: profileQuery.data?.identity.lastName, name, photoUrl: profileQuery.data?.identity.photoUrl }}
+      title={t("staff.photo.title")}
+      description={t("staff.photo.desc")}
+      onChanged={() => {
+        void queryClient.invalidateQueries({ queryKey: STAFF_PROFILE_QUERY_KEY(identity.id!) });
+        void queryClient.invalidateQueries({ queryKey: ADMIN_STUDENT_WORKSPACE_QUERY_KEY(studentId) });
+      }}
+    /> : null}
     <StaffTabList tabs={tabs} active={tab} onChange={(key) => setTab(key as WorkspaceTab)} label="Student workspace sections" idPrefix="ws" />
 
     <StaffTabPanel idPrefix="ws" tabKey="overview" active={tab === "overview"}>

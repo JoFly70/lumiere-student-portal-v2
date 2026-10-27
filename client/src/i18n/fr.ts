@@ -3,6 +3,8 @@ import { authFr } from "./modules/auth";
 import { cockpitFr } from "./modules/cockpit";
 import { staffFr } from "./modules/staff";
 import { assistantFr } from "./modules/assistant";
+import { attachmentsFr } from "./modules/attachments";
+import { studentOsFr } from "./modules/student-os";
 
 /**
  * Dictionnaire français (vouvoiement). Typé contre `en.ts` : toute clé anglaise doit exister ici.
@@ -14,6 +16,8 @@ export const fr: Record<TranslationKey, string> = {
   ...cockpitFr,
   ...staffFr,
   ...assistantFr,
+  ...attachmentsFr,
+  ...studentOsFr,
   "language.label": "Langue",
   "language.en": "English",
   "language.fr": "Français",
