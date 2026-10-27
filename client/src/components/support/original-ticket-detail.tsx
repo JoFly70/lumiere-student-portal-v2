@@ -15,6 +15,7 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import {
+  newIdempotencyKey,
   useAttachmentDownload,
   useCreateComment,
   useTicket,
@@ -29,7 +30,7 @@ import {
   type OriginalAttachmentModel,
   type OriginalDetailModel,
 } from "./original-support-adapter";
-import { SUPPORT_TEXT as T } from "./original-support-text";
+import { useSupportText } from "./original-support-text";
 import { StatusBadge, formatDate, formatDateTime, formatFileSize } from "./original-support-bits";
 import { attachmentError } from "./support-presentation";
 
@@ -44,6 +45,7 @@ function MetaField({ label, children }: { label: string; children: React.ReactNo
 
 /** Right-side metadata panel (desktop) / stacked block (mobile). */
 export function MetadataPanel({ ticket, className }: { ticket: OriginalDetailModel; className?: string }) {
+  const { T, language } = useSupportText();
   return (
     <div className={className} data-testid="ticket-metadata">
       <h4 className="mb-4 text-sm font-medium">{T.meta.heading}</h4>
@@ -55,11 +57,11 @@ export function MetadataPanel({ ticket, className }: { ticket: OriginalDetailMod
           </Badge>
         </MetaField>
         <MetaField label={T.meta.category}>
-          <Badge variant="secondary" className={ORIGINAL_CATEGORY_STYLE[ticket.category]}>{ticket.topicLabel}</Badge>
+          <Badge variant="secondary" className={ORIGINAL_CATEGORY_STYLE[ticket.category]}>{T.topics[ticket.topic]?.label ?? ticket.topicLabel}</Badge>
         </MetaField>
         <MetaField label={T.meta.advisor}>{ticket.advisorName ?? T.meta.unassigned}</MetaField>
         <MetaField label={T.meta.reference}><code className="font-mono text-xs">{ticket.ticketNumber}</code></MetaField>
-        <MetaField label={T.meta.lastUpdated}>{formatDateTime(ticket.updatedAt)}</MetaField>
+        <MetaField label={T.meta.lastUpdated}>{formatDateTime(ticket.updatedAt, language)}</MetaField>
         <Separator />
         <div>
           <Label className="mb-2 block text-xs text-muted-foreground">{T.meta.history}</Label>
@@ -70,7 +72,7 @@ export function MetadataPanel({ ticket, className }: { ticket: OriginalDetailMod
                 <div className={cn("mt-1.5 h-2 w-2 rounded-full", ORIGINAL_STATUS_STYLE[h.status].bgColor)} />
                 <div>
                   <span className="font-medium">{T.status[h.status]}</span>
-                  <p className="text-muted-foreground">{formatDate(h.createdAt)}</p>
+                  <p className="text-muted-foreground">{formatDate(h.createdAt, language)}</p>
                 </div>
               </div>
             ))}
@@ -82,25 +84,29 @@ export function MetadataPanel({ ticket, className }: { ticket: OriginalDetailMod
 }
 
 function AttachmentBadge({ a, onOpen, busy }: { a: OriginalAttachmentModel; onOpen: (a: OriginalAttachmentModel) => void; busy: boolean }) {
+  const { T, language } = useSupportText();
   return (
     <button
       type="button"
       onClick={() => onOpen(a)}
       disabled={busy}
-      aria-label={T.detail.download(`${a.name}, ${formatFileSize(a.size)}`)}
+      aria-label={T.detail.download(`${a.name}, ${formatFileSize(a.size, language)}`)}
       data-testid={`badge-attachment-${a.id}`}
       className="inline-flex"
     >
       <Badge variant="outline" className="cursor-pointer gap-1 hover-elevate">
         {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : <FileText className="h-3 w-3" />}
         {a.name}
-        <span className="text-muted-foreground">({formatFileSize(a.size)})</span>
+        <span className="text-muted-foreground">({formatFileSize(a.size, language)})</span>
       </Badge>
     </button>
   );
 }
 
 function DetailBody({ ticketId, onClose }: { ticketId: string; onClose: () => void }) {
+  const { T, language } = useSupportText();
+  // One idempotency key per reply attempt: stable across retries of the same submission, reset after success.
+  const replyKey = useRef<{ content: string; key: string } | null>(null);
   const query = useTicket(ticketId);
   const comment = useCreateComment(ticketId);
   const download = useAttachmentDownload(ticketId);
@@ -140,14 +146,16 @@ function DetailBody({ ticketId, onClose }: { ticketId: string; onClose: () => vo
   const reply = statusAfterStudentReply(ticket.status, ticket.resolvedAt, new Date());
   const canReply = reply.ok && ticket.canReply !== false;
   const replyBlockedWhy = !reply.ok
-    ? (reply.code === "TICKET_CLOSED" ? T.next.closed : "This request was resolved more than 14 days ago, so it can no longer be reopened. Please start a new request.")
-    : ticket.canReply === false ? "You cannot reply to this request right now." : null;
+    ? (reply.code === "TICKET_CLOSED" ? T.next.closed : T.reply.expired(14))
+    : ticket.canReply === false ? T.reply.blocked : null;
 
   const send = () => {
-    if (!draft.trim() || !canReply) return;
+    if (!draft.trim() || !canReply || comment.isPending) return;
     setNotice(null);
-    comment.mutate({ content: draft.trim() }, {
-      onSuccess: () => { setDraft(""); setNotice(T.detail.sent); },
+    const content = draft.trim();
+    if (replyKey.current?.content !== content) replyKey.current = { content, key: newIdempotencyKey() };
+    comment.mutate({ content, idempotencyKey: replyKey.current.key }, {
+      onSuccess: () => { replyKey.current = null; setDraft(""); setNotice(T.detail.sent); },
     });
   };
 
@@ -159,7 +167,7 @@ function DetailBody({ ticketId, onClose }: { ticketId: string; onClose: () => vo
     setNotice(null);
     upload.mutate({ file }, {
       onSuccess: () => setNotice(T.detail.fileAdded(file.name)),
-      onError: (e) => setFileError(`${e.message} ${file.name} was not added.`),
+      onError: (e) => setFileError(`${e.message} ${T.files.notAdded(file.name)}`),
     });
   };
 
@@ -186,10 +194,10 @@ function DetailBody({ ticketId, onClose }: { ticketId: string; onClose: () => vo
       <DialogHeader className="border-b p-4 pb-3 text-left sm:p-6 sm:pb-4">
         <div className="mb-1 flex flex-wrap items-center gap-2 pr-6">
           <code className="font-mono text-sm text-muted-foreground">{ticket.ticketNumber}</code>
-          <Badge variant="secondary" className={ORIGINAL_CATEGORY_STYLE[ticket.category]}>{ticket.topicLabel}</Badge>
+          <Badge variant="secondary" className={ORIGINAL_CATEGORY_STYLE[ticket.category]}>{T.topics[ticket.topic]?.label ?? ticket.topicLabel}</Badge>
         </div>
         <DialogTitle className="text-lg leading-snug [overflow-wrap:anywhere] sm:text-xl" data-testid="detail-title">{ticket.subject}</DialogTitle>
-        <DialogDescription>{T.detail.createdOn(formatDateTime(ticket.createdAt))}</DialogDescription>
+        <DialogDescription>{T.detail.createdOn(formatDateTime(ticket.createdAt, language))}</DialogDescription>
       </DialogHeader>
 
       <div className="flex min-h-0 flex-1 overflow-hidden">
@@ -198,7 +206,7 @@ function DetailBody({ ticketId, onClose }: { ticketId: string; onClose: () => vo
             <summary className="flex min-h-[44px] cursor-pointer list-none flex-wrap items-center gap-2 p-3 text-sm font-medium">
               <span>{T.meta.heading}</span>
               <StatusBadge status={ticket.status} />
-              <span className="ml-auto text-xs text-muted-foreground">{formatDate(ticket.updatedAt)}</span>
+              <span className="ml-auto text-xs text-muted-foreground">{formatDate(ticket.updatedAt, language)}</span>
             </summary>
             <MetadataPanel ticket={ticket} className="border-t p-4" />
           </details>
@@ -263,7 +271,7 @@ function DetailBody({ ticketId, onClose }: { ticketId: string; onClose: () => vo
                       </div>
                       <span className="truncate text-sm font-medium">{c.authorKind === "student" ? T.detail.you : c.authorName || T.detail.team}</span>
                     </div>
-                    <span className="shrink-0 text-xs text-muted-foreground">{formatDateTime(c.createdAt)}</span>
+                    <span className="shrink-0 text-xs text-muted-foreground">{formatDateTime(c.createdAt, language)}</span>
                   </div>
                   <p className="whitespace-pre-wrap text-sm sm:ml-10 [overflow-wrap:anywhere]">{c.content}</p>
                 </li>
@@ -283,7 +291,7 @@ function DetailBody({ ticketId, onClose }: { ticketId: string; onClose: () => vo
                 data-testid="input-new-comment"
               />
               {replyBlockedWhy && <p className="text-sm text-muted-foreground" data-testid="composer-note">{replyBlockedWhy}</p>}
-              {canReply && ticket.status === "resolved" && <p className="text-sm text-muted-foreground">Sending a reply will reopen this request.</p>}
+              {canReply && ticket.status === "resolved" && <p className="text-sm text-muted-foreground">{T.reply.reopens}</p>}
               {comment.isError && <p role="alert" className="text-sm font-medium text-destructive" data-testid="reply-error">{comment.error.message} {T.detail.sendFailed}</p>}
               <div aria-live="polite">
                 {notice && <p className="text-sm" data-testid="detail-notice">{notice}</p>}

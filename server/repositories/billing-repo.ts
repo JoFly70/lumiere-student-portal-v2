@@ -151,7 +151,7 @@ export const billingRepository: BillingRepository<Tx> = {
       UPDATE student_billing_installments SET
         due_date = COALESCE(${patch.dueDate ?? null}::date, due_date),
         amount_cents = COALESCE(${patch.amountCents ?? null}::bigint, amount_cents),
-        label = CASE WHEN ${patch.label !== undefined} THEN ${patch.label ?? null} ELSE label END
+        label = CASE WHEN ${patch.label !== undefined}::boolean THEN ${patch.label ?? null} ELSE label END
       WHERE student_id = ${studentId} AND id::text = ${installmentId}`);
     return true;
   },

@@ -1,4 +1,4 @@
-import { useT, type Language } from "@/i18n";
+import { frTypo, useT, type Language } from "@/i18n";
 
 /**
  * S18 — every English string of the restored original Support UI, in one
@@ -162,3 +162,184 @@ export const SUPPORT_TEXT_EN = {
   units: { b: "B", kb: "KB", mb: "MB" },
 };
 export type SupportText = typeof SUPPORT_TEXT_EN;
+
+/** Applies French typography to every string (and to the result of every function) in the tree. */
+function typo<T>(node: T): T {
+  if (typeof node === "string") return frTypo(node) as unknown as T;
+  if (typeof node === "function") return ((...a: unknown[]) => frTypo(String((node as (...x: unknown[]) => unknown)(...a)))) as unknown as T;
+  if (node && typeof node === "object") return Object.fromEntries(Object.entries(node).map(([k, v]) => [k, typo(v)])) as T;
+  return node;
+}
+
+const SUPPORT_TEXT_FR_RAW: SupportText = {
+  title: "Centre d’assistance aux élèves",
+  subtitle: "Soumettez vos demandes d’assistance et suivez-les",
+  createTicket: "Nouvelle demande",
+  status: {
+    open: "Ouverte",
+    in_progress: "En cours",
+    waiting_on_student: "En attente de votre réponse",
+    resolved: "Résolue",
+    closed: "Clôturée",
+  },
+  priority: { low: "Faible", medium: "Moyenne", high: "Élevée", urgent: "Urgente" },
+  list: {
+    heading: "Toutes les demandes",
+    searchPlaceholder: "Rechercher une demande…",
+    searchLabel: "Rechercher une demande",
+    topicLabel: "Filtrer par sujet",
+    allTopics: "Tous les sujets",
+    statusFilterLabel: "Filtrer par statut",
+    clearFilter: "Effacer le filtre",
+    noTickets: "Aucune demande trouvée",
+    adjustFilters: "Essayez de modifier vos filtres.",
+    createFirst: "Créez votre première demande d’assistance pour commencer.",
+    loading: "Chargement de vos demandes",
+    errorTitle: "L’assistance est momentanément indisponible",
+    retry: "Réessayer",
+    showingLatest: (shown, total) => `Affichage de vos ${shown} demandes les plus récentes sur ${total}.`,
+    comment: (n) => `${n} ${n > 1 ? "messages" : "message"}`,
+    files: (n) => `${n} ${n > 1 ? "pièces jointes" : "pièce jointe"}`,
+    expand: "Afficher les détails",
+    collapse: "Masquer les détails",
+    viewDetails: "Voir les détails",
+    viewFullDetails: "Voir tous les détails",
+    needsReply: "Votre réponse est attendue",
+  },
+  detail: {
+    createdOn: (date) => `Ouverte le ${date}`,
+    description: "Description",
+    attachments: "Pièces jointes",
+    noAttachments: "Aucun fichier joint pour le moment.",
+    conversation: (n) => `Conversation (${n})`,
+    you: "Vous",
+    team: "Équipe Lumière",
+    replyPlaceholder: "Écrivez une réponse à votre conseiller Lumière…",
+    replyLabel: "Votre réponse",
+    send: "Envoyer",
+    sending: "Envoi en cours…",
+    sendAndReopen: "Envoyer et rouvrir",
+    sent: "Message envoyé. Votre conseiller Lumière le verra immédiatement.",
+    sendFailed: "Votre message n’a pas été envoyé.",
+    attachFile: "Joindre un fichier",
+    uploading: "Téléversement en cours…",
+    attachHelp: "PDF, PNG, JPG, WebP, TXT, DOC ou DOCX, jusqu’à 10 Mo.",
+    attachNotAllowed: "Il n’est pas possible d’ajouter des fichiers à cette demande. Vous pouvez téléverser vos pièces justificatives depuis la page Documents.",
+    documentsLink: "Ouvrir Documents",
+    fileAdded: (name) => `${name} a été ajouté.`,
+    download: (name) => `Télécharger ${name}`,
+    downloadFailed: "Le fichier n’a pas pu être ouvert.",
+    loading: "Chargement de la conversation",
+    loadErrorTitle: "Nous n’avons pas pu ouvrir cette demande",
+    close: "Fermer",
+    resolutionHeading: "Comment la demande a été résolue",
+    resolutionDefault: "Votre conseiller a marqué cette demande comme traitée.",
+    relatedTo: "En lien avec",
+  },
+  meta: {
+    heading: "Détails",
+    status: "Statut",
+    priority: "Priorité",
+    category: "Catégorie",
+    advisor: "Conseiller",
+    unassigned: "Votre équipe de conseillers Lumière",
+    lastUpdated: "Dernière mise à jour",
+    history: "Historique des statuts",
+    noHistory: "Aucun changement de statut pour le moment.",
+    reference: "Référence",
+  },
+  next: {
+    waiting_on_student: "Votre conseiller Lumière a besoin d’un complément de votre part. Répondez ci-dessous afin que nous puissions poursuivre.",
+    open: "Lumière a bien reçu votre demande. Vous verrez la réponse directement ici.",
+    in_progress: "Votre conseiller traite votre demande. Vous verrez la réponse directement ici.",
+    resolved: "Demande résolue. Répondez dans les 14 jours suivant la résolution pour la rouvrir.",
+    closed: "Cette demande est clôturée. Créez une nouvelle demande si vous avez encore besoin d’aide.",
+  },
+  create: {
+    title: "Créer une demande d’assistance",
+    description: "Envoyez une nouvelle demande à notre équipe d’assistance. Nous répondons généralement sous 24 à 48 heures.",
+    topic: "Sujet",
+    topicPlaceholder: "Choisissez un sujet",
+    related: "Cours ou jalon concerné (facultatif)",
+    relatedNone: "Aucun élément en particulier",
+    subject: "Objet",
+    subjectPlaceholder: "Résumé bref de votre demande",
+    descriptionLabel: "Description",
+    descriptionPlaceholder: "Donnez-nous le plus de détails possible sur votre demande…",
+    attachments: "Pièces jointes",
+    attachZone: "Cliquez pour joindre des fichiers",
+    attachHelp: "PDF, images, documents jusqu’à 10 Mo. Les fichiers sont ajoutés juste après l’envoi de votre demande.",
+    addMore: "En ajouter",
+    remove: (name) => `Retirer ${name}`,
+    maxFiles: (n) => `Vous pouvez joindre jusqu’à ${n} fichiers.`,
+    cancel: "Annuler",
+    submit: "Envoyer la demande",
+    submitting: "Envoi en cours…",
+    notSent: "Votre demande n’a pas été envoyée. Rien de ce que vous avez écrit n’est perdu : vous pouvez réessayer.",
+    maySaved: "Elle a peut-être été reçue. Vous pouvez la renvoyer sans risque : nous ne créerons pas de doublon. Rien de ce que vous avez écrit n’est perdu.",
+  },
+  notice: {
+    created: (ref) => `Votre demande ${ref} a bien été envoyée. Lumière l’a reçue.`,
+    uploadingFiles: (n) => `Ajout de ${n} ${n > 1 ? "fichiers" : "fichier"} en cours…`,
+    filesDone: (n) => (n > 1 ? `${n} fichiers ont été ajoutés.` : `${n} fichier a été ajouté.`),
+    fileFailed: (name, why) => `${name} n’a pas été ajouté. ${why}`,
+    dismiss: "Fermer le message",
+  },
+  topics: {
+    course_assistance: { label: "Aide pour un cours ou un devoir", hint: "Questions sur un cours, un devoir ou un examen" },
+    roadmap_question: { label: "Question sur la feuille de route", hint: "Votre plan, l’enchaînement des cours ou la suite" },
+    transfer_credit: { label: "Université ou crédits transférés", hint: "Transfert de crédits, candidatures ou exigences universitaires" },
+    transcript_document: { label: "Problème de relevé ou de document", hint: "Relevés de notes, téléversements ou documents officiels" },
+    account_technical: { label: "Compte ou problème technique", hint: "Connexion, portail ou fonctionnalité qui ne répond pas" },
+    billing: { label: "Question de facturation", hint: "Factures, paiements ou frais de votre plan" },
+    general: { label: "Assistance générale", hint: "Tout ce pour quoi nous pouvons vous aider" },
+  },
+  validation: {
+    topic: "Choisissez le sujet qui convient le mieux afin que la bonne personne reçoive votre demande.",
+    subjectShort: (min) => `Ajoutez un objet d’au moins ${min} caractères.`,
+    subjectLong: (max, now) => `Veuillez limiter l’objet à ${max} caractères (actuellement ${now}).`,
+    descriptionShort: (min) => `Donnez-nous un peu plus de détails (au moins ${min} caractères) afin que nous puissions bien vous aider.`,
+    descriptionLong: (max, now) => `Veuillez limiter la description à ${max} caractères (actuellement ${now}).`,
+  },
+  files: {
+    empty: "Ce fichier est vide.",
+    tooBig: (name, size) => `${name} pèse ${size}. Les fichiers peuvent atteindre 10 Mo.`,
+    tooBigShort: "Les fichiers peuvent atteindre 10 Mo. Veuillez choisir un fichier plus léger.",
+    badType: (name, allowed) => `${name} n’est pas un type de fichier accepté. Veuillez utiliser ${allowed}.`,
+    badTypeShort: "Ce type de fichier n’est pas accepté. Veuillez utiliser PDF, PNG, JPG, WebP, TXT, DOC ou DOCX.",
+    allowed: "PDF, PNG, JPG, WebP, TXT, DOC ou DOCX",
+    openFirst: "Ouvrez une demande avant de joindre un fichier.",
+    prepareFailed: "Le téléversement n’a pas pu être préparé. Veuillez réessayer.",
+    uploadOffline: "Le fichier n’a pas pu être téléversé. Vérifiez votre connexion et réessayez.",
+    uploadFailed: "Le fichier n’a pas pu être téléversé. Veuillez réessayer.",
+    linkUnavailable: "Le lien de téléchargement n’est pas disponible pour le moment. Veuillez réessayer.",
+    notAdded: (name) => `${name} n’a pas été ajouté.`,
+  },
+  reply: {
+    closed: "Cette demande est clôturée : les réponses sont désactivées. Créez une nouvelle demande si vous avez encore besoin d’aide.",
+    expired: (days) => `Cette demande a été résolue il y a plus de ${days} jours ; elle ne peut plus être rouverte. Veuillez créer une nouvelle demande.`,
+    blocked: "Vous ne pouvez pas répondre à cette demande pour le moment.",
+    reopens: "L’envoi d’une réponse rouvrira cette demande.",
+  },
+  errors: {
+    unconfirmed: "Nous n’avons pas pu confirmer la bonne réception de votre demande.",
+    failedAttempt: "Votre message n’a pas été envoyé.",
+  },
+  units: { b: "o", kb: "Ko", mb: "Mo" },
+};
+
+
+export const SUPPORT_TEXT_FR: SupportText = typo(SUPPORT_TEXT_FR_RAW);
+
+/** Back-compat export (English). Components use useSupportText(). */
+export const SUPPORT_TEXT = SUPPORT_TEXT_EN;
+
+export function supportText(language: Language): SupportText {
+  return language === "fr" ? SUPPORT_TEXT_FR : SUPPORT_TEXT_EN;
+}
+
+/** Support strings for the current language, plus the language itself (for Intl formatting). */
+export function useSupportText(): { T: SupportText; language: Language } {
+  const { language } = useT();
+  return { T: supportText(language), language };
+}

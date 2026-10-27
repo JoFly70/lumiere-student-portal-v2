@@ -4,7 +4,9 @@ import { CheckCircle2, Circle, Clock, Loader2, type LucideIcon } from "lucide-re
 import { Badge } from "@/components/ui/badge";
 import type { TicketStatus } from "@shared/support-contract";
 import { ORIGINAL_STATUS_STYLE } from "./original-support-adapter";
-import { SUPPORT_TEXT as T } from "./original-support-text";
+import { useSupportText } from "./original-support-text";
+import { currentLanguage, type Language } from "@/i18n";
+import { formatFileSize as formatSize } from "./support-presentation";
 
 export const STATUS_ICON: Readonly<Record<TicketStatus, LucideIcon>> = {
   open: Circle,
@@ -15,6 +17,7 @@ export const STATUS_ICON: Readonly<Record<TicketStatus, LucideIcon>> = {
 };
 
 export function StatusBadge({ status }: { status: TicketStatus }) {
+  const { T } = useSupportText();
   const style = ORIGINAL_STATUS_STYLE[status];
   const Icon = STATUS_ICON[status];
   return (
@@ -25,20 +28,18 @@ export function StatusBadge({ status }: { status: TicketStatus }) {
   );
 }
 
-export function formatDate(iso: string): string {
+export function formatDate(iso: string, language: Language = currentLanguage()): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  return new Intl.DateTimeFormat(language, { month: "short", day: "numeric", year: "numeric" }).format(d);
 }
 
-export function formatDateTime(iso: string): string {
+export function formatDateTime(iso: string, language: Language = currentLanguage()): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
+  return new Intl.DateTimeFormat(language, { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }).format(d);
 }
 
-export function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+export function formatFileSize(bytes: number, language: Language = currentLanguage()): string {
+  return formatSize(bytes, language);
 }

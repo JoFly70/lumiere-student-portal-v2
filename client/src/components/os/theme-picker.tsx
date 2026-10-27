@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/hooks/use-theme";
@@ -23,8 +24,22 @@ export function ThemeSwatch({ swatch, className }: { swatch: readonly string[]; 
 /** The list of themes. Used inside the header popover; each option is a radio with a visible check. */
 export function ThemePicker({ onPicked }: { onPicked?: (id: ThemeId) => void }) {
   const { theme, setTheme } = useTheme();
+  const group = useRef<HTMLDivElement>(null);
+  // Radio-group keyboard model: arrows move and select, Home/End jump; only the selected option is a tab stop.
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    const keys: Record<string, number> = { ArrowDown: 1, ArrowRight: 1, ArrowUp: -1, ArrowLeft: -1 };
+    const i = THEMES.findIndex((t) => t.id === theme);
+    let n = -1;
+    if (e.key in keys) n = (i + keys[e.key] + THEMES.length) % THEMES.length;
+    else if (e.key === "Home") n = 0;
+    else if (e.key === "End") n = THEMES.length - 1;
+    if (n < 0) return;
+    e.preventDefault();
+    setTheme(THEMES[n].id);
+    group.current?.querySelectorAll<HTMLElement>('[role="radio"]')[n]?.focus();
+  };
   return (
-    <div role="radiogroup" aria-label="Colour theme" className="grid gap-1" data-testid="theme-picker">
+    <div ref={group} role="radiogroup" aria-label="Colour theme" className="grid gap-1" data-testid="theme-picker" onKeyDown={onKeyDown}>
       {THEMES.map((t) => {
         const selected = t.id === theme;
         return (
@@ -33,6 +48,7 @@ export function ThemePicker({ onPicked }: { onPicked?: (id: ThemeId) => void }) 
             type="button"
             role="radio"
             aria-checked={selected}
+            tabIndex={selected ? 0 : -1}
             onClick={() => {
               setTheme(t.id);
               onPicked?.(t.id);

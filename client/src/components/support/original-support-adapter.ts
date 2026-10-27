@@ -181,7 +181,7 @@ export function toDetailModel(t: OriginalSourceTicket): OriginalDetailModel {
     const kind = c.author_kind === "student" ? "student" : "staff";
     return {
       id: c.id,
-      authorName: c.author_name ? String(c.author_name) : kind === "student" ? "You" : "Lumière team",
+      authorName: c.author_name ? String(c.author_name) : "", // the UI supplies a localized "You" / team label
       authorKind: kind,
       content: c.content,
       createdAt: c.created_at,

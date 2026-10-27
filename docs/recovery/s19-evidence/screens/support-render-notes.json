@@ -1,0 +1,41 @@
+{
+  "generatedAt": "2026-10-27T20:54:23.718Z",
+  "note": "Renders of SYNTHETIC fixtures with stubbed auth and API through a local vite dev server. Not a deployment; not the owner's original screenshots (unavailable in this runtime).",
+  "themes": [
+    "lumiere (Lumière Desk)",
+    "monaco (Monaco Navy)"
+  ],
+  "languages": [
+    "en",
+    "fr"
+  ],
+  "failures": [],
+  "apiCallsObserved": [
+    "GET /api/student/programs",
+    "GET /api/students/me",
+    "GET /api/tickets",
+    "GET /api/tickets/t-1"
+  ],
+  "axe": [
+    {
+      "screen": "support-01-list-1440-en.png",
+      "violations": []
+    },
+    {
+      "screen": "support-02-list-1440-fr.png",
+      "violations": []
+    },
+    {
+      "screen": "support-03-detail-modal-1440-fr.png",
+      "violations": []
+    },
+    {
+      "screen": "support-04-list-1440-monaco.png",
+      "violations": []
+    },
+    {
+      "screen": "support-05-list-390-fr.png",
+      "violations": []
+    }
+  ]
+}

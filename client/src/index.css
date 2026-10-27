@@ -591,3 +591,23 @@ body.staff-shell {
 }
 .staff-surface ::placeholder { color: hsl(var(--s-muted)); opacity: 1; }
 .staff-surface table { border-collapse: collapse; }
+
+/* ------------------------------------------------------------------------------------------------ */
+/* S19 theme-aware chrome. Everything below reads the ClientDesk-parity tokens from styles/themes.css */
+/* (--t-*), so dialogs, cards, inputs and focus rings follow the chosen pack. No page files involved. */
+/* ------------------------------------------------------------------------------------------------ */
+::selection { background-color: var(--t-sel); }
+:where(html[data-theme]) :focus-visible { outline-color: var(--t-focus); }
+/* Dialog / sheet scrim uses the pack's backdrop (canvas-tinted) instead of flat black. */
+html[data-theme] [data-state].fixed.inset-0.z-50.bg-black\/80 { background-color: var(--t-backdrop); backdrop-filter: blur(2px); }
+/* Cards carry the pack's card shadow (none on dark packs, a soft pair on light ones). */
+html[data-theme] .shadcn-card { box-shadow: var(--t-card-shadow); }
+/* Form controls: panel-2 fill, audited control border, placeholder role. */
+html[data-theme] input::placeholder, html[data-theme] textarea::placeholder { color: var(--t-placeholder); opacity: 1; }
+html[data-theme] select option { background-color: var(--t-option-bg); color: var(--t-text); }
+/* Selected navigation: rail-actbg fill, rail-act text and the gold edge bar (also in the collapsed rail). */
+html[data-theme] .os-nav-item[data-active="true"] { background-color: var(--t-rail-actbg); color: var(--t-rail-act); }
+html[data-theme] .os-nav-item:hover:not([data-active="true"]) { color: var(--t-rail-head); }
+html[data-theme] .os-nav-item[data-active="true"]::before { background-color: var(--t-rail-act); }
+/* Brand wordmark type. */
+.font-display { font-feature-settings: "liga", "kern"; }

@@ -40,6 +40,7 @@ import {
 import type { StudentDocument } from "@shared/schema";
 import { Eyebrow, Pill, StudentSurface, buttonClass } from "@/components/student-progress/student-ui";
 import { cn } from "@/lib/utils";
+import { useT, type Language, type TranslationKey } from "@/i18n";
 import { docTypeLabel } from "@/lib/document-type-labels";
 
 type DocumentCategory =
@@ -129,7 +130,7 @@ function mapDocTypeToCategory(docType: string): DocumentCategory {
 }
 
 export { docTypeLabel };
-const formatDocDate = (value: string) => new Date(value).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+const formatDocDate = (value: string, language: Language) => new Intl.DateTimeFormat(language, { month: "short", day: "numeric", year: "numeric" }).format(new Date(value));
 
 const STATUS_PILL: Record<DocumentStatus, string> = {
   verified: "border-2 border-student-gold-ink bg-student-card text-student-gold-ink",
@@ -137,11 +138,12 @@ const STATUS_PILL: Record<DocumentStatus, string> = {
   rejected: "border-st-attention bg-st-attention-soft text-st-attention",
 };
 function DocStatusPill({ status }: { status: DocumentStatus }) {
+  const { t } = useT();
   const cfg = statusConfig[status];
   const Icon = cfg.icon;
   return (
     <Pill className={cn("font-semibold", STATUS_PILL[status])} icon={<Icon className="h-3.5 w-3.5" aria-hidden="true" />}>
-      {cfg.label}
+      {t(`documents.statusLabel.${status}` as TranslationKey)}
     </Pill>
   );
 }
@@ -156,10 +158,12 @@ function getFileIcon(mimeType: string) {
   return File;
 }
 
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return bytes + " B";
-  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
-  return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+function formatFileSize(bytes: number, language: Language): string {
+  const units = language === "fr" ? ["o", "Ko", "Mo"] : ["B", "KB", "MB"];
+  const num = (n: number) => new Intl.NumberFormat(language, { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(n);
+  if (bytes < 1024) return `${bytes} ${units[0]}`;
+  if (bytes < 1024 * 1024) return `${num(bytes / 1024)} ${units[1]}`;
+  return `${num(bytes / (1024 * 1024))} ${units[2]}`;
 }
 
 function getFileSizeFromName(fileName: string): number {
@@ -174,6 +178,7 @@ function getFileSizeFromName(fileName: string): number {
 
 export default function Documents() {
   const { toast } = useToast();
+  const { t, language } = useT();
   const { data: profile, isLoading: profileLoading } = useMyProfile();
   const { data: documentsData, isLoading: documentsLoading } = useDocuments(profile?.id || null);
   const generateUploadUrl = useGenerateUploadUrl(profile?.id || null);
@@ -208,8 +213,8 @@ export default function Documents() {
     if (!profile) {
       toast({
         variant: "destructive",
-        title: "Profile not found",
-        description: "Please complete your profile before uploading documents.",
+        title: t("documents.toast.noProfile"),
+        description: t("documents.toast.noProfileDetail"),
       });
       return;
     }
@@ -222,8 +227,8 @@ export default function Documents() {
       if (file.size > maxSize) {
         toast({
           variant: "destructive",
-          title: "File too large",
-          description: `${file.name} exceeds the 10MB limit.`,
+          title: t("documents.toast.tooLarge"),
+          description: t("documents.toast.tooLargeDetail", { name: file.name }),
         });
         continue;
       }
@@ -273,18 +278,18 @@ export default function Documents() {
         console.error('Upload error:', error);
         toast({
           variant: "destructive",
-          title: "Upload failed",
-          description: `Failed to upload ${file.name}`,
+          title: t("documents.toast.uploadFailed"),
+          description: t("documents.toast.uploadFailedDetail", { name: file.name }),
         });
       }
     }
 
     setUploadProgress(null);
     toast({
-      title: "Upload complete",
-      description: `${validFiles.length} file(s) uploaded successfully.`,
+      title: t("documents.toast.uploadDone"),
+      description: t(validFiles.length === 1 ? "documents.toast.uploadDoneOne" : "documents.toast.uploadDoneMany", { count: validFiles.length }),
     });
-  }, [activeTab, profile, generateUploadUrl, createDocument, toast]);
+  }, [activeTab, profile, generateUploadUrl, createDocument, toast, t]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -306,21 +311,21 @@ export default function Documents() {
   };
 
   const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`Are you sure you want to delete "${name}"?`)) {
+    if (!confirm(t("documents.confirmDelete", { name }))) {
       return;
     }
 
     try {
       await deleteDocument.mutateAsync(id);
       toast({
-        title: "Document deleted",
-        description: `${name} has been removed.`,
+        title: t("documents.toast.deleted"),
+        description: t("documents.toast.deletedDetail", { name }),
       });
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Delete failed",
-        description: `Failed to delete ${name}`,
+        title: t("documents.toast.deleteFailed"),
+        description: t("documents.toast.deleteFailedDetail", { name }),
       });
     }
   };
@@ -338,14 +343,14 @@ export default function Documents() {
       link.click();
       document.body.removeChild(link);
       toast({
-        title: "Download started",
-        description: `Downloading ${doc.file_name}...`,
+        title: t("documents.toast.downloadStarted"),
+        description: t("documents.toast.downloadStartedDetail", { name: doc.file_name }),
       });
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Download failed",
-        description: `Failed to download ${doc.file_name}`,
+        title: t("documents.toast.downloadFailed"),
+        description: t("documents.toast.downloadFailedDetail", { name: doc.file_name }),
       });
     }
   };
@@ -359,8 +364,8 @@ export default function Documents() {
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Preview failed",
-        description: `Failed to load ${doc.file_name}`,
+        title: t("documents.toast.previewFailed"),
+        description: t("documents.toast.previewFailedDetail", { name: doc.file_name }),
       });
     }
   };
@@ -396,10 +401,10 @@ export default function Documents() {
     <StudentSurface testId="page-documents">
     <div className="mx-auto max-w-6xl space-y-6">
       <header className="space-y-3">
-        <Eyebrow>Your file</Eyebrow>
-        <h1 className="font-serif text-3xl leading-tight tracking-tight text-student-ink sm:text-5xl" data-testid="text-page-title">Your documents</h1>
+        <Eyebrow>{t("nav.file")}</Eyebrow>
+        <h1 className="font-serif text-3xl leading-tight tracking-tight text-student-ink sm:text-5xl" data-testid="text-page-title">{t("documents.pageTitle")}</h1>
         <p className="max-w-2xl text-sm leading-relaxed text-student-muted">
-          Upload proof here and Lumière reviews it. Each file shows whether it is verified, still waiting for review, or needs a new copy.
+          {t("documents.intro")}
         </p>
       </header>
 
@@ -429,7 +434,7 @@ export default function Documents() {
                       </div>
                       <div>
                         <p className="font-serif text-3xl text-student-ink">{count}</p>
-                        <p className="text-xs text-muted-foreground">{config.label}</p>
+                        <p className="text-xs text-muted-foreground">{t(`documents.statusLabel.${status}` as TranslationKey)}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -448,7 +453,7 @@ export default function Documents() {
                   </div>
                   <div>
                     <p className="font-serif text-3xl text-student-ink">{documents.length}</p>
-                    <p className="text-xs text-muted-foreground">Total Documents</p>
+                    <p className="text-xs text-muted-foreground">{t("documents.total")}</p>
                   </div>
                 </div>
               </CardContent>
@@ -459,9 +464,9 @@ export default function Documents() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="font-serif text-2xl font-normal">Upload documents</CardTitle>
+          <CardTitle className="font-serif text-2xl font-normal">{t("documents.uploadTitle")}</CardTitle>
           <CardDescription>
-            Drag and drop files or click to browse. Files are securely stored and can be accessed anytime.
+            {t("documents.uploadHelp")}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -482,15 +487,15 @@ export default function Documents() {
                 <div className="animate-pulse">
                   <Upload className="h-12 w-12 mx-auto text-student-gold-ink mb-4" />
                 </div>
-                <p className="font-medium">Uploading files...</p>
+                <p className="font-medium">{t("documents.uploading")}</p>
                 <Progress value={uploadProgress} className="max-w-xs mx-auto" />
-                <p className="text-sm text-muted-foreground">{uploadProgress}% complete</p>
+                <p className="text-sm text-muted-foreground">{t("documents.progress", { percent: uploadProgress })}</p>
               </div>
             ) : (
               <>
                 <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <p className="font-semibold mb-2">Drag and drop files here</p>
-                <p className="text-sm text-muted-foreground mb-4">or click to browse your computer</p>
+                <p className="font-semibold mb-2">{t("documents.dropHere")}</p>
+                <p className="text-sm text-muted-foreground mb-4">{t("documents.orBrowse")}</p>
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -502,10 +507,10 @@ export default function Documents() {
                   data-testid="input-file-upload"
                 />
                 <label htmlFor="file-upload" className={cn(buttonClass.solid, "cursor-pointer")} data-testid="button-browse">
-                  Browse files
+                  {t("documents.browse")}
                 </label>
                 <p className="text-xs text-muted-foreground mt-4">
-                  Accepted: PDF, PNG, JPG, DOC, DOCX, XLS, XLSX (Max 10MB per file)
+                  {t("documents.accepted")}
                 </p>
               </>
             )}
@@ -517,14 +522,14 @@ export default function Documents() {
         <CardHeader>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <CardTitle className="font-serif text-2xl font-normal">Your library</CardTitle>
-              <CardDescription>Browse and manage your uploaded documents</CardDescription>
+              <CardTitle className="font-serif text-2xl font-normal">{t("documents.libraryTitle")}</CardTitle>
+              <CardDescription>{t("documents.libraryHelp")}</CardDescription>
             </div>
             <div className="flex flex-col sm:flex-row gap-2">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search documents..."
+                  placeholder={t("documents.searchPlaceholder")}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-9 w-full sm:w-64"
@@ -532,15 +537,15 @@ export default function Documents() {
                 />
               </div>
               <Select value={selectedStatus} onValueChange={(v) => setSelectedStatus(v as DocumentStatus | "all")}>
-                <SelectTrigger className="w-full sm:w-40" aria-label="Filter by status" data-testid="select-status-filter">
+                <SelectTrigger className="w-full sm:w-40" aria-label={t("support.filterByStatus")} data-testid="select-status-filter">
                   <Filter className="h-4 w-4 mr-2" />
-                  <SelectValue placeholder="Status" />
+                  <SelectValue placeholder={t("common.status")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="pending">Pending Review</SelectItem>
-                  <SelectItem value="verified">Verified</SelectItem>
-                  <SelectItem value="rejected">Rejected</SelectItem>
+                  <SelectItem value="all">{t("documents.allStatuses")}</SelectItem>
+                  <SelectItem value="pending">{t("documents.statusLabel.pending")}</SelectItem>
+                  <SelectItem value="verified">{t("documents.statusLabel.verified")}</SelectItem>
+                  <SelectItem value="rejected">{t("documents.statusLabel.rejected")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -550,7 +555,7 @@ export default function Documents() {
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as DocumentCategory | "all")}>
             <TabsList className="mb-4 flex-wrap h-auto gap-1">
               <TabsTrigger value="all" className="gap-2" data-testid="tab-all">
-                All
+                {t("common.all")}
                 <Badge variant="secondary" className="ml-1">{categoryCounts.all}</Badge>
               </TabsTrigger>
               {Object.entries(categoryConfig).map(([key, config]) => {
@@ -563,8 +568,8 @@ export default function Documents() {
                     data-testid={`tab-${key}`}
                   >
                     <Icon className={`h-4 w-4 ${config.color}`} aria-hidden="true" />
-                    <span className="sm:hidden">{config.short}</span>
-                    <span className="hidden sm:inline">{config.label}</span>
+                    <span className="sm:hidden">{t(`documents.cat.${key}.short` as TranslationKey)}</span>
+                    <span className="hidden sm:inline">{t(`documents.cat.${key}.label` as TranslationKey)}</span>
                     <Badge variant="secondary" className="ml-1">{categoryCounts[key] || 0}</Badge>
                   </TabsTrigger>
                 );
@@ -575,8 +580,8 @@ export default function Documents() {
               {filteredDocuments.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
                   <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p className="font-medium">No documents found</p>
-                  <p className="text-sm">Try adjusting your filters or upload new documents</p>
+                  <p className="font-medium">{t("documents.noneFound")}</p>
+                  <p className="text-sm">{t("documents.noneFoundHelp")}</p>
                 </div>
               ) : (
                 <>
@@ -589,14 +594,14 @@ export default function Documents() {
                           <FileIcon className="mt-0.5 h-7 w-7 shrink-0 text-student-muted" aria-hidden="true" />
                           <div className="min-w-0 flex-1">
                             <p className="break-words font-medium text-student-ink">{doc.file_name}</p>
-                            <p className="text-sm text-student-muted">{docTypeLabel(doc.doc_type)} · {formatDocDate(doc.created_at)}</p>
+                            <p className="text-sm text-student-muted">{docTypeLabel(doc.doc_type)} · {formatDocDate(doc.created_at, language)}</p>
                             <div className="mt-2"><DocStatusPill status={doc.status as DocumentStatus} /></div>
                           </div>
                         </div>
                         <div className="mt-2 flex gap-2 border-t border-student-line pt-2">
-                          <button type="button" className={cn(buttonClass.outline, "flex-1 px-2")} onClick={() => handlePreview(doc)} aria-label={`Preview ${doc.file_name}`} data-testid={`card-preview-${doc.id}`}><Eye className="h-4 w-4" aria-hidden="true" />View</button>
-                          <button type="button" className={cn(buttonClass.outline, "flex-1 px-2")} onClick={() => handleDownload(doc)} aria-label={`Download ${doc.file_name}`} data-testid={`card-download-${doc.id}`}><Download className="h-4 w-4" aria-hidden="true" />Download</button>
-                          <button type="button" className={cn(buttonClass.outline, "px-3")} onClick={() => handleDelete(doc.id, doc.file_name)} aria-label={`Delete ${doc.file_name}`} disabled={deleteDocument.isPending} data-testid={`card-delete-${doc.id}`}><Trash2 className="h-4 w-4" aria-hidden="true" /></button>
+                          <button type="button" className={cn(buttonClass.outline, "flex-1 px-2")} onClick={() => handlePreview(doc)} aria-label={t("documents.previewFile", { name: doc.file_name })} data-testid={`card-preview-${doc.id}`}><Eye className="h-4 w-4" aria-hidden="true" />{t("common.view")}</button>
+                          <button type="button" className={cn(buttonClass.outline, "flex-1 px-2")} onClick={() => handleDownload(doc)} aria-label={t("documents.downloadFile", { name: doc.file_name })} data-testid={`card-download-${doc.id}`}><Download className="h-4 w-4" aria-hidden="true" />{t("common.download")}</button>
+                          <button type="button" className={cn(buttonClass.outline, "px-3")} onClick={() => handleDelete(doc.id, doc.file_name)} aria-label={t("documents.deleteFile", { name: doc.file_name })} disabled={deleteDocument.isPending} data-testid={`card-delete-${doc.id}`}><Trash2 className="h-4 w-4" aria-hidden="true" /></button>
                         </div>
                       </li>
                     );
@@ -607,11 +612,11 @@ export default function Documents() {
                     <table className="w-full">
                       <thead>
                         <tr className="border-b bg-muted/50">
-                          <th className="text-left p-4 text-sm font-semibold">Name</th>
-                          <th className="text-left p-4 text-sm font-semibold">Type</th>
-                          <th className="text-left p-4 text-sm font-semibold hidden lg:table-cell">Uploaded</th>
-                          <th className="text-left p-4 text-sm font-semibold">Status</th>
-                          <th className="text-right p-4 text-sm font-semibold">Actions</th>
+                          <th className="text-left p-4 text-sm font-semibold">{t("documents.col.name")}</th>
+                          <th className="text-left p-4 text-sm font-semibold">{t("documents.col.type")}</th>
+                          <th className="text-left p-4 text-sm font-semibold hidden lg:table-cell">{t("documents.col.uploaded")}</th>
+                          <th className="text-left p-4 text-sm font-semibold">{t("common.status")}</th>
+                          <th className="text-right p-4 text-sm font-semibold">{t("documents.col.actions")}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -634,7 +639,7 @@ export default function Documents() {
                                     </p>
                                     {fileSize > 0 && (
                                       <p className="text-xs text-muted-foreground">
-                                        {formatFileSize(fileSize)}
+                                        {formatFileSize(fileSize, language)}
                                       </p>
                                     )}
                                   </div>
@@ -644,20 +649,20 @@ export default function Documents() {
                                 <span className="text-sm">{docTypeLabel(doc.doc_type)}</span>
                               </td>
                               <td className="p-4 hidden lg:table-cell">
-                                <span className="text-sm text-muted-foreground">{formatDocDate(doc.created_at)}</span>
+                                <span className="text-sm text-muted-foreground">{formatDocDate(doc.created_at, language)}</span>
                               </td>
                               <td className="p-4">
                                 <DocStatusPill status={doc.status as DocumentStatus} />
                               </td>
                               <td className="p-4">
                                 <div className="flex justify-end gap-1">
-                                  <Button variant="ghost" size="icon" onClick={() => handlePreview(doc)} aria-label={`Preview ${doc.file_name}`} data-testid={`button-preview-${doc.id}`}>
+                                  <Button variant="ghost" size="icon" onClick={() => handlePreview(doc)} aria-label={t("documents.previewFile", { name: doc.file_name })} data-testid={`button-preview-${doc.id}`}>
                                     <Eye className="h-4 w-4" />
                                   </Button>
-                                  <Button variant="ghost" size="icon" onClick={() => handleDownload(doc)} aria-label={`Download ${doc.file_name}`} data-testid={`button-download-${doc.id}`}>
+                                  <Button variant="ghost" size="icon" onClick={() => handleDownload(doc)} aria-label={t("documents.downloadFile", { name: doc.file_name })} data-testid={`button-download-${doc.id}`}>
                                     <Download className="h-4 w-4" />
                                   </Button>
-                                  <Button variant="ghost" size="icon" onClick={() => handleDelete(doc.id, doc.file_name)} aria-label={`Delete ${doc.file_name}`} data-testid={`button-delete-${doc.id}`} disabled={deleteDocument.isPending}>
+                                  <Button variant="ghost" size="icon" onClick={() => handleDelete(doc.id, doc.file_name)} aria-label={t("documents.deleteFile", { name: doc.file_name })} data-testid={`button-delete-${doc.id}`} disabled={deleteDocument.isPending}>
                                     <Trash2 className="h-4 w-4" />
                                   </Button>
                                 </div>
@@ -695,15 +700,15 @@ export default function Documents() {
                 <div className="min-w-0 flex-1">
                   <CardTitle className="truncate">{previewDocument.file_name}</CardTitle>
                   <CardDescription>
-                    {fileSize > 0 && `${formatFileSize(fileSize)} - `}
-                    Uploaded {new Date(previewDocument.created_at).toLocaleDateString()}
+                    {fileSize > 0 && `${formatFileSize(fileSize, language)} - `}
+                    {t("documents.uploadedOn", { date: formatDocDate(previewDocument.created_at, language) })}
                   </CardDescription>
                 </div>
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => { setPreviewDocument(null); setPreviewUrl(null); }}
-                  aria-label="Close preview"
+                  aria-label={t("documents.closePreview")}
                   data-testid="button-close-preview"
                 >
                   <X className="h-5 w-5" />
@@ -729,7 +734,7 @@ export default function Documents() {
                 ) : (
                   <div className="text-center py-12 text-muted-foreground">
                     <FileText className="h-16 w-16 mx-auto mb-4 opacity-50" />
-                    <p>Preview not available for this file type</p>
+                    <p>{t("documents.noPreview")}</p>
                     <Button
                       className="mt-4"
                       onClick={() => handleDownload(previewDocument)}

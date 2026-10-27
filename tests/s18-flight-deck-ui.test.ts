@@ -207,12 +207,13 @@ describe("source hygiene", () => {
     expect(read("client/src/lib/academic-projection-queries.ts")).toContain("ACADEMIC_PROJECTION_API");
   });
   it("the page reserves an empty assistant slot and has the required states", () => {
+    // S19: the page is now the cockpit; the reserved slot lives in the cockpit view and the copy is i18n keys.
     const page = read("client/src/pages/high-school-flight-deck.tsx");
-    expect(page).toContain('data-slot="academic-assistant"');
+    expect(read("client/src/components/cockpit/cockpit-view.tsx")).toContain('data-slot="academic-assistant"');
     for (const id of ["not-configured", "hs-flight-deck-skeleton", "hs-flight-deck-no-enrollment", "button-retry"]) {
       expect(page + read("client/src/components/student-progress/states.tsx")).toContain(id);
     }
-    expect(page).toContain("Your plan is being prepared");
+    expect(page).toContain("cockpit.state.notConfigured.title");
   });
   it("the router picks the deck by program access", () => {
     const router = read("client/src/pages/flight-deck-router.tsx");

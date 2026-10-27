@@ -25,13 +25,14 @@ export function buildDocumentReviewPayload(studentMessage: string, internalNote:
  * Wire `onSubmit` to POST /api/documents/:id/reject or /request-resubmit with the payload.
  */
 export function DocumentReviewDialog({
-  open, onOpenChange, action, documentLabel, pending = false, onSubmit,
+  open, onOpenChange, action, documentLabel, pending = false, errorMessage, onSubmit,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   action: DocumentReviewAction;
   documentLabel: string;
   pending?: boolean;
+  errorMessage?: string;
   onSubmit: (payload: DocumentReviewPayload) => void;
 }) {
   const [studentMessage, setStudentMessage] = useState("");
@@ -73,6 +74,7 @@ export function DocumentReviewDialog({
             <p className="text-xs text-muted-foreground">Visible to staff only. Optional.</p>
           </div>
         </div>
+        {errorMessage ? <p role="alert" className="text-sm text-st-urgent" data-testid="text-review-error">{errorMessage}</p> : null}
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
           <Button type="button" disabled={!payload || pending} onClick={() => payload && onSubmit(payload)} data-testid="button-submit-document-review">

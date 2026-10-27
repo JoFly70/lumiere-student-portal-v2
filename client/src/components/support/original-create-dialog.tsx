@@ -21,7 +21,7 @@ import {
 import type { SupportTopic } from "@shared/support-contract";
 import { SUPPORT_TOPIC_INFO } from "@shared/support-contract";
 import { ORIGINAL_CATEGORY_STYLE } from "./original-support-adapter";
-import { SUPPORT_TEXT as T } from "./original-support-text";
+import { useSupportText } from "./original-support-text";
 import { formatFileSize } from "./original-support-bits";
 import { TOPIC_CHOICES, attachmentError, validateRequestDraft } from "./support-presentation";
 
@@ -45,6 +45,7 @@ export function OriginalCreateDialog({
   /** `?item=` deep link from the roadmap. */
   defaultItemKey?: string | null;
 }) {
+  const { T, language } = useSupportText();
   const [topic, setTopic] = useState<SupportTopic | null>(defaultItemKey ? "roadmap_question" : null);
   const [subject, setSubject] = useState("");
   const [description, setDescription] = useState("");
@@ -61,7 +62,7 @@ export function OriginalCreateDialog({
   const options = contextOptions.data?.available ? contextOptions.data.items : [];
   const effectiveItem = itemKey || (defaultItemKey && options.some((o) => o.key === defaultItemKey) ? defaultItemKey : "");
 
-  const errors = validateRequestDraft({ topic, subject, description });
+  const errors = validateRequestDraft({ topic, subject, description }, language);
   const failure = createTicket.isError ? describeCreateFailure(createTicket.error) : null;
 
   const reset = () => {
@@ -76,7 +77,7 @@ export function OriginalCreateDialog({
     const next = [...files];
     for (const f of Array.from(list)) {
       if (next.length >= MAX_CREATE_FILES) { err = T.create.maxFiles(MAX_CREATE_FILES); break; }
-      const bad = attachmentError(f);
+      const bad = attachmentError(f, language);
       if (bad) { err = bad; continue; }
       next.push(f);
     }
@@ -126,14 +127,14 @@ export function OriginalCreateDialog({
               </SelectTrigger>
               <SelectContent>
                 {TOPIC_CHOICES.map((t) => (
-                  <SelectItem key={t.key} value={t.key} data-testid={`topic-option-${t.key}`}>{t.label}</SelectItem>
+                  <SelectItem key={t.key} value={t.key} data-testid={`topic-option-${t.key}`}>{T.topics[t.key]?.label ?? t.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
             {topic && (
               <p className="text-xs text-muted-foreground">
-                <span className={`mr-2 inline-block rounded px-1.5 py-0.5 ${ORIGINAL_CATEGORY_STYLE[SUPPORT_TOPIC_INFO[topic].category]}`}>{SUPPORT_TOPIC_INFO[topic].label}</span>
-                {SUPPORT_TOPIC_INFO[topic].hint}
+                <span className={`mr-2 inline-block rounded px-1.5 py-0.5 ${ORIGINAL_CATEGORY_STYLE[SUPPORT_TOPIC_INFO[topic].category]}`}>{T.topics[topic]?.label ?? SUPPORT_TOPIC_INFO[topic].label}</span>
+                {T.topics[topic]?.hint ?? SUPPORT_TOPIC_INFO[topic].hint}
               </p>
             )}
             {attempted && errors.topic && <p role="alert" className="text-sm font-medium text-destructive">{errors.topic}</p>}
@@ -204,7 +205,7 @@ export function OriginalCreateDialog({
                       <div className="flex min-w-0 items-center gap-2">
                         <FileText className="h-4 w-4 shrink-0" />
                         <span className="truncate text-sm">{f.name}</span>
-                        <span className="shrink-0 text-xs text-muted-foreground">({formatFileSize(f.size)})</span>
+                        <span className="shrink-0 text-xs text-muted-foreground">({formatFileSize(f.size, language)})</span>
                       </div>
                       <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" type="button" aria-label={T.create.remove(f.name)} onClick={() => setFiles((p) => p.filter((_, j) => j !== i))}>
                         <X className="h-3 w-3" />

@@ -2,6 +2,7 @@
  * Pure presentation helpers for the student profile (S09). No React, no
  * network: safe to unit test and to reuse from fixtures.
  */
+import { currentLanguage, type Language } from "@/i18n";
 import type {
   ContactAuthorityStatus,
   ContactScope,
@@ -56,11 +57,11 @@ export function initials(first?: string | null, last?: string | null): string {
   return a + b || "?";
 }
 
-export function formatDate(value: string | null | undefined): string {
+export function formatDate(value: string | null | undefined, language: Language = currentLanguage()): string {
   if (!value) return "";
   const d = /^\d{4}-\d{2}-\d{2}$/.test(value) ? new Date(`${value}T12:00:00Z`) : new Date(value);
   if (Number.isNaN(d.getTime())) return value;
-  return d.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric", timeZone: "UTC" });
+  return new Intl.DateTimeFormat(language, { year: "numeric", month: "short", day: "numeric", timeZone: "UTC" }).format(d);
 }
 
 // ---------------------------------------------------------------------------

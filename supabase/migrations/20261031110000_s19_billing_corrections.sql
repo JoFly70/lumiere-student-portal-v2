@@ -19,12 +19,12 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'student_billing_receipts_void_consistent') THEN
     ALTER TABLE student_billing_receipts ADD CONSTRAINT student_billing_receipts_void_consistent
       CHECK ((voided_at IS NULL AND voided_by IS NULL AND void_reason IS NULL)
-          OR (voided_at IS NOT NULL AND voided_by IS NOT NULL AND length(btrim(void_reason)) > 0));
+          OR (voided_at IS NOT NULL AND voided_by IS NOT NULL AND void_reason IS NOT NULL AND length(btrim(void_reason)) > 0));
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'student_billing_discounts_void_consistent') THEN
     ALTER TABLE student_billing_discounts ADD CONSTRAINT student_billing_discounts_void_consistent
       CHECK ((voided_at IS NULL AND voided_by IS NULL AND void_reason IS NULL)
-          OR (voided_at IS NOT NULL AND voided_by IS NOT NULL AND length(btrim(void_reason)) > 0));
+          OR (voided_at IS NOT NULL AND voided_by IS NOT NULL AND void_reason IS NOT NULL AND length(btrim(void_reason)) > 0));
   END IF;
 END $$;
 

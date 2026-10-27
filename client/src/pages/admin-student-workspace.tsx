@@ -56,6 +56,7 @@ import {
   placementRequirementLabel,
   validSnapshotFingerprint,
 } from "./controlled-placement-workflow";
+import { StudentDocumentsReview } from "@/components/admin/student-documents-review";
 import { StudentPortalAccountCard } from "@/components/admin/student-portal-account-card";
 import StudentProfileReview, { useStaffProfileData } from "@/components/admin/student-profile-review";
 import { profileDecisionCount } from "@/components/admin/student-profile-review-logic";
@@ -237,7 +238,7 @@ export default function AdminStudentWorkspace() {
       title={name}
       description={<>{identity.email ?? "Not provided"} · <span className="font-mono">{identity.studentCode ?? "Not provided"}</span></>}
       meta={<StaffPill tone="neutral" icon={<ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />}>Canonical view · controlled placement writes</StaffPill>}
-      actions={<><Link href={`/admin/students/${encodeURIComponent(studentId)}/roadmap`} className={`${staffBtn.outline} inline-flex items-center justify-center border`} data-testid="link-student-roadmap"><Route className="h-4 w-4" aria-hidden="true" />View roadmap</Link><Link href={`/admin/students/${encodeURIComponent(studentId)}/high-school`} className={`${staffBtn.outline} inline-flex items-center justify-center border`} data-testid="link-student-high-school">High school pathway</Link></>}
+      actions={<><Link href={`/admin/students/${encodeURIComponent(studentId)}/roadmap`} className={`${staffBtn.outline} inline-flex items-center justify-center border`} data-testid="link-student-roadmap"><Route className="h-4 w-4" aria-hidden="true" />View roadmap</Link><Link href={`/admin/students/${encodeURIComponent(studentId)}/high-school`} className={`${staffBtn.outline} inline-flex items-center justify-center border`} data-testid="link-student-high-school">High school pathway</Link><Link href={`/admin/students/${encodeURIComponent(studentId)}/billing`} className={`${staffBtn.outline} inline-flex items-center justify-center border`} data-testid="link-student-billing">Billing</Link></>}
     />
     <StaffTabList tabs={tabs} active={tab} onChange={(key) => setTab(key as WorkspaceTab)} label="Student workspace sections" idPrefix="ws" />
 
@@ -484,9 +485,9 @@ export default function AdminStudentWorkspace() {
 
     <StaffTabPanel idPrefix="ws" tabKey="documents" active={tab === "documents"}>
      <section id="workspace-documents" aria-labelledby="workspace-documents-heading" className="space-y-4">
-       <StaffSectionHeader id="workspace-documents-heading" icon={<FileText className="h-5 w-5" />} title="Documents" description="Documents already recorded for this student. This workspace is read-only." />
+       <StaffSectionHeader id="workspace-documents-heading" icon={<FileText className="h-5 w-5" />} title="Documents" description="Verify, reject or request a new upload. The reason you write for the student is shown to them; the internal note never is." />
        <WorkspaceResourceState loading={documentsQuery.isLoading} error={documentsQuery.isError} empty={!documentsQuery.data?.length} onRetry={() => void documentsQuery.refetch()}>
-         <ul className="grid gap-3 md:grid-cols-2">{documentsQuery.data?.map((document) => <li key={document.id}><StaffCard as="div" className="space-y-2"><div className="flex flex-wrap items-start justify-between gap-3"><p className="min-w-0 break-words font-medium text-student-ink">{document.file_name}</p><StatusPill status={documentStatusKey(document.status)} label={docStatusLabel(document.status)} /></div><p className="text-sm text-student-muted">{docTypeLabel(document.doc_type)}{document.issuer ? ` · ${document.issuer}` : ""}</p>{formatWorkspaceDateTime(document.uploaded_at ?? document.created_at) ? <p className="text-xs text-student-muted">Uploaded {formatWorkspaceDateTime(document.uploaded_at ?? document.created_at)}</p> : null}</StaffCard></li>)}</ul>
+         {canonicalStudentId ? <StudentDocumentsReview studentId={canonicalStudentId} documents={documentsQuery.data ?? []} /> : null}
        </WorkspaceResourceState>
      </section>
     </StaffTabPanel>

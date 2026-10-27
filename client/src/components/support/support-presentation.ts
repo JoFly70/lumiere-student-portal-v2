@@ -20,6 +20,8 @@ import {
   type TicketStatus,
 } from "@shared/support-contract";
 import type { StatusKey } from "@/pages/student-roadmap-presentation";
+import { currentLanguage, type Language } from "@/i18n";
+import { supportText } from "./original-support-text";
 
 export const SUBJECT_MIN = 5;
 export const SUBJECT_MAX = 200;
@@ -139,23 +141,23 @@ export function replyState(
   t: { status: TicketStatus; resolved_at?: string | null },
   canReplyPermission: boolean | undefined,
   now: Date,
+  lang: Language = currentLanguage(),
 ): ReplyState {
+  const X = supportText(lang).reply;
   const res = statusAfterStudentReply(t.status, t.resolved_at, now);
   if (!res.ok) {
     return {
       canReply: false,
       reason:
-        res.code === "TICKET_CLOSED"
-          ? "This request is closed, so replies are turned off. Start a new request if you need more help."
-          : `This request was resolved more than ${STUDENT_REOPEN_WINDOW_DAYS} days ago, so it can no longer be reopened. Please start a new request.`,
+        res.code === "TICKET_CLOSED" ? X.closed : X.expired(STUDENT_REOPEN_WINDOW_DAYS),
       note: null,
     };
   }
   if (canReplyPermission === false) {
-    return { canReply: false, reason: "You cannot reply to this request right now.", note: null };
+    return { canReply: false, reason: X.blocked, note: null };
   }
   if (t.status === "resolved") {
-    return { canReply: true, reason: null, note: "Sending a reply will reopen this request." };
+    return { canReply: true, reason: null, note: X.reopens };
   }
   return { canReply: true, reason: null, note: null };
 }
@@ -255,40 +257,40 @@ export interface RequestDraft {
 export type RequestErrors = Partial<Record<"topic" | "subject" | "description", string>>;
 
 /** Mirrors createTicketInputSchema (trimmed lengths). */
-export function validateRequestDraft(d: RequestDraft): RequestErrors {
+export function validateRequestDraft(d: RequestDraft, lang: Language = currentLanguage()): RequestErrors {
+  const V = supportText(lang).validation;
   const errors: RequestErrors = {};
   const subject = d.subject.trim();
   const description = d.description.trim();
-  if (!d.topic) errors.topic = "Choose the topic that fits best so the right person sees it.";
+  if (!d.topic) errors.topic = V.topic;
   if (subject.length < SUBJECT_MIN) {
-    errors.subject = `Add a short subject of at least ${SUBJECT_MIN} characters.`;
+    errors.subject = V.subjectShort(SUBJECT_MIN);
   } else if (subject.length > SUBJECT_MAX) {
-    errors.subject = `Please keep the subject under ${SUBJECT_MAX} characters (now ${subject.length}).`;
+    errors.subject = V.subjectLong(SUBJECT_MAX, subject.length);
   }
   if (description.length < DESCRIPTION_MIN) {
-    errors.description = `Tell us a little more, at least ${DESCRIPTION_MIN} characters, so we can help properly.`;
+    errors.description = V.descriptionShort(DESCRIPTION_MIN);
   } else if (description.length > DESCRIPTION_MAX) {
-    errors.description = `Please keep the description under ${DESCRIPTION_MAX} characters (now ${description.length}).`;
+    errors.description = V.descriptionLong(DESCRIPTION_MAX, description.length);
   }
   return errors;
 }
 
-export function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+export function formatFileSize(bytes: number, lang: Language = currentLanguage()): string {
+  const U = supportText(lang).units;
+  const num = (n: number, digits: number) => new Intl.NumberFormat(lang, { maximumFractionDigits: digits, minimumFractionDigits: 0 }).format(n);
+  if (bytes < 1024) return `${bytes} ${U.b}`;
+  if (bytes < 1024 * 1024) return `${num(Math.round(bytes / 1024), 0)} ${U.kb}`;
+  return `${new Intl.NumberFormat(lang, { maximumFractionDigits: 1, minimumFractionDigits: 1 }).format(bytes / (1024 * 1024))} ${U.mb}`;
 }
 
 export const ATTACHMENT_HELP = "PDF, PNG, JPG, WebP, TXT, DOC or DOCX, up to 10 MB.";
 
-export function attachmentError(file: { name: string; size: number; type: string }): string | null {
-  if (file.size <= 0) return "That file is empty.";
-  if (file.size > SUPPORT_ATTACHMENT_MAX_BYTES) {
-    return `${file.name} is ${formatFileSize(file.size)}. Files can be up to 10 MB.`;
-  }
-  if (!attachmentTypeAllowed(file.name, file.type)) {
-    return `${file.name} is not a supported type. Please use ${ATTACHMENT_HELP.replace(/, up to 10 MB\.$/, ".")}`;
-  }
+export function attachmentError(file: { name: string; size: number; type: string }, lang: Language = currentLanguage()): string | null {
+  const F = supportText(lang).files;
+  if (file.size <= 0) return F.empty;
+  if (file.size > SUPPORT_ATTACHMENT_MAX_BYTES) return F.tooBig(file.name, formatFileSize(file.size, lang));
+  if (!attachmentTypeAllowed(file.name, file.type)) return F.badType(file.name, F.allowed);
   return null;
 }
 

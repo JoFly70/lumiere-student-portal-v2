@@ -17,7 +17,7 @@ export interface ThemeDef {
 }
 
 export const THEMES = [
-  { id: "lumiere", label: "Lumière", note: "Default", dark: false, swatch: ["#f4f3ef", "#0f1522", "#c29a4e", "#1b1f27"] },
+  { id: "lumiere", label: "Lumière Desk", note: "Default", dark: false, swatch: ["#f4f3ef", "#0f1522", "#c29a4e", "#1b1f27"] },
   { id: "lumiere-dark", label: "Lumière Dark", note: "Classic", dark: true, swatch: ["#09090a", "#141417", "#c9aa6c", "#ebe6de"] },
   { id: "midnight", label: "Midnight Slate", note: "", dark: true, swatch: ["#0b0e14", "#161c29", "#8b9fbb", "#e7eaf0"] },
   { id: "monaco", label: "Monaco Navy", note: "", dark: true, swatch: ["#0b1120", "#151f36", "#c8ae76", "#f2ede3"] },

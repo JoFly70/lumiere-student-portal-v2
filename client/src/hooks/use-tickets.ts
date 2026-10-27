@@ -14,6 +14,8 @@ import type {
   TicketStatus,
   SupportTopic,
 } from '@shared/support-contract';
+import { currentLanguage } from '@/i18n';
+import { supportText } from '@/components/support/original-support-text';
 import { attachmentTypeAllowed, SUPPORT_ATTACHMENT_MAX_BYTES } from '@shared/support-contract';
 
 /**
@@ -68,7 +70,7 @@ export function describeCreateFailure(error: unknown): { message: string; mayHav
     if (error.code === 'SUPPORT_CREATE_IN_PROGRESS') return { message: error.message, mayHaveSaved: true };
     return { message: error.message, mayHaveSaved: false };
   }
-  return { message: 'We could not confirm that your request was received.', mayHaveSaved: true };
+  return { message: supportText(currentLanguage()).errors.unconfirmed, mayHaveSaved: true };
 }
 
 export interface UpdateTicketInput {
@@ -304,7 +306,7 @@ export function useAttachmentDownload(ticketId: string | null) {
         `/api/tickets/${ticketId}/attachments/${attachmentId}/download-url`,
       );
       const downloadUrl = res.downloadUrl ?? res.url ?? res.signedUrl;
-      if (!downloadUrl) throw new Error('The download link is not available right now. Please try again.');
+      if (!downloadUrl) throw new Error(supportText(currentLanguage()).files.linkUnavailable);
       return { downloadUrl, fileName: res.fileName ?? res.file_name ?? 'attachment' };
     },
   });
@@ -312,11 +314,10 @@ export function useAttachmentDownload(ticketId: string | null) {
 
 /** Client-side check shared by UI and hook. Returns a plain-language error or null. */
 export function validateAttachmentFile(file: { name: string; size: number; type: string }): string | null {
-  if (file.size <= 0) return 'That file is empty.';
-  if (file.size > SUPPORT_ATTACHMENT_MAX_BYTES) return 'Files can be up to 10 MB. Please choose a smaller file.';
-  if (!attachmentTypeAllowed(file.name, file.type)) {
-    return 'This file type is not supported. Please use PDF, PNG, JPG, WebP, TXT, DOC or DOCX.';
-  }
+  const F = supportText(currentLanguage()).files;
+  if (file.size <= 0) return F.empty;
+  if (file.size > SUPPORT_ATTACHMENT_MAX_BYTES) return F.tooBigShort;
+  if (!attachmentTypeAllowed(file.name, file.type)) return F.badTypeShort;
   return null;
 }
 
@@ -331,7 +332,7 @@ export function useUploadTicketAttachment(ticketId: string | null) {
     mutationFn: async (input) => {
       const file = input instanceof File ? input : input.file;
       const commentId = input instanceof File ? undefined : input.commentId;
-      if (!ticketId) throw new Error('Open a request before attaching a file.');
+      if (!ticketId) throw new Error(supportText(currentLanguage()).files.openFirst);
       const invalid = validateAttachmentFile(file);
       if (invalid) throw new Error(invalid);
 
@@ -340,7 +341,7 @@ export function useUploadTicketAttachment(ticketId: string | null) {
         `/api/tickets/${ticketId}/attachments/upload-url`,
         { method: 'POST', body: JSON.stringify(meta) },
       );
-      if (!target?.uploadUrl || !target?.storagePath) throw new Error('Could not prepare the upload. Please try again.');
+      if (!target?.uploadUrl || !target?.storagePath) throw new Error(supportText(currentLanguage()).files.prepareFailed);
 
       let put: Response;
       try {
@@ -350,9 +351,9 @@ export function useUploadTicketAttachment(ticketId: string | null) {
           body: file,
         });
       } catch {
-        throw new Error('The file could not be uploaded. Check your connection and try again.');
+        throw new Error(supportText(currentLanguage()).files.uploadOffline);
       }
-      if (!put.ok) throw new Error('The file could not be uploaded. Please try again.');
+      if (!put.ok) throw new Error(supportText(currentLanguage()).files.uploadFailed);
 
       const recorded = await apiRequest<TicketAttachment | { attachment: TicketAttachment }>(
         `/api/tickets/${ticketId}/attachments`,

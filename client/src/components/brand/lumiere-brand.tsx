@@ -4,7 +4,10 @@
  * Wordmark type: Cormorant Garamond 500 (ClientDesk's wordmark face) via the `font-display` utility /
  * `--font-display` token; tagline in the UI sans, tracked caps.
  */
+import React from "react";
 import { cn } from "@/lib/utils";
+
+void React; // classic JSX runtime when rendered under vitest/esbuild
 import crest96 from "@/assets/brand/crest-96.webp";
 import crest192 from "@/assets/brand/crest-192.webp";
 import crest480 from "@/assets/brand/crest-480.webp";

@@ -35,12 +35,13 @@ import {
   type OriginalCardModel,
   type OriginalFilters,
 } from "./original-support-adapter";
-import { SUPPORT_TEXT as T } from "./original-support-text";
+import { useSupportText } from "./original-support-text";
 import { STATUS_ICON, StatusBadge, formatDate, formatFileSize } from "./original-support-bits";
 import { OriginalCreateDialog, type CreatedTicket } from "./original-create-dialog";
 import { OriginalTicketDetailModal } from "./original-ticket-detail";
 
 export { SUPPORT_TEXT } from "./original-support-text";
+
 
 function itemFromUrl(): string | null {
   if (typeof window === "undefined") return null;
@@ -54,6 +55,7 @@ function itemFromUrl(): string | null {
 function TicketCard({
   ticket, isExpanded, onToggle, onViewDetails,
 }: { ticket: OriginalCardModel; isExpanded: boolean; onToggle: () => void; onViewDetails: () => void }) {
+  const { T, language } = useSupportText();
   const priority = ORIGINAL_PRIORITY_STYLE[ticket.priority];
   const panelId = `ticket-panel-${ticket.ticketNumber}`;
   return (
@@ -67,11 +69,11 @@ function TicketCard({
               {showPriorityOnCard(ticket.priority) && (
                 <Badge variant="secondary" className={`${priority.bgColor} ${priority.color}`}>{T.priority[ticket.priority]}</Badge>
               )}
-              <Badge variant="secondary" className={ORIGINAL_CATEGORY_STYLE[ticket.category]}>{ticket.topicLabel}</Badge>
+              <Badge variant="secondary" className={ORIGINAL_CATEGORY_STYLE[ticket.category]}>{T.topics[ticket.topic]?.label ?? ticket.topicLabel}</Badge>
             </div>
             <h4 className="mb-1 text-sm font-medium [overflow-wrap:anywhere] sm:truncate" data-testid={`ticket-subject-${ticket.ticketNumber}`}>{ticket.subject}</h4>
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1"><Calendar className="h-3 w-3" aria-hidden="true" />{formatDate(ticket.createdAt)}</span>
+              <span className="flex items-center gap-1"><Calendar className="h-3 w-3" aria-hidden="true" />{formatDate(ticket.createdAt, language)}</span>
               <span className="flex items-center gap-1"><MessageSquare className="h-3 w-3" aria-hidden="true" />{T.list.comment(ticket.commentCount)}</span>
               {ticket.attachmentCount > 0 && (
                 <span className="flex items-center gap-1"><Paperclip className="h-3 w-3" aria-hidden="true" />{ticket.attachmentCount}</span>
@@ -116,6 +118,7 @@ function TicketCard({
 
 /** Uploads the files chosen in the create dialog through the real attachment API, one by one, and reports truthfully. */
 function PostCreateUploads({ created, onDone }: { created: CreatedTicket; onDone: () => void }) {
+  const { T } = useSupportText();
   const upload = useUploadTicketAttachment(created.id);
   const [state, setState] = useState<{ added: number; failed: string[]; running: boolean }>({ added: 0, failed: [], running: created.files.length > 0 });
   const started = useRef(false);
@@ -147,6 +150,7 @@ function PostCreateUploads({ created, onDone }: { created: CreatedTicket; onDone
 }
 
 export function OriginalStudentSupport() {
+  const { T } = useSupportText();
   const itemParam = useMemo(itemFromUrl, []);
   const tickets = useTickets({ limit: 100 });
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
@@ -237,7 +241,7 @@ export function OriginalStudentSupport() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">{T.list.allTopics}</SelectItem>
-                  {SUPPORT_TOPICS.map((k) => <SelectItem key={k} value={k}>{SUPPORT_TOPIC_INFO[k].label}</SelectItem>)}
+                  {SUPPORT_TOPICS.map((k) => <SelectItem key={k} value={k}>{T.topics[k]?.label ?? SUPPORT_TOPIC_INFO[k].label}</SelectItem>)}
                 </SelectContent>
               </Select>
               {filters.status !== "all" && (

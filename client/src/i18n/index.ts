@@ -47,9 +47,30 @@ export function writeStoredLanguage(lang: Language, storage?: Pick<Storage, "set
   }
 }
 
+/**
+ * French typography: a narrow no-break space before ; ? ! and a no-break space before ":" so
+ * punctuation never wraps onto its own line. Applied centrally to French output.
+ */
+export function frTypo(s: string): string {
+  return s.replace(/ ([;?!])/g, "\u202F$1").replace(/ :/g, "\u00A0:");
+}
+
+/** Language for code that runs outside React (hooks' error messages, pure helpers). Never throws. */
+export function currentLanguage(): Language {
+  try {
+    const v = typeof localStorage !== "undefined" ? localStorage.getItem(LANGUAGE_STORAGE_KEY) : null; // written synchronously by setLanguage
+    return isLanguage(v) ? v : DEFAULT_LANGUAGE;
+  } catch {
+    // Storage blocked: the provider mirrors the language on <html lang>.
+    if (typeof document !== "undefined" && isLanguage(document.documentElement.lang)) return document.documentElement.lang;
+    return DEFAULT_LANGUAGE;
+  }
+}
+
 /** Pure translate function (used by the hook and by tests). */
 export function translate(lang: Language, key: string, vars?: Record<string, string | number>): string {
-  const template = DICTIONARIES[lang]?.[key] ?? DICTIONARIES.en[key] ?? key;
+  const raw = DICTIONARIES[lang]?.[key] ?? DICTIONARIES.en[key] ?? key;
+  const template = lang === "fr" ? frTypo(raw) : raw;
   if (!vars) return template;
   return template.replace(/\{(\w+)\}/g, (match, name: string) => (name in vars ? String(vars[name]) : match));
 }
