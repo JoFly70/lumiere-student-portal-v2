@@ -25,7 +25,9 @@ describe("S20 migration chain", () => {
     expect(ts.every((t, i) => i === 0 || t > ts[i - 1]!)).toBe(true);
   });
   it("the five S18/S19 files are the latest pre-S20 migrations, in release order", () => {
-    const pre = files.filter((f) => !/_s20_/.test(f));
+    // Later sessions (S21+) add newer migrations; the S18/S19 files must be the latest ones before S20.
+    const firstS20 = files.find((f) => /_s20_/.test(f))!;
+    const pre = files.filter((f) => f < firstS20);
     expect(pre.slice(-5)).toEqual(RELEASE);
   });
   it("every S20 migration sorts after the S19 corrections file, is additive and idempotent (no DROP TABLE/COLUMN, guarded DDL)", () => {

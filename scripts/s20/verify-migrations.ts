@@ -42,7 +42,8 @@ async function main() {
   check("timestamps unique and strictly increasing in filename order", stamps.every((s, i) => i === 0 || s > stamps[i - 1]!));
   const idx = PRE_S20_ORDER.map((f) => all.indexOf(f));
   check("the five S18/S19 files sort in the exact release order", idx.every((v, i) => i === 0 || v > idx[i - 1]!), idx.join(","));
-  const nonS20 = all.filter((f) => !S20.includes(f));
+  // Files before the first S20 migration (S21+ files sort after S20 and are not part of this check).
+  const nonS20 = all.filter((f) => !S20.includes(f) && (S20.length === 0 || f < S20[0]!));
   check("the five are the latest pre-S20 files (they are the last five non-S20 migrations)", JSON.stringify(nonS20.slice(-5)) === JSON.stringify(PRE_S20_ORDER), nonS20.slice(-5).join(","));
   check("every S20 migration sorts after the S19 corrections file", S20.every((f) => ts(f) > ts(PRE_S20_ORDER[4]!)), S20.join(","));
   check("S20 migration discovered (informational)", true, S20.length ? S20.join(",") : "none present");
