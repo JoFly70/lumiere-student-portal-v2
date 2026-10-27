@@ -21,3 +21,27 @@ run = ["npm", "start"]
 APP_URL = "https://lumiere-student-portal-v-2.replit.app"
 PUBLIC_APP_URL = "https://lumiere-student-portal-v-2.replit.app"
 AUTH_EMAIL_MODE = "custom_smtp"
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "S16 production preview"
+
+[[workflows.workflow]]
+name = "S16 production preview"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm start"
+waitForPort = 5000
+
+[workflows.workflow.metadata]
+outputType = "webview"
