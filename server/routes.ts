@@ -1364,6 +1364,10 @@ window.ENV = {
   // S18 billing: the student's own ledger, read-only
   app.use('/api/student', (await import('./routes/student-billing')).default);
 
+  // S20: Lumière Academic Assistant. Local guidance always; live Spark inference only when
+  // SPARK_ASSISTANT_ENABLED=true, a server key exists and the role is eligible (never students).
+  app.use('/api/assistant', (await import('./routes/academic-assistant')).default);
+
   app.use('/api/admin', adminRouter);
   app.use('/api', programsRouter);
 
