@@ -5,6 +5,19 @@ import { validateProductionAuthReadiness } from '../lib/auth-readiness';
 import { getRateLimitBackend } from '../lib/rate-limit-store';
 import { getMemoryPressure } from '../lib/memory-pressure';
 
+/** Upper bound for any single dependency probe so a hung database cannot hang the probe endpoint. */
+export const HEALTH_PROBE_TIMEOUT_MS = 3000;
+
+function withProbeTimeout<T>(probe: PromiseLike<T>, ms: number = HEALTH_PROBE_TIMEOUT_MS): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`probe timed out after ${ms}ms`)), ms);
+    Promise.resolve(probe).then(
+      (v) => { clearTimeout(timer); resolve(v); },
+      (e) => { clearTimeout(timer); reject(e); },
+    );
+  });
+}
+
 export function registerHealthRoutes(app: Express) {
   // Health check endpoint for monitoring/load balancers
   app.get('/health', async (req, res) => {
@@ -23,10 +36,10 @@ export function registerHealthRoutes(app: Express) {
     try {
       // Check Supabase connection (only if configured)
       if (isSupabaseConfigured) {
-        const { error } = await supabaseAdmin
+        const { error } = await withProbeTimeout(supabaseAdmin
           .from('users')
           .select('id')
-          .limit(1);
+          .limit(1));
 
         health.checks.database = error ? 'error' : 'ok';
 
@@ -102,10 +115,10 @@ export function registerHealthRoutes(app: Express) {
           rateLimitBackend: getRateLimitBackend(),
         }, {
           checkTables: async () => {
-            const [users, profiles] = await Promise.all([
+            const [users, profiles] = await withProbeTimeout(Promise.all([
               supabaseAdmin.from('users').select('id').limit(1),
               supabaseAdmin.from('profiles').select('id').limit(1),
-            ]);
+            ]));
             return { users: !users.error, profiles: !profiles.error };
           },
           checkAuthEmail: async () => {
@@ -147,10 +160,10 @@ export function registerHealthRoutes(app: Express) {
       }
 
       // Simple check if the app is ready to serve traffic
-      const { error } = await supabaseAdmin
+      const { error } = await withProbeTimeout(supabaseAdmin
         .from('users')
         .select('id')
-        .limit(1);
+        .limit(1));
 
       if (error) {
         throw error;

@@ -1,9 +1,23 @@
 import winston from 'winston';
+import { redactValue, redactString, SENSITIVE_LOG_KEY, REDACTED } from './log-redaction';
+
+// Defense in depth: every log record passes through redaction before output.
+const redactFormat = winston.format((info) => {
+  // Mutate in place: winston keeps LEVEL/MESSAGE/SPLAT on symbol keys that must survive.
+  for (const key of Object.keys(info)) {
+    if (key === 'level') continue;
+    (info as any)[key] = key === 'message' && typeof info.message === 'string'
+      ? redactString(info.message)
+      : SENSITIVE_LOG_KEY.test(key) ? REDACTED : redactValue((info as any)[key]);
+  }
+  return info;
+});
 
 const isProduction = process.env.NODE_ENV === 'production';
 
 // Custom format for development (pretty print)
 const devFormat = winston.format.combine(
+  redactFormat(),
   winston.format.colorize(),
   winston.format.timestamp({ format: 'HH:mm:ss' }),
   winston.format.printf(({ timestamp, level, message, ...meta }) => {
@@ -14,6 +28,7 @@ const devFormat = winston.format.combine(
 
 // Production format (JSON for log aggregation)
 const prodFormat = winston.format.combine(
+  redactFormat(),
   winston.format.timestamp(),
   winston.format.errors({ stack: true }),
   winston.format.json()

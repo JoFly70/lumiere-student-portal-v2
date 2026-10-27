@@ -1,4 +1,5 @@
 import { logger } from './logger';
+import { scrubSentryEvent } from './log-redaction';
 
 /**
  * Sentry is an optional dependency. When @sentry/node and
@@ -55,12 +56,9 @@ if (SentrySDK && dsn) {
     // Profiling
     profilesSampleRate: isProduction ? 0.1 : 1.0,
     // Filter out health check requests
-    beforeSend(event: { request?: { url?: string } }) {
-      const url = event.request?.url;
-      if (url && (url.includes('/health') || url.includes('/live') || url.includes('/ready'))) {
-        return null; // Don't send health check errors
-      }
-      return event;
+    // Drop health probes; scrub tokens, cookies, headers, query strings, bodies.
+    beforeSend(event: Record<string, any>) {
+      return scrubSentryEvent(event);
     },
   });
 

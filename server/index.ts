@@ -14,6 +14,7 @@ import {
   rateLimitConfig,
   compressionConfig,
 } from "./config/production";
+import { safeRequestContext } from "./lib/log-redaction";
 import { logger, logStartup, generateRequestId } from "./lib/logger";
 import { checkRedisHealth, configureRateLimitBackend, createRateLimitStore, getRateLimitBackend, trackRedisHealth, withCommandTimeout } from "./lib/rate-limit-store";
 
@@ -178,7 +179,7 @@ if (redisUrl && isProduction) {
     logger.error('⚠️  Redis initialization failed. Falling back to in-memory rate limiting.', {
       error: error instanceof Error ? error.message : String(error),
     });
-    logger.warn('   In-memory rate limiting is NOT suitable for multi-instance deployments. /api/health/ready will report not ready.');
+    logger.warn('   In-memory rate limiting is NOT suitable for multi-instance deployments. /ready will report not ready.');
 
     // Alert for production failures
     if (isSentryConfigured && Sentry) {
@@ -303,11 +304,8 @@ app.use((req, res, next) => {
     if (isSentryConfigured && status >= 500) {
       Sentry.captureException(err, {
         contexts: {
-          request: {
-            method: req.method,
-            url: req.url,
-            headers: req.headers,
-          },
+          // Never forward headers (Authorization, cookies) or the query string (?token_hash).
+          request: safeRequestContext(req),
         },
       });
     }
