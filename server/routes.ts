@@ -24,6 +24,13 @@ import {
   isDuplicateSignupError,
   resolvePasswordResetAppUrl,
 } from "./lib/auth-policy";
+import {
+  createResendVerificationHandler,
+  createVerifyEmailHandler,
+  resendVerificationRateLimit,
+  verifyEmailRateLimit,
+  type VerificationDeps,
+} from "./lib/email-verification";
 import { revokeAllSupabaseSessions } from "./lib/session-revocation";
 import { ACCOUNT_INACTIVE_RESPONSE, getAccountStatus, isAccountActive } from "./lib/account-status";
 import {
@@ -422,6 +429,19 @@ window.ENV = {
       return res.status(500).json({ error: "Internal server error" });
     }
   });
+
+  // Email verification: success only when the provider confirms the email.
+  const verificationDeps: VerificationDeps = {
+    isConfigured: () => isSupabaseConfigured,
+    getUser: (accessToken) => supabaseAdmin.auth.getUser(accessToken),
+    verifyOtp: (params) => createUserAuthClient().auth.verifyOtp(params),
+    resend: (email, emailRedirectTo) =>
+      createUserAuthClient().auth.resend({ type: "signup", email, options: emailRedirectTo ? { emailRedirectTo } : undefined }),
+    appUrl: () => resolvePasswordResetAppUrl(process.env.APP_URL, process.env.NODE_ENV === "production"),
+    warn: (message, meta) => logger.warn(message, meta),
+  };
+  app.post("/api/auth/verify-email", verifyEmailRateLimit, createVerifyEmailHandler(verificationDeps));
+  app.post("/api/auth/resend-verification", resendVerificationRateLimit, createResendVerificationHandler(verificationDeps));
 
   // Logout endpoint - clears CSRF token
   app.post("/api/auth/logout", async (req, res) => {

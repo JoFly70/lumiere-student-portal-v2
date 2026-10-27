@@ -140,6 +140,19 @@ export const billingRepository: BillingRepository<Tx> = {
     return voidRow(tx, "student_billing_receipts", studentId, receiptId, actorId, reason, at);
   },
 
+  async reopenEvidenceForReceipt(tx, studentId, receiptId) {
+    const [r] = rows(
+      await tx.execute(sql`
+        UPDATE student_billing_evidence e
+        SET status = 'awaiting_review', reviewed_by = NULL, reviewed_at = NULL, reject_reason = NULL, receipt_id = NULL
+        FROM student_billing_receipts r
+        WHERE r.student_id = ${studentId} AND r.id::text = ${receiptId} AND e.id = r.evidence_id
+          AND e.student_id = ${studentId} AND e.status = 'confirmed'
+        RETURNING e.id`),
+    );
+    return r ? String(r.id) : null;
+  },
+
   async voidDiscount(tx, studentId, discountId, actorId, reason, at) {
     return voidRow(tx, "student_billing_discounts", studentId, discountId, actorId, reason, at);
   },

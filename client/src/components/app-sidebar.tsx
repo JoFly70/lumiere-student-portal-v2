@@ -84,9 +84,14 @@ const adminMenuItems = [
   { title: "Support", url: "/support", icon: HelpCircle },
 ];
 
+// Staff (not admin) cannot open the admin student workspace; this is their way into student billing.
+export const STAFF_BILLING_PATH = "/staff/billing";
+
 const staffMenuItems = [
   { title: "Support", url: "/support", icon: HelpCircle },
 ];
+// Billing routes allow staff + admin only (not coach), so the entry is role-specific.
+const staffBillingItem = { title: "Student billing", url: STAFF_BILLING_PATH, icon: CreditCard };
 
 export function AppSidebar() {
   const [location] = useLocation();
@@ -111,7 +116,9 @@ export function AppSidebar() {
       ? adminMenuItems
       : isStudent
         ? studentMenuItems
-        : staffMenuItems;
+        : user?.role === "staff"
+          ? [...staffMenuItems, staffBillingItem]
+          : staffMenuItems;
 
   const displayName = isStudent && profile
     ? `${profile.first_name || ""} ${profile.last_name || ""}`.trim() || user?.name || "User"
@@ -222,6 +229,7 @@ export function AppSidebar() {
   const onStudents = location.startsWith("/admin/students") || (location === "/admin" && adminTabFromSearch(search) === "students");
   const isActive = (url: string) => {
     if (url === ADMIN_STUDENTS_PATH) return onStudents;
+    if (url === STAFF_BILLING_PATH) return location === url || /^\/admin\/students\/[^/]+\/billing$/.test(location);
     if (url === "/admin") return location.startsWith("/admin") && !onStudents;
     return location === url;
   };

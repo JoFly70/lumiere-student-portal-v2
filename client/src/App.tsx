@@ -14,6 +14,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Login from "@/pages/login";
 import ResetPassword from "@/pages/reset-password";
 import VerifyEmail from "@/pages/verify-email";
+import ResendVerification from "@/pages/resend-verification";
 import StudentProfile from "@/pages/student-profile";
 import FlightDeckRouter from "@/pages/flight-deck-router";
 import HighSchoolFlightDeck from "@/pages/high-school-flight-deck";
@@ -32,6 +33,7 @@ import { UniversityOnly } from "@/components/university-only";
 import { studentLandingPath, useStudentPrograms } from "@/lib/student-programs";
 import AdminStudentHighSchool from "@/pages/admin-student-high-school";
 import AdminStudentBilling from "@/pages/admin-student-billing";
+import StaffBillingLookup from "@/pages/staff-billing-lookup";
 import { PROTOTYPES_ENABLED, PREVIEW_FLIGHT_DECK_PATH } from "@/components/os/prototype-gate";
 
 // Prototype-only route (S17). Compiled out of normal production builds; see components/os/prototype-gate.
@@ -72,6 +74,8 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/reset-password" component={ResetPassword} />
       <Route path="/auth/verify" component={VerifyEmail} />
+      <Route path="/verify-email" component={VerifyEmail} />
+      <Route path="/resend-verification" component={ResendVerification} />
       <Route path="/">{() => <RoleLanding />}</Route>
       <Route path="/dashboard">{() => <RoleLanding />}</Route>
 
@@ -93,6 +97,13 @@ function Router() {
         {() => (
           <ProtectedRoute requireRole={["admin", "staff"]}>
             <AdminStudentHighSchool />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/staff/billing">
+        {() => (
+          <ProtectedRoute requireRole={["admin", "staff"]}>
+            <StaffBillingLookup />
           </ProtectedRoute>
         )}
       </Route>
@@ -244,7 +255,9 @@ function ApplicationLayout() {
   const isAuthRoute =
     location === "/login" ||
     location === "/reset-password" ||
-    location === "/auth/verify";
+    location === "/auth/verify" ||
+    location === "/verify-email" ||
+    location === "/resend-verification";
 
   if (isAuthRoute) {
     return <Router />;

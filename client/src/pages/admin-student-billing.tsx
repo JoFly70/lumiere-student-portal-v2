@@ -8,6 +8,7 @@ import { ArrowLeft, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatMoney } from "@shared/billing-contract";
 import { KpiTile, StaffNotice, StaffPage, StaffPageHeader, StaffPill, staffBtn } from "@/components/staff/staff-ui";
+import { useAuth } from "@/lib/auth";
 import { formatBillingDate, paidPercent, useStaffBilling, useStaffBillingAction, type StaffBillingCall } from "@/lib/billing-queries";
 import { DiscountPanel, EvidencePanel, ObligationPanel, ReceiptsPanel, SchedulePanel, type PanelProps } from "@/components/admin/billing/billing-panels";
 
@@ -19,9 +20,11 @@ export default function AdminStudentBilling() {
     action.mutate(call, { onSuccess: () => onDone?.() });
   }, [action]);
 
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin"; // the student workspace is admin-only; staff return to the billing lookup
   const back = (
-    <Link href={`/admin/students/${encodeURIComponent(studentId)}`} className="inline-flex items-center gap-1.5 text-sm text-student-muted hover:text-student-ink" data-testid="link-back-workspace">
-      <ArrowLeft className="h-4 w-4" />Student workspace
+    <Link href={isAdmin ? `/admin/students/${encodeURIComponent(studentId)}` : "/staff/billing"} className="inline-flex items-center gap-1.5 text-sm text-student-muted hover:text-student-ink" data-testid="link-back-workspace">
+      <ArrowLeft className="h-4 w-4" />{isAdmin ? "Student workspace" : "Student billing"}
     </Link>
   );
   const header = (extra?: React.ReactNode) => (

@@ -76,6 +76,8 @@ export interface BillingRepository<Tx = unknown> {
   insertReceipt(tx: Tx, studentId: string, actorId: string, input: RecordReceiptInput, evidenceId: string | null, at: Date): Promise<BillingReceiptRow>;
   /** Marks an active row voided. Returns false when the row is missing or already voided. */
   voidReceipt(tx: Tx, studentId: string, receiptId: string, actorId: string, reason: string, at: Date): Promise<"voided" | "not_found" | "already_voided">;
+  /** After a receipt void: returns that receipt's confirmed evidence to 'awaiting_review'. Returns the evidence id, or null when the receipt had none. */
+  reopenEvidenceForReceipt(tx: Tx, studentId: string, receiptId: string): Promise<string | null>;
   voidDiscount(tx: Tx, studentId: string, discountId: string, actorId: string, reason: string, at: Date): Promise<"voided" | "not_found" | "already_voided">;
   updateInstallment(tx: Tx, studentId: string, installmentId: string, patch: UpdateInstallmentInput): Promise<boolean>;
   insertEvidence(tx: Tx, studentId: string, actorId: string, input: RegisterEvidenceInput, at: Date): Promise<BillingEvidenceRow>;
@@ -180,7 +182,12 @@ export function createBillingService<Tx>(deps: BillingServiceDeps<Tx>) {
         const out = await repo.voidReceipt(tx, studentId, receiptId, actorId, reason, at);
         if (out === "not_found") throw new BillingError(E.RECEIPT_NOT_FOUND, 404, "Receipt not found");
         if (out === "already_voided") throw new BillingError(E.ALREADY_VOIDED, 409, "Receipt was already voided");
-        return [{ event: "billing.receipt_voided", description: "Receipt voided by staff", studentId, metadata: { receiptId } }];
+        // Evidence-backed receipt: the proof was submitted but its money is no longer received, so the
+        // evidence goes back to awaiting_review (re-confirmable, or staff may reject it). Audited.
+        const evidenceId = await repo.reopenEvidenceForReceipt(tx, studentId, receiptId);
+        const audits: BillingAuditRecord[] = [{ event: "billing.receipt_voided", description: "Receipt voided by staff", studentId, metadata: { receiptId, evidenceReopened: evidenceId !== null } }];
+        if (evidenceId) audits.push({ event: "billing.evidence_reviewed", description: "Payment evidence returned to review after receipt void", studentId, metadata: { evidenceId, status: "awaiting_review" } });
+        return audits;
       });
     },
 
