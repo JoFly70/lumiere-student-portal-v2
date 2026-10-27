@@ -150,7 +150,7 @@ export function GlobalSearch({ audience, className }: { audience: SearchAudience
   const allowed: readonly SearchType[] | undefined = audience === "staff" ? ["student"] : undefined;
   const q = useQuery({
     queryKey: ["/api/search", debounced, audience],
-    queryFn: async () => sanitiseServerResults(await api.get(`/api/search?q=${encodeURIComponent(debounced)}&limit=${SEARCH_LIMIT}`), allowed),
+    queryFn: async () => sanitiseServerResults(await api.get(`/api/search?q=${encodeURIComponent(debounced)}&limit=${SEARCH_LIMIT}&lang=${language}`), allowed),
     enabled,
     staleTime: 30_000,
     retry: false,
@@ -201,6 +201,7 @@ export function GlobalSearch({ audience, className }: { audience: SearchAudience
     if (e.nativeEvent.isComposing) return;
     const a = searchKeyAction(e.key, active, flat.length);
     if (a.kind === "close") {
+      if (!desktop) { e.preventDefault(); e.stopPropagation(); closeAll(); return; }
       if (query) { e.preventDefault(); e.stopPropagation(); setQuery(""); setOpen(true); } else { closeAll(); inputRef.current?.blur(); }
       if (!query) e.stopPropagation();
       return;

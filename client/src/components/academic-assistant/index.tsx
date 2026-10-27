@@ -28,7 +28,8 @@ import {
   SEARCH_MIN_CHARS,
   THROTTLE_COOLDOWN_MS,
   classifyFailure,
-  conversationFromLocation,
+  deepLinkFromSearch,
+  CONVERSATION_PARAM,
   isOpenableUrl,
   needsSupportEscalation,
   nextTrapTarget,
@@ -587,11 +588,18 @@ export function AcademicAssistant({ defaultOpen = false }: { defaultOpen?: boole
     return () => window.removeEventListener(ASSISTANT_OPEN_EVENT, onOpen);
   }, [loadConversation]);
   useEffect(() => {
-    if (location !== ASSISTANT_PATH) return;
+    const { conversationId, memoryId } = deepLinkFromSearch(search);
+    if (location !== ASSISTANT_PATH && !conversationId && !memoryId) return;
     setOpen(true);
-    const id = conversationFromLocation(location, search);
-    if (id) void loadConversation(id);
+    if (conversationId) void loadConversation(conversationId);
     else autoOpened.current = false;
+    // Consume the params so a reload or back does not reopen it; the path itself is left alone.
+    if (typeof window !== "undefined" && (conversationId || memoryId)) {
+      const u = new URL(window.location.href);
+      u.searchParams.delete(CONVERSATION_PARAM);
+      u.searchParams.delete("memory");
+      window.history.replaceState(window.history.state, "", u.pathname + u.search + u.hash);
+    }
   }, [location, search]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const renameConversation = useCallback(async (id: string, title: string) => {

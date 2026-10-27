@@ -129,6 +129,14 @@ export function assistantDeepLink(conversationId: string): string {
   return `${ASSISTANT_PATH}?${CONVERSATION_PARAM}=${encodeURIComponent(conversationId)}`;
 }
 
+/** Deep link on ANY student page: `?conversation=<id>` (or `?memory=<id>`, which just opens the drawer). */
+export function deepLinkFromSearch(search: string): { conversationId: string | null; memoryId: string | null } {
+  const q = new URLSearchParams(search);
+  const c = q.get(CONVERSATION_PARAM);
+  const m = q.get("memory");
+  return { conversationId: c && UUIDISH.test(c) ? c : null, memoryId: m && UUIDISH.test(m) ? m : null };
+}
+
 const UUIDISH = /^[A-Za-z0-9_-]{8,64}$/;
 /** Reads the conversation id from a deep link (`location`, `search`). Anything odd is ignored. */
 export function conversationFromLocation(pathname: string, search: string): string | null {
