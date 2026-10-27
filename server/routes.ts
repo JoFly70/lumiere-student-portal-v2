@@ -1336,6 +1336,9 @@ window.ENV = {
   // S11 high school pathway (student view, progress report, programs list)
   const studentHighSchoolRouter = (await import('./routes/student-high-school')).default;
   app.use('/api/student', studentHighSchoolRouter);
+  // S18 academic projection for the high school Flight Deck (student role only, own record only)
+  const studentAcademicProjectionRouter = (await import('./routes/student-academic-projection')).default;
+  app.use('/api/student', studentAcademicProjectionRouter);
 
   app.use('/api/admin', adminRouter);
   app.use('/api', programsRouter);

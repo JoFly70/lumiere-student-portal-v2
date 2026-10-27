@@ -451,6 +451,31 @@ export function createHighSchoolService(deps: HighSchoolServiceDeps) {
     return buildStudentView(studentId, enrollment, tx);
   }
 
+  /** S18: the student view plus the plan metadata the academic projection needs (additive). */
+  async function getStudentAcademicSource(studentId: string): Promise<{
+    view: StudentHighSchoolView;
+    meta: {
+      templateKey: string | null;
+      templateVersion: number | null;
+      milestones: { month: string; cumulativeHalfUnits: number }[];
+    };
+  }> {
+    const tx = deps.readTx;
+    const enrollment = currentOf(await repo.listEnrollments(studentId, tx));
+    if (!enrollment) throw new HsError(E.NO_ENROLLMENT, 404, "No high school enrollment yet");
+    const b = await loadBundle(enrollment, tx);
+    const view = projectStudentView(await projectionInput(studentId, b, tx));
+    const content = b.published ? (b.published.content as HsRoadmapContent) : null;
+    return {
+      view,
+      meta: {
+        templateKey: enrollment.templateKey,
+        templateVersion: enrollment.templateVersion,
+        milestones: (content?.pacing.milestones ?? []).map((m) => ({ month: m.month, cumulativeHalfUnits: m.cumulativeHalfUnits })),
+      },
+    };
+  }
+
   async function getStudentPrograms(studentId: string): Promise<StudentProgramsView> {
     const tx = deps.readTx;
     await ensureBuiltInTemplates();
@@ -1621,6 +1646,7 @@ export function createHighSchoolService(deps: HighSchoolServiceDeps) {
     createTemplate,
     getStudentView,
     getStudentPrograms,
+    getStudentAcademicSource,
     reportProgress,
     requestTranscript,
     getStaffState,
