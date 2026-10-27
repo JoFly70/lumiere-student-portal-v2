@@ -7,63 +7,72 @@ import crypto from 'crypto';
 import { Request, Response, NextFunction } from 'express';
 import { logger } from '../lib/logger';
 
-// Store CSRF tokens in memory (in production, use Redis or similar)
-const csrfTokenStore = new Map<string, { token: string; expires: number }>();
+// Stateless, HMAC-signed tokens: any instance holding SESSION_SECRET can verify a
+// token minted by another, so the check works on multi-instance Autoscale without a
+// shared store. Format: <expiresMs>.<nonce>.<hmac(userId|expiresMs|nonce)>.
+const TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
 
-// Clean up expired tokens every 5 minutes
+// Without SESSION_SECRET fall back to a per-process random key (never a known
+// default): tokens then only verify on the instance that issued them.
+const csrfSecret = process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex');
+if (!process.env.SESSION_SECRET && process.env.NODE_ENV === 'production') {
+  logger.warn('SESSION_SECRET unset: CSRF tokens are per-instance only');
+}
+
+// Best-effort logout revocation on this instance (the Supabase session is revoked
+// as well, so a stolen token is useless without a live bearer token).
+const revokedTokens = new Map<string, number>();
+
 setInterval(() => {
   const now = Date.now();
-  for (const [key, value] of csrfTokenStore.entries()) {
-    if (value.expires < now) {
-      csrfTokenStore.delete(key);
-    }
+  for (const [key, expires] of revokedTokens.entries()) {
+    if (expires < now) revokedTokens.delete(key);
   }
-}, 5 * 60 * 1000);
+}, 5 * 60 * 1000).unref();
+
+function sign(userId: string, expires: number, nonce: string): string {
+  return crypto.createHmac('sha256', csrfSecret).update(`${userId}|${expires}|${nonce}`).digest('base64url');
+}
 
 /**
  * Generate a CSRF token for a user session
  */
 export function generateCsrfToken(userId: string): string {
-  // Generate cryptographically secure random token
-  const token = crypto.randomBytes(32).toString('base64url');
-
-  // Store token with 1-hour expiry
-  const expires = Date.now() + 60 * 60 * 1000; // 1 hour
-  csrfTokenStore.set(`${userId}:${token}`, { token, expires });
-
-  return token;
+  const expires = Date.now() + TOKEN_TTL_MS;
+  const nonce = crypto.randomBytes(16).toString('base64url');
+  return `${expires}.${nonce}.${sign(userId, expires, nonce)}`;
 }
 
 /**
  * Verify a CSRF token
  */
 export function verifyCsrfToken(userId: string, token: string): boolean {
-  if (!userId || !token) {
+  if (!userId || !token || typeof token !== 'string') {
     return false;
   }
 
-  const key = `${userId}:${token}`;
-  const stored = csrfTokenStore.get(key);
+  const parts = token.split('.');
+  if (parts.length !== 3) return false;
+  const [expiresText, nonce, mac] = parts;
+  const expires = Number(expiresText);
+  if (!Number.isSafeInteger(expires) || expires < Date.now()) return false;
 
-  if (!stored) {
+  const expected = Buffer.from(sign(userId, expires, nonce));
+  const given = Buffer.from(mac);
+  if (expected.length !== given.length || !crypto.timingSafeEqual(expected, given)) {
     return false;
   }
-
-  // Check if token is expired
-  if (stored.expires < Date.now()) {
-    csrfTokenStore.delete(key);
-    return false;
-  }
-
-  return stored.token === token;
+  return !revokedTokens.has(`${userId}:${token}`);
 }
 
 /**
- * Delete a CSRF token (for logout)
+ * Revoke a CSRF token (for logout)
  */
 export function deleteCsrfToken(userId: string, token: string): void {
-  const key = `${userId}:${token}`;
-  csrfTokenStore.delete(key);
+  const expires = Number(token.split('.')[0]);
+  if (Number.isSafeInteger(expires) && expires > Date.now()) {
+    revokedTokens.set(`${userId}:${token}`, expires);
+  }
 }
 
 /**
