@@ -60,6 +60,52 @@ export const BILLING_TEXT = {
   installmentN: (n: number) => `Installment ${n}`,
 } as const;
 
+/** French counterpart of BILLING_TEXT (same shape; checked by the type below). */
+export const BILLING_TEXT_FR: { readonly [K in keyof typeof BILLING_TEXT]: (typeof BILLING_TEXT)[K] extends (...a: infer A) => string ? (...a: A) => string : string } = {
+  loading: "Chargement de votre facturation…",
+  errorTitle: "Nous n’avons pas pu charger votre facturation",
+  errorDetail: "Vos informations sont en sécurité. Veuillez réessayer dans un instant.",
+  retry: "Réessayer",
+  progressTitle: "Progression des paiements",
+  progressLabel: "Part du montant de votre programme déjà payée",
+  percentPaid: (pct: number) => `${pct} % payé`,
+  netAmount: "Montant après remise",
+  discountApplied: (amount: string) => `Remise de ${amount} incluse`,
+  noDiscount: "Aucune remise appliquée",
+  paymentsCount: (n: number) => (n === 1 ? "1 paiement enregistré" : `${n} paiements enregistrés`),
+  noPaymentsYet: "Aucun paiement enregistré pour l’instant",
+  creditNote: (amount: string) => `Crédit de ${amount} sur votre compte`,
+  allPaid: "Tous les paiements ont été reçus",
+  noSchedule: "Aucun échéancier pour l’instant",
+  planStatusSettled: "Entièrement payé",
+  planStatusOnTrack: "Conforme à l’échéancier",
+  planStatusOverdue: "Paiement en retard",
+  planStatusNoSchedule: "Aucune date de paiement fixée pour l’instant",
+  breakdownTitle: "Où vous en êtes",
+  scheduleTitle: "Échéancier de paiement",
+  scheduleNote: "L’échéancier indique quand le montant restant est attendu. Il ne s’ajoute pas à ce que vous devez.",
+  historyTitle: "Historique des paiements",
+  historyNote: "Paiements confirmés par notre équipe.",
+  recentPayments: "Paiements récents",
+  nextUp: "À venir",
+  date: "Date",
+  installment: "Échéance",
+  paidSoFar: "Payé",
+  status: "Statut",
+  total: "Total",
+  awaitingTitle: (n: number) => (n === 1 ? "1 justificatif en attente de confirmation" : `${n} justificatifs en attente de confirmation`),
+  awaitingDetail: "Nous avons bien reçu votre envoi. Il comptera comme paiement dès que notre équipe l’aura confirmé.",
+  uploadProof: "Déposer un justificatif de paiement dans Documents",
+  contactNote: "Une question sur votre solde ? Contactez l’assistance Lumière.",
+  installmentN: (n: number) => `Échéance ${n}`,
+};
+
+/** Billing strings for the active language. */
+export function billingText(language: string): typeof BILLING_TEXT_FR {
+  return language === "fr" ? BILLING_TEXT_FR : BILLING_TEXT;
+}
+
+
 const STATUS_KEY: Record<InstallmentStatus, TranslationKey> = {
   paid: "billing.status.paid",
   partially_paid: "billing.status.partiallyPaid",
@@ -77,7 +123,8 @@ const STATUS_STYLE: Record<InstallmentStatus, string> = {
 };
 
 export function StatusBadge({ status }: { status: InstallmentStatus }) {
-  const { t } = useT();
+  const { t, language } = useT();
+  const BT = billingText(language);
   return (
     <span
       className={cn("inline-flex items-center whitespace-nowrap rounded-full border px-2.5 py-0.5 text-xs font-semibold", STATUS_STYLE[status])}
@@ -101,18 +148,19 @@ function SummaryCard({ icon: Icon, label, value, sub, testId, emphasis }: { icon
   );
 }
 
-function planStatus(v: StudentBillingConfigured): { label: string; tone: "ok" | "warn" | "neutral" } {
-  if (v.remainingCents === 0) return { label: BILLING_TEXT.planStatusSettled, tone: "ok" };
-  if (v.installments.some((i) => i.status === "overdue")) return { label: BILLING_TEXT.planStatusOverdue, tone: "warn" };
-  if (v.installments.length === 0) return { label: BILLING_TEXT.planStatusNoSchedule, tone: "neutral" };
-  return { label: BILLING_TEXT.planStatusOnTrack, tone: "ok" };
+function planStatus(v: StudentBillingConfigured, BT: typeof BILLING_TEXT_FR): { label: string; tone: "ok" | "warn" | "neutral" } {
+  if (v.remainingCents === 0) return { label: BT.planStatusSettled, tone: "ok" };
+  if (v.installments.some((i) => i.status === "overdue")) return { label: BT.planStatusOverdue, tone: "warn" };
+  if (v.installments.length === 0) return { label: BT.planStatusNoSchedule, tone: "neutral" };
+  return { label: BT.planStatusOnTrack, tone: "ok" };
 }
 
 function Summary({ v }: { v: StudentBillingConfigured }) {
   const { t, language } = useT();
+  const BT = billingText(language);
   const money = (c: number) => formatMoney(c, v.currency, language);
   const next = v.nextDue;
-  const plan = planStatus(v);
+  const plan = planStatus(v, BT);
   return (
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4" data-testid="billing-summary">
       <SummaryCard
@@ -120,14 +168,14 @@ function Summary({ v }: { v: StudentBillingConfigured }) {
         icon={Landmark}
         label={t("billing.summary.agreedAmount")}
         value={money(v.agreedCents)}
-        sub={v.discountCents > 0 ? `${t("billing.summary.discount")}: −${money(v.discountCents)}` : BILLING_TEXT.noDiscount}
+        sub={v.discountCents > 0 ? `${t("billing.summary.discount")}: −${money(v.discountCents)}` : BT.noDiscount}
       />
       <SummaryCard
         testId="card-paid"
         icon={PiggyBank}
         label={t("billing.summary.paid")}
         value={money(v.paidCents)}
-        sub={v.receipts.length === 0 ? BILLING_TEXT.noPaymentsYet : BILLING_TEXT.paymentsCount(v.receipts.length)}
+        sub={v.receipts.length === 0 ? BT.noPaymentsYet : BT.paymentsCount(v.receipts.length)}
       />
       <SummaryCard
         testId="card-remaining"
@@ -135,7 +183,7 @@ function Summary({ v }: { v: StudentBillingConfigured }) {
         label={t("billing.summary.remaining")}
         value={money(v.remainingCents)}
         emphasis={v.remainingCents > 0}
-        sub={v.overpaid ? BILLING_TEXT.creditNote(money(v.creditCents)) : v.remainingCents === 0 ? BILLING_TEXT.allPaid : BILLING_TEXT.netAmount + ": " + money(v.netObligationCents)}
+        sub={v.overpaid ? BT.creditNote(money(v.creditCents)) : v.remainingCents === 0 ? BT.allPaid : BT.netAmount + ": " + money(v.netObligationCents)}
       />
       <SummaryCard
         testId="card-next-payment"
@@ -149,7 +197,7 @@ function Summary({ v }: { v: StudentBillingConfigured }) {
               <StatusBadge status={next.status} />
             </span>
           ) : v.remainingCents > 0 && v.installments.length === 0 ? (
-            BILLING_TEXT.noSchedule
+            BT.noSchedule
           ) : undefined
         }
       />
@@ -160,6 +208,7 @@ function Summary({ v }: { v: StudentBillingConfigured }) {
 /** The navy progress panel: fixed dark palette so it reads the same under every theme. */
 function ProgressPanel({ v }: { v: StudentBillingConfigured }) {
   const { t, language } = useT();
+  const BT = billingText(language);
   const money = (c: number) => formatMoney(c, v.currency, language);
   const pct = paidPercent(v.paidCents, v.netObligationCents);
   return (
@@ -171,17 +220,17 @@ function ProgressPanel({ v }: { v: StudentBillingConfigured }) {
     >
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 id="billing-progress-title" className="text-sm font-semibold uppercase tracking-wide text-[#c8ae76]">{BILLING_TEXT.progressTitle}</h2>
+          <h2 id="billing-progress-title" className="text-sm font-semibold uppercase tracking-wide text-[#c8ae76]">{BT.progressTitle}</h2>
           <p className="mt-2 text-3xl font-bold tabular-nums sm:text-4xl">
             {money(v.paidCents)} <span className="text-base font-medium text-[#d2ccc0]">/ {money(v.netObligationCents)}</span>
           </p>
         </div>
-        <p className="text-2xl font-bold tabular-nums text-[#ddca9e]" data-testid="text-percent-paid">{BILLING_TEXT.percentPaid(pct)}</p>
+        <p className="text-2xl font-bold tabular-nums text-[#ddca9e]" data-testid="text-percent-paid">{BT.percentPaid(pct)}</p>
       </div>
       <div
         className="mt-4 h-3 w-full overflow-hidden rounded-full bg-white/15"
         role="progressbar"
-        aria-label={BILLING_TEXT.progressLabel}
+        aria-label={BT.progressLabel}
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={pct}
@@ -206,16 +255,17 @@ function ProgressPanel({ v }: { v: StudentBillingConfigured }) {
 }
 
 function Awaiting({ n }: { n: number }) {
+  const BT = billingText(useT().language);
   if (n === 0) return null;
   return (
     <div className="flex items-start gap-3 rounded-xl border border-amber-600/35 bg-amber-500/10 p-4 text-sm text-foreground" role="status" data-testid="billing-awaiting">
       <Hourglass className="mt-0.5 h-4 w-4 shrink-0 text-amber-700 dark:text-amber-300" aria-hidden />
       <div className="min-w-0">
-        <p className="font-semibold">{BILLING_TEXT.awaitingTitle(n)}</p>
-        <p className="mt-0.5 text-muted-foreground">{BILLING_TEXT.awaitingDetail}</p>
+        <p className="font-semibold">{BT.awaitingTitle(n)}</p>
+        <p className="mt-0.5 text-muted-foreground">{BT.awaitingDetail}</p>
         <Link href="/documents" className="mt-2 inline-flex items-center gap-1.5 font-medium text-primary underline-offset-4 hover:underline" data-testid="link-upload-proof">
           <FileText className="h-4 w-4" aria-hidden />
-          {BILLING_TEXT.uploadProof}
+          {BT.uploadProof}
         </Link>
       </div>
     </div>
@@ -236,27 +286,31 @@ function PanelCard({ title, note, children, testId }: { title: string; note?: st
 
 function ScheduleTable({ rows, all, currency, limit }: { rows: readonly StudentInstallment[]; all: readonly StudentInstallment[]; currency: string; limit?: number }) {
   const { t, language } = useT();
+  const BT = billingText(language);
   const shown = limit ? rows.slice(0, limit) : rows;
+  // The compact (overview, half-width) table always uses the stacked three-column layout so long labels never clip.
+  const wideCol = limit ? "hidden" : "hidden sm:table-cell";
+  const stacked = limit ? "block" : "block sm:hidden";
   if (rows.length === 0) return <p className="px-4 py-8 text-center text-sm text-muted-foreground sm:px-5">{t("billing.noUpcoming")}</p>;
   return (
-    <div className="overflow-x-auto" tabIndex={0} role="region" aria-label={BILLING_TEXT.scheduleTitle}>
+    <div className="overflow-x-auto" tabIndex={0} role="region" aria-label={BT.scheduleTitle}>
       <table className="w-full text-sm" data-testid="table-installments">
         <thead>
           <tr className="border-b text-left text-xs uppercase tracking-wide text-muted-foreground">
-            <th scope="col" className="px-4 py-2.5 font-semibold sm:px-5">{BILLING_TEXT.date}</th>
-            <th scope="col" className="hidden px-3 py-2.5 font-semibold sm:table-cell">{BILLING_TEXT.installment}</th>
+            <th scope="col" className="px-4 py-2.5 font-semibold sm:px-5">{BT.date}</th>
+            <th scope="col" className={cn(wideCol, "px-3 py-2.5 font-semibold")}>{BT.installment}</th>
             <th scope="col" className="px-3 py-2.5 text-right font-semibold">{t("billing.amount")}</th>
-            <th scope="col" className="hidden px-3 py-2.5 text-right font-semibold sm:table-cell">{BILLING_TEXT.paidSoFar}</th>
-            <th scope="col" className="px-4 py-2.5 text-right font-semibold sm:px-5">{BILLING_TEXT.status}</th>
+            <th scope="col" className={cn(wideCol, "px-3 py-2.5 text-right font-semibold")}>{BT.paidSoFar}</th>
+            <th scope="col" className="px-4 py-2.5 text-right font-semibold sm:px-5">{BT.status}</th>
           </tr>
         </thead>
         <tbody>
           {shown.map((i) => (
             <tr key={i.id} className="border-b last:border-0" data-testid={`row-installment-${i.id}`}>
-              <td className="px-4 py-3 font-medium sm:px-5"><span className="whitespace-nowrap">{formatBillingDate(i.dueDate, language)}</span><span className="block text-xs font-normal text-muted-foreground sm:hidden">{i.label ?? BILLING_TEXT.installmentN(all.findIndex((x) => x.id === i.id) + 1)}{i.allocatedCents > 0 && i.status !== "paid" ? ` · ${BILLING_TEXT.paidSoFar} ${formatMoney(i.allocatedCents, currency, language)}` : ""}</span></td>
-              <td className="hidden px-3 py-3 text-muted-foreground sm:table-cell">{i.label ?? BILLING_TEXT.installmentN(all.findIndex((x) => x.id === i.id) + 1)}</td>
+              <td className="px-4 py-3 font-medium sm:px-5"><span className="whitespace-nowrap">{formatBillingDate(i.dueDate, language)}</span><span className={cn(stacked, "text-xs font-normal text-muted-foreground")}>{i.label ?? BT.installmentN(all.findIndex((x) => x.id === i.id) + 1)}{i.allocatedCents > 0 && i.status !== "paid" ? ` · ${BT.paidSoFar} ${formatMoney(i.allocatedCents, currency, language)}` : ""}</span></td>
+              <td className={cn(wideCol, "px-3 py-3 text-muted-foreground")}>{i.label ?? BT.installmentN(all.findIndex((x) => x.id === i.id) + 1)}</td>
               <td className="px-3 py-3 text-right tabular-nums">{formatMoney(i.amountCents, currency, language)}</td>
-              <td className="hidden px-3 py-3 text-right tabular-nums text-muted-foreground sm:table-cell">{formatMoney(i.allocatedCents, currency, language)}</td>
+              <td className={cn(wideCol, "px-3 py-3 text-right tabular-nums text-muted-foreground")}>{formatMoney(i.allocatedCents, currency, language)}</td>
               <td className="px-4 py-3 text-right sm:px-5"><StatusBadge status={i.status} /></td>
             </tr>
           ))}
@@ -268,14 +322,15 @@ function ScheduleTable({ rows, all, currency, limit }: { rows: readonly StudentI
 
 function HistoryTable({ v, limit }: { v: StudentBillingConfigured; limit?: number }) {
   const { t, language } = useT();
+  const BT = billingText(language);
   const rows = limit ? v.receipts.slice(0, limit) : v.receipts;
   if (v.receipts.length === 0) return <p className="px-4 py-8 text-center text-sm text-muted-foreground sm:px-5">{t("billing.noPayments")}</p>;
   return (
-    <div className="overflow-x-auto" tabIndex={0} role="region" aria-label={BILLING_TEXT.historyTitle}>
+    <div className="overflow-x-auto" tabIndex={0} role="region" aria-label={BT.historyTitle}>
       <table className="w-full text-sm" data-testid="table-receipts">
         <thead>
           <tr className="border-b text-left text-xs uppercase tracking-wide text-muted-foreground">
-            <th scope="col" className="px-4 py-2.5 font-semibold sm:px-5">{BILLING_TEXT.date}</th>
+            <th scope="col" className="px-4 py-2.5 font-semibold sm:px-5">{BT.date}</th>
             <th scope="col" className="hidden px-3 py-2.5 font-semibold sm:table-cell">{t("billing.method")}</th>
             <th scope="col" className="px-4 py-2.5 text-right font-semibold sm:px-5">{t("billing.amount")}</th>
           </tr>
@@ -292,7 +347,7 @@ function HistoryTable({ v, limit }: { v: StudentBillingConfigured; limit?: numbe
         {limit === undefined ? (
           <tfoot>
             <tr className="border-t-2">
-              <th scope="row" colSpan={1} className="px-4 py-3 text-left font-semibold sm:px-5">{BILLING_TEXT.total}</th>
+              <th scope="row" colSpan={1} className="px-4 py-3 text-left font-semibold sm:px-5">{BT.total}</th>
               <td className="px-4 py-3 text-right font-bold tabular-nums sm:px-5" data-testid="text-receipts-total" colSpan={2}>{formatMoney(v.paidCents, v.currency, language)}</td>
             </tr>
           </tfoot>
@@ -303,7 +358,8 @@ function HistoryTable({ v, limit }: { v: StudentBillingConfigured; limit?: numbe
 }
 
 function Configured({ v }: { v: StudentBillingConfigured }) {
-  const { t } = useT();
+  const { t, language } = useT();
+  const BT = billingText(language);
   const upcoming = v.installments.filter((i) => i.status !== "paid");
   return (
     <div className="space-y-5">
@@ -319,34 +375,35 @@ function Configured({ v }: { v: StudentBillingConfigured }) {
         <TabsContent value="overview" className="space-y-5">
           <ProgressPanel v={v} />
           <div className="grid gap-5 lg:grid-cols-2">
-            <PanelCard title={BILLING_TEXT.nextUp} testId="panel-next-up">
+            <PanelCard title={BT.nextUp} testId="panel-next-up">
               <ScheduleTable rows={upcoming} all={v.installments} currency={v.currency} limit={3} />
             </PanelCard>
-            <PanelCard title={BILLING_TEXT.recentPayments} testId="panel-recent">
+            <PanelCard title={BT.recentPayments} testId="panel-recent">
               <HistoryTable v={v} limit={3} />
             </PanelCard>
           </div>
         </TabsContent>
 
         <TabsContent value="history">
-          <PanelCard title={BILLING_TEXT.historyTitle} note={BILLING_TEXT.historyNote} testId="panel-history">
+          <PanelCard title={BT.historyTitle} note={BT.historyNote} testId="panel-history">
             <HistoryTable v={v} />
           </PanelCard>
         </TabsContent>
 
         <TabsContent value="upcoming">
-          <PanelCard title={BILLING_TEXT.scheduleTitle} note={BILLING_TEXT.scheduleNote} testId="panel-schedule">
+          <PanelCard title={BT.scheduleTitle} note={BT.scheduleNote} testId="panel-schedule">
             <ScheduleTable rows={v.installments} all={v.installments} currency={v.currency} />
           </PanelCard>
         </TabsContent>
       </Tabs>
-      <p className="text-sm text-muted-foreground">{BILLING_TEXT.contactNote}</p>
+      <p className="text-sm text-muted-foreground">{BT.contactNote}</p>
     </div>
   );
 }
 
 function NotConfigured({ awaiting }: { awaiting: number }) {
-  const { t } = useT();
+  const { t, language } = useT();
+  const BT = billingText(language);
   return (
     <div className="space-y-4">
       <section className="rounded-xl border bg-card p-6 text-card-foreground shadow-sm sm:p-8" data-testid="billing-not-configured">
@@ -355,7 +412,7 @@ function NotConfigured({ awaiting }: { awaiting: number }) {
           <div>
             <h2 className="text-lg font-semibold">{t("billing.notSetUp")}</h2>
             <p className="mt-1 max-w-prose text-sm text-muted-foreground">{t("billing.notSetUpDetail")}</p>
-            <p className="mt-3 text-sm text-muted-foreground">{BILLING_TEXT.contactNote}</p>
+            <p className="mt-3 text-sm text-muted-foreground">{BT.contactNote}</p>
           </div>
         </div>
       </section>
@@ -365,8 +422,9 @@ function NotConfigured({ awaiting }: { awaiting: number }) {
 }
 
 function Loading() {
+  const BT = billingText(useT().language);
   return (
-    <div className="space-y-4" role="status" aria-live="polite" aria-label={BILLING_TEXT.loading} data-testid="billing-loading">
+    <div className="space-y-4" role="status" aria-live="polite" aria-label={BT.loading} data-testid="billing-loading">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">{[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-28 rounded-xl" />)}</div>
       <Skeleton className="h-44 rounded-2xl" />
       <Skeleton className="h-56 rounded-xl" />
@@ -375,16 +433,17 @@ function Loading() {
 }
 
 function LoadError({ onRetry }: { onRetry: () => void }) {
+  const BT = billingText(useT().language);
   return (
     <section className="rounded-xl border border-destructive/40 bg-card p-6 shadow-sm" role="alert" data-testid="billing-error">
       <div className="flex items-start gap-3">
         <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" aria-hidden />
         <div>
-          <h2 className="font-semibold">{BILLING_TEXT.errorTitle}</h2>
-          <p className="mt-1 text-sm text-muted-foreground">{BILLING_TEXT.errorDetail}</p>
+          <h2 className="font-semibold">{BT.errorTitle}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{BT.errorDetail}</p>
           <Button variant="outline" size="sm" className="mt-3" onClick={onRetry} data-testid="button-retry">
             <RefreshCw className="mr-2 h-4 w-4" aria-hidden />
-            {BILLING_TEXT.retry}
+            {BT.retry}
           </Button>
         </div>
       </div>
@@ -393,7 +452,8 @@ function LoadError({ onRetry }: { onRetry: () => void }) {
 }
 
 export default function Billing() {
-  const { t } = useT();
+  const { t, language } = useT();
+  const BT = billingText(language);
   const { data, isLoading, error, refetch } = useStudentBilling();
 
   return (

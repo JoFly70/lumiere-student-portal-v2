@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-27T20:07:01.201Z",
+  "generatedAt": "2026-10-27T20:11:25.509Z",
   "mode": "LOCAL UI SIMULATION: vite dev server, Playwright route interception, stubbed auth and APIs, SYNTHETIC fixtures. Not hosted acceptance.",
   "blockedExternalHosts": [
     "fonts.googleapis.com",
@@ -111,6 +111,38 @@
       "note": "no non-GET requests"
     },
     "pageerrors-1440-monaco": {
+      "pass": true,
+      "note": "none"
+    },
+    "fr-persisted-1440": {
+      "pass": true,
+      "note": "html lang=fr, stored=fr"
+    },
+    "fr-nav-1440": {
+      "pass": true,
+      "note": "French navigation labels after reload"
+    },
+    "fr-no-banned-1440": {
+      "pass": true,
+      "note": "no payment gateway text in French"
+    },
+    "pageerrors-fr-1440": {
+      "pass": true,
+      "note": "none"
+    },
+    "fr-persisted-390": {
+      "pass": true,
+      "note": "html lang=fr, stored=fr"
+    },
+    "fr-nav-390": {
+      "pass": true,
+      "note": "French navigation labels after reload"
+    },
+    "fr-no-banned-390": {
+      "pass": true,
+      "note": "no payment gateway text in French"
+    },
+    "pageerrors-fr-390": {
       "pass": true,
       "note": "none"
     },

@@ -141,6 +141,25 @@ async function main() {
       await ctx.close();
     }
 
+    // French: switch with the shell toggle, reload, and confirm the preference persisted (S18 integration check).
+    for (const width of [1440, 390] as const) {
+      const { page, ctx, errors } = await open(browser, { theme: "lumiere", width, handler: handler(ok(BILLING_CONFIGURED)) });
+      await page.goto(BASE + "/billing");
+      await settle(page, '[data-testid="billing-summary"]');
+      await page.click('[data-testid="button-language-fr"]');
+      await page.reload();
+      await settle(page, '[data-testid="billing-summary"]');
+      const lang = await page.evaluate(() => document.documentElement.lang);
+      const stored = await page.evaluate(() => localStorage.getItem("lumiere_language"));
+      const text = await page.locator("body").innerText();
+      rec(`fr-persisted-${width}`, lang === "fr" && stored === "fr", `html lang=${lang}, stored=${stored}`);
+      rec(`fr-nav-${width}`, /Facturation/.test(text) && /Assistance/.test(text), "French navigation labels after reload");
+      rec(`fr-no-banned-${width}`, !BANNED.test(text), "no payment gateway text in French");
+      await shot(page, `billing-overview-${width}-lumiere-fr.png`);
+      rec(`pageerrors-fr-${width}`, errors.length === 0, errors.join("; ") || "none");
+      await ctx.close();
+    }
+
     {
       const { page, ctx, errors } = await open(browser, { theme: "lumiere", width: 1440, handler: handler(ok(BILLING_NOT_CONFIGURED)) });
       await page.goto(BASE + "/billing");
