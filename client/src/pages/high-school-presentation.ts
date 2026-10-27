@@ -349,6 +349,8 @@ export interface PaceBar {
   /** Visible line under the bar; the bar itself carries the official total. null when there is nothing to add. */
   readonly summary: string | null;
   readonly ariaLabel: string;
+  /** True when there is nothing to draw yet: no official credit and no plan milestone. The card then says so in words. */
+  readonly empty: boolean;
 }
 
 /** ONE measure: official credits against what the plan's milestones expected by now. No calendar bar. */
@@ -359,7 +361,12 @@ export function paceBar(view: Pick<StudentHighSchoolView, "credits" | "pace">): 
   const expectedPercent = expected === null ? null : barPercent(Math.min(expected, required), required);
   const summary = expected === null ? null : `The plan expected ${creditsLabel(Math.min(expected, required))} by now`;
   const ariaLabel = `${creditsOfLabel(earned, required)} official${expected === null ? "" : `; the plan expected ${formatHalfUnits(expected)} by now`}`;
-  return { officialPercent, expectedPercent, summary, ariaLabel };
+  return { officialPercent, expectedPercent, summary, ariaLabel, empty: earned === 0 && expected === null };
+}
+
+/** Title of the requirements panel: past tense once the diploma is conferred. */
+export function requirementsTitle(conferred: boolean): string {
+  return conferred ? "Your graduation requirements" : "What you need to graduate";
 }
 
 /** The target date line. A date is a target, never a guarantee. */
@@ -568,7 +575,7 @@ export function claimStatusView(s: TransferClaimStatus, recorded = false): Statu
     case "partially_accepted":
       return recorded
         ? { key: "official", label: "Transfer credit recorded" }
-        : { key: "applied", label: "Accepted by the school — credit not recorded yet" };
+        : { key: "progress", label: "Accepted by the school — credit not recorded yet" };
     default: return { key: "attention", label: "Not accepted by the school" };
   }
 }

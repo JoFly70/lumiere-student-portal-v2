@@ -26,10 +26,15 @@ import Admin from "@/pages/admin";
 import AdminStudentWorkspace from "@/pages/admin-student-workspace";
 import AdminStudentRoadmap from "@/pages/admin-student-roadmap";
 import HighSchool from "@/pages/high-school";
+import { UniversityOnly } from "@/components/university-only";
+import { studentLandingPath, useStudentPrograms } from "@/lib/student-programs";
 import AdminStudentHighSchool from "@/pages/admin-student-high-school";
 
 function RoleLanding() {
   const { user, isAuthenticated, isLoading } = useAuth();
+  const isStudent = isAuthenticated && user?.role === "student";
+  // Students land on the page for their program(s); a failed lookup falls back to the university dashboard.
+  const programs = useStudentPrograms(isStudent);
 
   if (isLoading) {
     return null;
@@ -47,7 +52,11 @@ function RoleLanding() {
     return <Redirect to="/support" />;
   }
 
-  return <Redirect to="/flight-deck" />;
+  if (programs.isLoading) {
+    return null;
+  }
+
+  return <Redirect to={studentLandingPath(programs)} />;
 }
 
 function Router() {
@@ -91,7 +100,7 @@ function Router() {
       <Route path="/flight-deck">
         {() => (
           <ProtectedRoute requireRole="student">
-            <FlightDeck />
+            <UniversityOnly><FlightDeck /></UniversityOnly>
           </ProtectedRoute>
         )}
       </Route>
@@ -107,7 +116,7 @@ function Router() {
       <Route path="/roadmap">
         {() => (
           <ProtectedRoute requireRole="student">
-            <Roadmap />
+            <UniversityOnly><Roadmap /></UniversityOnly>
           </ProtectedRoute>
         )}
       </Route>

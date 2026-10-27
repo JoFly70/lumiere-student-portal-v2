@@ -1,4 +1,4 @@
-import { BookOpen, FileText, CreditCard, GraduationCap, HelpCircle, LogOut, User, Gauge, ShieldCheck } from "lucide-react";
+import { BookOpen, FileText, CreditCard, GraduationCap, HelpCircle, LogOut, User, Gauge, ShieldCheck, School } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Link, useLocation, useSearch } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/sidebar";
 import { ProfileAvatarUpload } from "@/components/profile-avatar-upload";
 import { useAuth, useAuthToken } from "@/lib/auth";
+import { filterStudentNav, useStudentPrograms } from "@/lib/student-programs";
 import { StaffAvatar } from "@/components/staff/staff-ui";
 import { staffRoleLabel } from "@/components/staff/staff-shell";
 import { ADMIN_STUDENTS_PATH, adminTabFromSearch } from "@/pages/admin-student-workspace-presentation";
@@ -54,6 +55,7 @@ async function fetchMyProfile(accessToken: string | null): Promise<Student | nul
 }
 
 const studentMenuItems = [
+  { title: "High School", url: "/high-school", icon: School },
   { title: "Flight Deck", url: "/flight-deck", icon: Gauge },
   { title: "Student Profile", url: "/profile", icon: User },
   { title: "Your Roadmap", url: "/roadmap", icon: BookOpen },
@@ -63,8 +65,9 @@ const studentMenuItems = [
 ];
 
 // Student navigation is grouped: the journey first, then the student's file.
-const studentJourneyItems = studentMenuItems.filter((i) => ["/flight-deck", "/roadmap"].includes(i.url));
-const studentFileItems = studentMenuItems.filter((i) => !["/flight-deck", "/roadmap"].includes(i.url));
+const JOURNEY_URLS = ["/high-school", "/flight-deck", "/roadmap"];
+const studentJourneyItems = studentMenuItems.filter((i) => JOURNEY_URLS.includes(i.url));
+const studentFileItems = studentMenuItems.filter((i) => !JOURNEY_URLS.includes(i.url));
 
 // Staff navigation. "Students" opens the existing admin Students list (admin only: the
 // list route is admin-gated). Staff and coaches work from the support desk.
@@ -91,6 +94,9 @@ export function AppSidebar() {
     retry: false,
     enabled: isStudent,
   });
+
+  // Program awareness: High School only with a high school program; Flight Deck and Roadmap are university-only.
+  const programs = useStudentPrograms(isStudent);
 
   const menuItems =
     user?.role === "admin"
@@ -153,7 +159,7 @@ export function AppSidebar() {
           <nav aria-label="Main">
             <SidebarGroup>
               <SidebarGroupLabel className="text-[11px] font-semibold uppercase tracking-[0.16em]">Your journey</SidebarGroupLabel>
-              <SidebarGroupContent>{renderItems(studentJourneyItems)}</SidebarGroupContent>
+              <SidebarGroupContent>{renderItems(filterStudentNav(studentJourneyItems, programs))}</SidebarGroupContent>
             </SidebarGroup>
             <SidebarGroup>
               <SidebarGroupLabel className="text-[11px] font-semibold uppercase tracking-[0.16em]">Your file</SidebarGroupLabel>

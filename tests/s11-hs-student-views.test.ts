@@ -474,3 +474,27 @@ describe("S11 states", () => {
     expect(interpretProgressError(new ApiError("boom", 500, "X"))).toMatchObject({ kind: "error", refetch: false, message: "boom" });
   });
 });
+
+describe("S13 student understanding fixes", () => {
+  it("a new student sees a worded empty pace state and empty waiting state, not an empty bar", () => {
+    const j = text(panel(page(HS_NEW_STUDENT), "journey"));
+    const m = panel(page(HS_NEW_STUDENT), "journey");
+    expect(m).toContain('data-testid="pace-empty"');
+    expect(m).not.toContain('data-testid="target-progress"');
+    expect(j).toContain("No official credit yet.");
+    expect(j).toContain("Nothing is waiting for a grade. When you mark a task as submitted");
+    expect(j).not.toContain("Tasks you marked submitted — your school has not graded them yet.");
+  });
+  it("after graduation the requirements panel is not titled as a to-do", () => {
+    const g = text(panel(page(HS_GRADUATED), "graduation"));
+    expect(g).toContain("Your graduation requirements");
+    expect(g).not.toContain("What you need to graduate");
+    expect(text(panel(page(HS_MID_WAY), "graduation"))).toContain("What you need to graduate");
+  });
+  it("the journey and subjects tabs link to Documents (evidence) and Support (help)", () => {
+    const j = panel(page(HS_MID_WAY), "journey");
+    expect(j).toMatch(/data-testid="link-upload-evidence"[^>]*href="\/documents"|href="\/documents"[^>]*data-testid="link-upload-evidence"/);
+    expect(j).toMatch(/data-testid="link-ask-help"[^>]*href="\/support"/);
+    expect(panel(page(HS_MID_WAY), "subjects")).toMatch(/data-testid="link-upload-evidence"[^>]*href="\/documents"|href="\/documents"[^>]*data-testid="link-upload-evidence"/);
+  });
+});

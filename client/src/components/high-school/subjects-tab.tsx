@@ -405,7 +405,10 @@ export function SubjectsTab({
       </ul>
       <p className="flex items-center gap-2 text-sm text-student-muted">
         <MessageCircleQuestion className="h-4 w-4 text-student-gold-ink" aria-hidden="true" />
-        <span>Not sure about a course? <Link href="/support" className="inline-flex min-h-[44px] items-center font-medium text-student-gold-ink underline underline-offset-4">Open the Support Center</Link>.</span>
+        <span>
+          Have proof of finished work? <Link href="/documents" className="inline-flex min-h-[44px] items-center font-medium text-student-gold-ink underline underline-offset-4" data-testid="link-upload-evidence">Upload it in Documents</Link> (Lumière reviews it).
+          {" "}Not sure about a course? <Link href="/support" className="inline-flex min-h-[44px] items-center font-medium text-student-gold-ink underline underline-offset-4">Open the Support Center</Link>.
+        </span>
       </p>
     </div>
   );

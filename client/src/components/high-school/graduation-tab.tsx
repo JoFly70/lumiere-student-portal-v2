@@ -12,6 +12,7 @@ import {
   diplomaDeliveryLabel,
   financialClearanceView,
   outstandingWorkLabel,
+  requirementsTitle,
   reviewStatusView,
   transcriptRequestState,
 } from "@/pages/high-school-presentation";
@@ -66,7 +67,7 @@ export function GraduationTab({ view }: TabProps) {
   return (
     <div className="space-y-4 sm:space-y-6" data-testid="tab-graduation">
       <div className="grid items-start gap-4 sm:gap-6 lg:grid-cols-2">
-        <Panel title="What you need to graduate" headingId="hs-grad-reqs" testId="graduation-requirements">
+        <Panel title={requirementsTitle(conferred)} headingId="hs-grad-reqs" testId="graduation-requirements">
           <ul className="divide-y divide-student-line">
             {requirements.map((r) => (
               <Row

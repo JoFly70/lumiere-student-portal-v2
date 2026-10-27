@@ -4,7 +4,7 @@
  */
 import React from "react";
 import { Link } from "wouter";
-import { ArrowRight, BookOpenCheck, FileText, Hourglass, PartyPopper, Sparkles } from "lucide-react";
+import { ArrowRight, BookOpenCheck, FileText, Hourglass, LifeBuoy, PartyPopper, Sparkles, Upload } from "lucide-react";
 import type { StudentHighSchoolView } from "@shared/high-school-contract";
 import { formatShortDate } from "@/pages/student-roadmap-presentation";
 import {
@@ -165,11 +165,19 @@ function PaceCard({ view }: { view: StudentHighSchoolView }) {
         <StatusPill status={pace.key} label={pace.label} data-testid="pace-status" />
       </div>
       <p className="text-sm leading-relaxed text-student-muted">{pace.detail}</p>
-      <div data-testid="target-progress">
-        <PaceMeter officialPercent={bar.officialPercent} expectedPercent={bar.expectedPercent} ariaLabel={bar.ariaLabel} />
-        {bar.summary && <p className="text-sm text-student-ink" data-testid="pace-summary">{bar.summary}.</p>}
-        {milestone && <p className="text-sm text-student-muted">{milestone}.</p>}
-      </div>
+      {bar.empty ? (
+        <div data-testid="pace-empty">
+          <p className="text-sm text-student-ink">No official credit yet.</p>
+          <p className="text-sm text-student-muted">Your pace appears here once your school confirms your first credit.</p>
+          {milestone && <p className="text-sm text-student-muted">{milestone}.</p>}
+        </div>
+      ) : (
+        <div data-testid="target-progress">
+          <PaceMeter officialPercent={bar.officialPercent} expectedPercent={bar.expectedPercent} ariaLabel={bar.ariaLabel} />
+          {bar.summary && <p className="text-sm text-student-ink" data-testid="pace-summary">{bar.summary}.</p>}
+          {milestone && <p className="text-sm text-student-muted">{milestone}.</p>}
+        </div>
+      )}
       <p className="border-t border-student-line pt-3 text-sm text-student-muted" data-testid="target-date">{targetDateLine(view, formatShortDate)}</p>
     </Panel>
   );
@@ -181,13 +189,16 @@ function WaitingCard({ view, today, onNavigate }: TabProps) {
   const titles = taskListTitles(tasks);
   return (
     <Panel title="Waiting for your school" headingId="hs-awaiting" testId="awaiting-grade">
-      <p className="flex items-start gap-2 text-sm text-student-muted">
-        <Hourglass className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-        Tasks you marked submitted — your school has not graded them yet.
-      </p>
       {tasks.length === 0 ? (
-        <p className="text-sm text-student-muted" data-testid="awaiting-list-empty">Nothing is waiting for a grade.</p>
-      ) : (
+        <p className="flex items-start gap-2 text-sm text-student-muted" data-testid="awaiting-list-empty">
+          <Hourglass className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+          Nothing is waiting for a grade. When you mark a task as submitted, it waits here until your school grades it.
+        </p>
+      ) : (<>
+        <p className="flex items-start gap-2 text-sm text-student-muted">
+          <Hourglass className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+          Tasks you marked submitted — your school has not graded them yet.
+        </p>
         <MoreList
           items={tasks}
           max={4}
@@ -209,8 +220,17 @@ function WaitingCard({ view, today, onNavigate }: TabProps) {
             );
           }}
         />
-      )}
+      </>)}
     </Panel>
+  );
+}
+
+function HelpLinks() {
+  return (
+    <div className="flex flex-wrap items-center gap-x-6 gap-y-0 rounded-2xl border border-student-line bg-student-card px-4 py-1 text-sm" data-testid="help-links">
+      <Link href="/documents" className={linkButton} data-testid="link-upload-evidence"><Upload className="h-4 w-4" aria-hidden="true" />Upload supporting evidence in Documents</Link>
+      <Link href="/support" className={linkButton} data-testid="link-ask-help"><LifeBuoy className="h-4 w-4" aria-hidden="true" />Ask Lumière for help</Link>
+    </div>
   );
 }
 
@@ -230,6 +250,7 @@ export function JourneyTab(props: TabProps) {
           <div className="order-3 min-w-0 lg:order-none"><PaceCard view={view} /></div>
         </div>
       </div>
+      <HelpLinks />
       {view.roadmap && (
         <div className="flex min-w-0 items-start gap-3 rounded-2xl border border-student-line bg-student-card p-4 text-sm" data-testid="roadmap-version">
           <FileText className="mt-0.5 h-4 w-4 shrink-0 text-student-gold-ink" aria-hidden="true" />

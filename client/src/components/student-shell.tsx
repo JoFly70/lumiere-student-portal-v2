@@ -4,12 +4,14 @@
  * never cover page content. Colours come from the student tokens (index.css).
  */
 import { Link, useLocation } from "wouter";
-import { BookOpen, FileText, Gauge, HelpCircle, Menu } from "lucide-react";
+import { BookOpen, FileText, Gauge, HelpCircle, Menu, School } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { filterStudentNav, useStudentPrograms } from "@/lib/student-programs";
 
 const BAR_ITEMS = [
+  { title: "High School", url: "/high-school", icon: School },
   { title: "Flight Deck", url: "/flight-deck", icon: Gauge },
   { title: "Roadmap", url: "/roadmap", icon: BookOpen },
   { title: "Documents", url: "/documents", icon: FileText },
@@ -25,7 +27,7 @@ export function StudentHeader() {
           Lumière
         </p>
       </div>
-      <ThemeToggle />
+      <ThemeToggle className="h-11 w-11" />
     </header>
   );
 }
@@ -33,6 +35,9 @@ export function StudentHeader() {
 export function StudentBottomNav() {
   const [location] = useLocation();
   const { toggleSidebar } = useSidebar();
+  const programs = useStudentPrograms();
+  // Six tabs are too tight at 390px: a student with both programs reaches Roadmap through "More".
+  const barItems = filterStudentNav(BAR_ITEMS, programs).filter((i) => !(programs.hasHighSchool && !programs.highSchoolOnly && i.url === "/roadmap"));
   const itemClass =
     "relative flex min-h-[56px] flex-1 flex-col items-center justify-center gap-0.5 px-1 text-[11px] font-medium leading-tight";
   return (
@@ -42,7 +47,7 @@ export function StudentBottomNav() {
       data-testid="student-bottom-nav"
     >
       <ul className="flex">
-        {BAR_ITEMS.map((item) => {
+        {barItems.map((item) => {
           const active = location === item.url;
           return (
             <li key={item.url} className="flex flex-1">

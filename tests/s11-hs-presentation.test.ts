@@ -352,3 +352,11 @@ describe("S11 fixture dates are consistent on every screen (today = 2026-10-26)"
     expect(HS_GRADUATED.graduation.eligibilityConfirmedAt! >= "2026-09-01").toBe(true);
   });
 });
+
+describe("S13 presentation", () => {
+  it("an accepted-but-unrecorded claim never uses the check styles", () => {
+    for (const st of ["accepted", "partially_accepted"] as const) {
+      expect(["applied", "official"]).not.toContain(claimStatusView(st).key);
+    }
+  });
+});

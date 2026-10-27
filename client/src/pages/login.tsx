@@ -31,7 +31,7 @@ export default function Login() {
 
   // Redirect if already authenticated
   if (isAuthenticated) {
-    setLocation(user?.role === 'admin' ? '/admin' : user?.role === 'coach' || user?.role === 'staff' ? '/support' : '/flight-deck');
+    setLocation(user?.role === 'admin' ? '/admin' : user?.role === 'coach' || user?.role === 'staff' ? '/support' : '/');
     return null;
   }
 
