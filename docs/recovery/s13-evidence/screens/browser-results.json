@@ -1,0 +1,611 @@
+{
+  "generatedAt": "2026-10-27T03:02:50.093Z",
+  "mode": "LOCAL UI SIMULATION: vite dev server, Playwright route interception, stubbed auth and APIs, synthetic fixtures. Not hosted acceptance.",
+  "axe": "axe-core 4.x injected from node_modules (@axe-core/playwright is not installed); tags wcag2a/wcag2aa/wcag21aa/best-practice",
+  "checks": {
+    "1.landing-1440-light": {
+      "pass": true,
+      "note": "\"/\" -> /high-school"
+    },
+    "1.nav-1440-light": {
+      "pass": true,
+      "note": "visible non-main links: High School->/high-school, Student Profile->/profile, Documents->/documents, Billing->/billing, Support->/support"
+    },
+    "6.journey-1440-light": {
+      "pass": true,
+      "note": "overflow=false; axe=clean"
+    },
+    "pageerrors-journey-1440-light": {
+      "pass": true,
+      "note": "none"
+    },
+    "1.flightdeck-notice-1440-light": {
+      "pass": true,
+      "note": "notice shown; link returns to /high-school"
+    },
+    "1.landing-1440-dark": {
+      "pass": true,
+      "note": "\"/\" -> /high-school"
+    },
+    "1.nav-1440-dark": {
+      "pass": true,
+      "note": "visible non-main links: High School->/high-school, Student Profile->/profile, Documents->/documents, Billing->/billing, Support->/support"
+    },
+    "6.journey-1440-dark": {
+      "pass": true,
+      "note": "overflow=false; axe=clean"
+    },
+    "pageerrors-journey-1440-dark": {
+      "pass": true,
+      "note": "none"
+    },
+    "1.landing-390-light": {
+      "pass": true,
+      "note": "\"/\" -> /high-school"
+    },
+    "1.nav-390-light": {
+      "pass": true,
+      "note": "visible non-main links: High School->/high-school, Documents->/documents, Support->/support"
+    },
+    "6.journey-390-light": {
+      "pass": true,
+      "note": "overflow=false; axe=clean"
+    },
+    "6.touch-journey-390-light": {
+      "pass": true,
+      "note": "all main controls >= 44px"
+    },
+    "pageerrors-journey-390-light": {
+      "pass": true,
+      "note": "none"
+    },
+    "1.flightdeck-notice-390-light": {
+      "pass": true,
+      "note": "notice shown; link returns to /high-school"
+    },
+    "1.landing-390-dark": {
+      "pass": true,
+      "note": "\"/\" -> /high-school"
+    },
+    "1.nav-390-dark": {
+      "pass": true,
+      "note": "visible non-main links: High School->/high-school, Documents->/documents, Support->/support"
+    },
+    "6.journey-390-dark": {
+      "pass": true,
+      "note": "overflow=false; axe=clean"
+    },
+    "6.touch-journey-390-dark": {
+      "pass": true,
+      "note": "all main controls >= 44px"
+    },
+    "pageerrors-journey-390-dark": {
+      "pass": true,
+      "note": "none"
+    },
+    "2.tabs-1440": {
+      "pass": true,
+      "note": "tab-subjects:true tab-graduation:true tab-journey:true"
+    },
+    "2.link-documents-1440": {
+      "pass": true,
+      "note": "navigated to /documents"
+    },
+    "2.link-support-1440": {
+      "pass": true,
+      "note": "navigated to /support"
+    },
+    "2.report-task-1440": {
+      "pass": true,
+      "note": "POST /api/student/high-school/progress body={\"courseKey\":\"english-3\",\"taskKey\":\"english-3-lessons-2\",\"status\":\"in_progress\",\"reportedScorePercent\":88,\"expectedRevision\":2}"
+    },
+    "2.report-toast-1440": {
+      "pass": true,
+      "note": "toast says it is the student's report, school confirms official results"
+    },
+    "2.no-official-credit-increase-1440": {
+      "pass": true,
+      "note": "journey credit text unchanged after report: true (10.5of 21 creditsearned|10.5 credits|1 course fully sent (1 credit) — waiting for the school.|)"
+    },
+    "2.tabs-390": {
+      "pass": true,
+      "note": "tab-subjects:true tab-graduation:true tab-journey:true"
+    },
+    "2.link-documents-390": {
+      "pass": true,
+      "note": "navigated to /documents"
+    },
+    "2.link-support-390": {
+      "pass": true,
+      "note": "navigated to /support"
+    },
+    "2.report-task-390": {
+      "pass": true,
+      "note": "POST /api/student/high-school/progress body={\"courseKey\":\"english-3\",\"taskKey\":\"english-3-lessons-2\",\"status\":\"in_progress\",\"reportedScorePercent\":88,\"expectedRevision\":2}"
+    },
+    "2.report-toast-390": {
+      "pass": true,
+      "note": "toast says it is the student's report, school confirms official results"
+    },
+    "2.no-official-credit-increase-390": {
+      "pass": true,
+      "note": "journey credit text unchanged after report: true (10.5of 21 creditsearned|10.5 credits|1 course fully sent (1 credit) — waiting for the school.|)"
+    },
+    "6.touch-tab-journey-390": {
+      "pass": true,
+      "note": "all >= 44px"
+    },
+    "6.axe-overflow-tab-journey-390": {
+      "pass": true,
+      "note": "overflow=false; own-axe=clean; radix-toast-viewport-only=aria-allowed-role,aria-hidden-focus,list"
+    },
+    "6.touch-tab-subjects-390": {
+      "pass": true,
+      "note": "all >= 44px"
+    },
+    "6.axe-overflow-tab-subjects-390": {
+      "pass": true,
+      "note": "overflow=false; own-axe=clean; radix-toast-viewport-only=aria-allowed-role,aria-hidden-focus,list"
+    },
+    "6.touch-tab-graduation-390": {
+      "pass": true,
+      "note": "all >= 44px"
+    },
+    "6.axe-overflow-tab-graduation-390": {
+      "pass": true,
+      "note": "overflow=false; own-axe=clean; radix-toast-viewport-only=aria-allowed-role,aria-hidden-focus,list"
+    },
+    "3.new-student-enrolled-empty": {
+      "pass": true,
+      "note": "pace-empty=true, pace bar present=false, meters=0; \"No official credit yet. Your pace appears here once your school confirms your first credit.\""
+    },
+    "6.new-student-390": {
+      "pass": true,
+      "note": "overflow=false; small=none; axe=clean"
+    },
+    "3.no-enrollment-empty-state": {
+      "pass": true,
+      "note": "hs-no-enrollment=true; bars=0; \"HIGH SCHOOL PATHWAY Your high school plan isn't set up yet Lumière is still getting your high school pathway ready with you. Once it is set up, your courses, cr\""
+    },
+    "6.no-enrollment-390": {
+      "pass": true,
+      "note": "overflow=false; small=none; axe=clean"
+    },
+    "6.admin-workspace-1440": {
+      "pass": true,
+      "note": "overflow=false; axe=clean"
+    },
+    "4.link-account-1440": {
+      "pass": true,
+      "note": "dialog \"Link portal account? Link noa.fischer@synthetic.example to this student record. The studen\"; POST body={\"userId\":\"u-cand\"}; card then shows linked email=true"
+    },
+    "4.invite-1440": {
+      "pass": true,
+      "note": "POST /api/admin/invitations {\"email\":\"noa.fischer@synthetic.example\"}; url=http://localhost:5213/login?invite=TOK-ABC123; once-notice=true; invite button hidden after=true"
+    },
+    "4.linked-1440": {
+      "pass": true,
+      "note": "email=noa.fischer@synthetic.example; unlink opens dialog with confirm disabled until reason=true; unlink btn class has outline/ghost=true"
+    },
+    "6.admin-workspace-390": {
+      "pass": true,
+      "note": "overflow=false; axe=clean"
+    },
+    "4.link-account-390": {
+      "pass": true,
+      "note": "dialog \"Link portal account? Link noa.fischer@synthetic.example to this student record. The studen\"; POST body={\"userId\":\"u-cand\"}; card then shows linked email=true"
+    },
+    "4.invite-390": {
+      "pass": true,
+      "note": "POST /api/admin/invitations {\"email\":\"noa.fischer@synthetic.example\"}; url=http://localhost:5213/login?invite=TOK-ABC123; once-notice=true; invite button hidden after=true"
+    },
+    "4.linked-390": {
+      "pass": true,
+      "note": "email=noa.fischer@synthetic.example; unlink opens dialog with confirm disabled until reason=true; unlink btn class has outline/ghost=true"
+    },
+    "4.add-student-1440": {
+      "pass": true,
+      "note": "submit disabled when empty=true, partial=true; enabled when complete=true; POST /api/students has user_id=false, email=lena.park@synthetic.example, status=lead; navigated to /admin/students/s-new"
+    },
+    "6.add-student-dialog-1440": {
+      "pass": true,
+      "note": "overflow=false; axe=clean"
+    },
+    "4.add-student-390": {
+      "pass": true,
+      "note": "submit disabled when empty=true, partial=true; enabled when complete=true; POST /api/students has user_id=false, email=lena.park@synthetic.example, status=lead; navigated to /admin/students/s-new"
+    },
+    "6.add-student-dialog-390": {
+      "pass": true,
+      "note": "overflow=false; axe=clean; small dialog controls: input \"\" 40px; input \"\" 40px; input \"\" 40px; input \"\" 40px; input \"\" 40px; select \"United StatesForeign\" 40px; input \"\" 40px; input \"\" 40px; button \"Cancel\" 40px; button \"Create student\" 40px; button \"Close\" 16px"
+    },
+    "5.electives-visible-1440": {
+      "pass": true,
+      "note": "elective area row: \"Electives5 of 5 planned · 6 courses\"; area rows=8; courses before add=5"
+    },
+    "5.add-elective-1440": {
+      "pass": true,
+      "note": "elective row before: \"Electives5 of 5 planned · 6 courses\" | after: \"Electives6 of 5 planned · 7 courses\"; dirty badge=true"
+    },
+    "6.staff-roadmap-1440": {
+      "pass": true,
+      "note": "overflow=false; axe=clean"
+    },
+    "5.electives-visible-390": {
+      "pass": true,
+      "note": "elective area row: \"Electives5 of 5 planned · 6 courses\"; area rows=8; courses before add=5"
+    },
+    "5.add-elective-390": {
+      "pass": true,
+      "note": "elective row before: \"Electives5 of 5 planned · 6 courses\" | after: \"Electives6 of 5 planned · 7 courses\"; dirty badge=true"
+    },
+    "6.staff-roadmap-390": {
+      "pass": true,
+      "note": "overflow=false; axe=clean"
+    }
+  },
+  "axeScreens": [
+    {
+      "screen": "journey-1440-light",
+      "violations": []
+    },
+    {
+      "screen": "flightdeck-notice-1440-light",
+      "violations": []
+    },
+    {
+      "screen": "journey-1440-dark",
+      "violations": []
+    },
+    {
+      "screen": "journey-390-light",
+      "violations": []
+    },
+    {
+      "screen": "flightdeck-notice-390-light",
+      "violations": []
+    },
+    {
+      "screen": "journey-390-dark",
+      "violations": []
+    },
+    {
+      "screen": "subjects-report-1440",
+      "violations": []
+    },
+    {
+      "screen": "subjects-report-390",
+      "violations": []
+    },
+    {
+      "screen": "tab-journey-390",
+      "violations": [
+        {
+          "id": "aria-allowed-role",
+          "impact": "minor",
+          "nodes": 1,
+          "sample": [
+            ".group"
+          ]
+        },
+        {
+          "id": "aria-hidden-focus",
+          "impact": "serious",
+          "nodes": 2,
+          "sample": [
+            "div[role=\"region\"] > span[aria-hidden=\"true\"]:nth-child(1)",
+            "span[aria-hidden=\"true\"]:nth-child(3)"
+          ]
+        },
+        {
+          "id": "list",
+          "impact": "serious",
+          "nodes": 1,
+          "sample": [
+            "ol"
+          ]
+        }
+      ]
+    },
+    {
+      "screen": "tab-subjects-390",
+      "violations": [
+        {
+          "id": "aria-allowed-role",
+          "impact": "minor",
+          "nodes": 1,
+          "sample": [
+            ".group"
+          ]
+        },
+        {
+          "id": "aria-hidden-focus",
+          "impact": "serious",
+          "nodes": 2,
+          "sample": [
+            "div[role=\"region\"] > span[aria-hidden=\"true\"]:nth-child(1)",
+            "span[aria-hidden=\"true\"]:nth-child(3)"
+          ]
+        },
+        {
+          "id": "list",
+          "impact": "serious",
+          "nodes": 1,
+          "sample": [
+            "ol"
+          ]
+        }
+      ]
+    },
+    {
+      "screen": "tab-graduation-390",
+      "violations": [
+        {
+          "id": "aria-allowed-role",
+          "impact": "minor",
+          "nodes": 1,
+          "sample": [
+            ".group"
+          ]
+        },
+        {
+          "id": "aria-hidden-focus",
+          "impact": "serious",
+          "nodes": 2,
+          "sample": [
+            "div[role=\"region\"] > span[aria-hidden=\"true\"]:nth-child(1)",
+            "span[aria-hidden=\"true\"]:nth-child(3)"
+          ]
+        },
+        {
+          "id": "list",
+          "impact": "serious",
+          "nodes": 1,
+          "sample": [
+            "ol"
+          ]
+        }
+      ]
+    },
+    {
+      "screen": "new-student-390",
+      "violations": []
+    },
+    {
+      "screen": "no-enrollment-390",
+      "violations": []
+    },
+    {
+      "screen": "admin-account-candidate-1440",
+      "violations": []
+    },
+    {
+      "screen": "admin-invite-1440",
+      "violations": []
+    },
+    {
+      "screen": "admin-account-candidate-390",
+      "violations": []
+    },
+    {
+      "screen": "admin-invite-390",
+      "violations": []
+    },
+    {
+      "screen": "admin-add-student-1440",
+      "violations": []
+    },
+    {
+      "screen": "admin-add-student-390",
+      "violations": []
+    },
+    {
+      "screen": "staff-roadmap-1440",
+      "violations": []
+    },
+    {
+      "screen": "staff-roadmap-390",
+      "violations": []
+    }
+  ],
+  "layout": [
+    {
+      "screen": "journey-1440-light",
+      "overflow": false,
+      "sw": 1440,
+      "cw": 1440,
+      "small": []
+    },
+    {
+      "screen": "flightdeck-notice-1440-light",
+      "overflow": false,
+      "sw": 1440,
+      "cw": 1440,
+      "small": []
+    },
+    {
+      "screen": "journey-1440-dark",
+      "overflow": false,
+      "sw": 1440,
+      "cw": 1440,
+      "small": []
+    },
+    {
+      "screen": "journey-390-light",
+      "overflow": false,
+      "sw": 390,
+      "cw": 390,
+      "small": []
+    },
+    {
+      "screen": "flightdeck-notice-390-light",
+      "overflow": false,
+      "sw": 390,
+      "cw": 390,
+      "small": []
+    },
+    {
+      "screen": "journey-390-dark",
+      "overflow": false,
+      "sw": 390,
+      "cw": 390,
+      "small": []
+    },
+    {
+      "screen": "subjects-report-1440",
+      "overflow": false,
+      "sw": 1440,
+      "cw": 1440,
+      "small": []
+    },
+    {
+      "screen": "subjects-report-390",
+      "overflow": false,
+      "sw": 390,
+      "cw": 390,
+      "small": []
+    },
+    {
+      "screen": "tab-journey-390",
+      "overflow": false,
+      "sw": 390,
+      "cw": 390,
+      "small": []
+    },
+    {
+      "screen": "tab-subjects-390",
+      "overflow": false,
+      "sw": 390,
+      "cw": 390,
+      "small": []
+    },
+    {
+      "screen": "tab-graduation-390",
+      "overflow": false,
+      "sw": 390,
+      "cw": 390,
+      "small": []
+    },
+    {
+      "screen": "new-student-390",
+      "overflow": false,
+      "sw": 390,
+      "cw": 390,
+      "small": []
+    },
+    {
+      "screen": "no-enrollment-390",
+      "overflow": false,
+      "sw": 390,
+      "cw": 390,
+      "small": []
+    },
+    {
+      "screen": "admin-account-candidate-1440",
+      "overflow": false,
+      "sw": 1440,
+      "cw": 1440,
+      "small": []
+    },
+    {
+      "screen": "admin-invite-1440",
+      "overflow": false,
+      "sw": 1440,
+      "cw": 1440,
+      "small": []
+    },
+    {
+      "screen": "admin-account-candidate-390",
+      "overflow": false,
+      "sw": 390,
+      "cw": 390,
+      "small": [
+        "a \"Back to Students\" 40px",
+        "a \"View roadmap\" 40px",
+        "a \"High school pathway\" 40px",
+        "button \"Refresh workspace\" 40px",
+        "button \"Link account\" 40px"
+      ]
+    },
+    {
+      "screen": "admin-invite-390",
+      "overflow": false,
+      "sw": 390,
+      "cw": 390,
+      "small": [
+        "a \"Back to Students\" 40px",
+        "a \"View roadmap\" 40px",
+        "a \"High school pathway\" 40px",
+        "button \"Refresh workspace\" 40px",
+        "button \"Copy\" 40px"
+      ]
+    },
+    {
+      "screen": "admin-add-student-1440",
+      "overflow": false,
+      "sw": 1440,
+      "cw": 1440,
+      "small": []
+    },
+    {
+      "screen": "admin-add-student-390",
+      "overflow": false,
+      "sw": 390,
+      "cw": 390,
+      "small": [
+        "input \"\" 40px",
+        "input \"\" 40px",
+        "input \"\" 40px",
+        "input \"\" 40px",
+        "input \"\" 40px",
+        "select \"United StatesForeign\" 40px",
+        "input \"\" 40px",
+        "input \"\" 40px",
+        "button \"Cancel\" 40px",
+        "button \"Create student\" 40px",
+        "button \"Close\" 16px"
+      ]
+    },
+    {
+      "screen": "staff-roadmap-1440",
+      "overflow": false,
+      "sw": 1440,
+      "cw": 1440,
+      "small": []
+    },
+    {
+      "screen": "staff-roadmap-390",
+      "overflow": false,
+      "sw": 390,
+      "cw": 390,
+      "small": [
+        "a \"Back to student workspace\" 20px",
+        "button \"Program\" 40px",
+        "button \"Prior study\" 40px",
+        "button \"Roadmap\" 40px",
+        "button \"Reviews & results2\" 40px",
+        "button \"Graduation\" 40px",
+        "button \"Guardians\" 40px",
+        "button \"Activity\" 40px",
+        "button \"Discard changes\" 40px",
+        "button \"Save draft\" 40px",
+        "button \"Publish approved roadmap\" 40px",
+        "button \"Edit course and tasks\" 40px",
+        "button \"Actions for English 1: Introduction to L\" 36px",
+        "button \"Edit course and tasks\" 40px",
+        "button \"Actions for English 3: Analyzing Texts a\" 36px",
+        "button \"Edit course and tasks\" 40px",
+        "button \"Actions for English 4: Detailed Reading \" 36px",
+        "button \"Edit course and tasks\" 40px",
+        "button \"Actions for English 2: Foundations (new \" 36px",
+        "button \"Add a course\" 40px",
+        "button \"Add a milestone\" 40px",
+        "button \"Remove milestone Oct 2026\" 32px",
+        "button \"Remove milestone Jan 2027\" 32px",
+        "button \"Remove milestone Jun 2027\" 32px",
+        "button \"Set policies\" 40px"
+      ]
+    }
+  ],
+  "issues": []
+}

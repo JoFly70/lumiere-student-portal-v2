@@ -103,7 +103,7 @@ Publishing a roadmap whose electives are still "to plan" stays **allowed**, as S
 | One full `vitest` run | 2477 passed, 192 skipped (hosted-gated, unchanged), **12 failed in 2 files**: stale test mocks for the new staff card/dialog and the create schema. Mocks extended; focused rerun 43/43. |
 | ESLint on all files changed since S10 | 0 errors (181 warnings, pre-existing style) |
 | `npm run build` | passes |
-| Browser (Playwright, stubbed API) | see `s13-evidence/screens/browser-results.json` |
+| Browser (Playwright, real UI, **stubbed API/auth**; `scripts/s13/render-first-student-screens.ts`) | **60/60 checks** at 1440 and 390, light and dark: landing, nav, tabs, a real progress-report POST, evidence and help links, empty states, staff account card (link, invite, unlink), Add student, elective draft. No horizontal overflow; axe clean except Radix toast internals; student primary actions ≥ 44px. One defect fixed: the toast close button had no accessible name. `s13-evidence/screens/` |
 
 ### Journey highlights
 
