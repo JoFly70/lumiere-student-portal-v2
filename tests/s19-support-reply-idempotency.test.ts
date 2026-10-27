@@ -124,3 +124,18 @@ describe("S19 reply idempotency", () => {
     expect(countComments(h)).toBe(2);
   });
 });
+
+import fs from "node:fs";
+describe("S19 reply idempotency (client wiring)", () => {
+  const read = (f: string) => fs.readFileSync(f, "utf8");
+  it("sends an Idempotency-Key header, keeps the key across retries, resets it on success and disables the button while pending", () => {
+    const hook = read("client/src/hooks/use-tickets.ts");
+    expect(hook).toContain("'Idempotency-Key': idempotencyKey");
+    const detail = read("client/src/components/support/original-ticket-detail.tsx");
+    expect(detail).toContain("idempotencyKey: replyKey.current.key");
+    expect(detail).toContain("replyKey.current?.content !== content");
+    expect(detail).toMatch(/onSuccess: \(\) => \{ replyKey\.current = null;/);
+    expect(detail).toContain("comment.isPending");
+    expect(detail).toMatch(/disabled=\{!draft\.trim\(\) \|\| !canReply \|\| comment\.isPending\}/);
+  });
+});

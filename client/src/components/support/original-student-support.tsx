@@ -235,7 +235,7 @@ export function OriginalStudentSupport() {
                 />
               </div>
               <Select value={filters.topic} onValueChange={(v) => setFilters((f) => ({ ...f, topic: v as SupportTopic | "all" }))}>
-                <SelectTrigger className="w-full sm:w-56" aria-label={T.list.topicLabel} data-testid="filter-category">
+                <SelectTrigger className="w-full sm:w-56 [&>span]:flex-1 [&>span]:text-left" aria-label={T.list.topicLabel} data-testid="filter-category">
                   <Filter className="mr-2 h-4 w-4 shrink-0" aria-hidden="true" />
                   <SelectValue />
                 </SelectTrigger>

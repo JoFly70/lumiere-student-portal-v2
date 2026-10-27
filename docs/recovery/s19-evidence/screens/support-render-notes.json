@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-27T20:54:23.718Z",
+  "generatedAt": "2026-10-27T20:55:01.005Z",
   "note": "Renders of SYNTHETIC fixtures with stubbed auth and API through a local vite dev server. Not a deployment; not the owner's original screenshots (unavailable in this runtime).",
   "themes": [
     "lumiere (Lumière Desk)",
