@@ -1,51 +1,68 @@
 /**
- * Lumière academic assistant (S20): a floating crest button that opens a text chat drawer.
+ * Lumière academic assistant (S20, extended in S21): a floating crest button that opens a chat drawer.
  *
  * Mount once, inside the AUTHENTICATED student shell only (never on login / reset / verify):
  *   import { AcademicAssistant } from "@/components/academic-assistant";
  *   <AcademicAssistant />
  *
- * Honesty rule: when the server answers in "local" mode the answer is labelled as Lumière guide / local guidance
- * and never described as AI. Server text is rendered as plain text (never HTML). Nothing is stored in the browser.
+ * S21 adds saved conversations (history, search, rename, archive, resume), file attachments, "From your records"
+ * references, a Support link for answers with no source, and deep links (`/assistant?conversation=<id>` or the
+ * ASSISTANT_OPEN_EVENT window event used by global search).
+ *
+ * Honesty rule (unchanged): when the server answers in "local" mode the answer is labelled as Lumière guide / local
+ * guidance and never described as AI. Server text is rendered as plain text (never HTML).
  */
 import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { Link } from "wouter";
-import { ArrowRight, ExternalLink, LifeBuoy, RotateCcw, SendHorizontal, X } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link, useLocation, useSearch } from "wouter";
+import { ArrowLeft, ArrowRight, ExternalLink, History, LifeBuoy, MessageSquarePlus, RotateCcw, SendHorizontal, X } from "lucide-react";
 import { LumiereCrest } from "@/components/brand/lumiere-brand";
-import { api } from "@/lib/api";
-import { frTypo, useT, type Language } from "@/i18n";
-import { assistantEn, assistantFr, type AssistantKey } from "@/i18n/modules/assistant";
+import { api, apiRequest } from "@/lib/api";
+import { useT, type Language } from "@/i18n";
 import {
+  ASSISTANT_OPEN_EVENT,
+  ASSISTANT_PATH,
   FOCUSABLE_SELECTOR,
   MAX_MESSAGE_LENGTH,
+  SEARCH_MIN_CHARS,
   THROTTLE_COOLDOWN_MS,
-  buildHistory,
   classifyFailure,
+  conversationFromLocation,
+  isOpenableUrl,
+  needsSupportEscalation,
   nextTrapTarget,
   normaliseMessage,
-  sanitiseReply,
-  type AssistantReply,
+  normaliseTitle,
+  planSend,
+  sanitiseConversation,
+  sanitiseConversationList,
+  sanitiseDocuments,
+  sanitiseHits,
+  sanitiseMessage,
+  sanitiseMessages,
+  sanitisePolicy,
+  titleFromMessage,
   type AssistantStatus,
+  type AttachableDocument,
+  type AttachmentPolicy,
   type ChatEntry,
+  type ConversationHit,
+  type ConversationSummary,
   type FailureKind,
+  type MessageAttachment,
+  type PendingSend,
 } from "./logic";
+import { makeTr, type Tr } from "./tr";
+import { HistoryView, type HistoryViewProps } from "./history";
+import {
+  AttachMenuButton, AttachmentChips, DocumentPicker, SentAttachments, useComposerAttachments, type ComposerAttachment,
+} from "./attachments";
 import "@/styles/academic-assistant.css";
 
 void React; // classic JSX runtime when rendered under vitest/esbuild
 
-type Tr = (key: AssistantKey, vars?: Record<string, string | number>) => string;
-
-/** Self-contained lookup: works whether or not the module has been spread into the global dictionaries yet. */
-export function makeTr(language: Language): Tr {
-  const dict: Record<string, string> = language === "fr" ? assistantFr : assistantEn;
-  return (key, vars) => {
-    let s = dict[key] ?? assistantEn[key] ?? key;
-    if (vars) for (const [k, v] of Object.entries(vars)) s = s.split(`{${k}}`).join(String(v));
-    return language === "fr" ? frTypo(s) : s;
-  };
-}
+export { makeTr };
 
 function formatDate(value: string, language: Language): string {
   const d = new Date(value);
@@ -54,6 +71,29 @@ function formatDate(value: string, language: Language): string {
 }
 
 /* ------------------------------------------------------------------------------------------------ view */
+
+export interface AssistantFeatures {
+  panel: "chat" | "history" | "picker";
+  /** Title of the open saved conversation (null = a new one). */
+  conversationTitle: string | null;
+  conversationArchived: boolean;
+  conversationState: "idle" | "loading" | "error";
+  history: Omit<HistoryViewProps, "tr" | "language">;
+  picker: {
+    state: "loading" | "ready" | "error"; docs: readonly AttachableDocument[]; selected: readonly string[];
+    onToggle: (id: string) => void; onConfirm: () => void; onCancel: () => void; onRetry: () => void;
+  };
+  attach: {
+    items: readonly ComposerAttachment[]; policy: AttachmentPolicy | null; problem: string | null; menuOpen: boolean;
+    onToggleMenu: () => void; onUploadClick: () => void; onChoose: () => void; onRemove: (key: string) => void; onRetry: (key: string) => void;
+    onFiles: (files: File[]) => void; fileInputRef?: React.Ref<HTMLInputElement>; busy: boolean;
+  };
+  onOpenHistory: () => void;
+  onBack: () => void;
+  onRestore: () => void;
+  onOpenAttachment: (documentId: string) => void;
+  attachmentError: string | null;
+}
 
 export interface AssistantViewProps {
   language: Language;
@@ -70,6 +110,7 @@ export interface AssistantViewProps {
   onRetryStatus: () => void;
   onClear: () => void;
   onClose: () => void;
+  features?: AssistantFeatures;
   panelRef?: React.Ref<HTMLElement>;
   inputRef?: React.Ref<HTMLTextAreaElement>;
   titleRef?: React.Ref<HTMLHeadingElement>;
@@ -82,10 +123,19 @@ export function AssistantPanelView(p: AssistantViewProps) {
   const titleId = `${uid}-title`;
   const discId = `${uid}-disclaimer`;
   const counterId = `${uid}-count`;
+  const f = p.features;
+  const panel = f?.panel ?? "chat";
   const unavailable = p.statusState === "error" || (p.statusState === "ready" && p.status?.enabled === false);
-  const inputDisabled = unavailable || p.cooling;
-  const canSend = !inputDisabled && !p.pending && normaliseMessage(p.draft).length > 0;
-  const suggestions = p.entries.length === 0 && p.status ? p.status.suggestions.slice(0, 4) : [];
+  const archived = !!f?.conversationArchived;
+  const inputDisabled = unavailable || p.cooling || archived;
+  const attachBusy = !!f?.attach.busy;
+  const canSend = !inputDisabled && !p.pending && !attachBusy && normaliseMessage(p.draft).length > 0;
+  const showGreeting = !f || f.conversationTitle === null;
+  const suggestions = showGreeting && p.entries.length === 0 && p.status ? p.status.suggestions.slice(0, 4) : [];
+  const failureText = (kind: FailureKind): string =>
+    tr(kind === "throttled" ? "assistant.throttled" : kind === "unavailable" ? "assistant.unavailable" : kind === "attachment" ? "at.err.send" : kind === "archived" ? "ah.archivedNotice" : "assistant.error.generic");
+  const attachMenuId = `${uid}-attach-menu`;
+  const sub = panel !== "chat";
 
   return (
     <div className="aa-root" data-testid="assistant-root">
@@ -99,16 +149,28 @@ export function AssistantPanelView(p: AssistantViewProps) {
         lang={p.language}
         className="aa-panel"
         data-testid="assistant-panel"
+        data-panel={panel}
       >
         <header className="aa-head">
-          <LumiereCrest size={34} />
+          {sub && f ? (
+            <button type="button" className="aa-iconbtn" onClick={f.onBack} aria-label={tr("ah.back")} title={tr("ah.back")} data-testid="assistant-back">
+              <ArrowLeft aria-hidden="true" size={20} />
+            </button>
+          ) : (
+            <LumiereCrest size={34} />
+          )}
           <div className="aa-head-text">
             <h2 id={titleId} ref={p.titleRef} tabIndex={-1} className="aa-title">{tr("assistant.title")}</h2>
-            <p className="aa-subtitle">{tr("assistant.subtitle")}</p>
+            <p className="aa-subtitle" data-testid="assistant-subtitle">{f?.conversationTitle ? f.conversationTitle : tr("assistant.subtitle")}</p>
           </div>
-          {p.entries.length > 0 && (
+          {f && (
+            <button type="button" className="aa-iconbtn" onClick={f.onOpenHistory} aria-label={tr("ah.historyAria")} title={tr("ah.history")} data-testid="assistant-history-btn" aria-pressed={panel === "history"}>
+              <History aria-hidden="true" size={19} />
+            </button>
+          )}
+          {(p.entries.length > 0 || (f && f.conversationTitle !== null)) && (
             <button type="button" className="aa-iconbtn" onClick={p.onClear} aria-label={tr("assistant.clearAria")} title={tr("assistant.clear")} data-testid="assistant-clear">
-              <RotateCcw aria-hidden="true" size={18} />
+              {f ? <MessageSquarePlus aria-hidden="true" size={19} /> : <RotateCcw aria-hidden="true" size={18} />}
             </button>
           )}
           <button type="button" className="aa-iconbtn" onClick={p.onClose} aria-label={tr("assistant.closeAria")} title={tr("assistant.close")} data-testid="assistant-close">
@@ -116,11 +178,27 @@ export function AssistantPanelView(p: AssistantViewProps) {
           </button>
         </header>
 
-        <div ref={p.bodyRef} className="aa-body" role="log" aria-live="polite" aria-relevant="additions" aria-label={tr("assistant.conversation")} data-testid="assistant-log">
-          <div className="aa-msg aa-msg-assistant" data-testid="assistant-greeting">
-            <p className="aa-msg-label">{tr("assistant.title")}</p>
-            <div className="aa-bubble"><p className="aa-text">{tr("assistant.greeting")}</p></div>
-          </div>
+        {f && panel === "history" && <HistoryView tr={tr} language={p.language} {...f.history} />}
+        {f && panel === "picker" && (
+          <DocumentPicker
+            tr={tr} language={p.language} state={f.picker.state} docs={f.picker.docs} policy={f.attach.policy}
+            current={{ ids: f.attach.items.map((i) => i.documentId).filter((x): x is string => !!x), bytes: f.attach.items.reduce((n, i) => n + i.sizeBytes, 0) }}
+            selected={f.picker.selected} onToggle={f.picker.onToggle} onConfirm={f.picker.onConfirm} onCancel={f.picker.onCancel} onRetry={f.picker.onRetry}
+          />
+        )}
+
+        <div ref={p.bodyRef} className="aa-body" hidden={sub} role="log" aria-live="polite" aria-relevant="additions" aria-label={tr("assistant.conversation")} data-testid="assistant-log">
+          {showGreeting && (
+            <div className="aa-msg aa-msg-assistant" data-testid="assistant-greeting">
+              <p className="aa-msg-label">{tr("assistant.title")}</p>
+              <div className="aa-bubble"><p className="aa-text">{tr("assistant.greeting")}</p></div>
+            </div>
+          )}
+
+          {f?.conversationState === "loading" && <p className="aa-quiet" role="status" data-testid="assistant-conversation-loading">{tr("ah.loading")}</p>}
+          {f?.conversationState === "error" && (
+            <div className="aa-alert aa-alert-error" role="alert" data-testid="assistant-conversation-error"><p>{tr("ah.loadError")}</p></div>
+          )}
 
           {suggestions.length > 0 && (
             <div className="aa-suggest" data-testid="assistant-suggestions">
@@ -144,10 +222,15 @@ export function AssistantPanelView(p: AssistantViewProps) {
             e.role === "user" ? (
               <div key={e.id} data-entry-id={e.id} className="aa-msg aa-msg-user" data-testid="assistant-user-message">
                 <p className="aa-msg-label">{tr("assistant.you")}</p>
-                <div className="aa-bubble"><p className="aa-text">{e.text}</p></div>
+                <div className="aa-bubble">
+                  <p className="aa-text">{e.text}</p>
+                  {e.attachments && e.attachments.length > 0 && (
+                    <SentAttachments items={e.attachments} tr={tr} language={p.language} onOpen={(id) => f?.onOpenAttachment(id)} />
+                  )}
+                </div>
               </div>
             ) : (
-              <AssistantAnswer key={e.id} entry={e} language={p.language} tr={tr} />
+              <AssistantAnswer key={e.id} entry={e} language={p.language} tr={tr} onNavigate={p.onClose} />
             ),
           )}
 
@@ -160,9 +243,9 @@ export function AssistantPanelView(p: AssistantViewProps) {
             </div>
           )}
 
-          {p.failure && (
+          {p.failure && p.failure.kind !== "archived" && (
             <div className={`aa-alert aa-alert-${p.failure.kind}`} role="alert" data-testid={`assistant-${p.failure.kind}`}>
-              <p>{tr(p.failure.kind === "throttled" ? "assistant.throttled" : p.failure.kind === "unavailable" ? "assistant.unavailable" : "assistant.error.generic")}</p>
+              <p>{failureText(p.failure.kind)}</p>
               <div className="aa-alert-actions">
                 <button type="button" className="aa-linkbtn" onClick={p.onRetry} disabled={p.cooling || p.pending} data-testid="assistant-retry">
                   <RotateCcw aria-hidden="true" size={15} />{tr("assistant.retry")}
@@ -171,6 +254,8 @@ export function AssistantPanelView(p: AssistantViewProps) {
               </div>
             </div>
           )}
+
+          {f?.attachmentError && <div className="aa-alert aa-alert-error" role="alert" data-testid="assistant-attachment-error"><p>{f.attachmentError}</p></div>}
 
           {p.statusState === "loading" && <p className="aa-quiet" data-testid="assistant-status-loading">{tr("assistant.status.loading")}</p>}
           {unavailable && !p.failure && (
@@ -186,41 +271,81 @@ export function AssistantPanelView(p: AssistantViewProps) {
           )}
         </div>
 
-        <footer className="aa-foot">
-          <form
-            className="aa-form"
-            onSubmit={(ev) => {
-              ev.preventDefault();
-              if (canSend) p.onSend(p.draft);
-            }}
-          >
-            <label className="aa-sr" htmlFor={`${uid}-input`}>{tr("assistant.input.label")}</label>
-            <textarea
-              id={`${uid}-input`}
-              ref={p.inputRef}
-              className="aa-input"
-              rows={2}
-              maxLength={MAX_MESSAGE_LENGTH}
-              value={p.draft}
-              disabled={inputDisabled}
-              placeholder={tr("assistant.input.placeholder")}
-              aria-describedby={`${discId} ${counterId}`}
-              onChange={(ev) => p.onDraft(ev.target.value)}
-              onKeyDown={(ev) => {
-                if (ev.key === "Enter" && !ev.shiftKey && !ev.nativeEvent.isComposing) {
+        <footer className="aa-foot" hidden={sub}>
+          {archived && f ? (
+            <div className="aa-alert aa-alert-unavailable" role="status" data-testid="assistant-archived-notice">
+              <p>{tr("ah.archivedNotice")}</p>
+              <div className="aa-alert-actions">
+                <button type="button" className="aa-linkbtn" onClick={f.onRestore} data-testid="assistant-restore"><RotateCcw aria-hidden="true" size={15} />{tr("ah.restoreContinue")}</button>
+              </div>
+            </div>
+          ) : (
+            <>
+              {f && <AttachmentChips items={f.attach.items} tr={tr} language={p.language} onRemove={f.attach.onRemove} onRetry={f.attach.onRetry} />}
+              {f?.attach.problem && <p className="aa-attach-problem" role="alert" data-testid="assistant-attach-problem">{f.attach.problem}</p>}
+              {f && f.attach.items.length > 0 && f.attach.policy && (
+                <p className="aa-attach-info" data-testid="assistant-attach-info">
+                  {tr("at.count", { n: f.attach.items.length, max: f.attach.policy.maxPerMessage })}
+                </p>
+              )}
+              <form
+                className="aa-form"
+                onSubmit={(ev) => {
                   ev.preventDefault();
                   if (canSend) p.onSend(p.draft);
-                }
-              }}
-              data-testid="assistant-input"
-            />
-            <button type="submit" className="aa-send" disabled={!canSend} aria-label={tr("assistant.sendAria")} data-testid="assistant-send">
-              <SendHorizontal aria-hidden="true" size={18} />
-              <span>{tr("assistant.send")}</span>
-            </button>
-          </form>
+                }}
+              >
+                {f && (
+                  <>
+                    <AttachMenuButton
+                      open={f.attach.menuOpen} disabled={inputDisabled || p.pending} onToggle={f.attach.onToggleMenu} onUpload={f.attach.onUploadClick} onChoose={f.attach.onChoose} tr={tr} menuId={attachMenuId}
+                    />
+                    <input
+                      ref={f.attach.fileInputRef}
+                      type="file"
+                      multiple
+                      className="aa-sr"
+                      tabIndex={-1}
+                      aria-hidden="true"
+                      accept={f.attach.policy ? f.attach.policy.types.map((t) => `.${t.ext}`).join(",") : undefined}
+                      onChange={(ev) => {
+                        const files = Array.from(ev.target.files ?? []);
+                        ev.target.value = "";
+                        if (files.length) f.attach.onFiles(files);
+                      }}
+                      data-testid="assistant-file-input"
+                    />
+                  </>
+                )}
+                <label className="aa-sr" htmlFor={`${uid}-input`}>{tr("assistant.input.label")}</label>
+                <textarea
+                  id={`${uid}-input`}
+                  ref={p.inputRef}
+                  className="aa-input"
+                  rows={2}
+                  maxLength={MAX_MESSAGE_LENGTH}
+                  value={p.draft}
+                  disabled={inputDisabled}
+                  placeholder={tr("assistant.input.placeholder")}
+                  aria-describedby={`${discId} ${counterId}`}
+                  onChange={(ev) => p.onDraft(ev.target.value)}
+                  onKeyDown={(ev) => {
+                    if (ev.key === "Enter" && !ev.shiftKey && !ev.nativeEvent.isComposing) {
+                      ev.preventDefault();
+                      if (canSend) p.onSend(p.draft);
+                    }
+                  }}
+                  data-testid="assistant-input"
+                />
+                <button type="submit" className="aa-send" disabled={!canSend} aria-label={tr("assistant.sendAria")} data-testid="assistant-send">
+                  <SendHorizontal aria-hidden="true" size={18} />
+                  <span>{tr("assistant.send")}</span>
+                </button>
+              </form>
+            </>
+          )}
           <p id={counterId} className={`aa-count${p.draft.length > MAX_MESSAGE_LENGTH - 60 ? " aa-count-near" : ""}`} aria-live="off">
-            {p.draft.length > MAX_MESSAGE_LENGTH - 100 ? tr("assistant.counter", { n: p.draft.length, max: MAX_MESSAGE_LENGTH }) : " "}
+            {p.draft.length > MAX_MESSAGE_LENGTH - 100 ? tr("assistant.counter", { n: p.draft.length, max: MAX_MESSAGE_LENGTH }) : " "}
           </p>
           <p id={discId} className="aa-disclaimer" data-testid="assistant-disclaimer">{tr("assistant.disclaimer")}</p>
         </footer>
@@ -237,8 +362,9 @@ function SupportLink({ tr, onNavigate }: { tr: Tr; onNavigate: () => void }) {
   );
 }
 
-function AssistantAnswer({ entry, language, tr }: { entry: Extract<ChatEntry, { role: "assistant" }>; language: Language; tr: Tr }) {
+function AssistantAnswer({ entry, language, tr, onNavigate }: { entry: Extract<ChatEntry, { role: "assistant" }>; language: Language; tr: Tr; onNavigate: () => void }) {
   const local = entry.mode === "local";
+  const refs = entry.privateRefs ?? [];
   return (
     <div data-entry-id={entry.id} className={`aa-msg aa-msg-assistant ${local ? "aa-local" : "aa-live"}`} data-testid="assistant-answer" data-mode={entry.mode}>
       <p className="aa-msg-label">
@@ -253,7 +379,19 @@ function AssistantAnswer({ entry, language, tr }: { entry: Extract<ChatEntry, { 
             <ul className="aa-linklist">
               {entry.links.map((l) => (
                 <li key={l.path + l.label}>
-                  <Link href={l.path} className="aa-portal-link">{l.label}<ArrowRight aria-hidden="true" size={14} /></Link>
+                  <Link href={l.path} className="aa-portal-link" onClick={onNavigate}>{l.label}<ArrowRight aria-hidden="true" size={14} /></Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {refs.length > 0 && (
+          <div className="aa-block" data-testid="assistant-private-refs">
+            <p className="aa-block-title">{tr("ah.records")}</p>
+            <ul className="aa-linklist">
+              {refs.map((r) => (
+                <li key={r.path + r.title}>
+                  <Link href={r.path} className="aa-portal-link aa-ref-link" onClick={onNavigate}>{r.title}<ArrowRight aria-hidden="true" size={14} /></Link>
                 </li>
               ))}
             </ul>
@@ -276,6 +414,14 @@ function AssistantAnswer({ entry, language, tr }: { entry: Extract<ChatEntry, { 
             </ul>
           </div>
         )}
+        {needsSupportEscalation(entry) && (
+          <div className="aa-block aa-escalate" data-testid="assistant-escalate">
+            <p className="aa-note aa-note-flat">{tr("ah.support.note")}</p>
+            <Link href="/support" className="aa-linkbtn" onClick={onNavigate} data-testid="assistant-escalate-link">
+              <LifeBuoy aria-hidden="true" size={15} />{tr("ah.support.cta")}
+            </Link>
+          </div>
+        )}
         <p className="aa-note">{tr(local ? "assistant.note.local" : "assistant.note.live")}</p>
       </div>
     </div>
@@ -287,22 +433,55 @@ function AssistantAnswer({ entry, language, tr }: { entry: Extract<ChatEntry, { 
 let entrySeq = 0;
 const nextId = () => `aa-${Date.now().toString(36)}-${++entrySeq}`;
 
+function useDebounced<T>(value: T, ms: number): T {
+  const [v, setV] = useState(value);
+  useEffect(() => {
+    const id = setTimeout(() => setV(value), ms);
+    return () => clearTimeout(id);
+  }, [value, ms]);
+  return v;
+}
+
+const LIST_KEY = "/api/assistant/conversations";
+
 export function AcademicAssistant({ defaultOpen = false }: { defaultOpen?: boolean } = {}) {
   const { language } = useT();
   const tr = useMemo(() => makeTr(language), [language]);
+  const qc = useQueryClient();
+  const [location, navigate] = useLocation();
+  const search = useSearch();
   const [open, setOpen] = useState(defaultOpen);
+  const [panel, setPanel] = useState<"chat" | "history" | "picker">("chat");
   const [entries, setEntries] = useState<ChatEntry[]>([]);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [meta, setMeta] = useState<{ title: string; archived: boolean } | null>(null);
+  const [conversationState, setConversationState] = useState<"idle" | "loading" | "error">("idle");
   const [draft, setDraft] = useState("");
+  const [pending, setPending] = useState(false);
   const [failure, setFailure] = useState<{ kind: FailureKind; text: string } | null>(null);
   const [cooling, setCooling] = useState(false);
+  const [filter, setFilter] = useState<"active" | "archived">("active");
+  const [histQuery, setHistQuery] = useState("");
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [selectedDocs, setSelectedDocs] = useState<string[]>([]);
+  const [attachmentError, setAttachmentError] = useState<string | null>(null);
+
   const fabRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const wasOpen = useRef(false);
   const coolTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingRef = useRef<PendingSend | null>(null);
+  const loadToken = useRef(0);
+  const autoOpened = useRef(false);
+  const justLoaded = useRef(false);
+  const lastPanel = useRef<"chat" | "history" | "picker">("chat");
 
+  /* ---- queries ---- */
   const statusQuery = useQuery<AssistantStatus>({
     queryKey: ["/api/assistant/status"],
     queryFn: () => api.get<AssistantStatus>("/api/assistant/status"),
@@ -310,15 +489,141 @@ export function AcademicAssistant({ defaultOpen = false }: { defaultOpen?: boole
     staleTime: 5 * 60_000,
     retry: false,
   });
-
-  const mutation = useMutation<AssistantReply, unknown, { text: string; history: ReturnType<typeof buildHistory> }>({
-    mutationFn: async ({ text, history }) =>
-      sanitiseReply(await api.post("/api/assistant/message", { message: text, language, ...(history.length ? { history } : {}) })),
+  const listQuery = useQuery<ConversationSummary[]>({
+    queryKey: [LIST_KEY, filter],
+    queryFn: async () => sanitiseConversationList(await api.get(`${LIST_KEY}?archived=${filter === "archived"}&limit=50`)),
+    enabled: open,
+    retry: false,
   });
+  const dq = useDebounced(histQuery.trim(), 250);
+  const searchEnabled = open && panel === "history" && dq.length >= SEARCH_MIN_CHARS;
+  const searchQuery = useQuery<ConversationHit[]>({
+    queryKey: [LIST_KEY, "search", dq],
+    queryFn: async () => sanitiseHits(await api.get(`${LIST_KEY}/search?q=${encodeURIComponent(dq)}`)),
+    enabled: searchEnabled,
+    retry: false,
+  });
+  const policyQuery = useQuery<AttachmentPolicy | null>({
+    queryKey: ["/api/student/attachments/policy"],
+    queryFn: async () => sanitisePolicy(await api.get("/api/student/attachments/policy")),
+    enabled: open,
+    staleTime: 60_000,
+    retry: false,
+  });
+  const docsQuery = useQuery<AttachableDocument[]>({
+    queryKey: ["/api/student/attachments/documents"],
+    queryFn: async () => sanitiseDocuments(await api.get("/api/student/attachments/documents")),
+    enabled: open && panel === "picker",
+    staleTime: 0,
+    retry: false,
+  });
+  const policy = policyQuery.data ?? null;
 
-  const close = useCallback(() => setOpen(false), []);
+  const attach = useComposerAttachments(policy, tr, language, () => void qc.invalidateQueries({ queryKey: ["/api/student/attachments/policy"] }));
+  const clearAttach = attach.clear;
 
-  // Focus: into the panel on open, back to the button on close.
+  const close = useCallback(() => {
+    setOpen(false);
+    setMenuOpen(false);
+    if (location === ASSISTANT_PATH) navigate("/", { replace: true });
+  }, [location, navigate]);
+
+  /* ---- conversations ---- */
+  const loadConversation = useCallback(async (id: string) => {
+    autoOpened.current = true;
+    const token = ++loadToken.current;
+    setConversationState("loading");
+    setPanel("chat");
+    setFailure(null);
+    try {
+      const res = await api.get<{ conversation?: unknown; messages?: unknown }>(`${LIST_KEY}/${encodeURIComponent(id)}`);
+      if (token !== loadToken.current) return;
+      const c = sanitiseConversation(res.conversation);
+      pendingRef.current = null;
+      clearAttach();
+      justLoaded.current = true;
+      setActiveId(id);
+      setMeta({ title: c?.title || c?.lastMessagePreview?.slice(0, 60) || tr("ah.untitled"), archived: c?.archived === true });
+      setEntries(sanitiseMessages(res));
+      setConversationState("idle");
+    } catch {
+      if (token !== loadToken.current) return;
+      setConversationState("error");
+    }
+  }, [clearAttach, tr]);
+
+  const startNew = useCallback(() => {
+    autoOpened.current = true;
+    loadToken.current += 1;
+    pendingRef.current = null;
+    setActiveId(null);
+    setMeta(null);
+    setEntries([]);
+    setFailure(null);
+    setDraft("");
+    setConversationState("idle");
+    setAttachmentError(null);
+    clearAttach();
+    setPanel("chat");
+  }, [clearAttach]);
+
+  // Opening the drawer resumes the latest conversation, once, unless the student already chose something.
+  useEffect(() => {
+    if (!open || autoOpened.current || !listQuery.data) return;
+    autoOpened.current = true;
+    if (activeId || entries.length > 0) return;
+    const latest = listQuery.data.find((c) => !c.archived);
+    if (latest) void loadConversation(latest.id);
+  }, [open, listQuery.data, activeId, entries.length, loadConversation]);
+
+  // Deep link and cross-component open (global search).
+  useEffect(() => {
+    const onOpen = (ev: Event) => {
+      const id = (ev as CustomEvent<{ conversationId?: string | null }>).detail?.conversationId;
+      setOpen(true);
+      if (id) void loadConversation(id);
+    };
+    window.addEventListener(ASSISTANT_OPEN_EVENT, onOpen);
+    return () => window.removeEventListener(ASSISTANT_OPEN_EVENT, onOpen);
+  }, [loadConversation]);
+  useEffect(() => {
+    if (location !== ASSISTANT_PATH) return;
+    setOpen(true);
+    const id = conversationFromLocation(location, search);
+    if (id) void loadConversation(id);
+    else autoOpened.current = false;
+  }, [location, search]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const renameConversation = useCallback(async (id: string, title: string) => {
+    setActionError(null);
+    const t = normaliseTitle(title);
+    if (!t) throw new Error("blank");
+    try {
+      await apiRequest(`${LIST_KEY}/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify({ title: t }) });
+    } catch (err) {
+      throw err;
+    }
+    if (id === activeId) setMeta((m) => (m ? { ...m, title: t } : m));
+    void qc.invalidateQueries({ queryKey: [LIST_KEY] });
+  }, [activeId, qc]);
+
+  const archiveConversation = useCallback(async (id: string, archived: boolean) => {
+    setActionError(null);
+    try {
+      await api.post(`${LIST_KEY}/${encodeURIComponent(id)}/${archived ? "archive" : "unarchive"}`);
+      if (id === activeId) setMeta((m) => (m ? { ...m, archived } : m));
+      void qc.invalidateQueries({ queryKey: [LIST_KEY] });
+    } catch {
+      setActionError(tr("ah.action.error"));
+    }
+  }, [activeId, qc, tr]);
+
+  const restoreActive = useCallback(async () => {
+    if (activeId) await archiveConversation(activeId, false);
+    setFailure(null);
+  }, [activeId, archiveConversation]);
+
+  /* ---- focus, keys, scrolling ---- */
   useEffect(() => {
     if (open && !wasOpen.current) {
       const coarse = typeof window !== "undefined" && window.matchMedia?.("(pointer: coarse)").matches;
@@ -334,13 +639,29 @@ export function AcademicAssistant({ defaultOpen = false }: { defaultOpen?: boole
     return undefined;
   }, [open]);
 
-  // Escape closes; Tab is trapped inside the dialog.
+  // Moving between chat / history / picker moves focus to the new view.
+  useEffect(() => {
+    if (!open || lastPanel.current === panel) return undefined;
+    lastPanel.current = panel;
+    const id = requestAnimationFrame(() => {
+      const root = panelRef.current;
+      if (!root) return;
+      if (panel === "chat") {
+        const coarse = window.matchMedia?.("(pointer: coarse)").matches;
+        (coarse ? titleRef.current : inputRef.current ?? titleRef.current)?.focus({ preventScroll: true });
+      } else root.querySelector<HTMLElement>("[data-autofocus]")?.focus({ preventScroll: true });
+    });
+    return () => cancelAnimationFrame(id);
+  }, [panel, open]);
+
   useEffect(() => {
     if (!open) return undefined;
     const onKey = (ev: KeyboardEvent) => {
       if (ev.key === "Escape") {
         ev.preventDefault();
-        close();
+        if (menuOpen) setMenuOpen(false);
+        else if (panel !== "chat") setPanel("chat");
+        else close();
         return;
       }
       if (ev.key !== "Tab" || !panelRef.current) return;
@@ -355,88 +676,189 @@ export function AcademicAssistant({ defaultOpen = false }: { defaultOpen?: boole
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [open, close]);
+  }, [open, close, menuOpen, panel]);
 
-  // Keep the newest message in view: an answer from its start, a question at the bottom.
+  // Keep the newest message in view: an answer from its start, a question (or a loaded conversation) at the bottom.
   useEffect(() => {
     const body = bodyRef.current;
-    if (!open || !body || entries.length === 0) return;
+    if (!open || !body || entries.length === 0 || panel !== "chat") return;
     const last = entries[entries.length - 1]!;
     const reduce = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
     const behavior: ScrollBehavior = reduce ? "auto" : "smooth";
-    if (last.role === "assistant") {
+    if (justLoaded.current) {
+      justLoaded.current = false;
+      body.scrollTo({ top: body.scrollHeight, behavior: "auto" });
+    } else if (last.role === "assistant") {
       body.querySelector<HTMLElement>(`[data-entry-id="${last.id}"]`)?.scrollIntoView({ block: "start", behavior });
     } else {
       body.scrollTo({ top: body.scrollHeight, behavior });
     }
-  }, [entries, open, mutation.isPending]);
+  }, [entries, open, pending, panel]);
 
   useEffect(() => () => { if (coolTimer.current) clearTimeout(coolTimer.current); }, []);
 
-  const ask = useCallback(
-    (raw: string, retryOf?: string) => {
+  /* ---- sending ---- */
+  const send = useCallback(
+    async (raw: string, explicitIds?: readonly string[]) => {
       const text = normaliseMessage(raw);
-      if (!text || mutation.isPending || cooling) return;
+      if (!text || pending || cooling || attach.uploading) return;
       setFailure(null);
-      let history: ReturnType<typeof buildHistory>;
-      if (retryOf) {
-        const idx = entries.findIndex((e) => e.id === retryOf);
-        history = buildHistory(idx >= 0 ? entries.slice(0, idx) : entries);
-      } else {
-        history = buildHistory(entries);
-        setEntries((prev) => [...prev, { id: nextId(), role: "user", text }]);
-        setDraft("");
+      setAttachmentError(null);
+      const ids = explicitIds ?? attach.readyIds;
+      const previous = pendingRef.current;
+      const plan = planSend(previous, text, ids, activeId);
+      pendingRef.current = plan;
+      const optimisticId = `pending-${plan.messageRequestId}`;
+      // A different message after a failed one: the old unsent question is dropped from the transcript.
+      const staleId = previous && previous.messageRequestId !== plan.messageRequestId ? `pending-${previous.messageRequestId}` : null;
+      const shown: MessageAttachment[] = attach.items
+        .filter((i) => i.documentId && ids.includes(i.documentId))
+        .map((i) => ({ documentId: i.documentId!, fileName: i.fileName, mimeType: i.mimeType, sizeBytes: i.sizeBytes }));
+      setEntries((prev) => {
+        const base = staleId ? prev.filter((e) => e.id !== staleId) : prev;
+        return base.some((e) => e.id === optimisticId) ? base : [...base, { id: optimisticId, role: "user", text, attachments: shown }];
+      });
+      setDraft("");
+      setPending(true);
+      try {
+        let conversationId = plan.conversationId ?? activeId;
+        if (!conversationId) {
+          const created = await api.post<{ conversation?: unknown }>(LIST_KEY, { clientRequestId: plan.createRequestId, title: titleFromMessage(text) });
+          const c = sanitiseConversation(created.conversation);
+          if (!c) throw new Error("no conversation");
+          conversationId = c.id;
+          plan.conversationId = c.id;
+          loadToken.current += 1;
+          setActiveId(c.id);
+          setMeta({ title: c.title || titleFromMessage(text), archived: false });
+        }
+        const res = await api.post<{ studentMessage?: unknown; assistantMessage?: unknown }>(`${LIST_KEY}/${encodeURIComponent(conversationId)}/messages`, {
+          clientRequestId: plan.messageRequestId,
+          message: text,
+          language,
+          ...(ids.length ? { attachmentDocumentIds: [...ids] } : {}),
+        });
+        const sm = sanitiseMessage(res.studentMessage);
+        const am = sanitiseMessage(res.assistantMessage);
+        setEntries((prev) => {
+          const base = prev.filter((e) => e.id !== optimisticId);
+          return [...base, ...(sm ? [sm] : [{ id: nextId(), role: "user" as const, text, attachments: shown }]), ...(am ? [am] : [])];
+        });
+        pendingRef.current = null;
+        attach.clear();
+        void qc.invalidateQueries({ queryKey: [LIST_KEY] });
+      } catch (err) {
+        const kind = classifyFailure(err);
+        if (kind === "archived") setMeta((m) => (m ? { ...m, archived: true } : m));
+        setFailure({ kind, text });
+        if (kind === "throttled") {
+          setCooling(true);
+          if (coolTimer.current) clearTimeout(coolTimer.current);
+          coolTimer.current = setTimeout(() => setCooling(false), THROTTLE_COOLDOWN_MS);
+        }
+      } finally {
+        setPending(false);
       }
-      mutation.mutate(
-        { text, history },
-        {
-          onSuccess: (r) => setEntries((prev) => [...prev, { id: nextId(), role: "assistant", text: r.reply, mode: r.mode, sources: r.sources, links: r.links, notice: r.notice }]),
-          onError: (err) => {
-            const kind = classifyFailure(err);
-            setFailure({ kind, text });
-            if (kind === "throttled") {
-              setCooling(true);
-              if (coolTimer.current) clearTimeout(coolTimer.current);
-              coolTimer.current = setTimeout(() => setCooling(false), THROTTLE_COOLDOWN_MS);
-            }
-          },
-        },
-      );
     },
-    [entries, mutation, cooling],
+    [pending, cooling, attach, activeId, language, qc],
   );
 
-  const lastUser = [...entries].reverse().find((e) => e.role === "user");
   const onRetry = useCallback(() => {
-    if (failure && lastUser) ask(failure.text, lastUser.id);
-  }, [failure, lastUser, ask]);
+    if (failure) void send(failure.text, pendingRef.current?.attachmentIds);
+  }, [failure, send]);
 
-  const clear = useCallback(() => {
-    mutation.reset();
-    setEntries([]);
-    setFailure(null);
-    setDraft("");
-    inputRef.current?.focus();
-  }, [mutation]);
+  const openAttachment = useCallback(async (documentId: string) => {
+    setAttachmentError(null);
+    try {
+      const d = await api.get<{ download_url?: unknown }>(`/api/documents/${encodeURIComponent(documentId)}`);
+      if (!isOpenableUrl(d.download_url)) throw new Error("no url");
+      window.open(d.download_url, "_blank", "noopener,noreferrer");
+    } catch {
+      setAttachmentError(tr("at.err.open"));
+    }
+  }, [tr]);
+
+  /* ---- composer attachments ---- */
+  const chooseDocs = useCallback(() => { setMenuOpen(false); setSelectedDocs([]); setPanel("picker"); }, []);
+  const confirmDocs = useCallback(() => {
+    attach.addDocuments((docsQuery.data ?? []).filter((d) => selectedDocs.includes(d.id)));
+    setSelectedDocs([]);
+    setPanel("chat");
+  }, [attach, docsQuery.data, selectedDocs]);
 
   const statusState: "loading" | "ready" | "error" = statusQuery.isError ? "error" : statusQuery.data ? "ready" : "loading";
+  const listState: "loading" | "ready" | "error" = listQuery.isError ? "error" : listQuery.data ? "ready" : "loading";
+  const searchState: "idle" | "loading" | "ready" | "error" = !searchEnabled ? "idle" : searchQuery.isError ? "error" : searchQuery.data && searchQuery.fetchStatus === "idle" ? "ready" : "loading";
 
-  const panel = open ? (
+  const features: AssistantFeatures = {
+    panel,
+    conversationTitle: activeId ? meta?.title ?? tr("ah.untitled") : null,
+    conversationArchived: !!meta?.archived,
+    conversationState,
+    history: {
+      conversations: listQuery.data ?? [],
+      listState,
+      filter,
+      activeId,
+      query: histQuery,
+      hits: searchQuery.data ?? [],
+      searchState,
+      actionError,
+      onQuery: setHistQuery,
+      onFilter: setFilter,
+      onSelect: (id) => void loadConversation(id),
+      onNew: startNew,
+      onRename: renameConversation,
+      onArchive: archiveConversation,
+      onRetry: () => void listQuery.refetch(),
+    },
+    picker: {
+      state: docsQuery.isError ? "error" : docsQuery.data ? "ready" : "loading",
+      docs: docsQuery.data ?? [],
+      selected: selectedDocs,
+      onToggle: (id) => setSelectedDocs((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id])),
+      onConfirm: confirmDocs,
+      onCancel: () => setPanel("chat"),
+      onRetry: () => void docsQuery.refetch(),
+    },
+    attach: {
+      items: attach.items,
+      policy,
+      problem: attach.problem ?? (policyQuery.isError && menuOpen ? tr("at.policy.error") : null),
+      menuOpen,
+      onToggleMenu: () => setMenuOpen((m) => !m),
+      onUploadClick: () => { setMenuOpen(false); fileInputRef.current?.click(); },
+      onChoose: chooseDocs,
+      onRemove: attach.remove,
+      onRetry: attach.retry,
+      onFiles: attach.addFiles,
+      fileInputRef,
+      busy: attach.uploading,
+    },
+    onOpenHistory: () => setPanel((p) => (p === "history" ? "chat" : "history")),
+    onBack: () => setPanel("chat"),
+    onRestore: () => void restoreActive(),
+    onOpenAttachment: (id) => void openAttachment(id),
+    attachmentError,
+  };
+
+  const panelNode = open ? (
     <AssistantPanelView
       language={language}
       entries={entries}
       status={statusQuery.data}
       statusState={statusState}
-      pending={mutation.isPending}
+      pending={pending}
       failure={failure}
       cooling={cooling}
       draft={draft}
       onDraft={setDraft}
-      onSend={(t) => ask(t)}
+      onSend={(t) => void send(t)}
       onRetry={onRetry}
       onRetryStatus={() => void statusQuery.refetch()}
-      onClear={clear}
+      onClear={startNew}
       onClose={close}
+      features={features}
       panelRef={panelRef}
       inputRef={inputRef}
       titleRef={titleRef}
@@ -461,7 +883,7 @@ export function AcademicAssistant({ defaultOpen = false }: { defaultOpen?: boole
     </button>
   );
 
-  const tree = (<>{fab}{panel}</>);
+  const tree = (<>{fab}{panelNode}</>);
   return typeof document !== "undefined" ? createPortal(tree, document.body) : tree;
 }
 
