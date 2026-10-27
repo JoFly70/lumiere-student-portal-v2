@@ -404,6 +404,24 @@ async function transitionDocument(
 }
 
 /**
+ * S18: a rejection / resubmit request carries two separate texts.
+ * `studentMessage` is shown to the student; `internalNote` (admin_notes) is staff-only.
+ */
+export interface DocumentReviewInput {
+  studentMessage: string;
+  internalNote?: string | null;
+}
+
+function normalizeReview(review: DocumentReviewInput | string): { studentMessage: string; internalNote: string | null } {
+  // A bare string is treated as the student-visible message (no internal note).
+  const input: DocumentReviewInput = typeof review === 'string' ? { studentMessage: review } : review;
+  const studentMessage = (input.studentMessage ?? '').trim();
+  if (!studentMessage) throw new DocumentInputError('A reason for the student is required');
+  const internalNote = (input.internalNote ?? '').trim();
+  return { studentMessage, internalNote: internalNote || null };
+}
+
+/**
  * Verify document (admin action)
  */
 export async function verifyDocument(
@@ -414,7 +432,8 @@ export async function verifyDocument(
   try {
     const { before, after: data } = await transitionDocument(documentId, 'verified', verifiedBy, {
       verified: true,
-      admin_notes: adminNotes || null,
+      student_message: null, // a verified document carries no student-facing reason
+      admin_notes: adminNotes || null, // internal only; never shown to students
     });
 
     logger.info('Document verified', {
@@ -453,18 +472,19 @@ export async function verifyDocument(
 export async function rejectDocument(
   documentId: string,
   verifiedBy: string,
-  reason: string
+  review: DocumentReviewInput | string
 ): Promise<StudentDocument> {
+  const { studentMessage, internalNote } = normalizeReview(review);
   try {
     const { before, after: data } = await transitionDocument(documentId, 'rejected', verifiedBy, {
       verified: false,
-      admin_notes: reason,
+      student_message: studentMessage,
+      admin_notes: internalNote,
     });
 
     logger.info('Document rejected', {
       documentId,
       rejectedBy: verifiedBy,
-      reason,
     });
 
     // Write audit log
@@ -476,7 +496,7 @@ export async function rejectDocument(
       entityId: documentId,
       oldValue: before,
       newValue: data,
-      metadata: { doc_type: data.doc_type, reason, from_status: before.status },
+      metadata: { doc_type: data.doc_type, student_message: studentMessage, from_status: before.status },
     }).catch(err => logger.warn('Audit log failed', { err }));
 
     return data as StudentDocument;
@@ -492,18 +512,19 @@ export async function rejectDocument(
 export async function requestResubmit(
   documentId: string,
   requestedBy: string,
-  reason: string
+  review: DocumentReviewInput | string
 ): Promise<StudentDocument> {
+  const { studentMessage, internalNote } = normalizeReview(review);
   try {
     const { before, after: data } = await transitionDocument(documentId, 'resubmit_requested', requestedBy, {
       verified: false,
-      admin_notes: reason,
+      student_message: studentMessage,
+      admin_notes: internalNote,
     });
 
     logger.info('Document resubmit requested', {
       documentId,
       requestedBy,
-      reason,
     });
 
     // Write audit log
@@ -515,7 +536,7 @@ export async function requestResubmit(
       entityId: documentId,
       oldValue: before,
       newValue: data,
-      metadata: { doc_type: data.doc_type, reason, from_status: before.status },
+      metadata: { doc_type: data.doc_type, student_message: studentMessage, from_status: before.status },
     }).catch(err => logger.warn('Audit log failed', { err }));
 
     // TODO: Send notification to student

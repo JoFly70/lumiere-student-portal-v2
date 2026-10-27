@@ -739,7 +739,8 @@ export const studentDocumentSchema = z.object({
   verified: z.boolean().default(false),
   verified_by: z.string().uuid().nullable(),
   verified_at: z.string().nullable(),
-  admin_notes: z.string().nullable(),
+  admin_notes: z.string().nullable(), // internal, staff only
+  student_message: z.string().nullable().default(null), // S18: student-visible review reason
   
   // OCR
   ocr_text: z.string().nullable(),

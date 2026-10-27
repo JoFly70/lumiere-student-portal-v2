@@ -278,7 +278,8 @@ router.post('/:id/reject', requireStaff, requireVerifier, async (req, res) => {
     const { id } = req.params;
 
     const schema = z.object({
-      reason: z.string().min(1, 'Rejection reason required'),
+      student_message: z.string().trim().min(1, 'Reason for the student required').max(1000),
+      admin_notes: z.string().trim().max(2000).optional(), // internal, staff only
     });
 
     const validated = schema.parse(req.body);
@@ -287,12 +288,14 @@ router.post('/:id/reject', requireStaff, requireVerifier, async (req, res) => {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    const document = await rejectDocument(id, req.user.id, validated.reason);
+    const document = await rejectDocument(id, req.user.id, {
+      studentMessage: validated.student_message,
+      internalNote: validated.admin_notes,
+    });
 
     logger.info('Document rejected', {
       documentId: id,
       rejectedBy: req.user.id,
-      reason: validated.reason,
     });
 
     return res.json(document);
@@ -320,7 +323,8 @@ router.post('/:id/request-resubmit', requireStaff, requireVerifier, async (req, 
     const { id } = req.params;
 
     const schema = z.object({
-      reason: z.string().min(1, 'Resubmit reason required'),
+      student_message: z.string().trim().min(1, 'Reason for the student required').max(1000),
+      admin_notes: z.string().trim().max(2000).optional(), // internal, staff only
     });
 
     const validated = schema.parse(req.body);
@@ -329,12 +333,14 @@ router.post('/:id/request-resubmit', requireStaff, requireVerifier, async (req, 
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    const document = await requestResubmit(id, req.user.id, validated.reason);
+    const document = await requestResubmit(id, req.user.id, {
+      studentMessage: validated.student_message,
+      internalNote: validated.admin_notes,
+    });
 
     logger.info('Document resubmit requested', {
       documentId: id,
       requestedBy: req.user.id,
-      reason: validated.reason,
     });
 
     return res.json(document);

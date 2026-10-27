@@ -91,10 +91,12 @@ describe("S17 documents: student responses are allow-listed", () => {
 
   it("shows the student only the rejection reason, not notes on other statuses", async () => {
     const app = await makeApp();
-    queueFrom({ data: [row({ status: "rejected", admin_notes: "Please upload a clearer scan" })], error: null });
+    queueFrom({ data: [row({ status: "rejected", student_message: "Please upload a clearer scan" })], error: null });
     const res = await asStudent(request(app).get("/api/documents/student/student-1"));
     expect(res.body[0].review_message).toBe("Please upload a clearer scan");
     expect(res.body[0]).not.toHaveProperty("admin_notes");
+    expect(res.body[0]).not.toHaveProperty("student_message");
+    expect(JSON.stringify(res.body)).not.toMatch(/INTERNAL/); // S18: admin_notes never feeds review_message
   });
 
   it("staff keep the full row", async () => {
