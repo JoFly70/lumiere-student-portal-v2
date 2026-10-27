@@ -60,6 +60,7 @@ async function fetchMyProfile(accessToken: string | null): Promise<Student | nul
 const studentMenuItems: { title: string; labelKey?: TranslationKey; url: string; icon: typeof Gauge }[] = [
   { title: "High School", labelKey: "nav.highSchool", url: "/high-school", icon: School },
   { title: "Flight Deck", labelKey: "nav.flightDeck", url: "/flight-deck", icon: Gauge },
+  { title: "High School Flight Deck", labelKey: "nav.highSchoolFlightDeck", url: "/high-school/flight-deck", icon: Gauge },
   { title: "Student Profile", labelKey: "nav.profile", url: "/profile", icon: User },
   { title: "Your Roadmap", labelKey: "nav.roadmap", url: "/roadmap", icon: BookOpen },
   { title: "Documents", labelKey: "nav.documents", url: "/documents", icon: FileText },
@@ -68,7 +69,7 @@ const studentMenuItems: { title: string; labelKey?: TranslationKey; url: string;
 ];
 
 // Student navigation is grouped: the journey first, then the student's file.
-const JOURNEY_URLS = ["/high-school", "/flight-deck", "/roadmap"];
+const JOURNEY_URLS = ["/high-school", "/flight-deck", "/high-school/flight-deck", "/roadmap"];
 const studentJourneyItems = studentMenuItems.filter((i) => JOURNEY_URLS.includes(i.url));
 const studentFileItems = studentMenuItems.filter((i) => !JOURNEY_URLS.includes(i.url));
 

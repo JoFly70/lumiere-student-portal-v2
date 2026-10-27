@@ -22,6 +22,7 @@ export const en = {
 
   // Navigation
   "nav.flightDeck": "Flight Deck",
+  "nav.highSchoolFlightDeck": "High School Flight Deck",
   "nav.highSchool": "High School",
   "nav.roadmap": "Your Roadmap",
   "nav.documents": "Documents",

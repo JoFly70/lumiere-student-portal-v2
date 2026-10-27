@@ -20,7 +20,7 @@
   color: var(--auth-ivory);
   padding: 22px 20px 68px;
 }
-.auth-hero-lines { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; opacity: .55; -webkit-mask-image: linear-gradient(90deg, transparent 22%, #000 68%); mask-image: linear-gradient(90deg, transparent 22%, #000 68%); }
+.auth-hero-lines { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; opacity: .55; -webkit-mask-image: linear-gradient(90deg, transparent 38%, rgba(0,0,0,.35) 58%, #000 84%); mask-image: linear-gradient(90deg, transparent 38%, rgba(0,0,0,.35) 58%, #000 84%); }
 .auth-hero-inner { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 14px; }
 .auth-root .auth-wm-full { display: none; }
 .auth-eyebrow, .auth-hero-body, .auth-hero-foot { display: none; }

@@ -75,13 +75,15 @@ export function studentLandingPath(_access: ProgramAccess): string {
 
 /**
  * Applies program awareness to a list of student nav entries (anything with a `url`):
- * High School appears only with a high school program; Roadmap is hidden for high-school-only students.
+ * High School appears only with a high school program; the extra High School Flight Deck entry only for students who also hold a university program; Roadmap is hidden for high-school-only students.
  * Flight Deck stays for everyone (its content depends on `flightDeckVariant`). For high-school-only students
  * the order is Flight Deck, High School, then the rest. Order is otherwise kept.
  */
 export function filterStudentNav<T extends { readonly url: string }>(items: readonly T[], access: ProgramAccess): T[] {
   const kept = items.filter((i) => {
     if (i.url === HIGH_SCHOOL_PATH) return access.hasHighSchool;
+    // Students with both programs keep the university deck at /flight-deck; this is their way to the high school one.
+    if (i.url === HIGH_SCHOOL_FLIGHT_DECK_PATH) return access.hasHighSchool && !access.highSchoolOnly;
     if (UNIVERSITY_ONLY_PATHS.includes(i.url) || HIGH_SCHOOL_ONLY_HIDDEN_PATHS.includes(i.url)) return !access.highSchoolOnly;
     return true;
   });
