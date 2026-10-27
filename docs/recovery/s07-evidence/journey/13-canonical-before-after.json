@@ -9,37 +9,37 @@
   "before": {
     "student_credit_records": {
       "count": 1,
-      "digest": "2318d671f7ff2ef9fb30cbededcc6ef9"
+      "digest": "3b1dc630ccaae440524ca2796be1e827"
     },
     "student_credit_decisions": {
       "count": 1,
-      "digest": "6e58e8f702440fe2fc7006721d9fc548"
+      "digest": "ee8467e8d6de3e8e1a76c582be1550c1"
     },
     "student_credit_verification_events": {
       "count": 1,
-      "digest": "71a9cb489ad91a49d0250e33c0c41ecd"
+      "digest": "973b5cf41be256099b52f929125c301a"
     },
     "student_program_assignments": {
       "count": 1,
-      "digest": "de66dbcde56f99c8787f9e4069701ce9"
+      "digest": "f51b4017c3d2ccd2ef86632d738625a2"
     }
   },
   "after": {
     "student_credit_records": {
       "count": 1,
-      "digest": "2318d671f7ff2ef9fb30cbededcc6ef9"
+      "digest": "3b1dc630ccaae440524ca2796be1e827"
     },
     "student_credit_decisions": {
       "count": 1,
-      "digest": "6e58e8f702440fe2fc7006721d9fc548"
+      "digest": "ee8467e8d6de3e8e1a76c582be1550c1"
     },
     "student_credit_verification_events": {
       "count": 1,
-      "digest": "71a9cb489ad91a49d0250e33c0c41ecd"
+      "digest": "973b5cf41be256099b52f929125c301a"
     },
     "student_program_assignments": {
       "count": 1,
-      "digest": "de66dbcde56f99c8787f9e4069701ce9"
+      "digest": "f51b4017c3d2ccd2ef86632d738625a2"
     }
   },
   "identical": true,

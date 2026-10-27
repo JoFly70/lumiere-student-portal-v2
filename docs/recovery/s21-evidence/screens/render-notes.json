@@ -1,0 +1,221 @@
+{
+  "generatedAt": "2026-10-27T23:13:14.246Z",
+  "note": "LOCAL UI SIMULATION. Synthetic fixtures; stubbed auth and /api (incl. conversations, attachments, search, welcome) written against docs/recovery/s21/api-contracts.md; real student shell rendered by a local vite dev server. Not a deployment; no backend, database, storage or AI model was involved.",
+  "checks": [
+    {
+      "name": "cockpit: welcome banner present (Sonnet D component)",
+      "ok": true
+    },
+    {
+      "name": "header avatar shows the photo",
+      "ok": true
+    },
+    {
+      "name": "account menu: My Profile, Change Photo, Sign Out",
+      "ok": true,
+      "detail": "My Profile|Change Photo|Sign Out|EN|FR|Choose theme"
+    },
+    {
+      "name": "Change Photo opens the existing upload flow",
+      "ok": true
+    },
+    {
+      "name": "first-login welcome renders",
+      "ok": true
+    },
+    {
+      "name": "header avatar falls back to initials",
+      "ok": true
+    },
+    {
+      "name": "mobile 390: no horizontal page scroll",
+      "ok": true
+    },
+    {
+      "name": "mobile 390: header content fits",
+      "ok": true,
+      "detail": "{\"sw\":390,\"cw\":390}"
+    },
+    {
+      "name": "mobile 390: avatar + search + bottom nav visible",
+      "ok": true
+    },
+    {
+      "name": "mobile: language + theme live in the account menu",
+      "ok": true
+    },
+    {
+      "name": "mobile 360: no horizontal page scroll",
+      "ok": true
+    },
+    {
+      "name": "mobile 360: header content fits",
+      "ok": true,
+      "detail": "{\"sw\":360,\"cw\":360}"
+    },
+    {
+      "name": "mobile 360: avatar + search + bottom nav visible",
+      "ok": true
+    },
+    {
+      "name": "Ctrl+K focuses the header search",
+      "ok": true
+    },
+    {
+      "name": "results are grouped by type with labels",
+      "ok": true,
+      "detail": "Portal pages|Documents|Support requests|Guide conversations"
+    },
+    {
+      "name": "ArrowDown moves the active descendant",
+      "ok": true,
+      "detail": "rc-opt-1"
+    },
+    {
+      "name": "Esc clears the query",
+      "ok": true
+    },
+    {
+      "name": "outside click closes the results",
+      "ok": true
+    },
+    {
+      "name": "Enter on a page result navigates to /billing",
+      "ok": true
+    },
+    {
+      "name": "conversation result opens that conversation in the assistant",
+      "ok": true
+    },
+    {
+      "name": "mobile overlay: no horizontal overflow",
+      "ok": true
+    },
+    {
+      "name": "mobile overlay closes with Esc and returns focus",
+      "ok": true
+    },
+    {
+      "name": "staff search lists students only",
+      "ok": true,
+      "detail": "global-search-option-student,global-search-option-student"
+    },
+    {
+      "name": "opening the drawer resumes the latest conversation",
+      "ok": true
+    },
+    {
+      "name": "answer shows 'From your records' and sources",
+      "ok": true
+    },
+    {
+      "name": "sourceless answer offers Support",
+      "ok": true
+    },
+    {
+      "name": "local answers are not called AI",
+      "ok": true
+    },
+    {
+      "name": "sent attachment chip is present",
+      "ok": true
+    },
+    {
+      "name": "history lists newest first",
+      "ok": true,
+      "detail": "Transfer credit rules|Which documents do I need?|Planning my first term"
+    },
+    {
+      "name": "ArrowDown moves between conversations",
+      "ok": true
+    },
+    {
+      "name": "search finds archived conversations too",
+      "ok": true
+    },
+    {
+      "name": "rename sends PATCH {title}",
+      "ok": true
+    },
+    {
+      "name": "archived filter shows archived conversations",
+      "ok": true
+    },
+    {
+      "name": "unarchive restores to the current list",
+      "ok": true
+    },
+    {
+      "name": "Esc leaves history but keeps the drawer open",
+      "ok": true
+    },
+    {
+      "name": "a disallowed type is rejected in the browser, without any upload request",
+      "ok": true
+    },
+    {
+      "name": "an oversize file is rejected in the browser",
+      "ok": true
+    },
+    {
+      "name": "upload = upload-url then finalize",
+      "ok": true,
+      "detail": "/api/student/attachments/upload-url,/api/student/attachments/finalize"
+    },
+    {
+      "name": "attach menu: Upload a file / Choose from my documents",
+      "ok": true
+    },
+    {
+      "name": "send posts clientRequestId + attachmentDocumentIds (2)",
+      "ok": true,
+      "detail": "{\"clientRequestId\":\"60004c88-49c2-4fe9-8a2d-38790ad05bae\",\"message\":\"Please check these against my roadmap.\",\"language\":\"en\",\"attachmentDocumentIds\":[\"doc-up-5\",\"doc-1\"]}"
+    },
+    {
+      "name": "sent message shows both attachment chips",
+      "ok": true
+    },
+    {
+      "name": "opening an attachment fetches GET /api/documents/:id then opens its signed URL",
+      "ok": true
+    },
+    {
+      "name": "Tab never leaves the dialog",
+      "ok": true
+    },
+    {
+      "name": "a retry reuses the same clientRequestId",
+      "ok": true,
+      "detail": "6dfbed35-0992-46a5-86ec-2822d7d268c3 / 6dfbed35-0992-46a5-86ec-2822d7d268c3"
+    },
+    {
+      "name": "a new conversation was created once for it",
+      "ok": true
+    },
+    {
+      "name": "mobile: full-height sheet",
+      "ok": true,
+      "detail": "{\"w\":390,\"h\":844,\"vw\":390,\"vh\":844}"
+    },
+    {
+      "name": "360px: composer and menu inside the viewport, no page scroll",
+      "ok": true
+    },
+    {
+      "name": "360px: the drawer itself does not scroll sideways",
+      "ok": true
+    },
+    {
+      "name": "French: greeting and labels",
+      "ok": true
+    },
+    {
+      "name": "memory panel shows provenance and correct/retract",
+      "ok": true
+    },
+    {
+      "name": "login shows 'Student Portal' branding",
+      "ok": true
+    }
+  ]
+}

@@ -1,16 +1,16 @@
 {
-  "studentId": "1ca8f50f-1d01-4779-bc61-0617a9842f49",
-  "planId": "dc1e1e9b-eaf0-411d-9541-5b76da2c066e",
+  "studentId": "774833b3-4117-4612-a75e-b25988d4c0a9",
+  "planId": "497adf0a-b8d4-47e3-b3ef-67b656059e61",
   "published": {
-    "versionId": "6347ed72-ec5e-4bcd-bdc3-d0577987ec68",
+    "versionId": "e297832a-bbb4-40ff-99ff-8e6dfaab2807",
     "versionNumber": 1,
     "status": "published",
     "title": "TESU BSBA in Accounting roadmap",
-    "createdAt": "2026-10-27T21:37:33.852Z",
-    "createdBy": "e268b5f6-f527-4061-864f-8316bac4f018",
-    "publishedAt": "2026-10-27T21:37:34.402Z",
-    "publishedBy": "5e54afc7-24cc-4e7f-ad7e-5c76b34c7abf",
-    "importId": "59e3ead0-c2f0-4c44-abff-f6125b14de7f",
+    "createdAt": "2026-10-27T23:05:36.332Z",
+    "createdBy": "96eb7f32-886c-40df-9814-a57d82487fbb",
+    "publishedAt": "2026-10-27T23:05:37.360Z",
+    "publishedBy": "bc45216b-4150-454e-b0bd-5426fa2b7fc4",
+    "importId": "249d8773-f01e-47cb-9e03-009ba8cbbc3c",
     "content": {
       "items": [
         {
@@ -2481,10 +2481,10 @@
     }
   },
   "draft": {
-    "versionId": "0a2e7ff5-9f6e-4824-b00e-b50c67f34532",
+    "versionId": "f51de480-2889-488a-893f-4c28f785fdd3",
     "versionNumber": 2,
     "draftRevision": 1,
-    "baseVersionId": "6347ed72-ec5e-4bcd-bdc3-d0577987ec68",
+    "baseVersionId": "e297832a-bbb4-40ff-99ff-8e6dfaab2807",
     "content": {
       "items": [
         {
@@ -5961,470 +5961,470 @@
       {
         "note": "v2 reviewed",
         "exceptionKey": "REPORTED_HISTORY_NOT_CREDIT:Master Plan!1:credit-baseline-reported",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "CONDITIONAL_ALLOCATION:quantitative-skills-for-business:condition",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "CONDITIONAL_ALLOCATION:accounting-201:condition",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "CONDITIONAL_ALLOCATION:accounting-202:condition",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "CONDITIONAL_ALLOCATION:accounting-303:condition",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "CONDITIONAL_ALLOCATION:accounting-302:condition",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "CONDITIONAL_ALLOCATION:acc-352:condition",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "CONDITIONAL_ALLOCATION:acc-375:condition",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "CONDITIONAL_ALLOCATION:man-3730:condition",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "COMPANION_ROW_UNMATCHED:Weekly Plan!29",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "DEADLINE_CONFLICT:cis-1070:end",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "DEADLINE_CONFLICT:accounting-202:\"Final exam\":2026-12-20:2026-12-25",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "PROGRESS_ON_REMOVED_ITEM:business-308",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "PROGRESS_ON_REMOVED_ITEM:opm-3010",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "REGISTRATION_GATE_UNDOCUMENTED:bus-4210",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "EXAM_AFTER_TERM_DEADLINE:com-2090",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "EXAM_AFTER_TERM_DEADLINE:com-2090:final-exam",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "REGISTRATION_AFTER_DEADLINE:com-2090",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "EXAM_AFTER_TERM_DEADLINE:psy-3500",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "EXAM_AFTER_TERM_DEADLINE:psy-3500:final-exam",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "REGISTRATION_AFTER_DEADLINE:psy-3500",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "EXAM_AFTER_TERM_DEADLINE:phi-1300",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "EXAM_AFTER_TERM_DEADLINE:phi-1300:final-exam",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "REGISTRATION_AFTER_DEADLINE:phi-1300",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "EXAM_AFTER_TERM_DEADLINE:cis-1070",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "EXAM_AFTER_TERM_DEADLINE:cis-1070:final-exam",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "REGISTRATION_AFTER_DEADLINE:cis-1070",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "EXAM_AFTER_TERM_DEADLINE:mkt-2010",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "EXAM_AFTER_TERM_DEADLINE:mkt-2010:final-exam",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "REGISTRATION_AFTER_DEADLINE:mkt-2010",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "EXAM_AFTER_TERM_DEADLINE:man-3730",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "EXAM_AFTER_TERM_DEADLINE:man-3730:final-exam",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "REGISTRATION_AFTER_DEADLINE:man-3730",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "EXAM_AFTER_TERM_DEADLINE:fin-3310",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "EXAM_AFTER_TERM_DEADLINE:fin-3310:final-exam",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "REGISTRATION_AFTER_DEADLINE:fin-3310",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "REGISTRATION_AFTER_DEADLINE:sos-1100",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "REGISTRATION_AFTER_DEADLINE:bus-4210",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "STARTING_CREDITS_UNVERIFIED:credit-baseline-reported",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "STARTING_CREDITS_UNVERIFIED:english-composition-i-sophia",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "STARTING_CREDITS_UNVERIFIED:english-composition-ii-sophia",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "STARTING_CREDITS_UNVERIFIED:college-algebra-sophia",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "STARTING_CREDITS_UNVERIFIED:introduction-to-ethics-sophia",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "STARTING_CREDITS_UNVERIFIED:introduction-to-sociology-sophia",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "STARTING_CREDITS_UNVERIFIED:human-biology-sophia",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "STARTING_CREDITS_UNVERIFIED:introduction-to-nutrition-sophia",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "STARTING_CREDITS_UNVERIFIED:lifespan-development-sophia",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "STARTING_CREDITS_UNVERIFIED:introduction-to-statistics-sophia",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "STARTING_CREDITS_UNVERIFIED:microeconomics-sophia",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "STARTING_CREDITS_UNVERIFIED:principles-of-finance-sophia",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "STARTING_CREDITS_UNVERIFIED:financial-accounting-sophia",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "STARTING_CREDITS_UNVERIFIED:managerial-accounting-sophia",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "STARTING_CREDITS_UNVERIFIED:introduction-to-business-sophia",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "STARTING_CREDITS_UNVERIFIED:conflict-resolution-sophia",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "STARTING_CREDITS_UNVERIFIED:environmental-science-sophia",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "EQUIVALENCY_CONDITIONAL:quantitative-skills-for-business",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "EQUIVALENCY_CONDITIONAL:accounting-201",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "EQUIVALENCY_CONDITIONAL:accounting-202",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "EQUIVALENCY_CONDITIONAL:accounting-303",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "EQUIVALENCY_CONDITIONAL:accounting-302",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "EQUIVALENCY_CONDITIONAL:acc-352",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "EQUIVALENCY_CONDITIONAL:acc-375",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "LICENSING_CREDIT_SEPARATE:business-103",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "LICENSING_CREDIT_SEPARATE:business-101",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "LICENSING_CREDIT_SEPARATE:quantitative-skills-for-business",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "LICENSING_CREDIT_SEPARATE:accounting-201",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "LICENSING_CREDIT_SEPARATE:accounting-202",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "LICENSING_CREDIT_SEPARATE:accounting-303",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "LICENSING_CREDIT_SEPARATE:accounting-302",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "LICENSING_CREDIT_SEPARATE:business-324",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "LICENSING_CREDIT_SEPARATE:acc-352",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "LICENSING_CREDIT_SEPARATE:acc-375",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "LICENSING_CREDIT_SEPARATE:cis-1070",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "LICENSING_CREDIT_SEPARATE:mkt-2010",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "LICENSING_CREDIT_SEPARATE:man-3730",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "LICENSING_CREDIT_SEPARATE:fin-3310",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "LICENSING_CREDIT_SEPARATE:bus-4210",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       },
       {
         "note": "v2 reviewed",
         "exceptionKey": "LICENSING_CREDIT_SEPARATE:objective:licensing-planning",
-        "acknowledgedAt": "2026-10-27T21:37:35.104Z",
-        "acknowledgedBy": "e268b5f6-f527-4061-864f-8316bac4f018"
+        "acknowledgedAt": "2026-10-27T23:05:38.241Z",
+        "acknowledgedBy": "96eb7f32-886c-40df-9814-a57d82487fbb"
       }
     ],
     "diff": {
@@ -6551,10 +6551,10 @@
       "milestonesChanged": false
     },
     "import": {
-      "importId": "4181db0f-fe2e-4667-a9cd-4313e96709fd",
+      "importId": "e02a3127-e4a7-4c59-915d-e7f8e432e96c",
       "templateId": "lumiere-degree-master-v1+lumiere-execution-v1",
       "fileName": "eph-master-v2.xlsx + eph-execution-v2.xlsx",
-      "fileSha256": "8bece431997402bc7d4ba10916b8e3b07fbf4a254efaed81026d261adfb2e4fd",
+      "fileSha256": "295a41fa1e1ab0c089a51dc4ad69aca69275133569d21a9f82371b34d209d1d9",
       "summary": {
         "kind": "workbook",
         "fileName": "eph-master-v2.xlsx + eph-execution-v2.xlsx",
@@ -6583,26 +6583,26 @@
   },
   "versions": [
     {
-      "versionId": "0a2e7ff5-9f6e-4824-b00e-b50c67f34532",
+      "versionId": "f51de480-2889-488a-893f-4c28f785fdd3",
       "versionNumber": 2,
       "status": "draft",
       "title": "TESU BSBA in Accounting roadmap",
-      "createdAt": "2026-10-27T21:37:35.035Z",
-      "createdBy": "e268b5f6-f527-4061-864f-8316bac4f018",
+      "createdAt": "2026-10-27T23:05:38.170Z",
+      "createdBy": "96eb7f32-886c-40df-9814-a57d82487fbb",
       "publishedAt": null,
       "publishedBy": null,
-      "importId": "4181db0f-fe2e-4667-a9cd-4313e96709fd"
+      "importId": "e02a3127-e4a7-4c59-915d-e7f8e432e96c"
     },
     {
-      "versionId": "6347ed72-ec5e-4bcd-bdc3-d0577987ec68",
+      "versionId": "e297832a-bbb4-40ff-99ff-8e6dfaab2807",
       "versionNumber": 1,
       "status": "published",
       "title": "TESU BSBA in Accounting roadmap",
-      "createdAt": "2026-10-27T21:37:33.852Z",
-      "createdBy": "e268b5f6-f527-4061-864f-8316bac4f018",
-      "publishedAt": "2026-10-27T21:37:34.402Z",
-      "publishedBy": "5e54afc7-24cc-4e7f-ad7e-5c76b34c7abf",
-      "importId": "59e3ead0-c2f0-4c44-abff-f6125b14de7f"
+      "createdAt": "2026-10-27T23:05:36.332Z",
+      "createdBy": "96eb7f32-886c-40df-9814-a57d82487fbb",
+      "publishedAt": "2026-10-27T23:05:37.360Z",
+      "publishedBy": "bc45216b-4150-454e-b0bd-5426fa2b7fc4",
+      "importId": "249d8773-f01e-47cb-9e03-009ba8cbbc3c"
     }
   ]
 }

@@ -5,6 +5,8 @@
  * Theme tokens only; no motion under prefers-reduced-motion.
  */
 import React, { useCallback, useEffect, useState } from "react";
+import { useMyStudent } from "@/hooks/use-my-student";
+import { avatarInitials, safePhotoUrl } from "@/lib/avatar";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 void React;
@@ -59,11 +61,13 @@ function writeShown(marker: string): void {
 export interface WelcomeBannerViewProps {
   data: WelcomeData;
   photoUrl?: string | null;
+  /** Same initials as the header avatar; defaults to the first name's initial. */
+  initials?: string;
   onDismiss?: () => void;
 }
 
 /** Pure presentation (rendered in tests without a network). */
-export function WelcomeBannerView({ data, photoUrl, onDismiss }: WelcomeBannerViewProps) {
+export function WelcomeBannerView({ data, photoUrl, initials, onDismiss }: WelcomeBannerViewProps) {
   const { t } = useT();
   const href = data.kind === "first" ? null : data.attention.count > 0 ? safeAttentionPath(data.attention.path) : null;
   const message = t(welcomeMessageKey(data), { name: data.firstName ?? "" });
@@ -80,7 +84,7 @@ export function WelcomeBannerView({ data, photoUrl, onDismiss }: WelcomeBannerVi
       <Avatar className="h-10 w-10" data-testid="welcome-avatar">
         {photoUrl ? <AvatarImage src={photoUrl} alt="" /> : null}
         <AvatarFallback aria-hidden="true" style={{ background: "var(--t-accent-dim)", color: "var(--t-accent-text, var(--t-heading))" }}>
-          {initialsOf(data.firstName)}
+          {initials || initialsOf(data.firstName)}
         </AvatarFallback>
       </Avatar>
       <p className="min-w-0 flex-1 text-sm font-medium leading-snug" style={{ color: "var(--t-heading)" }} data-testid="welcome-message">
@@ -124,14 +128,8 @@ export function WelcomeBanner() {
     retry: false,
     refetchOnWindowFocus: false,
   });
-  const hasPhoto = !hidden && welcome.data?.photo === true;
-  const photo = useQuery<string | null>({
-    queryKey: [WELCOME_API, "photo"],
-    queryFn: async () => (await apiRequest<{ photo_url?: string | null }>("/api/students/me")).photo_url ?? null,
-    enabled: hasPhoto,
-    staleTime: 5 * 60_000,
-    retry: false,
-  });
+  // Same cache entry as the header avatar and profile, so a changed photo shows everywhere at once.
+  const me = useMyStudent(!hidden);
 
   const shown = !hidden && !!welcome.data;
   useEffect(() => {
@@ -144,7 +142,14 @@ export function WelcomeBanner() {
   const dismiss = useCallback(() => { writeShown(marker); setHidden(true); }, [marker]);
 
   if (!shown || !welcome.data) return null;
-  return <WelcomeBannerView data={welcome.data} photoUrl={photo.data ?? null} onDismiss={dismiss} />;
+  return (
+    <WelcomeBannerView
+      data={welcome.data}
+      photoUrl={welcome.data.photo ? safePhotoUrl(me.data?.photo_url) : null}
+      initials={avatarInitials(me.data?.first_name ?? welcome.data.firstName, me.data?.last_name)}
+      onDismiss={dismiss}
+    />
+  );
 }
 
 export default WelcomeBanner;

@@ -182,6 +182,12 @@ async function newPage(browser: any, o: Opts) {
       if (r.method() === "PATCH") { c.title = body.title; return json(200, { conversation: c }); }
       return json(200, { conversation: c, messages: state.messages[c.id] ?? [] });
     }
+    if (p === "/api/assistant/memory") return json(200, { items: [
+      { id: "mem-00000001", category: "intended_major", statement: "Intended major: communications", status: "active", basis: "student_reported", createdAt: iso(0), updatedAt: iso(0),
+        sources: [{ kind: "message", id: "n1", path: "/assistant?conversation=conv-roadmap-0001", excerpt: "I want to study communications after high school", createdAt: iso(0) }] },
+      { id: "mem-00000002", category: "country_interest", statement: "Interested in studying in Canada", status: "active", basis: "student_reported", createdAt: iso(0), updatedAt: iso(0),
+        sources: [{ kind: "message", id: "n3", path: "/assistant?conversation=conv-roadmap-0001", excerpt: "Universities in Canada too", createdAt: iso(0) }] },
+    ] });
     if (p === "/api/student/attachments/policy") return json(200, POLICY);
     if (p === "/api/student/attachments/documents") return json(200, { documents: DOCS });
     if (p === "/api/student/attachments/upload-url") return json(200, { uploadUrl: `${BASE}/__upload/${encodeURIComponent(body.fileName)}`, uploadToken: "t", storagePath: `chat/${body.fileName}`, expiresIn: 600 });
@@ -261,6 +267,10 @@ async function cockpitAndHeader(browser: any) {
   await page.waitForSelector('[data-testid="welcome-banner"]', { timeout: 8000 }).catch(() => undefined);
   await shot(page, "welcome-returning.png", { clip: { x: 0, y: 0, width: 1440, height: 420 } });
   await ctx.close();
+  ({ page, ctx } = await newPage(browser, { width: 1440, height: 900, theme: "lumiere", lang: "fr", welcome: "returning" }));
+  await page.waitForSelector('[data-testid="welcome-banner"]', { timeout: 8000 }).catch(() => undefined);
+  await shot(page, "welcome-returning-fr.png", { clip: { x: 0, y: 0, width: 1440, height: 420 } });
+  await ctx.close();
 
   // Mobile header: not crowded at 390 and 360.
   for (const w of [390, 360]) {
@@ -328,7 +338,7 @@ async function searchScenes(browser: any) {
   await ctx.close();
 
   // Staff: students only.
-  ({ page, ctx } = await newPage(browser, { width: 1440, height: 900, theme: "lumiere", role: "admin", path: "/support" }));
+  ({ page, ctx } = await newPage(browser, { width: 1440, height: 900, theme: "lumiere", role: "admin", path: "/staff/billing" }));
   await page.fill('[data-testid="global-search-input"]', "lau");
   await page.waitForSelector('[data-testid="global-search-list"]');
   const types = await page.locator('[data-testid^="global-search-option-"]').evaluateAll((els: Element[]) => els.map((e) => e.getAttribute("data-testid")));
@@ -477,6 +487,9 @@ async function assistantScenes(browser: any) {
   await page.click('[data-testid="assistant-suggestion-roadmap-how"]');
   await page.waitForSelector('[data-testid="assistant-answer"]');
   await shot(page, "assistant-fr-conversation.png");
+  await page.click('[data-testid="assistant-memory-btn"]');
+  await page.waitForSelector('[data-testid="assistant-memory-item"]');
+  await shot(page, "assistant-fr-memory.png");
   check("French: greeting and labels", /Guide Lumière/.test((await page.textContent('[data-testid="assistant-panel"]')) ?? ""));
   await ctx.close();
 
@@ -492,6 +505,10 @@ async function assistantScenes(browser: any) {
   await page.click('[data-testid="assistant-history-btn"]');
   await page.waitForSelector('[data-testid="assistant-conversation-list"]');
   await shot(page, "dark-monaco-assistant-history.png");
+  await page.click('[data-testid="assistant-memory-btn"]');
+  await page.waitForSelector('[data-testid="assistant-memory-item"]');
+  await shot(page, "dark-monaco-assistant-memory.png");
+  check("memory panel shows provenance and correct/retract", (await page.locator('[data-testid="assistant-memory-source"]').count()) === 2 && (await page.locator('[data-testid="assistant-memory-retract"]').count()) === 2);
   await ctx.close();
 }
 

@@ -295,3 +295,9 @@
 .aa-mem-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; padding: 10px 6px 10px 12px; }
 .aa-mem-text { white-space: normal; overflow-wrap: anywhere; }
 .aa-mem .aa-conv-preview { color: var(--t-accent-text); text-decoration: underline; text-underline-offset: 2px; white-space: normal; overflow-wrap: anywhere; }
+
+/* S21: five header controls (back/crest, history, memory, new, close) must keep the title on one line. */
+.aa-head { gap: 4px; }
+.aa-head > :first-child { margin-right: 6px; }
+.aa-title { font-size: 1.3rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.aa-subtitle { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

@@ -180,8 +180,8 @@ describe("S21 attachments: markup", () => {
     const html = picker({ current: { ids: ["d1"], bytes: 2 * MB } });
     expect(html).toContain("My documents");
     expect(html).toContain("Chat upload");
-    expect(html).toContain("The guide can read it");
-    expect(html).toContain("Stored, not readable by the guide");
+    expect(html).toContain("Text searchable in your records");
+    expect(html).toContain("Stored (text not searchable)");
     expect(html).toMatch(/checked=""[^>]*disabled=""|disabled=""[^>]*checked=""/);
     expect(html).toContain("Attach selected (0)");
     expect(html).toMatch(/data-testid="assistant-picker-add"[^>]*disabled|disabled=""[^>]*data-testid="assistant-picker-add"/);

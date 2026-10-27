@@ -10,7 +10,7 @@ export const authEn = {
   "auth.hero.body":
     "Your Student Portal, guided by advisors who know your story, from the first application to the final transcript.",
   "auth.hero.footer": "Private student portal",
-  "auth.hero.footerRight": "Student Portal",
+  "auth.hero.footerRight": "By invitation only",
   "auth.mobile.welcome": "Your journey begins here.",
   "auth.language.label": "Language",
 
@@ -96,7 +96,7 @@ export const authFr: Record<keyof typeof authEn, string> = {
   "auth.hero.body":
     "Votre portail étudiant, guidé par des conseillers qui connaissent votre histoire, de la première candidature au dernier relevé de notes.",
   "auth.hero.footer": "Portail étudiant privé",
-  "auth.hero.footerRight": "Portail étudiant",
+  "auth.hero.footerRight": "Sur invitation seulement",
   "auth.mobile.welcome": "Votre parcours commence ici.",
   "auth.language.label": "Langue",
 

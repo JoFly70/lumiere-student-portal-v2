@@ -94,7 +94,7 @@ const DANGEROUS_EXTS = new Set([
   'elf', 'so', 'dylib', 'ts', 'tsx', 'jsx', 'zip', 'rar', '7z', 'gz', 'tar',
 ]);
 
-const FORBIDDEN_NAME_CHARS = /[\u0000-\u001F\u007F-\u009F​-‏‪-‮⁦-⁩﻿\/\\<>:"|?*]/;
+const FORBIDDEN_NAME_CHARS = /[\u0000-\u001F\u007F-\u009F\u200B-\u200F\u202A-\u202E\u2066-\u2069\uFEFF\/\\<>:"|?*]/;
 
 export interface SanitizedName {
   /** Display name, safe to store and show. */

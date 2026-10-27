@@ -88,7 +88,7 @@ function MemoryRow({ item, p }: { item: MemoryItem; p: MemoryViewProps }) {
           <span className="aa-conv-title aa-mem-text">{item.statement}</span>
         )}
         {source?.path && !editing && (
-          <Link href={source.path} className="aa-conv-preview" data-testid="assistant-memory-source">{tr("am.source")}{source.excerpt ? `: “${source.excerpt.slice(0, 90)}”` : ""}</Link>
+          <Link href={source.path} className="aa-conv-preview" data-testid="assistant-memory-source">{source.excerpt ? tr("am.sourceQuote", { q: source.excerpt.slice(0, 90) }) : tr("am.source")}</Link>
         )}
       </div>
       <div className="aa-conv-actions">

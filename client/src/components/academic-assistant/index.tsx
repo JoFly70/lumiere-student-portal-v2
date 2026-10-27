@@ -635,11 +635,7 @@ export function AcademicAssistant({ defaultOpen = false }: { defaultOpen?: boole
     setActionError(null);
     const t = normaliseTitle(title);
     if (!t) throw new Error("blank");
-    try {
-      await apiRequest(`${LIST_KEY}/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify({ title: t }) });
-    } catch (err) {
-      throw err;
-    }
+    await apiRequest(`${LIST_KEY}/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify({ title: t }) });
     if (id === activeId) setMeta((m) => (m ? { ...m, title: t } : m));
     void qc.invalidateQueries({ queryKey: [LIST_KEY] });
   }, [activeId, qc]);
