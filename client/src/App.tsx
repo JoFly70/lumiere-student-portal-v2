@@ -132,6 +132,16 @@ function Router() {
         )}
       </Route>
 
+      {/* S21: Lumière Guide deep links (/assistant?conversation=<id>, /assistant?memory=<id>): the student landing
+          page with the assistant drawer opened on top by <AcademicAssistant /> (mounted in the student layout). */}
+      <Route path="/assistant">
+        {() => (
+          <ProtectedRoute requireRole="student">
+            <FlightDeckRouter />
+          </ProtectedRoute>
+        )}
+      </Route>
+
       <Route path="/high-school/flight-deck">
         {() => (
           <ProtectedRoute requireRole="student">

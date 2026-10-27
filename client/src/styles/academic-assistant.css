@@ -289,3 +289,9 @@
 
 /* the mobile composer: paperclip + textarea + send must fit 360px */
 @media (max-width: 420px) { .aa-form { gap: 6px; } .aa-attach-btn { width: 40px; } }
+
+/* S21 memory panel */
+.aa-mem { padding: 0; }
+.aa-mem-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; padding: 10px 6px 10px 12px; }
+.aa-mem-text { white-space: normal; overflow-wrap: anywhere; }
+.aa-mem .aa-conv-preview { color: var(--t-accent-text); text-decoration: underline; text-underline-offset: 2px; white-space: normal; overflow-wrap: anywhere; }

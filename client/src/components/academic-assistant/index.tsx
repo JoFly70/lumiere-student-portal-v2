@@ -16,7 +16,7 @@ import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 
 import { createPortal } from "react-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation, useSearch } from "wouter";
-import { ArrowLeft, ArrowRight, ExternalLink, History, LifeBuoy, MessageSquarePlus, RotateCcw, SendHorizontal, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, BookmarkCheck, ExternalLink, History, LifeBuoy, MessageSquarePlus, RotateCcw, SendHorizontal, X } from "lucide-react";
 import { LumiereCrest } from "@/components/brand/lumiere-brand";
 import { api, apiRequest } from "@/lib/api";
 import { useT, type Language } from "@/i18n";
@@ -59,6 +59,7 @@ import { HistoryView, type HistoryViewProps } from "./history";
 import {
   AttachMenuButton, AttachmentChips, DocumentPicker, SentAttachments, useComposerAttachments, type ComposerAttachment,
 } from "./attachments";
+import { MemoryView, sanitiseMemory, type MemoryViewProps } from "./memory";
 import "@/styles/academic-assistant.css";
 
 void React; // classic JSX runtime when rendered under vitest/esbuild
@@ -74,12 +75,14 @@ function formatDate(value: string, language: Language): string {
 /* ------------------------------------------------------------------------------------------------ view */
 
 export interface AssistantFeatures {
-  panel: "chat" | "history" | "picker";
+  panel: "chat" | "history" | "picker" | "memory";
   /** Title of the open saved conversation (null = a new one). */
   conversationTitle: string | null;
   conversationArchived: boolean;
   conversationState: "idle" | "loading" | "error";
   history: Omit<HistoryViewProps, "tr" | "language">;
+  memory?: Omit<MemoryViewProps, "tr" | "language">;
+  onOpenMemory?: () => void;
   picker: {
     state: "loading" | "ready" | "error"; docs: readonly AttachableDocument[]; selected: readonly string[];
     onToggle: (id: string) => void; onConfirm: () => void; onCancel: () => void; onRetry: () => void;
@@ -169,6 +172,11 @@ export function AssistantPanelView(p: AssistantViewProps) {
               <History aria-hidden="true" size={19} />
             </button>
           )}
+          {f?.onOpenMemory && (
+            <button type="button" className="aa-iconbtn" onClick={f.onOpenMemory} aria-label={tr("am.open")} title={tr("am.open")} data-testid="assistant-memory-btn" aria-pressed={panel === "memory"}>
+              <BookmarkCheck aria-hidden="true" size={19} />
+            </button>
+          )}
           {(p.entries.length > 0 || (f && f.conversationTitle !== null)) && (
             <button type="button" className="aa-iconbtn" onClick={p.onClear} aria-label={tr("assistant.clearAria")} title={tr("assistant.clear")} data-testid="assistant-clear">
               {f ? <MessageSquarePlus aria-hidden="true" size={19} /> : <RotateCcw aria-hidden="true" size={18} />}
@@ -180,6 +188,7 @@ export function AssistantPanelView(p: AssistantViewProps) {
         </header>
 
         {f && panel === "history" && <HistoryView tr={tr} language={p.language} {...f.history} />}
+        {f && panel === "memory" && f.memory && <MemoryView tr={tr} language={p.language} {...f.memory} />}
         {f && panel === "picker" && (
           <DocumentPicker
             tr={tr} language={p.language} state={f.picker.state} docs={f.picker.docs} policy={f.attach.policy}
@@ -452,7 +461,7 @@ export function AcademicAssistant({ defaultOpen = false }: { defaultOpen?: boole
   const [location, navigate] = useLocation();
   const search = useSearch();
   const [open, setOpen] = useState(defaultOpen);
-  const [panel, setPanel] = useState<"chat" | "history" | "picker">("chat");
+  const [panel, setPanel] = useState<"chat" | "history" | "picker" | "memory">("chat");
   const [entries, setEntries] = useState<ChatEntry[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [meta, setMeta] = useState<{ title: string; archived: boolean } | null>(null);
@@ -480,7 +489,7 @@ export function AcademicAssistant({ defaultOpen = false }: { defaultOpen?: boole
   const loadToken = useRef(0);
   const autoOpened = useRef(false);
   const justLoaded = useRef(false);
-  const lastPanel = useRef<"chat" | "history" | "picker">("chat");
+  const lastPanel = useRef<"chat" | "history" | "picker" | "memory">("chat");
 
   /* ---- queries ---- */
   const statusQuery = useQuery<AssistantStatus>({
@@ -522,6 +531,25 @@ export function AcademicAssistant({ defaultOpen = false }: { defaultOpen?: boole
 
   const attach = useComposerAttachments(policy, tr, language, () => void qc.invalidateQueries({ queryKey: ["/api/student/attachments/policy"] }));
   const clearAttach = attach.clear;
+
+  const [memoryHighlight, setMemoryHighlight] = useState<string | null>(null);
+  const [memoryError, setMemoryError] = useState<string | null>(null);
+  const memoryQuery = useQuery({
+    queryKey: ["/api/assistant/memory"],
+    queryFn: async () => sanitiseMemory(await api.get<unknown>("/api/assistant/memory")),
+    enabled: open && panel === "memory",
+    staleTime: 10_000,
+  });
+  const memoryAction = useCallback(async (path: string, body: unknown) => {
+    setMemoryError(null);
+    try {
+      await apiRequest(path, { method: "POST", body: JSON.stringify(body) });
+      await qc.invalidateQueries({ queryKey: ["/api/assistant/memory"] });
+    } catch (err) {
+      setMemoryError(tr("am.actionError"));
+      throw err;
+    }
+  }, [qc, tr]);
 
   const close = useCallback(() => {
     setOpen(false);
@@ -592,6 +620,7 @@ export function AcademicAssistant({ defaultOpen = false }: { defaultOpen?: boole
     if (location !== ASSISTANT_PATH && !conversationId && !memoryId) return;
     setOpen(true);
     if (conversationId) void loadConversation(conversationId);
+    else if (memoryId) { autoOpened.current = true; setMemoryHighlight(memoryId); setPanel("memory"); }
     else autoOpened.current = false;
     // Consume the params so a reload or back does not reopen it; the path itself is left alone.
     if (typeof window !== "undefined" && (conversationId || memoryId)) {
@@ -843,6 +872,16 @@ export function AcademicAssistant({ defaultOpen = false }: { defaultOpen?: boole
       fileInputRef,
       busy: attach.uploading,
     },
+    memory: {
+      state: memoryQuery.isError ? "error" : memoryQuery.data ? "ready" : "loading",
+      items: memoryQuery.data ?? [],
+      highlightId: memoryHighlight,
+      actionError: memoryError,
+      onCorrect: (id, statement) => memoryAction(`/api/assistant/memory/${encodeURIComponent(id)}/correct`, { statement }),
+      onRetract: (id) => memoryAction(`/api/assistant/memory/${encodeURIComponent(id)}/retract`, {}),
+      onRetry: () => void memoryQuery.refetch(),
+    },
+    onOpenMemory: () => setPanel((p) => (p === "memory" ? "chat" : "memory")),
     onOpenHistory: () => setPanel((p) => (p === "history" ? "chat" : "history")),
     onBack: () => setPanel("chat"),
     onRestore: () => void restoreActive(),

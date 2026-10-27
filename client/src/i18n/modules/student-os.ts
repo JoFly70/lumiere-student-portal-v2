@@ -4,6 +4,23 @@
  * Server-provided text (titles, snippets, file names, record names) is data and is never translated here.
  */
 export const studentOsEn = {
+  "am.title": "What Lumière remembers",
+  "am.open": "What Lumière remembers",
+  "am.intro": "Goals and preferences you shared in conversations. They help the guide find relevant context; they never change your official credits, documents or billing.",
+  "am.basis.reported": "You told us",
+  "am.basis.official": "Official record",
+  "am.source": "Where you said it",
+  "am.correct": "Correct “{item}”",
+  "am.correctShort": "Correct",
+  "am.correct.label": "Corrected statement",
+  "am.retract": "Forget “{item}”",
+  "am.retractShort": "Forget",
+  "am.save": "Save correction",
+  "am.cancel": "Cancel",
+  "am.loading": "Loading what Lumière remembers…",
+  "am.error": "Remembered items could not be loaded.",
+  "am.empty": "Nothing remembered yet. When you share a goal (for example the major you want to study), it appears here.",
+  "am.actionError": "That change could not be saved. Please try again.",
   // Global search
   "gs.label": "Search",
   "gs.placeholder": "Search pages, courses, documents…",
@@ -143,6 +160,23 @@ export const studentOsEn = {
 } as const;
 
 export const studentOsFr: Record<keyof typeof studentOsEn, string> = {
+  "am.title": "Ce dont Lumière se souvient",
+  "am.open": "Ce dont Lumière se souvient",
+  "am.intro": "Les objectifs et préférences que vous avez partagés dans vos conversations. Ils aident le guide à retrouver le bon contexte; ils ne modifient jamais vos crédits officiels, vos documents ni votre facturation.",
+  "am.basis.reported": "Vous nous l’avez dit",
+  "am.basis.official": "Dossier officiel",
+  "am.source": "Où vous l’avez dit",
+  "am.correct": "Corriger « {item} »",
+  "am.correctShort": "Corriger",
+  "am.correct.label": "Énoncé corrigé",
+  "am.retract": "Oublier « {item} »",
+  "am.retractShort": "Oublier",
+  "am.save": "Enregistrer la correction",
+  "am.cancel": "Annuler",
+  "am.loading": "Chargement de ce dont Lumière se souvient…",
+  "am.error": "Impossible de charger les éléments mémorisés.",
+  "am.empty": "Rien n’est encore mémorisé. Lorsque vous partagez un objectif (par exemple le programme que vous voulez étudier), il apparaît ici.",
+  "am.actionError": "Cette modification n’a pas pu être enregistrée. Veuillez réessayer.",
   "gs.label": "Recherche",
   "gs.placeholder": "Rechercher pages, cours, documents…",
   "gs.placeholder.staff": "Rechercher un étudiant par nom, code ou courriel…",
