@@ -1,0 +1,54 @@
+{
+  "generatedAt": "2026-10-27T20:04:19.080Z",
+  "note": "Renders of SYNTHETIC fixtures with stubbed auth and API through a local vite dev server. Not a deployment; not the owner's original screenshots (unavailable in this runtime).",
+  "themes": [
+    "lumiere (default light)",
+    "midnight (Midnight Slate, dark)"
+  ],
+  "failures": [],
+  "apiCallsObserved": [
+    "GET /api/student/programs",
+    "GET /api/students/me",
+    "GET /api/tickets",
+    "GET /api/tickets/context-options",
+    "GET /api/tickets/t-1"
+  ],
+  "axe": [
+    {
+      "screen": "support-01-list-1440.png",
+      "violations": []
+    },
+    {
+      "screen": "support-02-expanded-card-1440.png",
+      "violations": []
+    },
+    {
+      "screen": "support-03-detail-modal-1440.png",
+      "violations": []
+    },
+    {
+      "screen": "support-04-create-dialog-1440.png",
+      "violations": []
+    },
+    {
+      "screen": "support-05-list-filtered-waiting-1440.png",
+      "violations": []
+    },
+    {
+      "screen": "support-06-list-390.png",
+      "violations": []
+    },
+    {
+      "screen": "support-07-detail-modal-390.png",
+      "violations": []
+    },
+    {
+      "screen": "support-08-list-1440-midnight.png",
+      "violations": []
+    },
+    {
+      "screen": "support-09-detail-modal-1440-midnight.png",
+      "violations": []
+    }
+  ]
+}
