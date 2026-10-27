@@ -1366,6 +1366,8 @@ window.ENV = {
 
   // S20: Lumière Academic Assistant. Local guidance always; live Spark inference only when
   // SPARK_ASSISTANT_ENABLED=true, a server key exists and the role is eligible (never students).
+  // S21: persistent, tamper-evident Lumière Guide conversations (owner-scoped; mounted before /api/assistant).
+  app.use('/api/assistant/conversations', (await import('./routes/assistant-conversations')).default);
   app.use('/api/assistant', (await import('./routes/academic-assistant')).default);
 
   app.use('/api/admin', adminRouter);
