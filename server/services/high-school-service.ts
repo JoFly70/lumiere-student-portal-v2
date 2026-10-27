@@ -103,6 +103,21 @@ export class HsError extends Error {
 }
 
 const E = HS_ERROR_CODES;
+
+/** Postgres SQLSTATEs / driver codes meaning "the store or its schema is not there" (drizzle may wrap the driver error in `cause`). */
+const INFRA_CODES = new Set(["42P01", "3D000", "57P01", "57P03", "53300", "ECONNREFUSED", "ECONNRESET", "ETIMEDOUT", "ENOTFOUND", "CONNECT_TIMEOUT", "CONNECTION_CLOSED", "CONNECTION_DESTROYED"]);
+function infraCodeOf(error: unknown): string | null {
+  for (let e: any = error, i = 0; e && i < 4; e = e.cause, i++) {
+    const code = typeof e.code === "string" ? e.code : "";
+    if (INFRA_CODES.has(code) || code.startsWith("08")) return code;
+  }
+  return null;
+}
+/** S13: a missing table / unreachable database is a truthful 503 HS_UNAVAILABLE, never a generic 500 or an empty 200. Other errors pass through. */
+export function toHsUnavailable(error: unknown): unknown {
+  if (error instanceof HsError) return error;
+  return infraCodeOf(error) ? new HsError(E.UNAVAILABLE, 503, "High school records are temporarily unavailable") : error;
+}
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // ── Types ────────────────────────────────────────────────────────────────────

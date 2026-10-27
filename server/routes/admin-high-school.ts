@@ -29,9 +29,13 @@ import {
 } from "@shared/high-school-contract";
 import { hsCurriculumTemplateSchema } from "@shared/high-school-projection";
 import { requireAuth } from "../middleware/auth";
-import type { HighSchoolService } from "../services/high-school-service";
+import { toHsUnavailable, type HighSchoolService } from "../services/high-school-service";
 import { emitAccessDenied, emitHighSchoolAudit, type HsAuditSink } from "./high-school-audit";
-import { guardRoles, parseBody, sendHsError, sendZodError, studentIdNotAccepted, validationFailure } from "./high-school-http";
+import { guardRoles, parseBody, sendHsError as sendHsErrorBase, sendZodError, studentIdNotAccepted, validationFailure } from "./high-school-http";
+
+/** S13: missing tables / unreachable database -> 503 HS_UNAVAILABLE instead of a generic 500. */
+const sendHsError = (res: Parameters<typeof sendHsErrorBase>[0], error: unknown, context: string) =>
+  sendHsErrorBase(res, toHsUnavailable(error), context);
 
 type Svc = HighSchoolService;
 export interface AdminHighSchoolRouterDeps {

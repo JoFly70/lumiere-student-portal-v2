@@ -778,7 +778,7 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("S11 high school pathway — real HTTP e
       expect((await get(s.student.id)).current!.awards.filter((a) => a.courseKey === "english-1")).toHaveLength(1);
     }, 60_000);
 
-    it("a database failure returns a generic 500 without internals and leaves no partial state", async () => {
+    it("a database failure (missing table) returns a truthful 503 without internals and leaves no partial state", async () => {
       const s = await seedHsStudent(pg, "DbFail");
       const { eid, state } = await enroll(s);
       const revision = state.current!.enrollment.revision;
@@ -789,8 +789,8 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("S11 high school pathway — real HTTP e
       } finally {
         await pg.sql(`alter table hs_events_offline rename to hs_events`);
       }
-      expect(res.status).toBe(500);
-      expect(res.body).toEqual({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
+      expect(res.status).toBe(503);
+      expect(res.body).toEqual({ error: { code: "HS_UNAVAILABLE", message: "High school records are temporarily unavailable" } });
       expect(JSON.stringify(res.body)).not.toMatch(/hs_events|relation|postgres|select|insert|stack/i);
       const after = await get(s.student.id);
       expect(after.current!.enrollment.revision).toBe(revision);

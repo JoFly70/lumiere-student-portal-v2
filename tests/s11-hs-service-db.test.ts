@@ -1219,13 +1219,13 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("S11 high school pathway — service on 
       expect((await request(hs.app).get(`${enr}`).set(authHeader(staff.token))).status).toBe(404); // no GET on the enrollment itself
     });
 
-    it("a database failure returns 500 without leaking internals", async () => {
+    it("a database failure (missing table) returns 503 HS_UNAVAILABLE without leaking internals", async () => {
       const s = await enroll("Smoke Failure");
       await pg.sql(`alter table hs_graduation_records rename to hs_graduation_records_tmp`);
       try {
         const res = await request(hs.app).get(`/api/admin/students/${s.st.studentId}/high-school`).set(authHeader(staff.token));
-        expect(res.status).toBe(500);
-        expect(res.body).toEqual({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
+        expect(res.status).toBe(503);
+        expect(res.body).toEqual({ error: { code: "HS_UNAVAILABLE", message: "High school records are temporarily unavailable" } });
         expect(JSON.stringify(res.body)).not.toMatch(/hs_graduation|relation|select/i);
       } finally {
         await pg.sql(`alter table hs_graduation_records_tmp rename to hs_graduation_records`);

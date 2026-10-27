@@ -15,9 +15,13 @@ import { requireAuth } from "../middleware/auth";
 import { requireRole } from "../middleware/rbac";
 import { getStudentByUserId } from "../repositories/student-academic-repo";
 import { hsStudentProgressSchema, transcriptRequestSchema } from "@shared/high-school-contract";
-import type { HighSchoolService } from "../services/high-school-service";
+import { toHsUnavailable, type HighSchoolService } from "../services/high-school-service";
 import { emitHighSchoolAudit, type HsAuditSink } from "./high-school-audit";
-import { parseBody, sendHsError, studentIdNotAccepted, mentionsStudentId } from "./high-school-http";
+import { parseBody, sendHsError as sendHsErrorBase, studentIdNotAccepted, mentionsStudentId } from "./high-school-http";
+
+/** S13: missing tables / unreachable database -> 503 HS_UNAVAILABLE instead of a generic 500. */
+const sendHsError = (res: Parameters<typeof sendHsErrorBase>[0], error: unknown, context: string) =>
+  sendHsErrorBase(res, toHsUnavailable(error), context);
 
 export interface StudentHighSchoolRouterDeps {
   readonly getStudentByUserId: (userId: string) => Promise<{ readonly id: string } | null>;

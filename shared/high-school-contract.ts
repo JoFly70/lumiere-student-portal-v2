@@ -797,6 +797,8 @@ export const HS_ERROR_CODES = {
   CLAIM_NOT_FOUND: "HS_CLAIM_NOT_FOUND",
   NO_DRAFT: "HS_NO_DRAFT",
   INVALID_TRANSITION: "HS_INVALID_TRANSITION",
+  /** S13: database/table unavailable (never a fake empty success). */
+  UNAVAILABLE: "HS_UNAVAILABLE",
 } as const;
 export type HsErrorCode = (typeof HS_ERROR_CODES)[keyof typeof HS_ERROR_CODES];
 
