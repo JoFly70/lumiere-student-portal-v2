@@ -1,0 +1,54 @@
+/*
+ * Navigation rail and shell polish (S17).
+ * Visual patterns adapted from the Lumière ClientDesk design system; re-implemented for the Portal.
+ * Colours come from the sidebar variables, which styles/themes.css maps from each theme's rail palette.
+ */
+
+/* Active item: tinted fill, accent text and a short accent bar on the leading edge. */
+.os-nav-item {
+  position: relative;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+.os-nav-item:hover {
+  background-color: var(--t-rail-hover, hsl(var(--sidebar-accent) / 0.5));
+  color: hsl(var(--sidebar-foreground));
+}
+.os-nav-item[data-active="true"] {
+  background-color: hsl(var(--sidebar-accent));
+  color: hsl(var(--sidebar-accent-foreground));
+  font-weight: 600;
+}
+.os-nav-item[data-active="true"]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 9px;
+  bottom: 9px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background-color: hsl(var(--sidebar-primary));
+}
+.os-nav-item:focus-visible {
+  outline: 2px solid hsl(var(--sidebar-ring));
+  outline-offset: 1px;
+}
+
+/* Collapsed icon rail: centred icons, the bar hugs the rail edge. */
+[data-collapsible="icon"] .os-nav-item[data-active="true"]::before {
+  top: 11px;
+  bottom: 11px;
+}
+
+/* Whole-shell colour changes ease in when a theme is picked (never when reduced motion is requested). */
+@media (prefers-reduced-motion: no-preference) {
+  body.student-shell [data-sidebar="sidebar"],
+  body.student-shell .student-surface {
+    transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease;
+  }
+}
+
+/* The theme picker's focus ring uses the active theme's accent. */
+.os-theme-option:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}

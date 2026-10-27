@@ -321,6 +321,8 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("S13 first high-school diploma student �
   // ── 9 ────────────────────────────────────────────────────────────────────
   step(9, "student submits supporting evidence (pending); the student cannot verify it", async (rec) => {
     const body = { doc_type: "hs_transcript", file_name: "synthetic-school-record.pdf", storage_path: `students/${s1Code}/hs_transcript/1790000000000_synthetic-school-record.pdf` };
+    // S17: finalize requires the object to exist in storage (the signed upload happened).
+    support.addStorageObject(body.storage_path);
     const created = await api().post(`/api/documents/student/${s1Id}`).set(s1User.auth).send(body);
     expect(created.status, JSON.stringify(created.body).slice(0, 300)).toBe(201);
     docId = created.body.id;

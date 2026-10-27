@@ -5,6 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Lumiere Student Portal - Track Your UMPI Degree Progress</title>
     <meta name="description" content="Manage your registration, billing, and academic progress across all study phases. Track transfer credits from Sophia, Study.com, and ACE mapped to UMPI distribution requirements." />
+    <!-- Flash-free theme bootstrap (S17): applies the saved theme before first paint. Mirrors lib/themes.ts. -->
+    <script>
+      (function () {
+        try {
+          var ids = { lumiere: 0, "lumiere-dark": 1, midnight: 1, monaco: 1, forest: 1, bordeaux: 1, graphite: 1, sandstone: 0, teal: 1 };
+          var v = null;
+          try { v = localStorage.getItem("lumiere-portal:theme") || localStorage.getItem("theme"); } catch (e) {}
+          if (v === "dark") v = "lumiere-dark"; else if (v === "light") v = null;
+          if (!v || !Object.prototype.hasOwnProperty.call(ids, v)) v = "lumiere";
+          var r = document.documentElement;
+          r.setAttribute("data-theme", v);
+          r.classList.remove("light", "dark");
+          r.classList.add(ids[v] ? "dark" : "light");
+          r.style.colorScheme = ids[v] ? "dark" : "light";
+        } catch (e) {}
+      })();
+    </script>
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

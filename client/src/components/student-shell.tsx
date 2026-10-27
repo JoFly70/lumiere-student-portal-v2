@@ -20,7 +20,7 @@ const BAR_ITEMS = [
 
 export function StudentHeader() {
   return (
-    <header className="flex h-14 shrink-0 items-center justify-between border-b border-student-line bg-student-bg px-3 sm:px-4">
+    <header className="flex h-14 shrink-0 items-center justify-between border-b border-student-line bg-student-card px-3 sm:px-4">
       <div className="flex items-center gap-3">
         <SidebarTrigger className="hidden md:inline-flex" data-testid="button-sidebar-toggle" />
         <p className="font-serif text-xl tracking-tight text-student-gold-ink md:hidden" data-testid="text-header-brand">
@@ -39,7 +39,7 @@ export function StudentBottomNav() {
   // Six tabs are too tight at 390px: a student with both programs reaches Roadmap through "More".
   const barItems = filterStudentNav(BAR_ITEMS, programs).filter((i) => !(programs.hasHighSchool && !programs.highSchoolOnly && i.url === "/roadmap"));
   const itemClass =
-    "relative flex min-h-[56px] flex-1 flex-col items-center justify-center gap-0.5 px-1 text-[11px] font-medium leading-tight";
+    "relative flex min-h-[60px] flex-1 flex-col items-center justify-center gap-0.5 px-1 text-[11px] font-medium leading-tight";
   return (
     <nav
       aria-label="Primary"
@@ -57,8 +57,12 @@ export function StudentBottomNav() {
                 className={cn(itemClass, active ? "text-student-gold-ink" : "text-student-muted")}
                 data-testid={`bar-${item.title.toLowerCase().replace(/\s+/g, "-")}`}
               >
-                {active && <span aria-hidden="true" className="absolute inset-x-4 top-0 h-0.5 rounded-b bg-student-gold" />}
-                <item.icon className="h-5 w-5" aria-hidden="true" />
+                <span
+                  aria-hidden="true"
+                  className={cn("flex h-7 w-12 items-center justify-center rounded-full transition-colors", active && "bg-student-gold-soft")}
+                >
+                  <item.icon className="h-5 w-5" />
+                </span>
                 {item.title}
               </Link>
             </li>
@@ -66,7 +70,9 @@ export function StudentBottomNav() {
         })}
         <li className="flex flex-1">
           <button type="button" onClick={toggleSidebar} className={cn(itemClass, "text-student-muted")} data-testid="bar-more">
-            <Menu className="h-5 w-5" aria-hidden="true" />
+            <span aria-hidden="true" className="flex h-7 w-12 items-center justify-center rounded-full">
+              <Menu className="h-5 w-5" />
+            </span>
             More
           </button>
         </li>

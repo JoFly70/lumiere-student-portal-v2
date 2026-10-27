@@ -1,4 +1,4 @@
-import { BookOpen, FileText, CreditCard, GraduationCap, HelpCircle, LogOut, User, Gauge, ShieldCheck, School } from "lucide-react";
+import { BookOpen, FileText, CreditCard, GraduationCap, HelpCircle, LogOut, User, Gauge, ShieldCheck, School, FlaskConical } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Link, useLocation, useSearch } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -17,6 +17,7 @@ import {
 import { ProfileAvatarUpload } from "@/components/profile-avatar-upload";
 import { useAuth, useAuthToken } from "@/lib/auth";
 import { filterStudentNav, useStudentPrograms } from "@/lib/student-programs";
+import { PROTOTYPES_ENABLED, PREVIEW_FLIGHT_DECK_PATH } from "@/components/os/prototype-gate";
 import { StaffAvatar } from "@/components/staff/staff-ui";
 import { staffRoleLabel } from "@/components/staff/staff-shell";
 import { ADMIN_STUDENTS_PATH, adminTabFromSearch } from "@/pages/admin-student-workspace-presentation";
@@ -69,6 +70,9 @@ const JOURNEY_URLS = ["/high-school", "/flight-deck", "/roadmap"];
 const studentJourneyItems = studentMenuItems.filter((i) => JOURNEY_URLS.includes(i.url));
 const studentFileItems = studentMenuItems.filter((i) => !JOURNEY_URLS.includes(i.url));
 
+// Dev/prototype builds only (see os/prototype-gate): a link to the Academic Flight Deck preview.
+const prototypeItems = [{ title: "Flight Deck Preview", url: PREVIEW_FLIGHT_DECK_PATH, icon: FlaskConical }];
+
 // Staff navigation. "Students" opens the existing admin Students list (admin only: the
 // list route is admin-gated). Staff and coaches work from the support desk.
 const adminMenuItems = [
@@ -118,7 +122,7 @@ export function AppSidebar() {
 
   if (isStudent) {
     const renderItems = (items: typeof studentMenuItems) => (
-      <SidebarMenu>
+      <SidebarMenu className="gap-0.5">
         {items.map((item) => {
           const active = location === item.url;
           return (
@@ -126,15 +130,16 @@ export function AppSidebar() {
               <SidebarMenuButton
                 asChild
                 isActive={active}
+                tooltip={item.title}
                 className={cn(
-                  "h-11 gap-3 rounded-lg px-3 text-[15px] font-medium",
-                  active && "relative bg-sidebar-accent text-sidebar-accent-foreground before:absolute before:inset-y-2 before:left-0 before:w-[3px] before:rounded-full before:bg-sidebar-primary",
+                  "os-nav-item h-10 gap-3 rounded-lg px-3 text-[14px] font-medium text-sidebar-foreground",
+                  "group-data-[collapsible=icon]:!h-10 group-data-[collapsible=icon]:!w-10 group-data-[collapsible=icon]:!justify-center group-data-[collapsible=icon]:!p-0",
                 )}
                 data-testid={`link-${item.title.toLowerCase().replace(/\s+/g, "-")}`}
               >
-                <Link href={item.url} aria-current={active ? "page" : undefined}>
-                  <item.icon className="h-[18px] w-[18px]" aria-hidden="true" />
-                  <span>{item.title}</span>
+                <Link href={item.url} aria-label={item.title} aria-current={active ? "page" : undefined}>
+                  <item.icon className="h-[18px] w-[18px] shrink-0" aria-hidden="true" />
+                  <span className="group-data-[collapsible=icon]:hidden">{item.title}</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -143,33 +148,48 @@ export function AppSidebar() {
       </SidebarMenu>
     );
     return (
-      <Sidebar>
-        <SidebarHeader className="px-6 pb-4 pt-7">
-          <div className="flex items-center gap-3" role="region" aria-label="Lumière Higher-Ed Pathways">
-            <img src={lumiereLogo} alt="Lumière Higher-Ed Pathways" className="h-11 w-11 object-contain" data-testid="img-lumiere-logo" />
-            <div>
-              <p className="font-serif text-2xl leading-none tracking-tight text-sidebar-primary">Lumière</p>
-              <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-sidebar-foreground/70">Higher-Ed Pathways</p>
+      <Sidebar collapsible="icon">
+        <SidebarHeader className="px-5 pb-3 pt-6 group-data-[collapsible=icon]:px-1.5">
+          <div className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center" role="region" aria-label="Lumière Higher-Ed Pathways">
+            <img
+              src={lumiereLogo}
+              alt="Lumière Higher-Ed Pathways"
+              className="h-11 w-11 shrink-0 rounded-full object-contain ring-1 ring-sidebar-border group-data-[collapsible=icon]:h-9 group-data-[collapsible=icon]:w-9"
+              data-testid="img-lumiere-logo"
+            />
+            <div className="min-w-0 group-data-[collapsible=icon]:hidden">
+              <p className="font-serif text-[22px] leading-none tracking-tight text-sidebar-primary">Lumière</p>
+              <p className="mt-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-sidebar-foreground/70">Higher-Ed Pathways</p>
               <p className="sr-only">{portalLabel}</p>
             </div>
           </div>
-          <div className="mt-5 h-px bg-gradient-to-r from-sidebar-primary/60 via-sidebar-primary/20 to-transparent" aria-hidden="true" />
+          <div className="mt-5 h-px bg-sidebar-border group-data-[collapsible=icon]:mt-4" aria-hidden="true" />
         </SidebarHeader>
-        <SidebarContent className="px-2">
+        <SidebarContent className="px-3 group-data-[collapsible=icon]:px-1.5">
           <nav aria-label="Main">
-            <SidebarGroup>
-              <SidebarGroupLabel className="text-[11px] font-semibold uppercase tracking-[0.16em]">Your journey</SidebarGroupLabel>
+            <SidebarGroup className="px-0 py-2">
+              <SidebarGroupLabel className="px-3 text-[10.5px] font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/70">Your journey</SidebarGroupLabel>
               <SidebarGroupContent>{renderItems(filterStudentNav(studentJourneyItems, programs))}</SidebarGroupContent>
             </SidebarGroup>
-            <SidebarGroup>
-              <SidebarGroupLabel className="text-[11px] font-semibold uppercase tracking-[0.16em]">Your file</SidebarGroupLabel>
+            <SidebarGroup className="px-0 py-2">
+              <SidebarGroupLabel className="px-3 text-[10.5px] font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/70">Your file</SidebarGroupLabel>
               <SidebarGroupContent>{renderItems(filterStudentNav(studentFileItems, programs))}</SidebarGroupContent>
             </SidebarGroup>
+            {PROTOTYPES_ENABLED && (
+              <SidebarGroup className="px-0 py-2" data-testid="nav-prototypes">
+                <SidebarGroupLabel className="px-3 text-[10.5px] font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/70">Prototypes</SidebarGroupLabel>
+                <SidebarGroupContent>{renderItems(prototypeItems)}</SidebarGroupContent>
+              </SidebarGroup>
+            )}
           </nav>
         </SidebarContent>
-        <SidebarFooter className="gap-3 px-4 pb-5 pt-3" role="contentinfo">
-          <div role="region" aria-label="Your account" className="space-y-2 rounded-xl border border-sidebar-border bg-sidebar-accent/40 p-3">
-            <div className="flex items-center gap-3" role="group" aria-label="User profile" data-testid="profile-user">
+        <SidebarFooter className="gap-3 px-3 pb-4 pt-3 group-data-[collapsible=icon]:px-1.5" role="contentinfo">
+          <div
+            role="region"
+            aria-label="Your account"
+            className="space-y-2 rounded-xl border border-sidebar-border bg-sidebar-accent/40 p-3 group-data-[collapsible=icon]:border-0 group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:p-0"
+          >
+            <div className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center" role="group" aria-label="User profile" data-testid="profile-user">
               <ProfileAvatarUpload
                 photoUrl={profile?.photo_url}
                 firstName={profile?.first_name}
@@ -177,22 +197,22 @@ export function AppSidebar() {
                 size="md"
                 showUploadButton={false}
               />
-              <div className="min-w-0 flex-1">
+              <div className="min-w-0 flex-1 group-data-[collapsible=icon]:hidden">
                 <div className="truncate text-sm font-semibold" data-testid="text-username">{displayName}</div>
                 <div className="truncate text-xs text-sidebar-foreground/70" data-testid="text-email">{displayEmail}</div>
               </div>
             </div>
             <button
               onClick={() => void logout()}
-              className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-lg border border-sidebar-border bg-sidebar text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent"
+              className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-lg border border-sidebar-border bg-transparent text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:w-10"
               data-testid="button-logout"
               aria-label="Log out"
             >
               <LogOut className="h-4 w-4" aria-hidden="true" />
-              <span>Log out</span>
+              <span className="group-data-[collapsible=icon]:hidden">Log out</span>
             </button>
           </div>
-          <p className="text-center text-[11px] text-sidebar-foreground">© 2026 Lumière Higher-Ed Pathways</p>
+          <p className="text-center text-[11px] text-sidebar-foreground/70 group-data-[collapsible=icon]:hidden">© 2026 Lumière Higher-Ed Pathways</p>
         </SidebarFooter>
       </Sidebar>
     );

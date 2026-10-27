@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { Switch, Route, Redirect, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -29,6 +29,10 @@ import HighSchool from "@/pages/high-school";
 import { UniversityOnly } from "@/components/university-only";
 import { studentLandingPath, useStudentPrograms } from "@/lib/student-programs";
 import AdminStudentHighSchool from "@/pages/admin-student-high-school";
+import { PROTOTYPES_ENABLED, PREVIEW_FLIGHT_DECK_PATH } from "@/components/os/prototype-gate";
+
+// Prototype-only route (S17). Compiled out of normal production builds; see components/os/prototype-gate.
+const FlightDeckPreview = PROTOTYPES_ENABLED ? lazy(() => import("@/pages/flight-deck-preview")) : null;
 
 function RoleLanding() {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -182,7 +186,7 @@ function AuthenticatedLayout() {
 
   const style = {
     "--sidebar-width": "16rem",
-    "--sidebar-width-icon": "3rem",
+    "--sidebar-width-icon": "3.75rem",
   };
 
   return (
@@ -231,6 +235,20 @@ function ApplicationLayout() {
 }
 
 export default function App() {
+  const [location] = useLocation();
+  // Academic Flight Deck preview: dev / VITE_ENABLE_PROTOTYPES only. Rendered outside auth and the API
+  // client on purpose: it uses synthetic data and makes no network calls.
+  if (PROTOTYPES_ENABLED && FlightDeckPreview && location === PREVIEW_FLIGHT_DECK_PATH) {
+    return (
+      <ThemeProvider>
+        <TooltipProvider>
+          <Suspense fallback={null}>
+            <FlightDeckPreview />
+          </Suspense>
+        </TooltipProvider>
+      </ThemeProvider>
+    );
+  }
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
