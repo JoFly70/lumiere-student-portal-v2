@@ -224,8 +224,9 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("S13 first high-school diploma student �
   }
 
   // ── 3 ────────────────────────────────────────────────────────────────────
-  step(3, "staff enrolls the student in the high-school program (us-hs-diploma-21)", async (rec) => {
-    const res = await api().post(`${A(s1Id)}/enrollments`).set(staff.auth).send({ templateKey: "us-hs-diploma-21", templateVersion: 1, status: "active" });
+  // S16: the first student enrolls on template version 2 (corrected core titles); the second student below stays on version 1.
+  step(3, "staff enrolls the student in the high-school program (us-hs-diploma-21 v2)", async (rec) => {
+    const res = await api().post(`${A(s1Id)}/enrollments`).set(staff.auth).send({ templateKey: "us-hs-diploma-21", templateVersion: 2, status: "active" });
     const st = ok(res, "enroll") as StaffHighSchoolState;
     eid = st.current!.enrollment.id;
     expect(st.current!.enrollment.status).toBe("active");
@@ -242,6 +243,8 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("S13 first high-school diploma student �
     expect(templateCourses.filter((c: any) => c.areaKey !== "electives")).toHaveLength(17); // 17 core courses ...
     expect(coreSum).toBe(32); // ... = 16 core credits
     expect(templateCourses.filter((c: any) => c.areaKey === "electives")).toHaveLength(0); // electives are chosen by staff
+    expect(templateCourses.map((c: any) => c.title)).toEqual(expect.arrayContaining(["Personal Finance", "U.S. History", "U.S. Government and Economics", "Health and Nutrition"]));
+    expect(templateCourses.some((c: any) => /confirmed per enrollment/.test(c.title))).toBe(false);
     const content = JSON.parse(JSON.stringify(draft.content));
     for (const e of ELECTIVES) {
       content.courses.push({ key: e.key, title: e.title, areaKey: "electives", halfUnits: e.halfUnits, status: "planned", replacesCourseKey: null, plannedStart: null, plannedEnd: null, tasks: [] });

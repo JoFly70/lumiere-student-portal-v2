@@ -225,6 +225,35 @@ export const TEMPLATE_STANDARD_21: HsCurriculumTemplate = {
 };
 
 /**
+ * Version 2 of the standard 21-credit diploma (S16). Same areas, credits and
+ * policies as version 1; the four placeholder core slots carry the titles from
+ * the awarding school's public curriculum page (checked 2026-10-27), pending the
+ * school's written confirmation. Version 1 stays stored and in force for
+ * enrollments created on it: templates are immutable once inserted.
+ * Course order is the listing order, not a school-approved sequence. Electives
+ * are not template courses: the draft builder plans every template course, so
+ * staff add the five elective credits per student from the school's offerings.
+ */
+export const TEMPLATE_STANDARD_21_V2: HsCurriculumTemplate = {
+  ...TEMPLATE_STANDARD_21,
+  version: 2,
+  courses: TEMPLATE_STANDARD_21.courses.map((c) => {
+    switch (c.key) {
+      case "math-3": return course("math-personal-finance", "Personal Finance", "math", 1);
+      case "social-2": return course("social-us-history", "U.S. History", "social", 1);
+      case "social-3": return course("social-us-gov-econ", "U.S. Government and Economics", "social", 1);
+      case "health-pe": return course("health-nutrition", "Health and Nutrition", "health_pe", 1);
+      default: return c;
+    }
+  }),
+  sourceNote:
+    "Discipline credit totals from the awarding school's public student catalog (Academic Year 2026 edition); " +
+    "core course titles from its public curriculum page (both checked 2026-10-27), pending the school's written confirmation. " +
+    "Transfer maximum is stated as both 15 and 16 by the school, so it is left unconfigured. " +
+    "Exam retake rules depend on the exam type and are not configured; passing grades and time limits are applied by the school.",
+};
+
+/**
  * Tennessee residents: 22 credits, minimum 4 ELA, 4 math, 3 science, 3 social
  * studies. The extra credit is modelled as a fourth math credit (18 core + 5
  * elective courses per the school's TN program outline). Staff must confirm
@@ -243,7 +272,17 @@ export const TEMPLATE_TN_22: HsCurriculumTemplate = {
     "catalog and TN program outline (checked 2026-10-26). Course list to be confirmed per enrollment.",
 };
 
-export const BUILT_IN_TEMPLATES: readonly HsCurriculumTemplate[] = [TEMPLATE_STANDARD_21, TEMPLATE_TN_22];
+export const BUILT_IN_TEMPLATES: readonly HsCurriculumTemplate[] = [TEMPLATE_STANDARD_21, TEMPLATE_STANDARD_21_V2, TEMPLATE_TN_22];
+
+/** The highest version of each template key, in first-seen key order. New enrollments start from these. */
+export function latestTemplateVersions(templates: readonly HsCurriculumTemplate[]): HsCurriculumTemplate[] {
+  const latest = new Map<string, HsCurriculumTemplate>();
+  for (const t of templates) {
+    const cur = latest.get(t.templateKey);
+    if (!cur || t.version > cur.version) latest.set(t.templateKey, t);
+  }
+  return [...latest.values()];
+}
 
 /** Structural validation of a template (used when staff create a new template version). */
 export function validateTemplate(t: HsCurriculumTemplate): string[] {

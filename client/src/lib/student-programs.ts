@@ -53,6 +53,8 @@ export function useStudentPrograms(enabled = true) {
 
 export const HIGH_SCHOOL_PATH = "/high-school";
 export const UNIVERSITY_ONLY_PATHS: readonly string[] = ["/flight-deck", "/roadmap"];
+/** Nav entries hidden for high-school-only students: billing is not connected for the high school program. The route itself stays. */
+export const HIGH_SCHOOL_ONLY_HIDDEN_PATHS: readonly string[] = ["/billing"];
 
 /** Where a student lands after sign-in. Unknown access (loading is handled by the caller) means the university dashboard. */
 export function studentLandingPath(access: ProgramAccess): string {
@@ -62,12 +64,12 @@ export function studentLandingPath(access: ProgramAccess): string {
 /**
  * Applies program awareness to a list of student nav entries (anything with a `url`):
  * High School appears only with a high school program and leads for high-school-only students;
- * Flight Deck and Roadmap are hidden for high-school-only students. Order is otherwise kept.
+ * Flight Deck, Roadmap and Billing are hidden for high-school-only students. Order is otherwise kept.
  */
 export function filterStudentNav<T extends { readonly url: string }>(items: readonly T[], access: ProgramAccess): T[] {
   const kept = items.filter((i) => {
     if (i.url === HIGH_SCHOOL_PATH) return access.hasHighSchool;
-    if (UNIVERSITY_ONLY_PATHS.includes(i.url)) return !access.highSchoolOnly;
+    if (UNIVERSITY_ONLY_PATHS.includes(i.url) || HIGH_SCHOOL_ONLY_HIDDEN_PATHS.includes(i.url)) return !access.highSchoolOnly;
     return true;
   });
   if (!access.highSchoolOnly) return kept;

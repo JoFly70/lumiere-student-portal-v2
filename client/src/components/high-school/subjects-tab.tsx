@@ -293,7 +293,7 @@ function SubjectCard({ subject, today, schoolLine, open, onToggle, openCourses, 
       </h3>
       <div id={id} hidden={!open} className="px-3 pb-4 sm:px-6 sm:pb-6">
         {subject.courses.length === 0 ? (
-          <p className="text-sm text-student-muted">No courses are planned in this subject yet.</p>
+          <p className="text-sm text-student-muted">{subject.subject === "electives" ? "Your electives are being confirmed with your school. Your advisor will add them here." : "No courses are planned in this subject yet."}</p>
         ) : (
           <div className="space-y-3">
             {current.length > 0 ? (

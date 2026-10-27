@@ -5,7 +5,7 @@ import { GraduationCap, University } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { BUILT_IN_TEMPLATES, GENERIC_SCHOOL_DESCRIPTION, HS_ENROLLMENT_STATUSES, formatHalfUnits, type HsCurriculumTemplate, type HsEnrollmentSummary } from "@shared/high-school-contract";
+import { BUILT_IN_TEMPLATES, GENERIC_SCHOOL_DESCRIPTION, HS_ENROLLMENT_STATUSES, formatHalfUnits, latestTemplateVersions, type HsCurriculumTemplate, type HsEnrollmentSummary } from "@shared/high-school-contract";
 import { adminHighSchoolApi, useHsTemplates } from "@/lib/admin-high-school-api";
 import {
   CLOSED_RECORD_TEXT, createEnrollmentBody, disclosureGate, disclosurePreview, enrollmentTimeline, evidenceGate, formatDate, isOpenEnrollment, noteGate, statusLabel, templateOptionLabel,
@@ -81,18 +81,22 @@ function EnrollmentFacts({ e, templateTitle }: { e: HsEnrollmentSummary; templat
 function EnrollmentEditor({ studentId, e }: { studentId: string; e: HsEnrollmentSummary }) {
   const [status, setStatus] = useState<string>(e.status);
   const [target, setTarget] = useState(e.targetCompletionDate ?? "");
+  const [schoolRef, setSchoolRef] = useState(e.schoolStudentRef ?? "");
   const [note, setNote] = useState("");
   const action = useStaffAction(studentId, (body: unknown) => adminHighSchoolApi.updateEnrollment(studentId, e.id, body), "Program updated.");
-  const changed = status !== e.status || target !== (e.targetCompletionDate ?? "");
+  const refChanged = schoolRef.trim() !== (e.schoolStudentRef ?? "");
+  const changed = status !== e.status || target !== (e.targetCompletionDate ?? "") || refChanged;
   const gate = !changed ? { enabled: false, reason: "No changes to save." } : noteGate(note);
+  const patch = { status, targetCompletionDate: target || null, ...(refChanged ? { schoolStudentRef: schoolRef.trim() || null } : {}) };
   return (
-    <form className="grid gap-4 md:grid-cols-2" onSubmit={(ev) => { ev.preventDefault(); if (gate.enabled) action.run(updateEnrollmentBody(e.revision, { status, targetCompletionDate: target || null }, note), () => setNote("")); }}>
+    <form className="grid gap-4 md:grid-cols-2" onSubmit={(ev) => { ev.preventDefault(); if (gate.enabled) action.run(updateEnrollmentBody(e.revision, patch, note), () => setNote("")); }}>
       <Field id="hs-edit-status" label="Status">
         <select id="hs-edit-status" className={FIELD_CLASS} value={status} onChange={(ev) => setStatus(ev.target.value)}>
           {HS_ENROLLMENT_STATUSES.map((s) => <option key={s} value={s}>{statusLabel(s)}</option>)}
         </select>
       </Field>
       <Field id="hs-edit-target" label="Target completion date" hint="A target, not a guarantee."><Input id="hs-edit-target" type="date" value={target} aria-describedby="hs-edit-target-hint" onChange={(ev) => setTarget(ev.target.value)} /></Field>
+      <Field id="hs-edit-school-ref" label="School student reference (optional)" hint="The number the school issued. Staff-only." className="md:col-span-2"><Input id="hs-edit-school-ref" value={schoolRef} maxLength={80} aria-describedby="hs-edit-school-ref-hint" onChange={(ev) => setSchoolRef(ev.target.value)} /></Field>
       <Field id="hs-edit-note" label="Note for the record (required)" className="md:col-span-2"><Input id="hs-edit-note" value={note} onChange={(ev) => setNote(ev.target.value)} placeholder="Why this change" /></Field>
       <div className="space-y-3 md:col-span-2">
         <ActionMessage message={action.message} />
@@ -230,7 +234,7 @@ export function ProgramSection({ state, studentId, isAdmin, docs, templates, ini
       </SectionCard>
 
       {cur && !cur.isHistorical ? <DisclosureCard key={`${cur.id}-${cur.revision}`} studentId={studentId} e={cur} form={form} /> : null}
-      {!hasOpen ? <CreateEnrollmentCard studentId={studentId} templates={list} hasOpen={hasOpen} form={form} /> : null}
+      {!hasOpen ? <CreateEnrollmentCard studentId={studentId} templates={latestTemplateVersions(list)} hasOpen={hasOpen} form={form} /> : null}
       <HistoricalGraduateCard studentId={studentId} templates={list} isAdmin={isAdmin} docs={docs} form={form} />
       <p className="text-xs text-muted-foreground">Verify documents in <Link href={`/admin/students/${encodeURIComponent(studentId)}#workspace-documents`} className="underline">Documents</Link>; only verified documents can be used as evidence.</p>
     </section>

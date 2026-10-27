@@ -163,7 +163,7 @@ export function AppSidebar() {
             </SidebarGroup>
             <SidebarGroup>
               <SidebarGroupLabel className="text-[11px] font-semibold uppercase tracking-[0.16em]">Your file</SidebarGroupLabel>
-              <SidebarGroupContent>{renderItems(studentFileItems)}</SidebarGroupContent>
+              <SidebarGroupContent>{renderItems(filterStudentNav(studentFileItems, programs))}</SidebarGroupContent>
             </SidebarGroup>
           </nav>
         </SidebarContent>

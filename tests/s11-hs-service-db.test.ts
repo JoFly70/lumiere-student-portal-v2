@@ -1164,7 +1164,7 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("S11 high school pathway — service on 
       const state200 = await request(hs.app).get(base).set(authHeader(staff.token));
       expect(state200.status).toBe(200);
       expect(state200.body.current.enrollment.id).toBe(s.eid);
-      expect((await request(hs.app).get("/api/admin/high-school/templates").set(authHeader(staff.token))).body.templates.map((t: { templateKey: string }) => t.templateKey)).toEqual(["us-hs-diploma-21", "us-hs-diploma-tn-22"]);
+      expect((await request(hs.app).get("/api/admin/high-school/templates").set(authHeader(staff.token))).body.templates.map((t: { templateKey: string; version: number }) => `${t.templateKey}@${t.version}`)).toEqual(["us-hs-diploma-21@1", "us-hs-diploma-21@2", "us-hs-diploma-tn-22@1"]);
 
       const enr = `${base}/enrollments/${s.eid}`;
       const draft = await request(hs.app).post(`${enr}/roadmap/draft/from-template`).set(authHeader(staff.token)).send({});

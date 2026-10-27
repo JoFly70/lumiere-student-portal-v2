@@ -45,11 +45,12 @@ describe("navigation matrix", () => {
   it("both programs: High School appears alongside the university entries", () => {
     expect(urls(programAccess(prog("high_school", "university_degree")))).toEqual(NAV.map((i) => i.url));
   });
-  it("high-school-only: High School first, no Flight Deck or Roadmap, Profile/Documents/Support kept", () => {
+  it("high-school-only: High School first, no Flight Deck, Roadmap or Billing, Profile/Documents/Support kept", () => {
     const u = urls(programAccess(prog("high_school")));
     expect(u[0]).toBe("/high-school");
     expect(u).not.toContain("/flight-deck");
     expect(u).not.toContain("/roadmap");
+    expect(u).not.toContain("/billing");
     for (const keep of ["/profile", "/documents", "/support"]) expect(u).toContain(keep);
   });
   it("sidebar and mobile bar both use the filter; the theme toggle is 44px", () => {
@@ -57,6 +58,7 @@ describe("navigation matrix", () => {
     const shell = read("client/src/components/student-shell.tsx");
     expect(sidebar).toContain('url: "/high-school"');
     expect(sidebar).toContain("filterStudentNav(studentJourneyItems, programs)");
+    expect(sidebar).toContain("filterStudentNav(studentFileItems, programs)");
     expect(shell).toContain('url: "/high-school"');
     expect(shell).toContain("filterStudentNav(BAR_ITEMS, programs)");
     expect(shell).toContain('<ThemeToggle className="h-11 w-11" />');
