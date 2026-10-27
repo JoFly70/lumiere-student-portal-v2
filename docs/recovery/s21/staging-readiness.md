@@ -24,7 +24,7 @@ Verdict: **HOSTED STAGING VERIFIED = NO.** Same level as S20. S21 code is CODE R
 | Client-privilege hardening (anon revoked, `profiles.status` not writable by users) | account gate integrity | `scripts/release/s14/35-client-privilege-hardening.sql` | Grants only. |
 | High-school tables `hs_*` | HS pathway | `supabase/migrations/20261029100000_s11_*` | In the chain. |
 | Billing `student_billing_*` | billing | S18-S20 migrations | In the chain. |
-| Storage buckets `student-documents` (also holds profile photos under `profile-photos/`), `documents` (ticket attachments), `knowledge-evidence` | uploads, avatar | `scripts/disposable-env/90_storage_buckets.sql` | All private. `student-documents` is limited to 10 MB and pdf/png/jpeg/webp. **S21 chat attachments:** the bucket limits must be raised/extended to match the final `/api/student/attachments/policy` (types and size), otherwise Storage refuses valid uploads; the application re-checks everything regardless. |
+| Storage buckets `student-documents` (also holds profile photos under `profile-photos/`), `documents` (ticket attachments), `knowledge-evidence` | uploads, avatar | `scripts/disposable-env/90_storage_buckets.sql` | All private. `student-documents` is limited to 10 MB and pdf/png/jpeg/webp. **S21 chat attachments (resolved, Opus integration):** `20261102110000_s21_document_attachments.sql` raises the `student-documents` bucket to 20 MB and adds the DOCX/XLSX/CSV/TXT mime types when `storage.buckets` exists (step 10 runs after the buckets are created in step 8), and `ensureBucketExists` creates new buckets with the same ceiling. The Documents page keeps its stricter 10 MB / PDF+image validation in the application. |
 | Runtime tables `providers`, `plans`, `enrollments`, `metrics`, `payments`, `programs`, ... | legacy admin views | `scripts/disposable-env/50_runtime_supplement.sql`, `migrations/004`, `migrations/007` | Not required for the student journey; disposable lineage only. Skip on staging unless an admin page needs them. |
 
 ## 3. Minimal ordered staging bootstrap (owner executes, in a NEW isolated Supabase project)
@@ -44,7 +44,7 @@ Preconditions: a brand-new Supabase project (free tier is enough), named so nobo
 5. `20261026100000_s05_student_roadmap.sql`, `20261026110000_s07_roadmap_audit_event_types.sql`, `20261026200000_s09_student_profile.sql`, `20261027100000_s08_support_audit_events.sql`, `20261028100000_s10_support_idempotency_index.sql`, `20261028200000_s10_support_schema_repair.sql`, `20261029100000_s11_high_school_pathway.sql`, `20261029110000_s11_high_school_audit_event_types.sql`
 6. `scripts/release/s14/30-account-gate.sql` (must follow step 5)
 7. `scripts/release/s14/35-client-privilege-hardening.sql`
-8. `scripts/disposable-env/90_storage_buckets.sql` (then adjust `student-documents` limits for chat attachments, see table above)
+8. `scripts/disposable-env/90_storage_buckets.sql` (the S21 attachments migration in step 10 extends the `student-documents` limits)
 9. The 7 release files: `20261030100000_s18_billing_ledger`, `20261030100100_s18_billing_audit_event_types`, `20261030110000_s18_document_student_message`, `20261031100000_s19_ticket_comment_idempotency`, `20261031110000_s19_billing_corrections`, `20261101100000_s20_billing_evidence_void`, `20261101200000_s20_assistant_usage`
 10. S21, in filename order: `20261102100000_s21_assistant_conversations`, `20261102110000_s21_document_attachments`, `20261102120000_s21_student_memory`, `20261102130000_s21_student_welcome`.
 11. Verify (read-only): `scripts/release/s14/00-baseline-probe.sql` (all A rows APPLIED, all B rows true), `01-account-readiness.sql`, `90-verify.sql` (every row pass = true).
@@ -59,6 +59,6 @@ This ordering is exactly what `scripts/release/s14/rehearse-local.sh` and the S0
 
 1. Create the isolated staging Supabase project and deployment (cost: free tiers).
 2. Run the bootstrap above, send back the output of `00-baseline-probe.sql` and `90-verify.sql`.
-3. Decide `student-documents` bucket limits for chat attachments (types and size) once the attachments policy is final.
+3. (Resolved by migration) After step 10, confirm in Storage settings that `student-documents` shows a 20 MB limit and the DOCX/XLSX/CSV/TXT types.
 4. Create the first admin as described.
 5. Repeat the S20 journey table (J1-J15) plus S21 conversation, attachment, memory and welcome flows on staging; only then may "HOSTED STAGING VERIFIED" be claimed.

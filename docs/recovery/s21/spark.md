@@ -1,6 +1,6 @@
 # S21 Spark (Meta Model API) hardening
 
-Evidence: `docs/recovery/s21/spark-live-smoke.json` (one live call, 2026-10-27, `scripts/s21/spark-contributor-smoke.ts`). No further live calls were made for this work; every provider test uses a fetch mock.
+Evidence: `docs/recovery/s21/spark-live-smoke.json` (2026-10-27, `scripts/s21/spark-contributor-smoke.ts`). Two billable requests reached the provider in total: a first one capped at 200 output tokens (empty content: 26 prompt / 200 completion, 198 reasoning, ≈ $0.000043) and the recorded one at the production cap 700 (26 / 312, 297 reasoning, ≈ $0.000065). An earlier attempt failed locally before reaching the network (Node fetch needs `NODE_USE_ENV_PROXY=1` behind this container's proxy). No further live calls were made for this work; every provider test uses a fetch mock.
 
 ## Hard model pin
 * Only `muse-spark-1.3-contributor` can leave the server. `assertContributorModel()` (`meta-adapter.ts`) runs in `callMuseSpark` immediately before `fetch`, on the configured model, and again on the model parsed back out of the serialized request body. Any other value (`muse-spark-1.3`, other Muse variants, trailing/leading whitespace, case variants, non-strings) throws `ProviderError('model_rejected')` and **no outbound call is made**. The API base is pinned the same way.
