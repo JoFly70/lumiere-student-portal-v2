@@ -9,6 +9,7 @@
  * 1280px it is open. The person can still open or close it with the trigger.
  */
 import { useEffect, useState } from "react";
+import { LumiereWordmark } from "@/components/brand/lumiere-brand";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { StaffAvatar } from "@/components/staff/staff-ui";
@@ -49,7 +50,7 @@ export function StaffHeader({ name, role }: { name?: string; role?: string }) {
     <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-student-line bg-student-bg px-3 sm:px-4" data-testid="staff-header">
       <div className="flex min-w-0 items-center gap-3">
         <SidebarTrigger className="h-10 w-10" data-testid="button-sidebar-toggle" aria-label="Toggle navigation" />
-        <p className="font-serif text-xl tracking-tight text-student-gold-ink md:hidden" data-testid="text-header-brand">Lumière</p>
+        <div className="md:hidden" data-testid="text-header-brand"><LumiereWordmark variant="compact" tone="on-light" /></div>
         <p className="hidden text-[11px] font-semibold uppercase tracking-[0.18em] text-student-muted md:block">Staff Portal</p>
       </div>
       <div className="flex min-w-0 items-center gap-3">

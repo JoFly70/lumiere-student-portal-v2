@@ -14,6 +14,7 @@ import {
   type BillingReceiptRow,
   type RecordReceiptInput,
   type RegisterEvidenceInput,
+  type UpdateInstallmentInput,
   type SetInstallmentsInput,
   type SetObligationInput,
   type StaffBillingView,
@@ -45,7 +46,13 @@ export function toBillingUnavailable(error: unknown): unknown {
   return error;
 }
 
-export type BillingAuditEvent = "billing.ledger_updated" | "billing.receipt_recorded" | "billing.evidence_reviewed";
+export type BillingAuditEvent =
+  | "billing.ledger_updated"
+  | "billing.receipt_recorded"
+  | "billing.evidence_reviewed"
+  | "billing.receipt_voided"
+  | "billing.discount_voided"
+  | "billing.installment_updated";
 export interface BillingAuditRecord {
   readonly event: BillingAuditEvent;
   readonly description: string;
@@ -67,6 +74,10 @@ export interface BillingRepository<Tx = unknown> {
   insertDiscount(tx: Tx, studentId: string, actorId: string, input: AddDiscountInput, at: Date): Promise<void>;
   replaceInstallments(tx: Tx, studentId: string, actorId: string, input: SetInstallmentsInput, at: Date): Promise<void>;
   insertReceipt(tx: Tx, studentId: string, actorId: string, input: RecordReceiptInput, evidenceId: string | null, at: Date): Promise<BillingReceiptRow>;
+  /** Marks an active row voided. Returns false when the row is missing or already voided. */
+  voidReceipt(tx: Tx, studentId: string, receiptId: string, actorId: string, reason: string, at: Date): Promise<"voided" | "not_found" | "already_voided">;
+  voidDiscount(tx: Tx, studentId: string, discountId: string, actorId: string, reason: string, at: Date): Promise<"voided" | "not_found" | "already_voided">;
+  updateInstallment(tx: Tx, studentId: string, installmentId: string, patch: UpdateInstallmentInput): Promise<boolean>;
   insertEvidence(tx: Tx, studentId: string, actorId: string, input: RegisterEvidenceInput, at: Date): Promise<BillingEvidenceRow>;
   findEvidence(tx: Tx, studentId: string, evidenceId: string): Promise<BillingEvidenceRow | null>;
   reviewEvidence(
@@ -125,7 +136,8 @@ export function createBillingService<Tx>(deps: BillingServiceDeps<Tx>) {
     setObligation(studentId: string, actorId: string, input: SetObligationInput) {
       return mutate(studentId, async (tx, at) => {
         const before = await repo.loadLedger(tx, studentId, { lock: true });
-        if (before.obligation && before.obligation.currency !== input.currency && (before.receipts.length > 0 || before.discounts.length > 0)) {
+        const history = before.receipts.length + before.discounts.length + (before.voidedReceipts?.length ?? 0) + (before.voidedDiscounts?.length ?? 0);
+        if (before.obligation && before.obligation.currency !== input.currency && history > 0) {
           throw new BillingError(E.VALIDATION, 400, "Currency cannot change after receipts or discounts exist");
         }
         await repo.upsertObligation(tx, studentId, actorId, input, at);
@@ -158,6 +170,37 @@ export function createBillingService<Tx>(deps: BillingServiceDeps<Tx>) {
         await requireConfigured(tx, studentId);
         const receipt = await repo.insertReceipt(tx, studentId, actorId, input, null, at);
         return [{ event: "billing.receipt_recorded", description: "Receipt confirmed by staff", studentId, metadata: { receiptId: receipt.id, amountCents: input.amountCents, fromEvidence: false } }];
+      });
+    },
+
+    /** Void (never delete) a receipt: it stops counting as paid; who/when/why is kept. */
+    voidReceipt(studentId: string, actorId: string, receiptId: string, reason: string) {
+      return mutate(studentId, async (tx, at) => {
+        await requireConfigured(tx, studentId);
+        const out = await repo.voidReceipt(tx, studentId, receiptId, actorId, reason, at);
+        if (out === "not_found") throw new BillingError(E.RECEIPT_NOT_FOUND, 404, "Receipt not found");
+        if (out === "already_voided") throw new BillingError(E.ALREADY_VOIDED, 409, "Receipt was already voided");
+        return [{ event: "billing.receipt_voided", description: "Receipt voided by staff", studentId, metadata: { receiptId } }];
+      });
+    },
+
+    voidDiscount(studentId: string, actorId: string, discountId: string, reason: string) {
+      return mutate(studentId, async (tx, at) => {
+        await requireConfigured(tx, studentId);
+        const out = await repo.voidDiscount(tx, studentId, discountId, actorId, reason, at);
+        if (out === "not_found") throw new BillingError(E.DISCOUNT_NOT_FOUND, 404, "Discount not found");
+        if (out === "already_voided") throw new BillingError(E.ALREADY_VOIDED, 409, "Discount was already removed");
+        return [{ event: "billing.discount_voided", description: "Discount removed by staff", studentId, metadata: { discountId } }];
+      });
+    },
+
+    updateInstallment(studentId: string, _actorId: string, installmentId: string, patch: UpdateInstallmentInput) {
+      return mutate(studentId, async (tx) => {
+        await requireConfigured(tx, studentId);
+        if (!(await repo.updateInstallment(tx, studentId, installmentId, patch))) {
+          throw new BillingError(E.INSTALLMENT_NOT_FOUND, 404, "Installment not found");
+        }
+        return [{ event: "billing.installment_updated", description: "Installment edited", studentId, metadata: { installmentId, amountCents: patch.amountCents ?? null, dueDate: patch.dueDate ?? null } }];
       });
     },
 

@@ -35,7 +35,7 @@ const COLUMNS: Record<string, readonly string[]> = {
     "priority", "status", "assigned_to", "assigned_at", "resolved_at", "resolved_by", "resolution_notes", "tags",
     "metadata", "created_at", "updated_at",
   ],
-  ticket_comments: ["id", "ticket_id", "author_id", "author_name", "author_role", "content", "is_internal", "created_at", "updated_at"],
+  ticket_comments: ["id", "ticket_id", "author_id", "author_name", "author_role", "content", "is_internal", "idempotency_key", "created_at", "updated_at"],
   ticket_attachments: ["id", "ticket_id", "comment_id", "file_name", "file_size", "file_type", "storage_path", "uploaded_by", "created_at"],
   ticket_status_history: ["id", "ticket_id", "old_status", "new_status", "changed_by", "change_reason", "created_at"],
 };
@@ -341,6 +341,13 @@ export function createFakeSupportSupabase(options: FakeSupabaseOptions = {}) {
         if (this.table === "support_tickets") {
           for (const row of created) {
             if (store.some((r) => r.ticket_number === row.ticket_number)) {
+              return this.fail({ message: "duplicate key value violates unique constraint", code: "23505" });
+            }
+          }
+        }
+        if (this.table === "ticket_comments") {
+          for (const row of created) {
+            if (row.idempotency_key != null && store.some((r) => r.ticket_id === row.ticket_id && r.author_id === row.author_id && r.idempotency_key === row.idempotency_key)) {
               return this.fail({ message: "duplicate key value violates unique constraint", code: "23505" });
             }
           }

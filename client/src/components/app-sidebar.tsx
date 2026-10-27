@@ -22,7 +22,7 @@ import { PROTOTYPES_ENABLED, PREVIEW_FLIGHT_DECK_PATH } from "@/components/os/pr
 import { StaffAvatar } from "@/components/staff/staff-ui";
 import { staffRoleLabel } from "@/components/staff/staff-shell";
 import { ADMIN_STUDENTS_PATH, adminTabFromSearch } from "@/pages/admin-student-workspace-presentation";
-import lumiereLogo from "@assets/Lumiere Logo_1762534146530.webp";
+import { LumiereCrest, BRAND } from "@/components/brand/lumiere-brand";
 import type { Student } from "@shared/schema";
 
 async function fetchMyProfile(accessToken: string | null): Promise<Student | null> {
@@ -155,15 +155,10 @@ export function AppSidebar() {
       <Sidebar collapsible="icon">
         <SidebarHeader className="px-5 pb-3 pt-6 group-data-[collapsible=icon]:px-1.5">
           <div className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center" role="region" aria-label="Lumière Higher-Ed Pathways">
-            <img
-              src={lumiereLogo}
-              alt="Lumière Higher-Ed Pathways"
-              className="h-11 w-11 shrink-0 rounded-full object-contain ring-1 ring-sidebar-border group-data-[collapsible=icon]:h-9 group-data-[collapsible=icon]:w-9"
-              data-testid="img-lumiere-logo"
-            />
-            <div className="min-w-0 group-data-[collapsible=icon]:hidden">
-              <p className="font-serif text-[22px] leading-none tracking-tight text-sidebar-primary">Lumière</p>
-              <p className="mt-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-sidebar-foreground/70">Higher-Ed Pathways</p>
+            <LumiereCrest size={44} className="group-data-[collapsible=icon]:h-9 group-data-[collapsible=icon]:w-auto" />
+            <div className="min-w-0 group-data-[collapsible=icon]:hidden" data-testid="img-lumiere-logo">
+              <p className="font-display text-[26px] font-medium leading-none tracking-[0.01em] text-[var(--t-rail-head,hsl(var(--sidebar-primary)))]">{BRAND.name}</p>
+              <p className="mt-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--t-rail-sub,hsl(var(--sidebar-foreground)/0.7))]">{BRAND.tagline}</p>
               <p className="sr-only">{portalLabel}</p>
             </div>
           </div>
@@ -234,15 +229,10 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       <SidebarHeader className="px-4 pb-3 pt-6 group-data-[collapsible=icon]:px-1.5">
         <div className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center" role="region" aria-label="Lumière Higher-Ed Pathways">
-          <img
-            src={lumiereLogo}
-            alt="Lumière Higher-Ed Pathways"
-            className="h-10 w-10 shrink-0 object-contain"
-            data-testid="img-lumiere-logo"
-          />
-          <div className="min-w-0 group-data-[collapsible=icon]:hidden">
-            <p className="font-serif text-2xl leading-none tracking-tight text-sidebar-primary">Lumière</p>
-            <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-sidebar-foreground/70">Higher-Ed Pathways</p>
+          <LumiereCrest size={42} className="group-data-[collapsible=icon]:h-9 group-data-[collapsible=icon]:w-auto" />
+          <div className="min-w-0 group-data-[collapsible=icon]:hidden" data-testid="img-lumiere-logo">
+            <p className="font-display text-[26px] font-medium leading-none tracking-[0.01em] text-[var(--t-rail-head,hsl(var(--sidebar-primary)))]">{BRAND.name}</p>
+            <p className="mt-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--t-rail-sub,hsl(var(--sidebar-foreground)/0.7))]">{BRAND.tagline}</p>
             <p className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-sidebar-primary" data-testid="text-portal-label">{portalLabel}</p>
           </div>
         </div>

@@ -4,6 +4,7 @@
  * never cover page content. Colours come from the student tokens (index.css).
  */
 import { Link, useLocation } from "wouter";
+import { LumiereWordmark } from "@/components/brand/lumiere-brand";
 import { BookOpen, FileText, Gauge, HelpCircle, Menu, School } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
@@ -26,9 +27,7 @@ export function StudentHeader() {
     <header className="flex h-14 shrink-0 items-center justify-between border-b border-student-line bg-student-card px-3 sm:px-4">
       <div className="flex items-center gap-3">
         <SidebarTrigger className="hidden md:inline-flex" data-testid="button-sidebar-toggle" />
-        <p className="font-serif text-xl tracking-tight text-student-gold-ink md:hidden" data-testid="text-header-brand">
-          Lumière
-        </p>
+        <div className="md:hidden" data-testid="text-header-brand"><LumiereWordmark variant="compact" tone="on-light" /></div>
       </div>
       <div className="flex items-center gap-1">
         <LanguageToggle />

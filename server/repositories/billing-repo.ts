@@ -12,6 +12,8 @@ import type {
   BillingInstallmentRow,
   BillingLedgerData,
   BillingReceiptRow,
+  BillingVoidedDiscount,
+  BillingVoidedReceipt,
 } from "@shared/billing-contract";
 import type { BillingRepository } from "../services/billing-service";
 
@@ -46,6 +48,15 @@ const toEvidence = (r: Row): BillingEvidenceRow => ({
   receiptId: r.receipt_id ? String(r.receipt_id) : null,
 });
 
+async function voidRow(tx: Tx, table: "student_billing_receipts" | "student_billing_discounts", studentId: string, id: string, actorId: string, reason: string, at: Date) {
+  const t = sql.raw(table);
+  const [r] = rows(await tx.execute(sql`SELECT voided_at FROM ${t} WHERE student_id = ${studentId} AND id::text = ${id} FOR UPDATE`));
+  if (!r) return "not_found" as const;
+  if (r.voided_at) return "already_voided" as const;
+  await tx.execute(sql`UPDATE ${t} SET voided_at = ${at.toISOString()}::timestamptz, voided_by = ${actorId}, void_reason = ${reason} WHERE student_id = ${studentId} AND id::text = ${id} AND voided_at IS NULL`);
+  return "voided" as const;
+}
+
 export const billingRepository: BillingRepository<Tx> = {
   async studentExists(tx, studentId) {
     return rows(await tx.execute(sql`SELECT 1 AS ok FROM students WHERE id = ${studentId} LIMIT 1`)).length > 0;
@@ -63,14 +74,20 @@ export const billingRepository: BillingRepository<Tx> = {
     if (opts?.lock) await tx.execute(sql`SELECT id FROM students WHERE id = ${studentId} FOR UPDATE`);
     const [ob] = rows(await tx.execute(sql`SELECT agreed_cents, currency, note FROM student_billing_obligations WHERE student_id = ${studentId}`));
     const discounts = rows(
-      await tx.execute(sql`SELECT id, amount_cents, reason, approved_by, approved_at FROM student_billing_discounts WHERE student_id = ${studentId} ORDER BY approved_at, id`),
+      await tx.execute(sql`SELECT id, amount_cents, reason, approved_by, approved_at FROM student_billing_discounts WHERE student_id = ${studentId} AND voided_at IS NULL ORDER BY approved_at, id`),
     ).map((r): BillingDiscount => ({ id: String(r.id), amountCents: int(r.amount_cents), reason: String(r.reason), approvedBy: String(r.approved_by), approvedAt: iso(r.approved_at) }));
     const installments = rows(
       await tx.execute(sql`SELECT id, due_date, amount_cents, label, sort_order FROM student_billing_installments WHERE student_id = ${studentId} ORDER BY due_date, sort_order, id`),
     ).map((r): BillingInstallmentRow => ({ id: String(r.id), dueDate: dateOnly(r.due_date), amountCents: int(r.amount_cents), label: (r.label as string | null) ?? null, sortOrder: int(r.sort_order) }));
     const receipts = rows(
-      await tx.execute(sql`SELECT id, amount_cents, received_date, method_label, reference, note, evidence_id, confirmed_by, confirmed_at FROM student_billing_receipts WHERE student_id = ${studentId} ORDER BY received_date, confirmed_at, id`),
+      await tx.execute(sql`SELECT id, amount_cents, received_date, method_label, reference, note, evidence_id, confirmed_by, confirmed_at FROM student_billing_receipts WHERE student_id = ${studentId} AND voided_at IS NULL ORDER BY received_date, confirmed_at, id`),
     ).map(toReceipt);
+    const voidedReceipts = rows(
+      await tx.execute(sql`SELECT id, amount_cents, received_date, method_label, reference, note, evidence_id, confirmed_by, confirmed_at, voided_at, voided_by, void_reason FROM student_billing_receipts WHERE student_id = ${studentId} AND voided_at IS NOT NULL ORDER BY voided_at, id`),
+    ).map((r): BillingVoidedReceipt => ({ ...toReceipt(r), voidedAt: iso(r.voided_at), voidedBy: String(r.voided_by), voidReason: String(r.void_reason) }));
+    const voidedDiscounts = rows(
+      await tx.execute(sql`SELECT id, amount_cents, reason, approved_by, approved_at, voided_at, voided_by, void_reason FROM student_billing_discounts WHERE student_id = ${studentId} AND voided_at IS NOT NULL ORDER BY voided_at, id`),
+    ).map((r): BillingVoidedDiscount => ({ id: String(r.id), amountCents: int(r.amount_cents), reason: String(r.reason), approvedBy: String(r.approved_by), approvedAt: iso(r.approved_at), voidedAt: iso(r.voided_at), voidedBy: String(r.voided_by), voidReason: String(r.void_reason) }));
     const evidence = rows(
       await tx.execute(sql`SELECT id, document_id, status, note, submitted_at, reviewed_by, reviewed_at, reject_reason, receipt_id FROM student_billing_evidence WHERE student_id = ${studentId} ORDER BY submitted_at, id`),
     ).map(toEvidence);
@@ -80,6 +97,8 @@ export const billingRepository: BillingRepository<Tx> = {
       installments,
       receipts,
       evidence,
+      voidedReceipts,
+      voidedDiscounts,
     };
   },
 
@@ -115,6 +134,26 @@ export const billingRepository: BillingRepository<Tx> = {
         RETURNING id, amount_cents, received_date, method_label, reference, note, evidence_id, confirmed_by, confirmed_at`),
     );
     return toReceipt(r!);
+  },
+
+  async voidReceipt(tx, studentId, receiptId, actorId, reason, at) {
+    return voidRow(tx, "student_billing_receipts", studentId, receiptId, actorId, reason, at);
+  },
+
+  async voidDiscount(tx, studentId, discountId, actorId, reason, at) {
+    return voidRow(tx, "student_billing_discounts", studentId, discountId, actorId, reason, at);
+  },
+
+  async updateInstallment(tx, studentId, installmentId, patch) {
+    const found = rows(await tx.execute(sql`SELECT id FROM student_billing_installments WHERE student_id = ${studentId} AND id::text = ${installmentId} FOR UPDATE`));
+    if (!found.length) return false;
+    await tx.execute(sql`
+      UPDATE student_billing_installments SET
+        due_date = COALESCE(${patch.dueDate ?? null}::date, due_date),
+        amount_cents = COALESCE(${patch.amountCents ?? null}::bigint, amount_cents),
+        label = CASE WHEN ${patch.label !== undefined} THEN ${patch.label ?? null} ELSE label END
+      WHERE student_id = ${studentId} AND id::text = ${installmentId}`);
+    return true;
   },
 
   async insertEvidence(tx, studentId, actorId, input, at) {

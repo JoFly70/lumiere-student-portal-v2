@@ -84,6 +84,8 @@ export interface CreateCommentInput {
   content: string;
   isInternal?: boolean;
   nextStatus?: TicketStatus;
+  /** Stable per reply attempt (sent as the Idempotency-Key header); a retry reuses it so it never duplicates. */
+  idempotencyKey?: string;
 }
 
 export interface TicketsResponse {
@@ -225,10 +227,10 @@ export function useCreateComment(ticketId: string) {
   const queryClient = useQueryClient();
 
   return useMutation<{ comment: TicketComment; ticket?: Ticket }, Error, CreateCommentInput>({
-    mutationFn: async (data) => {
+    mutationFn: async ({ idempotencyKey, ...data }) => {
       return apiRequest(`/api/tickets/${ticketId}/comments`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {}) },
         body: JSON.stringify(data),
       });
     },

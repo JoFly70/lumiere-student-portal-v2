@@ -108,6 +108,9 @@ export type AuditEventType =
   | 'billing.ledger_updated'
   | 'billing.receipt_recorded'
   | 'billing.evidence_reviewed'
+  | 'billing.receipt_voided'
+  | 'billing.discount_voided'
+  | 'billing.installment_updated'
   | 'billing.access_denied';
 
 export type AuditSeverity = 'info' | 'warning' | 'error' | 'critical';

@@ -76,6 +76,13 @@ export const registerEvidenceSchema = z
   .object({ documentId: shortText(128), note: optionalText(500) })
   .strict();
 
+/** S19 corrections: never delete; a reason is always required. */
+export const voidEntrySchema = z.object({ reason: shortText(300) }).strict();
+export const updateInstallmentSchema = z
+  .object({ dueDate: isoDateSchema.optional(), amountCents: centsSchema.optional(), label: z.string().trim().max(120).nullable().optional() })
+  .strict()
+  .refine((v) => v.dueDate !== undefined || v.amountCents !== undefined || v.label !== undefined, "Nothing to change");
+
 export const rejectEvidenceSchema = z.object({ reason: shortText(300) }).strict();
 
 export type SetObligationInput = z.infer<typeof setObligationSchema>;
@@ -83,6 +90,8 @@ export type AddDiscountInput = z.infer<typeof addDiscountSchema>;
 export type SetInstallmentsInput = z.infer<typeof setInstallmentsSchema>;
 export type RecordReceiptInput = z.infer<typeof recordReceiptSchema>;
 export type RegisterEvidenceInput = z.infer<typeof registerEvidenceSchema>;
+export type VoidEntryInput = z.infer<typeof voidEntrySchema>;
+export type UpdateInstallmentInput = z.infer<typeof updateInstallmentSchema>;
 export type RejectEvidenceInput = z.infer<typeof rejectEvidenceSchema>;
 
 // ── stored ledger rows (what the repository returns) ────────────────────────
@@ -117,6 +126,13 @@ export interface BillingReceiptRow {
   readonly confirmedAt: string;
   readonly evidenceId: string | null;
 }
+export interface VoidInfo {
+  readonly voidedAt: string;
+  readonly voidedBy: string;
+  readonly voidReason: string;
+}
+export type BillingVoidedReceipt = BillingReceiptRow & VoidInfo;
+export type BillingVoidedDiscount = BillingDiscount & VoidInfo;
 export type BillingEvidenceStatus = "awaiting_review" | "confirmed" | "rejected";
 export interface BillingEvidenceRow {
   readonly id: string;
@@ -135,6 +151,9 @@ export interface BillingLedgerData {
   readonly installments: readonly BillingInstallmentRow[];
   readonly receipts: readonly BillingReceiptRow[];
   readonly evidence: readonly BillingEvidenceRow[];
+  /** S19: voided entries are kept for the audit trail and never counted. */
+  readonly voidedReceipts?: readonly BillingVoidedReceipt[];
+  readonly voidedDiscounts?: readonly BillingVoidedDiscount[];
 }
 
 // ── derived views ───────────────────────────────────────────────────────────
@@ -210,6 +229,8 @@ export interface StaffBillingView {
   readonly discounts: readonly BillingDiscount[];
   readonly receipts: readonly BillingReceiptRow[];
   readonly evidence: readonly BillingEvidenceRow[];
+  readonly voidedReceipts: readonly BillingVoidedReceipt[];
+  readonly voidedDiscounts: readonly BillingVoidedDiscount[];
   /** Sum of scheduled installments. */
   readonly scheduledCents: number;
   /** scheduled - net obligation. 0 when the schedule allocates the obligation exactly; staff-visible flag otherwise. */
@@ -226,6 +247,10 @@ export const BILLING_ERROR_CODES = {
   EVIDENCE_NOT_FOUND: "BILLING_EVIDENCE_NOT_FOUND",
   EVIDENCE_ALREADY_REVIEWED: "BILLING_EVIDENCE_ALREADY_REVIEWED",
   DISCOUNT_EXCEEDS_OBLIGATION: "BILLING_DISCOUNT_EXCEEDS_OBLIGATION",
+  RECEIPT_NOT_FOUND: "BILLING_RECEIPT_NOT_FOUND",
+  DISCOUNT_NOT_FOUND: "BILLING_DISCOUNT_NOT_FOUND",
+  INSTALLMENT_NOT_FOUND: "BILLING_INSTALLMENT_NOT_FOUND",
+  ALREADY_VOIDED: "BILLING_ALREADY_VOIDED",
   UNAVAILABLE: "BILLING_UNAVAILABLE",
 } as const;
 export type BillingErrorCode = (typeof BILLING_ERROR_CODES)[keyof typeof BILLING_ERROR_CODES];

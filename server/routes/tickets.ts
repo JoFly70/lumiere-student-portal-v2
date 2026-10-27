@@ -57,6 +57,7 @@ import {
   type TicketCategory,
   type TicketPriority,
   type TicketStatus,
+  SUPPORT_IDEMPOTENCY_KEY_PATTERN,
 } from "@shared/support-contract";
 
 // ---------------------------------------------------------------------------
@@ -128,6 +129,12 @@ function isMissingTable(err: any): boolean {
   if (!err) return false;
   if (["42P01", "PGRST205", "PGRST200"].includes(String(err.code))) return true;
   return /does not exist|schema cache|could not find the table/i.test(String(err.message ?? ""));
+}
+
+/** The optional S19 idempotency_key column is not there yet (migration pending). */
+function isMissingColumn(err: any): boolean {
+  if (!err) return false;
+  return ["42703", "PGRST204"].includes(String(err.code)) || /column .*idempotency_key|idempotency_key.*(does not exist|schema cache)/i.test(String(err.message ?? ""));
 }
 
 const firstRow = (data: unknown): Row | null => (Array.isArray(data) ? ((data[0] as Row) ?? null) : ((data as Row) ?? null));
@@ -845,6 +852,36 @@ export function createTicketsRouter(deps: TicketsRouterDeps): Router {
     const ticket = await accessibleTicket(req, res, "comment");
     if (!ticket) return;
 
+    // S19 reply idempotency: an optional `Idempotency-Key` header. A replay of the same
+    // (ticket, author, key) returns the existing comment (200) and fires no side effects.
+    const rawReplyKey = req.header("idempotency-key");
+    if (rawReplyKey !== undefined && !SUPPORT_IDEMPOTENCY_KEY_PATTERN.test(rawReplyKey)) {
+      return fail(res, 400, "VALIDATION_FAILED", "Invalid Idempotency-Key");
+    }
+    let replyKey: string | null = rawReplyKey ?? null;
+    const findReplay = async (): Promise<Row | null | "error"> => {
+      const { data, error: lookupError } = await db()
+        .from("ticket_comments")
+        .select("*")
+        .eq("ticket_id", ticket.id)
+        .eq("author_id", viewer.id)
+        .eq("idempotency_key", replyKey)
+        .limit(1);
+      if (lookupError) {
+        if (isMissingColumn(lookupError)) { replyKey = null; return null; } // migration not applied: no dedupe
+        logger.error("Support: reply idempotency lookup failed", { error: lookupError.message });
+        return "error";
+      }
+      return firstRow(data);
+    };
+    const replay = async (comment: Row) =>
+      res.status(200).json({ comment: presentComment(viewer, comment), ticket: await summaryFor(ticket, viewer), replayed: true });
+    if (replyKey) {
+      const found = await findReplay();
+      if (found === "error") return dbFail(res, "reply idempotency lookup failed", null);
+      if (found) return replay(found);
+    }
+
     const now = deps.now();
     const student = viewer.role === "student";
     let patch: Row | null = null;
@@ -900,18 +937,28 @@ export function createTicketsRouter(deps: TicketsRouterDeps): Router {
       ? String(ticket.reporter_name || "Student")
       : (await loadPeople([viewer.id])).get(viewer.id)?.name || "Lumière team";
 
-    const { data: created, error } = await db()
+    const commentRow: Row = {
+      ticket_id: ticket.id,
+      author_id: viewer.id,
+      author_name: authorName,
+      author_role: viewer.role,
+      content: input.content,
+      is_internal: !!input.isInternal,
+    };
+    let { data: created, error } = await db()
       .from("ticket_comments")
-      .insert({
-        ticket_id: ticket.id,
-        author_id: viewer.id,
-        author_name: authorName,
-        author_role: viewer.role,
-        content: input.content,
-        is_internal: !!input.isInternal,
-      })
+      .insert(replyKey ? { ...commentRow, idempotency_key: replyKey } : commentRow)
       .select("*")
       .single();
+    if (error && replyKey && isMissingColumn(error)) {
+      replyKey = null; // migration not applied yet: behave as before (no dedupe)
+      ({ data: created, error } = await db().from("ticket_comments").insert(commentRow).select("*").single());
+    }
+    if (error?.code === "23505" && replyKey) {
+      // A concurrent request with the same key won the partial unique index: return its comment.
+      const found = await findReplay();
+      if (found && found !== "error") return replay(found);
+    }
     if (error || !created) return dbFail(res, "comment create failed", error);
     const comment = created as Row;
 

@@ -10,6 +10,8 @@
  *   POST /api/admin/students/:studentId/billing/evidence          (log student-submitted proof)
  *   POST /api/admin/students/:studentId/billing/evidence/:evidenceId/confirm  (body = receipt)
  *   POST /api/admin/students/:studentId/billing/evidence/:evidenceId/reject
+ *   POST .../receipts/:receiptId/void, .../discounts/:discountId/void   (S19; reason required, never deletes)
+ *   POST .../installments/:installmentId                                (S19; edit one installment)
  *
  * Per-route middleware, so mounting at /api/admin never intercepts other admin paths.
  */
@@ -23,6 +25,8 @@ import {
   rejectEvidenceSchema,
   setInstallmentsSchema,
   setObligationSchema,
+  updateInstallmentSchema,
+  voidEntrySchema,
 } from "@shared/billing-contract";
 import { requireAuth } from "../middleware/auth";
 import { toBillingUnavailable, type BillingAuditRecord, type BillingService } from "../services/billing-service";
@@ -33,7 +37,7 @@ import { guardRoles } from "./high-school-http";
 export interface AdminBillingRouterDeps {
   readonly service: Pick<
     BillingService,
-    "getStaffView" | "setObligation" | "addDiscount" | "setInstallments" | "recordReceipt" | "registerEvidence" | "confirmEvidence" | "rejectEvidence"
+    "getStaffView" | "setObligation" | "addDiscount" | "setInstallments" | "recordReceipt" | "registerEvidence" | "confirmEvidence" | "rejectEvidence" | "voidReceipt" | "voidDiscount" | "updateInstallment"
   >;
   readonly audit?: BillingAuditSink;
   readonly onAccessDenied?: (req: Request) => void;
@@ -88,6 +92,13 @@ export function createAdminBillingRouter(deps: AdminBillingRouterDeps) {
   post("/evidence/:evidenceId/reject", "evidence reject", rejectEvidenceSchema, (sid, actor, b, req) =>
     deps.service.rejectEvidence(sid, actor, String(req.params.evidenceId), b.reason));
 
+  post("/receipts/:receiptId/void", "receipt void", voidEntrySchema, (sid, actor, b, req) =>
+    deps.service.voidReceipt(sid, actor, String(req.params.receiptId), b.reason));
+  post("/discounts/:discountId/void", "discount void", voidEntrySchema, (sid, actor, b, req) =>
+    deps.service.voidDiscount(sid, actor, String(req.params.discountId), b.reason));
+  post("/installments/:installmentId", "installment edit", updateInstallmentSchema, (sid, actor, b, req) =>
+    deps.service.updateInstallment(sid, actor, String(req.params.installmentId), b));
+
   return router;
 }
 
@@ -97,7 +108,7 @@ export function createDefaultAdminBillingRouter() {
     <K extends keyof AdminBillingRouterDeps["service"]>(name: K) =>
     async (...args: Parameters<AdminBillingRouterDeps["service"][K]>) =>
       ((await load())[name] as (...a: unknown[]) => unknown)(...args);
-  const names = ["getStaffView", "setObligation", "addDiscount", "setInstallments", "recordReceipt", "registerEvidence", "confirmEvidence", "rejectEvidence"] as const;
+  const names = ["getStaffView", "setObligation", "addDiscount", "setInstallments", "recordReceipt", "registerEvidence", "confirmEvidence", "rejectEvidence", "voidReceipt", "voidDiscount", "updateInstallment"] as const;
   const service = Object.fromEntries(names.map((n) => [n, lazy(n)])) as unknown as AdminBillingRouterDeps["service"];
   return createAdminBillingRouter({ service });
 }

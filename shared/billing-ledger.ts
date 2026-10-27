@@ -132,6 +132,8 @@ export function computeStaffBilling(data: BillingLedgerData, today: string): Sta
     discounts: data.discounts,
     receipts: [...data.receipts].sort((a, b) => b.receivedDate.localeCompare(a.receivedDate)),
     evidence: data.evidence,
+    voidedReceipts: data.voidedReceipts ?? [],
+    voidedDiscounts: data.voidedDiscounts ?? [],
     scheduledCents: scheduled,
     scheduleMismatchCents: net !== null && data.installments.length > 0 ? scheduled - net : 0,
   };
