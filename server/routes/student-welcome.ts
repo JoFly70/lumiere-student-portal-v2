@@ -92,8 +92,13 @@ const defaultAttention: Required<NonNullable<StudentWelcomeOptions['attention']>
   async documents({ studentId }) {
     const { db } = await import('../lib/db');
     return countOf(await db.execute(sql`
-      SELECT count(*)::int AS n FROM student_documents
-       WHERE student_id = ${studentId} AND status::text IN ('rejected', 'resubmit_requested') AND COALESCE(soft_deleted, false) = false`));
+      SELECT count(*)::int AS n FROM student_documents d
+       WHERE d.student_id = ${studentId} AND d.status::text IN ('rejected', 'resubmit_requested') AND COALESCE(d.soft_deleted, false) = false
+         AND d.doc_type::text <> 'chat_attachment'
+         -- already answered: a newer upload of the same document type supersedes the rejected one
+         AND NOT EXISTS (SELECT 1 FROM student_documents n
+                          WHERE n.student_id = d.student_id AND n.doc_type = d.doc_type AND COALESCE(n.soft_deleted, false) = false
+                            AND n.uploaded_at > d.uploaded_at)`));
   },
   /** Overdue installments (real ledger via the billing service). Evidence under staff review is waiting on staff, not the student. */
   async billing({ studentId }) {

@@ -1,0 +1,315 @@
+{
+  "journey": "S21 first student launch (local rehearsal, throwaway Postgres 16; no hosted environment)",
+  "counts": {
+    "pass": 23,
+    "fail": 0
+  },
+  "steps": [
+    {
+      "id": "J1",
+      "title": "admin issues an invitation; only the SHA-256 hash is stored; staff/students cannot issue",
+      "backing": "DB",
+      "status": "pass",
+      "numbers": {
+        "staffIssue": 403,
+        "adminIssue": 201,
+        "hashOnly": true,
+        "emailNormalizedLowercase": true
+      }
+    },
+    {
+      "id": "J2",
+      "title": "signup is invitation-gated and, with ENABLE_EMAIL_VERIFICATION=true, creates an UNCONFIRMED account with no session",
+      "backing": "DB+MOCK",
+      "mocked": "Supabase Auth createUser/signIn (provider behaviour emulated); invitation rows are real",
+      "status": "pass",
+      "numbers": {
+        "noToken": 403,
+        "wrongEmail": 403,
+        "providerFailureReleasedInvitation": true,
+        "createdUnconfirmed": true,
+        "sessionReturned": false,
+        "reuse": 403
+      }
+    },
+    {
+      "id": "J3",
+      "title": "email verification: only a provider-confirmed email counts; unconfirmed/invalid links never report success",
+      "backing": "MOCKED",
+      "mocked": "Supabase verifyOtp/getUser answers are scripted; the route, validation and response contract are real",
+      "status": "pass",
+      "numbers": {
+        "missing": 400,
+        "unconfirmed": 401,
+        "expired": 401,
+        "confirmed": 200,
+        "credentialEchoed": false
+      }
+    },
+    {
+      "id": "J4",
+      "title": "session handling: valid token works; expired, tampered, forged-issuer and absent tokens are 401; suspended account is refused",
+      "backing": "DB+MOCK",
+      "mocked": "account-status lookup is doubled; JWT verification and RBAC are real (local-JWT dev path, not Supabase JWTs)",
+      "status": "pass",
+      "numbers": {
+        "expired": 401,
+        "tampered": 401,
+        "wrongIssuer": 401,
+        "noToken": 401,
+        "suspended": 403,
+        "reactivated": "ok"
+      }
+    },
+    {
+      "id": "J5",
+      "title": "staff creates the student record; admin links the login (account linkage)",
+      "backing": "DB",
+      "mocked": "audit sink",
+      "status": "pass",
+      "numbers": {
+        "created": 201,
+        "linked": true
+      }
+    },
+    {
+      "id": "J6",
+      "title": "high-school enrollment + plan: 17 core courses = 16 core credits, 6 electives = 5 credits (incl. two 0.5-credit), total 21 credits = 42 half-units; admin publishes",
+      "backing": "DB",
+      "mocked": "audit sink",
+      "status": "pass",
+      "numbers": {
+        "coreCourses": 17,
+        "coreHalfUnits": 32,
+        "electiveCourses": 6,
+        "electiveHalfUnits": 10,
+        "totalHalfUnits": 42,
+        "totalCredits": 21,
+        "highSchoolProgramRecognised": true
+      }
+    },
+    {
+      "id": "J7",
+      "title": "academic projection before any evidence: nothing official, nothing invented (no graduation date, no earned credit)",
+      "backing": "DB",
+      "status": "pass",
+      "numbers": {
+        "required": 42,
+        "official": 0,
+        "targetCompletionDate": null,
+        "officialPercent": 0
+      }
+    },
+    {
+      "id": "J8",
+      "title": "student reports progress: submitted -> awaiting_school, started -> in_progress, untouched -> planned; none of it is official credit",
+      "backing": "DB",
+      "status": "pass",
+      "numbers": {
+        "official": 0,
+        "awaiting": 2,
+        "inProgress": 2,
+        "planned": 38
+      }
+    },
+    {
+      "id": "J9",
+      "title": "document upload -> staff rejection with a student-visible reason (internal note hidden) -> student resubmission -> staff verification",
+      "backing": "DB+MOCK",
+      "mocked": "object storage (the signed upload itself is not exercised); audit sink",
+      "status": "pass",
+      "numbers": {
+        "uploaded": 201,
+        "rejectedWithStudentMessage": true,
+        "internalNoteHiddenFromStudent": true,
+        "rejectedAsEvidence": 422,
+        "resubmitted": 201,
+        "verified": true
+      }
+    },
+    {
+      "id": "J10",
+      "title": "official results from verified evidence: english-1 (2 half-units) + a 0.5-credit elective (1 half-unit) = 3 half-units; buckets stay distinct",
+      "backing": "DB",
+      "mocked": "audit sink",
+      "status": "pass",
+      "numbers": {
+        "officialHalfUnits": 3,
+        "officialCredits": 1.5,
+        "remainingHalfUnits": 39,
+        "graduation": "in_progress",
+        "targetCompletionDate": null
+      }
+    },
+    {
+      "id": "J11",
+      "title": "access isolation: student B cannot read or change student A's projection, documents, billing, tickets or staff surfaces",
+      "backing": "DB",
+      "status": "pass",
+      "numbers": {
+        "projectionOfOther": 404,
+        "queryStudentId": 400,
+        "documents": 403,
+        "staffHs": 403,
+        "staffBilling": 403,
+        "bBilling": "not_configured"
+      }
+    },
+    {
+      "id": "J12",
+      "title": "support: ticket creation, staff reply, student reply with Idempotency-Key sent twice => exactly one comment; internal notes hidden",
+      "backing": "DB+MOCK",
+      "mocked": "support tables are the S08 in-memory fake (not in the local migration chain); the 20261031100000 unique index is covered by scripts/s20/verify-migrations.ts",
+      "status": "pass",
+      "numbers": {
+        "created": 201,
+        "firstReply": 201,
+        "duplicateReply": 200,
+        "replayed": true,
+        "commentsWithText": 1,
+        "internalHidden": true
+      }
+    },
+    {
+      "id": "J13",
+      "title": "staff configure billing (obligation, discount, 4 installments); student sees exact integer-cent totals and no staff-only fields",
+      "backing": "DB",
+      "mocked": "audit sink",
+      "status": "pass",
+      "numbers": {
+        "net": 1000000,
+        "remaining": 1000000,
+        "installments": 4
+      }
+    },
+    {
+      "id": "J14",
+      "title": "proof of payment: student-uploaded evidence never counts until staff confirm; confirming records an exact receipt",
+      "backing": "DB+MOCK",
+      "mocked": "object storage for the proof file; audit sink",
+      "status": "pass",
+      "numbers": {
+        "awaitingBeforeConfirm": 1,
+        "paidBefore": 0,
+        "paidAfter": 300000,
+        "remainingAfter": 700000,
+        "secondConfirm": 409
+      }
+    },
+    {
+      "id": "J15",
+      "title": "correction: void the receipt (reason required) -> totals revert, evidence returns to review; same evidence backs ONE new receipt, never two",
+      "backing": "DB",
+      "mocked": "audit sink",
+      "status": "pass",
+      "numbers": {
+        "voidWithoutReason": 400,
+        "afterVoidPaid": 0,
+        "evidenceBackInReview": true,
+        "newReceiptPaid": 250000,
+        "activeReceiptsOnEvidence": 1,
+        "voidedHistory": 1
+      }
+    },
+    {
+      "id": "J16",
+      "title": "first-login welcome is server-derived: 'first' once, then 'returning'; attention counts only real items (resubmitted rejection is not counted)",
+      "backing": "DB",
+      "status": "pass",
+      "numbers": {
+        "first": "first",
+        "afterSeen": "returning",
+        "attention": 0,
+        "staff": 403
+      }
+    },
+    {
+      "id": "J17",
+      "title": "student opens Lumière Guide and starts a conversation; the student message and local reply are stored in Postgres with a hash chain",
+      "backing": "DB",
+      "mocked": "live model disabled (students are never live-eligible); budget store unused",
+      "status": "pass",
+      "numbers": {
+        "created": 201,
+        "storedMessages": 2,
+        "retryReplayed": true,
+        "integrityOk": true,
+        "mode": "local"
+      }
+    },
+    {
+      "id": "J18",
+      "title": "student attaches an existing Document (their verified transcript) to a message; another student's document is refused",
+      "backing": "DB+MOCK",
+      "mocked": "object storage (attaching reuses the stored document row; the new-upload finalize path is covered by tests/s21-attachments-service-db.test.ts)",
+      "status": "pass",
+      "numbers": {
+        "foreignDocument": 422,
+        "attached": true,
+        "documentRowsUnchanged": 3
+      }
+    },
+    {
+      "id": "J19",
+      "title": "logout + return (new session/device): the conversation list, history, attachment reference and integrity are intact",
+      "backing": "DB",
+      "mocked": "a second local JWT stands in for the new session",
+      "status": "pass",
+      "numbers": {
+        "resumed": true,
+        "messages": 4,
+        "attachmentKept": true,
+        "integrityOk": true
+      }
+    },
+    {
+      "id": "J20",
+      "title": "memory: the stated goal is remembered as student-reported with a source link; later 'which universities did we discuss for communications?' cites the earlier discussion; no official record changes",
+      "backing": "DB",
+      "status": "pass",
+      "numbers": {
+        "memoryCategory": "intended_major",
+        "basis": "student_reported",
+        "privateRefs": 2,
+        "officialHalfUnitsUnchanged": 3
+      }
+    },
+    {
+      "id": "J21",
+      "title": "global search: student finds own course, document, conversation and Billing; staff search returns students only",
+      "backing": "DB",
+      "status": "pass",
+      "numbers": {
+        "conversationHit": true,
+        "documentHit": true,
+        "billingHit": true,
+        "staffOnlyStudents": true
+      }
+    },
+    {
+      "id": "J22",
+      "title": "another student cannot list, read, post to, search or attach into student A's conversations, memory or documents",
+      "backing": "DB",
+      "status": "pass",
+      "numbers": {
+        "read": 404,
+        "post": 404,
+        "list": 0,
+        "search": 0,
+        "memory": 0,
+        "attachForeignDoc": 422,
+        "staffRead": 404
+      }
+    },
+    {
+      "id": "J23",
+      "title": "tamper evidence: a direct SQL edit of a stored message (trigger bypassed as superuser) is detected by the integrity check",
+      "backing": "DB",
+      "status": "pass",
+      "numbers": {
+        "detected": true,
+        "problem": "hash_mismatch"
+      }
+    }
+  ]
+}
