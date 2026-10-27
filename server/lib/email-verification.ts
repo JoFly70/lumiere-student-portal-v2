@@ -37,6 +37,67 @@ export interface VerificationDeps {
   warn: (message: string, meta?: Record<string, unknown>) => void;
 }
 
+/** Paths (relative to APP_URL) that auth emails may redirect to. */
+export const AUTH_REDIRECT_PATHS = {
+  verifyEmail: "/verify-email",
+  resetPassword: "/reset-password",
+} as const;
+
+/**
+ * Every auth-email redirect is built from the configured APP_URL only, never
+ * from a request Host / X-Forwarded-* header (host-header poisoning would
+ * otherwise let an attacker aim a victim's verification/recovery link at a
+ * domain they control).
+ */
+export function authRedirectUrl(appUrl: string | null | undefined, path: string): string | undefined {
+  return appUrl ? `${appUrl}${path}` : undefined;
+}
+
+/**
+ * `admin.createUser` never sends a confirmation email. With
+ * ENABLE_EMAIL_VERIFICATION=true the account is created unconfirmed, so the
+ * server sends the first verification email itself (best effort; the student
+ * can always use /resend-verification). Returns whether the provider accepted it.
+ */
+export async function sendInitialVerificationEmail(
+  deps: Pick<VerificationDeps, "resend" | "appUrl" | "warn">,
+  email: string,
+): Promise<boolean> {
+  try {
+    const { error } = await deps.resend(email, authRedirectUrl(deps.appUrl(), AUTH_REDIRECT_PATHS.verifyEmail));
+    if (error) {
+      deps.warn("Initial verification email not delivered");
+      return false;
+    }
+    return true;
+  } catch {
+    deps.warn("Initial verification email error");
+    return false;
+  }
+}
+
+export type RecoveryExchange = (params: { token_hash: string; type: "recovery" }) => Promise<{
+  data?: { session?: { access_token?: string } | null } | null;
+  error?: unknown;
+}>;
+
+/**
+ * Exchanges a recovery `token_hash` (custom email template link) for the
+ * recovery session's access token. Only called when the new password is
+ * submitted, so a mail scanner that GETs the link cannot consume the token.
+ * Returns null for a malformed, expired or already-used hash.
+ */
+export async function exchangeRecoveryTokenHash(exchange: RecoveryExchange, tokenHash: unknown): Promise<string | null> {
+  if (typeof tokenHash !== "string" || !TOKEN_HASH_RE.test(tokenHash)) return null;
+  try {
+    const { data, error } = await exchange({ token_hash: tokenHash, type: "recovery" });
+    const token = data?.session?.access_token;
+    return !error && typeof token === "string" && token ? token : null;
+  } catch {
+    return null;
+  }
+}
+
 function fail(res: Response, status: number, code: VerificationCode) {
   return res.status(status).json({ verified: false, code });
 }
@@ -99,7 +160,7 @@ export function createResendVerificationHandler(deps: VerificationDeps): Request
     try {
       // type "signup" only re-sends for an existing unconfirmed account; it can
       // never create one, so invitation-only registration is unaffected.
-      const { error } = await deps.resend(email.trim(), deps.appUrl() ? `${deps.appUrl()}/verify-email` : undefined);
+      const { error } = await deps.resend(email.trim(), authRedirectUrl(deps.appUrl(), AUTH_REDIRECT_PATHS.verifyEmail));
       if (error) deps.warn("Verification resend not delivered");
     } catch {
       deps.warn("Verification resend error");

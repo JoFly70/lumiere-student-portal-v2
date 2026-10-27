@@ -25,6 +25,10 @@ import {
   resolvePasswordResetAppUrl,
 } from "./lib/auth-policy";
 import {
+  AUTH_REDIRECT_PATHS,
+  authRedirectUrl,
+  exchangeRecoveryTokenHash,
+  sendInitialVerificationEmail,
   createResendVerificationHandler,
   createVerifyEmailHandler,
   resendVerificationRateLimit,
@@ -256,6 +260,11 @@ window.ENV = {
         return res.status(500).json({ error: "Account creation error" });
       }
 
+      // admin.createUser sends no email; with verification on, send the first one.
+      if (emailVerificationEnabled) {
+        await sendInitialVerificationEmail(verificationDeps, email);
+      }
+
       // Sign in the user to get session tokens — isolated client so the
       // shared service-role client never acquires a user session.
       const userAuthClient = createUserAuthClient();
@@ -324,7 +333,7 @@ window.ENV = {
 
       // Send password reset email via Supabase
       const { error } = await supabaseAdmin.auth.resetPasswordForEmail(email, {
-        redirectTo: `${appUrl || 'http://localhost:5000'}/reset-password`,
+        redirectTo: authRedirectUrl(appUrl, AUTH_REDIRECT_PATHS.resetPassword),
       });
 
       // Always return success to prevent email enumeration
@@ -356,7 +365,8 @@ window.ENV = {
   // Validates the recovery access_token before updating the password.
   app.post("/api/auth/update-password", passwordUpdateRateLimit, async (req, res) => {
     try {
-      const { password, access_token, recovery_type } = req.body;
+      const { password, recovery_type } = req.body;
+      let access_token = req.body.access_token;
 
       if (!password || typeof password !== 'string') {
         return res.status(400).json({ error: "Password is required" });
@@ -365,7 +375,9 @@ window.ENV = {
         return res.status(400).json({ error: "Password must be at least 6 characters" });
       }
 
-      if (!access_token || typeof access_token !== 'string') {
+      const tokenHash = req.body.token_hash;
+      const hasTokenHash = tokenHash !== undefined && tokenHash !== null && tokenHash !== '';
+      if (!hasTokenHash && (!access_token || typeof access_token !== 'string')) {
         return res.status(400).json({ error: "Access token is required" });
       }
       if (recovery_type !== 'recovery') {
@@ -376,6 +388,20 @@ window.ENV = {
       if (!isSupabaseConfigured) {
         logger.error("Password update attempted but Supabase not configured");
         return res.status(503).json({ error: "Service unavailable" });
+      }
+
+      // Recovery link from a token_hash email template: exchange it now (at
+      // submit time, so link scanners cannot consume it) for the recovery
+      // session, then continue with the same checks as an access_token link.
+      if (hasTokenHash) {
+        access_token = await exchangeRecoveryTokenHash(
+          (params) => createUserAuthClient().auth.verifyOtp(params),
+          tokenHash,
+        );
+        if (!access_token) {
+          logger.warn("Password update rejected: recovery token_hash invalid or expired");
+          return res.status(401).json({ error: "Invalid or expired password reset token" });
+        }
       }
 
       // Validate the recovery credential by calling Supabase auth.getUser with

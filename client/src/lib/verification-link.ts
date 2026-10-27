@@ -5,7 +5,7 @@
  */
 export type VerificationLink =
   | { kind: 'credential'; accessToken?: string; tokenHash?: string; type?: string }
-  | { kind: 'error'; reason: 'expired' | 'invalid' }
+  | { kind: 'error'; reason: 'expired' | 'invalid' | 'unsupported' }
   | { kind: 'missing' };
 
 const SENSITIVE_KEYS = [
@@ -36,8 +36,10 @@ export function parseVerificationLink(url: string): VerificationLink {
   const accessToken = hash.get('access_token') || null; // fragment only
   if (accessToken) return { kind: 'credential', accessToken, type };
 
-  // PKCE `code` or bare `token` cannot be verified without the original browser verifier.
-  if (get('code') || get('token')) return { kind: 'error', reason: 'invalid' };
+  // PKCE `code` or bare `token` cannot be verified: the app's server creates
+  // the user, so no browser holds a code verifier. Say so, so the UI can point
+  // the student at a fresh token_hash link instead of a generic "invalid".
+  if (get('code') || get('token')) return { kind: 'error', reason: 'unsupported' };
   return { kind: 'missing' };
 }
 

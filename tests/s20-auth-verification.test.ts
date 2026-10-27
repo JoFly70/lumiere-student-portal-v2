@@ -151,7 +151,7 @@ describe("S20 verification link parsing (client)", () => {
   it("other error -> invalid; recovery/PKCE code -> invalid", () => {
     expect(p("#error=access_denied")).toEqual({ kind: "error", reason: "invalid" });
     expect(p(`#access_token=${JWT}&type=recovery`)).toEqual({ kind: "error", reason: "invalid" });
-    expect(p("?code=abc")).toEqual({ kind: "error", reason: "invalid" });
+    expect(p("?code=abc")).toEqual({ kind: "error", reason: "unsupported" });
   });
   it("token present is only a credential, never success", () => {
     expect(p(`#access_token=${JWT}&type=signup`)).toEqual({ kind: "credential", accessToken: JWT, type: "signup" });

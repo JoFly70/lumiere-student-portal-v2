@@ -4,18 +4,24 @@ import { CheckCircle2, MailCheck } from 'lucide-react';
 import { useT } from '@/i18n';
 import { AuthLayout } from '@/components/auth/auth-layout';
 import { AuthAlert, AuthField, AuthHeading, AuthStatus, AuthSubmit } from '@/components/auth/auth-parts';
-import { extractRecoveryToken, recoveryUrlWithoutCredentials } from '@/lib/recovery-token';
+import { parseRecoveryLink, recoveryUrlWithoutCredentials } from '@/lib/recovery-token';
 
 export default function ResetPassword() {
   const [, setLocation] = useLocation();
   const { t } = useT();
+  // Read once; the credential lives only in this state and the request body.
+  const [link] = useState(() => parseRecoveryLink(window.location.href));
+  const recoveryToken = link.kind === 'access_token' ? link.accessToken : null;
+  const recoveryTokenHash = link.kind === 'token_hash' ? link.tokenHash : null;
   const [email, setEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  // An unusable link lands on the request-a-new-link form with an explanation.
+  const [error, setError] = useState(() =>
+    link.kind === 'unsupported' ? t('auth.reset.linkUnsupported')
+      : link.kind === 'error' ? t(link.reason === 'expired' ? 'auth.reset.linkExpired' : 'auth.reset.linkUnsupported')
+      : '');
   const [success, setSuccess] = useState(false);
-
-  const [recoveryToken] = useState(() => extractRecoveryToken(window.location.href));
 
   useLayoutEffect(() => {
     const currentUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`;
@@ -25,7 +31,7 @@ export default function ResetPassword() {
     }
   }, []);
 
-  const isRecoveryMode = !!recoveryToken;
+  const isRecoveryMode = !!recoveryToken || !!recoveryTokenHash;
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,7 +75,7 @@ export default function ResetPassword() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           password: newPassword,
-          access_token: recoveryToken,
+          ...(recoveryToken ? { access_token: recoveryToken } : { token_hash: recoveryTokenHash }),
           recovery_type: 'recovery',
         }),
       });

@@ -6,7 +6,7 @@ import { AuthLayout } from '@/components/auth/auth-layout';
 import { AuthStatus } from '@/components/auth/auth-parts';
 import { parseVerificationLink, verificationUrlWithoutCredentials, type VerificationLink } from '@/lib/verification-link';
 
-type Status = 'verifying' | 'success' | 'expired' | 'invalid' | 'missing' | 'unavailable';
+type Status = 'verifying' | 'success' | 'expired' | 'invalid' | 'unsupported' | 'missing' | 'unavailable';
 
 export default function VerifyEmail() {
   const [, setLocation] = useLocation();
@@ -57,6 +57,7 @@ export default function VerifyEmail() {
   const bodyKey = {
     expired: 'auth.verify.expiredBody',
     invalid: 'auth.verify.errorBody',
+    unsupported: 'auth.verify.unsupportedBody',
     missing: 'auth.verify.missingBody',
     unavailable: 'auth.verify.unavailableBody',
   } as const;
