@@ -61,7 +61,9 @@ describe("navigation matrix", () => {
     expect(shell).toContain("filterStudentNav(BAR_ITEMS, programs)");
     expect(shell).toContain('<ThemeToggle className="h-11 w-11" />');
   });
-  it("Billing stays: the page states honestly that billing is not connected", () => {
-    expect(read("client/src/pages/billing.tsx")).toContain("Billing information is not connected yet");
+  it("Billing stays: an unconfigured ledger is stated honestly, never as zero (S18)", () => {
+    const billing = read("client/src/pages/billing.tsx");
+    expect(billing).toContain('t("billing.notSetUp")');
+    expect(read("client/src/i18n/en.ts")).toContain('"billing.notSetUp": "Billing is not set up yet"');
   });
 });

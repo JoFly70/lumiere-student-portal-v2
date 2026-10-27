@@ -1321,6 +1321,8 @@ window.ENV = {
   // S11 high school pathway staff API (per-route auth/role; admin-only actions inside).
   const adminHighSchoolRouter = (await import('./routes/admin-high-school')).default;
   app.use('/api/admin', adminHighSchoolRouter);
+  // S18 billing ledger: staff/admin entry and review (per-route role checks)
+  app.use('/api/admin', (await import('./routes/admin-billing')).default);
   // S13 staff-only student <-> portal account linkage (per-route auth, admin only).
   app.use('/api/admin', (await import('./routes/admin-student-account')).default);
   app.use('/api/admin', adminStudentWorkspaceRouter);
@@ -1339,6 +1341,8 @@ window.ENV = {
   // S18 academic projection for the high school Flight Deck (student role only, own record only)
   const studentAcademicProjectionRouter = (await import('./routes/student-academic-projection')).default;
   app.use('/api/student', studentAcademicProjectionRouter);
+  // S18 billing: the student's own ledger, read-only
+  app.use('/api/student', (await import('./routes/student-billing')).default);
 
   app.use('/api/admin', adminRouter);
   app.use('/api', programsRouter);

@@ -102,7 +102,13 @@ export type AuditEventType =
   | 'high_school.credit_voided'
   | 'high_school.graduation_updated'
   | 'high_school.guardian_note_added'
-  | 'high_school.access_denied';
+  | 'high_school.access_denied'
+  // Billing ledger events (S18). Must also exist in the Postgres audit_event_type enum
+  // (supabase/migrations/20261030100100_s18_billing_audit_event_types.sql).
+  | 'billing.ledger_updated'
+  | 'billing.receipt_recorded'
+  | 'billing.evidence_reviewed'
+  | 'billing.access_denied';
 
 export type AuditSeverity = 'info' | 'warning' | 'error' | 'critical';
 

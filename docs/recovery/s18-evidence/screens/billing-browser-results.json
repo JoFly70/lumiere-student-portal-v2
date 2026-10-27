@@ -1,0 +1,134 @@
+{
+  "generatedAt": "2026-10-27T20:07:01.201Z",
+  "mode": "LOCAL UI SIMULATION: vite dev server, Playwright route interception, stubbed auth and APIs, SYNTHETIC fixtures. Not hosted acceptance.",
+  "blockedExternalHosts": [
+    "fonts.googleapis.com",
+    "www.chatbase.co"
+  ],
+  "checks": {
+    "configured-text-1440-lumiere": {
+      "pass": true,
+      "note": "agreed amount shown; no payment-method or pay-now text"
+    },
+    "no-banned-1440-lumiere": {
+      "pass": true,
+      "note": "no Pay Now / Manage Card / payment method text"
+    },
+    "four-cards-1440-lumiere": {
+      "pass": true,
+      "note": "summary cards = 4"
+    },
+    "awaiting-not-paid-1440-lumiere": {
+      "pass": true,
+      "note": "paid card = confirmed receipts only ($4,050.00); awaiting-review notice shown"
+    },
+    "a11y-overview-1440-lumiere": {
+      "pass": true,
+      "note": "overflow=false (1440/1440); axe=clean"
+    },
+    "history-rows-1440-lumiere": {
+      "pass": true,
+      "note": "2 confirmed receipts"
+    },
+    "schedule-rows-1440-lumiere": {
+      "pass": true,
+      "note": "4 installments"
+    },
+    "a11y-upcoming-1440-lumiere": {
+      "pass": true,
+      "note": "overflow=false (1440/1440); axe=clean"
+    },
+    "read-only-1440-lumiere": {
+      "pass": true,
+      "note": "no non-GET requests"
+    },
+    "pageerrors-1440-lumiere": {
+      "pass": true,
+      "note": "none"
+    },
+    "configured-text-390-lumiere": {
+      "pass": true,
+      "note": "agreed amount shown; no payment-method or pay-now text"
+    },
+    "no-banned-390-lumiere": {
+      "pass": true,
+      "note": "no Pay Now / Manage Card / payment method text"
+    },
+    "four-cards-390-lumiere": {
+      "pass": true,
+      "note": "summary cards = 4"
+    },
+    "awaiting-not-paid-390-lumiere": {
+      "pass": true,
+      "note": "paid card = confirmed receipts only ($4,050.00); awaiting-review notice shown"
+    },
+    "a11y-overview-390-lumiere": {
+      "pass": true,
+      "note": "overflow=false (390/390); axe=clean"
+    },
+    "history-rows-390-lumiere": {
+      "pass": true,
+      "note": "2 confirmed receipts"
+    },
+    "schedule-rows-390-lumiere": {
+      "pass": true,
+      "note": "4 installments"
+    },
+    "a11y-upcoming-390-lumiere": {
+      "pass": true,
+      "note": "overflow=false (390/390); axe=clean"
+    },
+    "read-only-390-lumiere": {
+      "pass": true,
+      "note": "no non-GET requests"
+    },
+    "pageerrors-390-lumiere": {
+      "pass": true,
+      "note": "none"
+    },
+    "configured-text-1440-monaco": {
+      "pass": true,
+      "note": "agreed amount shown; no payment-method or pay-now text"
+    },
+    "no-banned-1440-monaco": {
+      "pass": true,
+      "note": "no Pay Now / Manage Card / payment method text"
+    },
+    "four-cards-1440-monaco": {
+      "pass": true,
+      "note": "summary cards = 4"
+    },
+    "awaiting-not-paid-1440-monaco": {
+      "pass": true,
+      "note": "paid card = confirmed receipts only ($4,050.00); awaiting-review notice shown"
+    },
+    "a11y-overview-1440-monaco": {
+      "pass": true,
+      "note": "overflow=false (1440/1440); axe=clean"
+    },
+    "read-only-1440-monaco": {
+      "pass": true,
+      "note": "no non-GET requests"
+    },
+    "pageerrors-1440-monaco": {
+      "pass": true,
+      "note": "none"
+    },
+    "not-configured-no-numbers": {
+      "pass": true,
+      "note": "says not set up; no $0, no percent"
+    },
+    "a11y-not-configured": {
+      "pass": true,
+      "note": "overflow=false (1440/1440); axe=clean"
+    },
+    "pageerrors-not-configured": {
+      "pass": true,
+      "note": "none"
+    },
+    "error-state-honest": {
+      "pass": true,
+      "note": "error shown, no amounts"
+    }
+  }
+}

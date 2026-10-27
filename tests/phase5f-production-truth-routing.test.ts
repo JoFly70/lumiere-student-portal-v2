@@ -62,8 +62,9 @@ describe("Phase 5F production truth and routing", () => {
       expect(billing).not.toContain(sample);
     }
 
-    expect(billing).toContain("Billing information is not connected yet");
-    expect(billing).toContain("No sample transactions or estimated balances are shown");
+    // S18: figures come only from the staff-entered ledger; no ledger means an explicit not-set-up state.
+    expect(billing).toContain('t("billing.notSetUp")');
+    expect(billing).toContain("useStudentBilling");
   });
 
   it("distinguishes Programs load failures from an empty programs list", () => {
