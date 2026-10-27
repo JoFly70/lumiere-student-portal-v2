@@ -113,6 +113,12 @@ vi.mock('drizzle-orm', () => ({
   eq: vi.fn(),
 }));
 
+// The students router derives its update schema with partialForUpdate (Zod 4,
+// S16). The schema module is mocked below, so keep the mock's own .partial() chain.
+vi.mock('../shared/partial-for-update.js', () => ({
+  partialForUpdate: (schema: any) => schema.partial(),
+}));
+
 vi.mock('../shared/schema.js', () => ({
   users: { id: 'id', email: 'email', name: 'name', role: 'role' },
   studentsTable: { id: 'id', user_id: 'user_id', student_code: 'student_code' },

@@ -58,12 +58,16 @@ describe("S07 integration: roadmap routes alongside the S06 server changes", () 
     };
     const adminLimiter = at("app.use('/api/admin', adminLimiter)");
     const apiLimiter = at("app.use('/api', apiLimiter)");
-    const roadmapParser = at("roadmap(\\/|$)/, express.json({ limit: '2mb' })");
-    const defaultParser = at("app.use(express.json({");
+    // S16 moved body parsing into configureRequestBody: one parser per request,
+    // the 2 MB limit only on the staff roadmap paths.
+    const bodyParsing = at("configureRequestBody(app)");
+    const requestBody = read("server/lib/request-body.ts");
+    expect(requestBody).toContain('parser("2mb")');
+    expect(requestBody).toContain('parser("100kb")');
+    expect(requestBody).toContain("roadmap(\\/|$)/.test(req.path) ? roadmapJson : ordinaryJson");
     expect(at("registerWebhookRoutes(app)")).toBeLessThan(adminLimiter);
     expect(adminLimiter).toBeLessThan(apiLimiter);
-    expect(apiLimiter).toBeLessThan(roadmapParser);
-    expect(roadmapParser).toBeLessThan(defaultParser);
+    expect(apiLimiter).toBeLessThan(bodyParsing);
     expect(at("registerHealthRoutes(app)")).toBeLessThan(at("await registerRoutes(app)"));
     expect(src).toContain("configureRateLimitBackend(");
   });
