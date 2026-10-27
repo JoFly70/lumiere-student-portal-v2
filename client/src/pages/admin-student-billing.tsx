@@ -51,7 +51,7 @@ export default function AdminStudentBilling() {
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4" data-testid="billing-summary">
           <KpiTile label="Net obligation" value={money(s.netObligationCents)} hint={s.discountCents > 0 ? `${money(s.agreedCents)} less ${money(s.discountCents)} discounts` : "No discounts"} />
           <KpiTile label="Paid" value={money(s.paidCents)} hint={`${s.receipts.length} confirmed payment${s.receipts.length === 1 ? "" : "s"}`} />
-          <KpiTile label="Outstanding" value={money(s.remainingCents)} tone={s.nextDue?.status === "overdue" ? "urgent" : "default"} hint={s.overpaid ? `Credit ${money(s.creditCents)}` : undefined} />
+          <KpiTile label="Outstanding" value={money(s.remainingCents)} tone={s.nextDue?.status === "overdue" ? "urgent" : "default"} hint={s.overpaid ? `Credit ${money(s.creditCents)}` : "Left on the net obligation"} />
           <KpiTile label="Next due" value={s.nextDue ? formatBillingDate(s.nextDue.dueDate, "en-US") : "·"} hint={s.nextDue ? `${money(s.nextDue.amountCents)}${s.nextDue.status === "overdue" ? " · overdue" : ""}` : "Nothing scheduled"} />
         </div>
       )}

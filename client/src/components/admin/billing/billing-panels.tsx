@@ -67,7 +67,7 @@ export function DiscountPanel({ view, pending, error, run, resetError }: PanelPr
         <ul className="mb-4 divide-y divide-student-line">
           {view.discounts.map((d) => (
             <li key={d.id} className="flex items-center justify-between gap-3 py-2 text-sm">
-              <span className="min-w-0"><span className="font-medium tabular-nums">{formatMoney(d.amountCents, currency)}</span> <span className="text-student-muted">· {d.reason} · {stamp(d.approvedAt)}</span></span>
+              <span className="min-w-0"><span className="font-medium tabular-nums">{formatMoney(d.amountCents, currency)}</span> <span className="text-student-muted">· {d.reason} · {fmt(stamp(d.approvedAt))}</span></span>
               <Button type="button" className={staffBtn.ghost} variant="ghost" onClick={() => { resetError(); setRemoving(d.id); }}><Undo2 className="h-4 w-4" />Remove</Button>
             </li>
           ))}
@@ -198,7 +198,7 @@ export function EvidencePanel({ view, pending, error, run, resetError }: PanelPr
         <ul className="divide-y divide-student-line">
           {waiting.map((e) => (
             <li key={e.id} className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm">
-              <span className="min-w-0">Submitted {stamp(e.submittedAt)}{e.note ? <span className="text-student-muted"> · {e.note}</span> : null}</span>
+              <span className="min-w-0">Submitted {fmt(stamp(e.submittedAt))}{e.note ? <span className="text-student-muted"> · {e.note}</span> : null}</span>
               <span className="flex flex-wrap gap-2">
                 <Button type="button" className={staffBtn.outline} variant="outline" onClick={() => openDocument(e.documentId).catch((err: Error) => setOpenError(err))}><ExternalLink className="h-4 w-4" />View file</Button>
                 <Button type="button" className={staffBtn.seal} onClick={() => { resetError(); setConfirming(e); }} data-testid={`button-confirm-evidence-${e.id}`}>Confirm as payment</Button>

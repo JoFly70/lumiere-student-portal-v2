@@ -31,6 +31,7 @@ import HighSchool from "@/pages/high-school";
 import { UniversityOnly } from "@/components/university-only";
 import { studentLandingPath, useStudentPrograms } from "@/lib/student-programs";
 import AdminStudentHighSchool from "@/pages/admin-student-high-school";
+import AdminStudentBilling from "@/pages/admin-student-billing";
 import { PROTOTYPES_ENABLED, PREVIEW_FLIGHT_DECK_PATH } from "@/components/os/prototype-gate";
 
 // Prototype-only route (S17). Compiled out of normal production builds; see components/os/prototype-gate.
@@ -92,6 +93,13 @@ function Router() {
         {() => (
           <ProtectedRoute requireRole={["admin", "staff"]}>
             <AdminStudentHighSchool />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/admin/students/:studentId/billing">
+        {() => (
+          <ProtectedRoute requireRole={["admin", "staff"]}>
+            <AdminStudentBilling />
           </ProtectedRoute>
         )}
       </Route>
