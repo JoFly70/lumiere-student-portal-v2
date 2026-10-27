@@ -145,7 +145,7 @@ const academicRuleSchema = z.object({
   ruleKey: z.string().trim().min(1, 'Rule key is required'),
   ruleKind: z.enum([...RULE_KINDS] as [string, ...string[]]),
   title: z.string().trim().min(1, 'Title is required'),
-  ruleValue: z.record(z.unknown()).optional(),
+  ruleValue: z.record(z.string(), z.unknown()).optional(),
   claimVersionId: z.string().min(1),
   effectiveFrom: z.date().nullable().optional(),
   effectiveTo: z.date().nullable().optional(),

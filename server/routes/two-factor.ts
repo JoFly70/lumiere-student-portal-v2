@@ -159,7 +159,7 @@ router.post('/verify-setup', async (req, res) => {
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         error: 'Invalid request',
-        details: error.errors,
+        details: error.issues,
       });
     }
 
@@ -225,7 +225,7 @@ router.post('/disable', async (req, res) => {
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         error: 'Invalid request',
-        details: error.errors,
+        details: error.issues,
       });
     }
 
@@ -327,7 +327,7 @@ router.post('/verify', async (req, res) => {
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         error: 'Invalid request',
-        details: error.errors,
+        details: error.issues,
       });
     }
 

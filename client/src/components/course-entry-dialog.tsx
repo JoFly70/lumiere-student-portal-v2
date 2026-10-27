@@ -13,16 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Plus } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 
-const courseFormSchema = z.object({
-  providerId: z.string().min(1, "Provider is required"),
-  courseCode: z.string().min(1, "Course code is required"),
-  title: z.string().min(1, "Course title is required"),
-  credits: z.coerce.number().min(1).max(6),
-  courseUrl: z.string().url().optional().or(z.literal("")),
-  notes: z.string().optional(),
-  // "completed" is recorded by staff, not self-reported.
-  status: z.enum(["todo", "in_progress", "dropped"]).default("todo"),
-});
+import { courseFormSchema } from "@/lib/course-form-schema";
 
 type CourseFormData = z.infer<typeof courseFormSchema>;
 
@@ -31,7 +22,7 @@ export function CourseEntryDialog() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const form = useForm<CourseFormData>({
+  const form = useForm<z.input<typeof courseFormSchema>, unknown, CourseFormData>({
     resolver: zodResolver(courseFormSchema),
     defaultValues: {
       providerId: "",

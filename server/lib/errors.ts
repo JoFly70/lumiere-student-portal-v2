@@ -157,7 +157,7 @@ export function sendErrorResponse(
     return res.status(400).json({
       error: 'Validation failed',
       code: 'VALIDATION_ERROR',
-      details: error.errors.map((err) => ({
+      details: error.issues.map((err) => ({
         field: err.path.join('.'),
         message: err.message,
       })),

@@ -4,6 +4,7 @@ import compression from "compression";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
 import { registerRoutes } from "./routes";
+import { configureRequestBody } from "./lib/request-body";
 import { registerHealthRoutes } from "./routes/health";
 import { registerWebhookRoutes } from "./routes/webhooks";
 import { setupVite, serveStatic, log } from "./vite";
@@ -234,16 +235,7 @@ app.use('/api/admin', adminLimiter);
 // API limiter must be last (after more specific routes)
 app.use('/api', apiLimiter);
 
-// Body parsing middleware
-// Roadmap import packages (structured AI/script output) can exceed the default
-// 100 KB; the larger limit applies only to the staff roadmap endpoints.
-app.use(/^\/api\/admin\/students\/[^/]+\/roadmap(\/|$)/, express.json({ limit: '2mb' }));
-app.use(express.json({
-  verify: (req, _res, buf) => {
-    req.rawBody = buf;
-  }
-}));
-app.use(express.urlencoded({ extended: false }));
+configureRequestBody(app);
 
 // Request logging middleware
 app.use((req, res, next) => {

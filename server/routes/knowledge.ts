@@ -613,7 +613,7 @@ const createAcademicRuleBody = z.object({
   ruleKey: z.string().trim().min(1),
   ruleKind: z.enum(RULE_KINDS),
   title: z.string().trim().min(1),
-  ruleValue: z.record(z.unknown()).optional(),
+  ruleValue: z.record(z.string(), z.unknown()).optional(),
   claimVersionId: z.string().uuid(),
   effectiveFrom: isoDateSchema.optional(),
   effectiveTo: isoDateSchema.optional(),

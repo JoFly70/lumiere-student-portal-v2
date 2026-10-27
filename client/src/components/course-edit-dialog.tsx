@@ -13,15 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { Enrollment } from "@shared/schema";
 
-const courseEditSchema = z.object({
-  providerId: z.string().min(1, "Provider is required"),
-  courseCode: z.string().min(1, "Course code is required"),
-  title: z.string().min(1, "Course title is required"),
-  credits: z.coerce.number().min(1).max(6),
-  courseUrl: z.string().url().optional().or(z.literal("")),
-  notes: z.string().optional(),
-  status: z.enum(["todo", "in_progress", "completed", "dropped"]),
-});
+import { courseEditSchema } from "@/lib/course-form-schema";
 
 type CourseEditData = z.infer<typeof courseEditSchema>;
 
@@ -35,7 +27,7 @@ export function CourseEditDialog({ enrollment, open, onOpenChange }: CourseEditD
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const form = useForm<CourseEditData>({
+  const form = useForm<z.input<typeof courseEditSchema>, unknown, CourseEditData>({
     resolver: zodResolver(courseEditSchema),
     defaultValues: {
       providerId: enrollment.providerId || "",

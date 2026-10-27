@@ -197,7 +197,7 @@ const createInvitationSchema = z.object({
 router.post('/invitations', asyncHandler(async (req: any, res) => {
   const parsed = createInvitationSchema.safeParse(req.body);
   if (!parsed.success) {
-    return res.status(400).json({ error: 'Validation failed', details: parsed.error.errors });
+    return res.status(400).json({ error: 'Validation failed', details: parsed.error.issues });
   }
   const admin = req.user;
   try {

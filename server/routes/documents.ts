@@ -151,7 +151,7 @@ router.post('/student/:studentId/upload-url', async (req, res) => {
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         error: 'Validation failed',
-        details: error.errors,
+        details: error.issues,
       });
     }
 
@@ -208,7 +208,7 @@ router.post('/student/:studentId', async (req, res) => {
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         error: 'Validation failed',
-        details: error.errors,
+        details: error.issues,
       });
     }
 
@@ -252,7 +252,7 @@ router.post('/:id/verify', requireStaff, requireVerifier, async (req, res) => {
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         error: 'Validation failed',
-        details: error.errors,
+        details: error.issues,
       });
     }
 
@@ -294,7 +294,7 @@ router.post('/:id/reject', requireStaff, requireVerifier, async (req, res) => {
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         error: 'Validation failed',
-        details: error.errors,
+        details: error.issues,
       });
     }
 
@@ -336,7 +336,7 @@ router.post('/:id/request-resubmit', requireStaff, requireVerifier, async (req, 
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         error: 'Validation failed',
-        details: error.errors,
+        details: error.issues,
       });
     }
 
@@ -424,7 +424,7 @@ router.post('/bulk-verify', requireStaff, requireVerifier, async (req, res) => {
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         error: 'Validation failed',
-        details: error.errors,
+        details: error.issues,
       });
     }
 

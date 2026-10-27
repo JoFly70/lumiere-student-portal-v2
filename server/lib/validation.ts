@@ -339,7 +339,7 @@ export function validateAndSanitize<T>(
  * Format validation errors for API responses
  */
 export function formatValidationErrors(error: z.ZodError): string[] {
-  return error.errors.map((err) => {
+  return error.issues.map((err) => {
     const path = err.path.join('.');
     return path ? `${path}: ${err.message}` : err.message;
   });

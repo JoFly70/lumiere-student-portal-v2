@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
+import { partialForUpdate } from '@shared/partial-for-update';
 import { supabaseAdmin } from '../lib/supabase';
 import { requireAuth } from '../middleware/auth';
 import { requireRole } from '../middleware/rbac';
@@ -91,7 +92,7 @@ router.post('/programs', requireAuth, requireRole(['admin', 'staff']), async (re
     res.status(201).json(data);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ error: error.errors });
+      return res.status(400).json({ error: error.issues });
     }
     console.error('Error creating degree program:', error);
     res.status(500).json({ error: 'Failed to create degree program' });
@@ -100,7 +101,7 @@ router.post('/programs', requireAuth, requireRole(['admin', 'staff']), async (re
 
 router.put('/programs/:id', requireAuth, requireRole(['admin', 'staff']), async (req, res) => {
   try {
-    const validatedData = degreeProgramSchema.partial().parse(req.body);
+    const validatedData = partialForUpdate(degreeProgramSchema).parse(req.body);
 
     const { data, error } = await supabaseAdmin
       .from('degree_programs')
@@ -114,7 +115,7 @@ router.put('/programs/:id', requireAuth, requireRole(['admin', 'staff']), async 
     res.json(data);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ error: error.errors });
+      return res.status(400).json({ error: error.issues });
     }
     console.error('Error updating degree program:', error);
     res.status(500).json({ error: 'Failed to update degree program' });
@@ -191,7 +192,7 @@ router.post('/courses', requireAuth, requireRole(['admin', 'staff']), async (req
     res.status(201).json(data);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ error: error.errors });
+      return res.status(400).json({ error: error.issues });
     }
     console.error('Error creating course:', error);
     res.status(500).json({ error: 'Failed to create course' });
@@ -200,7 +201,7 @@ router.post('/courses', requireAuth, requireRole(['admin', 'staff']), async (req
 
 router.put('/courses/:id', requireAuth, requireRole(['admin', 'staff']), async (req, res) => {
   try {
-    const validatedData = courseSchema.partial().parse(req.body);
+    const validatedData = partialForUpdate(courseSchema).parse(req.body);
 
     const { data, error } = await supabaseAdmin
       .from('courses')
@@ -214,7 +215,7 @@ router.put('/courses/:id', requireAuth, requireRole(['admin', 'staff']), async (
     res.json(data);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ error: error.errors });
+      return res.status(400).json({ error: error.issues });
     }
     console.error('Error updating course:', error);
     res.status(500).json({ error: 'Failed to update course' });
@@ -278,7 +279,7 @@ router.post('/programs/:programId/courses', requireAuth, requireRole(['admin', '
     res.status(201).json(data);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ error: error.errors });
+      return res.status(400).json({ error: error.issues });
     }
     console.error('Error adding course to program:', error);
     res.status(500).json({ error: 'Failed to add course to program' });
@@ -346,7 +347,7 @@ router.post('/enrollments', requireAuth, requireRole(['admin', 'staff']), async 
     res.status(201).json(data);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ error: error.errors });
+      return res.status(400).json({ error: error.issues });
     }
     console.error('Error creating enrollment:', error);
     res.status(500).json({ error: 'Failed to create enrollment' });
@@ -355,7 +356,7 @@ router.post('/enrollments', requireAuth, requireRole(['admin', 'staff']), async 
 
 router.put('/enrollments/:id', requireAuth, requireRole(['admin', 'staff']), async (req, res) => {
   try {
-    const validatedData = enrollmentSchema.partial().parse(req.body);
+    const validatedData = partialForUpdate(enrollmentSchema).parse(req.body);
 
     const { data, error } = await supabaseAdmin
       .from('student_program_enrollments')
@@ -372,7 +373,7 @@ router.put('/enrollments/:id', requireAuth, requireRole(['admin', 'staff']), asy
     res.json(data);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ error: error.errors });
+      return res.status(400).json({ error: error.issues });
     }
     console.error('Error updating enrollment:', error);
     res.status(500).json({ error: 'Failed to update enrollment' });

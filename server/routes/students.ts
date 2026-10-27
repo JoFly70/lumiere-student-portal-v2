@@ -34,6 +34,7 @@ import {
   type CorrectionStatus,
 } from '@shared/student-profile-contract';
 import { logger } from '../lib/logger';
+import { partialForUpdate } from '@shared/partial-for-update';
 import { supabaseAdmin } from '../lib/supabase';
 import { studentOwnsProfile, isAdminOrStaff } from '../lib/resource-ownership';
 import {
@@ -75,9 +76,8 @@ export { STUDENT_EDITABLE_PROFILE_FIELDS } from '@shared/student-profile-contrac
  * audited as material changes). Never editable through this API by anyone:
  * user_id, student_code, photo_url (upload endpoint only) and the login email.
  */
-const staffProfileUpdateSchema = insertStudentSchema
-  .omit({ user_id: true, photo_url: true, email: true })
-  .partial()
+const staffProfileUpdateSchema = partialForUpdate(insertStudentSchema
+  .omit({ user_id: true, photo_url: true, email: true }))
   .strict();
 
 /** Creating a student never binds a login: user_id is set only by the audited account-link endpoint. */
@@ -104,7 +104,7 @@ function sendProfileError(res: Response, error: unknown): boolean {
     return true;
   }
   if (error instanceof z.ZodError) {
-    res.status(400).json({ error: 'Validation failed', code: 'VALIDATION_FAILED', details: error.errors });
+    res.status(400).json({ error: 'Validation failed', code: 'VALIDATION_FAILED', details: error.issues });
     return true;
   }
   return false;
@@ -441,7 +441,7 @@ router.post('/', requireStaff, async (req, res) => {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ 
         error: 'Validation failed', 
-        details: error.errors 
+        details: error.issues
       });
     }
 
@@ -592,7 +592,7 @@ router.put('/contacts/:id', async (req, res) => {
       return res.status(403).json({ error: 'Access denied' });
     }
 
-    const input = studentContactInputSchema.partial().strict().parse(req.body);
+    const input = partialForUpdate(studentContactInputSchema).strict().parse(req.body);
     const updated = await updateContact(contact, input, actorIdOf(req) ?? req.user!.id, isAdminOrStaff(req.user));
 
     logger.info('Contact updated', {
@@ -707,7 +707,7 @@ router.post('/:id/english-proof', async (req, res) => {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ 
         error: 'Validation failed', 
-        details: error.errors 
+        details: error.issues
       });
     }
 
