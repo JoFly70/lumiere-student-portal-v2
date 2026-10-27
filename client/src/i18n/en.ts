@@ -6,7 +6,14 @@
  * NOTE: official English course titles, course codes and school names are data, never keys.
  * They are intentionally NOT translated anywhere in this file or in fr.ts.
  */
+import { authEn } from "./modules/auth";
+import { cockpitEn } from "./modules/cockpit";
+import { staffEn } from "./modules/staff";
+
 export const en = {
+  ...authEn,
+  ...cockpitEn,
+  ...staffEn,
   // Language
   "language.label": "Language",
   "language.en": "English",
