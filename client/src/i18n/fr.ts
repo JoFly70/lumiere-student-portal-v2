@@ -24,6 +24,8 @@ export const fr: Record<TranslationKey, string> = {
   "nav.primary": "Navigation principale",
   "nav.account": "Votre compte",
   "nav.chooseTheme": "Choisir un thème",
+  "nav.journey": "Votre parcours",
+  "nav.file": "Votre dossier",
 
   "common.save": "Enregistrer",
   "common.cancel": "Annuler",

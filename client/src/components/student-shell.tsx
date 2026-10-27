@@ -8,15 +8,18 @@ import { BookOpen, FileText, Gauge, HelpCircle, Menu, School } from "lucide-reac
 import { cn } from "@/lib/utils";
 import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { LanguageToggle } from "@/components/language-toggle";
+import { useT, type TranslationKey } from "@/i18n";
 import { filterStudentNav, useStudentPrograms } from "@/lib/student-programs";
 
-const BAR_ITEMS = [
-  { title: "High School", url: "/high-school", icon: School },
-  { title: "Flight Deck", url: "/flight-deck", icon: Gauge },
-  { title: "Roadmap", url: "/roadmap", icon: BookOpen },
-  { title: "Documents", url: "/documents", icon: FileText },
-  { title: "Support", url: "/support", icon: HelpCircle },
-] as const;
+// `title` stays English (test ids); `labelKey` is the visible, translated label.
+const BAR_ITEMS: readonly { title: string; labelKey: TranslationKey; url: string; icon: typeof Gauge }[] = [
+  { title: "High School", labelKey: "nav.highSchool", url: "/high-school", icon: School },
+  { title: "Flight Deck", labelKey: "nav.flightDeck", url: "/flight-deck", icon: Gauge },
+  { title: "Roadmap", labelKey: "nav.roadmap", url: "/roadmap", icon: BookOpen },
+  { title: "Documents", labelKey: "nav.documents", url: "/documents", icon: FileText },
+  { title: "Support", labelKey: "nav.support", url: "/support", icon: HelpCircle },
+];
 
 export function StudentHeader() {
   return (
@@ -27,7 +30,10 @@ export function StudentHeader() {
           Lumière
         </p>
       </div>
-      <ThemeToggle className="h-11 w-11" />
+      <div className="flex items-center gap-1">
+        <LanguageToggle />
+        <ThemeToggle className="h-11 w-11" />
+      </div>
     </header>
   );
 }
@@ -36,13 +42,14 @@ export function StudentBottomNav() {
   const [location] = useLocation();
   const { toggleSidebar } = useSidebar();
   const programs = useStudentPrograms();
+  const { t } = useT();
   // Six tabs are too tight at 390px: a student with both programs reaches Roadmap through "More".
   const barItems = filterStudentNav(BAR_ITEMS, programs).filter((i) => !(programs.hasHighSchool && !programs.highSchoolOnly && i.url === "/roadmap"));
   const itemClass =
     "relative flex min-h-[60px] flex-1 flex-col items-center justify-center gap-0.5 px-1 text-[11px] font-medium leading-tight";
   return (
     <nav
-      aria-label="Primary"
+      aria-label={t("nav.primary")}
       className="student-shell-bar shrink-0 border-t border-student-line bg-student-card md:hidden"
       data-testid="student-bottom-nav"
     >
@@ -63,7 +70,7 @@ export function StudentBottomNav() {
                 >
                   <item.icon className="h-5 w-5" />
                 </span>
-                {item.title}
+                {t(item.labelKey)}
               </Link>
             </li>
           );
@@ -73,7 +80,7 @@ export function StudentBottomNav() {
             <span aria-hidden="true" className="flex h-7 w-12 items-center justify-center rounded-full">
               <Menu className="h-5 w-5" />
             </span>
-            More
+            {t("nav.more")}
           </button>
         </li>
       </ul>

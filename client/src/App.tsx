@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { ThemeProvider } from "@/hooks/use-theme";
+import { I18nProvider } from "@/i18n";
 import { StaffHeader, StaffSkipLink, useStaffSidebarDefaultOpen } from "@/components/staff/staff-shell";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
@@ -253,10 +254,12 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <ThemeProvider>
-          <TooltipProvider>
-            <ApplicationLayout />
-            <Toaster />
-          </TooltipProvider>
+          <I18nProvider>
+            <TooltipProvider>
+              <ApplicationLayout />
+              <Toaster />
+            </TooltipProvider>
+          </I18nProvider>
         </ThemeProvider>
       </AuthProvider>
     </QueryClientProvider>

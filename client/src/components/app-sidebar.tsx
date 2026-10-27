@@ -17,6 +17,7 @@ import {
 import { ProfileAvatarUpload } from "@/components/profile-avatar-upload";
 import { useAuth, useAuthToken } from "@/lib/auth";
 import { filterStudentNav, useStudentPrograms } from "@/lib/student-programs";
+import { useT, type TranslationKey } from "@/i18n";
 import { PROTOTYPES_ENABLED, PREVIEW_FLIGHT_DECK_PATH } from "@/components/os/prototype-gate";
 import { StaffAvatar } from "@/components/staff/staff-ui";
 import { staffRoleLabel } from "@/components/staff/staff-shell";
@@ -55,14 +56,15 @@ async function fetchMyProfile(accessToken: string | null): Promise<Student | nul
   }
 }
 
-const studentMenuItems = [
-  { title: "High School", url: "/high-school", icon: School },
-  { title: "Flight Deck", url: "/flight-deck", icon: Gauge },
-  { title: "Student Profile", url: "/profile", icon: User },
-  { title: "Your Roadmap", url: "/roadmap", icon: BookOpen },
-  { title: "Documents", url: "/documents", icon: FileText },
-  { title: "Billing", url: "/billing", icon: CreditCard },
-  { title: "Support", url: "/support", icon: HelpCircle },
+// `title` stays English (test ids, matching); `labelKey` is the visible, translated label.
+const studentMenuItems: { title: string; labelKey?: TranslationKey; url: string; icon: typeof Gauge }[] = [
+  { title: "High School", labelKey: "nav.highSchool", url: "/high-school", icon: School },
+  { title: "Flight Deck", labelKey: "nav.flightDeck", url: "/flight-deck", icon: Gauge },
+  { title: "Student Profile", labelKey: "nav.profile", url: "/profile", icon: User },
+  { title: "Your Roadmap", labelKey: "nav.roadmap", url: "/roadmap", icon: BookOpen },
+  { title: "Documents", labelKey: "nav.documents", url: "/documents", icon: FileText },
+  { title: "Billing", labelKey: "nav.billing", url: "/billing", icon: CreditCard },
+  { title: "Support", labelKey: "nav.support", url: "/support", icon: HelpCircle },
 ];
 
 // Student navigation is grouped: the journey first, then the student's file.
@@ -91,6 +93,7 @@ export function AppSidebar() {
   const { user, logout } = useAuth();
   const accessToken = useAuthToken();
   const isStudent = user?.role === "student";
+  const { t } = useT();
 
   const { data: profile } = useQuery({
     queryKey: ["/api/students/me", user?.id],
@@ -125,21 +128,22 @@ export function AppSidebar() {
       <SidebarMenu className="gap-0.5">
         {items.map((item) => {
           const active = location === item.url;
+          const label = item.labelKey ? t(item.labelKey) : item.title;
           return (
             <SidebarMenuItem key={item.title}>
               <SidebarMenuButton
                 asChild
                 isActive={active}
-                tooltip={item.title}
+                tooltip={label}
                 className={cn(
                   "os-nav-item h-10 gap-3 rounded-lg px-3 text-[14px] font-medium text-sidebar-foreground",
                   "group-data-[collapsible=icon]:!h-10 group-data-[collapsible=icon]:!w-10 group-data-[collapsible=icon]:!justify-center group-data-[collapsible=icon]:!p-0",
                 )}
                 data-testid={`link-${item.title.toLowerCase().replace(/\s+/g, "-")}`}
               >
-                <Link href={item.url} aria-label={item.title} aria-current={active ? "page" : undefined}>
+                <Link href={item.url} aria-label={label} aria-current={active ? "page" : undefined}>
                   <item.icon className="h-[18px] w-[18px] shrink-0" aria-hidden="true" />
-                  <span className="group-data-[collapsible=icon]:hidden">{item.title}</span>
+                  <span className="group-data-[collapsible=icon]:hidden">{label}</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -166,13 +170,13 @@ export function AppSidebar() {
           <div className="mt-5 h-px bg-sidebar-border group-data-[collapsible=icon]:mt-4" aria-hidden="true" />
         </SidebarHeader>
         <SidebarContent className="px-3 group-data-[collapsible=icon]:px-1.5">
-          <nav aria-label="Main">
+          <nav aria-label={t("nav.main")}>
             <SidebarGroup className="px-0 py-2">
-              <SidebarGroupLabel className="px-3 text-[10.5px] font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/70">Your journey</SidebarGroupLabel>
+              <SidebarGroupLabel className="px-3 text-[10.5px] font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/70">{t("nav.journey")}</SidebarGroupLabel>
               <SidebarGroupContent>{renderItems(filterStudentNav(studentJourneyItems, programs))}</SidebarGroupContent>
             </SidebarGroup>
             <SidebarGroup className="px-0 py-2">
-              <SidebarGroupLabel className="px-3 text-[10.5px] font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/70">Your file</SidebarGroupLabel>
+              <SidebarGroupLabel className="px-3 text-[10.5px] font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/70">{t("nav.file")}</SidebarGroupLabel>
               <SidebarGroupContent>{renderItems(filterStudentNav(studentFileItems, programs))}</SidebarGroupContent>
             </SidebarGroup>
             {PROTOTYPES_ENABLED && (
@@ -186,7 +190,7 @@ export function AppSidebar() {
         <SidebarFooter className="gap-3 px-3 pb-4 pt-3 group-data-[collapsible=icon]:px-1.5" role="contentinfo">
           <div
             role="region"
-            aria-label="Your account"
+            aria-label={t("nav.account")}
             className="space-y-2 rounded-xl border border-sidebar-border bg-sidebar-accent/40 p-3 group-data-[collapsible=icon]:border-0 group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:p-0"
           >
             <div className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center" role="group" aria-label="User profile" data-testid="profile-user">
@@ -206,10 +210,10 @@ export function AppSidebar() {
               onClick={() => void logout()}
               className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-lg border border-sidebar-border bg-transparent text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:w-10"
               data-testid="button-logout"
-              aria-label="Log out"
+              aria-label={t("nav.logOut")}
             >
               <LogOut className="h-4 w-4" aria-hidden="true" />
-              <span className="group-data-[collapsible=icon]:hidden">Log out</span>
+              <span className="group-data-[collapsible=icon]:hidden">{t("nav.logOut")}</span>
             </button>
           </div>
           <p className="text-center text-[11px] text-sidebar-foreground/70 group-data-[collapsible=icon]:hidden">© 2026 Lumière Higher-Ed Pathways</p>

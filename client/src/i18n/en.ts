@@ -27,6 +27,8 @@ export const en = {
   "nav.primary": "Primary",
   "nav.account": "Your account",
   "nav.chooseTheme": "Choose theme",
+  "nav.journey": "Your journey",
+  "nav.file": "Your file",
 
   // Common
   "common.save": "Save",
