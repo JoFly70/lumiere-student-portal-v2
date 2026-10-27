@@ -1,0 +1,166 @@
+{
+  "journey": "S13 first high-school diploma student",
+  "template": "us-hs-diploma-21",
+  "steps": {
+    "1": {
+      "step": "staff creates the student record (POST /api/students)",
+      "status": "pass",
+      "numbers": {
+        "created": true,
+        "linkedAtCreation": false,
+        "studentRouteRanOnLocalPg": true
+      }
+    },
+    "2": {
+      "step": "account linkage: unlinked login gets 404 STUDENT_PROFILE_NOT_FOUND; admin links it; then it resolves",
+      "status": "pass",
+      "numbers": {
+        "beforeLink": 404,
+        "beforeLinkCode": "STUDENT_PROFILE_NOT_FOUND",
+        "afterLink": 404,
+        "afterLinkCode": "HS_NO_ENROLLMENT",
+        "refusals": [
+          "ACCOUNT_NOT_STUDENT",
+          "EMAIL_MISMATCH",
+          "STUDENT_ALREADY_LINKED"
+        ]
+      }
+    },
+    "3": {
+      "step": "staff enrolls the student in the high-school program (us-hs-diploma-21)",
+      "status": "pass",
+      "numbers": {
+        "requiredHalfUnits": 42,
+        "earnedHalfUnits": 0
+      }
+    },
+    "4": {
+      "step": "staff confirms the mandatory curriculum and selects exactly 5 elective credits (16 core + 5 elective = 21 = 42 half-units)",
+      "status": "pass",
+      "numbers": {
+        "coreCourses": 17,
+        "coreHalfUnits": 32,
+        "electiveCourses": 6,
+        "electiveHalfUnits": 10,
+        "totalHalfUnits": 42,
+        "halfCreditCourseHalfUnits": 1
+      }
+    },
+    "5": {
+      "step": "admin publishes the roadmap; staff (non-admin) cannot",
+      "status": "pass",
+      "numbers": {
+        "staffPublish": 403,
+        "adminPublish": 200,
+        "publishedVersion": 1
+      }
+    },
+    "6": {
+      "step": "student sees enrollment, required courses, electives and a high_school program",
+      "status": "pass",
+      "numbers": {
+        "courses": 23,
+        "requiredHalfUnits": 42,
+        "coreRequired": 32,
+        "electiveRequired": 10,
+        "highSchoolPrograms": 1
+      }
+    },
+    "7": {
+      "step": "student reports a task complete; step 8: official earned credit is unchanged",
+      "status": "pass",
+      "numbers": {
+        "taskStatus": "pending_review",
+        "studentEarnedHalfUnits": 0,
+        "staffEarnedHalfUnits": 0,
+        "officialResults": 0,
+        "awards": 0
+      }
+    },
+    "8": {
+      "step": "official earned credit unchanged after a student report",
+      "status": "pass",
+      "numbers": {
+        "earnedHalfUnits": 0,
+        "remainingHalfUnits": 42
+      }
+    },
+    "9": {
+      "step": "student submits supporting evidence (pending); the student cannot verify it",
+      "status": "pass",
+      "numbers": {
+        "documentStatus": "pending",
+        "studentVerify": 403,
+        "forgedVerifiedCreate": 400,
+        "pendingEvidenceRefused": 422
+      }
+    },
+    "10": {
+      "step": "staff verifies the evidence; step 11: official result + credit award with that evidence adds exactly the course half-units",
+      "status": "pass",
+      "numbers": {
+        "documentStatus": "verified",
+        "afterEnglish1": 2,
+        "afterHalfElective": 3,
+        "halfCreditCourseAdded": 1,
+        "remaining": 39
+      }
+    },
+    "11": {
+      "step": "official result and credit award with verified evidence",
+      "status": "pass",
+      "numbers": {
+        "english1HalfUnits": 2,
+        "halfElectiveHalfUnits": 1,
+        "earnedHalfUnits": 3
+      }
+    },
+    "12": {
+      "step": "support: student opens a course_assistance ticket; staff replies; student sees the reply but not internal notes",
+      "status": "pass",
+      "numbers": {
+        "ticketCreated": 201,
+        "staffReply": 201,
+        "internalNote": 201,
+        "studentSeesInternal": false,
+        "otherStudentSeesTicket": false
+      }
+    },
+    "13": {
+      "step": "a second student cannot read or alter student 1's high-school record",
+      "status": "pass",
+      "numbers": {
+        "queryIdRefused": 400,
+        "bodyIdRefused": 400,
+        "staffRouteAsStudent": 403,
+        "documentsAsOtherStudent": 403,
+        "otherEarnedHalfUnits": 0,
+        "student1EarnedHalfUnits": 3
+      }
+    },
+    "14": {
+      "step": "graduation stays blocked: blockers present; confirm_eligibility refused while requirements are unmet",
+      "status": "pass",
+      "numbers": {
+        "blockers": 9,
+        "confirmEligibilityAsAdmin": 409,
+        "confirmEligibilityAsStaff": 403,
+        "graduationStatus": "in_progress"
+      }
+    },
+    "15": {
+      "step": "university academic, roadmap and financial tables are unchanged",
+      "status": "pass",
+      "numbers": {
+        "protectedTables": 12,
+        "identical": true
+      }
+    }
+  },
+  "counts": {
+    "pass": 15,
+    "fail": 0,
+    "todo": 0
+  },
+  "notes": []
+}

@@ -80,6 +80,9 @@ const staffProfileUpdateSchema = insertStudentSchema
   .partial()
   .strict();
 
+/** Creating a student never binds a login: user_id is set only by the audited account-link endpoint. */
+export const createStudentBodySchema = insertStudentSchema.omit({ user_id: true }).strict();
+
 async function withSignedPhoto<T>(student: T): Promise<T> {
   const row = student as unknown as { photo_url?: unknown } | null;
   if (!row || typeof row !== 'object' || !('photo_url' in row)) return student;
@@ -421,7 +424,7 @@ router.get('/:id/full', async (req, res) => {
 router.post('/', requireStaff, async (req, res) => {
   try {
     // Validate request body
-    const validated = insertStudentSchema.parse(req.body);
+    const validated = { ...createStudentBodySchema.parse(req.body), user_id: null };
 
     // Pass actor ID for audit logging
     const actorId = req.audit?.actorId || req.user?.id || null;

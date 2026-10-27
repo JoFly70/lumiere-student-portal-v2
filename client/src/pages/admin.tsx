@@ -16,6 +16,7 @@ import {
   BarChart3,
 } from "lucide-react";
 import { apiRequest } from "@/lib/api";
+import { AddStudentDialog } from "@/components/admin/add-student-dialog";
 import { ProgramsManagement } from "@/components/programs-management";
 import { KnowledgeSources } from "@/components/knowledge-sources";
 import { useLocation, useSearch } from "wouter";
@@ -314,6 +315,7 @@ function StudentManagement() {
             <SelectItem value="graduated">Graduated</SelectItem>
           </SelectContent>
         </Select>
+        <AddStudentDialog />
       </div>
 
       <div className={staffTable.frame}>

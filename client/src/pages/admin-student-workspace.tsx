@@ -56,6 +56,7 @@ import {
   placementRequirementLabel,
   validSnapshotFingerprint,
 } from "./controlled-placement-workflow";
+import { StudentPortalAccountCard } from "@/components/admin/student-portal-account-card";
 import StudentProfileReview, { useStaffProfileData } from "@/components/admin/student-profile-review";
 import { profileDecisionCount } from "@/components/admin/student-profile-review-logic";
 import { useDocuments } from "@/hooks/use-documents";
@@ -271,6 +272,7 @@ export default function AdminStudentWorkspace() {
           Placement changes are paused: this student has no current academic snapshot yet. Refresh the workspace once the degree report has been generated.
         </StaffNotice>
       : null}
+    <StudentPortalAccountCard studentId={canonicalStudentId ?? studentId} />
     <StaffCard tone={attentionTotal > 0 ? "attention" : "default"} aria-labelledby="needs-attention-heading" data-testid="needs-attention">
       <StaffSectionHeader id="needs-attention-heading" title="Needs attention" description={attentionTotal > 0 ? "Everything waiting on a staff member for this student, in one list." : "Nothing is waiting on a staff member for this student."} actions={attentionTotal > 0 ? <StaffPill tone="attention">{attentionTotal} {attentionTotal === 1 ? "item" : "items"}</StaffPill> : null} />
       <ul className="divide-y divide-student-line">

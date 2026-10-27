@@ -1346,6 +1346,8 @@ window.ENV = {
   // S11 high school pathway staff API (per-route auth/role; admin-only actions inside).
   const adminHighSchoolRouter = (await import('./routes/admin-high-school')).default;
   app.use('/api/admin', adminHighSchoolRouter);
+  // S13 staff-only student <-> portal account linkage (per-route auth, admin only).
+  app.use('/api/admin', (await import('./routes/admin-student-account')).default);
   app.use('/api/admin', adminStudentWorkspaceRouter);
   app.use('/api/admin', adminStudentCreditPlacementRouter);
 
