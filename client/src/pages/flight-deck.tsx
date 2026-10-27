@@ -13,6 +13,7 @@ import {
   fetchStudentRoadmap,
   isRoadmapMissingRecord,
 } from "@/lib/student-roadmap-queries";
+import { WelcomeBanner } from "@/components/cockpit/welcome-banner";
 import { FlightDeckRoadmapView } from "@/components/student-progress/student-roadmap-views";
 import { RoadmapActionsProvider } from "@/components/student-progress/roadmap-actions";
 import { RequirementDetails } from "@/components/student-progress/requirement-details";
@@ -74,7 +75,7 @@ export default function FlightDeck() {
 
   return (
     <RoadmapActionsProvider>
-      <FlightDeckRoadmapView view={data} requirementDetails={<RequirementDetails />} />
+      <FlightDeckRoadmapView view={data} requirementDetails={<RequirementDetails />} banner={<WelcomeBanner />} />
     </RoadmapActionsProvider>
   );
 }

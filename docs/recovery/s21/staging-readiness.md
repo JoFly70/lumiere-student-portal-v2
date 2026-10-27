@@ -46,7 +46,7 @@ Preconditions: a brand-new Supabase project (free tier is enough), named so nobo
 7. `scripts/release/s14/35-client-privilege-hardening.sql`
 8. `scripts/disposable-env/90_storage_buckets.sql` (then adjust `student-documents` limits for chat attachments, see table above)
 9. The 7 release files: `20261030100000_s18_billing_ledger`, `20261030100100_s18_billing_audit_event_types`, `20261030110000_s18_document_student_message`, `20261031100000_s19_ticket_comment_idempotency`, `20261031110000_s19_billing_corrections`, `20261101100000_s20_billing_evidence_void`, `20261101200000_s20_assistant_usage`
-10. S21, in filename order: `20261102100000_s21_assistant_conversations`, `20261102110000_s21_document_attachments`, `20261102120000_s21_student_memory`, plus `20261102130000_s21_student_welcome` only if it exists in the release.
+10. S21, in filename order: `20261102100000_s21_assistant_conversations`, `20261102110000_s21_document_attachments`, `20261102120000_s21_student_memory`, `20261102130000_s21_student_welcome`.
 11. Verify (read-only): `scripts/release/s14/00-baseline-probe.sql` (all A rows APPLIED, all B rows true), `01-account-readiness.sql`, `90-verify.sql` (every row pass = true).
 
 This ordering is exactly what `scripts/release/s14/rehearse-local.sh` and the S05 harness run locally (clean build and a second idempotency pass).

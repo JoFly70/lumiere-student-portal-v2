@@ -162,13 +162,17 @@ export function RoadmapPageView({
 export function FlightDeckRoadmapView({
   view,
   requirementDetails,
+  banner,
 }: {
   view: StudentRoadmapView;
   requirementDetails?: React.ReactNode;
+  /** Optional slot at the very top (S21 welcome banner). Absent in static renders and tests. */
+  banner?: React.ReactNode;
 }) {
   if (!isPublished(view)) {
     return (
       <StudentSurface testId="flight-deck">
+        {banner}
         <div className="mx-auto w-full max-w-6xl space-y-8" data-state="NOT_PUBLISHED">
           <PageHeader eyebrow={BRAND_NAME} title="Your Flight Deck" />
           <RoadmapNotPublished view={view} requirementDetails={requirementDetails} />
@@ -179,6 +183,7 @@ export function FlightDeckRoadmapView({
   return (
     <StudentSurface testId="flight-deck">
       <div data-state="PUBLISHED">
+        {banner}
         <div className="mx-auto w-full max-w-6xl pb-6">
           <PageHeader eyebrow={BRAND_NAME} title="Your Flight Deck" subtitle={primaryObjectiveTitle(view)} />
         </div>

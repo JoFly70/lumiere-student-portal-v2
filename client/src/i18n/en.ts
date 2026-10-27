@@ -12,6 +12,7 @@ import { staffEn } from "./modules/staff";
 import { assistantEn } from "./modules/assistant";
 import { attachmentsEn } from "./modules/attachments";
 import { studentOsEn } from "./modules/student-os";
+import { welcomeEn } from "./modules/welcome";
 
 export const en = {
   ...authEn,
@@ -20,6 +21,7 @@ export const en = {
   ...assistantEn,
   ...attachmentsEn,
   ...studentOsEn,
+  ...welcomeEn,
   // Language
   "language.label": "Language",
   "language.en": "English",

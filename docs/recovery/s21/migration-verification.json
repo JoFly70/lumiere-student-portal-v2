@@ -9,7 +9,8 @@
     "20261101200000_s20_assistant_usage.sql",
     "20261102100000_s21_assistant_conversations.sql",
     "20261102110000_s21_document_attachments.sql",
-    "20261102120000_s21_student_memory.sql"
+    "20261102120000_s21_student_memory.sql",
+    "20261102130000_s21_student_welcome.sql"
   ],
   "s20Discovered": [
     "20261101100000_s20_billing_evidence_void.sql",
@@ -18,10 +19,11 @@
   "s21Discovered": [
     "20261102100000_s21_assistant_conversations.sql",
     "20261102110000_s21_document_attachments.sql",
-    "20261102120000_s21_student_memory.sql"
+    "20261102120000_s21_student_memory.sql",
+    "20261102130000_s21_student_welcome.sql"
   ],
-  "total": 73,
-  "passed": 73,
+  "total": 79,
+  "passed": 79,
   "failed": 0,
   "checks": [
     {
@@ -60,12 +62,12 @@
     {
       "name": "S21 migrations discovered (informational)",
       "pass": true,
-      "detail": "20261102100000_s21_assistant_conversations.sql,20261102110000_s21_document_attachments.sql,20261102120000_s21_student_memory.sql"
+      "detail": "20261102100000_s21_assistant_conversations.sql,20261102110000_s21_document_attachments.sql,20261102120000_s21_student_memory.sql,20261102130000_s21_student_welcome.sql"
     },
     {
       "name": "every S21 migration sorts after the last S20 migration and after S19",
       "pass": true,
-      "detail": "20261102100000_s21_assistant_conversations.sql,20261102110000_s21_document_attachments.sql,20261102120000_s21_student_memory.sql"
+      "detail": "20261102100000_s21_assistant_conversations.sql,20261102110000_s21_document_attachments.sql,20261102120000_s21_student_memory.sql,20261102130000_s21_student_welcome.sql"
     },
     {
       "name": "S21 migrations have unique timestamps",
@@ -242,6 +244,10 @@
       "pass": true
     },
     {
+      "name": "S21 applied twice, in order: 20261102130000_s21_student_welcome.sql",
+      "pass": true
+    },
+    {
       "name": "S21 additive: no pre-existing column removed",
       "pass": true,
       "detail": ""
@@ -258,7 +264,7 @@
     {
       "name": "S21 created new tables (informational)",
       "pass": true,
-      "detail": "assistant_audit_events,assistant_conversations,assistant_integrity_checkpoints,assistant_memory_sources,assistant_message_attachments,assistant_messages,student_assistant_memory,student_document_text,student_storage_quota"
+      "detail": "assistant_audit_events,assistant_conversations,assistant_integrity_checkpoints,assistant_memory_sources,assistant_message_attachments,assistant_messages,student_assistant_memory,student_welcome_state"
     },
     {
       "name": "S21: RLS enabled on EVERY new table",
@@ -324,6 +330,28 @@
     },
     {
       "name": "S21: student_documents.id type matches assistant_message_attachments.document_id",
+      "pass": true
+    },
+    {
+      "name": "S21 welcome: holds only user id and timestamps (no names, no content)",
+      "pass": true,
+      "detail": "first_seen_at,last_seen_at,user_id,welcomed_at"
+    },
+    {
+      "name": "S21 welcome: every pre-existing student account is backfilled as already welcomed (never greeted as brand new)",
+      "pass": true,
+      "detail": "1/1"
+    },
+    {
+      "name": "S21 welcome: the pre-existing student account is welcomed, accounts created later are not (they get 'first')",
+      "pass": true
+    },
+    {
+      "name": "S21 welcome: the server's upsert reports created=true once, then false, and keeps first_seen_at",
+      "pass": true
+    },
+    {
+      "name": "S21 welcome: user_id is the primary key (one row per account); a new row starts un-welcomed",
       "pass": true
     },
     {

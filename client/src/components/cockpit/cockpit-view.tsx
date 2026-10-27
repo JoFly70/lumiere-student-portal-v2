@@ -270,11 +270,13 @@ export interface CockpitViewProps {
   ops?: CockpitOps;
   initialMode?: ViewMode;
   initialSubject?: string | null;
+  /** Optional slot above the header (S21 welcome banner). Absent in tests and screenshots. */
+  banner?: React.ReactNode;
 }
 
 const STANDING_ICON: Record<string, string> = { good: "good", warn: "warn", info: "info", neutral: "neutral" };
 
-export function CockpitView({ projection, firstName, ops = OPS_LOADING, initialMode = "verified", initialSubject = null }: CockpitViewProps) {
+export function CockpitView({ projection, firstName, ops = OPS_LOADING, initialMode = "verified", initialSubject = null, banner }: CockpitViewProps) {
   const f = useFormatters();
   const { t, fc } = f;
   const [mode, setMode] = useState<ViewMode>(initialMode);
@@ -296,6 +298,8 @@ export function CockpitView({ projection, firstName, ops = OPS_LOADING, initialM
     <div className="ck" data-testid="high-school-flight-deck" data-deck-state={hero.state} data-mode={mode}>
       {/* RESERVED SLOT: future text assistant (data-slot="academic-assistant"). Empty, invisible, not interactive. */}
       <div className="fdl-assistant-slot" data-slot="academic-assistant" data-testid="academic-assistant-slot" aria-hidden="true" />
+
+      {banner}
 
       <header className="ck-top">
         <div className="ck-top-main">

@@ -1363,6 +1363,8 @@ window.ENV = {
   app.use('/api/student', studentAcademicProjectionRouter);
   // S18 billing: the student's own ledger, read-only
   app.use('/api/student', (await import('./routes/student-billing')).default);
+  // S21: personalized login welcome (server-derived first/returning state, real attention items only).
+  app.use('/api/student/welcome', (await import('./routes/student-welcome')).default);
 
   // S20: Lumière Academic Assistant. Local guidance always; live Spark inference only when
   // SPARK_ASSISTANT_ENABLED=true, a server key exists and the role is eligible (never students).

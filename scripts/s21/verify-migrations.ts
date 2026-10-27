@@ -191,6 +191,7 @@ async function main() {
       const tablesBefore = await tables();
       const docsBefore = (await q(`select count(*)::int n from student_documents`))[0]!.n;
       const legacyBefore = (await q(`select file_name, status, admin_notes, student_message from student_documents where id='${legacy!.id}'`))[0]!;
+      const existingStudentLogin = await seedUser(pg, "student"); // account that exists before S21 (must count as returning)
       const usersBefore = (await q(`select count(*)::int n from users`))[0]!.n;
 
       for (const f of S21) {
@@ -239,6 +240,22 @@ async function main() {
             (await rejects(`update assistant_audit_events set event_type='x'`)) && (await rejects(`delete from assistant_audit_events`)));
         }
         check("S21: student_documents.id type matches assistant_message_attachments.document_id", (await q(`select (select data_type from information_schema.columns where table_name='student_documents' and column_name='id') a, (select data_type from information_schema.columns where table_name='assistant_message_attachments' and column_name='document_id') b`)).every((r) => r.a === r.b));
+      }
+      if (newTables.includes("student_welcome_state")) {
+        const cols = (await q(`select column_name from information_schema.columns where table_name='student_welcome_state'`)).map((r) => r.column_name as string).sort();
+        check("S21 welcome: holds only user id and timestamps (no names, no content)", JSON.stringify(cols) === JSON.stringify(["first_seen_at", "last_seen_at", "user_id", "welcomed_at"]), cols.join(","));
+        const studentUsers = (await q(`select count(*)::int n from users where role::text='student'`))[0]!.n;
+        const backfilled = (await q(`select count(*)::int n from student_welcome_state where welcomed_at is not null`))[0]!.n;
+        check("S21 welcome: every pre-existing student account is backfilled as already welcomed (never greeted as brand new)", studentUsers >= 1 && backfilled === studentUsers, `${backfilled}/${studentUsers}`);
+        check("S21 welcome: the pre-existing student account is welcomed, accounts created later are not (they get 'first')",
+          (await q(`select count(*)::int n from student_welcome_state where user_id='${existingStudentLogin.id}' and welcomed_at is not null`))[0]!.n === 1);
+        await q(`insert into student_welcome_state (user_id) values ('verify-new-account')`);
+        const touch = () => q(`INSERT INTO student_welcome_state (user_id, first_seen_at, last_seen_at) VALUES ('verify-touch', now(), now())
+          ON CONFLICT (user_id) DO UPDATE SET last_seen_at = EXCLUDED.last_seen_at RETURNING first_seen_at, welcomed_at, (xmax = 0) AS created`);
+        const t1 = (await touch())[0]!, t2 = (await touch())[0]!;
+        check("S21 welcome: the server's upsert reports created=true once, then false, and keeps first_seen_at", t1.created === true && t2.created === false && String(t1.first_seen_at) === String(t2.first_seen_at));
+        check("S21 welcome: user_id is the primary key (one row per account); a new row starts un-welcomed", (await rejects(`insert into student_welcome_state (user_id) values ('verify-new-account')`)) &&
+          (await q(`select welcomed_at from student_welcome_state where user_id='verify-new-account'`))[0]!.welcomed_at === null);
       }
       const docCols = after.has("student_documents.source");
       if (docCols) {

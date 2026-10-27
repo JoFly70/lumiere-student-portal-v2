@@ -13,6 +13,7 @@ import { useCockpitOps } from "@/components/cockpit/use-cockpit-ops";
 import { useT } from "@/i18n";
 import { isNoHighSchoolEnrollment, useAcademicProjection } from "@/lib/academic-projection-queries";
 import { deckState } from "@/lib/academic-flight-deck-presentation";
+import { WelcomeBanner } from "@/components/cockpit/welcome-banner";
 import "@/styles/flight-deck-preview.css";
 import "@/styles/academic-flight-deck.css";
 
@@ -97,7 +98,7 @@ export function HighSchoolFlightDeckView({ projection }: { projection: AcademicP
   const { ops, firstName } = useCockpitOps();
   return (
     <Shell testId="hs-flight-deck">
-      <CockpitView projection={projection} firstName={firstName} ops={ops} />
+      <CockpitView projection={projection} firstName={firstName} ops={ops} banner={<WelcomeBanner />} />
     </Shell>
   );
 }
