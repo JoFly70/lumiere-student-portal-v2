@@ -84,7 +84,7 @@ describe("operational sources are honest", () => {
   });
   it("ready sources show counts and a currency-formatted payment", () => {
     const html = render({ projection: S19_PARTIAL, ops: S19_OPS_READY });
-    expect(html).toContain("2 need action");
+    expect(html).toContain("Needing action: 2");
     expect(html).toContain("1 waiting for you");
     expect(html).toContain("$800.00");
     const fr = render({ projection: S19_PARTIAL, ops: S19_OPS_READY }, "fr");

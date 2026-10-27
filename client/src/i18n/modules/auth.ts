@@ -1,7 +1,7 @@
 /**
  * Login, invitation signup, password reset, email verification (S19). Spread into en.ts / fr.ts.
  * Keys are namespaced "auth.*". English is the source of truth; French must define every key.
- * French uses a non-breaking space ( ) before ? ! : ; and inside guillemets.
+ * French uses a non-breaking space (\u00a0) before ? ! : ; and inside guillemets.
  */
 export const authEn = {
   // Brand panel
@@ -114,8 +114,8 @@ export const authFr: Record<keyof typeof authEn, string> = {
   "auth.invite.failed": "Nous n’avons pas pu créer votre compte. Veuillez réessayer.",
   "auth.invite.created":
     "Compte créé. Veuillez consulter votre messagerie pour vérifier votre adresse e-mail avant de vous connecter.",
-  "auth.forgot": "Mot de passe oublié ?",
-  "auth.help": "Besoin d’aide ? Contactez votre conseiller Lumière.",
+  "auth.forgot": "Mot de passe oublié\u00a0?",
+  "auth.help": "Besoin d’aide\u00a0? Contactez votre conseiller Lumière.",
   "auth.redirecting": "Redirection en cours…",
 
   "auth.reset.title": "Réinitialiser votre mot de passe",
@@ -125,7 +125,7 @@ export const authFr: Record<keyof typeof authEn, string> = {
   "auth.reset.failed": "La réinitialisation a échoué. Veuillez réessayer.",
   "auth.reset.sentTitle": "Consultez votre messagerie",
   "auth.reset.sentBody": "Nous avons envoyé un lien de réinitialisation à {email}.",
-  "auth.reset.sentExpiry": "Ce lien expire dans 1 heure.",
+  "auth.reset.sentExpiry": "Ce lien expire dans 1\u00a0heure.",
   "auth.newPassword.title": "Définir un nouveau mot de passe",
   "auth.newPassword.subtitle": "Choisissez un mot de passe que vous n’utilisez pas ailleurs.",
   "auth.newPassword.label": "Nouveau mot de passe",
@@ -146,6 +146,6 @@ export const authFr: Record<keyof typeof authEn, string> = {
   "auth.verify.goToSignin": "Accéder à la connexion",
   "auth.verify.errorTitle": "La vérification a échoué",
   "auth.verify.errorBody": "Ce lien de vérification n’est pas valide. Veuillez consulter votre messagerie et réessayer.",
-  "auth.verify.noEmail": "Vous n’avez pas reçu l’e-mail ?",
+  "auth.verify.noEmail": "Vous n’avez pas reçu l’e-mail\u00a0?",
   "auth.verify.resend": "Renvoyer l’e-mail de vérification",
 };
