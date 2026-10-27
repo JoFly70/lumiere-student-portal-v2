@@ -3,6 +3,7 @@ import { supabaseAdmin, isSupabaseConfigured } from '../lib/supabase';
 import { logger } from '../lib/logger';
 import { validateProductionAuthReadiness } from '../lib/auth-readiness';
 import { getRateLimitBackend } from '../lib/rate-limit-store';
+import { getMemoryPressure } from '../lib/memory-pressure';
 
 export function registerHealthRoutes(app: Express) {
   // Health check endpoint for monitoring/load balancers
@@ -52,10 +53,11 @@ export function registerHealthRoutes(app: Express) {
       external: Math.round(memUsage.external / 1024 / 1024),
     };
 
-    // Warn if heap usage is over 80%
-    if (memUsageMB.heapUsed / memUsageMB.heapTotal > 0.8) {
-      health.checks.memory = 'warning';
-      logger.warn('Health check: High memory usage', { memUsageMB });
+    // Allocated heap is elastic. Compare raw usage with actual V8/OS limits.
+    const memoryPressure = getMemoryPressure(memUsage);
+    health.checks.memory = memoryPressure.status;
+    if (memoryPressure.status === 'warning') {
+      logger.warn('Health check: High memory usage', { memUsageMB, memoryPressure });
     }
 
     // Overall status
@@ -79,6 +81,7 @@ export function registerHealthRoutes(app: Express) {
       ...health,
       duration: `${duration}ms`,
       memory: memUsageMB,
+      memoryPressure,
     });
   });
 
