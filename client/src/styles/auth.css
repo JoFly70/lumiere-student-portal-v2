@@ -33,10 +33,12 @@
   border: 1px solid var(--lang-line); border-radius: 999px; padding: 2px;
 }
 .auth-lang button {
-  min-width: 44px; height: 32px; border-radius: 999px; border: 0; background: transparent; cursor: pointer;
+  min-width: 44px; height: 32px; border-radius: 999px; position: relative; border: 0; background: transparent; cursor: pointer;
   font-size: 11px; font-weight: 600; letter-spacing: .14em; color: var(--lang-fg); transition: color .2s, background .2s;
 }
 .auth-lang button[aria-checked="true"] { background: var(--lang-on); color: #0a1020; }
+/* S20: 44px touch target without changing the pill's visual height. */
+.auth-lang button::after { content: ""; position: absolute; inset: -6px 0; }
 .auth-lang button:hover:not([aria-checked="true"]) { color: #fff; }
 .auth-lang button:focus-visible, .auth-link:focus-visible, .auth-tab:focus-visible, .auth-eye:focus-visible {
   outline: 2px solid var(--t-accent, #c29a4e); outline-offset: 2px;

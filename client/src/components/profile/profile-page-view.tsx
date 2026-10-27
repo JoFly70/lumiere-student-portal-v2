@@ -20,16 +20,18 @@ import { BackgroundSection } from "./background-section";
 import { ContactsSection } from "./contacts-section";
 import { EligibilitySection } from "./eligibility-section";
 import { AccountSection } from "./account-section";
+import { pt } from "./pt";
+import { useT } from "@/i18n";
 
-const sections = PROFILE_SECTIONS.map((s) => ({ id: sectionDomId(s.id), label: s.label }));
 
 /**
  * The one in-page navigation: short pills under the header (same order as Roadmap:
  * header first, then navigation). Pills wrap on small screens so none is cut off.
  */
 export function ProfileSectionNav() {
+  const sections = PROFILE_SECTIONS.map((s) => ({ id: sectionDomId(s.id), label: pt(s.label) }));
   return (
-    <nav aria-label="Profile sections" className="min-w-0" data-testid="section-nav">
+    <nav aria-label={pt("Profile sections")} className="min-w-0" data-testid="section-nav">
       <ul className="flex flex-wrap gap-2">
         {sections.map((s) => (
           <li key={s.id}>
@@ -97,42 +99,42 @@ export function ReadinessPanel({ items }: { items: readonly ProfileReadinessItem
   return (
     <section aria-labelledby="readiness-title" className={cn(cardClass, "space-y-4")} data-testid="readiness-panel">
       <div>
-        <h2 id="readiness-title" className="font-serif text-xl text-student-ink">Your profile at a glance</h2>
-        <p className="text-sm text-student-muted">Only things that need someone to act are listed. Optional details never appear here.</p>
+        <h2 id="readiness-title" className="font-serif text-xl text-student-ink">{pt("Your profile at a glance")}</h2>
+        <p className="text-sm text-student-muted">{pt("Only things that need someone to act are listed. Optional details never appear here.")}</p>
       </div>
       {clear ? (
         <p className="flex items-center gap-2 text-sm font-medium text-student-gold-ink" data-testid="readiness-clear">
           <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
-          Nothing needs your attention, and nothing is waiting on Lumière.
+          {pt("Nothing needs your attention, and nothing is waiting on Lumière.")}
         </p>
       ) : null}
       {clear && completed.length === 0 ? null : (
         <div className="grid gap-4 md:grid-cols-2">
           {!clear && <div data-testid="readiness-attention">
-            <h3 className="mb-1 text-sm font-semibold text-student-ink">Needs your attention</h3>
+            <h3 className="mb-1 text-sm font-semibold text-student-ink">{pt("Needs your attention")}</h3>
             {attention.length ? (
               <ul>{attention.map((i) => <ReadinessRow key={i.key} item={i} />)}</ul>
             ) : (
-              <p className="px-3 text-sm text-student-muted">Nothing for you to do right now.</p>
+              <p className="px-3 text-sm text-student-muted">{pt("Nothing for you to do right now.")}</p>
             )}
           </div>}
           {!clear && <div data-testid="readiness-waiting">
-            <h3 className="mb-1 text-sm font-semibold text-student-ink">Waiting on Lumière</h3>
+            <h3 className="mb-1 text-sm font-semibold text-student-ink">{pt("Waiting on Lumière")}</h3>
             {waiting.length ? (
               <ul>{waiting.map((i) => <ReadinessRow key={i.key} item={i} />)}</ul>
             ) : (
-              <p className="px-3 text-sm text-student-muted">Nothing is waiting for review.</p>
+              <p className="px-3 text-sm text-student-muted">{pt("Nothing is waiting for review.")}</p>
             )}
           </div>}
           {external.length > 0 && (
             <div data-testid="readiness-external">
-              <h3 className="mb-1 text-sm font-semibold text-student-ink">Waiting on an outside institution</h3>
+              <h3 className="mb-1 text-sm font-semibold text-student-ink">{pt("Waiting on an outside institution")}</h3>
               <ul>{external.map((i) => <ReadinessRow key={i.key} item={i} />)}</ul>
             </div>
           )}
           {completed.length > 0 && (
             <div data-testid="readiness-completed">
-              <h3 className="mb-1 text-sm font-semibold text-student-ink">Completed</h3>
+              <h3 className="mb-1 text-sm font-semibold text-student-ink">{pt("Completed")}</h3>
               <ul>{completed.map((i) => <ReadinessRow key={i.key} item={i} />)}</ul>
             </div>
           )}
@@ -158,21 +160,23 @@ export function ProfileHeader({ identity }: { identity: StudentProfileView["iden
         showUploadButton
       />
       <div className="min-w-0 space-y-1">
-        <Eyebrow>My profile</Eyebrow>
+        <Eyebrow>{pt("My profile")}</Eyebrow>
         <h1 className="break-words font-serif text-3xl leading-tight tracking-tight text-student-ink sm:text-5xl" data-testid="text-profile-name">
           {names.primary}
         </h1>
         {names.legal !== names.primary && (
-          <p className="text-sm text-student-muted" data-testid="text-legal-name">Legal name: {names.legal}</p>
+          <p className="text-sm text-student-muted" data-testid="text-legal-name">{pt("Legal name:")} {names.legal}</p>
         )}
-        <p className="text-sm text-student-muted" data-testid="text-student-code">Student ID: {identity.studentCode}</p>
-        <StatusChip label={`Identity: ${chip.label}`} tone={chip.tone} />
+        <p className="text-sm text-student-muted" data-testid="text-student-code">{pt("Student ID:")} {identity.studentCode}</p>
+        <StatusChip label={pt("Identity: {status}", { status: chip.label })} tone={chip.tone} />
       </div>
     </header>
   );
 }
 
 export function ProfilePageView({ profile }: { profile: StudentProfileView }) {
+  // Subscribing here re-renders the whole (non-memoised) profile tree when the language changes.
+  useT();
   return (
     <StudentSurface testId="page-student-profile">
       <div className="mx-auto max-w-6xl space-y-6 pb-6 pt-2 sm:space-y-8 sm:pt-4">
@@ -195,10 +199,11 @@ export function ProfilePageView({ profile }: { profile: StudentProfileView }) {
 // ---------------------------------------------------------------------------
 
 export function ProfileSkeleton() {
+  useT();
   return (
     <StudentSurface testId="profile-loading">
       <div className="mx-auto max-w-6xl space-y-6" role="status" aria-live="polite" aria-busy="true">
-        <span className="sr-only">Loading your profile…</span>
+        <span className="sr-only">{pt("Loading your profile…")}</span>
         <div className="flex items-center gap-4">
           <Skeleton className="h-24 w-24 rounded-full" />
           <div className="space-y-2">
@@ -215,14 +220,15 @@ export function ProfileSkeleton() {
 }
 
 export function ProfileErrorState({ onRetry }: { onRetry: () => void }) {
+  useT();
   return (
     <StudentSurface testId="profile-error">
       <div className="mx-auto max-w-md space-y-3 py-16 text-center" role="alert">
         <AlertCircle className="mx-auto h-10 w-10 text-student-attn" aria-hidden="true" />
-        <h1 className="font-serif text-2xl text-student-ink">Student record could not be loaded</h1>
-        <p className="text-sm text-student-muted">This is a system error, not a missing student record. Your information is safe.</p>
+        <h1 className="font-serif text-2xl text-student-ink">{pt("Student record could not be loaded")}</h1>
+        <p className="text-sm text-student-muted">{pt("This is a system error, not a missing student record. Your information is safe.")}</p>
         <button type="button" className={buttonClass.solid} onClick={onRetry} data-testid="button-retry-profile">
-          Try again
+          {pt("Try again")}
         </button>
       </div>
     </StudentSurface>
@@ -230,13 +236,14 @@ export function ProfileErrorState({ onRetry }: { onRetry: () => void }) {
 }
 
 export function ProfileNotReady() {
+  useT();
   return (
     <StudentSurface testId="profile-not-ready">
       <div className="mx-auto max-w-md space-y-3 py-16 text-center">
         <UserRound className="mx-auto h-10 w-10 text-student-muted" aria-hidden="true" />
-        <h1 className="font-serif text-2xl text-student-ink">Student record not ready</h1>
-        <p className="text-sm text-student-muted">Your Lumière advisor must create your student record before your profile can be shown.</p>
-        <Link href="/support" className={buttonClass.outline}>Contact support</Link>
+        <h1 className="font-serif text-2xl text-student-ink">{pt("Student record not ready")}</h1>
+        <p className="text-sm text-student-muted">{pt("Your Lumière advisor must create your student record before your profile can be shown.")}</p>
+        <Link href="/support" className={buttonClass.outline}>{pt("Contact support")}</Link>
       </div>
     </StudentSurface>
   );

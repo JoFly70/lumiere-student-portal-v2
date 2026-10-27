@@ -2,6 +2,7 @@ import type { TranslationKey } from "./en";
 import { authFr } from "./modules/auth";
 import { cockpitFr } from "./modules/cockpit";
 import { staffFr } from "./modules/staff";
+import { assistantFr } from "./modules/assistant";
 
 /**
  * Dictionnaire français (vouvoiement). Typé contre `en.ts` : toute clé anglaise doit exister ici.
@@ -12,6 +13,7 @@ export const fr: Record<TranslationKey, string> = {
   ...authFr,
   ...cockpitFr,
   ...staffFr,
+  ...assistantFr,
   "language.label": "Langue",
   "language.en": "English",
   "language.fr": "Français",

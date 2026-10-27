@@ -26,7 +26,7 @@ function normalize(text: string): string {
   // Fold fullwidth digits/@ and strip zero-width characters used to dodge matching.
   return text
     .normalize('NFKC')
-    .replace(/[​-‍﻿]/g, '');
+    .replace(/[\u200B-\u200D\uFEFF]/g, '');
 }
 
 export function detectPii(text: string): PiiResult {

@@ -27,7 +27,7 @@
       }
     },
     "3": {
-      "step": "staff enrolls the student in the high-school program (us-hs-diploma-21)",
+      "step": "staff enrolls the student in the high-school program (us-hs-diploma-21 v2)",
       "status": "pass",
       "numbers": {
         "requiredHalfUnits": 42,
@@ -152,7 +152,7 @@
       "step": "university academic, roadmap and financial tables are unchanged",
       "status": "pass",
       "numbers": {
-        "protectedTables": 12,
+        "protectedTables": 17,
         "identical": true
       }
     }

@@ -6,7 +6,7 @@
     "degreeProgressSha": "<hash>",
     "ticketsSha": "<hash>",
     "canonicalTables": 4,
-    "protectedTables": 12
+    "protectedTables": 17
   },
   "ticketReporterNameAtCreation": "Ada Journey",
   "newTicketReporterNameAfterCorrection": "Ada Journey",

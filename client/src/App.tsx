@@ -34,6 +34,7 @@ import { studentLandingPath, useStudentPrograms } from "@/lib/student-programs";
 import AdminStudentHighSchool from "@/pages/admin-student-high-school";
 import AdminStudentBilling from "@/pages/admin-student-billing";
 import StaffBillingLookup from "@/pages/staff-billing-lookup";
+import { AcademicAssistant } from "@/components/academic-assistant";
 import { PROTOTYPES_ENABLED, PREVIEW_FLIGHT_DECK_PATH } from "@/components/os/prototype-gate";
 
 // Prototype-only route (S17). Compiled out of normal production builds; see components/os/prototype-gate.
@@ -238,12 +239,14 @@ function AuthenticatedLayout() {
             {...(isStudent ? {} : { id: "main-content", tabIndex: -1 })}
             className={cn(
               "flex-1 overflow-auto",
-              isStudent ? "relative min-h-0 p-6 md:p-8" : "p-4 focus-visible:outline-none sm:p-6 lg:p-8",
+              isStudent ? "relative min-h-0 p-6 pb-24 md:p-8" : "p-4 focus-visible:outline-none sm:p-6 lg:p-8",
             )}
           >
             <Router />
           </main>
           {isStudent && <StudentBottomNav />}
+          {/* S20: Lumière Academic Assistant (authenticated students only; never on auth screens). */}
+          {isStudent && <AcademicAssistant />}
         </div>
       </div>
     </SidebarProvider>

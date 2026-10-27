@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react';
+import { pt } from '@/components/profile/pt';
 import { Camera, Loader2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
@@ -21,10 +22,10 @@ export const PHOTO_MAX_BYTES = 5 * 1024 * 1024;
 /** Client-side pre-check; the server remains the authority. Returns a message or null. */
 export function validatePhotoFile(file: { type: string; size: number }): string | null {
   if (!(PHOTO_TYPES as readonly string[]).includes(file.type)) {
-    return 'Choose a PNG, JPEG or WEBP image.';
+    return pt("Choose a PNG, JPEG or WEBP image.");
   }
   if (file.size > PHOTO_MAX_BYTES) {
-    return 'That image is larger than 5 MB. Choose a smaller one.';
+    return pt("That image is larger than 5 MB. Choose a smaller one.");
   }
   return null;
 }
@@ -111,10 +112,10 @@ export function ProfileAvatarUpload({
       const raw = err instanceof Error ? err.message : '';
       setError(
         /413|too large/i.test(raw)
-          ? 'That image is larger than 5 MB. Choose a smaller one.'
+          ? pt("That image is larger than 5 MB. Choose a smaller one.")
           : raw && !/^HTTP \d+/.test(raw) && raw !== 'Request failed'
             ? raw
-            : 'We could not upload that photo. Check the file and try again.',
+            : pt("We could not upload that photo. Check the file and try again."),
       );
     } finally {
       setUploading(false);
@@ -167,12 +168,12 @@ export function ProfileAvatarUpload({
             ) : (
               <Camera className="h-4 w-4" aria-hidden="true" data-testid="icon-upload" />
             )}
-            {uploading ? 'Uploading…' : hasPhoto ? 'Replace photo' : 'Add a photo'}
+            {uploading ? pt("Uploading…") : hasPhoto ? pt("Replace photo") : pt("Add a photo")}
           </button>
           <div id={statusId} className="max-w-[14rem] text-center text-xs" aria-live="polite" role="status">
             {uploading ? (
               <span className="text-student-muted" data-testid="photo-uploading">
-                Uploading your photo…
+                {pt("Uploading your photo…")}
               </span>
             ) : error ? (
               <span role="alert" className="font-medium text-student-attn" data-testid="photo-error">
@@ -180,10 +181,10 @@ export function ProfileAvatarUpload({
               </span>
             ) : done ? (
               <span className="font-medium text-student-gold-ink" data-testid="photo-saved">
-                Photo saved
+                {pt("Photo saved")}
               </span>
             ) : (
-              <span className="text-student-muted">PNG, JPEG or WEBP, up to 5 MB</span>
+              <span className="text-student-muted">{pt("PNG, JPEG or WEBP, up to 5 MB")}</span>
             )}
           </div>
         </>

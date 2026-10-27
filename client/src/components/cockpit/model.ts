@@ -124,6 +124,7 @@ export function buildHero(p: AcademicProjection, mode: ViewMode, t: T, fc: Forma
     return { status, from, to: cursor, halfUnits: tally[status], visible: mode === "projected" || status === "official" };
   });
   const shown = shownHalfUnits(tally, mode);
+  const notOfficial = Math.max(0, tally.required - tally.official);
   const legend = CREDIT_STATUSES.map((status) => ({
     status,
     label: t(`cockpit.status.${status}`),
@@ -143,7 +144,8 @@ export function buildHero(p: AcademicProjection, mode: ViewMode, t: T, fc: Forma
     figure: fc(shown),
     of: t("cockpit.hero.of", { total: fc(tally.required) }),
     percent: p.credits.total.officialPercent,
-    leftText: t("cockpit.hero.left", { n: fc(Math.max(0, tally.required - tally.official)) }),
+    // required - official = every credit that is not official yet (awaiting school, in progress, planned, AND not started).
+    leftText: t(notOfficial > 0 && notOfficial <= 2 ? "cockpit.hero.leftOne" : "cockpit.hero.left", { n: fc(notOfficial) }),
     caption: mode === "verified" ? t("cockpit.hero.captionVerified") : t("cockpit.hero.captionProjected"),
     segments,
     legend,

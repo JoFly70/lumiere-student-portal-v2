@@ -29,6 +29,7 @@ import {
   inputClass,
   useEditableCard,
 } from "./profile-ui";
+import { pt } from "./pt";
 
 const NONE = "__none__";
 
@@ -64,20 +65,20 @@ function SwitchRow({
   );
 }
 
-const yesNo = (v: boolean) => (v ? "Yes" : "No");
+const yesNo = (v: boolean) => (v ? pt("Yes") : pt("No"));
 
 // ---------------------------------------------------------------------------
 
 function EmailCard({ contact }: { contact: ProfileContactInfo }) {
   return (
     <SubCard
-      title="Sign-in email"
+      title={pt("Sign-in email")}
       testId="email-card"
       action={
         contact.emailVerified ? (
-          <StatusChip label="Verified" tone="verified" testId="email-verified" />
+          <StatusChip label={pt("Verified")} tone="verified" testId="email-verified" />
         ) : (
-          <StatusChip label="Not yet verified" tone="missing" testId="email-verified" />
+          <StatusChip label={pt("Not yet verified")} tone="missing" testId="email-verified" />
         )
       }
     >
@@ -86,9 +87,9 @@ function EmailCard({ contact }: { contact: ProfileContactInfo }) {
         {contact.email}
       </p>
       <p className="mt-2 text-sm text-student-muted">
-        This is your sign-in email, so it cannot be edited here. To change it, contact support.
+        {pt("This is your sign-in email, so it cannot be edited here. To change it, contact support.")}
       </p>
-      <TextLink href="/support" testId="link-change-email">Contact support</TextLink>
+      <TextLink href="/support" testId="link-change-email">{pt("Contact support")}</TextLink>
     </SubCard>
   );
 }
@@ -106,7 +107,7 @@ function PhoneCard({ contact }: { contact: ProfileContactInfo }) {
         phone_secondary: secondary.trim() === "" ? null : secondary.trim(),
         whatsapp_primary: whatsapp,
       }),
-    "Phone numbers saved",
+    pt("Phone numbers saved"),
   );
 
   function start() {
@@ -130,30 +131,30 @@ function PhoneCard({ contact }: { contact: ProfileContactInfo }) {
 
   return (
     <SubCard
-      title="Phone numbers"
+      title={pt("Phone numbers")}
       testId="phone-card"
       action={
         card.editing ? null : (
           <div className="flex items-center gap-3">
             <SavedIndicator saved={card.saved} />
-            <EditButton label="Edit phone numbers" onClick={start} testId="button-edit-phone" addText={contact.phonePrimary ? undefined : "Add phone"} />
+            <EditButton label={pt("Edit phone numbers")} onClick={start} testId="button-edit-phone" addText={contact.phonePrimary ? undefined : pt("Add phone")} />
           </div>
         )
       }
     >
       {card.editing ? (
         <form onSubmit={onSubmit} className="space-y-3" noValidate>
-          <TextField label="Primary phone" required type="tel" inputMode="tel" autoComplete="tel" value={primary} onChange={setPrimary} error={errors.primary} testId="input-phone-primary" />
-          <TextField label="Alternative phone" type="tel" inputMode="tel" autoComplete="tel" value={secondary} onChange={setSecondary} error={errors.secondary} hint="Optional" testId="input-phone-secondary" />
-          <SwitchRow label="My primary phone is on WhatsApp" checked={whatsapp} onChange={setWhatsapp} testId="switch-whatsapp" />
+          <TextField label={pt("Primary phone")} required type="tel" inputMode="tel" autoComplete="tel" value={primary} onChange={setPrimary} error={errors.primary} testId="input-phone-primary" />
+          <TextField label={pt("Alternative phone")} type="tel" inputMode="tel" autoComplete="tel" value={secondary} onChange={setSecondary} error={errors.secondary} hint={pt("Optional")} testId="input-phone-secondary" />
+          <SwitchRow label={pt("My primary phone is on WhatsApp")} checked={whatsapp} onChange={setWhatsapp} testId="switch-whatsapp" />
           <FormError message={card.error} />
           <FormActions saving={card.saving} onCancel={() => card.setEditing(false)} />
         </form>
       ) : (
         <FactGrid>
-          <Fact label="Primary phone" testId="fact-phone-primary" empty="Not provided yet" missing>{contact.phonePrimary}</Fact>
-          <Fact label="Alternative phone" testId="fact-phone-secondary" empty="None added">{contact.phoneSecondary}</Fact>
-          <Fact label="Primary phone on WhatsApp">{yesNo(contact.whatsappPrimary)}</Fact>
+          <Fact label={pt("Primary phone")} testId="fact-phone-primary" empty={pt("Not provided yet")} missing>{contact.phonePrimary}</Fact>
+          <Fact label={pt("Alternative phone")} testId="fact-phone-secondary" empty={pt("None added")}>{contact.phoneSecondary}</Fact>
+          <Fact label={pt("Primary phone on WhatsApp")}>{yesNo(contact.whatsappPrimary)}</Fact>
         </FactGrid>
       )}
     </SubCard>
@@ -180,7 +181,7 @@ function AddressCard({ contact }: { contact: ProfileContactInfo }) {
         address_postal: nullable(postal),
         address_country: country.trim(),
       }),
-    "Address saved",
+    pt("Address saved"),
   );
 
   function start() {
@@ -197,9 +198,9 @@ function AddressCard({ contact }: { contact: ProfileContactInfo }) {
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     const next: FieldErrors = {};
-    if (!line1.trim()) next.line1 = "Enter your street address";
-    if (country.trim().length < 2) next.country = "Enter your country";
-    if (postal.trim().length > 20) next.postal = "Use 20 characters or fewer";
+    if (!line1.trim()) next.line1 = pt("Enter your street address");
+    if (country.trim().length < 2) next.country = pt("Enter your country");
+    if (postal.trim().length > 20) next.postal = pt("Use 20 characters or fewer");
     setErrors(next);
     if (Object.keys(next).length === 0) void card.submit(describeError);
   }
@@ -207,26 +208,26 @@ function AddressCard({ contact }: { contact: ProfileContactInfo }) {
 
   return (
     <SubCard
-      title="Mailing address"
+      title={pt("Mailing address")}
       testId="address-card"
       action={
         card.editing ? null : (
           <div className="flex items-center gap-3">
             <SavedIndicator saved={card.saved} />
-            <EditButton label="Edit mailing address" onClick={start} testId="button-edit-address" addText={summary.length ? undefined : "Add address"} />
+            <EditButton label={pt("Edit mailing address")} onClick={start} testId="button-edit-address" addText={summary.length ? undefined : pt("Add address")} />
           </div>
         )
       }
     >
       {card.editing ? (
         <form onSubmit={onSubmit} className="space-y-3" noValidate>
-          <TextField label="Address line 1" required autoComplete="address-line1" value={line1} onChange={setLine1} error={errors.line1} maxLength={160} testId="input-address-line1" />
-          <TextField label="Address line 2" autoComplete="address-line2" value={line2} onChange={setLine2} maxLength={160} hint="Apartment, suite, unit (optional)" testId="input-address-line2" />
+          <TextField label={pt("Address line 1")} required autoComplete="address-line1" value={line1} onChange={setLine1} error={errors.line1} maxLength={160} testId="input-address-line1" />
+          <TextField label={pt("Address line 2")} autoComplete="address-line2" value={line2} onChange={setLine2} maxLength={160} hint={pt("Apartment, suite, unit (optional)")} testId="input-address-line2" />
           <div className="grid gap-3 sm:grid-cols-2">
-            <TextField label="City" autoComplete="address-level2" value={city} onChange={setCity} maxLength={80} testId="input-address-city" />
-            <TextField label="State or region" autoComplete="address-level1" value={state} onChange={setState} maxLength={80} testId="input-address-state" />
-            <TextField label="Postal code" autoComplete="postal-code" value={postal} onChange={setPostal} error={errors.postal} maxLength={20} testId="input-address-postal" />
-            <TextField label="Country" required autoComplete="country-name" value={country} onChange={setCountry} error={errors.country} maxLength={80} testId="input-address-country" />
+            <TextField label={pt("City")} autoComplete="address-level2" value={city} onChange={setCity} maxLength={80} testId="input-address-city" />
+            <TextField label={pt("State or region")} autoComplete="address-level1" value={state} onChange={setState} maxLength={80} testId="input-address-state" />
+            <TextField label={pt("Postal code")} autoComplete="postal-code" value={postal} onChange={setPostal} error={errors.postal} maxLength={20} testId="input-address-postal" />
+            <TextField label={pt("Country")} required autoComplete="country-name" value={country} onChange={setCountry} error={errors.country} maxLength={80} testId="input-address-country" />
           </div>
           <FormError message={card.error} />
           <FormActions saving={card.saving} onCancel={() => card.setEditing(false)} />
@@ -238,7 +239,7 @@ function AddressCard({ contact }: { contact: ProfileContactInfo }) {
           ))}
         </address>
       ) : (
-        <p className="flex items-center gap-1.5 text-sm font-semibold text-student-attn" data-testid="text-address"><CircleDashed className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />No address on file yet.</p>
+        <p className="flex items-center gap-1.5 text-sm font-semibold text-student-attn" data-testid="text-address"><CircleDashed className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />{pt("No address on file yet.")}</p>
       )}
     </SubCard>
   );
@@ -260,7 +261,7 @@ function PreferencesCard({ contact }: { contact: ProfileContactInfo }) {
       media_release: media,
     };
     return actions.saveSelfService(update);
-  }, "Preferences saved");
+  }, pt("Preferences saved"));
 
   function start() {
     setTimezone(contact.timezone ?? NONE);
@@ -273,13 +274,13 @@ function PreferencesCard({ contact }: { contact: ProfileContactInfo }) {
 
   return (
     <SubCard
-      title="Preferences"
+      title={pt("Preferences")}
       testId="preferences-card"
       action={
         card.editing ? null : (
           <div className="flex items-center gap-3">
             <SavedIndicator saved={card.saved} />
-            <EditButton label="Edit preferences" onClick={start} testId="button-edit-preferences" />
+            <EditButton label={pt("Edit preferences")} onClick={start} testId="button-edit-preferences" />
           </div>
         )
       }
@@ -294,13 +295,13 @@ function PreferencesCard({ contact }: { contact: ProfileContactInfo }) {
           noValidate
         >
           <div className="space-y-1.5">
-            <Label htmlFor={tzId} className="text-sm font-medium text-student-ink">Time zone</Label>
+            <Label htmlFor={tzId} className="text-sm font-medium text-student-ink">{pt("Time zone")}</Label>
             <Select value={timezone} onValueChange={setTimezone}>
               <SelectTrigger id={tzId} className={cn(inputClass, "w-full")} data-testid="select-timezone">
-                <SelectValue placeholder="Choose a time zone" />
+                <SelectValue placeholder={pt("Choose a time zone")} />
               </SelectTrigger>
               <SelectContent className="max-h-72">
-                <SelectItem value={NONE}>Not set</SelectItem>
+                <SelectItem value={NONE}>{pt("Not set")}</SelectItem>
                 {listTimezones(contact.timezone).map((z) => (
                   <SelectItem key={z} value={z}>{z.replace(/_/g, " ")}</SelectItem>
                 ))}
@@ -308,7 +309,7 @@ function PreferencesCard({ contact }: { contact: ProfileContactInfo }) {
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor={chId} className="text-sm font-medium text-student-ink">Preferred way to be contacted</Label>
+            <Label htmlFor={chId} className="text-sm font-medium text-student-ink">{pt("Preferred way to be contacted")}</Label>
             <Select value={channel} onValueChange={(v) => setChannel(v as PreferredContactChannel)}>
               <SelectTrigger id={chId} className={cn(inputClass, "w-full")} data-testid="select-channel">
                 <SelectValue />
@@ -320,17 +321,17 @@ function PreferencesCard({ contact }: { contact: ProfileContactInfo }) {
               </SelectContent>
             </Select>
           </div>
-          <SwitchRow label="Send me news and offers from Lumière" help="Optional. Program and account messages are always sent." checked={marketing} onChange={setMarketing} testId="switch-marketing" />
-          <SwitchRow label="Media release" help="Allow Lumière to feature your name or photo in student stories. Optional." checked={media} onChange={setMedia} testId="switch-media" />
+          <SwitchRow label={pt("Send me news and offers from Lumière")} help={pt("Optional. Program and account messages are always sent.")} checked={marketing} onChange={setMarketing} testId="switch-marketing" />
+          <SwitchRow label={pt("Media release")} help={pt("Allow Lumière to feature your name or photo in student stories. Optional.")} checked={media} onChange={setMedia} testId="switch-media" />
           <FormError message={card.error} />
           <FormActions saving={card.saving} onCancel={() => card.setEditing(false)} />
         </form>
       ) : (
         <FactGrid>
-          <Fact label="Time zone" testId="fact-timezone" empty="Not set">{contact.timezone?.replace(/_/g, " ")}</Fact>
-          <Fact label="Preferred contact" testId="fact-channel">{CHANNEL_LABELS[contact.preferredContactChannel]}</Fact>
-          <Fact label="News and offers">{yesNo(contact.marketingOptIn)}</Fact>
-          <Fact label="Media release">{yesNo(contact.mediaRelease)}</Fact>
+          <Fact label={pt("Time zone")} testId="fact-timezone" empty={pt("Not set")}>{contact.timezone?.replace(/_/g, " ")}</Fact>
+          <Fact label={pt("Preferred contact")} testId="fact-channel">{CHANNEL_LABELS[contact.preferredContactChannel]}</Fact>
+          <Fact label={pt("News and offers")}>{yesNo(contact.marketingOptIn)}</Fact>
+          <Fact label={pt("Media release")}>{yesNo(contact.mediaRelease)}</Fact>
         </FactGrid>
       )}
     </SubCard>
@@ -341,8 +342,8 @@ export function ContactSection({ contact }: { contact: ProfileContactInfo }) {
   return (
     <ProfileSection
       id="contact"
-      title="Contact Information"
-      description="How Lumière reaches you. Keep your phone and address current so you never miss something important."
+      title={pt("Contact Information")}
+      description={pt("How Lumière reaches you. Keep your phone and address current so you never miss something important.")}
     >
       <div className="grid gap-4 md:grid-cols-2">
         <EmailCard contact={contact} />

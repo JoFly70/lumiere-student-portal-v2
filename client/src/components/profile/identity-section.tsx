@@ -57,6 +57,7 @@ import {
   inputClass,
   useEditableCard,
 } from "./profile-ui";
+import { pt } from "./pt";
 
 // ---------------------------------------------------------------------------
 // Preferred name (the only directly editable identity field)
@@ -68,26 +69,26 @@ function PreferredNameCard({ identity }: { identity: ProfileIdentity }) {
   const [fieldError, setFieldError] = useState<string | null>(null);
   const card = useEditableCard(
     () => actions.saveSelfService({ preferred_name: value.trim() === "" ? null : value.trim() }),
-    "Preferred name saved",
+    pt("Preferred name saved"),
   );
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (value.trim().length > 80) return setFieldError("Use 80 characters or fewer");
+    if (value.trim().length > 80) return setFieldError(pt("Use 80 characters or fewer"));
     setFieldError(null);
     void card.submit(describeError);
   }
 
   return (
     <SubCard
-      title="Preferred name"
+      title={pt("Preferred name")}
       testId="preferred-name-card"
       action={
         card.editing ? null : (
           <div className="flex items-center gap-3">
             <SavedIndicator saved={card.saved} />
             <EditButton
-              label="Edit preferred name"
+              label={pt("Edit preferred name")}
               testId="button-edit-preferred-name"
               onClick={() => {
                 setValue(identity.preferredName ?? "");
@@ -102,11 +103,11 @@ function PreferredNameCard({ identity }: { identity: ProfileIdentity }) {
       {card.editing ? (
         <form onSubmit={onSubmit} className="space-y-3" noValidate>
           <TextField
-            label="Preferred name"
+            label={pt("Preferred name")}
             value={value}
             onChange={setValue}
             error={fieldError}
-            hint="What Lumière staff and your portal call you day to day. It does not change your legal name."
+            hint={pt("What Lumière staff and your portal call you day to day. It does not change your legal name.")}
             maxLength={80}
             autoComplete="nickname"
             testId="input-preferred-name"
@@ -117,9 +118,9 @@ function PreferredNameCard({ identity }: { identity: ProfileIdentity }) {
       ) : (
         <>
           <p className="text-sm text-student-ink" data-testid="text-preferred-name">
-            {identity.preferredName ? identity.preferredName : <span className="italic text-student-muted">None set. We use your first name.</span>}
+            {identity.preferredName ? identity.preferredName : <span className="italic text-student-muted">{pt("None set. We use your first name.")}</span>}
           </p>
-          <p className="mt-1 text-xs text-student-muted">Optional. You can change this any time.</p>
+          <p className="mt-1 text-xs text-student-muted">{pt("Optional. You can change this any time.")}</p>
         </>
       )}
     </SubCard>
@@ -137,12 +138,12 @@ function ChangeRows({ request }: { request: IdentityCorrectionRequestView }) {
         <li key={f} className="grid gap-1 px-3 py-2 text-sm sm:grid-cols-3 sm:gap-3">
           <span className="font-medium text-student-ink">{FIELD_LABELS[f] ?? f}</span>
           <span className="min-w-0 break-words text-student-muted">
-            <span className="text-xs uppercase tracking-wide">On record: </span>
-            {request.currentDisplay[f] || "Nothing recorded"}
+            <span className="text-xs uppercase tracking-wide">{pt("On record:")} </span>
+            {request.currentDisplay[f] || pt("Nothing recorded")}
           </span>
           <span className="min-w-0 break-words text-student-ink">
-            <span className="text-xs uppercase tracking-wide text-student-muted">Requested: </span>
-            {request.requestedDisplay[f] || "Cleared"}
+            <span className="text-xs uppercase tracking-wide text-student-muted">{pt("Requested:")} </span>
+            {request.requestedDisplay[f] || pt("Cleared")}
           </span>
         </li>
       ))}
@@ -161,7 +162,7 @@ function WithdrawButton({ request }: { request: IdentityCorrectionRequestView })
     setError(null);
     try {
       await actions.withdrawCorrection(request.id);
-      toast({ title: "Request withdrawn", description: "Your identity details were not changed." });
+      toast({ title: pt("Request withdrawn"), description: pt("Your identity details were not changed.") });
       setOpen(false);
     } catch (e) {
       setError(describeError(e));
@@ -173,19 +174,19 @@ function WithdrawButton({ request }: { request: IdentityCorrectionRequestView })
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger asChild>
         <button type="button" className={buttonClass.outline} data-testid="button-withdraw-correction">
-          Withdraw request
+          {pt("Withdraw request")}
         </button>
       </AlertDialogTrigger>
       <AlertDialogContent className="student-surface border-student-line bg-student-card text-student-ink">
         <AlertDialogHeader>
-          <AlertDialogTitle className="font-serif text-xl">Withdraw this correction request?</AlertDialogTitle>
+          <AlertDialogTitle className="font-serif text-xl">{pt("Withdraw this correction request?")}</AlertDialogTitle>
           <AlertDialogDescription className="text-student-muted">
-            Lumière will stop reviewing it and your identity details stay as they are. You can submit a new request afterwards.
+            {pt("Lumière will stop reviewing it and your identity details stay as they are. You can submit a new request afterwards.")}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <FormError message={error} />
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={busy} className="min-h-[44px]">Keep request</AlertDialogCancel>
+          <AlertDialogCancel disabled={busy} className="min-h-[44px]">{pt("Keep request")}</AlertDialogCancel>
           <AlertDialogAction
             disabled={busy}
             onClick={(e) => {
@@ -194,7 +195,7 @@ function WithdrawButton({ request }: { request: IdentityCorrectionRequestView })
             }}
             className="min-h-[44px]"
           >
-            {busy ? "Withdrawing…" : "Withdraw"}
+            {busy ? pt("Withdrawing…") : pt("Withdraw")}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -208,24 +209,24 @@ export function PendingCorrectionCard({ request }: { request: IdentityCorrection
       className="space-y-3 rounded-2xl border border-student-gold bg-student-gold-soft/60 p-4 sm:p-5"
       data-testid="pending-correction"
       role="group"
-      aria-label="Pending identity correction request"
+      aria-label={pt("Pending identity correction request")}
     >
       <div className="flex flex-wrap items-center gap-2">
         <Hourglass className="h-4 w-4 text-student-gold-ink" aria-hidden="true" />
-        <h3 className="text-base font-semibold text-student-ink">Correction request under review</h3>
-        <StatusChip label="Pending review" tone="waiting" />
+        <h3 className="text-base font-semibold text-student-ink">{pt("Correction request under review")}</h3>
+        <StatusChip label={pt("Pending review")} tone="waiting" />
       </div>
       <p className="text-sm text-student-muted">
-        Submitted {formatDate(request.createdAt)}. Your verified identity stays exactly as recorded until Lumière finishes reviewing this request.
+        {pt("Submitted {date}. Your verified identity stays exactly as recorded until Lumière finishes reviewing this request.", { date: formatDate(request.createdAt) })}
       </p>
       <ChangeRows request={request} />
       <p className="text-sm text-student-ink">
-        <span className="font-medium">Your reason: </span>
+        <span className="font-medium">{pt("Your reason:")} </span>
         {request.reason}
       </p>
       <div className="flex flex-wrap items-center gap-3">
         <WithdrawButton request={request} />
-        <TextLink href="/documents">Add supporting documents</TextLink>
+        <TextLink href="/documents">{pt("Add supporting documents")}</TextLink>
       </div>
     </div>
   );
@@ -242,26 +243,26 @@ export function ResolvedCorrectionCard({ request }: { request: IdentityCorrectio
         ) : (
           <XCircle className="h-4 w-4 text-student-attn" aria-hidden="true" />
         )}
-        <h3 className="text-base font-semibold text-student-ink">Your last correction request</h3>
+        <h3 className="text-base font-semibold text-student-ink">{pt("Your last correction request")}</h3>
         <StatusChip
-          label={approved ? "Approved" : withdrawn ? "Withdrawn" : "Not approved"}
+          label={approved ? pt("Approved") : withdrawn ? pt("Withdrawn") : pt("Not approved")}
           tone={approved ? "verified" : withdrawn ? "neutral" : "attention"}
           testId="resolved-correction-status"
         />
       </div>
       <p className="text-sm text-student-muted">
         {approved
-          ? `Approved ${formatDate(request.reviewedAt ?? request.createdAt)}. Your details above now show the corrected values.`
+          ? pt("Approved {date}. Your details above now show the corrected values.", { date: formatDate(request.reviewedAt ?? request.createdAt) })
           : withdrawn
-            ? `You withdrew this request on ${formatDate(request.reviewedAt ?? request.createdAt)}. Nothing changed.`
-            : `Reviewed ${formatDate(request.reviewedAt ?? request.createdAt)}. Your details were not changed.`}
+            ? pt("You withdrew this request on {date}. Nothing changed.", { date: formatDate(request.reviewedAt ?? request.createdAt) })
+            : pt("Reviewed {date}. Your details were not changed.", { date: formatDate(request.reviewedAt ?? request.createdAt) })}
       </p>
       <p className="text-sm text-student-muted">
-        You asked to change: {request.fields.map((f) => FIELD_LABELS[f] ?? f).join(", ")}.
+        {pt("You asked to change:")} {request.fields.map((f) => FIELD_LABELS[f] ?? f).join(", ")}.
       </p>
       {request.reviewNote && (
         <p className="rounded-lg bg-student-gold-soft px-3 py-2 text-sm text-student-ink" data-testid="correction-review-note">
-          <span className="font-medium">Note from Lumière: </span>
+          <span className="font-medium">{pt("Note from Lumière:")} </span>
           {request.reviewNote}
         </p>
       )}
@@ -290,9 +291,9 @@ function currentValues(identity: ProfileIdentity): DraftValues {
 }
 
 const FIELD_HINTS: Partial<Record<IdentityCorrectionField, string>> = {
-  nationality: "Separate more than one with commas (up to 4).",
-  gov_id_number: "Enter the full corrected number. Only the last four characters are ever shown back to you.",
-  dob: "Use the date printed on your ID.",
+  get nationality() { return pt("Separate more than one with commas (up to 4)."); },
+  get gov_id_number() { return pt("Enter the full corrected number. Only the last four characters are ever shown back to you."); },
+  get dob() { return pt("Use the date printed on your ID."); },
 };
 
 export function buildCorrectionChanges(
@@ -309,8 +310,8 @@ export function buildCorrectionChanges(
     switch (f) {
       case "first_name":
       case "last_name":
-        if (!raw) errors[f] = `${FIELD_LABELS[f]} cannot be empty`;
-        else if (raw.length > 80) errors[f] = "Use 80 characters or fewer";
+        if (!raw) errors[f] = pt("{field} cannot be empty", { field: FIELD_LABELS[f] ?? f });
+        else if (raw.length > 80) errors[f] = pt("Use 80 characters or fewer");
         else changes[f] = raw;
         break;
       case "middle_name":
@@ -319,20 +320,20 @@ export function buildCorrectionChanges(
         changes[f] = raw === "" ? null : raw;
         break;
       case "dob":
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(raw) || Number.isNaN(Date.parse(raw))) errors[f] = "Enter a valid date";
-        else if (raw > new Date().toISOString().slice(0, 10)) errors[f] = "Date of birth cannot be in the future";
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(raw) || Number.isNaN(Date.parse(raw))) errors[f] = pt("Enter a valid date");
+        else if (raw > new Date().toISOString().slice(0, 10)) errors[f] = pt("Date of birth cannot be in the future");
         else changes[f] = raw;
         break;
       case "nationality": {
         const list = raw.split(",").map((s) => s.trim()).filter(Boolean);
-        if (list.length === 0) errors[f] = "Enter at least one nationality";
-        else if (list.length > 4) errors[f] = "List up to 4 nationalities";
-        else if (list.some((s) => s.length < 2)) errors[f] = "Each nationality needs at least 2 letters";
+        if (list.length === 0) errors[f] = pt("Enter at least one nationality");
+        else if (list.length > 4) errors[f] = pt("List up to 4 nationalities");
+        else if (list.some((s) => s.length < 2)) errors[f] = pt("Each nationality needs at least 2 letters");
         else changes[f] = list;
         break;
       }
       case "gov_id_number":
-        if (raw.length < 3) errors[f] = "Enter the full ID number (at least 3 characters)";
+        if (raw.length < 3) errors[f] = pt("Enter the full ID number (at least 3 characters)");
         else changes[f] = raw;
         break;
     }
@@ -345,7 +346,7 @@ export function buildCorrectionChanges(
       const now = cur[k as IdentityCorrectionField];
       return (Array.isArray(v) ? v.join(", ") : (v ?? "")) === now;
     });
-    for (const k of unchanged) errors[k] = "This matches what is already on record";
+    for (const k of unchanged) errors[k] = pt("This matches what is already on record");
   }
   return { changes: changes as IdentityCorrectionChanges, errors };
 }
@@ -387,17 +388,17 @@ export function CorrectionDialog({ identity }: { identity: ProfileIdentity }) {
     e.preventDefault();
     setServerError(null);
     const next: Record<string, string> = {};
-    if (selected.size === 0) next._fields = "Choose at least one detail to correct";
+    if (selected.size === 0) next._fields = pt("Choose at least one detail to correct");
     const built = buildCorrectionChanges(identity, selected, values);
     Object.assign(next, built.errors);
-    if (reason.trim().length < 10) next.reason = "Tell us briefly why this needs correcting (at least 10 characters)";
+    if (reason.trim().length < 10) next.reason = pt("Tell us briefly why this needs correcting (at least 10 characters)");
     setErrors(next);
     if (Object.keys(next).length > 0) return;
     const payload: CreateIdentityCorrection = { changes: built.changes, reason: reason.trim() };
     setBusy(true);
     try {
       await actions.submitCorrection(payload);
-      toast({ title: "Correction request sent", description: "Lumière will review it. Your current details stay as they are until then." });
+      toast({ title: pt("Correction request sent"), description: pt("Lumière will review it. Your current details stay as they are until then.") });
       setOpen(false);
       reset();
     } catch (err) {
@@ -418,20 +419,20 @@ export function CorrectionDialog({ identity }: { identity: ProfileIdentity }) {
       <DialogTrigger asChild>
         <button type="button" className={buttonClass.outline} data-testid="button-request-correction">
           <FileCheck2 className="h-4 w-4" aria-hidden="true" />
-          Request a correction
+          {pt("Request a correction")}
         </button>
       </DialogTrigger>
       <DialogContent className={dialogClass}>
         <DialogHeader className={dialogHeaderClass}>
-          <DialogTitle className="font-serif text-2xl">Request a correction</DialogTitle>
+          <DialogTitle className="font-serif text-2xl">{pt("Request a correction")}</DialogTitle>
           <DialogDescription className="text-student-muted">
-            Choose what is wrong and enter the correct value. Lumière reviews every request, and your recorded details do not change until it is approved.
+            {pt("Choose what is wrong and enter the correct value. Lumière reviews every request, and your recorded details do not change until it is approved.")}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={onSubmit} className={dialogFormClass} noValidate>
           <DialogBody>
           <fieldset className="space-y-2">
-            <legend className="text-sm font-medium text-student-ink">What needs correcting?</legend>
+            <legend className="text-sm font-medium text-student-ink">{pt("What needs correcting?")}</legend>
             {errors._fields && (
               <p role="alert" className="text-xs font-medium text-student-attn">{errors._fields}</p>
             )}
@@ -455,7 +456,7 @@ export function CorrectionDialog({ identity }: { identity: ProfileIdentity }) {
                   {on && (
                     <div className="pb-3">
                       <TextField
-                        label={`Correct ${FIELD_LABELS[f].toLowerCase()}`}
+                        label={pt("Correct {field}", { field: (FIELD_LABELS[f] ?? f).toLowerCase() })}
                         type={f === "dob" ? "date" : "text"}
                         value={values[f]}
                         onChange={(v) => setValues((s) => ({ ...s, [f]: v }))}
@@ -472,8 +473,8 @@ export function CorrectionDialog({ identity }: { identity: ProfileIdentity }) {
 
           <div className="space-y-1.5">
             <Label htmlFor={reasonId} className="text-sm font-medium text-student-ink">
-              Why does this need correcting? <span aria-hidden="true" className="text-student-attn">*</span>
-              <span className="sr-only">(required, at least 10 characters)</span>
+              {pt("Why does this need correcting?")} <span aria-hidden="true" className="text-student-attn">*</span>
+              <span className="sr-only">({pt("required, at least 10 characters")})</span>
             </Label>
             <Textarea
               id={reasonId}
@@ -492,13 +493,13 @@ export function CorrectionDialog({ identity }: { identity: ProfileIdentity }) {
           </div>
 
           <p className="rounded-lg bg-student-gold-soft px-3 py-2 text-sm text-student-gold-ink" data-testid="correction-evidence-note">
-            Supporting documents, like a corrected ID or passport, are uploaded in{" "}
-            <Link href="/documents" className="font-medium underline underline-offset-4">Documents</Link>. Lumière will look for them when reviewing.
+            {pt("Supporting documents, like a corrected ID or passport, are uploaded in")}{" "}
+            <Link href="/documents" className="font-medium underline underline-offset-4">Documents</Link>. {pt("Lumière will look for them when reviewing.")}
           </p>
 
           <FormError message={serverError} />
           </DialogBody>
-          <FormActions saving={busy} onCancel={() => setOpen(false)} saveLabel="Send request" sticky />
+          <FormActions saving={busy} onCancel={() => setOpen(false)} saveLabel={pt("Send request")} sticky />
         </form>
       </DialogContent>
     </Dialog>
@@ -516,23 +517,23 @@ export function IdentitySection({ identity }: { identity: ProfileIdentity }) {
   return (
     <ProfileSection
       id="identity"
-      title="My Identity"
-      description="Your legal identity is the record Lumière uses for admissions, transcripts and credentials. You can keep your preferred name up to date; everything else changes only after Lumière reviews a request."
+      title={pt("My Identity")}
+      description={pt("Your legal identity is the record Lumière uses for admissions, transcripts and credentials. You can keep your preferred name up to date; everything else changes only after Lumière reviews a request.")}
     >
       <div className="grid gap-3 sm:gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,18rem)] lg:items-start">
         <SubCard
-          title="Legal identity"
+          title={pt("Legal identity")}
           testId="legal-identity-card"
           action={<StatusChip label={chip.label} tone={chip.tone} testId="identity-verification-badge" />}
         >
           <FactGrid>
-            <Fact label="Legal full name" testId="fact-legal-name">{names.legal}</Fact>
-            <Fact label="Student ID" testId="fact-student-id">{identity.studentCode}</Fact>
-            <Fact label="Date of birth" testId="fact-dob" missing>{formatDate(identity.dob)}</Fact>
-            <Fact label="Sex" testId="fact-sex">{identity.sex}</Fact>
-            <Fact label="Nationality" testId="fact-nationality">{identity.nationality.join(", ")}</Fact>
-            <Fact label="Government ID type" testId="fact-gov-id-type">{identity.govIdType}</Fact>
-            <Fact label="Government ID number" testId="fact-gov-id-number" empty="Not on record" missing={needsUpload(identity.verification)}>
+            <Fact label={pt("Legal full name")} testId="fact-legal-name">{names.legal}</Fact>
+            <Fact label={pt("Student ID")} testId="fact-student-id">{identity.studentCode}</Fact>
+            <Fact label={pt("Date of birth")} testId="fact-dob" missing>{formatDate(identity.dob)}</Fact>
+            <Fact label={pt("Sex")} testId="fact-sex">{identity.sex}</Fact>
+            <Fact label={pt("Nationality")} testId="fact-nationality">{identity.nationality.join(", ")}</Fact>
+            <Fact label={pt("Government ID type")} testId="fact-gov-id-type">{identity.govIdType}</Fact>
+            <Fact label={pt("Government ID number")} testId="fact-gov-id-number" empty={pt("Not on record")} missing={needsUpload(identity.verification)}>
               {identity.govIdNumberMasked}
             </Fact>
           </FactGrid>
@@ -543,12 +544,12 @@ export function IdentitySection({ identity }: { identity: ProfileIdentity }) {
           {needsUpload(identity.verification) && (
             <Link href="/documents" className={cn(buttonClass.solid, "mt-3 w-full sm:w-auto")} data-testid="link-upload-government-id">
               <Upload className="h-4 w-4" aria-hidden="true" />
-              Upload government ID
+              {pt("Upload government ID")}
             </Link>
           )}
           <div className="mt-3 space-y-2 border-t border-student-line pt-3">
             <ReadOnlyNote>
-              Read-only. Identity changes go through a correction request, and your recorded details stay as they are until Lumière approves it.
+              {pt("Read-only. Identity changes go through a correction request, and your recorded details stay as they are until Lumière approves it.")}
             </ReadOnlyNote>
             {!identity.pendingCorrection && <CorrectionDialog identity={identity} />}
           </div>

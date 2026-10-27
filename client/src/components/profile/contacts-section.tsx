@@ -35,15 +35,15 @@ import {
 } from "./profile-presentation";
 import { DialogBody, FormActions, FormError, ProfileSection, StatusChip, SubCard, TextField, dialogClass, dialogFormClass, dialogHeaderClass, inputClass } from "./profile-ui";
 import { Pill } from "@/components/student-progress/student-ui";
+import { pt } from "./pt";
 
 export function AuthorityExplainer() {
   return (
     <div className="flex items-start gap-2 text-sm leading-relaxed text-student-muted" data-testid="authority-explainer" role="note">
       <Info className="mt-0.5 h-4 w-4 shrink-0 text-student-gold-ink" aria-hidden="true" />
       <p>
-        <span className="font-semibold text-student-ink">Adding someone does not give them access.</span>{" "}
-        They get no portal login and cannot see your academic or financial records. A guardian or representative can act for you only after
-        Lumière verifies a signed consent or legal document. Upload it in{" "}
+        <span className="font-semibold text-student-ink">{pt("Adding someone does not give them access.")}</span>{" "}
+        {pt("They get no portal login and cannot see your academic or financial records. A guardian or representative can act for you only after Lumière verifies a signed consent or legal document. Upload it in")}{" "}
         <Link href="/documents" className="font-medium text-student-gold-ink underline underline-offset-4">Documents</Link>.
       </p>
     </div>
@@ -56,18 +56,18 @@ function ScopeLine({ contact }: { contact: StudentContactView }) {
   return (
     <div className="space-y-1 text-sm" data-testid="contact-scopes">
       <p className="text-student-ink">
-        <span className="text-xs font-medium uppercase tracking-wide text-student-muted">In force today: </span>
-        <span data-testid="effective-scopes">{inForce.length ? inForce.join(", ") : "No special permissions"}</span>
+        <span className="text-xs font-medium uppercase tracking-wide text-student-muted">{pt("In force today:")} </span>
+        <span data-testid="effective-scopes">{inForce.length ? inForce.join(", ") : pt("No special permissions")}</span>
       </p>
       {contact.requestedScopes.length > 0 && (
         <p className="text-student-muted">
-          <span className="text-xs font-medium uppercase tracking-wide">You asked for: </span>
+          <span className="text-xs font-medium uppercase tracking-wide">{pt("You asked for:")} </span>
           <span data-testid="requested-scopes">{scopeLabels(contact.requestedScopes).join(", ")}</span>
         </p>
       )}
       {pendingScopes.length > 0 && (
         <p className="text-xs text-student-muted" data-testid="scopes-inactive-note">
-          Not in force until Lumière verifies authority: {scopeLabels(pendingScopes).join(", ")}.
+          {pt("Not in force until Lumière verifies authority:")} {scopeLabels(pendingScopes).join(", ")}.
         </p>
       )}
     </div>
@@ -111,20 +111,20 @@ export function ContactCard({
       {contact.authorityStatus === "pending_verification" && (
         <p className="mt-3 text-sm text-student-muted" data-testid="pending-hint">
           {consentUnderReview ? (
-            "Lumière is reviewing the consent you sent. You will see the result here."
+            pt("Lumière is reviewing the consent you sent. You will see the result here.")
           ) : (
-            <>Lumière is waiting for a signed consent or legal document. <Link href="/documents" className="font-medium text-student-gold-ink underline underline-offset-4">Upload it in Documents</Link>.</>
+            <>{pt("Lumière is waiting for a signed consent or legal document.")} <Link href="/documents" className="font-medium text-student-gold-ink underline underline-offset-4">{pt("Upload it in Documents")}</Link>.</>
           )}
         </p>
       )}
       {contact.authorityStatus === "revoked" && (
         <p className="mt-3 text-sm text-student-muted" data-testid="revoked-hint">
-          Next step: <Link href="/documents" className="font-medium text-student-gold-ink underline underline-offset-4">Upload a signed consent in Documents</Link> and Lumière will review it again.
+          {pt("Next step:")} <Link href="/documents" className="font-medium text-student-gold-ink underline underline-offset-4">{pt("Upload a signed consent in Documents")}</Link> {pt("and Lumière will review it again.")}
         </p>
       )}
       {contact.authorityNote && (
         <p className="mt-3 rounded-lg bg-student-gold-soft px-3 py-2 text-sm text-student-ink" data-testid="authority-note">
-          <span className="font-medium">Note from Lumière: </span>{contact.authorityNote}
+          <span className="font-medium">{pt("Note from Lumière:")} </span>{contact.authorityNote}
         </p>
       )}
       <div className="h-3 shrink-0" aria-hidden="true" />
@@ -132,18 +132,18 @@ export function ContactCard({
         {locked && (
           <p className="flex items-center gap-2 text-sm text-student-muted" data-testid="contact-locked">
             <Lock className="h-4 w-4" aria-hidden="true" />
-            Verified by Lumière. <Link href="/support" className="font-medium text-student-gold-ink underline underline-offset-4">Contact Lumière to change</Link>
+            {pt("Verified by Lumière.")} <Link href="/support" className="font-medium text-student-gold-ink underline underline-offset-4">{pt("Contact Lumière to change")}</Link>
           </p>
         )}
         <div className="ml-auto flex flex-wrap gap-2">
-          <button type="button" className={buttonClass.outline} onClick={() => onEdit?.(contact)} aria-label={`${locked ? "Update phone or email for" : "Edit"} ${contact.fullName}`} data-testid="button-edit-contact">
+          <button type="button" className={buttonClass.outline} onClick={() => onEdit?.(contact)} aria-label={pt(locked ? "Update phone or email for {name}" : "Edit {name}", { name: contact.fullName })} data-testid="button-edit-contact">
             <Pencil className="h-4 w-4" aria-hidden="true" />
-            {locked ? "Update phone or email" : "Edit"}
+            {locked ? pt("Update phone or email") : pt("Edit")}
           </button>
           {!locked && (
-            <button type="button" className={buttonClass.outline} onClick={() => onDelete?.(contact)} aria-label={`Remove ${contact.fullName}`} data-testid="button-delete-contact">
+            <button type="button" className={buttonClass.outline} onClick={() => onDelete?.(contact)} aria-label={pt("Remove {name}", { name: contact.fullName })} data-testid="button-delete-contact">
               <Trash2 className="h-4 w-4" aria-hidden="true" />
-              Remove
+              {pt("Remove")}
             </button>
           )}
         </div>
@@ -224,8 +224,8 @@ export function ContactDialog({
     setServerError(null);
     const next: FieldErrors = {};
     if (!locked) {
-      if (!draft.fullName.trim()) next.fullName = "Enter their full name";
-      if (!draft.relationship.trim()) next.relationship = "Describe how they are related to you";
+      if (!draft.fullName.trim()) next.fullName = pt("Enter their full name");
+      if (!draft.relationship.trim()) next.relationship = pt("Describe how they are related to you");
     }
     const p = validatePhone(draft.phone, true);
     if (p) next.phone = p;
@@ -254,8 +254,8 @@ export function ContactDialog({
         else await actions.addContact(payload);
       }
       toast({
-        title: editing ? "Contact updated" : "Contact added",
-        description: needsAuthority && !locked ? "Listed. Authority is pending Lumière's verification." : "Your changes were saved.",
+        title: editing ? pt("Contact updated") : pt("Contact added"),
+        description: needsAuthority && !locked ? pt("Listed. Authority is pending Lumière's verification.") : pt("Your changes were saved."),
       });
       onOpenChange(false);
     } catch (err) {
@@ -270,12 +270,12 @@ export function ContactDialog({
       <DialogContent className={dialogClass}>
         <DialogHeader className={dialogHeaderClass}>
           <DialogTitle className="font-serif text-2xl">
-            {locked ? "Update contact details" : editing ? "Edit contact" : "Add a contact"}
+            {locked ? pt("Update contact details") : editing ? pt("Edit contact") : pt("Add a contact")}
           </DialogTitle>
           <DialogDescription className="text-student-muted">
             {locked
-              ? "Lumière verified this person's authority, so only their phone, email and language can be updated here."
-              : "Listing someone does not give them portal access or access to your records."}
+              ? pt("Lumière verified this person's authority, so only their phone, email and language can be updated here.")
+              : pt("Listing someone does not give them portal access or access to your records.")}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={onSubmit} className={dialogFormClass} noValidate>
@@ -283,7 +283,7 @@ export function ContactDialog({
           {!locked && (
             <>
               <div className="space-y-1.5">
-                <Label htmlFor={typeId} className="text-sm font-medium text-student-ink">Type of contact</Label>
+                <Label htmlFor={typeId} className="text-sm font-medium text-student-ink">{pt("Type of contact")}</Label>
                 <Select value={draft.type} onValueChange={(v) => set("type", v as ContactType)}>
                   <SelectTrigger id={typeId} className={cn(inputClass, "w-full")} data-testid="select-contact-type">
                     <SelectValue />
@@ -295,17 +295,17 @@ export function ContactDialog({
                   </SelectContent>
                 </Select>
               </div>
-              <TextField label="Full name" required value={draft.fullName} onChange={(v) => set("fullName", v)} error={errors.fullName} maxLength={120} testId="input-contact-name" />
-              <TextField label="Relationship to you" required value={draft.relationship} onChange={(v) => set("relationship", v)} error={errors.relationship} maxLength={60} hint="For example: mother, uncle, family friend" testId="input-contact-relationship" />
+              <TextField label={pt("Full name")} required value={draft.fullName} onChange={(v) => set("fullName", v)} error={errors.fullName} maxLength={120} testId="input-contact-name" />
+              <TextField label={pt("Relationship to you")} required value={draft.relationship} onChange={(v) => set("relationship", v)} error={errors.relationship} maxLength={60} hint={pt("For example: mother, uncle, family friend")} testId="input-contact-relationship" />
             </>
           )}
-          <TextField label="Phone" required type="tel" inputMode="tel" value={draft.phone} onChange={(v) => set("phone", v)} error={errors.phone} testId="input-contact-phone" />
-          <TextField label="Email" type="email" inputMode="email" value={draft.email} onChange={(v) => set("email", v)} error={errors.email} hint="Optional" testId="input-contact-email" />
-          <TextField label="Preferred language" value={draft.language} onChange={(v) => set("language", v)} maxLength={40} hint="Optional" testId="input-contact-language" />
+          <TextField label={pt("Phone")} required type="tel" inputMode="tel" value={draft.phone} onChange={(v) => set("phone", v)} error={errors.phone} testId="input-contact-phone" />
+          <TextField label={pt("Email")} type="email" inputMode="email" value={draft.email} onChange={(v) => set("email", v)} error={errors.email} hint={pt("Optional")} testId="input-contact-email" />
+          <TextField label={pt("Preferred language")} value={draft.language} onChange={(v) => set("language", v)} maxLength={40} hint={pt("Optional")} testId="input-contact-language" />
 
           {!locked && (
             <fieldset className="space-y-2">
-              <legend className="text-sm font-medium text-student-ink">What may Lumière do with this contact?</legend>
+              <legend className="text-sm font-medium text-student-ink">{pt("What may Lumière do with this contact?")}</legend>
               {CONTACT_SCOPES.map((s) => {
                 const info = SCOPE_INFO[s];
                 const id = `scope-${s}`;
@@ -322,7 +322,7 @@ export function ContactDialog({
                     <span className="min-w-0 text-sm">
                       <span className="flex flex-wrap items-center gap-2 font-medium text-student-ink">
                         {info.label}
-                        {info.authority && <span className="rounded-full border border-student-line-strong px-2 text-xs font-medium text-student-muted">Requires verification</span>}
+                        {info.authority && <span className="rounded-full border border-student-line-strong px-2 text-xs font-medium text-student-muted">{pt("Requires verification")}</span>}
                       </span>
                       <span className="block text-xs text-student-muted">{info.help}</span>
                     </span>
@@ -334,13 +334,13 @@ export function ContactDialog({
 
           {needsAuthority && !locked && (
             <p className="rounded-lg bg-student-gold-soft px-3 py-2 text-sm text-student-gold-ink" data-testid="authority-warning">
-              This contact will be listed with a status of &ldquo;Verification pending&rdquo;. They gain no authority until Lumière verifies a signed consent or legal document. Upload it in{" "}
+              {pt("This contact will be listed with a status of “Verification pending”. They gain no authority until Lumière verifies a signed consent or legal document. Upload it in")}{" "}
               <Link href="/documents" className="font-medium underline underline-offset-4">Documents</Link>.
             </p>
           )}
           <FormError message={serverError} />
           </DialogBody>
-          <FormActions saving={busy} onCancel={() => onOpenChange(false)} saveLabel={editing ? "Save contact" : "Add contact"} sticky />
+          <FormActions saving={busy} onCancel={() => onOpenChange(false)} saveLabel={editing ? pt("Save contact") : pt("Add contact")} sticky />
         </form>
       </DialogContent>
     </Dialog>
@@ -358,7 +358,7 @@ function DeleteContactDialog({ contact, onClose }: { contact: StudentContactView
     setError(null);
     try {
       await actions.deleteContact(contact.id);
-      toast({ title: "Contact removed", description: `${contact.fullName} was removed from your list.` });
+      toast({ title: pt("Contact removed"), description: pt("{name} was removed from your list.", { name: contact.fullName }) });
       onClose();
     } catch (e) {
       setError(describeError(e));
@@ -370,14 +370,14 @@ function DeleteContactDialog({ contact, onClose }: { contact: StudentContactView
     <AlertDialog open={Boolean(contact)} onOpenChange={(o) => !o && !busy && onClose()}>
       <AlertDialogContent className="student-surface border-student-line bg-student-card text-student-ink">
         <AlertDialogHeader>
-          <AlertDialogTitle className="font-serif text-xl">Remove {contact?.fullName}?</AlertDialogTitle>
+          <AlertDialogTitle className="font-serif text-xl">{pt("Remove {name}?", { name: contact?.fullName ?? "" })}</AlertDialogTitle>
           <AlertDialogDescription className="text-student-muted">
-            They will be taken off your list and Lumière will no longer contact them for you. Any pending verification for this person ends.
+            {pt("They will be taken off your list and Lumière will no longer contact them for you. Any pending verification for this person ends.")}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <FormError message={error} />
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={busy} className="min-h-[44px]">Keep contact</AlertDialogCancel>
+          <AlertDialogCancel disabled={busy} className="min-h-[44px]">{pt("Keep contact")}</AlertDialogCancel>
           <AlertDialogAction
             disabled={busy}
             onClick={(e) => {
@@ -387,7 +387,7 @@ function DeleteContactDialog({ contact, onClose }: { contact: StudentContactView
             className="min-h-[44px] bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:bg-muted disabled:text-muted-foreground disabled:opacity-100"
             data-testid="button-confirm-delete-contact"
           >
-            {busy ? "Removing…" : "Remove contact"}
+            {busy ? pt("Removing…") : pt("Remove contact")}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -402,8 +402,8 @@ export function ContactsSection({ contacts, readiness = [] }: { contacts: readon
   return (
     <ProfileSection
       id="contacts"
-      title="Authorized Contacts & Guardians"
-      description="People Lumière can reach in an emergency, and family who may later be authorized to act for you."
+      title={pt("Authorized Contacts & Guardians")}
+      description={pt("People Lumière can reach in an emergency, and family who may later be authorized to act for you.")}
     >
       <AuthorityExplainer />
       <div className="flex justify-end">
@@ -417,15 +417,15 @@ export function ContactsSection({ contacts, readiness = [] }: { contacts: readon
           data-testid="button-add-contact"
         >
           <Plus className="h-4 w-4" aria-hidden="true" />
-          Add a contact
+          {pt("Add a contact")}
         </button>
       </div>
       {contacts.length === 0 ? (
         <SubCard testId="contacts-empty">
-          <p className="text-sm text-student-muted">You have not listed anyone yet. Add at least an emergency contact so we can reach someone if we cannot reach you.</p>
+          <p className="text-sm text-student-muted">{pt("You have not listed anyone yet. Add at least an emergency contact so we can reach someone if we cannot reach you.")}</p>
         </SubCard>
       ) : (
-        <ul className="grid gap-4 lg:grid-cols-2" aria-label="Your contacts">
+        <ul className="grid gap-4 lg:grid-cols-2" aria-label={pt("Your contacts")}>
           {contacts.map((c) => (
             <ContactCard
               key={c.id}

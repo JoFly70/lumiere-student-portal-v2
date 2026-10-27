@@ -1,0 +1,292 @@
+{
+  "generatedAt": "2026-10-27T21:29:55.329Z",
+  "note": "LOCAL UI SIMULATION. Synthetic fixtures; stubbed auth and /api (incl. /api/assistant/*); real Student shell rendered by a local vite dev server with the assistant mounted in a sibling root by a harness. Not a deployment; no AI model was called.",
+  "checks": [
+    {
+      "name": "axe desktop-1440-lumiere open",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "desktop-1440-lumiere: focus moves into the dialog on open",
+      "ok": true
+    },
+    {
+      "name": "desktop-1440-lumiere: panel is a bottom-right drawer on desktop",
+      "ok": true,
+      "detail": "{\"w\":400,\"h\":660,\"x\":1020,\"y\":220,\"vw\":1440,\"vh\":900}"
+    },
+    {
+      "name": "desktop-1440-lumiere: local answer labelled as guide, not AI",
+      "ok": true,
+      "detail": "Lumière guide · local guidance"
+    },
+    {
+      "name": "desktop-1440-lumiere: source link rel=noopener",
+      "ok": true
+    },
+    {
+      "name": "second request carries history",
+      "ok": true,
+      "detail": "[\"user\",\"assistant\"]"
+    },
+    {
+      "name": "request has only message/language/history",
+      "ok": true
+    },
+    {
+      "name": "429 shows throttled state",
+      "ok": true
+    },
+    {
+      "name": "composer disabled while cooling",
+      "ok": true
+    },
+    {
+      "name": "503 shows unavailable state + support link",
+      "ok": true
+    },
+    {
+      "name": "Tab never leaves the dialog",
+      "ok": true
+    },
+    {
+      "name": "Shift+Tab never leaves the dialog",
+      "ok": true
+    },
+    {
+      "name": "Escape closes",
+      "ok": true
+    },
+    {
+      "name": "focus returns to the button",
+      "ok": true
+    },
+    {
+      "name": "Close button closes + focus returns",
+      "ok": true
+    },
+    {
+      "name": "desktop-1440-lumiere: no horizontal page scroll",
+      "ok": true
+    },
+    {
+      "name": "axe desktop-1440-dark open",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "desktop-1440-dark: focus moves into the dialog on open",
+      "ok": true
+    },
+    {
+      "name": "desktop-1440-dark: panel is a bottom-right drawer on desktop",
+      "ok": true,
+      "detail": "{\"w\":400,\"h\":660,\"x\":1020,\"y\":220,\"vw\":1440,\"vh\":900}"
+    },
+    {
+      "name": "desktop-1440-dark: local answer labelled as guide, not AI",
+      "ok": true,
+      "detail": "Lumière guide · local guidance"
+    },
+    {
+      "name": "desktop-1440-dark: source link rel=noopener",
+      "ok": true
+    },
+    {
+      "name": "axe desktop-1440-fr open",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "desktop-1440-fr: focus moves into the dialog on open",
+      "ok": true
+    },
+    {
+      "name": "desktop-1440-fr: panel is a bottom-right drawer on desktop",
+      "ok": true,
+      "detail": "{\"w\":400,\"h\":660,\"x\":1020,\"y\":220,\"vw\":1440,\"vh\":900}"
+    },
+    {
+      "name": "desktop-1440-fr: local answer labelled as guide, not AI",
+      "ok": true,
+      "detail": "Guide Lumière · repères locaux"
+    },
+    {
+      "name": "desktop-1440-fr: source link rel=noopener",
+      "ok": true
+    },
+    {
+      "name": "axe mobile-390-lumiere open",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "mobile-390-lumiere: focus moves into the dialog on open",
+      "ok": true
+    },
+    {
+      "name": "mobile-390-lumiere: full-height sheet on mobile",
+      "ok": true,
+      "detail": "{\"w\":390,\"h\":844,\"x\":0,\"y\":0,\"vw\":390,\"vh\":844}"
+    },
+    {
+      "name": "mobile-390-lumiere: local answer labelled as guide, not AI",
+      "ok": true,
+      "detail": "Lumière guide · local guidance"
+    },
+    {
+      "name": "mobile-390-lumiere: source link rel=noopener",
+      "ok": true
+    },
+    {
+      "name": "second request carries history",
+      "ok": true,
+      "detail": "[\"user\",\"assistant\"]"
+    },
+    {
+      "name": "request has only message/language/history",
+      "ok": true
+    },
+    {
+      "name": "429 shows throttled state",
+      "ok": true
+    },
+    {
+      "name": "composer disabled while cooling",
+      "ok": true
+    },
+    {
+      "name": "503 shows unavailable state + support link",
+      "ok": true
+    },
+    {
+      "name": "Tab never leaves the dialog",
+      "ok": true
+    },
+    {
+      "name": "Shift+Tab never leaves the dialog",
+      "ok": true
+    },
+    {
+      "name": "Escape closes",
+      "ok": true
+    },
+    {
+      "name": "focus returns to the button",
+      "ok": true
+    },
+    {
+      "name": "Close button closes + focus returns",
+      "ok": true
+    },
+    {
+      "name": "mobile-390-lumiere: button sits above the bottom nav",
+      "ok": true,
+      "detail": "fab.bottom=770 nav.top=783"
+    },
+    {
+      "name": "mobile-390-lumiere: no horizontal page scroll",
+      "ok": true
+    },
+    {
+      "name": "axe mobile-390-dark open",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "mobile-390-dark: focus moves into the dialog on open",
+      "ok": true
+    },
+    {
+      "name": "mobile-390-dark: full-height sheet on mobile",
+      "ok": true,
+      "detail": "{\"w\":390,\"h\":844,\"x\":0,\"y\":0,\"vw\":390,\"vh\":844}"
+    },
+    {
+      "name": "mobile-390-dark: local answer labelled as guide, not AI",
+      "ok": true,
+      "detail": "Lumière guide · local guidance"
+    },
+    {
+      "name": "mobile-390-dark: source link rel=noopener",
+      "ok": true
+    },
+    {
+      "name": "axe mobile-390-fr open",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "mobile-390-fr: focus moves into the dialog on open",
+      "ok": true
+    },
+    {
+      "name": "mobile-390-fr: full-height sheet on mobile",
+      "ok": true,
+      "detail": "{\"w\":390,\"h\":844,\"x\":0,\"y\":0,\"vw\":390,\"vh\":844}"
+    },
+    {
+      "name": "mobile-390-fr: local answer labelled as guide, not AI",
+      "ok": true,
+      "detail": "Guide Lumière · repères locaux"
+    },
+    {
+      "name": "mobile-390-fr: source link rel=noopener",
+      "ok": true
+    },
+    {
+      "name": "axe mobile-390-reduced-motion open",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "mobile-390-reduced-motion: focus moves into the dialog on open",
+      "ok": true
+    },
+    {
+      "name": "mobile-390-reduced-motion: full-height sheet on mobile",
+      "ok": true,
+      "detail": "{\"w\":390,\"h\":844,\"x\":0,\"y\":0,\"vw\":390,\"vh\":844}"
+    },
+    {
+      "name": "mobile-390-reduced-motion: local answer labelled as guide, not AI",
+      "ok": true,
+      "detail": "Lumière guide · local guidance"
+    },
+    {
+      "name": "mobile-390-reduced-motion: source link rel=noopener",
+      "ok": true
+    }
+  ],
+  "axe": [
+    {
+      "screen": "desktop-1440-lumiere open",
+      "violations": []
+    },
+    {
+      "screen": "desktop-1440-dark open",
+      "violations": []
+    },
+    {
+      "screen": "desktop-1440-fr open",
+      "violations": []
+    },
+    {
+      "screen": "mobile-390-lumiere open",
+      "violations": []
+    },
+    {
+      "screen": "mobile-390-dark open",
+      "violations": []
+    },
+    {
+      "screen": "mobile-390-fr open",
+      "violations": []
+    },
+    {
+      "screen": "mobile-390-reduced-motion open",
+      "violations": []
+    }
+  ]
+}

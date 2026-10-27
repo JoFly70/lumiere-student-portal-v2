@@ -321,7 +321,7 @@ export function CockpitView({ projection, firstName, ops = OPS_LOADING, initialM
       {top && (
         <Link href={top.href} className="ck-next" data-attention={top.attention} data-testid="next-item">
           <span className="ck-next-kind">{top.kindLabel}</span>
-          <span className="ck-next-msg">{top.message}</span>
+          <span className="ck-next-msg" title={top.message}>{top.message}</span>
           {top.due && <span className="ck-next-due">{top.due}</span>}
           <ArrowRight className="h-4 w-4" aria-hidden="true" />
         </Link>
@@ -379,7 +379,7 @@ export function CockpitView({ projection, firstName, ops = OPS_LOADING, initialM
             <div className="ck-subj-list" data-testid="subject-strips">
               {subjects.map((s) => (
                 <button key={s.subject} type="button" className="ck-subj" onClick={() => setOpenSubject(s.subject)} aria-label={s.aria} data-testid={`subject-${s.subject}`}>
-                  <span className="ck-subj-label">{s.label}</span>
+                  <span className="ck-subj-label" title={s.label}>{s.label}</span>
                   <span className="ck-subj-val tnum">{s.text}</span>
                   <StackBar tally={s.tally} mode={mode} label={s.text} />
                 </button>
@@ -392,7 +392,7 @@ export function CockpitView({ projection, firstName, ops = OPS_LOADING, initialM
           {inProgress.length === 0 ? <p className="ck-empty" data-testid="inprogress-empty">{t("cockpit.inProgress.empty")}</p> : (
             <ul className="ck-courses" data-testid="in-progress-list">
               {inProgress.map((c) => (
-                <li key={c.key}><Swatch status="in_progress" /><span className="ck-c-title">{c.title}</span>
+                <li key={c.key}><Swatch status="in_progress" /><span className="ck-c-title" title={c.title}>{c.title}</span>
                   <small className="tnum">{c.tasksTotal > 0 ? t("cockpit.inProgress.tasks", { done: c.tasksDone, total: c.tasksTotal }) : fc(c.halfUnits)}</small></li>
               ))}
             </ul>
@@ -403,7 +403,7 @@ export function CockpitView({ projection, firstName, ops = OPS_LOADING, initialM
           {awaiting.length === 0 ? <p className="ck-empty" data-testid="awaiting-empty">{t("cockpit.awaiting.empty")}</p> : (
             <>
               <ul className="ck-courses" data-testid="awaiting-list">
-                {awaiting.map((c) => <li key={c.key}><Swatch status="awaiting_school" /><span className="ck-c-title">{c.title}</span><small className="tnum">{fc(c.halfUnits)}</small></li>)}
+                {awaiting.map((c) => <li key={c.key}><Swatch status="awaiting_school" /><span className="ck-c-title" title={c.title}>{c.title}</span><small className="tnum">{fc(c.halfUnits)}</small></li>)}
               </ul>
               <p className="ck-note">{t("cockpit.awaiting.note")}</p>
             </>

@@ -29,7 +29,7 @@
         ],
         "identityVerification": "verified",
         "govIdNumberMasked": "•••• 2349",
-        "readinessItems": 1
+        "readinessItems": 2
       }
     },
     {
@@ -166,6 +166,11 @@
           "financial_rules",
           "payments",
           "plan_financials",
+          "student_billing_discounts",
+          "student_billing_evidence",
+          "student_billing_installments",
+          "student_billing_obligations",
+          "student_billing_receipts",
           "student_credit_decisions",
           "student_credit_records",
           "student_credit_verification_events",

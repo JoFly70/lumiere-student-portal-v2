@@ -28,6 +28,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Pill, cardClass } from "@/components/student-progress/student-ui";
 import { sectionDomId, type ChipTone } from "./profile-presentation";
+import { pt } from "./pt";
 
 export const inputClass =
   "h-11 border-student-line-strong bg-student-card text-student-ink placeholder:text-student-muted focus:ring-student-gold-ink focus-visible:ring-student-gold-ink focus-visible:ring-offset-student-card";
@@ -180,7 +181,7 @@ export function ProfileSection({
               className="inline-flex min-h-[44px] items-center gap-1.5 text-sm font-medium text-student-gold-ink underline-offset-4 hover:underline"
               data-testid="button-section-toggle"
             >
-              {open ? "Hide details" : "Show details"}
+              {open ? pt("Hide details") : pt("Show details")}
               <ChevronDown className={cn("h-4 w-4 transition-transform", open && "rotate-180")} aria-hidden="true" />
             </button>
           </div>
@@ -223,7 +224,7 @@ export function SubCard({
 export function Fact({
   label,
   children,
-  empty = "Not provided",
+  empty,
   missing = false,
   testId,
 }: {
@@ -242,10 +243,10 @@ export function Fact({
         {has ? children : missing ? (
           <span className="inline-flex items-center gap-1.5" data-testid="fact-missing">
             <CircleDashed className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-            Missing
-            <span className="sr-only">: {empty}</span>
+            {pt("Missing")}
+            <span className="sr-only">: {empty ?? pt("Not provided")}</span>
           </span>
-        ) : empty}
+        ) : (empty ?? pt("Not provided"))}
       </dd>
     </div>
   );
@@ -312,7 +313,7 @@ export function TextField({
       <Label htmlFor={id} className="text-sm font-medium text-student-ink">
         {label}
         {required && <span aria-hidden="true" className="text-student-attn"> *</span>}
-        {required && <span className="sr-only"> (required)</span>}
+        {required && <span className="sr-only"> ({pt("required")})</span>}
       </Label>
       <Input
         id={id}
@@ -350,7 +351,7 @@ export function TextField({
 export function FormActions({
   saving,
   onCancel,
-  saveLabel = "Save changes",
+  saveLabel,
   disabled,
   sticky = false,
 }: {
@@ -374,14 +375,14 @@ export function FormActions({
         disabled={saving}
         className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-lg border border-student-line-strong bg-student-card px-4 text-sm font-medium text-student-ink hover:bg-student-gold-soft disabled:opacity-60 sm:flex-none"
       >
-        Cancel
+        {pt("Cancel")}
       </button>
       <button
         type="submit"
         disabled={saving || disabled}
         className="inline-flex min-h-[44px] flex-[2] items-center justify-center gap-2 rounded-lg bg-student-seal px-5 text-sm font-medium text-student-seal-ink hover:opacity-90 disabled:opacity-60 sm:flex-none"
       >
-        {saving ? "Saving…" : saveLabel}
+        {saving ? pt("Saving…") : (saveLabel ?? pt("Save changes"))}
       </button>
     </div>
   );
@@ -426,7 +427,7 @@ export function EditButton({
       )}
     >
       {addText ? <Plus className="h-4 w-4" aria-hidden="true" /> : <Pencil className="h-4 w-4" aria-hidden="true" />}
-      {addText ?? "Edit"}
+      {addText ?? pt("Edit")}
     </button>
   );
 }
@@ -450,7 +451,7 @@ export function useEditableCard(onSave: () => Promise<void>, savedTitle: string)
       await onSave();
       setEditing(false);
       setSaved(true);
-      toast({ title: savedTitle, description: "Your changes were saved." });
+      toast({ title: savedTitle, description: pt("Your changes were saved.") });
       if (timer.current) clearTimeout(timer.current);
       timer.current = setTimeout(() => setSaved(false), 4000);
     } catch (e) {
@@ -468,7 +469,7 @@ export function SavedIndicator({ saved }: { saved: boolean }) {
       {saved && (
         <span className="inline-flex items-center gap-1.5 text-sm font-medium text-student-gold-ink" data-testid="saved-indicator">
           <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
-          Saved
+          {pt("Saved")}
         </span>
       )}
     </span>
@@ -503,7 +504,7 @@ export function CollapsibleList({
           className="mt-1 inline-flex min-h-[44px] items-center gap-1.5 text-sm font-medium text-student-gold-ink underline-offset-4 hover:underline"
           data-testid="button-show-all"
         >
-          {all ? "Show fewer" : `Show all ${items.length} ${label}`}
+          {all ? pt("Show fewer") : pt("Show all {n} {label}", { n: items.length, label })}
           <ChevronDown className={cn("h-4 w-4 transition-transform", all && "rotate-180")} aria-hidden="true" />
         </button>
       )}

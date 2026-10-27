@@ -142,7 +142,8 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("S10 profile migration chain - full chai
     const supp = applied.indexOf("50_runtime_supplement.sql");
     expect(supp).toBeGreaterThan(Math.max(...pos));
     // the migrations directory portion is in filename order
-    const migrationPart = pg.appliedFiles.filter((f) => f.startsWith("supabase/migrations/"));
+    // (S18's guarded student_message migration is deliberately re-applied after the supplements; count first runs only.)
+    const migrationPart = [...new Set(pg.appliedFiles.filter((f) => f.startsWith("supabase/migrations/")))];
     expect(migrationPart).toEqual([...migrationPart].sort());
   });
 

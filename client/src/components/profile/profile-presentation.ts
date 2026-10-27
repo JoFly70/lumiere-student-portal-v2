@@ -3,6 +3,7 @@
  * network: safe to unit test and to reuse from fixtures.
  */
 import { currentLanguage, type Language } from "@/i18n";
+import { pt } from "./pt";
 import type {
   ContactAuthorityStatus,
   ContactScope,
@@ -26,14 +27,14 @@ export const PROFILE_SECTIONS = [
 export function readinessAction(item: { key: string; kind: string; section: string }): { label: string; href: string; external: boolean } | null {
   if (item.kind !== "missing" && item.kind !== "action_required") return null;
   switch (item.key) {
-    case "phone": return { label: "Add phone", href: `#${sectionDomId("contact")}`, external: false };
-    case "address": return { label: "Add address", href: `#${sectionDomId("contact")}`, external: false };
-    case "id_gov": return { label: "Upload government ID", href: "/documents", external: true };
+    case "phone": return { label: pt("Add phone"), href: `#${sectionDomId("contact")}`, external: false };
+    case "address": return { label: pt("Add address"), href: `#${sectionDomId("contact")}`, external: false };
+    case "id_gov": return { label: pt("Upload government ID"), href: "/documents", external: true };
     default:
       // Anything that asks for a (new) file goes straight to Documents.
-      if (item.key.startsWith("contact_authority:")) return { label: "Upload signed consent", href: "/documents", external: true };
-      if (item.key.startsWith("document:") || item.key === "identity_document") return { label: "Upload new file", href: "/documents", external: true };
-      return { label: item.kind === "missing" ? "Add" : "Review", href: `#${sectionDomId(item.section)}`, external: false };
+      if (item.key.startsWith("contact_authority:")) return { label: pt("Upload signed consent"), href: "/documents", external: true };
+      if (item.key.startsWith("document:") || item.key === "identity_document") return { label: pt("Upload new file"), href: "/documents", external: true };
+      return { label: item.kind === "missing" ? pt("Add") : pt("Review"), href: `#${sectionDomId(item.section)}`, external: false };
   }
 }
 export type ProfileSectionId = (typeof PROFILE_SECTIONS)[number]["id"];
@@ -73,15 +74,15 @@ export type ChipTone = "verified" | "waiting" | "missing" | "attention" | "neutr
 export function evidenceChip(status: EvidenceStatus): { label: string; tone: ChipTone } {
   switch (status) {
     case "verified":
-      return { label: "Verified", tone: "verified" };
+      return { label: pt("Verified"), tone: "verified" };
     case "pending":
-      return { label: "Under review", tone: "waiting" };
+      return { label: pt("Under review"), tone: "waiting" };
     case "rejected":
-      return { label: "Not accepted", tone: "attention" };
+      return { label: pt("Not accepted"), tone: "attention" };
     case "resubmit_requested":
-      return { label: "Resubmission requested", tone: "attention" };
+      return { label: pt("Resubmission requested"), tone: "attention" };
     default:
-      return { label: "Not submitted", tone: "missing" };
+      return { label: pt("Not submitted"), tone: "missing" };
   }
 }
 
@@ -90,28 +91,28 @@ export function verificationChip(status: EvidenceStatus): { label: string; tone:
   switch (status) {
     case "verified":
       return {
-        label: "Verified",
+        label: pt("Verified"),
         tone: "verified",
-        explain: "Lumière has checked your government ID. Your legal identity stays as recorded until a correction is reviewed.",
+        explain: pt("Lumière has checked your government ID. Your legal identity stays as recorded until a correction is reviewed."),
       };
     case "pending":
       return {
-        label: "Under review",
+        label: pt("Under review"),
         tone: "waiting",
-        explain: "We received your ID and Lumière is reviewing it. Nothing more is needed from you right now.",
+        explain: pt("We received your ID and Lumière is reviewing it. Nothing more is needed from you right now."),
       };
     case "rejected":
     case "resubmit_requested":
       return {
-        label: "Action required",
+        label: pt("Action required"),
         tone: "attention",
-        explain: "Lumière could not accept the ID on file. Upload a new copy in Documents.",
+        explain: pt("Lumière could not accept the ID on file. Upload a new copy in Documents."),
       };
     default:
       return {
-        label: "Not yet verified",
+        label: pt("Not yet verified"),
         tone: "missing",
-        explain: "Upload a government ID in Documents so Lumière can verify your identity.",
+        explain: pt("Upload a government ID in Documents so Lumière can verify your identity."),
       };
   }
 }
@@ -135,17 +136,17 @@ export function splitReadiness(items: readonly ProfileReadinessItem[]) {
 export function readinessChip(kind: ProfileReadinessItem["kind"]): { label: string; tone: ChipTone } {
   switch (kind) {
     case "missing":
-      return { label: "Missing", tone: "missing" };
+      return { label: pt("Missing"), tone: "missing" };
     case "action_required":
-      return { label: "Action required", tone: "attention" };
+      return { label: pt("Action required"), tone: "attention" };
     case "pending_review":
-      return { label: "Under review", tone: "waiting" };
+      return { label: pt("Under review"), tone: "waiting" };
     case "unverified":
-      return { label: "Not yet verified", tone: "waiting" };
+      return { label: pt("Not yet verified"), tone: "waiting" };
     case "waiting_external":
-      return { label: "With an outside institution", tone: "waiting" };
+      return { label: pt("With an outside institution"), tone: "waiting" };
     default:
-      return { label: "Complete", tone: "verified" };
+      return { label: pt("Complete"), tone: "verified" };
   }
 }
 
@@ -154,49 +155,49 @@ export function readinessChip(kind: ProfileReadinessItem["kind"]): { label: stri
 // ---------------------------------------------------------------------------
 
 export const FIELD_LABELS: Record<string, string> = {
-  first_name: "First name",
-  middle_name: "Middle name",
-  last_name: "Last name",
-  dob: "Date of birth",
-  sex: "Sex",
-  nationality: "Nationality",
-  gov_id_type: "Government ID type",
-  gov_id_number: "Government ID number",
+  get first_name() { return pt("First name"); },
+  get middle_name() { return pt("Middle name"); },
+  get last_name() { return pt("Last name"); },
+  get dob() { return pt("Date of birth"); },
+  get sex() { return pt("Sex"); },
+  get nationality() { return pt("Nationality"); },
+  get gov_id_type() { return pt("Government ID type"); },
+  get gov_id_number() { return pt("Government ID number"); },
 };
 
 export const CHANNEL_LABELS: Record<PreferredContactChannel, string> = {
-  email: "Email",
-  phone: "Phone call",
-  whatsapp: "WhatsApp",
-  sms: "Text message (SMS)",
+  get email() { return pt("Email"); },
+  get phone() { return pt("Phone call"); },
+  get whatsapp() { return pt("WhatsApp"); },
+  get sms() { return pt("Text message (SMS)"); },
 };
 
 export const CONTACT_TYPE_LABELS: Record<ContactType, string> = {
-  parent: "Parent",
-  guardian: "Guardian",
-  emergency: "Emergency contact",
-  representative: "Representative",
-  spouse: "Spouse or partner",
-  other: "Other",
+  get parent() { return pt("Parent"); },
+  get guardian() { return pt("Guardian"); },
+  get emergency() { return pt("Emergency contact"); },
+  get representative() { return pt("Representative"); },
+  get spouse() { return pt("Spouse or partner"); },
+  get other() { return pt("Other"); },
 };
 
 export const SCOPE_INFO: Record<ContactScope, { label: string; help: string; authority: boolean }> = {
-  emergency: { label: "Emergency contact", help: "Lumière may call this person if we cannot reach you in an urgent situation.", authority: false },
-  academic: { label: "Academic records", help: "Discuss your academic progress and records.", authority: true },
-  financial: { label: "Financial matters", help: "Discuss billing, payments and financial aid.", authority: true },
-  release: { label: "Release of information", help: "Receive information Lumière would otherwise share only with you.", authority: true },
+  emergency: { get label() { return pt("Emergency contact"); }, get help() { return pt("Lumière may call this person if we cannot reach you in an urgent situation."); }, authority: false },
+  academic: { get label() { return pt("Academic records"); }, get help() { return pt("Discuss your academic progress and records."); }, authority: true },
+  financial: { get label() { return pt("Financial matters"); }, get help() { return pt("Discuss billing, payments and financial aid."); }, authority: true },
+  release: { get label() { return pt("Release of information"); }, get help() { return pt("Receive information Lumière would otherwise share only with you."); }, authority: true },
 };
 
 export function authorityChip(status: ContactAuthorityStatus): { label: string; tone: ChipTone } {
   switch (status) {
     case "verified":
-      return { label: "Verified by Lumière", tone: "verified" };
+      return { label: pt("Verified by Lumière"), tone: "verified" };
     case "pending_verification":
-      return { label: "Verification pending", tone: "waiting" };
+      return { label: pt("Verification pending"), tone: "waiting" };
     case "revoked":
-      return { label: "Not authorized", tone: "attention" };
+      return { label: pt("Not authorized"), tone: "attention" };
     default:
-      return { label: "Listed by you", tone: "neutral" };
+      return { label: pt("Listed by you"), tone: "neutral" };
   }
 }
 
@@ -214,16 +215,16 @@ export function isVerifiedAuthority(c: Pick<StudentContactView, "authorityStatus
 }
 
 export function residencyLabel(r: "us" | "foreign" | null): string {
-  if (r === "us") return "U.S. resident";
-  if (r === "foreign") return "International (non-U.S.)";
-  return "Not recorded";
+  if (r === "us") return pt("U.S. resident");
+  if (r === "foreign") return pt("International (non-U.S.)");
+  return pt("Not recorded");
 }
 
 export function hsPathLabel(p: "local_diploma" | "ged" | "foreign" | null): string {
-  if (p === "local_diploma") return "High school diploma";
-  if (p === "ged") return "GED";
-  if (p === "foreign") return "Foreign secondary credential";
-  return "Not recorded";
+  if (p === "local_diploma") return pt("High school diploma");
+  if (p === "ged") return pt("GED");
+  if (p === "foreign") return pt("Foreign secondary credential");
+  return pt("Not recorded");
 }
 
 export function docTypeActionHref(): string {
@@ -235,23 +236,21 @@ export function docTypeActionHref(): string {
 // ---------------------------------------------------------------------------
 
 const FRIENDLY_CODES: Record<string, string> = {
-  PROFILE_CORRECTION_ALREADY_PENDING:
-    "You already have a correction under review. Withdraw it first if you want to submit a different one.",
-  PROFILE_CORRECTION_NO_CHANGE: "Those values are the same as what is on record. Change at least one field.",
-  PROFILE_CORRECTION_NOT_PENDING: "That request is no longer pending.",
-  PROFILE_CONTACT_AUTHORITY_STAFF_MANAGED:
-    "This contact's authority was verified by Lumière, so it can only be changed by our team. Please contact Lumière.",
-  PROFILE_PHOTO_INVALID: "That photo could not be used. Choose a PNG, JPEG or WEBP image under 5 MB.",
-  PROFILE_EVIDENCE_NOT_OWNED: "That document could not be attached to your request.",
-  PROFILE_IDENTITY_REQUIRES_CORRECTION: "Legal identity can only be changed through a correction request.",
-  PROFILE_FIELDS_STAFF_CONTROLLED: "That information is managed by Lumière staff.",
-  PROFILE_EMAIL_MANAGED_BY_ACCOUNT: "Your sign-in email is managed by your account. Contact support to change it.",
+  get PROFILE_CORRECTION_ALREADY_PENDING() { return pt("You already have a correction under review. Withdraw it first if you want to submit a different one."); },
+  get PROFILE_CORRECTION_NO_CHANGE() { return pt("Those values are the same as what is on record. Change at least one field."); },
+  get PROFILE_CORRECTION_NOT_PENDING() { return pt("That request is no longer pending."); },
+  get PROFILE_CONTACT_AUTHORITY_STAFF_MANAGED() { return pt("This contact's authority was verified by Lumière, so it can only be changed by our team. Please contact Lumière."); },
+  get PROFILE_PHOTO_INVALID() { return pt("That photo could not be used. Choose a PNG, JPEG or WEBP image under 5 MB."); },
+  get PROFILE_EVIDENCE_NOT_OWNED() { return pt("That document could not be attached to your request."); },
+  get PROFILE_IDENTITY_REQUIRES_CORRECTION() { return pt("Legal identity can only be changed through a correction request."); },
+  get PROFILE_FIELDS_STAFF_CONTROLLED() { return pt("That information is managed by Lumière staff."); },
+  get PROFILE_EMAIL_MANAGED_BY_ACCOUNT() { return pt("Your sign-in email is managed by your account. Contact support to change it."); },
 };
 
-export function describeError(error: unknown, fallback = "Something went wrong. Please try again."): string {
+export function describeError(error: unknown, fallback = pt("Something went wrong. Please try again.")): string {
   const e = error as { code?: string; message?: string; status?: number } | null;
   if (e?.code && FRIENDLY_CODES[e.code]) return FRIENDLY_CODES[e.code];
-  if (e?.status === 413) return "That file is too large. Choose an image under 5 MB.";
+  if (e?.status === 413) return pt("That file is too large. Choose an image under 5 MB.");
   const msg = e?.message?.trim();
   if (!msg) return fallback;
   // Strip a leading "403: " style status prefix from generic fetch errors.
@@ -306,17 +305,17 @@ export type FieldErrors = Record<string, string>;
 
 export function validatePhone(value: string, required: boolean): string | null {
   const v = value.trim();
-  if (!v) return required ? "Enter a phone number" : null;
-  if (v.length < 5) return "Enter at least 5 characters";
-  if (v.length > 32) return "Use 32 characters or fewer";
-  if (!/^[+()\d][\d\s().\-+]*$/.test(v)) return "Use digits, spaces, + and dashes only";
+  if (!v) return required ? pt("Enter a phone number") : null;
+  if (v.length < 5) return pt("Enter at least 5 characters");
+  if (v.length > 32) return pt("Use 32 characters or fewer");
+  if (!/^[+()\d][\d\s().\-+]*$/.test(v)) return pt("Use digits, spaces, + and dashes only");
   return null;
 }
 
 export function validateEmail(value: string): string | null {
   const v = value.trim();
   if (!v) return null;
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) ? null : "Enter a valid email address";
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) ? null : pt("Enter a valid email address");
 }
 
 /** Document types shown under Academic Background, so Eligibility does not list them again. */

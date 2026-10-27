@@ -9,11 +9,13 @@
 import { authEn } from "./modules/auth";
 import { cockpitEn } from "./modules/cockpit";
 import { staffEn } from "./modules/staff";
+import { assistantEn } from "./modules/assistant";
 
 export const en = {
   ...authEn,
   ...cockpitEn,
   ...staffEn,
+  ...assistantEn,
   // Language
   "language.label": "Language",
   "language.en": "English",
