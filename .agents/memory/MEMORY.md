@@ -1,0 +1,1 @@
+- [Hosted staging QA](staging-hosted-qa.md) — budget sessions across preview and runner; shared request quotas can resemble auth failures.
