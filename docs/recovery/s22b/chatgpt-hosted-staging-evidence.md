@@ -48,3 +48,14 @@ All 40 applications were confirmed as Supabase migration records. The migration-
 A separate GitHub branch `claude/s22b-real-hosted-staging` was created from S22 `bf00f539652c3dcd0276598ec45ab80f035a4aac`. Do not use another branch for S22b. The live V2 Replit app is on historical S16 and must not be overwritten.
 
 **Next:** create a separate Replit staging app from this branch, configure staging-only secrets and Auth, run the hosted-first-student journey, close the three admin usability gaps, resolve remaining security warnings before any production cutover, then get owner cutover signoff. No production deployment is authorized by this record.
+
+## Public production-domain DNS discovery (read-only, 2026-10-27/28 UTC)
+Google Public DNS responses (queried via publicly readable DNS-over-HTTPS, no changes):
+- `lumiereportal.app` A: `34.111.179.208` (Replit shared hosting endpoint, TTL 300 s)
+- NS: `ns1cny.name.com`, `ns2ckr.name.com`, `ns3jkl.name.com`, `ns4hny.name.com` (Name.com DNS)
+- TXT: `replit-verify=a51b4fb3-73af-47af-840b-7f8e17d7c553` (evidence of Replit domain verification)
+- `www.lumiereportal.app`: no A or CNAME; NXDOMAIN
+- Apex MX: no answer (no configured MX detected)
+- Apex CAA: no answer
+
+Thus the old public site is routed to a Replit endpoint through Name.com DNS; the **specific older Replit deployment/account is still not identified** in the accessible Replit integration. Do not move the apex until the existing domain association is identified and a staging deployment has passed. Retain current records as rollback evidence.
