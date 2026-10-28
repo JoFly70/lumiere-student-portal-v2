@@ -135,3 +135,30 @@ Rollback per step (the database changes are additive, so most rollbacks are "lea
 6. Only then: set `ENABLE_EMAIL_VERIFICATION=true` and the other production variables (the server now refuses to start without it), deploy the matching code, and consider inviting the real student.
 
 Deploy order matters: apply the S18/S19/S20/S21 migrations before deploying code that reads their tables or columns (the S19 file states this explicitly).
+
+## 8. Staging pre-application validation (local PostgreSQL 16 rehearsal)
+
+Run on a throwaway local PG16 cluster (the existing harness: `tests/helpers/s05-local-pg.ts` + `scripts/s22/staging-bootstrap.ts`), with `DATABASE_URL`, `STAGING_DATABASE_URL` and `PG*` unset. No hosted system was contacted.
+
+1. Full manifest, twice: `npx tsx scripts/s22/staging-bootstrap.ts --target=local --twice --verify`. Result: PASS, 71 file applications (72 including the inline default-privilege prelude) and 0 failures. Order confirmed: step `10b` (S22 account gate) then `10c` with `20261104100000_s25_user_language_preference.sql` followed by `20261104110000_s25_client_write_lockdown.sql`. Each S25 file ran twice with rc=0 (idempotent). Verification: 189 pass, 0 fail, 1 informational (no admin yet) of 190 checks, including the S14 `90-verify.sql` G2/G3/G4/V3/V6/V8 rows.
+2. Resulting privileges on the rehearsal database (key tables):
+
+| Table | anon | authenticated | service_role |
+|-------|------|---------------|--------------|
+| `users` | none | SELECT | all |
+| `students` | none | SELECT | all |
+| `profiles` | none | SELECT, plus column UPDATE on `timezone`, `phone` only (`status`, `user_id` not updatable) | all |
+| `student_documents` | none | none | all |
+| `hs_credit_awards` | none | SELECT | all |
+| `user_language_preference` | none | none | all |
+| `student_billing_receipts`, `assistant_messages` | none | none | all |
+
+3. Workflow checks (rolled-back transactions, `auth.uid()` set through the JWT claim settings):
+   - Owner (server) connection: `UPDATE users` and `INSERT ... ON CONFLICT` into `user_language_preference` succeed.
+   - `authenticated`: `SELECT` on `profiles` and `users` (own row under RLS) works; `UPDATE profiles SET timezone` works; `UPDATE profiles.status`, `UPDATE users.role`, `UPDATE student_documents.status` and `INSERT hs_credit_awards` are all "permission denied".
+   - RLS helpers `is_staff_or_admin()`, `student_owns_record()`, `current_user_role()`, `current_user_is_active()`: EXECUTE for `authenticated` true, `anon` false, `search_path=public, pg_temp` pinned; calls as `authenticated` succeed.
+   - No S25-listed guard or helper function remains without a pinned `search_path`.
+   - Observation: on tables created after the S14 default-privilege hardening (for example `user_language_preference`), `authenticated` holds no `SELECT` at all, so their "owner read" policies are inert through PostgREST; that is the safe direction because the server reads these tables through the owner connection. On hosted projects whose default privileges still grant `authenticated` SELECT on new tables, the same policies apply and restrict reads to the caller's own rows.
+4. DB-backed suites with `--maxWorkers=1` (s11, s13, s18-flight, s19-staff, s20/s22/s23-auth, s24, s17-security-documents, s18-document-review-privacy, s21-conversations, s21-student, s21-knowledge, s25, staging-startup-guard, s22-staging-guard, s22-bootstrap): 37 files, 572 tests passed, 0 skipped, 0 failed.
+5. Not covered by the rehearsal: Supabase-specific behaviour (PostgREST, `pg_graphql`, hosted `storage.objects`), the effect of the existing production default ACLs (check `00-production-prechecks.sql` P7), and real `auth.users` data.
+6. Known unrelated failures: `tests/s20-journey-first-student.test.ts` and `tests/s21-journey-first-student.test.ts` fail with 401 because their Supabase mock returns `undefined` from `auth.getUser` at `server/middleware/auth.ts:161` (stale fixtures from the S23 confirmation change; they fail before any assistant or S25 code runs). They need the same provider-verification mock update that S24 applied to its suites.

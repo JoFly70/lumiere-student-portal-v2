@@ -6,7 +6,7 @@ describe('S21 expanded public knowledge base', () => {
   it('keeps the 17 original entries and adds 30+ new ones, ids unique', () => {
     expect(KNOWLEDGE.length).toBeGreaterThanOrEqual(47);
     expect(new Set(KNOWLEDGE.map((e) => e.id)).size).toBe(KNOWLEDGE.length);
-    for (const id of ['lumiere-orientation', 'portal-navigation', 'contact-team', 'roadmap-how', 'statuses', 'terms-credit', 'terms-transcript', 'terms-ace-clep', 'hs-pathways-us', 'univ-admission-basics', 'provider-tesu', 'provider-tesu-transcripts', 'provider-sophia', 'provider-studycom', 'provider-pennfoster', 'no-guarantee-transfer']) {
+    for (const id of ['lumiere-orientation', 'portal-navigation', 'contact-team', 'roadmap-how', 'statuses', 'terms-credit', 'terms-transcript', 'terms-ace-clep', 'hs-pathways-us', 'univ-admission-basics', 'provider-tesu', 'provider-tesu-transcripts', 'provider-sophia', 'provider-studycom', 'provider-awarding-school', 'no-guarantee-transfer']) {
       expect(KNOWLEDGE.some((e) => e.id === id), id).toBe(true);
     }
     for (const s of SUGGESTIONS) expect(KNOWLEDGE.some((e) => e.id === s.entryId)).toBe(true);
@@ -27,7 +27,7 @@ describe('S21 expanded public knowledge base', () => {
         expect(s.title.length).toBeGreaterThan(3);
         expect(s.verifiedAt, `${e.id} ${s.url}`).toMatch(/^\d{4}-\d{2}-\d{2}$/);
       }
-      if (e.topic === 'providers') expect((e.sources ?? []).length, e.id).toBeGreaterThan(0);
+      if (e.topic === 'providers' && e.institution !== 'Awarding school') expect((e.sources ?? []).length, e.id).toBeGreaterThan(0);
     }
   });
   it('no entry promises that credits will transfer or invents amounts', () => {
@@ -52,14 +52,14 @@ describe('S21 expanded public knowledge base', () => {
     const top = (q: string) => searchKnowledge(q, 3).map((h) => h.entry.id);
     expect(top('What is the maximum transfer credit TESU accepts from a community college?')).toContain('tesu-transfer-limits');
     expect(top('Is Sophia accredited?')).toContain('sophia-accreditation-status');
-    expect(top('Penn Foster high school transfer credits maximum')).toContain('pennfoster-hs-transfer-credits');
+    expect(top('awarding school high school transfer credits maximum')).toContain('awarding-school-hs-transfer-credits');
     expect(top('Comment fonctionne la mémoire de l’assistant ?')).toContain('portal-assistant-memory');
     expect(top('Que fait la recherche dans le portail')).toContain('portal-search');
     expect(top('How do CLEP exams work?')).toContain('clep-basics');
     expect(top('I paid but do not see my payment')).toContain('portal-financial-admin-faq');
   });
   it('exact institution matching beats a generic hit', () => {
-    expect(searchKnowledge('transfer limit for Penn Foster', 1)[0].entry.institution).toBe('Penn Foster');
+    expect(searchKnowledge('transfer limit for the awarding school', 1)[0].entry.institution).toBe('Awarding school');
     expect(searchKnowledge('Study.com official transcript', 1)[0].entry.institution).toBe('Study.com');
   });
   it('returns nothing for gibberish and is source-date aware', () => {

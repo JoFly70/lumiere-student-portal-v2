@@ -51,7 +51,7 @@ export interface Hit { entry: KbEntry; score: number; /** Oldest verifiedAt amon
 /** Institution aliases (folded) used for exact institution matching in queries. */
 const INSTITUTION_ALIASES: Record<string, string[]> = {
   tesu: ['tesu', 'thomas edison'],
-  'penn foster': ['penn foster', 'pennfoster'],
+  'awarding school': ['awarding school', 'partner school'],
   sophia: ['sophia'],
   'study.com': ['study.com', 'study com', 'studycom'],
 };

@@ -141,7 +141,7 @@ const COUNTRIES: Array<{ en: string; fr: string; aliases: string[] }> = [
 ];
 const INSTITUTIONS: Array<{ name: string; aliases: string[] }> = [
   { name: 'Thomas Edison State University', aliases: ['thomas edison state university', 'thomas edison', 'tesu'] },
-  { name: 'Penn Foster', aliases: ['penn foster'] },
+  { name: 'Awarding school', aliases: ['awarding school', 'partner school'] },
   { name: 'Sophia Learning', aliases: ['sophia learning', 'sophia.org', 'sophia'] },
   { name: 'Study.com', aliases: ['study.com'] },
   { name: 'Western Governors University', aliases: ['western governors university', 'wgu'] },

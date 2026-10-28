@@ -2,6 +2,9 @@
  * Curated, public-only knowledge for the Academic Assistant (local mode and live-mode context).
  * Rules: generic Lumière wording (no invented policies); external facts only with a public source
  * URL and `verifiedAt` (ISO date) - `verifiedAt: null` means NOT independently verified, wording is general.
+ * S25: the awarding school is never named here (confidential until the owner discloses it, see
+ * StudentHighSchoolView.schoolDisplayName); its entries use generic wording and carry no source URL because the
+ * source host would identify it. Staff-only records hold the real identity.
  * Never claim a credit transfers: acceptance is always the receiving institution's decision.
  */
 
@@ -38,9 +41,7 @@ const TESU_FAQ: KbSource = { title: 'TESU - Transfer Credit Policy FAQs', url: '
 const TESU_TRAINING: KbSource = { title: 'TESU - Credit for Professional Training', url: 'https://www.tesu.edu/admissions/methods-of-earning-credit/credit-for-training.php', verifiedAt: V };
 const TESU_SEND: KbSource = { title: 'TESU - Send Transcripts', url: 'https://www.tesu.edu/student-resources/transfer-credits/send-transcripts.php', verifiedAt: V };
 const SOPHIA_ACE: KbSource = { title: 'Sophia - ACE recommendation vs. accreditation', url: 'https://www.sophia.org/blog/higher-education/ace-credit-recommendation-and-accreditation', verifiedAt: V };
-const PF_FAQ: KbSource = { title: 'Penn Foster - High School Diploma FAQs', url: 'https://www.pennfoster.edu/high-school/diploma/faq', verifiedAt: V };
 
-const PF_TRANSFER: KbSource = { title: 'Penn Foster - Credit Transfer Policy', url: 'https://www.pennfoster.edu/admissions/policies/transferring-credits', verifiedAt: V };
 const COMMON_APP: KbSource = { title: 'Common App - Application guide for first-year students', url: 'https://www.commonapp.org/apply/first-year-students', verifiedAt: V };
 const CLEP_KEY: KbSource = { title: 'College Board CLEP - Key exam information', url: 'https://clep.collegeboard.org/for-colleges/understanding-clep/key-exam-information', verifiedAt: V };
 const CLEP_FIND: KbSource = { title: 'College Board CLEP - How to find a college\'s CLEP policy', url: 'https://clep.collegeboard.org/colleges-that-recognize-clep/how-find-colleges-clep-policy', verifiedAt: V };
@@ -204,16 +205,15 @@ export const KNOWLEDGE: KbEntry[] = [
     sources: [TESU_TRAINING],
   },
   {
-    id: 'provider-pennfoster',
-    institution: 'Penn Foster',
+    id: 'provider-awarding-school',
+    institution: 'Awarding school',
     topic: 'providers',
-    title: { en: 'Penn Foster High School', fr: 'Penn Foster High School' },
+    title: { en: 'Awarding school: high school', fr: 'École décernant le diplôme : études secondaires' },
     text: {
-      en: 'Penn Foster says its high school is regionally accredited for grades 9 through adult by the Middle States Association’s Commission on Secondary Schools, and that it reviews official transcripts to decide which prior credits it can use. Whether a university or employer accepts a diploma is their decision; check what your target schools require.',
-      fr: 'Penn Foster indique que son école secondaire est accréditée régionalement (de la 9e année à l’âge adulte) par la Commission on Secondary Schools de la Middle States Association, et qu’elle examine les relevés officiels pour déterminer quels crédits antérieurs peuvent être utilisés. L’acceptation d’un diplôme par une université ou un employeur leur appartient; vérifiez les exigences de vos établissements cibles.',
+      en: 'The awarding school says its high school is regionally accredited for grades 9 through adult by the Middle States Association’s Commission on Secondary Schools, and that it reviews official transcripts to decide which prior credits it can use. Whether a university or employer accepts a diploma is their decision; check what your target schools require.',
+      fr: 'L’école indique que son école secondaire est accréditée régionalement (de la 9e année à l’âge adulte) par la Commission on Secondary Schools de la Middle States Association, et qu’elle examine les relevés officiels pour déterminer quels crédits antérieurs peuvent être utilisés. L’acceptation d’un diplôme par une université ou un employeur leur appartient; vérifiez les exigences de vos établissements cibles.',
     },
-    keywords: ['penn foster', 'pennfoster', 'high school', 'diploma', 'diplôme', 'accredited', 'accrédité', 'online', 'en ligne', 'secondaire', 'adult', 'adulte'],
-    sources: [PF_FAQ],
+    keywords: ['awarding school', 'partner school', 'high school', 'diploma', 'diplôme', 'accredited', 'accrédité', 'online', 'en ligne', 'secondaire', 'adult', 'adulte'],
     links: [L.highSchool],
   },
   {
@@ -251,7 +251,6 @@ export const KNOWLEDGE: KbEntry[] = [
       fr: 'Téléversez des copies claires et complètes des documents demandés sur la page Documents, en choisissant le type de document correspondant. Votre équipe les examine et met à jour le statut; un message vous indique si quelque chose doit être corrigé ou renvoyé. Les relevés officiels destinés à l’évaluation de crédits doivent généralement provenir directement de l’établissement émetteur ou d’un service de relevés; une copie téléversée peut donc ne pas suffire pour l’évaluation d’un établissement.',
     },
     keywords: ['upload', 'procedure', 'how to upload', 'document type', 'official transcript', 'resend', 'téléverser', 'procédure', 'relevé officiel', 'renvoyer', 'type de document', 'copy', 'copie'],
-    sources: [{ title: 'Penn Foster - Credit Transfer Policy', url: 'https://www.pennfoster.edu/admissions/policies/transferring-credits', verifiedAt: V }],
     links: [L.documents],
   },
   {
@@ -381,7 +380,6 @@ export const KNOWLEDGE: KbEntry[] = [
       fr: 'Un diplôme d’une école secondaire en ligne accréditée et une équivalence comme le GED sont deux voies différentes : le premier est délivré par une école après l’obtention de ses crédits, la seconde s’obtient en réussissant des tests. Les collèges et employeurs fixent leurs propres règles sur ce qu’ils acceptent; vérifiez les exigences de vos établissements visés avant de choisir.',
     },
     keywords: ['ged', 'hiset', 'diploma', 'high school', 'equivalency', 'online high school', 'diplôme', 'équivalence', 'secondaire', 'which route', 'quelle voie', 'compare'],
-    sources: [PF_FAQ],
     links: [L.highSchool],
   },
   {
@@ -396,53 +394,49 @@ export const KNOWLEDGE: KbEntry[] = [
     links: [L.highSchool, L.roadmap],
   },
   {
-    id: 'pennfoster-accreditation',
-    institution: 'Penn Foster',
+    id: 'awarding-school-accreditation',
+    institution: 'Awarding school',
     topic: 'providers',
-    title: { en: 'Penn Foster High School: accreditation', fr: 'Penn Foster High School : accréditation' },
+    title: { en: 'Awarding school: accreditation', fr: 'École décernant le diplôme : accréditation' },
     text: {
-      en: 'Penn Foster says its high school is regionally accredited for grades 9 through adult by the Commission on Secondary Schools of the Middle States Association of Colleges and Schools, and nationally accredited by the Distance Education Accrediting Commission (DEAC). Accreditation does not guarantee that another school accepts a diploma or credits.',
-      fr: 'Penn Foster indique que son école secondaire est accréditée régionalement (de la 9e année à l’âge adulte) par la Commission on Secondary Schools de la Middle States Association of Colleges and Schools, et accréditée à l’échelle nationale par la Distance Education Accrediting Commission (DEAC). L’accréditation ne garantit pas qu’un autre établissement acceptera un diplôme ou des crédits.',
+      en: 'The awarding school says its high school is regionally accredited for grades 9 through adult by the Commission on Secondary Schools of the Middle States Association of Colleges and Schools, and nationally accredited by the Distance Education Accrediting Commission (DEAC). Accreditation does not guarantee that another school accepts a diploma or credits.',
+      fr: 'L’école indique que son école secondaire est accréditée régionalement (de la 9e année à l’âge adulte) par la Commission on Secondary Schools de la Middle States Association of Colleges and Schools, et accréditée à l’échelle nationale par la Distance Education Accrediting Commission (DEAC). L’accréditation ne garantit pas qu’un autre établissement acceptera un diplôme ou des crédits.',
     },
-    keywords: ['penn foster', 'accredited', 'accreditation', 'deac', 'middle states', 'msa', 'css', 'accrédité', 'accréditation', 'legit', 'legitimate'],
-    sources: [PF_FAQ],
+    keywords: ['awarding school', 'accredited', 'accreditation', 'deac', 'middle states', 'msa', 'css', 'accrédité', 'accréditation', 'legit', 'legitimate'],
   },
   {
-    id: 'pennfoster-hs-transfer-credits',
-    institution: 'Penn Foster',
+    id: 'awarding-school-hs-transfer-credits',
+    institution: 'Awarding school',
     topic: 'providers',
-    title: { en: 'Penn Foster High School: transferring prior high-school credits in', fr: 'Penn Foster High School : transfert de crédits secondaires antérieurs' },
+    title: { en: 'Awarding school: transferring prior high-school credits in', fr: 'École décernant le diplôme : transfert de crédits secondaires antérieurs' },
     text: {
-      en: 'Penn Foster says that to receive high-school transfer credits an official transcript from an accredited institution it recognizes must be submitted. Credits are evaluated for comparable high-school subjects where a full credit was earned, only Penn Foster’s evaluation determines the number awarded, and it lists a maximum of 15 transfer credits.',
-      fr: 'Penn Foster indique que, pour recevoir des crédits secondaires transférés, un relevé officiel d’un établissement accrédité qu’elle reconnaît doit être soumis. Les crédits sont évalués pour des matières secondaires comparables où un crédit complet a été obtenu, seule l’évaluation de Penn Foster détermine le nombre accordé, et elle indique un maximum de 15 crédits transférés.',
+      en: 'The awarding school says that to receive high-school transfer credits an official transcript from an accredited institution it recognizes must be submitted. Credits are evaluated for comparable high-school subjects where a full credit was earned, only the awarding school’s evaluation determines the number awarded, and it lists a maximum of 15 transfer credits.',
+      fr: 'L’école indique que, pour recevoir des crédits secondaires transférés, un relevé officiel d’un établissement accrédité qu’elle reconnaît doit être soumis. Les crédits sont évalués pour des matières secondaires comparables où un crédit complet a été obtenu, seule l’évaluation de l’école détermine le nombre accordé, et elle indique un maximum de 15 crédits transférés.',
     },
-    keywords: ['penn foster', 'transfer credits', 'prior credits', 'transcript review', 'maximum 15', 'crédits transférés', 'relevé', 'évaluation', 'previous school', 'ancienne école', '15 credits'],
-    sources: [PF_TRANSFER, PF_FAQ],
+    keywords: ['awarding school', 'transfer credits', 'prior credits', 'transcript review', 'maximum 15', 'crédits transférés', 'relevé', 'évaluation', 'previous school', 'ancienne école', '15 credits'],
     links: [L.highSchool],
   },
   {
-    id: 'pennfoster-college-transfer',
-    institution: 'Penn Foster',
+    id: 'awarding-school-college-transfer',
+    institution: 'Awarding school',
     topic: 'providers',
-    title: { en: 'Penn Foster College: transfer-in rules', fr: 'Penn Foster College : règles de transfert entrant' },
+    title: { en: 'Awarding school, college programs: transfer-in rules', fr: 'École décernant le diplôme, programmes collégiaux : règles de transfert entrant' },
     text: {
-      en: 'For its college programs, Penn Foster says prior coursework may be credited if the earlier school meets its standards, the work is eligible, and the grade was at least a C; up to 75% of required credits may transfer in. It also says no form of accreditation guarantees another school will accept credits.',
-      fr: 'Pour ses programmes collégiaux, Penn Foster indique que des cours antérieurs peuvent être reconnus si l’établissement d’origine répond à ses normes, si les travaux sont admissibles et si la note est d’au moins C; jusqu’à 75 % des crédits requis peuvent être transférés. Elle précise aussi qu’aucune forme d’accréditation ne garantit qu’un autre établissement acceptera des crédits.',
+      en: 'For its college programs, the awarding school says prior coursework may be credited if the earlier school meets its standards, the work is eligible, and the grade was at least a C; up to 75% of required credits may transfer in. It also says no form of accreditation guarantees another school will accept credits.',
+      fr: 'Pour ses programmes collégiaux, l’école indique que des cours antérieurs peuvent être reconnus si l’établissement d’origine répond à ses normes, si les travaux sont admissibles et si la note est d’au moins C; jusqu’à 75 % des crédits requis peuvent être transférés. Elle précise aussi qu’aucune forme d’accréditation ne garantit qu’un autre établissement acceptera des crédits.',
     },
-    keywords: ['penn foster college', 'college transfer', '75%', 'minimum grade', 'c grade', 'transfer in', 'collège', 'transfert', 'note minimale', '75 %'],
-    sources: [PF_TRANSFER],
+    keywords: ['awarding school college', 'college transfer', '75%', 'minimum grade', 'c grade', 'transfer in', 'collège', 'transfert', 'note minimale', '75 %'],
   },
   {
-    id: 'pennfoster-sophia-partnership',
-    institution: 'Penn Foster',
+    id: 'awarding-school-sophia-partnership',
+    institution: 'Awarding school',
     topic: 'providers',
-    title: { en: 'Penn Foster graduates and Sophia', fr: 'Diplômés de Penn Foster et Sophia' },
+    title: { en: 'Awarding-school graduates and Sophia', fr: 'Diplômés de l’école et Sophia' },
     text: {
-      en: 'Penn Foster’s FAQ lists Sophia as an educational partner for graduates, with access to DEAC-recommended courses designed to be transferred for college credit, self-paced learning and a discount on the first month. Whether a college grants credit for any such course is that college’s decision.',
-      fr: 'La FAQ de Penn Foster présente Sophia comme partenaire éducatif pour les diplômés, avec accès à des cours recommandés par la DEAC conçus pour être transférés en crédits collégiaux, un apprentissage à rythme libre et un rabais sur le premier mois. L’octroi de crédits par un collège pour un tel cours relève de ce collège.',
+      en: 'The awarding school’s FAQ lists Sophia as an educational partner for graduates, with access to DEAC-recommended courses designed to be transferred for college credit, self-paced learning and a discount on the first month. Whether a college grants credit for any such course is that college’s decision.',
+      fr: 'La FAQ de l’école présente Sophia comme partenaire éducatif pour les diplômés, avec accès à des cours recommandés par la DEAC conçus pour être transférés en crédits collégiaux, un apprentissage à rythme libre et un rabais sur le premier mois. L’octroi de crédits par un collège pour un tel cours relève de ce collège.',
     },
-    keywords: ['penn foster', 'sophia', 'partner', 'graduates', 'discount', 'deac', 'partenaire', 'diplômés', 'rabais', 'after high school', 'après le secondaire'],
-    sources: [PF_FAQ],
+    keywords: ['awarding school', 'sophia', 'partner', 'graduates', 'discount', 'deac', 'partenaire', 'diplômés', 'rabais', 'after high school', 'après le secondaire'],
   },
   {
     id: 'us-admissions-terms',
@@ -599,11 +593,11 @@ export const KNOWLEDGE: KbEntry[] = [
     topic: 'terms',
     title: { en: 'Academic documentation: official versus unofficial', fr: 'Documents scolaires : officiels ou non officiels' },
     text: {
-      en: 'An official transcript is sent directly by the issuing school (or an authorised service) to the receiving institution; a copy you upload or forward is usually unofficial. Schools commonly evaluate credit only from official documents: TESU, for example, says evaluations cannot be completed on unofficial documents, and Penn Foster says official transcripts must come from the school or an authorised credential service.',
-      fr: 'Un relevé officiel est envoyé directement par l’établissement émetteur (ou un service autorisé) à l’établissement d’accueil; une copie que vous téléversez ou transmettez est généralement non officielle. Les établissements n’évaluent habituellement les crédits qu’à partir de documents officiels : TESU indique par exemple que les évaluations ne peuvent être faites sur des documents non officiels, et Penn Foster que les relevés officiels doivent venir de l’école ou d’un service autorisé.',
+      en: 'An official transcript is sent directly by the issuing school (or an authorised service) to the receiving institution; a copy you upload or forward is usually unofficial. Schools commonly evaluate credit only from official documents: TESU, for example, says evaluations cannot be completed on unofficial documents, and the awarding school says official transcripts must come from the school or an authorised credential service.',
+      fr: 'Un relevé officiel est envoyé directement par l’établissement émetteur (ou un service autorisé) à l’établissement d’accueil; une copie que vous téléversez ou transmettez est généralement non officielle. Les établissements n’évaluent habituellement les crédits qu’à partir de documents officiels : TESU indique par exemple que les évaluations ne peuvent être faites sur des documents non officiels, et l’école, que les relevés officiels doivent venir de l’école ou d’un service autorisé.',
     },
     keywords: ['official transcript', 'unofficial', 'documentation', 'send transcript', 'parchment', 'credly', 'relevé officiel', 'non officiel', 'envoyer un relevé', 'copie', 'documents scolaires'],
-    sources: [TESU_TRANSFER, PF_TRANSFER],
+    sources: [TESU_TRANSFER],
     links: [L.documents],
   },
   {
