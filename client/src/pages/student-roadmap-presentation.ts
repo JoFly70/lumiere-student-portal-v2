@@ -533,11 +533,11 @@ export function milestoneStatusLine(m: StudentRoadmapMilestoneView, view?: Stude
 
 // ── Dates ───────────────────────────────────────────────────────────────────
 
-export function formatShortDate(iso: string | null | undefined): string | null {
+export function formatShortDate(iso: string | null | undefined, lang: "en" | "fr" = "en"): string | null {
   if (!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return null;
   const date = new Date(`${iso}T00:00:00Z`);
   if (Number.isNaN(date.getTime())) return null;
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
+  return date.toLocaleDateString(lang === "fr" ? "fr-FR" : "en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
 }
 
 export function dateRangeLabel(start: string | null, end: string | null): string | null {

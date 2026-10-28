@@ -13,6 +13,7 @@ import { assistantEn } from "./modules/assistant";
 import { attachmentsEn } from "./modules/attachments";
 import { studentOsEn } from "./modules/student-os";
 import { welcomeEn } from "./modules/welcome";
+import { highSchoolEn } from "./modules/high-school";
 
 export const en = {
   ...authEn,
@@ -22,6 +23,7 @@ export const en = {
   ...attachmentsEn,
   ...studentOsEn,
   ...welcomeEn,
+  ...highSchoolEn,
   // Language
   "language.label": "Language",
   "language.en": "English",

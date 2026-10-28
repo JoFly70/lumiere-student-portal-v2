@@ -10,7 +10,6 @@
 import {
   HS_SUBJECT_AREAS,
   HS_SUBJECT_LABELS,
-  formatHalfUnits,
   halfUnitPercent,
   type HalfUnits,
   type HsAttentionItem,
@@ -30,6 +29,15 @@ import {
   type TransferClaimStatus,
 } from "@shared/high-school-contract";
 import type { StatusKey } from "@/pages/student-roadmap-presentation";
+import { formatCreditsLocale, translate, type Language } from "@/i18n";
+
+/**
+ * Every helper that returns wording takes an optional trailing `lang` (default English, so callers and tests that
+ * do not pass one are unchanged). Components pass the language from useT(); nothing here reads storage.
+ */
+const tr = (lang: Language, key: string, vars?: Record<string, string | number>) => translate(lang, key, vars);
+/** English singular only for exactly 1 credit (2 half-units); French is singular below 2 credits (under 4 half-units). */
+export const creditUnit = (half: HalfUnits, lang: Language = "en") => tr(lang, (lang === "fr" ? half < 4 : half === 2) ? "hs.unit.credit" : "hs.unit.credits");
 
 export const HS_PATH = "/high-school";
 export const HS_TABS = [
@@ -39,6 +47,11 @@ export const HS_TABS = [
 ] as const;
 export type HsTabId = (typeof HS_TABS)[number]["id"];
 
+/** Tab label split so the "My " lead-in can be dropped on narrow screens ("Mon ", "Mes " in French). */
+export function hsTabParts(id: HsTabId, lang: Language = "en"): { prefix: string; rest: string } {
+  return { prefix: tr(lang, `hs.tab.${id}.prefix`), rest: tr(lang, `hs.tab.${id}.rest`) };
+}
+
 export function tabFromHash(hash: string | null | undefined): HsTabId | null {
   const id = (hash ?? "").replace(/^#/, "");
   return HS_TABS.some((t) => t.id === id) ? (id as HsTabId) : null;
@@ -47,13 +60,13 @@ export function tabFromHash(hash: string | null | undefined): HsTabId | null {
 // ── Credits ─────────────────────────────────────────────────────────────────
 
 /** "10.5" with the unit: "1 credit" / "10.5 credits". */
-export function creditsLabel(half: HalfUnits): string {
-  return `${formatHalfUnits(half)} ${half === 2 ? "credit" : "credits"}`;
+export function creditsLabel(half: HalfUnits, lang: Language = "en"): string {
+  return `${formatCreditsLocale(half, lang)} ${creditUnit(half, lang)}`;
 }
 
 /** "10.5 of 21 credits". */
-export function creditsOfLabel(earned: HalfUnits, required: HalfUnits): string {
-  return `${formatHalfUnits(earned)} of ${formatHalfUnits(required)} ${required === 2 ? "credit" : "credits"}`;
+export function creditsOfLabel(earned: HalfUnits, required: HalfUnits, lang: Language = "en"): string {
+  return tr(lang, "hs.creditsOf", { earned: formatCreditsLocale(earned, lang), required: formatCreditsLocale(required, lang), unit: creditUnit(required, lang) });
 }
 
 /** Whole-number percent for sizing a graphic, floored (never rounds up to 100). */
@@ -65,10 +78,10 @@ export function barPercent(part: HalfUnits, whole: HalfUnits): number {
  * Work the student reported as finished but the school has not confirmed. Plain text only:
  * it is never drawn as credit (not in the ring, not in a bar).
  */
-export function reportedWaitingLabel(half: HalfUnits, courses = 0): string | null {
+export function reportedWaitingLabel(half: HalfUnits, courses = 0, lang: Language = "en"): string | null {
   if (half <= 0) return null;
-  if (courses <= 0) return `Work you sent for ${creditsLabel(half)} is waiting for the school`;
-  return `${courses} ${courses === 1 ? "course" : "courses"} fully sent (${creditsLabel(half)}) — waiting for the school`;
+  if (courses <= 0) return tr(lang, "hs.waiting.credits", { credits: creditsLabel(half, lang) });
+  return tr(lang, courses === 1 ? "hs.waiting.coursesOne" : "hs.waiting.coursesOther", { n: courses, credits: creditsLabel(half, lang) });
 }
 
 /** Courses whose every task the student marked submitted (what credits.awaitingConfirmationHalfUnits counts). */
@@ -127,8 +140,8 @@ export function orderedSubjects(subjects: readonly HsSubjectView[]): HsSubjectVi
   });
 }
 
-export function subjectLabel(subject: HsSubjectArea): string {
-  return HS_SUBJECT_LABELS[subject];
+export function subjectLabel(subject: HsSubjectArea, lang: Language = "en"): string {
+  return lang === "en" ? HS_SUBJECT_LABELS[subject] : tr(lang, `hs.subject.${subject}`);
 }
 
 const COURSE_ORDER: Record<HsCourseDisplayStatus, number> = {
@@ -186,13 +199,17 @@ export function sortedTasks(tasks: readonly HsTaskView[]): HsTaskView[] {
 
 export const TASK_KIND_LABEL: Record<HsTaskKind, string> = { lesson: "Lessons", exam: "Exam", project: "Written project" };
 
-export function subjectSummary(s: HsSubjectView): string {
-  return `${creditsOfLabel(s.earnedHalfUnits, s.requiredHalfUnits)} (official)`;
+export function taskKindLabel(kind: HsTaskKind, lang: Language = "en"): string {
+  return tr(lang, `hs.taskKind.${kind}`);
 }
 
-export function courseCountLabel(s: HsSubjectView): string {
+export function subjectSummary(s: HsSubjectView, lang: Language = "en"): string {
+  return `${creditsOfLabel(s.earnedHalfUnits, s.requiredHalfUnits, lang)} (${lang === "fr" ? "officiels" : "official"})`;
+}
+
+export function courseCountLabel(s: HsSubjectView, lang: Language = "en"): string {
   const active = s.courses.filter((c) => c.status !== "replaced").length;
-  return `${active} ${active === 1 ? "course" : "courses"}`;
+  return tr(lang, active === 1 ? "hs.course.one" : "hs.course.other", { n: active });
 }
 
 // ── Status language ─────────────────────────────────────────────────────────
@@ -203,27 +220,29 @@ export interface StatusView {
 }
 
 /** Colour + icon + label always travel together (see StatusPill). */
-export function taskStatusView(status: HsTaskDisplayStatus): StatusView {
+export function taskStatusView(status: HsTaskDisplayStatus, lang: Language = "en"): StatusView {
+  const l = (k: string) => tr(lang, `hs.task.${k}`);
   switch (status) {
-    case "official_passed": return { key: "official", label: "Official: passed" };
-    case "official_failed": return { key: "attention", label: "Official: not passed" };
-    case "retake_required": return { key: "attention", label: "Official: retake needed" };
+    case "official_passed": return { key: "official", label: l("official_passed") };
+    case "official_failed": return { key: "attention", label: l("official_failed") };
+    case "retake_required": return { key: "attention", label: l("retake_required") };
     // Produced purely by the student marking "Submitted" or typing a score: never worded as the school's step.
-    case "pending_review": return { key: "submitted", label: "You marked this submitted" };
-    case "in_progress": return { key: "progress", label: "In progress" };
-    default: return { key: "notstarted", label: "Not started" };
+    case "pending_review": return { key: "submitted", label: l("pending_review") };
+    case "in_progress": return { key: "progress", label: l("in_progress") };
+    default: return { key: "notstarted", label: l("not_started") };
   }
 }
 
-export function courseStatusView(status: HsCourseDisplayStatus): StatusView {
+export function courseStatusView(status: HsCourseDisplayStatus, lang: Language = "en"): StatusView {
+  const l = (k: string) => tr(lang, `hs.courseStatus.${k}`);
   switch (status) {
-    case "official_complete": return { key: "official", label: "Official: completed" };
-    case "transfer_credit": return { key: "official", label: "Transfer credit (accepted by the school)" };
-    case "awaiting_school": return { key: "submitted", label: "All work sent — waiting for the school" };
-    case "in_progress": return { key: "progress", label: "In progress" };
-    case "not_passed": return { key: "attention", label: "Official: not passed" };
-    case "replaced": return { key: "notstarted", label: "Replaced in your updated plan" };
-    default: return { key: "notstarted", label: "Not started" };
+    case "official_complete": return { key: "official", label: l("official_complete") };
+    case "transfer_credit": return { key: "official", label: l("transfer_credit") };
+    case "awaiting_school": return { key: "submitted", label: l("awaiting_school") };
+    case "in_progress": return { key: "progress", label: l("in_progress") };
+    case "not_passed": return { key: "attention", label: l("not_passed") };
+    case "replaced": return { key: "notstarted", label: l("replaced") };
+    default: return { key: "notstarted", label: l("not_started") };
   }
 }
 
@@ -243,6 +262,10 @@ export const REPORTED_STATUS_OPTIONS: readonly { value: HsReportedStatus; label:
   { value: "in_progress", label: "In progress" },
   { value: "submitted", label: "Submitted to the school" },
 ];
+
+export function reportedStatusOptions(lang: Language = "en"): readonly { value: HsReportedStatus; label: string }[] {
+  return REPORTED_STATUS_OPTIONS.map((o) => ({ value: o.value, label: tr(lang, `hs.reported.${o.value}`) }));
+}
 
 /** Whether the student may still change this task (official results are locked). */
 export function canReportTask(task: Pick<HsTaskView, "status">, courseStatus: HsCourseDisplayStatus): boolean {
@@ -265,10 +288,10 @@ export interface ScoreLine {
 }
 
 /** Official and reported grades are never mixed: each carries its own label. */
-export function scoreLines(task: Pick<HsTaskView, "officialScorePercent" | "reportedScorePercent">): ScoreLine[] {
+export function scoreLines(task: Pick<HsTaskView, "officialScorePercent" | "reportedScorePercent">, lang: Language = "en"): ScoreLine[] {
   const out: ScoreLine[] = [];
-  if (task.officialScorePercent !== null) out.push({ kind: "official", label: `Official (confirmed by the school): ${task.officialScorePercent}%` });
-  if (task.reportedScorePercent !== null) out.push({ kind: "reported", label: `You reported: ${task.reportedScorePercent}%` });
+  if (task.officialScorePercent !== null) out.push({ kind: "official", label: tr(lang, "hs.score.official", { n: task.officialScorePercent }) });
+  if (task.reportedScorePercent !== null) out.push({ kind: "reported", label: tr(lang, "hs.score.reported", { n: task.reportedScorePercent }) });
   return out;
 }
 
@@ -289,21 +312,21 @@ export function daysUntil(iso: string | null | undefined, today: string): number
   return Math.round((a - b) / DAY);
 }
 
-export function monthLabel(ym: string): string {
+export function monthLabel(ym: string, lang: Language = "en"): string {
   const t = Date.parse(`${ym}-01T00:00:00Z`);
   if (Number.isNaN(t)) return ym;
-  return new Date(t).toLocaleDateString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
+  return new Date(t).toLocaleDateString(lang === "fr" ? "fr-FR" : "en-US", { month: "long", year: "numeric", timeZone: "UTC" });
 }
 
-export function dueLabel(due: string | null, today: string, formatDate: (iso: string | null) => string | null): string | null {
+export function dueLabel(due: string | null, today: string, formatDate: (iso: string | null) => string | null, lang: Language = "en"): string | null {
   const when = formatDate(due);
   if (!when) return null;
   const d = daysUntil(due, today);
-  if (d === null) return `Target ${when}`;
-  if (d < 0) return `Target was ${when}`;
-  if (d === 0) return `Target today (${when})`;
-  if (d === 1) return `Target tomorrow (${when})`;
-  return `Target ${when}`;
+  if (d === null) return tr(lang, "hs.due.target", { when });
+  if (d < 0) return tr(lang, "hs.due.was", { when });
+  if (d === 0) return tr(lang, "hs.due.today", { when });
+  if (d === 1) return tr(lang, "hs.due.tomorrow", { when });
+  return tr(lang, "hs.due.target", { when });
 }
 
 export function todayIso(now: Date = new Date()): string {
@@ -318,27 +341,27 @@ export interface PaceView {
   readonly detail: string;
 }
 
-export function paceView(pace: StudentHighSchoolView["pace"]): PaceView {
+export function paceView(pace: StudentHighSchoolView["pace"], lang: Language = "en"): PaceView {
   // One pace measure only: the status is computed from the monthly milestones, so a weekly figure
   // is shown only when the plan has no milestones (two measures can disagree on one card).
   const usesMilestones = pace.expectedByNowHalfUnits !== null || pace.nextMilestone !== null;
-  const weekly = !usesMilestones && pace.weeklyTargetHalfUnits !== null ? `Weekly target: ${creditsLabel(pace.weeklyTargetHalfUnits)}. ` : "";
+  const weekly = !usesMilestones && pace.weeklyTargetHalfUnits !== null ? tr(lang, "hs.pace.weekly", { credits: creditsLabel(pace.weeklyTargetHalfUnits, lang) }) : "";
   switch (pace.status) {
     case "on_track":
-      return { key: "progress", label: "On track", detail: `${weekly}You are keeping up with your plan.` };
+      return { key: "progress", label: tr(lang, "hs.pace.onTrack"), detail: tr(lang, "hs.pace.onTrackDetail", { weekly }) };
     case "ahead":
-      return { key: "applied", label: "Ahead of target", detail: `${weekly}You are ahead of your plan. Nice work.` };
+      return { key: "applied", label: tr(lang, "hs.pace.ahead"), detail: tr(lang, "hs.pace.aheadDetail", { weekly }) };
     case "behind":
-      return { key: "attention", label: "Behind target", detail: `${weekly}You are a little behind your plan. Lumière can help adjust it.` };
+      return { key: "attention", label: tr(lang, "hs.pace.behind"), detail: tr(lang, "hs.pace.behindDetail", { weekly }) };
     default:
-      return { key: "notstarted", label: "Target not set yet", detail: "Lumière has not set a weekly or monthly target for you yet." };
+      return { key: "notstarted", label: tr(lang, "hs.pace.none"), detail: tr(lang, "hs.pace.noneDetail") };
   }
 }
 
-export function nextMilestoneLabel(pace: StudentHighSchoolView["pace"]): string | null {
+export function nextMilestoneLabel(pace: StudentHighSchoolView["pace"], lang: Language = "en"): string | null {
   const m = pace.nextMilestone;
   if (!m) return null;
-  return `By ${monthLabel(m.month)}: ${creditsLabel(m.cumulativeHalfUnits)} in total`;
+  return tr(lang, "hs.pace.milestone", { month: monthLabel(m.month, lang), credits: creditsLabel(m.cumulativeHalfUnits, lang) });
 }
 
 export interface PaceBar {
@@ -354,27 +377,27 @@ export interface PaceBar {
 }
 
 /** ONE measure: official credits against what the plan's milestones expected by now. No calendar bar. */
-export function paceBar(view: Pick<StudentHighSchoolView, "credits" | "pace">): PaceBar {
+export function paceBar(view: Pick<StudentHighSchoolView, "credits" | "pace">, lang: Language = "en"): PaceBar {
   const { earnedHalfUnits: earned, requiredHalfUnits: required } = view.credits;
   const expected = view.pace.expectedByNowHalfUnits;
   const officialPercent = barPercent(earned, required);
   const expectedPercent = expected === null ? null : barPercent(Math.min(expected, required), required);
-  const summary = expected === null ? null : `The plan expected ${creditsLabel(Math.min(expected, required))} by now`;
-  const ariaLabel = `${creditsOfLabel(earned, required)} official${expected === null ? "" : `; the plan expected ${formatHalfUnits(expected)} by now`}`;
+  const summary = expected === null ? null : tr(lang, "hs.pace.expectedSummary", { credits: creditsLabel(Math.min(expected, required), lang) });
+  const ariaLabel = `${tr(lang, "hs.official", { label: creditsOfLabel(earned, required, lang) })}${expected === null ? "" : tr(lang, "hs.pace.ariaExpected", { n: formatCreditsLocale(expected, lang) })}`;
   return { officialPercent, expectedPercent, summary, ariaLabel, empty: earned === 0 && expected === null };
 }
 
 /** Title of the requirements panel: past tense once the diploma is conferred. */
-export function requirementsTitle(conferred: boolean): string {
-  return conferred ? "Your graduation requirements" : "What you need to graduate";
+export function requirementsTitle(conferred: boolean, lang: Language = "en"): string {
+  return tr(lang, conferred ? "hs.requirements.conferred" : "hs.requirements.pending");
 }
 
 /** The target date line. A date is a target, never a guarantee. */
-export function targetDateLine(view: Pick<StudentHighSchoolView, "enrollment" | "credits">, formatDate: (iso: string | null) => string | null): string {
-  if (view.credits.remainingHalfUnits === 0) return "All required credits are official. The school's graduation review is the next step.";
+export function targetDateLine(view: Pick<StudentHighSchoolView, "enrollment" | "credits">, formatDate: (iso: string | null) => string | null, lang: Language = "en"): string {
+  if (view.credits.remainingHalfUnits === 0) return tr(lang, "hs.target.allOfficial");
   const when = formatDate(view.enrollment.targetCompletionDate);
-  if (!when) return "Lumière will set a completion target with you. The date is a target, not a guarantee.";
-  return `Target completion: ${when}. The date is a target, not a guarantee.`;
+  if (!when) return tr(lang, "hs.target.unset");
+  return tr(lang, "hs.target.date", { when });
 }
 
 // ── Next step ───────────────────────────────────────────────────────────────
@@ -388,42 +411,44 @@ export interface NextStep {
   readonly action: { readonly label: string; readonly tab: HsTabId } | null;
 }
 
-export function nextStep(view: StudentHighSchoolView, today: string, formatDate: (iso: string | null) => string | null): NextStep {
+export function nextStep(view: StudentHighSchoolView, today: string, formatDate: (iso: string | null) => string | null, lang: Language = "en"): NextStep {
+  const l = (k: string, vars?: Record<string, string | number>) => tr(lang, `hs.next.${k}`, vars);
   if (view.graduation.status === "diploma_conferred") {
-    return { tone: "done", title: "You graduated", detail: "Your diploma has been conferred by your school.", courseKey: null, taskKey: null, action: { label: "See your graduation details", tab: "graduation" } };
+    return { tone: "done", title: l("graduated"), detail: l("graduatedDetail"), courseKey: null, taskKey: null, action: { label: l("graduatedAction"), tab: "graduation" } };
   }
   if (!view.roadmap) {
-    return { tone: "plan", title: "Your plan is on its way", detail: "Lumière is preparing your roadmap. You will see your first steps here as soon as it is published.", courseKey: null, taskKey: null, action: null };
+    return { tone: "plan", title: l("planTitle"), detail: l("planDetail"), courseKey: null, taskKey: null, action: null };
   }
   const t = view.current.nextTask;
   if (t) {
-    const when = dueLabel(t.dueDate, today, formatDate);
+    const when = dueLabel(t.dueDate, today, formatDate, lang);
     return {
       tone: "task",
       title: t.title,
       detail: `${cleanCourseTitle(t.courseTitle)}${when ? ` · ${when}` : ""}`,
       courseKey: t.courseKey,
       taskKey: t.key,
-      action: { label: "Open this course", tab: "subjects" },
+      action: { label: l("openCourse"), tab: "subjects" },
     };
   }
   if (view.graduation.status === "eligibility_confirmed") {
-    return { tone: "graduation", title: "Your school confirmed you are eligible", detail: "You can request your transcript while the school finishes your diploma.", courseKey: null, taskKey: null, action: { label: "Go to My Graduation", tab: "graduation" } };
+    return { tone: "graduation", title: l("eligibleTitle"), detail: l("eligibleDetail"), courseKey: null, taskKey: null, action: { label: l("goGraduation"), tab: "graduation" } };
   }
   if (view.awaitingGrade.length > 0) {
-    return { tone: "review", title: "Waiting for your school's grade", detail: `You sent ${view.awaitingGrade.length} ${view.awaitingGrade.length === 1 ? "task" : "tasks"} to your school. Nothing more to do on ${view.awaitingGrade.length === 1 ? "it" : "these"} right now.`, courseKey: null, taskKey: null, action: { label: "See your subjects", tab: "subjects" } };
+    const n = view.awaitingGrade.length;
+    return { tone: "review", title: l("waitingTitle"), detail: l(n === 1 ? "waitingTasksOne" : "waitingTasksOther", { n }), courseKey: null, taskKey: null, action: { label: l("seeSubjects"), tab: "subjects" } };
   }
   if (view.graduation.creditsSatisfied) {
-    return { tone: "graduation", title: "All required credits are official", detail: "Your school is doing its official completion review.", courseKey: null, taskKey: null, action: { label: "Go to My Graduation", tab: "graduation" } };
+    return { tone: "graduation", title: l("creditsDoneTitle"), detail: l("creditsDoneDetail"), courseKey: null, taskKey: null, action: { label: l("goGraduation"), tab: "graduation" } };
   }
   const started = view.credits.earnedHalfUnits > 0 || view.subjects.some((s) => s.courses.some((c) => c.status !== "not_started"));
   return {
     tone: started ? "plan" : "welcome",
-    title: started ? "Pick your next course" : "Start with your first course",
-    detail: "Open My Subjects to see what is planned for you.",
+    title: started ? l("pickTitle") : l("startTitle"),
+    detail: l("openSubjectsDetail"),
     courseKey: null,
     taskKey: null,
-    action: { label: "Open My Subjects", tab: "subjects" },
+    action: { label: l("openSubjects"), tab: "subjects" },
   };
 }
 
@@ -445,22 +470,23 @@ export interface AttentionView {
 }
 
 /** Every attention kind has an owner: work the student does reads as theirs, Lumière's as Lumière's. */
-export function attentionView(a: Pick<HsAttentionItem, "kind" | "message">): AttentionView {
+export function attentionView(a: Pick<HsAttentionItem, "kind" | "message">, lang: Language = "en"): AttentionView {
+  const l = (k: string) => tr(lang, `hs.attention.${k}`);
   switch (a.kind) {
     case "documents_requested":
       return /transcript/i.test(a.message)
-        ? { title: "Your school needs your previous transcript", detail: null, action: { kind: "documents", label: "Upload in Documents" } }
-        : { title: "Your school asked for a document", detail: a.message, action: { kind: "documents", label: "Upload in Documents" } };
+        ? { title: l("transcript"), detail: null, action: { kind: "documents", label: l("upload") } }
+        : { title: l("document"), detail: a.message, action: { kind: "documents", label: l("upload") } };
     case "overdue_task":
-      return { title: "Your task is past its target date", detail: a.message, action: { kind: "course", label: "Open the course" } };
+      return { title: l("overdue"), detail: a.message, action: { kind: "course", label: l("openCourse") } };
     case "retake_required":
-      return { title: "Your school asked for a retake", detail: a.message, action: { kind: "course", label: "Open the course" } };
+      return { title: l("retake"), detail: a.message, action: { kind: "course", label: l("openCourse") } };
     case "behind_pace":
-      return { title: "Lumière can adjust your plan", detail: a.message, action: { kind: "support", label: "Ask Lumière" } };
+      return { title: l("behind"), detail: a.message, action: { kind: "support", label: l("askLumiere") } };
     case "not_passed":
-      return { title: "Lumière can help with next steps", detail: a.message, action: { kind: "support", label: "Ask Lumière" } };
+      return { title: l("notPassed"), detail: a.message, action: { kind: "support", label: l("askLumiere") } };
     default:
-      return { title: "Lumière can help", detail: a.message, action: { kind: "support", label: "Ask Lumière" } };
+      return { title: l("help"), detail: a.message, action: { kind: "support", label: l("askLumiere") } };
   }
 }
 
@@ -472,30 +498,32 @@ export interface ReviewStatusView {
   readonly detail: string;
 }
 
-export function reviewStatusView(g: HsGraduationView): ReviewStatusView {
-  if (g.status === "diploma_conferred") return { key: "official", label: "Diploma conferred", detail: "Your school conferred your diploma." };
-  if (g.status === "eligibility_confirmed") return { key: "official", label: "Eligibility confirmed by the school", detail: "Your school confirmed that you meet its graduation requirements." };
+export function reviewStatusView(g: HsGraduationView, lang: Language = "en"): ReviewStatusView {
+  const l = (k: string) => tr(lang, `hs.review.${k}`);
+  if (g.status === "diploma_conferred") return { key: "official", label: l("conferred"), detail: l("conferredDetail") };
+  if (g.status === "eligibility_confirmed") return { key: "official", label: l("eligible"), detail: l("eligibleDetail") };
   if (g.creditsSatisfied && g.outstandingExams === 0 && g.outstandingProjects === 0) {
-    return { key: "submitted", label: "Review by the school pending", detail: "Your credits look complete. Only the school can confirm that you are eligible to graduate." };
+    return { key: "submitted", label: l("pending"), detail: l("pendingDetail") };
   }
-  return { key: "notstarted", label: "Not ready for review yet", detail: "The school reviews your record once all required credits, exams and projects are official." };
+  return { key: "notstarted", label: l("notReady"), detail: l("notReadyDetail") };
 }
 
 /** Outstanding work phrased as what is left in the plan. null when nothing is left. */
-export function outstandingWorkLabel(g: Pick<HsGraduationView, "outstandingExams" | "outstandingProjects">): string | null {
+export function outstandingWorkLabel(g: Pick<HsGraduationView, "outstandingExams" | "outstandingProjects">, lang: Language = "en"): string | null {
   const parts: string[] = [];
-  if (g.outstandingExams > 0) parts.push(`${g.outstandingExams} ${g.outstandingExams === 1 ? "exam" : "exams"}`);
-  if (g.outstandingProjects > 0) parts.push(`${g.outstandingProjects} ${g.outstandingProjects === 1 ? "project" : "projects"}`);
+  if (g.outstandingExams > 0) parts.push(tr(lang, g.outstandingExams === 1 ? "hs.outstanding.examOne" : "hs.outstanding.examOther", { n: g.outstandingExams }));
+  if (g.outstandingProjects > 0) parts.push(tr(lang, g.outstandingProjects === 1 ? "hs.outstanding.projectOne" : "hs.outstanding.projectOther", { n: g.outstandingProjects }));
   if (parts.length === 0) return null;
-  return `${parts.join(" and ")} left in your plan`;
+  const work = parts.length === 2 ? tr(lang, "hs.outstanding.and", { a: parts[0], b: parts[1] }) : parts[0];
+  return tr(lang, "hs.outstanding.left", { work });
 }
 
-export function financialClearanceView(value: HsGraduationView["financialClearance"]): { key: StatusKey; label: string; detail: string } {
+export function financialClearanceView(value: HsGraduationView["financialClearance"], lang: Language = "en"): { key: StatusKey; label: string; detail: string } {
+  const l = (k: string) => tr(lang, `hs.clearance.${k}`);
   switch (value) {
-    case "cleared": return { key: "applied", label: "Cleared", detail: "No balance is blocking your diploma." };
-    case "hold": return { key: "attention", label: "On hold", detail: "A balance may delay your diploma. Ask Lumière for details." };
-    case "unknown": return { key: "notstarted", label: "Not available here", detail: "Not available here. Ask Lumière." };
-    default: return { key: "notstarted", label: "Not available here", detail: "Not available here. Ask Lumière." };
+    case "cleared": return { key: "applied", label: l("cleared"), detail: l("clearedDetail") };
+    case "hold": return { key: "attention", label: l("hold"), detail: l("holdDetail") };
+    default: return { key: "notstarted", label: l("unknown"), detail: l("unknownDetail") };
   }
 }
 
@@ -509,48 +537,41 @@ export interface TranscriptRequestState {
   readonly statusLabel: string;
 }
 
-const DELIVERY_LABEL: Record<HsGraduationView["transcript"]["status"], string> = {
-  not_requested: "Not requested yet",
-  requested: "Requested. Lumière is asking the school",
-  issued: "Issued by the school",
-  delivered: "Delivered",
-};
-
-export function deliveryLabel(status: HsGraduationView["transcript"]["status"]): string {
-  return DELIVERY_LABEL[status];
+export function deliveryLabel(status: HsGraduationView["transcript"]["status"], lang: Language = "en"): string {
+  return tr(lang, `hs.delivery.${status}`);
 }
 
-export function transcriptRequestState(g: HsGraduationView): TranscriptRequestState {
-  const statusLabel = deliveryLabel(g.transcript.status);
+export function transcriptRequestState(g: HsGraduationView, lang: Language = "en"): TranscriptRequestState {
+  const statusLabel = deliveryLabel(g.transcript.status, lang);
   if (!canRequestTranscript(g)) {
-    return { enabled: false, reason: "You can request your official transcript once your school confirms you are eligible to graduate.", statusLabel };
+    return { enabled: false, reason: tr(lang, "hs.transcript.notEligible"), statusLabel };
   }
   if (g.transcript.status !== "not_requested") {
-    return { enabled: false, reason: g.transcript.status === "requested" ? "Your request is with Lumière. We will update this page as the school responds." : "Your transcript is ready. Find it in Documents.", statusLabel };
+    return { enabled: false, reason: tr(lang, g.transcript.status === "requested" ? "hs.transcript.requested" : "hs.transcript.ready"), statusLabel };
   }
-  return { enabled: true, reason: "Lumière will ask your school to issue your official transcript.", statusLabel };
+  return { enabled: true, reason: tr(lang, "hs.transcript.canRequest"), statusLabel };
 }
 
-export function diplomaDeliveryLabel(g: HsGraduationView["diploma"]): string {
-  if (g.status === "not_requested") return "Not conferred yet";
-  return deliveryLabel(g.status);
+export function diplomaDeliveryLabel(g: HsGraduationView["diploma"], lang: Language = "en"): string {
+  if (g.status === "not_requested") return tr(lang, "hs.diploma.notConferred");
+  return deliveryLabel(g.status, lang);
 }
 
-export function creditRequirementRows(view: Pick<StudentHighSchoolView, "credits">): { id: "core" | "elective"; label: string; earned: HalfUnits; required: HalfUnits; satisfied: boolean }[] {
+export function creditRequirementRows(view: Pick<StudentHighSchoolView, "credits">, lang: Language = "en"): { id: "core" | "elective"; label: string; earned: HalfUnits; required: HalfUnits; satisfied: boolean }[] {
   const { core, elective } = view.credits;
   return [
-    { id: "core", label: "Core credits", earned: core.earnedHalfUnits, required: core.requiredHalfUnits, satisfied: core.earnedHalfUnits >= core.requiredHalfUnits },
-    { id: "elective", label: "Elective credits", earned: elective.earnedHalfUnits, required: elective.requiredHalfUnits, satisfied: elective.earnedHalfUnits >= elective.requiredHalfUnits },
+    { id: "core", label: tr(lang, "hs.credits.core"), earned: core.earnedHalfUnits, required: core.requiredHalfUnits, satisfied: core.earnedHalfUnits >= core.requiredHalfUnits },
+    { id: "elective", label: tr(lang, "hs.credits.elective"), earned: elective.earnedHalfUnits, required: elective.requiredHalfUnits, satisfied: elective.earnedHalfUnits >= elective.requiredHalfUnits },
   ];
 }
 
 // ── Prior education ─────────────────────────────────────────────────────────
 
-export function priorEducationStatusLabel(s: PriorEducationStatus): string {
+export function priorEducationStatusLabel(s: PriorEducationStatus, lang: Language = "en"): string {
   switch (s) {
-    case "reported": return "Reported. Under review by the school";
-    case "documents_requested": return "Documents requested";
-    default: return "Evaluated";
+    case "reported": return tr(lang, "hs.prior.reported");
+    case "documents_requested": return tr(lang, "hs.prior.documents_requested");
+    default: return tr(lang, "hs.prior.evaluated");
   }
 }
 
@@ -567,53 +588,64 @@ export function recordedTransferTitles(subjects: readonly HsSubjectView[]): Read
  * A claim is the student's / Lumière's statement, never credit. Only a course that appears in the subjects
  * with status transfer_credit shows the official badge; every other state uses a non-official style.
  */
-export function claimStatusView(s: TransferClaimStatus, recorded = false): StatusView {
+export function claimStatusView(s: TransferClaimStatus, recorded = false, lang: Language = "en"): StatusView {
   switch (s) {
-    case "claimed": return { key: "notstarted", label: "Not sent to the school yet" };
-    case "submitted_to_school": return { key: "submitted", label: "Under review by the school" };
+    case "claimed": return { key: "notstarted", label: tr(lang, "hs.claim.claimed") };
+    case "submitted_to_school": return { key: "submitted", label: tr(lang, "hs.claim.submitted") };
     case "accepted":
     case "partially_accepted":
       return recorded
-        ? { key: "official", label: "Transfer credit recorded" }
-        : { key: "progress", label: "Accepted by the school — credit not recorded yet" };
-    default: return { key: "attention", label: "Not accepted by the school" };
+        ? { key: "official", label: tr(lang, "hs.claim.recorded") }
+        : { key: "progress", label: tr(lang, "hs.claim.acceptedNotRecorded") };
+    default: return { key: "attention", label: tr(lang, "hs.claim.rejected") };
   }
 }
 
 /** "Accepted: 1 of 1.5 credits" when the school's accepted amount is known. */
-export function claimAcceptedLabel(c: ClaimView): string | null {
+export function claimAcceptedLabel(c: ClaimView, lang: Language = "en"): string | null {
   if (c.acceptedHalfUnits === undefined || c.acceptedHalfUnits === null) return null;
-  return `Accepted: ${formatHalfUnits(c.acceptedHalfUnits)} of ${creditsLabel(c.claimedHalfUnits)}`;
+  return tr(lang, "hs.claim.accepted", { accepted: formatCreditsLocale(c.acceptedHalfUnits, lang), claimed: creditsLabel(c.claimedHalfUnits, lang) });
 }
 
 // ── Guardians ───────────────────────────────────────────────────────────────
 
-export function guardianStandingView(standing: HsGuardianStanding): StatusView & { detail: string } {
+export function guardianStandingView(standing: HsGuardianStanding, lang: Language = "en"): StatusView & { detail: string } {
+  const l = (k: string) => tr(lang, `hs.guardian.${k}`);
   switch (standing) {
-    case "verified_guardian": return { key: "applied", label: "Verified guardian", detail: "Lumière verified this person's legal role." };
-    case "guardian_unverified": return { key: "submitted", label: "Guardian — awaiting verification", detail: "Lumière has not verified this yet." };
-    case "revoked": return { key: "notstarted", label: "No longer authorized", detail: "This person is no longer listed as authorized." };
-    default: return { key: "notstarted", label: "Listed parent", detail: "Listed by you. No special permissions." };
+    case "verified_guardian": return { key: "applied", label: l("verified"), detail: l("verifiedDetail") };
+    case "guardian_unverified": return { key: "submitted", label: l("unverified"), detail: l("unverifiedDetail") };
+    case "revoked": return { key: "notstarted", label: l("revoked"), detail: l("revokedDetail") };
+    default: return { key: "notstarted", label: l("parent"), detail: l("parentDetail") };
   }
 }
 
-export function guardianSharingLabel(g: HsGuardianView): string {
+function sharingParts(g: HsGuardianView, lang: Language): string {
   const parts: string[] = [];
-  if (g.mayDiscussAcademics) parts.push("grades and progress");
-  if (g.mayDiscussFinances) parts.push("billing");
-  if (parts.length === 0) return "Lumière does not discuss grades or billing with this person.";
-  return `Lumière may discuss ${parts.join(" and ")} with this person.`;
+  if (g.mayDiscussAcademics) parts.push(tr(lang, "hs.guardian.shareAcademics"));
+  if (g.mayDiscussFinances) parts.push(tr(lang, "hs.guardian.shareBilling"));
+  return parts.length === 2 ? tr(lang, "hs.guardian.shareBoth", { a: parts[0], b: parts[1] }) : (parts[0] ?? "");
+}
+
+export function guardianSharingLabel(g: HsGuardianView, lang: Language = "en"): string {
+  const parts = sharingParts(g, lang);
+  return parts === "" ? tr(lang, "hs.guardian.shareNone") : tr(lang, "hs.guardian.shareSome", { parts });
 }
 
 export const GUARDIAN_EXPLAINER = "Lumière discusses grades or billing only with verified guardians who have that permission.";
 export const NO_PORTAL_ACCESS_NOTE = "Nobody on this list can sign in to your account.";
 
+export function guardianExplainer(lang: Language = "en"): string {
+  return tr(lang, "hs.guardian.explainer");
+}
+
+export function noPortalAccessNote(lang: Language = "en"): string {
+  return tr(lang, "hs.guardian.noPortal");
+}
+
 /** One short line per person; the standing pill already says who they are. */
-export function guardianSharingShort(g: HsGuardianView): string {
-  const parts: string[] = [];
-  if (g.mayDiscussAcademics) parts.push("grades and progress");
-  if (g.mayDiscussFinances) parts.push("billing");
-  return parts.length === 0 ? "Lumière does not discuss grades or billing." : `Lumière may discuss ${parts.join(" and ")}.`;
+export function guardianSharingShort(g: HsGuardianView, lang: Language = "en"): string {
+  const parts = sharingParts(g, lang);
+  return parts === "" ? tr(lang, "hs.guardian.shortNone") : tr(lang, "hs.guardian.shortSome", { parts });
 }
 
 export const GOVERNANCE_COPY = {
@@ -623,12 +655,17 @@ export const GOVERNANCE_COPY = {
   detail: "Lumière plans and supports you. Anything you report here helps us help you, but it only becomes official once your school confirms it.",
 } as const;
 
+export function governanceCopy(lang: Language = "en"): { headline: string; detail: string } {
+  return { headline: tr(lang, "hs.gov.headline"), detail: tr(lang, "hs.gov.detail") };
+}
+
 // ── Support ─────────────────────────────────────────────────────────────────
 
-export function supportDraft(course: Pick<HsCourseView, "title" | "key">, schoolLine: string): { subject: string; description: string } {
+export function supportDraft(course: Pick<HsCourseView, "title" | "key">, schoolLine: string, lang: Language = "en"): { subject: string; description: string } {
+  const title = cleanCourseTitle(course.title);
   return {
-    subject: `High school help: ${cleanCourseTitle(course.title)}`,
-    description: `Hi Lumière, I would like help with "${cleanCourseTitle(course.title)}" in my high school plan (${schoolLine}). `,
+    subject: tr(lang, "hs.supportDraft.subject", { title }),
+    description: tr(lang, "hs.supportDraft.description", { title, school: schoolLine }),
   };
 }
 
@@ -637,6 +674,7 @@ export function supportKeyFor(courseKey: string, nonce: string): string {
   return `hs-${courseKey}-${nonce}`.replace(/[^A-Za-z0-9_-]/g, "-").padEnd(16, "0").slice(0, 100);
 }
 
-export function describeGeneratedAt(iso: string, formatDate: (iso: string | null) => string | null): string {
-  return `Updated ${formatDate(iso.slice(0, 10)) ?? "recently"}`;
+export function describeGeneratedAt(iso: string, formatDate: (iso: string | null) => string | null, lang: Language = "en"): string {
+  const when = formatDate(iso.slice(0, 10));
+  return when ? tr(lang, "hs.updated", { when }) : tr(lang, "hs.updatedRecently");
 }

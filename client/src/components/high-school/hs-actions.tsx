@@ -8,6 +8,7 @@
 import React, { createContext, useCallback, useContext, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { HsStudentProgressInput } from "@shared/high-school-contract";
+import { useT } from "@/i18n";
 import { useToast } from "@/hooks/use-toast";
 import { describeCreateFailure, newIdempotencyKey, useCreateTicket } from "@/hooks/use-tickets";
 import { HS_QUERY_KEY, interpretProgressError, useReportHsProgress, useRequestTranscript } from "@/lib/high-school-queries";
@@ -42,6 +43,7 @@ export const useHsActions = () => useContext(Ctx);
 export function HsActionsProvider({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { t } = useT();
   const report = useReportHsProgress();
   const transcript = useRequestTranscript();
   const createTicket = useCreateTicket();
@@ -54,11 +56,11 @@ export function HsActionsProvider({ children }: { children: React.ReactNode }) {
       setPending((p) => new Set(p).add(id));
       try {
         await report.mutateAsync(input);
-        toast({ title: "Saved", description: `${label}. This is your report; the school confirms official results.` });
+        toast({ title: t("hs.toast.saved"), description: t("hs.toast.savedDetail", { label }) });
         return true;
       } catch (error) {
         const failure = interpretProgressError(error);
-        toast({ title: failure.kind === "conflict" ? "Your plan was updated" : "Could not save", description: failure.message, variant: "destructive" });
+        toast({ title: failure.kind === "conflict" ? t("hs.toast.planUpdated") : t("hs.toast.saveFailed"), description: failure.message, variant: "destructive" });
         if (failure.refetch) await queryClient.invalidateQueries({ queryKey: [...HS_QUERY_KEY] });
         return false;
       } finally {
@@ -69,19 +71,19 @@ export function HsActionsProvider({ children }: { children: React.ReactNode }) {
         });
       }
     },
-    [queryClient, report, toast],
+    [queryClient, report, t, toast],
   );
 
   const requestTranscript = useCallback(async () => {
     try {
       await transcript.mutateAsync();
-      toast({ title: "Transcript requested", description: "Lumière will ask your school and update this page." });
+      toast({ title: t("hs.toast.transcriptTitle"), description: t("hs.toast.transcriptBody") });
       return true;
     } catch (error) {
-      toast({ title: "Could not send the request", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" });
+      toast({ title: t("hs.toast.requestFailed"), description: error instanceof Error ? error.message : t("hs.toast.tryAgain"), variant: "destructive" });
       return false;
     }
-  }, [toast, transcript]);
+  }, [t, toast, transcript]);
 
   const requestSupport = useCallback(
     async (input: SupportRequestInput): Promise<SupportResult> => {

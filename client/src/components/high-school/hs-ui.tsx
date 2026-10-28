@@ -5,8 +5,9 @@
  */
 import React from "react";
 import { cn } from "@/lib/utils";
-import { formatHalfUnits, type HalfUnits } from "@shared/high-school-contract";
-import { barPercent, creditsOfLabel } from "@/pages/high-school-presentation";
+import type { HalfUnits } from "@shared/high-school-contract";
+import { useT } from "@/i18n";
+import { barPercent, creditUnit, creditsOfLabel } from "@/pages/high-school-presentation";
 import { cardClass } from "@/components/student-progress/student-ui";
 
 /** Section card with an optional heading. */
@@ -60,11 +61,12 @@ export function CreditRing({
   size?: number;
   className?: string;
 }) {
+  const { t, language, formatCredits } = useT();
   const stroke = 13;
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
   const earnedFrac = required > 0 ? Math.min(1, earned / required) : 0;
-  const label = `${creditsOfLabel(earned, required)} official`;
+  const label = t("hs.official", { label: creditsOfLabel(earned, required, language) });
   return (
     <div className={cn("relative mx-auto shrink-0", className)} style={{ width: size, height: size }} role="img" aria-label={label} data-testid="credit-ring" data-percent={barPercent(earned, required)}>
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden="true">
@@ -84,9 +86,9 @@ export function CreditRing({
         )}
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center text-center" aria-hidden="true">
-        <span className="font-serif text-4xl leading-none tracking-tight text-student-ink">{formatHalfUnits(earned)}</span>
-        <span className="mt-1 text-xs text-student-muted">of {formatHalfUnits(required)} {required === 2 ? "credit" : "credits"}</span>
-        <span className="text-[11px] font-semibold uppercase tracking-wide text-student-gold-ink">earned</span>
+        <span className="font-serif text-4xl leading-none tracking-tight text-student-ink">{formatCredits(earned)}</span>
+        <span className="mt-1 text-xs text-student-muted">{t("hs.ring.of", { total: formatCredits(required), unit: creditUnit(required, language) })}</span>
+        <span className="text-[11px] font-semibold uppercase tracking-wide text-student-gold-ink">{t("hs.ring.earned")}</span>
       </div>
     </div>
   );
@@ -106,6 +108,7 @@ export function Meter({
   className?: string;
   tone?: "gold" | "ink";
 }) {
+  const { language } = useT();
   const a = barPercent(value, total);
   return (
     <div
@@ -115,7 +118,7 @@ export function Meter({
       aria-valuemin={0}
       aria-valuemax={total}
       aria-valuenow={Math.min(value, total)}
-      aria-valuetext={creditsOfLabel(value, total)}
+      aria-valuetext={creditsOfLabel(value, total, language)}
     >
       <div className={cn("h-full", tone === "gold" ? "bg-student-gold" : "bg-student-seal")} style={{ width: `${a}%` }} />
     </div>
@@ -127,6 +130,7 @@ export function Meter({
  * The tick's label sits on its own row under the bar and is clamped at both edges so it never overflows or crowds text.
  */
 export function PaceMeter({ officialPercent, expectedPercent, ariaLabel }: { officialPercent: number; expectedPercent: number | null; ariaLabel: string }) {
+  const { t } = useT();
   const edge = expectedPercent === null ? "middle" : expectedPercent < 15 ? "start" : expectedPercent > 85 ? "end" : "middle";
   return (
     <div className="pt-1" data-testid="pace-meter">
@@ -144,7 +148,7 @@ export function PaceMeter({ officialPercent, expectedPercent, ariaLabel }: { off
             className={cn("absolute top-0 whitespace-nowrap text-xs leading-4 text-student-muted", edge === "start" && "left-0", edge === "end" && "right-0", edge === "middle" && "-translate-x-1/2")}
             style={edge === "middle" ? { left: `${expectedPercent}%` } : undefined}
           >
-            Expected by now
+            {t("hs.pace.expectedByNow")}
           </span>
         </div>
       )}
@@ -154,6 +158,7 @@ export function PaceMeter({ officialPercent, expectedPercent, ariaLabel }: { off
 
 /** Shows the first `max` items and tucks the rest behind a native "and N more" disclosure. */
 export function MoreList<T>({ items, max, render, label, testId, listClass, ariaLabel }: { items: readonly T[]; max: number; render: (item: T, i: number) => React.ReactNode; label?: string; testId?: string; listClass?: string; ariaLabel?: string }) {
+  const { t } = useT();
   const head = items.slice(0, max);
   const rest = items.slice(max);
   return (
@@ -162,9 +167,9 @@ export function MoreList<T>({ items, max, render, label, testId, listClass, aria
       {rest.length > 0 && (
         <details className="group" data-testid={testId ? `${testId}-more` : undefined}>
           <summary className="flex min-h-[44px] cursor-pointer list-none items-center gap-1.5 text-sm font-medium text-student-gold-ink underline underline-offset-4 [&::-webkit-details-marker]:hidden">
-            {label ?? `and ${rest.length} more`}
+            {label ?? t("hs.more", { n: rest.length })}
           </summary>
-          <ul className={listClass} aria-label={ariaLabel ? `${ariaLabel}, more` : undefined}>{rest.map((t, i) => render(t, head.length + i))}</ul>
+          <ul className={listClass} aria-label={ariaLabel ? t("hs.moreAria", { label: ariaLabel }) : undefined}>{rest.map((t, i) => render(t, head.length + i))}</ul>
         </details>
       )}
     </div>

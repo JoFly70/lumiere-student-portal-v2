@@ -27,6 +27,7 @@ import {
   uniqueTasks,
   type HsTabId,
 } from "@/pages/high-school-presentation";
+import { useT } from "@/i18n";
 import { StatusGlyph, StatusPill, buttonClass } from "@/components/student-progress/student-ui";
 import { TaskRing } from "@/components/student-progress/journey-graphics";
 import { CreditRing, Fact, MoreList, PaceMeter, Panel, linkButton } from "./hs-ui";
@@ -38,12 +39,13 @@ export interface TabProps {
 }
 
 function AttentionList({ view, onNavigate }: Pick<TabProps, "view" | "onNavigate">) {
+  const { t, language } = useT();
   const items = journeyAttention(view);
   if (view.attention.length === 0) {
     return (
       <p className="flex items-center gap-2 border-t border-student-gold/40 pt-3 text-sm text-student-muted" data-testid="attention-empty">
         <Sparkles className="h-4 w-4 shrink-0 text-student-gold-ink" aria-hidden="true" />
-        Nothing needs attention right now. Keep going.
+        {t("hs.journey.noAttention")}
       </p>
     );
   }
@@ -52,16 +54,16 @@ function AttentionList({ view, onNavigate }: Pick<TabProps, "view" | "onNavigate
     <div className="border-t border-student-gold/40 pt-3" data-testid="attention-card">
       <h4 id="hs-attention" className="mb-1 flex items-center gap-2 text-sm font-semibold text-student-ink">
         <StatusGlyph status="attention" className="h-4 w-4" />
-        Needs attention
+        {t("hs.journey.needsAttention")}
       </h4>
       <MoreList
         items={items}
         max={3}
         testId="attention-list"
         listClass="divide-y divide-student-gold/30"
-        ariaLabel="Needs attention"
+        ariaLabel={t("hs.journey.needsAttention")}
         render={(a, i) => {
-          const v = attentionView(a);
+          const v = attentionView(a, language);
           return (
             <li key={`${a.kind}-${i}`} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-0 py-1.5" data-attention-kind={a.kind}>
               <p className="min-w-0 text-sm text-student-ink">
@@ -86,7 +88,9 @@ function AttentionList({ view, onNavigate }: Pick<TabProps, "view" | "onNavigate
 }
 
 function NextStepCard({ view, today, onNavigate }: TabProps) {
-  const step = nextStep(view, today, formatShortDate);
+  const { t, language } = useT();
+  const fmt = (iso: string | null) => formatShortDate(iso, language);
+  const step = nextStep(view, today, fmt, language);
   const Icon = step.tone === "done" ? PartyPopper : step.tone === "review" ? Hourglass : step.tone === "task" ? BookOpenCheck : Sparkles;
   const task = view.current.nextTask;
   const course = view.current.course;
@@ -95,7 +99,7 @@ function NextStepCard({ view, today, onNavigate }: TabProps) {
       <div className="space-y-2.5">
         <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-student-gold-ink">
           <Icon className="h-4 w-4" aria-hidden="true" />
-          Your next step
+          {t("hs.journey.nextStep")}
         </p>
         <h3 id="hs-next-step" className="font-serif text-2xl leading-tight tracking-tight text-student-ink sm:text-[1.7rem]">
           {step.title}
@@ -103,15 +107,15 @@ function NextStepCard({ view, today, onNavigate }: TabProps) {
         <p className="max-w-xl text-base leading-relaxed text-student-ink">{step.detail}</p>
         {task && (
           <div className="flex flex-wrap items-center gap-2" data-testid="next-task-meta">
-            <StatusPill status={taskStatusView(task.status).key} label={taskStatusView(task.status).label} />
-            {task.overdue && <StatusPill status="attention" label="Past target date" />}
+            <StatusPill status={taskStatusView(task.status, language).key} label={taskStatusView(task.status, language).label} />
+            {task.overdue && <StatusPill status="attention" label={t("hs.journey.pastTarget")} />}
           </div>
         )}
         {course && task && course.key === task.courseKey && (
           <div className="flex items-center gap-3 pt-1" data-testid="current-course">
             <TaskRing done={course.tasksDone} total={course.tasksTotal} size={40} />
             <p className="text-sm text-student-muted">
-              {course.tasksDone} of {course.tasksTotal} tasks in this course officially done · {creditsLabel(course.halfUnits)}
+              {t("hs.journey.courseTasks", { done: course.tasksDone, total: course.tasksTotal, credits: creditsLabel(course.halfUnits, language) })}
             </p>
           </div>
         )}
@@ -130,18 +134,19 @@ function NextStepCard({ view, today, onNavigate }: TabProps) {
 }
 
 function CreditsCard({ view }: { view: StudentHighSchoolView }) {
+  const { t, language } = useT();
   const c = view.credits;
-  const reported = reportedWaitingLabel(c.awaitingConfirmationHalfUnits, fullySentCourseCount(view.subjects));
-  const rows = creditRequirementRows(view);
+  const reported = reportedWaitingLabel(c.awaitingConfirmationHalfUnits, fullySentCourseCount(view.subjects), language);
+  const rows = creditRequirementRows(view, language);
   return (
-    <Panel title="Your credits" headingId="hs-credits" testId="credits-card" className="flex flex-col justify-start">
+    <Panel title={t("hs.journey.credits")} headingId="hs-credits" testId="credits-card" className="flex flex-col justify-start">
       <div className="grid grid-cols-[auto_1fr] items-start gap-4 sm:gap-6">
         <CreditRing earned={c.earnedHalfUnits} required={c.requiredHalfUnits} size={160} />
         <dl className="space-y-3 text-left">
-          <Fact label="Still to earn"><span data-testid="credits-remaining">{creditsLabel(c.remainingHalfUnits)}</span></Fact>
+          <Fact label={t("hs.journey.stillToEarn")}><span data-testid="credits-remaining">{creditsLabel(c.remainingHalfUnits, language)}</span></Fact>
           {rows.map((r) => (
-            <Fact key={r.id} label={r.id === "core" ? "Core" : "Elective"}>
-              <span data-testid={`credits-${r.id}`}>{creditsOfLabel(r.earned, r.required)}</span>
+            <Fact key={r.id} label={r.id === "core" ? t("hs.credits.coreShort") : t("hs.credits.electiveShort")}>
+              <span data-testid={`credits-${r.id}`}>{creditsOfLabel(r.earned, r.required, language)}</span>
             </Fact>
           ))}
         </dl>
@@ -149,26 +154,27 @@ function CreditsCard({ view }: { view: StudentHighSchoolView }) {
       {reported ? (
         <p className="border-t border-student-line pt-3 text-sm text-student-muted" data-testid="credits-reported">{reported}.</p>
       ) : (
-        <p className="border-t border-student-line pt-3 text-sm text-student-muted" data-testid="credits-official-note">Only credits confirmed by your school are counted here.</p>
+        <p className="border-t border-student-line pt-3 text-sm text-student-muted" data-testid="credits-official-note">{t("hs.journey.officialOnly")}</p>
       )}
     </Panel>
   );
 }
 
 function PaceCard({ view }: { view: StudentHighSchoolView }) {
-  const pace = paceView(view.pace);
-  const bar = paceBar(view);
-  const milestone = nextMilestoneLabel(view.pace);
+  const { t, language } = useT();
+  const pace = paceView(view.pace, language);
+  const bar = paceBar(view, language);
+  const milestone = nextMilestoneLabel(view.pace, language);
   return (
-    <Panel title="Your pace" headingId="hs-pace" testId="pace-card">
+    <Panel title={t("hs.journey.pace")} headingId="hs-pace" testId="pace-card">
       <div className="flex flex-wrap items-center gap-2">
         <StatusPill status={pace.key} label={pace.label} data-testid="pace-status" />
       </div>
       <p className="text-sm leading-relaxed text-student-muted">{pace.detail}</p>
       {bar.empty ? (
         <div data-testid="pace-empty">
-          <p className="text-sm text-student-ink">No official credit yet.</p>
-          <p className="text-sm text-student-muted">Your pace appears here once your school confirms your first credit.</p>
+          <p className="text-sm text-student-ink">{t("hs.journey.noOfficial")}</p>
+          <p className="text-sm text-student-muted">{t("hs.journey.noOfficialDetail")}</p>
           {milestone && <p className="text-sm text-student-muted">{milestone}.</p>}
         </div>
       ) : (
@@ -178,35 +184,36 @@ function PaceCard({ view }: { view: StudentHighSchoolView }) {
           {milestone && <p className="text-sm text-student-muted">{milestone}.</p>}
         </div>
       )}
-      <p className="border-t border-student-line pt-3 text-sm text-student-muted" data-testid="target-date">{targetDateLine(view, formatShortDate)}</p>
+      <p className="border-t border-student-line pt-3 text-sm text-student-muted" data-testid="target-date">{targetDateLine(view, (iso) => formatShortDate(iso, language), language)}</p>
     </Panel>
   );
 }
 
 function WaitingCard({ view, today, onNavigate }: TabProps) {
+  const { t, language } = useT();
   const nextKey = view.current.nextTask ? `${view.current.nextTask.courseKey}:${view.current.nextTask.key}` : null;
   const tasks = uniqueTasks(view.awaitingGrade).filter((t) => `${t.courseKey}:${t.key}` !== nextKey);
   const titles = taskListTitles(tasks);
   return (
-    <Panel title="Waiting for your school" headingId="hs-awaiting" testId="awaiting-grade">
+    <Panel title={t("hs.journey.waiting")} headingId="hs-awaiting" testId="awaiting-grade">
       {tasks.length === 0 ? (
         <p className="flex items-start gap-2 text-sm text-student-muted" data-testid="awaiting-list-empty">
           <Hourglass className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-          Nothing is waiting for a grade. When you mark a task as submitted, it waits here until your school grades it.
+          {t("hs.journey.waitingEmpty")}
         </p>
       ) : (<>
         <p className="flex items-start gap-2 text-sm text-student-muted">
           <Hourglass className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-          Tasks you marked submitted — your school has not graded them yet.
+          {t("hs.journey.waitingIntro")}
         </p>
         <MoreList
           items={tasks}
           max={4}
           testId="awaiting-list"
           listClass="divide-y divide-student-line"
-          ariaLabel="Tasks waiting for your school"
+          ariaLabel={t("hs.journey.waitingAria")}
           render={(t) => {
-            const when = dueLabel(t.dueDate, today, formatShortDate);
+            const when = dueLabel(t.dueDate, today, (iso) => formatShortDate(iso, language), language);
             return (
               <li key={`${t.courseKey}:${t.key}`} className="py-1 first:pt-0 last:pb-0">
                 <button type="button" className="min-h-[44px] w-full text-left" onClick={() => onNavigate("subjects", t.courseKey)}>
@@ -226,16 +233,18 @@ function WaitingCard({ view, today, onNavigate }: TabProps) {
 }
 
 function HelpLinks() {
+  const { t } = useT();
   return (
     <div className="flex flex-wrap items-center gap-x-6 gap-y-0 rounded-2xl border border-student-line bg-student-card px-4 py-1 text-sm" data-testid="help-links">
-      <Link href="/documents" className={linkButton} data-testid="link-upload-evidence"><Upload className="h-4 w-4" aria-hidden="true" />Upload supporting evidence in Documents</Link>
-      <Link href="/support" className={linkButton} data-testid="link-ask-help"><LifeBuoy className="h-4 w-4" aria-hidden="true" />Ask Lumière for help</Link>
+      <Link href="/documents" className={linkButton} data-testid="link-upload-evidence"><Upload className="h-4 w-4" aria-hidden="true" />{t("hs.journey.uploadEvidence")}</Link>
+      <Link href="/support" className={linkButton} data-testid="link-ask-help"><LifeBuoy className="h-4 w-4" aria-hidden="true" />{t("hs.journey.askHelp")}</Link>
     </div>
   );
 }
 
 export function JourneyTab(props: TabProps) {
   const { view } = props;
+  const { t, language } = useT();
   const message = view.roadmap?.studentMessage ?? null;
   return (
     <div className="space-y-4 sm:space-y-6" data-testid="tab-journey">
@@ -256,10 +265,10 @@ export function JourneyTab(props: TabProps) {
           <FileText className="mt-0.5 h-4 w-4 shrink-0 text-student-gold-ink" aria-hidden="true" />
           <div className="min-w-0 space-y-1">
             <p className="font-medium text-student-ink">
-              Roadmap version {view.roadmap.versionNumber}
-              <span className="font-normal text-student-muted"> · published {formatShortDate(view.roadmap.publishedAt.slice(0, 10))}</span>
+              {t("hs.journey.roadmapVersion", { n: view.roadmap.versionNumber })}
+              <span className="font-normal text-student-muted">{t("hs.journey.published", { date: formatShortDate(view.roadmap.publishedAt.slice(0, 10), language) ?? "" })}</span>
             </p>
-            {message && <p className="text-student-ink" data-testid="staff-message"><span className="sr-only">Message from Lumière: </span>&ldquo;{message}&rdquo;</p>}
+            {message && <p className="text-student-ink" data-testid="staff-message"><span className="sr-only">{t("hs.journey.messageFrom")}</span>&ldquo;{message}&rdquo;</p>}
           </div>
         </div>
       )}
