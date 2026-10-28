@@ -59,3 +59,11 @@ Google Public DNS responses (queried via publicly readable DNS-over-HTTPS, no ch
 - Apex CAA: no answer
 
 Thus the old public site is routed to a Replit endpoint through Name.com DNS; the **specific older Replit deployment/account is still not identified** in the accessible Replit integration. Do not move the apex until the existing domain association is identified and a staging deployment has passed. Retain current records as rollback evidence.
+
+## Formal hosted-verifier rerun: 130/130 PASS
+Using the Supabase SQL connector and original unmodified `scripts/s22/hosted-verify.sql`, executed the full SELECT in an explicit `BEGIN TRANSACTION READ ONLY` / `ROLLBACK` transaction. Confirmed `transaction_read_only=on` in an independent preliminary transaction. Result: **130 checks, 130 true, 0 false**. This supersedes the one harness-only failure reported above; all 130 checks are now PASS against the hosted staging project.
+
+## New isolated Replit staging workspace
+A new, disposable Replit App was created separately from production, initially titled `AllGullibleBase` (Repl ID `12005f5d-d31a-42c8-803c-2d0433c373f5`). The Replit Agent confirmed it could import existing source into this distinct project and then reported a successful clone of `claude/s22b-real-hosted-staging` at `49dca6bfbc67c37fc964be601168fb12ef721a7b` (1,594 tracked files). The Agent subsequently reported a local-only commit `949bd2b3db710b5c4d7eb130c90b82f50e1933d4` affecting only `.replit` and two agent-memory files. GitHub branch source at this stage remained at `49dca6bfbc67c37fc964be601168fb12ef721a7b`. 
+
+Staging Repl configuration has `SUPABASE_URL` / `VITE_SUPABASE_URL` directed to the isolated project, plus staging ref/confirmation. **Managed `DATABASE_URL` is present but NOT verified and must NOT be used.** Missing verified database password, `SUPABASE_SERVICE_KEY`, and legacy anon key build variables. No app was started or published at time of this record.
