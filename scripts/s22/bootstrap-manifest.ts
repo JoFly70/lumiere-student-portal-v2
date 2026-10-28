@@ -108,6 +108,11 @@ export const STEPS: ManifestStep[] = [
     note: '20261030100000_s18_billing_ledger.sql overwrites is_staff_or_admin() without the active check (90-verify V3); the S21 conversations migration creates assistant_purge_active() after the hardening (90-verify G4). Also required on production.',
   },
   {
+    id: '10c', label: 'S25 forward migrations: server-side portal language preference; authenticated loses all public-table write privileges; pin search_path on remaining helper/guard functions', kind: 'apply',
+    files: [`${M}20261104100000_s25_user_language_preference.sql`, `${M}20261104110000_s25_client_write_lockdown.sql`],
+    note: 'Defence in depth: the browser has no Supabase data client and the server uses the service role / owner connection. Also required on production.',
+  },
+  {
     id: '11', label: 'verify (read-only)', kind: 'verify',
     files: [`${S14}00-baseline-probe.sql`, `${S14}01-account-readiness.sql`, `${S14}90-verify.sql`, 'scripts/s22/hosted-verify.sql'],
   },

@@ -1390,6 +1390,8 @@ window.ENV = {
   // S11 high school pathway staff API (per-route auth/role; admin-only actions inside).
   const adminHighSchoolRouter = (await import('./routes/admin-high-school')).default;
   app.use('/api/admin', adminHighSchoolRouter);
+  // S25 owner "View as Student": read-only student projection preview (per-route auth, admin only, audited).
+  app.use('/api/admin', (await import('./routes/admin-view-as-student')).default);
   // S18 billing ledger: staff/admin entry and review (per-route role checks)
   app.use('/api/admin', (await import('./routes/admin-billing')).default);
   // S13 staff-only student <-> portal account linkage (per-route auth, admin only).
@@ -1414,6 +1416,8 @@ window.ENV = {
   app.use('/api/student', (await import('./routes/student-billing')).default);
   // S21: personalized login welcome (server-derived first/returning state, real attention items only).
   app.use('/api/student/welcome', (await import('./routes/student-welcome')).default);
+  // S25: the student's portal language (server copy of the EN/FR choice; student only, own row only).
+  app.use('/api/student/preferences', (await import('./routes/student-preferences')).default);
 
   // S20: Lumière Academic Assistant. Local guidance always; live Spark inference only when
   // SPARK_ASSISTANT_ENABLED=true, a server key exists and the role is eligible (never students).

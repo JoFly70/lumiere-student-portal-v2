@@ -35,6 +35,8 @@ import AdminStudentHighSchool from "@/pages/admin-student-high-school";
 import AdminStudentBilling from "@/pages/admin-student-billing";
 import StaffBillingLookup from "@/pages/staff-billing-lookup";
 import { AcademicAssistant } from "@/components/academic-assistant";
+import { LanguagePreferenceSync } from "@/lib/language-preference";
+import AdminViewAsStudent from "@/pages/admin-view-as-student";
 import { PROTOTYPES_ENABLED, PREVIEW_FLIGHT_DECK_PATH } from "@/components/os/prototype-gate";
 
 // Prototype-only route (S17). Compiled out of normal production builds; see components/os/prototype-gate.
@@ -105,6 +107,13 @@ function Router() {
         {() => (
           <ProtectedRoute requireRole={["admin", "staff"]}>
             <StaffBillingLookup />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/admin/students/:studentId/view-as-student">
+        {() => (
+          <ProtectedRoute requireRole="admin">
+            <AdminViewAsStudent />
           </ProtectedRoute>
         )}
       </Route>
@@ -257,6 +266,8 @@ function AuthenticatedLayout() {
           {isStudent && <StudentBottomNav />}
           {/* S20: Lumière Academic Assistant (authenticated students only; never on auth screens). */}
           {isStudent && <AcademicAssistant />}
+          {/* S25: server copy of the student's EN/FR choice (cross-device; visible to staff in View as Student). */}
+          {isStudent && <LanguagePreferenceSync />}
         </div>
       </div>
     </SidebarProvider>

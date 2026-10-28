@@ -16,10 +16,14 @@ import {
 } from "./config/production";
 import { safeRequestContext } from "./lib/log-redaction";
 import { logger, logStartup, generateRequestId } from "./lib/logger";
+import { assertProductionAuthPolicy } from "./lib/production-auth-guard";
 import { checkRedisHealth, configureRateLimitBackend, createRateLimitStore, getRateLimitBackend, trackRedisHealth, withCommandTimeout } from "./lib/rate-limit-store";
 
 const app = express();
 const isProduction = process.env.NODE_ENV === 'production';
+
+// S25: fail closed before serving anything if the account gate is not enforced in production.
+assertProductionAuthPolicy();
 
 // Dynamically import Sentry (optional dependency)
 let Sentry: any = null;

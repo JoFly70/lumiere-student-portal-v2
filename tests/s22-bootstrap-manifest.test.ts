@@ -18,7 +18,7 @@ describe('S22 bootstrap manifest', () => {
     const ids = STEPS.map((s) => s.id);
     expect(ids.filter((i) => /^\d+$/.test(i))).toEqual(['01','02','03','04','05','06','07','08','09','10','11']);
     // S22 additions sit after step 10 and before verification
-    expect(ids.slice(-3)).toEqual(['10', '10b', '11']);
+    expect(ids.slice(-4)).toEqual(['10', '10b', '10c', '11']);
     const flat = applySteps().flatMap((s) => s.files);
     const at = (needle: string) => flat.findIndex((f) => f.includes(needle));
     expect(at('011_degree_programs_courses')).toBe(0);
@@ -29,10 +29,11 @@ describe('S22 bootstrap manifest', () => {
     expect(at('35-client-privilege-hardening')).toBeLessThan(at('90_storage_buckets'));
     expect(at('90_storage_buckets')).toBeLessThan(at('s21_document_attachments'));
     expect(at('s21_student_welcome')).toBeLessThan(at('s22_account_gate_restore'));
+    expect(at('s22_account_gate_restore')).toBeLessThan(at('s25_client_write_lockdown'));
     expect(verifyFiles()).toContain('scripts/s22/hosted-verify.sql');
   });
 
-  it('lists all 36 migrations once each, no exclusions', () => {
+  it('lists every migration once each, no exclusions', () => {
     const dir = fs.readdirSync(path.join(REPO_ROOT, 'supabase/migrations')).filter((f) => f.endsWith('.sql'));
     const listed = STEPS.flatMap((s) => s.files).filter((f) => f.startsWith('supabase/migrations/'));
     expect(new Set(listed).size).toBe(dir.length);
