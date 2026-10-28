@@ -22,3 +22,4 @@ dist-ssr
 *.sw?
 .env
 /generated-artifacts/
+.s26-private-backup/
