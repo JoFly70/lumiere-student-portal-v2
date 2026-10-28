@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { Request, Response, NextFunction } from 'express';
 import crypto from 'node:crypto';
 
@@ -75,10 +75,57 @@ function createMockRes(): any {
 }
 
 describe('Authentication Middleware', () => {
+  afterEach(() => vi.unstubAllEnvs());
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.NODE_ENV = 'test';
     delete process.env.ALLOW_DEMO_MODE;
+    delete process.env.ENABLE_EMAIL_VERIFICATION;
+  });
+
+  it.each([
+    {},
+    { email_confirmed_at: null },
+    { email_confirmed_at: "not-a-date" },
+    { confirmed_at: "2026-01-01T00:00:00Z", user_metadata: { email_verified: true } },
+  ])('denies provider-unconfirmed users before accessing a local profile: %j', async (confirmation) => {
+    vi.stubEnv('ENABLE_EMAIL_VERIFICATION', 'true');
+    mockGetUser.mockResolvedValue({ data: { user: { id: "synthetic", email: "synthetic@s23.invalid", ...confirmation } }, error: null });
+    const { requireAuth } = await import('../server/middleware/auth.js');
+    const res = createMockRes(); const next = vi.fn();
+    await requireAuth(createMockReq({ headers: { authorization: "Bearer synthetic-session" } }), res, next);
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ code: "EMAIL_VERIFICATION_REQUIRED" }));
+    expect(mockDbLimit).not.toHaveBeenCalled();
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('admits provider-confirmed active users when confirmation is mandatory', async () => {
+    vi.stubEnv('ENABLE_EMAIL_VERIFICATION', 'true');
+    mockGetUser.mockResolvedValue({ data: { user: { id: "synthetic", email_confirmed_at: "2026-01-01T00:00:00Z" } }, error: null });
+    mockDbLimit.mockResolvedValue([{ id: "synthetic", email: "synthetic@s23.invalid", role: "student" }]);
+    const { requireAuth } = await import('../server/middleware/auth.js');
+    const next = vi.fn();
+    await requireAuth(createMockReq({ headers: { authorization: "Bearer synthetic-session" } }), createMockRes(), next);
+    expect(next).toHaveBeenCalled();
+  });
+
+  it('disables development local-JWT and demo shortcuts when confirmation is mandatory', async () => {
+    vi.stubEnv('ENABLE_EMAIL_VERIFICATION', 'true');
+    const header = Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT" })).toString("base64url");
+    const payload = Buffer.from(JSON.stringify({ iss: "lumiere-local", userId: "synthetic", email: "synthetic@s23.invalid", exp: Math.floor(Date.now()/1000)+600 })).toString("base64url");
+    const signature = crypto.createHmac("sha256", process.env.SESSION_SECRET || "local-dev-secret-change-in-production").update(`${header}.${payload}`).digest("base64url");
+    mockGetUser.mockResolvedValue({ data: { user: null }, error: { message: "invalid token" } });
+    const { requireAuth } = await import('../server/middleware/auth.js');
+    const res = createMockRes(); const next = vi.fn();
+    await requireAuth(createMockReq({ headers: { authorization: `Bearer ${header}.${payload}.${signature}` } }), res, next);
+    expect(res.status).toHaveBeenCalledWith(401);
+    expect(mockDbLimit).not.toHaveBeenCalled();
+    vi.stubEnv('ALLOW_DEMO_MODE', 'true');
+    const demoRes = createMockRes();
+    await requireAuth(createMockReq(), demoRes, next);
+    expect(demoRes.status).toHaveBeenCalledWith(500);
+    expect(next).not.toHaveBeenCalled();
   });
 
   it('rejects unauthenticated requests with 401 (no auth header)', async () => {

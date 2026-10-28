@@ -4,6 +4,22 @@ export type SupabaseAuthErrorLike = {
   message?: string;
 };
 
+export const EMAIL_VERIFICATION_REQUIRED_RESPONSE = {
+  error: "Confirm your email before signing in.",
+  code: "EMAIL_VERIFICATION_REQUIRED",
+};
+
+export function emailVerificationRequired(): boolean {
+  return process.env.ENABLE_EMAIL_VERIFICATION === "true";
+}
+
+/** Trust only the provider's email confirmation, never JWT/user metadata or phone confirmation. */
+export function hasRequiredEmailConfirmation(user: { email_confirmed_at?: string | null } | null | undefined): boolean {
+  if (!emailVerificationRequired()) return true;
+  return typeof user?.email_confirmed_at === "string"
+    && Number.isFinite(Date.parse(user.email_confirmed_at));
+}
+
 export function isDuplicateSignupError(error: SupabaseAuthErrorLike): boolean {
   const normalizedCode = error.code?.toLowerCase();
   return error.status === 409 ||

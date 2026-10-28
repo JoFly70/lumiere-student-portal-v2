@@ -36,6 +36,7 @@ import {
   type VerificationDeps,
 } from "./lib/email-verification";
 import { revokeAllSupabaseSessions } from "./lib/session-revocation";
+import { hasRequiredEmailConfirmation, EMAIL_VERIFICATION_REQUIRED_RESPONSE } from "./lib/auth-policy";
 import { ACCOUNT_INACTIVE_RESPONSE, getAccountStatus, isAccountActive } from "./lib/account-status";
 import {
   claimInvitation,
@@ -61,6 +62,7 @@ async function getUserFromToken(
   try {
     const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
     if (!error && user) {
+      if (options.requireActive !== false && !hasRequiredEmailConfirmation(user)) return null;
       if (options.requireActive !== false && !(await isAccountActive(user.id))) {
         return null;
       }
@@ -212,6 +214,14 @@ window.ENV = {
         return res.status(500).json({ error: "Account creation error" });
       }
 
+      // With confirmation required, an unexpectedly auto-confirmed provider
+      // response is a configuration failure, not permission to issue a session.
+      if (emailVerificationEnabled && authData.user.email_confirmed_at) {
+        await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
+        await releaseInvitation(invitationId);
+        return res.status(503).json({ error: "Email confirmation configuration must be reviewed", code: "EMAIL_CONFIRMATION_CONFIGURATION" });
+      }
+
       // Create user record in our database
       const { error: userError } = await supabaseAdmin
         .from('users')
@@ -263,6 +273,12 @@ window.ENV = {
       // admin.createUser sends no email; with verification on, send the first one.
       if (emailVerificationEnabled) {
         await sendInitialVerificationEmail(verificationDeps, email);
+        return res.json({
+          success: true,
+          user: { id: authData.user.id, email, name: fullName },
+          emailVerificationRequired: true,
+          message: "Please check your email to verify your account before signing in. If no message arrives, use Resend verification.",
+        });
       }
 
       // Sign in the user to get session tokens — isolated client so the
@@ -544,6 +560,10 @@ window.ENV = {
         logger.warn("Login failed", { email, reason: error?.message || "No session returned" });
         return res.status(401).json({ error: "Invalid credentials" });
       }
+      if (!hasRequiredEmailConfirmation(data.user)) {
+        try { await userAuthClient.auth.signOut({ scope: 'global' }); } catch { /* Deny even if revocation fails. */ }
+        return res.status(403).json(EMAIL_VERIFICATION_REQUIRED_RESPONSE);
+      }
 
       // Fetch user details from users table
       let userData: { id: string; email: string; name: string; role: string } | null = null;
@@ -671,6 +691,9 @@ window.ENV = {
       if (authError || !authUser) {
         logger.warn("Invalid auth token", { error: authError?.message });
         return res.status(401).json({ error: "Invalid or expired session" });
+      }
+      if (!hasRequiredEmailConfirmation(authUser)) {
+        return res.status(403).json(EMAIL_VERIFICATION_REQUIRED_RESPONSE);
       }
 
       // Get user details from database

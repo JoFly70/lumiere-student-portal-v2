@@ -10,6 +10,7 @@ import { db } from '../lib/db';
 import { users } from '@shared/schema';
 import { eq } from 'drizzle-orm';
 import { ACCOUNT_INACTIVE_RESPONSE, isAccountActive } from '../lib/account-status';
+import { emailVerificationRequired, hasRequiredEmailConfirmation, EMAIL_VERIFICATION_REQUIRED_RESPONSE } from '../lib/auth-policy';
 
 // Local JWT secret (must match routes.ts)
 const LOCAL_JWT_SECRET = process.env.SESSION_SECRET || 'local-dev-secret-change-in-production';
@@ -19,7 +20,7 @@ function verifyLocalJWT(token: string): { userId: string; email: string } | null
   try {
     // Local JWTs are a development/test compatibility path. Production
     // authentication is exclusively validated by Supabase.
-    if (process.env.NODE_ENV === 'production') return null;
+    if (process.env.NODE_ENV === 'production' || emailVerificationRequired()) return null;
 
     const parts = token.split('.');
     if (parts.length !== 3) return null;
@@ -88,6 +89,9 @@ export async function requireAuth(
     const authHeader = req.headers.authorization;
     const isProduction = process.env.NODE_ENV === 'production';
     const allowDemoMode = process.env.ALLOW_DEMO_MODE === 'true' && !isProduction;
+    if (emailVerificationRequired() && process.env.ALLOW_DEMO_MODE === 'true') {
+      return res.status(500).json({ error: 'Server configuration error' });
+    }
 
     // Demo mode ONLY in non-production AND when explicitly enabled AND no auth header is present
     if (allowDemoMode && (!authHeader || !authHeader.startsWith('Bearer '))) {
@@ -159,6 +163,9 @@ export async function requireAuth(
       if (error || !user) {
         logger.warn('Invalid auth token', { error: error?.message });
         return res.status(401).json({ error: 'Invalid or expired token' });
+      }
+      if (!hasRequiredEmailConfirmation(user)) {
+        return res.status(403).json(EMAIL_VERIFICATION_REQUIRED_RESPONSE);
       }
 
       logger.debug('Auth user from JWT', { 
