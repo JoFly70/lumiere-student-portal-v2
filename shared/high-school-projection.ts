@@ -639,6 +639,37 @@ export function validateRoadmapContent(
   return errors;
 }
 
+/**
+ * Publication-only coverage gate. Drafts may be incomplete. Required core
+ * allocations come from the immutable template; approved enrollment total
+ * exceptions adjust electives using the same rule as the draft builder.
+ * Replaced/removed courses cannot satisfy an active plan twice.
+ */
+export function validateRoadmapPublicationCoverage(
+  content: HsRoadmapContent,
+  template: HsCurriculumTemplate,
+  expectedTotalHalfUnits: HalfUnits = template.totalRequiredHalfUnits,
+): string[] {
+  const expected = contentFromTemplate(template, expectedTotalHalfUnits, null);
+  if (expected.error) return [expected.error];
+  const errors: string[] = [];
+  for (const area of expected.content.areas) {
+    const configured = content.areas.find((a) => a.key === area.key);
+    if (!configured || configured.requiredHalfUnits !== area.requiredHalfUnits) {
+      errors.push(`Restore the ${area.label} requirement to ${formatHalfUnits(area.requiredHalfUnits)} credits from the diploma contract. Credit exceptions must be configured on the enrollment, not by lowering draft requirements.`);
+    }
+    const planned = sumHalfUnits(content.courses
+      .filter((c) => c.areaKey === area.key && c.status === "planned")
+      .map((c) => c.halfUnits));
+    if (area.kind === "core" && planned !== area.requiredHalfUnits) {
+      errors.push(`${area.label} must contain exactly ${formatHalfUnits(area.requiredHalfUnits)} planned core credits (currently ${formatHalfUnits(planned)}). Add the missing school-approved course credits or correct replacements before publishing.`);
+    } else if (area.kind === "elective" && planned < area.requiredHalfUnits) {
+      errors.push(`Add school-approved elective courses totaling at least ${formatHalfUnits(area.requiredHalfUnits)} credits for ${area.label} (currently ${formatHalfUnits(planned)}). You can save this incomplete plan as a draft.`);
+    }
+  }
+  return errors;
+}
+
 /** Builds the first draft of a roadmap from a template, adjusting electives to a configured total. */
 export function contentFromTemplate(
   template: HsCurriculumTemplate,

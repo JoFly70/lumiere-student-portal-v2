@@ -13,6 +13,12 @@ import type { AddressInfo } from "node:net";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import express from "express";
 import request from "supertest";
+// This route matrix deliberately exceeds the shared per-IP request budget.
+// Test RBAC here; rate-limit behavior has its own tests, never disable it in app code.
+vi.mock("../server/middleware/rate-limit", async (importOriginal) => ({
+  ...await importOriginal<typeof import("../server/middleware/rate-limit")>(),
+  apiRateLimit: (_req: unknown, _res: unknown, next: () => void) => next(),
+}));
 import { HS_AUDIT_EVENTS, HS_ERROR_CODES as E, TEMPLATE_TN_22, formatHalfUnits, creditsToHalfUnits, type StaffHighSchoolState, type StudentHighSchoolView } from "../shared/high-school-contract";
 import { PG_BINARIES_AVAILABLE, S05_PG_SKIP_MESSAGE, seedAcademicRecord, startLocalPg, type LocalPg } from "./helpers/s05-local-pg";
 import { applyS09Migration } from "./helpers/s09-apply-migration";

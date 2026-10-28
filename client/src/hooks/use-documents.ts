@@ -13,7 +13,7 @@ export interface GenerateUploadUrlInput {
   file_name: string;
   file_size: number;
   mime_type: string;
-  student_code: string;
+  student_code?: string;
 }
 
 // Mirrors the server's presigned upload response (snake_case).

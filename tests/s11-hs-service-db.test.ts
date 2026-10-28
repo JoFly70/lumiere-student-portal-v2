@@ -104,7 +104,9 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("S11 high school pathway — service on 
   async function publishPlan(s: Scenario, mutate: (c: HsRoadmapContent) => HsRoadmapContent) {
     let state = (await svc().draftFromTemplate(s.st.studentId, s.eid, staff.userId, undefined)).result;
     const draft = state.current!.draft!;
-    const content = mutate(structuredClone(draft.content) as HsRoadmapContent);
+    // Publication now requires elective coverage; keep unrelated scenarios on
+    // valid test plans, using this suite's existing synthetic fixtures.
+    const content = mutate(withElectives(structuredClone(draft.content) as HsRoadmapContent));
     state = (await svc().saveDraft(s.st.studentId, s.eid, staff.userId, { expectedDraftRevision: draft.draftRevision, content })).result;
     return svc().publish(s.st.studentId, s.eid, admin.userId, {
       expectedDraftRevision: state.current!.draft!.draftRevision,
@@ -117,7 +119,7 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("S11 high school pathway — service on 
     ...c,
     courses: [
       ...c.courses,
-      ...ELECTIVES.map((k) => ({
+      ...ELECTIVES.filter((k) => !c.courses.some((course) => course.key === k)).map((k) => ({
         key: k,
         title: `Elective ${k}`,
         areaKey: "electives",
@@ -205,14 +207,14 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("S11 high school pathway — service on 
     });
 
     it("per-area counted is min(earned, required); surplus in one area never fills another", async () => {
-      const s = await enroll("Lior Katz");
-      // an extra English course (5th english credit) beyond the 4 required
-      await publishPlan(s, (c) => ({
-        ...c,
-        courses: [...c.courses, { key: "english-5", title: "English 5", areaKey: "english", halfUnits: 2, status: "planned", replacesCourseKey: null, plannedStart: null, plannedEnd: null, tasks: [] }],
-      }));
-      for (const k of ["english-1", "english-2", "english-3", "english-4", "english-5"]) await completeCourse(s, k);
-      const credits = (await state(s)).current!.credits;
+      // Historical surplus awards remain readable; new overallocated core
+      // plans must no longer be published just to exercise this arithmetic.
+      const { computeCreditSummary } = await import("../shared/high-school-projection");
+      const { TEMPLATE_STANDARD_21 } = await import("../shared/high-school-contract");
+      const credits = computeCreditSummary(TEMPLATE_STANDARD_21.areas, 42, Array.from({ length: 5 }, (_, i) => ({
+        id: `historical-english-${i}`, source: "course_completion" as const, courseKey: `english-${i}`,
+        areaKey: "english", halfUnits: 2, status: "active" as const,
+      })));
       const english = credits.byArea.find((a) => a.key === "english")!;
       expect(english).toMatchObject({ requiredHalfUnits: 8, earnedHalfUnits: 10, countedHalfUnits: 8 });
       expect(credits.core.earnedHalfUnits).toBe(8);
@@ -225,7 +227,7 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("S11 high school pathway — service on 
       expect(tnState.current!.enrollment.totalRequiredHalfUnits).toBe(44);
       expect(tnState.current!.enrollment.jurisdiction).toBe("US-TN");
       const tnDraft = (await svc().draftFromTemplate(tn.st.studentId, tn.eid, staff.userId, undefined)).result.current!.draft!;
-      expect(tnDraft.validationErrors).toEqual([]);
+      expect(tnDraft.validationErrors.join(" ")).toContain("at least 5 credits");
       expect(tnDraft.content.areas.find((a) => a.key === "math")!.requiredHalfUnits).toBe(8);
 
       const ov = await enroll("Dana Levi", { totalRequiredHalfUnitsOverride: 44, overrideReason: "State exception approved by the school" });
@@ -238,7 +240,7 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("S11 high school pathway — service on 
       const ovDraft = (await svc().draftFromTemplate(ov.st.studentId, ov.eid, staff.userId, undefined)).result.current!.draft!;
       expect(ovDraft.content.totalRequiredHalfUnits).toBe(44);
       expect(ovDraft.content.areas.find((a) => a.key === "electives")!.requiredHalfUnits).toBe(12);
-      expect(ovDraft.validationErrors).toEqual([]);
+      expect(ovDraft.validationErrors.join(" ")).toContain("at least 6 credits");
     });
 
     it("an override needs a reason (422) and an unreachable total is refused", async () => {
@@ -840,6 +842,7 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("S11 high school pathway — service on 
           courses: [
             ...c.courses.map((x) => (x.key === "english-1" ? { ...x, status: "replaced" as const } : x.key === "english-2" ? { ...x, status: "removed" as const } : x)),
             { key: "english-1b", title: "English 1 (new)", areaKey: "english", halfUnits: 2, status: "planned" as const, replacesCourseKey: "english-1", plannedStart: null, plannedEnd: null, tasks: [] },
+            { ...c.courses.find((x) => x.key === "english-2")!, key: "english-2b", replacesCourseKey: "english-2" },
           ],
         })),
       );
@@ -865,35 +868,40 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("S11 high school pathway — service on 
       const content = staffClone(draft.content) as HsRoadmapContent;
       content.courses = content.courses.map((c) => (c.key === "english-1" ? { ...c, status: "replaced" as const } : c));
       content.courses.push({ key: "english-1b", title: "English 1b", areaKey: "english", halfUnits: 2, status: "planned", replacesCourseKey: "english-1", plannedStart: null, plannedEnd: null, tasks: [] });
-      content.courses.push({ key: "english-1c", title: "English 1c", areaKey: "english", halfUnits: 2, status: "planned", replacesCourseKey: "english-1b", plannedStart: null, plannedEnd: null, tasks: [] });
       const saved = (await svc().saveDraft(s.st.studentId, s.eid, staff.userId, { expectedDraftRevision: draft.draftRevision, content })).result;
       await svc().publish(s.st.studentId, s.eid, admin.userId, { expectedDraftRevision: saved.current!.draft!.draftRevision, expectedPublishedVersionId: saved.current!.published!.versionId });
 
       expect(await codeOf(completeCourse(s, "english-1b"))).toMatchObject({ code: "HS_ALREADY_RECORDED", status: 409 });
-      expect(await codeOf(completeCourse(s, "english-1c"))).toMatchObject({ code: "HS_ALREADY_RECORDED", status: 409 }); // two links away
+      expect(await codeOf(completeCourse(s, "english-1c"))).toMatchObject({ code: "HS_UNKNOWN_COURSE_OR_TASK", status: 422 }); // not planned until the next valid replacement
       expect((await state(s)).current!.credits.earnedHalfUnits).toBe(2);
       const award = (await state(s)).current!.awards.find((a) => a.courseKey === "english-1")!;
       await svc().voidAward(s.st.studentId, s.eid, award.id, admin.userId, "Replaced before credit was final");
       await completeCourse(s, "english-1b");
       expect((await state(s)).current!.credits.earnedHalfUnits).toBe(2);
+      // Publish the next replacement only after retiring the previous one;
+      // concurrent planned replacements would exceed the required core credits.
+      const nextDraft = (await svc().draftFromTemplate(s.st.studentId, s.eid, staff.userId, undefined)).result.current!.draft!;
+      const nextContent = staffClone(nextDraft.content) as HsRoadmapContent;
+      const previous = nextContent.courses.find((c) => c.key === "english-1b")!;
+      previous.status = "replaced";
+      nextContent.courses.push({ ...previous, key: "english-1c", status: "planned", replacesCourseKey: "english-1b" });
+      const nextSaved = (await svc().saveDraft(s.st.studentId, s.eid, staff.userId, { expectedDraftRevision: nextDraft.draftRevision, content: nextContent })).result;
+      await svc().publish(s.st.studentId, s.eid, admin.userId, { expectedDraftRevision: nextSaved.current!.draft!.draftRevision, expectedPublishedVersionId: nextSaved.current!.published!.versionId });
       // and now english-1c is blocked by english-1b's award
       expect(await codeOf(completeCourse(s, "english-1c"))).toMatchObject({ code: "HS_ALREADY_RECORDED" });
     });
 
-    it("surplus credit cannot satisfy the overall total: blockers use the sum of per-area counted credit", async () => {
+    it("surplus core credits cannot substitute for missing electives at publication", async () => {
       const s = await enroll("Surplus Sam");
-      await publishPlan(s, (c) => ({
+      const attempt = publishPlan(s, (c) => ({
         ...withElectives(c),
         courses: [...withElectives(c).courses.filter((x) => x.key !== "e5"), { key: "english-5", title: "English 5", areaKey: "english", halfUnits: 2, status: "planned" as const, replacesCourseKey: null, plannedStart: null, plannedEnd: null, tasks: [] }],
       }));
-      await completeAll(s);
-      const credits = (await state(s)).current!.credits;
-      expect(credits.earnedHalfUnits).toBe(42); // raw official sum, kept for display
-      expect(credits.byArea.find((a) => a.key === "english")).toMatchObject({ earnedHalfUnits: 10, countedHalfUnits: 8 });
-      const blockers = (await state(s)).current!.graduation.blockers;
-      expect(blockers[0]).toMatch(/^Earned 20 of 21 required credits/);
-      expect((await state(s)).current!.graduation.creditsSatisfied).toBe(false);
-      expect(await codeOf(confirmEligibility(s))).toMatchObject({ code: "HS_NOT_ELIGIBLE", status: 409 });
+      expect(await codeOf(attempt)).toMatchObject({ code: "HS_ROADMAP_INVALID", status: 422 });
+      const current = (await state(s)).current!;
+      expect(current.published).toBeNull();
+      expect(current.draft!.validationErrors.join(" ")).toContain("at least 5 credits");
+      expect(current.credits.earnedHalfUnits).toBe(0);
     });
 
     // 3. delivery statuses and financial clearance
@@ -1169,7 +1177,12 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("S11 high school pathway — service on 
       const enr = `${base}/enrollments/${s.eid}`;
       const draft = await request(hs.app).post(`${enr}/roadmap/draft/from-template`).set(authHeader(staff.token)).send({});
       expect(draft.status).toBe(200);
-      const rev = draft.body.current.draft.draftRevision;
+      const saved = await request(hs.app).put(`${enr}/roadmap/draft`).set(authHeader(staff.token)).send({
+        expectedDraftRevision: draft.body.current.draft.draftRevision,
+        content: withElectives(draft.body.current.draft.content),
+      });
+      expect(saved.status).toBe(200);
+      const rev = saved.body.current.draft.draftRevision;
       const publishBody = { expectedDraftRevision: rev, expectedPublishedVersionId: null };
       const asStaffPublish = await request(hs.app).post(`${enr}/roadmap/publish`).set(authHeader(staff.token)).send(publishBody);
       expect(asStaffPublish.status).toBe(403);

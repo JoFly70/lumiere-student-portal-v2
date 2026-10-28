@@ -3,20 +3,115 @@
  * Reject and resubmit open DocumentReviewDialog, which keeps the student-facing reason and the
  * internal staff note in two separate fields (student_message / admin_notes).
  */
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, ExternalLink, RotateCcw, XCircle } from "lucide-react";
+import { CheckCircle2, ExternalLink, RotateCcw, Upload, XCircle } from "lucide-react";
 import type { StudentDocument } from "@shared/schema";
 import { Button } from "@/components/ui/button";
-import { StaffCard, StaffNotice, StatusPill, staffBtn } from "@/components/staff/staff-ui";
+import { Input } from "@/components/ui/input";
+import { StaffCard, StaffNotice, StatusPill, staffBtn, staffField, staffLabel } from "@/components/staff/staff-ui";
 import { apiRequest } from "@/lib/api";
 import { docStatusLabel, docTypeLabel } from "@/lib/document-type-labels";
-import { fetchDocumentWithDownloadUrl } from "@/hooks/use-documents";
+import { fetchDocumentWithDownloadUrl, useCreateDocument, useGenerateUploadUrl } from "@/hooks/use-documents";
+import { useAuth } from "@/lib/auth";
 import { DocumentReviewDialog, type DocumentReviewAction, type DocumentReviewPayload } from "./document-review-dialog";
+import { canUploadDocumentOnBehalfForRole, STAFF_DOCUMENT_ACCEPT, validateStaffDocumentFile } from "./student-documents-upload-logic";
 
 type ReviewCall = { id: string; action: "verify" | DocumentReviewAction; body: Record<string, unknown> };
 
 const statusKey = (s: string) => (s === "verified" ? "official" : s === "pending" ? "submitted" : s === "rejected" || s === "resubmit_requested" ? "attention" : "notstarted") as Parameters<typeof StatusPill>[0]["status"];
+
+const STAFF_UPLOAD_TYPES = [
+  ["hs_transcript", "High-school transcript"],
+  ["hs_diploma", "High-school diploma"],
+  ["college_transcript", "College transcript"],
+  ["degree_certificate", "Degree certificate"],
+  ["id_gov", "Government-issued ID"],
+  ["foreign_eval", "Foreign credential evaluation"],
+  ["english_cert", "English proficiency proof"],
+  ["residency_doc", "Proof of residency"],
+  ["consent_form", "Consent form"],
+  ["other", "Other document"],
+] as const;
+
+export function StaffDocumentUpload({ studentId }: { studentId: string }) {
+  const qc = useQueryClient();
+  const { user } = useAuth();
+  const canUploadOnBehalf = canUploadDocumentOnBehalfForRole(user?.role);
+  const generateUploadUrl = useGenerateUploadUrl(studentId);
+  const createDocument = useCreateDocument(studentId);
+  const [uploadType, setUploadType] = useState<string>("hs_transcript");
+  const [uploadMessage, setUploadMessage] = useState<{ kind: "success" | "error"; text: string } | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInput = useRef<HTMLInputElement>(null);
+  const uploadFile = async (file: File) => {
+    if (uploading) return;
+    setUploadMessage(null);
+    const validation = validateStaffDocumentFile(file);
+    if (!validation.valid) {
+      setUploadMessage({ kind: "error", text: validation.message });
+      return;
+    }
+    setUploading(true);
+    try {
+      const signed = await generateUploadUrl.mutateAsync({
+        doc_type: uploadType,
+        file_name: file.name,
+        file_size: file.size,
+        mime_type: file.type || "application/octet-stream",
+      });
+      const uploaded = await fetch(signed.upload_url, {
+        method: "PUT",
+        body: file,
+        headers: { "Content-Type": file.type || "application/octet-stream" },
+      });
+      if (!uploaded.ok) throw new Error("The file could not be stored. Please try again.");
+      await createDocument.mutateAsync({
+        doc_type: uploadType,
+        file_name: file.name,
+        storage_path: signed.storage_path,
+      });
+      await qc.invalidateQueries({ queryKey: ["documents", studentId] });
+      setUploadMessage({ kind: "success", text: "File uploaded. It is pending review and has not been verified." });
+    } catch (error) {
+      setUploadMessage({ kind: "error", text: error instanceof Error ? error.message : "Upload failed. Please try again." });
+    } finally {
+      setUploading(false);
+      if (fileInput.current) fileInput.current.value = "";
+    }
+  };
+  const uploadPending = uploading || generateUploadUrl.isPending || createDocument.isPending;
+  if (!canUploadOnBehalf) return null;
+  return (
+      <StaffCard as="div" className="space-y-3" data-testid="staff-document-upload">
+        <div>
+          <h3 className={staffLabel}>Upload on behalf of student</h3>
+          <p className="mt-1 text-sm text-student-muted">The file will be visible to the student and staff (student_staff). New uploads remain pending review; uploading does not verify a document.</p>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_auto] sm:items-end">
+          <div>
+            <label className={staffLabel} htmlFor="staff-upload-document-type">Document type</label>
+            <select id="staff-upload-document-type" className={`${staffField} mt-1 w-full`} value={uploadType} disabled={uploadPending} onChange={(event) => setUploadType(event.target.value)}>
+              {STAFF_UPLOAD_TYPES.map(([value, label]) => <option value={value} key={value}>{label}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className={staffLabel} htmlFor="staff-upload-document-file">File</label>
+            <Input ref={fileInput} id="staff-upload-document-file" className={`${staffField} mt-1`} type="file" accept={STAFF_DOCUMENT_ACCEPT} disabled={uploadPending} data-testid="input-staff-document-file" onChange={(event) => {
+              const file = event.currentTarget.files?.[0];
+              if (file) void uploadFile(file);
+            }} />
+            <p className="mt-1 text-xs text-student-muted">PDF, PNG, JPG, DOC, DOCX, XLS, or XLSX · up to 10 MB</p>
+          </div>
+          <Button type="button" className={staffBtn.outline} variant="outline" disabled={uploadPending} onClick={() => fileInput.current?.click()} data-testid="button-staff-upload-document">
+            <Upload className="h-4 w-4" aria-hidden="true" />{uploadPending ? "Uploading…" : "Choose file"}
+          </Button>
+        </div>
+        {uploadPending ? <p role="status" aria-live="polite" className="text-sm text-student-muted">Uploading file securely…</p> : null}
+        {uploadMessage ? <StaffNotice tone={uploadMessage.kind === "error" ? "urgent" : "gold"} role={uploadMessage.kind === "error" ? "alert" : "status"}>{uploadMessage.text}</StaffNotice> : null}
+      </StaffCard>
+  );
+}
 
 export function StudentDocumentsReview({ studentId, documents }: { studentId: string; documents: readonly StudentDocument[] }) {
   const qc = useQueryClient();
@@ -40,6 +135,8 @@ export function StudentDocumentsReview({ studentId, documents }: { studentId: st
     <div className="space-y-3" data-testid="documents-review">
       {reviewError && <StaffNotice tone="urgent" role="alert">{reviewError}</StaffNotice>}
       {viewError && <StaffNotice tone="urgent" role="alert">{viewError}</StaffNotice>}
+      <StaffDocumentUpload studentId={studentId} />
+      {documents.length === 0 ? <StaffNotice tone="gold" role="status">No documents have been uploaded for this student yet.</StaffNotice> : null}
       <ul className="grid gap-3 md:grid-cols-2">
         {documents.map((d) => (
           <li key={d.id}>

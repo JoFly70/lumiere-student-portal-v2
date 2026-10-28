@@ -70,6 +70,7 @@ import {
   projectStudentView,
   toGuardianView,
   validateRoadmapContent,
+  validateRoadmapPublicationCoverage,
   type HsAwardRecord,
   type HsCourseResultRecord,
   type HsGraduationRecordInput,
@@ -667,11 +668,11 @@ export function createHighSchoolService(deps: HighSchoolServiceDeps) {
       content,
       validationErrors:
         v.status === "draft"
-          ? validateRoadmapContent(content, b.template, {
+          ? [...validateRoadmapContent(content, b.template, {
               expectedTotalHalfUnits: b.enrollment.totalRequiredHalfUnits,
               protectedCourseKeys: activity.courses,
               protectedTaskKeys: activity.tasks,
-            })
+            }), ...validateRoadmapPublicationCoverage(content, b.template, b.enrollment.totalRequiredHalfUnits)]
           : [],
       createdBy: v.createdBy,
       createdAt: v.createdAt.toISOString(),
@@ -1145,7 +1146,8 @@ export function createHighSchoolService(deps: HighSchoolServiceDeps) {
         protectedCourseKeys: activity.courses,
         protectedTaskKeys: activity.tasks,
       });
-      if (errors.length > 0) throw new HsError(E.ROADMAP_INVALID, 422, "The roadmap cannot be published yet", { errors });
+      errors.push(...validateRoadmapPublicationCoverage(content, template, enrollment.totalRequiredHalfUnits));
+      if (errors.length > 0) throw new HsError(E.ROADMAP_INVALID, 422, `The roadmap cannot be published yet. ${errors[0]}`, { errors });
       if (published) await repo.updateVersion(published.id, { status: "superseded", supersededAt: now }, tx);
       await repo.updateVersion(draft.id, { status: "published", publishedBy: actorId, publishedAt: now }, tx);
       await repo.appendEvent(event(studentId, enrollment.id, "roadmap_published", actorId, `Roadmap version ${draft.versionNumber} published`, { versionId: draft.id, versionNumber: draft.versionNumber, supersededVersionId: published?.id ?? null }, now), tx);

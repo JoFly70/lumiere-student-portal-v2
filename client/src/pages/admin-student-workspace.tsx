@@ -1,7 +1,7 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
 import { useParams, Link } from "wouter";
-import { AlertCircle, ArrowLeft, ArrowRight, ChevronDown, Database, FileCheck2, FileText, Fingerprint, LayoutDashboard, LifeBuoy, RefreshCw, Route, ShieldCheck } from "lucide-react";
+import { AlertCircle, ArrowLeft, ArrowRight, ChevronDown, Database, FileCheck2, FileText, Fingerprint, LayoutDashboard, LifeBuoy, RefreshCw, Route, ShieldCheck, UserCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,7 +38,6 @@ import {
   creditRecordStanding,
   creditRecordStandingCounts,
   documentNeedsReview,
-  documentStatusKey,
   resolveWorkspaceStudentIdentity,
   workspaceStudentIdFromData,
   formatWorkspaceDateTime,
@@ -64,9 +63,11 @@ import { PhotoDialog } from "@/components/os/account-menu";
 import { useT } from "@/i18n";
 import { profileDecisionCount } from "@/components/admin/student-profile-review-logic";
 import { useDocuments } from "@/hooks/use-documents";
+import { apiRequest } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 import { useTickets, type Ticket } from "@/hooks/use-tickets";
 import { SUPPORT_TOPIC_INFO, awaitingFor, staffStatusLabel, topicForTicket } from "@shared/support-contract";
-import { docStatusLabel, docTypeLabel } from "@/lib/document-type-labels";
+import { canActivateLeadForRole } from "@/components/admin/student-documents-upload-logic";
 
 const WORKSPACE_TABS = ["overview", "profile", "documents", "support"] as const;
 type WorkspaceTab = typeof WORKSPACE_TABS[number];
@@ -146,9 +147,17 @@ export default function AdminStudentWorkspace() {
   const { studentId = "" } = useParams<{ studentId: string }>();
   const [snapshotUnavailable, setSnapshotUnavailable] = useState(false);
   const [placementFeedback, setPlacementFeedback] = useState<Record<string, PlacementActionFeedback>>({});
+  const [activationFeedback, setActivationFeedback] = useState<{ kind: "success" | "error"; message: string } | null>(null);
   const query = useQuery({
     queryKey: ADMIN_STUDENT_WORKSPACE_QUERY_KEY(studentId),
     ...ADMIN_STUDENT_WORKSPACE_QUERY_OPTIONS,
+  });
+  const state = selectWorkspaceState(query);
+  // New leads can exist before an academic assignment. Keep lifecycle actions
+  // available without changing the canonical academic workspace's 404 contract.
+  const unassignedStudent = useQuery<{ id: string; status: string }>({
+    queryKey: [`/api/students/${encodeURIComponent(studentId)}`],
+    enabled: state.kind === "empty" && state.reason === "not-found" && !!studentId,
   });
   // Route param only locates the workspace; every panel keys off the id of the
   // student record the workspace endpoint returned.
@@ -158,12 +167,40 @@ export default function AdminStudentWorkspace() {
   const { profileQuery } = useStaffProfileData(canonicalStudentId ?? "");
   const queryClient = useQueryClient();
   const { t } = useT();
+  const { user } = useAuth();
+  const activateLead = useMutation({
+    mutationFn: async (id: string) => apiRequest(`/api/admin/students/${encodeURIComponent(id)}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ status: "active" }),
+    }),
+    onMutate: () => setActivationFeedback(null),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["/api/admin/students"] });
+      const refreshed = unassignedStudent.data?.id === studentId
+        ? await unassignedStudent.refetch() : await query.refetch();
+      if (refreshed.isError) {
+        setActivationFeedback({ kind: "error", message: "Lead activated, but the workspace could not refresh. Retry the workspace refresh." });
+      } else {
+        setActivationFeedback({ kind: "success", message: "Lead activated." });
+      }
+    },
+    onError: (error) => setActivationFeedback({ kind: "error", message: error instanceof Error ? error.message : "Could not activate this lead." }),
+  });
   const [photoOpen, setPhotoOpen] = useState(false);
   const [tab, setTab] = useHashTab(WORKSPACE_TABS, "overview", WORKSPACE_TAB_ALIASES);
-  const state = selectWorkspaceState(query);
   if (state.kind === "loading") return <div role={state.role} aria-live={state.ariaLive} className="space-y-4"><span className="sr-only">Loading student workspace</span><div className="h-8 w-64 animate-pulse rounded bg-muted" /><div className="h-32 animate-pulse rounded-lg bg-muted" /><div className="h-64 animate-pulse rounded-lg bg-muted" /></div>;
   if (state.kind === "error") return <Card><CardContent className="flex flex-col items-center gap-3 py-16 text-center"><AlertCircle className="h-8 w-8 text-destructive" /><h2 className="text-lg font-semibold">Workspace unavailable</h2><p className="text-sm text-muted-foreground">The canonical student workspace could not be loaded.</p><Button onClick={() => query.refetch()}><RefreshCw className="mr-2 h-4 w-4" />Retry</Button></CardContent></Card>;
-  if (state.kind === "empty") return <Card><CardContent className="flex flex-col items-center gap-3 py-16 text-center"><h2 className="text-lg font-semibold">{state.reason === "not-found" ? "Student workspace not found" : "Workspace unavailable"}</h2><p className="text-sm text-muted-foreground">{state.reason === "not-found" ? "There is no canonical workspace for this student." : "No workspace record is available for this student."}</p></CardContent></Card>;
+  if (state.kind === "empty") {
+    const student = unassignedStudent.data?.id === studentId ? unassignedStudent.data : undefined;
+    if (student) return <Card><CardContent className="flex flex-col items-center gap-3 py-16 text-center">
+      <h2 className="text-lg font-semibold">Student academic workspace not assigned</h2>
+      <p className="text-sm text-muted-foreground">This student has no active academic assignment yet. Student status: <span className="font-medium capitalize">{student.status}</span>.</p>
+      {canActivateLeadForRole(user?.role, student.status) ? <Button type="button" disabled={activateLead.isPending} onClick={() => activateLead.mutate(student.id)} data-testid="button-activate-lead">{activateLead.isPending ? "Activating…" : "Activate lead"}</Button> : null}
+      {activationFeedback ? <p role={activationFeedback.kind === "error" ? "alert" : "status"}>{activationFeedback.message}</p> : null}
+      <Link href={`/admin/students/${encodeURIComponent(student.id)}/high-school`} className="text-sm underline">Open high school pathway</Link>
+    </CardContent></Card>;
+    return <Card><CardContent className="flex flex-col items-center gap-3 py-16 text-center"><h2 className="text-lg font-semibold">{state.reason === "not-found" ? "Student workspace not found" : "Workspace unavailable"}</h2><p className="text-sm text-muted-foreground">{unassignedStudent.isLoading ? "Loading student status…" : state.reason === "not-found" ? "There is no canonical workspace for this student." : "No workspace record is available for this student."}</p></CardContent></Card>;
+  }
   const vm = state.viewModel;
   const snapshot = vm.snapshot && typeof vm.snapshot === "object" && !Array.isArray(vm.snapshot) ? vm.snapshot as WorkspaceRecord : {};
   const label = (kind: "programs" | "programVersions" | "requirements", id: unknown): string | undefined => {
@@ -206,6 +243,8 @@ export default function AdminStudentWorkspace() {
   const programVersionName = label("programVersions", value(vm.programVersion, "id")) ?? value(vm.programVersion, "versionLabel", "id");
   const requirementOptions = canonicalLabelOptions(vm.labels.requirements);
   const academicRuleOptions = canonicalLabelOptions(vm.labels.academicRules);
+  const studentStatus = value(vm.student, "status").toLowerCase();
+  const canActivateLead = canActivateLeadForRole(user?.role, studentStatus);
   const writesDisabled = !placementStudentId || !placementWritesEnabled(
     snapshotFingerprint,
     snapshotUnavailable,
@@ -244,8 +283,9 @@ export default function AdminStudentWorkspace() {
       title={name}
       description={<>{identity.email ?? "Not provided"} · <span className="font-mono">{identity.studentCode ?? "Not provided"}</span></>}
       meta={<StaffPill tone="neutral" icon={<ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />}>Canonical view · controlled placement writes</StaffPill>}
-      actions={<><Button type="button" variant="outline" size="sm" className={staffBtn.outline} onClick={() => setPhotoOpen(true)} data-testid="button-student-photo">{t("staff.photo.button")}</Button><Link href={`/admin/students/${encodeURIComponent(studentId)}/roadmap`} className={`${staffBtn.outline} inline-flex items-center justify-center border`} data-testid="link-student-roadmap"><Route className="h-4 w-4" aria-hidden="true" />View roadmap</Link><Link href={`/admin/students/${encodeURIComponent(studentId)}/high-school`} className={`${staffBtn.outline} inline-flex items-center justify-center border`} data-testid="link-student-high-school">High school pathway</Link><Link href={`/admin/students/${encodeURIComponent(studentId)}/billing`} className={`${staffBtn.outline} inline-flex items-center justify-center border`} data-testid="link-student-billing">Billing</Link></>}
+      actions={<>{canActivateLead ? <Button type="button" size="sm" className={staffBtn.seal} disabled={activateLead.isPending || !canonicalStudentId} onClick={() => canonicalStudentId && activateLead.mutate(canonicalStudentId)} data-testid="button-activate-lead">{activateLead.isPending ? "Activating…" : <><UserCheck className="h-4 w-4" aria-hidden="true" />Activate lead</>}</Button> : null}<Button type="button" variant="outline" size="sm" className={staffBtn.outline} onClick={() => setPhotoOpen(true)} data-testid="button-student-photo">{t("staff.photo.button")}</Button><Link href={`/admin/students/${encodeURIComponent(studentId)}/roadmap`} className={`${staffBtn.outline} inline-flex items-center justify-center border`} data-testid="link-student-roadmap"><Route className="h-4 w-4" aria-hidden="true" />View roadmap</Link><Link href={`/admin/students/${encodeURIComponent(studentId)}/high-school`} className={`${staffBtn.outline} inline-flex items-center justify-center border`} data-testid="link-student-high-school">High school pathway</Link><Link href={`/admin/students/${encodeURIComponent(studentId)}/billing`} className={`${staffBtn.outline} inline-flex items-center justify-center border`} data-testid="link-student-billing">Billing</Link></>}
     />
+    {activationFeedback ? <StaffNotice tone={activationFeedback.kind === "error" ? "urgent" : "gold"} role={activationFeedback.kind === "error" ? "alert" : "status"}>{activationFeedback.message}</StaffNotice> : null}
     {identity.id ? <PhotoDialog
       open={photoOpen}
       onOpenChange={setPhotoOpen}
@@ -503,7 +543,7 @@ export default function AdminStudentWorkspace() {
     <StaffTabPanel idPrefix="ws" tabKey="documents" active={tab === "documents"}>
      <section id="workspace-documents" aria-labelledby="workspace-documents-heading" className="space-y-4">
        <StaffSectionHeader id="workspace-documents-heading" icon={<FileText className="h-5 w-5" />} title="Documents" description="Verify, reject or request a new upload. The reason you write for the student is shown to them; the internal note never is." />
-       <WorkspaceResourceState loading={documentsQuery.isLoading} error={documentsQuery.isError} empty={!documentsQuery.data?.length} onRetry={() => void documentsQuery.refetch()}>
+       <WorkspaceResourceState loading={documentsQuery.isLoading} error={documentsQuery.isError} empty={false} onRetry={() => void documentsQuery.refetch()}>
          {canonicalStudentId ? <StudentDocumentsReview studentId={canonicalStudentId} documents={documentsQuery.data ?? []} /> : null}
        </WorkspaceResourceState>
      </section>

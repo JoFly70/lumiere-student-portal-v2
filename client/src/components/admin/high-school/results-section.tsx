@@ -8,6 +8,7 @@ import {
 } from "@/lib/admin-high-school-logic";
 import { ActionMessage, EvidenceSelect, FIELD_CLASS, Field, FormPanel, GatedButton, Notice, Pill, RecordButton, SectionCard, SectionHeading, useOpenForm, type SectionProps } from "./shared";
 import { useStaffAction } from "./use-staff-action";
+import { StaffDocumentUpload } from "@/components/admin/student-documents-review";
 
 const docName = (docs: readonly EvidenceDoc[], id: string) => docs.find((d) => d.id === id)?.file_name ?? "Verified document";
 
@@ -70,9 +71,9 @@ export function ResultsSection({ state, studentId, isAdmin, docs, initialOpenFor
   const task = useStaffAction(studentId, (b: unknown) => adminHighSchoolApi.taskResult(studentId, eid, b), "Official task result recorded.");
   const course = useStaffAction(studentId, (b: unknown) => adminHighSchoolApi.courseResult(studentId, eid, b), "Official course result recorded.");
   const voider = useStaffAction(studentId, (v: { id: string; reason: string }) => adminHighSchoolApi.voidAward(studentId, eid, v.id, voidAwardBody(v.reason)), "Credit award voided.");
-  if (!cur) return <section aria-labelledby="hs-results-h"><SectionHeading id="hs-results-h" title="Reviews and official results" /><Notice>Create the high school program first.</Notice></section>;
+  if (!cur) return <section aria-labelledby="hs-results-h" className="space-y-5"><SectionHeading id="hs-results-h" title="Reviews and official results" /><StaffDocumentUpload studentId={studentId} /><Notice>Create the high school program first.</Notice></section>;
   if (!cur.published) {
-    return <section aria-labelledby="hs-results-h"><SectionHeading id="hs-results-h" title="Reviews and official results" /><Notice>Results are recorded against the published roadmap. Publish a roadmap first.</Notice></section>;
+    return <section aria-labelledby="hs-results-h" className="space-y-5"><SectionHeading id="hs-results-h" title="Reviews and official results" /><StaffDocumentUpload studentId={studentId} /><Notice>Results are recorded against the published roadmap. Publish a roadmap first.</Notice></section>;
   }
   const courses = planCourseOptions(state);
   const tasks = taskOptions(state, tCourse);
@@ -95,6 +96,7 @@ export function ResultsSection({ state, studentId, isAdmin, docs, initialOpenFor
         Only results issued by the awarding school are official. Courses listed are those in the published roadmap; every result needs a verified document of this student as evidence.
       </SectionHeading>
       {locked ? <Notice tone="info" testId="closed-record">{CLOSED_RECORD_TEXT} Results and awards can no longer be changed.</Notice> : null}
+      <StaffDocumentUpload studentId={studentId} />
       <ReviewQueue queue={cur.reviewQueue} onPick={pick} locked={locked} />
 
       {locked ? null : (

@@ -11,6 +11,10 @@ vi.mock("@tanstack/react-query", async (importOriginal) => ({
   useMutation: vi.fn(() => ({ isPending: false, mutate: vi.fn() })),
   useQueryClient: vi.fn(() => ({ invalidateQueries: vi.fn(), setQueryData: vi.fn() })),
 }));
+vi.mock("@/lib/auth", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/auth")>()),
+  useAuth: () => ({ user: { role: "staff" } }),
+}));
 
 import { HighSchoolWorkspace, type HsTabId } from "@/pages/admin-student-high-school";
 import { RoadmapEditor } from "@/components/admin/high-school/roadmap-section";
