@@ -21,6 +21,8 @@ run = ["npm", "start"]
 APP_URL = "https://lumiere-student-portal-v-2.replit.app"
 PUBLIC_APP_URL = "https://lumiere-student-portal-v-2.replit.app"
 AUTH_EMAIL_MODE = "custom_smtp"
+ENABLE_EMAIL_VERIFICATION = "true"
+ALLOW_DEMO_MODE = "false"
 
 [workflows]
 runButton = "Project"

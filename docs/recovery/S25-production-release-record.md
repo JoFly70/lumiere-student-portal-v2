@@ -7,7 +7,7 @@ and the `lumiereportal.app` domain were not changed in S25.
 
 ## 1. Branch and SHA
 
-Final S25 code SHA: `1caf1af` (see the status section at the end for any later documentation-only commits).
+Final S25 application code: `a970639` plus the S26 production-config commit (`.replit` production env); later commits are documentation only. The release SHA is stated in the S26 package.
 
 | Commit | Content |
 |--------|---------|
@@ -18,6 +18,7 @@ Final S25 code SHA: `1caf1af` (see the status section at the end for any later d
 | `a1cb646` | Guarded published-staging mode for the staging launcher |
 | `230bcbc` | S20/S21 first-student journey fixtures repaired for provider-verified auth |
 | `1caf1af` | French 404 page and phrasing |
+| `a970639` | Unknown `/api` paths return JSON 404 (found by hosted acceptance) |
 
 ## 2. Git divergence resolution
 
@@ -117,9 +118,26 @@ See `s25-security-readiness.md`. Summary:
 - Production's `is_staff_or_admin()` and `student_owns_record()` already check active status (live evidence); the plan
   runs the S18 billing migration and the S22 restore in one transaction so that check is never lost.
 
+### Not tested (deferred by owner order, 2026-10-28 ~23:40 UTC; NOT passed)
+
+Round 2 of hosted acceptance was cancelled before it ran. The following were never executed on hosted staging and are
+**DEFERRED**, not passed:
+
+- Admin View as Student on the published site (incl. method rejection and the `profile.viewed` audit row). Locally
+  covered by `tests/s25-view-as-student.test.ts` only.
+- Staff role denials on the published site (locally covered by RBAC suites).
+- Isolation between two real synthetic students on the published site (round 1 covered a non-existent foreign id only).
+- Browser check of the French High School pages and the View as Student page on the published site (locally covered
+  by render tests; round 1 browser run timed out before the HS page).
+- Real email journey on hosted staging: invitation, verification email delivery, verify link, login/logout, password
+  reset email, inactive-account denial. Never run in S25; no test email was sent.
+
+The Replit Agent was told to stop the exercise, deactivate any "S25 QA" privileged identity it had created (the
+23:26 UTC evidence shows none had been created), and delete any uncommitted harness.
+
 ## 8. Production deployment status
 
-NOT DEPLOYED (owner approval required). Production remains the S16 build (`cd21764`, deployment `a24d52bb-…`).
+NOT DEPLOYED. Production remains the S16 build (`cd21764`, deployment `a24d52bb-…`). See S26 below.
 
 ## 9. Domain status
 
@@ -127,12 +145,28 @@ Unchanged: `lumiereportal.app` is attached to MockPortalNode. Cutover and rollba
 
 ## 10. Unresolved launch blockers
 
-See status section.
+1. Production schema: 16 missing tables plus S25 objects (plan: `s25-production-migration-plan.md`), not applied.
+2. Production deployment config: `ENABLE_EMAIL_VERIFICATION=true` was missing, so the S25 build would refuse to start
+   in production. Fixed in the tracked `.replit` `[userenv.production]` (with `ALLOW_DEMO_MODE=false`); takes effect
+   when the production workspace moves to the release SHA.
+3. Distributed rate limiting: production has no `REDIS_URL`; production `/ready` returns 503
+   (`distributedRateLimit=false`) by design. Owner decision in S26 package.
+4. Production email delivery (custom SMTP in production Supabase Auth): declared (`AUTH_EMAIL_MODE=custom_smtp`) but
+   never delivery-tested; the deferred email journey above is the gate.
+5. Production Supabase Auth URLs for the production origins; production storage bucket (10 MiB, PDF/images only)
+   must be raised to 20 MiB and 11 MIME types for S21 attachments.
+6. Approved elective course selections for the first student (separate enrollment gate; the five electives remain
+   STAGING TEST ONLY).
+7. Repository is public; owner wants it private before real-student launch (owner action in GitHub settings).
 
 ## 11. GO / NO-GO
 
-See status section.
+S25 (staging): **CLOSED.** Software release candidate built, migrated and live on staging; the student journey
+verified on the published site; deferred items listed above.
+
+First-student production release: **NO-GO until the S26 cutover package below is approved and executed**, and the
+real-email login journey has passed once on production before the student is invited.
 
 ## 12. Immediate next action
 
-See status section.
+Owner approves (or amends) the S26 cutover package in `docs/recovery/S26-production-cutover-package.md`.
