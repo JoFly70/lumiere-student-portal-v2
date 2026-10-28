@@ -67,3 +67,13 @@ Using the Supabase SQL connector and original unmodified `scripts/s22/hosted-ver
 A new, disposable Replit App was created separately from production, initially titled `AllGullibleBase` (Repl ID `12005f5d-d31a-42c8-803c-2d0433c373f5`). The Replit Agent confirmed it could import existing source into this distinct project and then reported a successful clone of `claude/s22b-real-hosted-staging` at `49dca6bfbc67c37fc964be601168fb12ef721a7b` (1,594 tracked files). The Agent subsequently reported a local-only commit `949bd2b3db710b5c4d7eb130c90b82f50e1933d4` affecting only `.replit` and two agent-memory files. GitHub branch source at this stage remained at `49dca6bfbc67c37fc964be601168fb12ef721a7b`. 
 
 Staging Repl configuration has `SUPABASE_URL` / `VITE_SUPABASE_URL` directed to the isolated project, plus staging ref/confirmation. **Managed `DATABASE_URL` is present but NOT verified and must NOT be used.** Missing verified database password, `SUPABASE_SERVICE_KEY`, and legacy anon key build variables. No app was started or published at time of this record.
+
+## Identified live custom-domain owning Repl (read-only Replit Agent verification)
+The domain's public DNS TXT `replit-verify=a51b4fb3-73af-47af-840b-7f8e17d7c553` **exactly matches Replit Repl ID `a51b4fb3-73af-47af-840b-7f8e17d7c553`**. Replit Agent inspection of the matching project confirms:
+- Repl title: `MockPortalNode`; domain: `https://lumiereportal.app` (primary custom domain)
+- Secondary published URL: `https://mock-portal-node-jsebbag.replit.app`
+- Published Autoscale deployment; public; both URLs serve the same older Lumière marketing/landing page, HTTP 200
+- No other custom domains reported. V2 production app is a *different* Repl `lumiere-student-portal-v2` (`33a30f4f-b01b-4abc-a2d8-e08f31fe10d9`)
+- The new staging workspace is a *third* separate Repl `AllGullibleBase` (`12005f5d-d31a-42c8-803c-2d0433c373f5`).
+
+The previous S22 `domain-cutover.md` question about domain ownership is **resolved**; keep the source old deployment for rollback. No domain relinking or DNS writes performed. Replit should display a conflict/move flow when the final cutover is authorized. Never move it before a real staging app PASS.
