@@ -72,7 +72,28 @@ export function validateStagingAuthConfiguration(env) {
   if (env.ALLOW_DEMO_MODE && env.ALLOW_DEMO_MODE !== 'false') refuse('Staging does not permit demo authentication.');
 }
 
-export function validateStartupEnvironment(env) {
+// S25: a published staging deployment has no REPLIT_DEV_DOMAIN; its origin is declared explicitly and must be a
+// *.replit.app host, and the app URLs must equal it.
+const PUBLISHED_ORIGIN = /^https:\/\/[a-z0-9-]+(?:\.[a-z0-9-]+)*\.replit\.app$/;
+
+export function stagingOrigin(env, published) {
+  if (published) {
+    const origin = env.STAGING_PUBLISHED_ORIGIN;
+    if (typeof origin !== 'string' || !PUBLISHED_ORIGIN.test(origin) ||
+        env.APP_URL !== origin || env.PUBLIC_APP_URL !== origin) {
+      refuse('APP_URL and PUBLIC_APP_URL must equal STAGING_PUBLISHED_ORIGIN, a *.replit.app origin.');
+    }
+    return origin.slice('https://'.length);
+  }
+  const host = env.REPLIT_DEV_DOMAIN;
+  if (typeof host !== 'string' || !/^[a-z0-9-]+(?:\.[a-z0-9-]+)*\.replit\.dev$/.test(host) ||
+      env.APP_URL !== `https://${host}` || env.PUBLIC_APP_URL !== `https://${host}`) {
+    refuse('APP_URL and PUBLIC_APP_URL must equal this staging Repl development origin.');
+  }
+  return host;
+}
+
+export function validateStartupEnvironment(env, { published = false } = {}) {
   validateStagingIdentity(env);
   const database = validateStagingDatabaseIdentity(env.STAGING_DATABASE_URL);
   if (!database.password) refuse('STAGING_DATABASE_URL must include its staging database password.');
@@ -93,17 +114,13 @@ export function validateStartupEnvironment(env) {
   if (typeof env.SESSION_SECRET !== 'string' || env.SESSION_SECRET.length < 32) {
     refuse('SESSION_SECRET must be configured with at least 32 characters.');
   }
-  const host = env.REPLIT_DEV_DOMAIN;
-  if (typeof host !== 'string' || !/^[a-z0-9-]+(?:\.[a-z0-9-]+)*\.replit\.dev$/.test(host) ||
-      env.APP_URL !== `https://${host}` || env.PUBLIC_APP_URL !== `https://${host}`) {
-    refuse('APP_URL and PUBLIC_APP_URL must equal this staging Repl development origin.');
-  }
+  stagingOrigin(env, published);
   validateStagingAuthConfiguration(env);
 }
 
 // Exclude these names BEFORE looking up their values. In particular, never read,
 // spread, compare, parse, log, or forward the inherited managed DATABASE_URL.
-export function buildApplicationEnvironment(env) {
+export function buildApplicationEnvironment(env, { published = false } = {}) {
   const child = {};
   for (const name of Object.keys(env)) {
     if (name === 'DATABASE_URL' || name === 'STAGING_DATABASE_URL' ||
@@ -111,8 +128,9 @@ export function buildApplicationEnvironment(env) {
     if (typeof env[name] === 'string') child[name] = env[name];
   }
   child.DATABASE_URL = env.STAGING_DATABASE_URL;
-  child.NODE_ENV = 'development';
-  child.CUSTOM_DOMAIN = env.REPLIT_DEV_DOMAIN;
+  // Published staging serves the production build (production security headers and auth guard).
+  child.NODE_ENV = published ? 'production' : 'development';
+  child.CUSTOM_DOMAIN = published ? String(env.STAGING_PUBLISHED_ORIGIN).slice('https://'.length) : env.REPLIT_DEV_DOMAIN;
   child.EMAIL_ENABLED = 'false';
   child.ENABLE_EMAIL_VERIFICATION = 'true';
   child.ALLOW_DEMO_MODE = 'false';

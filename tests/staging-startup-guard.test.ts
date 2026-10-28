@@ -7,6 +7,7 @@ import {
   validateStagingServiceKey,
   validateStartupEnvironment,
   validateStagingAuthConfiguration,
+  stagingOrigin,
 } from '../scripts/staging/guard.mjs';
 
 // Identity-only URLs: deliberately contain no passwords, tokens, or secret keys.
@@ -99,5 +100,20 @@ describe('staging-only startup guard (offline, no credentials)', () => {
       expect(() => validateStagingAuthConfiguration({ ENABLE_EMAIL_VERIFICATION: value })).toThrow();
     }
     expect(() => validateStagingAuthConfiguration({ ENABLE_EMAIL_VERIFICATION: 'true', ALLOW_DEMO_MODE: 'true' })).toThrow();
+  });
+
+  it('S25 published mode: production build, declared *.replit.app origin only', () => {
+    const origin = 'https://lumiere-staging.replit.app';
+    expect(stagingOrigin({ STAGING_PUBLISHED_ORIGIN: origin, APP_URL: origin, PUBLIC_APP_URL: origin }, true)).toBe('lumiere-staging.replit.app');
+    for (const bad of ['https://lumiereportal.app', 'http://lumiere-staging.replit.app', 'https://x.replit.app.attacker.invalid', undefined]) {
+      expect(() => stagingOrigin({ STAGING_PUBLISHED_ORIGIN: bad, APP_URL: bad, PUBLIC_APP_URL: bad }, true)).toThrow();
+    }
+    expect(() => stagingOrigin({ STAGING_PUBLISHED_ORIGIN: origin, APP_URL: 'https://other.replit.app', PUBLIC_APP_URL: origin }, true)).toThrow();
+    const child = buildApplicationEnvironment({ STAGING_DATABASE_URL: identityUrl, STAGING_PUBLISHED_ORIGIN: origin }, { published: true });
+    expect(child.NODE_ENV).toBe('production');
+    expect(child.CUSTOM_DOMAIN).toBe('lumiere-staging.replit.app');
+    expect(child.DATABASE_URL).toBe(identityUrl);
+    expect(child.ENABLE_EMAIL_VERIFICATION).toBe('true');
+    expect(child.EMAIL_ENABLED).toBe('false');
   });
 });

@@ -8,21 +8,23 @@ import {
 
 // No app module is loaded until the isolated child has its verified environment.
 const mode = process.argv.slice(2);
-if (mode.length !== 1 || !['--check', '--start'].includes(mode[0])) {
-  console.error('Usage: node scripts/staging/start.mjs --check | --start');
+// --serve (S25): the published staging deployment; runs the production build (dist/) with the same guard.
+if (mode.length !== 1 || !['--check', '--start', '--serve', '--check-published'].includes(mode[0])) {
+  console.error('Usage: node scripts/staging/start.mjs --check | --start | --check-published | --serve');
   process.exitCode = 1;
 } else {
   try {
-    validateStartupEnvironment(process.env);
-    if (mode[0] === '--check') {
+    const published = mode[0] === '--serve' || mode[0] === '--check-published';
+    validateStartupEnvironment(process.env, { published });
+    if (mode[0] === '--check' || mode[0] === '--check-published') {
       console.log('Staging startup configuration passed offline checks. No connection attempted; credential authenticity is not verified.');
     } else {
       const lifecycle = (event, fields = {}) => console.log(JSON.stringify({
         component: 'staging-launcher', event, time: new Date().toISOString(), ...fields,
       }));
-      const child = spawn(process.execPath, ['--import', 'tsx', 'server/index.ts'], {
+      const child = spawn(process.execPath, published ? ['dist/index.js'] : ['--import', 'tsx', 'server/index.ts'], {
         cwd: fileURLToPath(new URL('../../', import.meta.url)),
-        env: buildApplicationEnvironment(process.env),
+        env: buildApplicationEnvironment(process.env, { published }),
         stdio: 'inherit',
         shell: false,
       });

@@ -66,3 +66,19 @@ App-level `EMAIL_ENABLED=false` does not disable Supabase Auth email. Do not run
 hosted signup/resend/recovery tests without separate authorization for controlled
 delivery. The S23 Auth tests mock provider/mail calls and use disposable local
 PostgreSQL only; see `docs/recovery/s23-staging-auth-readiness.md`.
+
+## Published staging deployment (S25)
+
+The owner authorized a published, continuously reachable staging deployment of this same Repl
+against the same staging project. It uses the same guard in a published mode:
+
+- Deployment build: `npm ci && npm run build`
+- Deployment run: `node scripts/staging/start.mjs --serve` (never `npm start`: that would read the
+  managed `DATABASE_URL`)
+- Deployment environment: the same staging identity/secrets as above, plus
+  `STAGING_PUBLISHED_ORIGIN=https://<deployment>.replit.app` with `APP_URL` and `PUBLIC_APP_URL` equal
+  to it. Only a `*.replit.app` origin is accepted, so the guard refuses the production custom domain.
+- `node scripts/staging/start.mjs --check-published` runs the offline checks for that configuration.
+
+The published child runs the production build (`dist/index.js`) with `NODE_ENV=production`, so the
+production security headers and the S25 production auth guard apply; App-level email stays disabled.
