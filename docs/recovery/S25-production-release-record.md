@@ -65,7 +65,29 @@ Staging Repl `AllGullibleBase` (`12005f5d-…`), Supabase `tqgwoyzlnkqwkcjsiocd`
   (hosted-verify 130/130).
 - Install, offline guard check, production build: PASS on the Repl. Development preview `/health`, `/live`, `/ready`,
   `/login`: 200.
-- Published deployment: PENDING (see status).
+- Published deployment: **https://all-gullible-base.replit.app** (Autoscale, deployment `587ed13b-c7e9-46b1-a47f-cf5ca05eb9a5`).
+  Run command `node scripts/staging/start.mjs --serve`: the guarded launcher serves the production build with
+  `NODE_ENV=production` and only the verified `STAGING_DATABASE_URL`; it refuses any origin but the declared
+  `*.replit.app` one. Two-step first publish: the guard refused to serve until Replit had assigned the hostname and
+  `STAGING_PUBLISHED_ORIGIN`/`APP_URL`/`PUBLIC_APP_URL` were set to it (fail-closed), then republished.
+- Owner-configured staging Supabase Auth: Site URL = the published origin; redirects `/auth/verify`, `/verify-email`,
+  `/reset-password`; public sign-ups, manual linking and anonymous sign-ins OFF; Confirm email ON.
+- External checks of the published site: `/health` 200 (`environment: production`, database ok); `/login` renders
+  (EN/FR, invitation tab); `/ready` 503 as expected for staging (`customSmtpDeclared=false` because staging uses the
+  Supabase default mailer, `distributedRateLimit=false` because there is no Redis).
+
+### Hosted acceptance, round 1 (published site, 22:53–22:55 UTC, no email, no new accounts)
+
+| Check | Result |
+|-------|--------|
+| Guest: student profile, view-as-student | 401 PASS |
+| Student: profile, HS view, academic projection, own documents, tickets, `/api/me` | 200 PASS |
+| Roadmap totals 21 credits (16 core + 5 elective); all five electives labelled TEST ONLY; official earned 0 | PASS |
+| Student → admin endpoints; student → a non-existent student's documents | 403 PASS |
+| Language: save FR 200, read FR 200, `de` 400 | PASS |
+| `/api/auth/me` (non-existent path) returned the SPA HTML with 200 | FAIL → fixed in `a970639` (JSON 404) |
+| Admin View as Student, staff denial, real second-student isolation | NOT RUN (no synthetic admin/staff/second student) → round 2 |
+| Browser: Flight Deck, prototype link absent, EN→FR toggle | partial; HS French headings not reached (timeout) → round 2 |
 
 ## 6. Application and database checks completed
 
