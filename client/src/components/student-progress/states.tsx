@@ -73,8 +73,8 @@ export function PlanNotReady() {
           Your Lumi&egrave;re plan is not ready yet
         </h2>
         <p className="text-sm leading-relaxed text-muted-foreground">
-          Your advisor must create your student record before your academic progress can be shown.
-          This page checks again automatically, so it will update as soon as your record exists.
+          Your account is ready. An advisor still needs to finish linking your student profile and
+          academic plan before your progress can appear here. Contact support if you need help.
         </p>
         <Button asChild variant="outline" className="min-h-[44px]">
           <Link href="/support">Contact Support</Link>

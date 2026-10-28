@@ -13,7 +13,12 @@ function getDb() {
   }
 
   if (!dbInstance) {
-    client = postgres(connectionString);
+    // The isolated staging session pooler has a small shared connection budget.
+    // Promise.all projections plus a concurrent QA runner must not each reserve
+    // the driver's default ten sessions. Production behavior is unchanged.
+    const guardedStaging = process.env.NODE_ENV === "development"
+      && process.env.S22_STAGING_PROJECT_REF === "tqgwoyzlnkqwkcjsiocd";
+    client = postgres(connectionString, guardedStaging ? { max: 2, idle_timeout: 10 } : {});
     dbInstance = drizzle(client, { schema });
   }
 
@@ -28,3 +33,10 @@ export const db = new Proxy({} as ReturnType<typeof drizzle>, {
     return typeof value === 'function' ? value.bind(instance) : value;
   }
 });
+
+/** Explicit shutdown for bounded staging/test runners; never called by the server. */
+export async function closeDatabase(): Promise<void> {
+  if (client) await client.end({ timeout: 5 });
+  client = null;
+  dbInstance = null;
+}

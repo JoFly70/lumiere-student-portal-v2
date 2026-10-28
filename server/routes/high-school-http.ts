@@ -15,7 +15,23 @@ export function sendHsError(res: Response, error: unknown, context: string) {
       error: { code: error.code, message: error.message, ...(error.details ? { details: error.details } : {}) },
     });
   }
-  logger.error(`High school ${context} failed`, { error: error instanceof Error ? error.message : String(error) });
+  // Drizzle wraps driver failures with SQL and bound values. Log safe diagnostic
+  // identifiers instead of discarding the cause or exposing query/student data.
+  const diagnostic: Record<string, string> = {};
+  let cause: unknown = error;
+  for (let depth = 0; cause && typeof cause === "object" && depth < 5; depth++) {
+    const detail = cause as { code?: unknown; routine?: unknown; column?: unknown; message?: unknown; cause?: unknown };
+    for (const key of ["code", "routine", "column"] as const) {
+      const value = detail[key];
+      if (typeof value === "string" && /^[A-Za-z0-9_.]+$/.test(value)) diagnostic[key] = value;
+    }
+    if (typeof detail.message === "string") {
+      if (/max.?clients|clients.*pool_size|too many clients/i.test(detail.message)) diagnostic.reason = "SESSION_POOL_CAPACITY";
+      else if (/prepared statement/i.test(detail.message)) diagnostic.reason = "PREPARED_STATEMENT";
+    }
+    cause = detail.cause;
+  }
+  logger.error(`High school ${context} failed`, diagnostic);
   return res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
 }
 

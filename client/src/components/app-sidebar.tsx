@@ -1,4 +1,4 @@
-import { BookOpen, FileText, CreditCard, GraduationCap, HelpCircle, LogOut, User, Gauge, ShieldCheck, School, FlaskConical } from "lucide-react";
+import { BookOpen, FileText, CreditCard, GraduationCap, HelpCircle, LogOut, User, Gauge, ShieldCheck, School } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Link, useLocation, useSearch } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -18,7 +18,6 @@ import { ProfileAvatarUpload } from "@/components/profile-avatar-upload";
 import { useAuth, useAuthToken } from "@/lib/auth";
 import { filterStudentNav, useStudentPrograms } from "@/lib/student-programs";
 import { useT, type TranslationKey } from "@/i18n";
-import { PROTOTYPES_ENABLED, PREVIEW_FLIGHT_DECK_PATH } from "@/components/os/prototype-gate";
 import { StaffAvatar } from "@/components/staff/staff-ui";
 import { staffRoleLabel } from "@/components/staff/staff-shell";
 import { ADMIN_STUDENTS_PATH, adminTabFromSearch } from "@/pages/admin-student-workspace-presentation";
@@ -72,9 +71,6 @@ const studentMenuItems: { title: string; labelKey?: TranslationKey; url: string;
 const JOURNEY_URLS = ["/high-school", "/flight-deck", "/high-school/flight-deck", "/roadmap"];
 const studentJourneyItems = studentMenuItems.filter((i) => JOURNEY_URLS.includes(i.url));
 const studentFileItems = studentMenuItems.filter((i) => !JOURNEY_URLS.includes(i.url));
-
-// Dev/prototype builds only (see os/prototype-gate): a link to the Academic Flight Deck preview.
-const prototypeItems = [{ title: "Flight Deck Preview", url: PREVIEW_FLIGHT_DECK_PATH, icon: FlaskConical }];
 
 // Staff navigation. "Students" opens the existing admin Students list (admin only: the
 // list route is admin-gated). Staff and coaches work from the support desk.
@@ -182,12 +178,6 @@ export function AppSidebar() {
               <SidebarGroupLabel className="px-3 text-[10.5px] font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/70">{t("nav.file")}</SidebarGroupLabel>
               <SidebarGroupContent>{renderItems(filterStudentNav(studentFileItems, programs))}</SidebarGroupContent>
             </SidebarGroup>
-            {PROTOTYPES_ENABLED && (
-              <SidebarGroup className="px-0 py-2" data-testid="nav-prototypes">
-                <SidebarGroupLabel className="px-3 text-[10.5px] font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/70">Prototypes</SidebarGroupLabel>
-                <SidebarGroupContent>{renderItems(prototypeItems)}</SidebarGroupContent>
-              </SidebarGroup>
-            )}
           </nav>
         </SidebarContent>
         <SidebarFooter className="gap-3 px-3 pb-4 pt-3 group-data-[collapsible=icon]:px-1.5" role="contentinfo">

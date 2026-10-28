@@ -11,6 +11,7 @@ import { asyncHandler } from '../lib/errors';
 import { requireAuth } from '../middleware/auth';
 import { requireRole } from '../middleware/rbac';
 import { auditAdmin } from '../lib/audit';
+import { changeStudentStatus } from '../services/admin-student-status';
 import { createInvitation, DEFAULT_INVITATION_TTL_HOURS, MAX_INVITATION_TTL_HOURS } from '../lib/invitations';
 
 // Supabase Auth ban applied when an account is archived, so refresh tokens
@@ -374,26 +375,7 @@ router.patch('/students/:id/status', asyncHandler(async (req: any, res) => {
   }
 
   try {
-    const { data: student, error } = await supabaseAdmin
-      .from('students')
-      .update({ status })
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (error) {
-      logger.error('Failed to update student status', { error: error.message });
-      return res.status(500).json({ error: 'Failed to update student status' });
-    }
-
-    // Audit log
-    await auditAdmin(
-      'admin.bulk_operation',
-      admin.id,
-      student.user_id,
-      `Changed student status to ${status}`,
-      { studentId: id, oldStatus: student.status, newStatus: status }
-    );
+    const student = await changeStudentStatus(id, status, admin.id);
 
     logger.info('Student status updated', { studentId: id, newStatus: status, adminId: admin.id });
 
