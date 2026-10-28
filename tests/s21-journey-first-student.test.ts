@@ -50,7 +50,7 @@ vi.mock("../server/lib/account-status", () => ({
 }));
 vi.mock("../server/lib/supabase", () => ({
   supabaseAdmin: {
-    auth: { getUser: (...a: unknown[]) => holder.getUser(...a), admin: { createUser: (...a: unknown[]) => holder.createUser(...a), deleteUser: (...a: unknown[]) => holder.deleteUser(...a) } },
+    auth: { getUser: async (...a: unknown[]) => (await holder.getUser(...a)) ?? (await import("./helpers/s09-profile-stack")).fixtureProviderGetUser(...(a as [string])), admin: { createUser: (...a: unknown[]) => holder.createUser(...a), deleteUser: (...a: unknown[]) => holder.deleteUser(...a) } },
     from: (t: string) => {
       if (t === "account_invitations") return new holder.InvitationQuery(holder.pg);
       if (t === "users" || t === "profiles") {
