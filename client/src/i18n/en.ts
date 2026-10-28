@@ -49,6 +49,9 @@ export const en = {
   "nav.file": "Your file",
 
   // Common
+  "common.notFound.title": "Page not found",
+  "common.notFound.body": "This page does not exist or has moved.",
+  "common.notFound.home": "Back to my portal",
   "common.save": "Save",
   "common.cancel": "Cancel",
   "common.close": "Close",

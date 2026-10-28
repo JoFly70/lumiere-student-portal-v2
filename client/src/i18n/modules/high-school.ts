@@ -537,7 +537,7 @@ export const highSchoolFr: Record<keyof typeof highSchoolEn, string> = {
   "hs.journey.needsAttention": "À surveiller",
   "hs.journey.nextStep": "Votre prochaine étape",
   "hs.journey.pastTarget": "Date cible dépassée",
-  "hs.journey.courseTasks": "{done} tâches sur {total} de ce cours officiellement terminées · {credits}",
+  "hs.journey.courseTasks": "Tâches officiellement terminées dans ce cours : {done} sur {total} · {credits}",
   "hs.journey.credits": "Vos crédits",
   "hs.journey.stillToEarn": "Reste à obtenir",
   "hs.journey.officialOnly": "Seuls les crédits confirmés par votre école sont comptés ici.",

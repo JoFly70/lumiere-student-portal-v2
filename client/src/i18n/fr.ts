@@ -44,6 +44,12 @@ export const fr: Record<TranslationKey, string> = {
   "nav.journey": "Votre parcours",
   "nav.file": "Votre dossier",
 
+  "common.notFound.title": "Page introuvable",
+
+  "common.notFound.body": "Cette page n’existe pas ou a été déplacée.",
+
+  "common.notFound.home": "Retour à mon portail",
+
   "common.save": "Enregistrer",
   "common.cancel": "Annuler",
   "common.close": "Fermer",
