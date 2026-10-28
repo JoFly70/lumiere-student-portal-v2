@@ -327,6 +327,11 @@ app.use((req, res, next) => {
     }
   });
 
+  // S25: an unknown /api path is a JSON 404, never the SPA's index.html with 200.
+  app.use('/api', (_req: Request, res: Response) => {
+    res.status(404).json({ error: 'Not found', code: 'NOT_FOUND' });
+  });
+
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route
   // doesn't interfere with the other routes
