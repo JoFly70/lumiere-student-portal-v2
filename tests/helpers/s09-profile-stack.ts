@@ -18,6 +18,28 @@ export function makeLocalJWT(userId: string, email: string): string {
   return `${header}.${payload}.${signature}`;
 }
 
+/**
+ * Test-only provider response for this harness's signed fixtures. Application
+ * requireAuth/RBAC still run unchanged; no network or local-token bypass flag.
+ */
+export async function fixtureProviderGetUser(token: string) {
+  try {
+    const [header, payload, signature, extra] = token.split(".");
+    if (!header || !payload || !signature || extra) throw new Error("invalid fixture");
+    const expected = crypto.createHmac("sha256", JWT_SECRET).update(`${header}.${payload}`).digest();
+    const actual = Buffer.from(signature, "base64url");
+    if (actual.length !== expected.length || !crypto.timingSafeEqual(actual, expected)) throw new Error("invalid fixture");
+    const claims = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
+    if (claims.iss !== "lumiere-local" || claims.sub !== claims.userId ||
+        typeof claims.userId !== "string" || typeof claims.email !== "string" ||
+        !Number.isFinite(claims.exp) || claims.exp <= Date.now() / 1000) throw new Error("invalid fixture");
+    return { data: { user: { id: claims.userId as string, email: claims.email as string,
+      email_confirmed_at: "2000-01-01T00:00:00.000Z" } }, error: null };
+  } catch {
+    return { data: { user: null }, error: { message: "invalid fixture token" } };
+  }
+}
+
 /** A real 1x1 PNG. */
 export const VALID_PNG = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",

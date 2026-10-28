@@ -27,7 +27,7 @@ import {
   type SeedRole,
 } from "./s05-local-pg";
 import { applyS09Migration } from "./s09-apply-migration";
-import { makeLocalJWT, protectedTables, snapshotTables, type TableSnapshot } from "./s09-profile-stack";
+import { fixtureProviderGetUser, makeLocalJWT, protectedTables, snapshotTables, type TableSnapshot } from "./s09-profile-stack";
 import type { HsAuditRecord, HighSchoolService } from "../../server/services/high-school-service";
 
 export { makeLocalJWT, snapshotTables };
@@ -76,7 +76,7 @@ export async function bootHighSchoolApp(pg: LocalPg, opts: { now?: string } = {}
   }));
   vi.doMock("../../server/lib/supabase", () => ({
     supabaseAdmin: {
-      auth: { getUser: async () => ({ data: { user: null }, error: { message: "invalid token" } }) },
+      auth: { getUser: fixtureProviderGetUser },
       from: () => ({}),
       storage: { from: () => ({}) },
     },

@@ -27,9 +27,9 @@ vi.mock("../server/lib/account-status", () => ({
   getAccountStatus: vi.fn(async () => "active"),
   isAccountActive: vi.fn(async () => true),
 }));
-vi.mock("../server/lib/supabase", () => ({
+vi.mock("../server/lib/supabase", async () => ({
   supabaseAdmin: {
-    auth: { getUser: async () => ({ data: { user: null }, error: { message: "invalid token" } }) },
+    auth: { getUser: (await import("./helpers/s09-profile-stack")).fixtureProviderGetUser },
     from: (t: string) => holder.supabase.client.from(t),
     get storage() {
       return holder.supabase.client.storage;

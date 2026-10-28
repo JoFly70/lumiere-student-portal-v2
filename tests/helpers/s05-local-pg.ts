@@ -30,13 +30,14 @@ import net from "node:net";
 import os from "node:os";
 import path from "node:path";
 import postgres from "postgres";
+import { discoverPostgresBinDirectory, postgresBinariesAvailable } from "./s05-pg-binaries";
 
-export const PG_BIN_DIR = process.env.S05_PG_BIN_DIR ?? "/usr/lib/postgresql/16/bin";
-export const PG_BINARIES_AVAILABLE = fs.existsSync(path.join(PG_BIN_DIR, "initdb"));
+export const PG_BIN_DIR = discoverPostgresBinDirectory(process.env);
+export const PG_BINARIES_AVAILABLE = postgresBinariesAvailable(PG_BIN_DIR);
 
 /** Message to use with describe.skipIf / console when the binaries are missing. */
 export const S05_PG_SKIP_MESSAGE =
-  `S05 local Postgres harness skipped: ${path.join(PG_BIN_DIR, "initdb")} not found ` +
+  `S05 local Postgres harness skipped: initdb/pg_ctl/postgres are not executable in ${PG_BIN_DIR} ` +
   "(install PostgreSQL 16 server binaries or set S05_PG_BIN_DIR).";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "..", "..");

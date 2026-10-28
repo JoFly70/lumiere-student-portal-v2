@@ -17,22 +17,31 @@ if (mode.length !== 1 || !['--check', '--start'].includes(mode[0])) {
     if (mode[0] === '--check') {
       console.log('Staging startup configuration passed offline checks. No connection attempted; credential authenticity is not verified.');
     } else {
+      const lifecycle = (event, fields = {}) => console.log(JSON.stringify({
+        component: 'staging-launcher', event, time: new Date().toISOString(), ...fields,
+      }));
       const child = spawn(process.execPath, ['--import', 'tsx', 'server/index.ts'], {
         cwd: fileURLToPath(new URL('../../', import.meta.url)),
         env: buildApplicationEnvironment(process.env),
         stdio: 'inherit',
         shell: false,
       });
+      child.once('spawn', () => lifecycle('child-started', { pid: child.pid }));
       child.once('error', () => {
+        lifecycle('child-launch-failed');
         console.error('Staging application process could not be launched.');
         process.exitCode = 1;
       });
-      const forward = (signal) => { child.kill(signal); };
+      const forward = (signal) => {
+        lifecycle('launcher-signal', { signal });
+        child.kill(signal);
+      };
       const onTerm = () => forward('SIGTERM');
       const onInt = () => forward('SIGINT');
       process.on('SIGTERM', onTerm);
       process.on('SIGINT', onInt);
       child.once('exit', (code, signal) => {
+        lifecycle('child-exited', { code, signal });
         process.removeListener('SIGTERM', onTerm);
         process.removeListener('SIGINT', onInt);
         process.exitCode = code ?? (signal === 'SIGINT' ? 130 : 143);

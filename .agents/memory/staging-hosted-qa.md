@@ -14,3 +14,9 @@ Repeated hosted QA can consume the same observed client-IP rate quota as owner p
 **Why:** Extended browser/API repetitions produced HTTP 429 and an apparent session-reload failure, while liveness stayed healthy and the normal request logs showed no new handler activity.
 
 **How to apply:** Read Retry-After, wait for its window, and reduce repeated calls. Do not weaken the rate policy, spoof a client IP, or restart the server merely to clear the limit. Preserve partial results so successful steps need not be repeated unnecessarily.
+
+Auth hardening must also be reflected in disposable test-provider fixtures; never restore demo/local-token bypasses to make integration tests pass.
+
+**Why:** Previously skipped database suites concealed old provider mocks that always rejected authentication. Once local PostgreSQL discovery worked, those requests failed before reaching the academic authorization checks.
+
+**How to apply:** Keep the real application authentication and role middleware intact. Simulate only external provider verification for signed synthetic fixtures, and run destructive schema/error-path tests only in the cluster the harness creates, never the retained Supabase staging database.
