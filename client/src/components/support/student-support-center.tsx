@@ -1,4 +1,5 @@
 /** Student Support Center: request list + conversation, list -> drill-in on small screens. */
+import { useT } from "@/i18n";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { MessageCircle, Plus } from "lucide-react";
 import { describeCreateFailure, newIdempotencyKey, useCreateTicket, useSupportContextOptions, useTickets } from "@/hooks/use-tickets";
@@ -19,6 +20,7 @@ function itemFromUrl(): string | null {
 }
 
 export function StudentSupportCenter() {
+  const { t } = useT();
   const itemParam = useMemo(itemFromUrl, []);
   const [creating, setCreating] = useState<boolean>(!!itemParam);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -95,7 +97,7 @@ export function StudentSupportCenter() {
             onClick={() => { createTicket.reset(); setSelectedId(null); setCreating(true); }}
             data-testid="button-new-request"
           >
-            <Plus className="h-4 w-4" aria-hidden="true" /> New request
+            <Plus className="h-4 w-4" aria-hidden="true" /> {t("support.newRequest")}
           </button>
         </header>
 

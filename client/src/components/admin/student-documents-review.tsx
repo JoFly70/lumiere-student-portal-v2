@@ -16,6 +16,7 @@ import { apiRequest } from "@/lib/api";
 import { docStatusLabel, docTypeLabel } from "@/lib/document-type-labels";
 import { fetchDocumentWithDownloadUrl, useCreateDocument, useGenerateUploadUrl } from "@/hooks/use-documents";
 import { useAuth } from "@/lib/auth";
+import { useT } from "@/i18n";
 import { DocumentReviewDialog, type DocumentReviewAction, type DocumentReviewPayload } from "./document-review-dialog";
 import { canUploadDocumentOnBehalfForRole, STAFF_UPLOAD_ACCEPT, staffUploadMime, validateStaffUploadFile } from "./student-documents-upload-logic";
 
@@ -40,6 +41,7 @@ const STAFF_UPLOAD_TYPES = [
 export function StaffDocumentUpload({ studentId }: { studentId: string }) {
   const qc = useQueryClient();
   const { user } = useAuth();
+  const { t } = useT();
   const canUploadOnBehalf = canUploadDocumentOnBehalfForRole(user?.role);
   const generateUploadUrl = useGenerateUploadUrl(studentId);
   const createDocument = useCreateDocument(studentId);
@@ -92,22 +94,22 @@ export function StaffDocumentUpload({ studentId }: { studentId: string }) {
   return (
       <StaffCard as="div" className="space-y-4 bg-student-bg/40 shadow-none" data-testid="staff-upload-on-behalf">
         <div className="space-y-1">
-          <h3 className="flex items-center gap-2 font-serif text-lg tracking-tight text-student-ink"><Upload className="h-4 w-4 text-student-gold-ink" aria-hidden="true" />Upload on the student's behalf</h3>
-          <p className="max-w-3xl text-sm leading-relaxed text-student-muted">The student and staff will see the file. New uploads stay pending review; uploading never verifies a document.</p>
+          <h3 className="flex items-center gap-2 font-serif text-lg tracking-tight text-student-ink"><Upload className="h-4 w-4 text-student-gold-ink" aria-hidden="true" />{t("staff.docs.upload.title")}</h3>
+          <p className="max-w-3xl text-sm leading-relaxed text-student-muted">{t("staff.docs.upload.intro")}</p>
         </div>
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)_minmax(0,1fr)] xl:items-start">
           <div className="min-w-0 space-y-1.5">
-            <label className={cn(staffLabel, "block")} htmlFor="staff-upload-document-type">Document type</label>
+            <label className={cn(staffLabel, "block")} htmlFor="staff-upload-document-type">{t("staff.docs.upload.type")}</label>
             <select id="staff-upload-document-type" className={staffField} value={uploadType} disabled={uploadPending} onChange={(event) => setUploadType(event.target.value)}>
               {STAFF_UPLOAD_TYPES.map(([value, label]) => <option value={value} key={value}>{label}</option>)}
             </select>
           </div>
           <div className="min-w-0 space-y-1.5">
-            <label className={cn(staffLabel, "block")} htmlFor="staff-upload-document-note">Note <span className="font-normal normal-case tracking-normal">(optional)</span></label>
-            <input id="staff-upload-document-note" className={staffField} maxLength={500} value={uploadNote} disabled={uploadPending} placeholder="e.g. Received by email on 12 Oct" onChange={(event) => setUploadNote(event.target.value)} />
+            <label className={cn(staffLabel, "block")} htmlFor="staff-upload-document-note">{t("staff.docs.upload.note")} <span className="font-normal normal-case tracking-normal">{t("staff.docs.upload.optional")}</span></label>
+            <input id="staff-upload-document-note" className={staffField} maxLength={500} value={uploadNote} disabled={uploadPending} placeholder={t("staff.docs.upload.notePlaceholder")} onChange={(event) => setUploadNote(event.target.value)} />
           </div>
           <div className="min-w-0 space-y-1.5 md:col-span-2 xl:col-span-1">
-            <span className={cn(staffLabel, "block")} id="staff-upload-document-file-label">File</span>
+            <span className={cn(staffLabel, "block")} id="staff-upload-document-file-label">{t("staff.docs.upload.file")}</span>
             {/* One control: the native input is visually hidden and driven by the styled button. */}
             <input ref={fileInput} id="staff-upload-document-file" className="sr-only" type="file" accept={STAFF_UPLOAD_ACCEPT} disabled={uploadPending} aria-labelledby="staff-upload-document-file-label" data-testid="input-staff-document-file" onChange={(event) => {
               const file = event.currentTarget.files?.[0];
@@ -115,14 +117,14 @@ export function StaffDocumentUpload({ studentId }: { studentId: string }) {
             }} />
             <div className="flex min-w-0 items-center gap-3">
               <Button type="button" className={cn(staffBtn.outline, "shrink-0")} variant="outline" disabled={uploadPending} onClick={() => fileInput.current?.click()} data-testid="button-staff-upload-document">
-                <Upload className="h-4 w-4" aria-hidden="true" />{uploadPending ? "Uploading…" : "Choose file"}
+                <Upload className="h-4 w-4" aria-hidden="true" />{uploadPending ? t("staff.docs.upload.uploading") : t("staff.docs.upload.choose")}
               </Button>
-              <span className={cn("min-w-0 truncate text-sm", fileName ? "text-student-ink" : "text-student-muted")} title={fileName ?? undefined} data-testid="staff-upload-file-name">{fileName ?? "No file chosen"}</span>
+              <span className={cn("min-w-0 truncate text-sm", fileName ? "text-student-ink" : "text-student-muted")} title={fileName ?? undefined} data-testid="staff-upload-file-name">{fileName ?? t("staff.docs.upload.noFile")}</span>
             </div>
           </div>
         </div>
-        <p className="text-xs text-student-muted">PDF, PNG, JPG or WebP · up to 10 MB. Add the note first: the upload starts as soon as you choose the file.</p>
-        {uploadPending ? <div role="status" aria-live="polite" className="space-y-1"><div className="h-1.5 overflow-hidden rounded-full bg-student-line"><div className="h-full w-1/2 animate-pulse rounded-full bg-student-gold" /></div><p className="text-sm text-student-muted">Uploading file securely…</p></div> : null}
+        <p className="text-xs text-student-muted">{t("staff.docs.upload.help")}</p>
+        {uploadPending ? <div role="status" aria-live="polite" className="space-y-1"><div className="h-1.5 overflow-hidden rounded-full bg-student-line"><div className="h-full w-1/2 animate-pulse rounded-full bg-student-gold" /></div><p className="text-sm text-student-muted">{t("staff.docs.upload.securely")}</p></div> : null}
         {uploadMessage ? <StaffNotice tone={uploadMessage.kind === "error" ? "urgent" : "success"} role={uploadMessage.kind === "error" ? "alert" : "status"}>{uploadMessage.text}</StaffNotice> : null}
       </StaffCard>
   );
@@ -130,6 +132,7 @@ export function StaffDocumentUpload({ studentId }: { studentId: string }) {
 
 export function StudentDocumentsReview({ studentId, documents }: { studentId: string; documents: readonly StudentDocument[] }) {
   const qc = useQueryClient();
+  const { t } = useT();
   const [dialog, setDialog] = useState<{ doc: StudentDocument; action: DocumentReviewAction } | null>(null);
   const [viewError, setViewError] = useState<string | null>(null);
   const review = useMutation<unknown, Error, ReviewCall>({
@@ -180,7 +183,7 @@ export function StudentDocumentsReview({ studentId, documents }: { studentId: st
                     )}
                     <Button type="button" className={cn(staffBtn.outline, small)} variant="outline" onClick={() => view(d.id)}><ExternalLink className="h-4 w-4" />View file</Button>
                     {d.status !== "resubmit_requested" && (
-                      <Button type="button" className={cn(staffBtn.ghost, quiet)} variant="ghost" disabled={review.isPending} onClick={() => { review.reset(); setDialog({ doc: d, action: "request-resubmit" }); }} data-testid={`button-resubmit-${d.id}`}><RotateCcw className="h-4 w-4" />Request new copy</Button>
+                      <Button type="button" className={cn(staffBtn.ghost, quiet)} variant="ghost" disabled={review.isPending} onClick={() => { review.reset(); setDialog({ doc: d, action: "request-resubmit" }); }} data-testid={`button-resubmit-${d.id}`}><RotateCcw className="h-4 w-4" />{t("staff.docs.requestNewCopy")}</Button>
                     )}
                     {d.status !== "rejected" && (
                       <Button type="button" className={cn(staffBtn.ghost, quiet)} variant="ghost" disabled={review.isPending} onClick={() => { review.reset(); setDialog({ doc: d, action: "reject" }); }} data-testid={`button-reject-${d.id}`}><XCircle className="h-4 w-4" />Reject</Button>
