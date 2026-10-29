@@ -1431,6 +1431,9 @@ window.ENV = {
   app.use('/api/admin', (await import('./routes/admin-owner-assistant')).default);
   // S26 "Experience as student": admin-only, synthetic demo accounts / demo mirrors only, audited.
   app.use('/api/admin', (await import('./routes/admin-student-experience')).default);
+  // S27 program journey: agreement, checkpoints, orientation sessions, staff notes and the owner Control Center
+  // (per-route auth/role/CSRF: admin writes; staff reads and adds notes; coach none; every write audited).
+  app.use('/api/admin', (await import('./routes/program-journey')).default);
   // S18 billing ledger: staff/admin entry and review (per-route role checks)
   app.use('/api/admin', (await import('./routes/admin-billing')).default);
   // S13 staff-only student <-> portal account linkage (per-route auth, admin only).
@@ -1448,6 +1451,8 @@ window.ENV = {
   // S11 high school pathway (student view, progress report, programs list)
   const studentHighSchoolRouter = (await import('./routes/student-high-school')).default;
   app.use('/api/student', studentHighSchoolRouter);
+  // S27 student journey (agreement deadlines, checkpoints, own sessions, logged pace); student role, own record only.
+  app.use('/api/student', (await import('./routes/program-journey')).studentJourneyRouter);
   // S18 academic projection for the high school Flight Deck (student role only, own record only)
   const studentAcademicProjectionRouter = (await import('./routes/student-academic-projection')).default;
   app.use('/api/student', studentAcademicProjectionRouter);

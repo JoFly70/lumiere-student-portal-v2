@@ -83,12 +83,22 @@ export async function defaultLoadOwnerContext(studentId: string): Promise<OwnerC
       ? { state: "configured", currency: s.currency, agreedCents: s.agreedCents, discountCents: s.discountCents, paidCents: s.paidCents, remainingCents: s.remainingCents,
           nextDue: s.nextDue ? { dueDate: s.nextDue.dueDate, amountCents: s.nextDue.amountCents, status: s.nextDue.status } : null,
           lastReceipt: last ? { receivedDate: last.receivedDate, amountCents: last.amountCents, methodLabel: last.methodLabel } : null,
-          evidenceAwaiting: v.evidence.filter((e) => e.status === "awaiting_review").length }
+          evidenceAwaiting: v.evidence.filter((e) => e.status === "awaiting_review").length,
+          schedule: s.installments.map((i) => ({ dueDate: i.dueDate, amountCents: i.amountCents, status: i.status })) }
       : { state: "not_configured" };
   } catch (error) {
     logger.warn("Owner assistant billing lookup failed", { error: error instanceof Error ? error.message : String(error) });
   }
-  return { student, highSchool, reviewQueue, documents, tickets, billing };
+  // S27: program journey (agreement, checkpoints, pace) and staff notes. Admin-only route, so note bodies are included (scrubbed).
+  let program: OwnerContextInput["program"] = null;
+  try {
+    const { defaultProgramJourneyService: journey } = await import("../services/program-journey/service.default");
+    const notes = await journey.listNotes(studentId);
+    program = { journey: await journey.getJourney(studentId), notesCount: notes.length, noteBodies: notes.slice(0, 5).map((n) => n.body) };
+  } catch (error) {
+    logger.warn("Owner assistant program lookup failed", { error: error instanceof Error ? error.message : String(error) });
+  }
+  return { student, highSchool, reviewQueue, documents, tickets, billing, program };
 }
 
 export function createAdminOwnerAssistantRouter(opts: OwnerAssistantRouterOptions = {}): Router {

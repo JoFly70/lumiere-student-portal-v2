@@ -12,6 +12,7 @@
  */
 import { formatHalfUnits, type StudentHighSchoolView } from "@shared/high-school-contract";
 import type { StudentBillingView } from "@shared/billing-contract";
+import type { StudentJourneyView } from "@shared/s27-contract";
 
 export type Lang = "en" | "fr";
 export interface StudentRecordInput {
@@ -19,6 +20,8 @@ export interface StudentRecordInput {
   readonly documents: readonly { doc_type: string; status: string; student_message?: string | null; rejection_reason?: string | null; uploaded_at?: string | null }[];
   readonly tickets: readonly { subject: string; status: string; ticket_number?: string | null; updated_at?: string | null; last_staff_reply_at?: string | null }[];
   readonly billing: StudentBillingView | null;
+  /** S27: agreement deadlines, checkpoints, sessions and logged pace (student-visible fields only). */
+  readonly journey?: StudentJourneyView | null;
   readonly today: string;
 }
 export interface StudentRecord { readonly ref: string; readonly label: string; readonly path: string; readonly text: string }
@@ -67,10 +70,38 @@ export function composeStudentRecords(input: StudentRecordInput): StudentRecord[
   } else if (b) {
     push({ label: "Billing", path: "/billing", text: "Billing has not been set up on your account yet." });
   }
+  composeJourneyRecords(input.journey ?? null, push);
   return out;
 }
 
-type Intent = "credits" | "electives" | "elective_change" | "documents" | "support" | "billing" | "timeline" | "next" | "school_approval";
+const listOf = (xs: readonly string[]) => (xs.length ? xs.join(", ") : "none");
+
+/** S27 records: student-safe wording, no internal notes, no staff fields. Appended after the S1.. records so earlier refs stay stable. */
+function composeJourneyRecords(j: StudentJourneyView | null, push: (r: Omit<StudentRecord, "ref">) => void): void {
+  if (!j) return;
+  const a = j.agreement;
+  if (a) {
+    const dl = a.deadlines.map((d) => `${d.label} (${d.rule}): ${d.status === "done" ? `done${d.doneOn ? ` on ${d.doneOn}` : ""}` : d.status === "waived" ? "waived" : d.dueOn ? `due ${d.dueOn}${d.daysLeft !== null ? (d.daysLeft < 0 ? `, ${-d.daysLeft} day(s) overdue` : `, ${d.daysLeft} day(s) left`) : ""}` : "date not set yet"}${d.detail ? `; ${d.detail}` : ""}`);
+    push({ label: "Program agreement", path: "/journey", text: `Your program agreement${a.signedOn ? ` was signed on ${a.signedOn}` : " is not signed yet"}${a.activatedOn ? ` and activated on ${a.activatedOn}` : ""}. Lumière support ${a.supportEndsOn ? `runs until ${a.supportEndsOn} (${a.supportMonthsLeft} month(s) left)` : `lasts ${a.supportMonths} months from activation`}; school platform access lasts up to ${a.accessMonths} months from activation${a.accessEndsOn ? ` (until ${a.accessEndsOn})` : ""}. Deadlines: ${dl.join("; ")}.` });
+    if (a.goal) push({ label: "Goal", path: "/journey", text: `Your post-secondary goal: ${clip(a.goal.field, 80)} in ${clip(a.goal.region, 60)}${a.goal.targets.length ? `. Target programs: ${a.goal.targets.slice(0, 4).map((t) => `${clip(t.name, 80)} (${clip(t.city, 40)}, ${clip(t.track, 40)})`).join("; ")}` : ""}.` });
+  }
+  const done = j.checkpoints.filter((c) => c.status === "done").map((c) => c.label);
+  const next = j.checkpoints.find((c) => c.status === "next");
+  const upcoming = j.checkpoints.filter((c) => c.status === "upcoming").map((c) => c.label);
+  push({ label: "Checkpoints", path: "/journey", text: `Your Lumière checkpoints. Done: ${listOf(done)}. Next: ${next ? `${next.label}${next.plannedOn ? `, planned ${next.plannedOn}` : ""}` : "none"}. Coming up: ${listOf(upcoming)}.` });
+  const p = j.pace;
+  if (p) {
+    push({ label: "Pace", path: "/journey", text: p.itemsLogged28d === 0
+      ? `You have not logged any work in the last 28 days${p.lastLoggedOn ? ` (last logged ${p.lastLoggedOn})` : ""}. Exams logged this week: ${p.examsThisWeek}${p.weeklyExamLimit ? ` of ${p.weeklyExamLimit}` : ""}.`
+      : `From the work you logged in the last 28 days (${p.itemsLogged28d} item(s), last on ${p.lastLoggedOn}): about ${p.creditsPerWeek} credit(s) per week${p.estimatedFinishOn ? `, which would reach the remaining credits around ${p.estimatedFinishOn}` : ""}. This is an estimate from your own reports; credits count only once the school confirms them. ${p.stale ? "Nothing was logged in the last 7 days. " : ""}Exams logged this week: ${p.examsThisWeek}${p.weeklyExamLimit ? ` of ${p.weeklyExamLimit}` : ""}.` });
+  }
+  if (a) {
+    const upcomingSessions = j.sessions.filter((s) => s.status === "requested" || s.status === "confirmed");
+    push({ label: "Orientation sessions", path: "/journey", text: `Orientation sessions: ${a.orientationSessionsUsed} of ${a.orientationSessionsIncluded} used.${upcomingSessions.length ? ` Upcoming: ${upcomingSessions.slice(0, 3).map((s) => `${s.slotAt.slice(0, 16).replace("T", " ")} (${s.status})`).join("; ")}.` : ""}${a.orientationSessionsUsed >= a.orientationSessionsIncluded ? " No sessions left." : ""}` });
+  }
+}
+
+type Intent = "credits" | "electives" | "elective_change" | "documents" | "support" | "billing" | "timeline" | "next" | "school_approval" | "program";
 const INTENTS: Array<[Intent, RegExp]> = [
   ["elective_change", /(switch|change|chang|swap|replace|remplac).*(elective|option)|(elective|option).*(switch|change|swap|replace|remplac)/i],
   ["school_approval", /(school|école|ecole).*(approv|accept)|(approv|accept).*(school|école)/i],
@@ -79,12 +110,13 @@ const INTENTS: Array<[Intent, RegExp]> = [
   ["documents", /document|upload|téléverse|pièce|papier|owe|dois.*fournir/i],
   ["support", /ticket|support|reply|répon|assistance|demande/i],
   ["billing", /pay|paid|balance|tuition|fee|owe.*money|solde|payé|paiement|frais|facture/i],
+  ["program", /language test|test de langue|checkpoint|étape|orientation|session|pace|rythme|goal|objectif|universit|accompagnement|how long.*support|prior schooling|scolarité|agreement|contrat/i],
   ["timeline", /timeline|when.*finish|deadline|date|calendrier|échéance|fin de|based on|basé/i],
   ["next", /what should i (study|do)|today|next|quoi (étudier|faire)|aujourd|prochaine|commencer/i],
 ];
 const MAP: Record<Intent, string[]> = {
   credits: ["Credits", "Graduation"], electives: ["Electives"], elective_change: ["Electives"], school_approval: ["Electives"],
-  documents: ["Documents"], support: ["Support"], billing: ["Billing"], timeline: ["Timeline"], next: ["Next tasks", "Current courses"],
+  documents: ["Documents"], support: ["Support"], billing: ["Billing"], timeline: ["Timeline"], program: ["Program agreement", "Checkpoints", "Pace", "Goal", "Orientation sessions"], next: ["Next tasks", "Current courses"],
 };
 const LEAD = {
   en: { head: "From your record (system facts, not AI):", change: "You can request a change from the elective's course card (\"Request a change\"). Lumière reviews it, the school must accept the substitute, and only then is a new version of your roadmap published. You cannot change the roadmap yourself, and nothing changes until it is approved.", approval: "If the school has not approved an elective, it stays marked as proposed and earns no credit; Lumière will tell you and help choose another option so you still reach 5 elective credits." },
@@ -130,5 +162,10 @@ export async function loadOwnStudentRecord(userId: string): Promise<StudentRecor
     const { defaultBillingService } = await import("../billing-service.default");
     billing = await defaultBillingService.getStudentView(student.id);
   } catch { billing = null; }
-  return composeStudentRecords({ highSchool, documents, tickets, billing, today });
+  let journey: StudentJourneyView | null = null;
+  try {
+    const { defaultProgramJourneyService } = await import("../program-journey/service.default");
+    journey = await defaultProgramJourneyService.getJourney(student.id);
+  } catch { journey = null; }
+  return composeStudentRecords({ highSchool, documents, tickets, billing, journey, today });
 }

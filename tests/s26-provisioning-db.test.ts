@@ -22,7 +22,7 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("S26 provisioning sequence on real Postg
     const admin = await seedStaff(pg, "admin");
     const st = await seedStudent(pg, { name: "DEMO Eleve" });
     const svc = hs.service;
-    let state = (await svc.createEnrollment(st.studentId, admin.userId, createEnrollmentSchema.parse({ templateKey: "us-hs-diploma-21", templateVersion: 2, status: "active", startedOn: DEMO_START, targetCompletionDate: DEMO_TARGET }))).result;
+    let state = (await svc.createEnrollment(st.studentId, admin.userId, createEnrollmentSchema.parse({ templateKey: "us-hs-diploma-21", templateVersion: 3, status: "active", startedOn: DEMO_START, targetCompletionDate: DEMO_TARGET }))).result;
     const eid = state.current!.enrollment.id;
     state = (await svc.draftFromTemplate(st.studentId, eid, admin.userId, undefined)).result;
     const draft = state.current!.draft!;
@@ -37,7 +37,7 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("S26 provisioning sequence on real Postg
     expect(view.subjects.flatMap((s) => s.courses)).toHaveLength(22);
     expect(view.roadmap?.studentMessage).toMatch(/^DEMO \/ SYNTHETIC/);
     // Optional: export the projected view for offline assistant evaluations (synthetic data only).
-    await svc.reportProgress(st.studentId, st.userId, { courseKey: "startup-personal-growth", taskKey: "startup-personal-growth-enter", status: "in_progress", scorePercent: null, note: null, expectedRevision: 0 } as never).catch(() => undefined);
+    await svc.reportProgress(st.studentId, st.userId, { courseKey: "startup-personal-growth", taskKey: "startup-personal-growth-exam-1", status: "in_progress", scorePercent: null, note: null, expectedRevision: 0 } as never).catch(() => undefined);
     if (process.env.S26_EXPORT_VIEW) (await import("node:fs")).writeFileSync(process.env.S26_EXPORT_VIEW, JSON.stringify(await svc.getStudentView(st.studentId)));
   }, 120_000);
 
@@ -45,7 +45,7 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("S26 provisioning sequence on real Postg
     const admin = await seedStaff(pg, "admin");
     const st = await seedStudent(pg, { name: "Pre Enrollment" });
     const svc = hs.service;
-    let state = (await svc.createEnrollment(st.studentId, admin.userId, createEnrollmentSchema.parse({ templateKey: "us-hs-diploma-21", templateVersion: 2, status: "planned" }))).result;
+    let state = (await svc.createEnrollment(st.studentId, admin.userId, createEnrollmentSchema.parse({ templateKey: "us-hs-diploma-21", templateVersion: 3, status: "planned" }))).result;
     const eid = state.current!.enrollment.id;
     state = (await svc.draftFromTemplate(st.studentId, eid, admin.userId, undefined)).result;
     const d = state.current!.draft!;
@@ -87,7 +87,7 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("S26 provisioning sequence on real Postg
     const admin = await seedStaff(pg, "admin");
     const st = await seedStudent(pg, { name: "DEMO Amira" });
     const svc = hs.service;
-    let state = (await svc.createEnrollment(st.studentId, admin.userId, createEnrollmentSchema.parse({ templateKey: "us-hs-diploma-21", templateVersion: 2, status: "active", startedOn: "2026-04-06" }))).result;
+    let state = (await svc.createEnrollment(st.studentId, admin.userId, createEnrollmentSchema.parse({ templateKey: "us-hs-diploma-21", templateVersion: 3, status: "active", startedOn: "2026-04-06" }))).result;
     const eid = state.current!.enrollment.id;
     state = (await svc.draftFromTemplate(st.studentId, eid, admin.userId, undefined)).result;
     const d = state.current!.draft!;

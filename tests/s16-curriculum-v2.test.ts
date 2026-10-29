@@ -71,10 +71,11 @@ describe("version 1 is preserved for existing enrollments", () => {
     expect(BUILT_IN_TEMPLATES.map((t) => `${t.templateKey}@${t.version}`)).toEqual([
       "us-hs-diploma-21@1",
       "us-hs-diploma-21@2",
+      "us-hs-diploma-21@3",
       "us-hs-diploma-tn-22@1",
     ]);
     expect(latestTemplateVersions(BUILT_IN_TEMPLATES).map((t) => `${t.templateKey}@${t.version}`)).toEqual([
-      "us-hs-diploma-21@2",
+      "us-hs-diploma-21@3",
       "us-hs-diploma-tn-22@1",
     ]);
   });

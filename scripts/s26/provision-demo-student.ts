@@ -142,11 +142,11 @@ async function main() {
     let state = await hs.getStaffState(student.id);
     if (!state.current) {
       state = (await hs.createEnrollment(student.id, actorId, createEnrollmentSchema.parse({
-        templateKey: "us-hs-diploma-21", templateVersion: 2, status: "active", startedOn: DEMO_START, targetCompletionDate: DEMO_TARGET,
+        templateKey: "us-hs-diploma-21", templateVersion: 3, status: "active", startedOn: DEMO_START, targetCompletionDate: DEMO_TARGET,
       }))).result;
     }
     const enrollment = state.current!.enrollment;
-    check(enrollment.templateVersion === 2 && enrollment.totalRequiredHalfUnits === 42, "DEMO_ENROLLMENT_MODEL_MISMATCH");
+    check([2, 3].includes(enrollment.templateVersion) && enrollment.totalRequiredHalfUnits === 42, "DEMO_ENROLLMENT_MODEL_MISMATCH");
     if (state.current!.priorEducation.length === 0) await soft("priorEducation", async () => {
       state = (await hs.recordPriorEducation(student.id, enrollment.id, actorId, recordPriorEducationSchema.parse({
         schoolName: "DEMO — fictional Moroccan collège (synthetic)", country: "Morocco", gradeLevels: "DEMO 3e année collège",
@@ -213,7 +213,7 @@ async function main() {
       let rs = await hs.getStaffState(real!.id);
       if (!rs.current) {
         rs = (await hs.createEnrollment(real!.id, actorId, createEnrollmentSchema.parse({
-          templateKey: "us-hs-diploma-21", templateVersion: 2, status: "planned",
+          templateKey: "us-hs-diploma-21", templateVersion: 3, status: "planned",
         }))).result;
       }
       const re = rs.current!.enrollment;

@@ -113,6 +113,11 @@ export const STEPS: ManifestStep[] = [
     note: 'Defence in depth: the browser has no Supabase data client and the server uses the service role / owner connection. Also required on production.',
   },
   {
+    id: '10d', label: 'S27 forward migration: program journey tables (agreements, checkpoints, orientation sessions, staff notes; RLS on, no client privileges) and program.* audit event types', kind: 'apply',
+    files: [`${M}20261105100000_s27_program_journey.sql`],
+    note: 'Additive and idempotent. Applied in production by scripts/release/s27/apply-s27.sh.',
+  },
+  {
     id: '11', label: 'verify (read-only)', kind: 'verify',
     files: [`${S14}00-baseline-probe.sql`, `${S14}01-account-readiness.sql`, `${S14}90-verify.sql`, 'scripts/s22/hosted-verify.sql'],
   },

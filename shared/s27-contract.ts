@@ -89,6 +89,14 @@ export interface ProgramAgreementView {
   readonly orientationSessionsIncluded: number;
   readonly orientationSessionsUsed: number;
   readonly goal: PostSecondaryGoal | null;
+  /**
+   * S27 backend additions (optional so existing client fixtures stay valid; the server always fills them).
+   * They let the staff form show and edit the configurable terms without a second endpoint.
+   */
+  readonly languageTestDays?: number;
+  readonly priorSchoolingDays?: number;
+  readonly languageTestScore?: number | null;
+  readonly languageTestTarget?: string | null;
 }
 
 /** Staff update (PUT). Every field optional; unknown keys rejected. */
@@ -158,6 +166,8 @@ export const requestSessionSchema = z
     channel: z.enum(["portal", "whatsapp"]).default("portal"),
   })
   .strict();
+/** Staff creates a session on the student's behalf (e.g. agreed over WhatsApp). Default status "confirmed". */
+export const createSessionByStaffSchema = requestSessionSchema.extend({ status: z.enum(["requested", "confirmed"]).default("confirmed") });
 export const updateSessionSchema = z
   .object({ status: z.enum(SESSION_STATUSES).optional(), slotAt: z.string().datetime({ offset: true }).optional(), notes: optText(4000) })
   .strict();
@@ -266,4 +276,27 @@ export const S27_ERROR_CODES = {
   NOT_FOUND: "S27_NOT_FOUND",
   NO_SESSIONS_LEFT: "S27_NO_SESSIONS_LEFT",
   FORBIDDEN: "S27_FORBIDDEN",
+  /** S27 backend addition: e.g. confirming a cancelled session, or completing one that was never confirmed (409). */
+  INVALID_TRANSITION: "S27_INVALID_TRANSITION",
 } as const;
+
+/**
+ * S27 backend addition: audit event types written by the S27 routes (identifiers, keys, statuses and counts only;
+ * never note bodies, session notes or goal text). They exist in the audit_event_type enum through
+ * supabase/migrations/20261105100000_s27_program_journey.sql.
+ */
+export const S27_AUDIT_EVENTS = {
+  agreementUpdated: "program.agreement_updated",
+  checkpointUpdated: "program.checkpoint_updated",
+  sessionRequested: "program.session_requested",
+  sessionUpdated: "program.session_updated",
+  noteAdded: "program.note_added",
+  accessDenied: "program.access_denied",
+} as const;
+
+/**
+ * Role matrix (server-enforced): admin reads and writes everything; staff reads the journey, notes and the
+ * Control Center and may add notes; coach has no access; a student reads only their own journey and may request
+ * an orientation session (the student is resolved from the session, a studentId in query/body is rejected).
+ * Dates are computed in UTC (Africa/Casablanca is treated as UTC for "today" and "Monday").
+ */
