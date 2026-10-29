@@ -140,7 +140,8 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("S27 program journey on real Postgres", 
     const pace = (await svc.getJourney(st.studentId)).pace!;
     // 3 of 7 tasks of a 0.5-credit course = 0.214 credit in 28 days = 0.05/week
     expect(pace).toMatchObject({ itemsLogged28d: 3, lastLoggedOn: "2026-11-10", stale: false, examsThisWeek: 3, creditsPerWeek: 0.05 });
-    expect(pace.estimatedFinishOn).not.toBeNull();
+    // 0.05 credit/week against ~21 credits is ~8 years out: no projected date is shown (beyond the 3-year horizon).
+    expect(pace.estimatedFinishOn).toBeNull();
     expect((await h.getStudentView(st.studentId)).credits.earnedHalfUnits).toBe(0);
   }, 120_000);
 

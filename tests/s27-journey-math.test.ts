@@ -105,6 +105,12 @@ describe("S27 logged pace", () => {
     // official b (1) + logged a (0.5) of 2 required -> remaining 0.5 at 0.25/week
     expect(p.estimatedFinishOn).toBe("2026-11-25");
   });
+  it("leaves the finish empty when the pace would project more than three years out", () => {
+    // 0.25 credit/week against 42 credits required -> ~164 weeks: not a meaningful date
+    const p = computePace(base({ requiredHalfUnits: 84, logged: [{ courseKey: "a", taskKey: "a-1", at: "2026-11-10T10:00:00Z" }, { courseKey: "a", taskKey: "a-2", at: "2026-11-09T10:00:00Z" }, { courseKey: "b", taskKey: "b-1", at: "2026-11-08T10:00:00Z" }] }));
+    expect(p.creditsPerWeek).toBe(0.25);
+    expect(p.estimatedFinishOn).toBeNull();
+  });
   it("finish is today when nothing remains", () => {
     expect(computePace(base({ awardedCourseKeys: new Set(["a", "b"]) })).estimatedFinishOn).toBe("2026-11-11");
   });

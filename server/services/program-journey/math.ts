@@ -150,6 +150,8 @@ export interface PaceInput {
 const round2 = (n: number) => Math.round(n * 100) / 100;
 export const PACE_WINDOW_DAYS = 28;
 export const PACE_STALE_DAYS = 7;
+/** Beyond this horizon a projection is not meaningful (school access lasts up to 36 months): show no date. */
+export const PACE_MAX_PROJECTION_DAYS = 3 * 365;
 
 /**
  * Pace from the student's own logs. Each submitted/scored task of a planned course is worth
@@ -192,7 +194,11 @@ export function computePace(input: PaceInput): LoggedPaceView {
   const remaining = Math.max(0, input.requiredHalfUnits / 2 - officialCredits - loggedUnconfirmed);
   let estimatedFinishOn: string | null = null;
   if (remaining <= 0) estimatedFinishOn = today;
-  else if (creditsPerWeek > 0) estimatedFinishOn = addDays(today, Math.ceil((remaining / creditsPerWeek) * 7));
+  else if (creditsPerWeek > 0) {
+    const days = Math.ceil((remaining / creditsPerWeek) * 7);
+    // A near-zero pace would project a finish years away (e.g. 2040); that reads as a real date, so leave it empty.
+    if (days <= PACE_MAX_PROJECTION_DAYS) estimatedFinishOn = addDays(today, days);
+  }
 
   return { creditsPerWeek, itemsLogged28d: inWindow.length, lastLoggedOn, stale, estimatedFinishOn, examsThisWeek, weeklyExamLimit: input.weeklyExamLimit };
 }
