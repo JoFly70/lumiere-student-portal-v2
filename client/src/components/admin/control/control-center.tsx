@@ -38,7 +38,8 @@ const FILTERS: { key: StudentFilter; label: TranslationKey }[] = [
 
 /** Owner tones -> the student cockpit's pill classes and colours. */
 const PILL: Record<Tone, string> = { urgent: "crit", attention: "warn", ok: "ok", gold: "wait", neutral: "plan" };
-const COLOR: Record<Tone, string> = { urgent: "var(--t-red)", attention: "var(--t-amber)", ok: "var(--t-green)", gold: "var(--t-accent)", neutral: "var(--t-line-3)" };
+/** Owner rule: Lumière palette only. Severity is umber (deep for urgent, soft for attention), done is sage. */
+const COLOR: Record<Tone, string> = { urgent: "var(--occ-umber)", attention: "var(--occ-umber-soft)", ok: "var(--occ-sage)", gold: "var(--t-accent)", neutral: "var(--t-line-3)" };
 const statusTone = (tone: ControlStudentRow["status"]["tone"]): Tone => (tone === "critical" ? "urgent" : tone === "warning" ? "attention" : tone === "ok" ? "ok" : tone === "gold" ? "gold" : "neutral");
 const LIST_LIMIT = 6;
 const DASH = "—";
@@ -152,7 +153,7 @@ function Widgets({ d, today, locale, demoIds }: { d: ControlCenterView; today: s
   return (
     <section aria-label={t("owner.kpi.label")} className="alerts occ-alerts">
       <Widget testId="kpi-needs" sev={COLOR[worst]}
-        ring={<SegRing parts={[{ n: sev.critical, color: "var(--t-red)" }, { n: sev.warning, color: "var(--t-amber)" }, { n: sev.info, color: "var(--t-accent)" }]} />}
+        ring={<SegRing parts={[{ n: sev.critical, color: "var(--occ-umber)" }, { n: sev.warning, color: "var(--occ-umber-soft)" }, { n: sev.info, color: "var(--t-accent)" }]} />}
         big={d.counts.needsYou} unit={t(d.counts.needsYou === 1 ? "owner.unit.action" : "owner.unit.actions")}
         title={t("owner.kpi.needs")}
         text={d.counts.needsYou === 0 ? t("owner.ring.needs.none") : t("owner.ring.needs.d", { c: sev.critical, w: sev.warning, i: sev.info })}
@@ -185,12 +186,12 @@ function Radar({ d }: { d: ControlCenterView }) {
   const endingSoon = d.supportWindows.filter((w) => w.monthsLeft <= 1 && !d.students.find((s) => s.studentId === w.studentId)?.isDemo).length;
   const critical = real.filter((s) => s.status.tone === "critical").length;
   const chips: { key: string; text: string; color: string; href: string; testId?: string }[] = [
-    { key: "flying", text: t(d.counts.flying === 1 ? "owner.radar.flying.one" : "owner.radar.flying.other", { n: d.counts.flying }), color: "var(--t-green)", href: "#cc-fleet", testId: "kpi-flying" },
+    { key: "flying", text: t(d.counts.flying === 1 ? "owner.radar.flying.one" : "owner.radar.flying.other", { n: d.counts.flying }), color: "var(--occ-sage)", href: "#cc-fleet", testId: "kpi-flying" },
   ];
-  if (critical > 0) chips.push({ key: "critical", text: t(critical === 1 ? "owner.radar.critical.one" : "owner.radar.critical.other", { n: critical }), color: "var(--t-red)", href: "#cc-students" });
-  if (d.payments.overdueInstallments > 0) chips.push({ key: "overdue", text: t(d.payments.overdueInstallments === 1 ? "owner.radar.overdue.one" : "owner.radar.overdue.other", { n: d.payments.overdueInstallments }), color: "var(--t-red)", href: "#cc-payments" });
-  if (d.payments.signedNotPaid > 0) chips.push({ key: "signed", text: t(d.payments.signedNotPaid === 1 ? "owner.radar.signed.one" : "owner.radar.signed.other", { n: d.payments.signedNotPaid }), color: "var(--t-amber)", href: "#cc-payments" });
-  if (endingSoon > 0) chips.push({ key: "support", text: t(endingSoon === 1 ? "owner.radar.support.one" : "owner.radar.support.other", { n: endingSoon }), color: "var(--t-amber)", href: "#cc-support" });
+  if (critical > 0) chips.push({ key: "critical", text: t(critical === 1 ? "owner.radar.critical.one" : "owner.radar.critical.other", { n: critical }), color: "var(--occ-umber)", href: "#cc-students" });
+  if (d.payments.overdueInstallments > 0) chips.push({ key: "overdue", text: t(d.payments.overdueInstallments === 1 ? "owner.radar.overdue.one" : "owner.radar.overdue.other", { n: d.payments.overdueInstallments }), color: "var(--occ-umber)", href: "#cc-payments" });
+  if (d.payments.signedNotPaid > 0) chips.push({ key: "signed", text: t(d.payments.signedNotPaid === 1 ? "owner.radar.signed.one" : "owner.radar.signed.other", { n: d.payments.signedNotPaid }), color: "var(--occ-umber-soft)", href: "#cc-payments" });
+  if (endingSoon > 0) chips.push({ key: "support", text: t(endingSoon === 1 ? "owner.radar.support.one" : "owner.radar.support.other", { n: endingSoon }), color: "var(--occ-umber-soft)", href: "#cc-support" });
   return (
     <div className="radar" data-testid="cc-radar">
       <span className="lbl">{t("owner.radar.label")}</span>
@@ -215,7 +216,9 @@ function QueueRow({ item, role, isDemo }: { item: ControlQueueItem; role: string
         <p className="occ-q-t">
           {item.title}
           {isDemo ? <span className="occ-demo">{t("owner.demo")}</span> : null}
-          <span className="sr-only"> ({t(`owner.severity.${item.severity}` as TranslationKey)})</span>
+          {item.severity === "critical"
+            ? <span className="occ-sev"> {t("owner.severity.critical")}</span>
+            : <span className="sr-only"> ({t(`owner.severity.${item.severity}` as TranslationKey)})</span>}
         </p>
         <p className="occ-q-d">{item.detail}</p>
       </div>
@@ -234,7 +237,7 @@ function QueueCard({ queue, role, demoIds }: { queue: readonly ControlQueueItem[
     <Card title={t("owner.queue.title")} labelId="cc-queue-h" testId="cc-queue" aside={t("owner.queue.open", { n: queue.length })} className="occ-queue">
       {queue.length === 0 ? (
         <div className="occ-empty" data-testid="queue-empty">
-          <Ring fraction={1} color="var(--t-green)" size={40} />
+          <Ring fraction={1} color="var(--occ-sage)" size={40} />
           <p>{t("owner.queue.empty")}</p>
         </div>
       ) : (
@@ -262,7 +265,7 @@ function DeadlinesCard({ d, locale, demoIds }: { d: ControlCenterView; locale: s
   return (
     <Card title={t("owner.next.title")} labelId="cc-deadlines-h" testId="cc-deadlines" aside={t("owner.next.sub")}>
       {d.deadlines.length === 0 ? (
-        <div className="occ-empty"><Ring fraction={1} color="var(--t-green)" size={40} /><p>{t("owner.next.empty")}</p></div>
+        <div className="occ-empty"><Ring fraction={1} color="var(--occ-sage)" size={40} /><p>{t("owner.next.empty")}</p></div>
       ) : (
         <div className="agenda">
           {list.map((x, i) => {
@@ -302,8 +305,8 @@ function PaymentsCard({ data, locale, today }: { data: ControlCenterView; locale
         </div>
       ) : null}
       <div className="occ-paylines">
-        <div><span className="occ-dot" style={{ background: p.signedNotPaid > 0 ? "var(--t-amber)" : "var(--t-line-3)" }} aria-hidden="true" /><span>{t("owner.pay.signed")}</span><b data-testid="pay-signed">{p.signedNotPaid}</b></div>
-        <div><span className="occ-dot" style={{ background: p.overdueInstallments > 0 ? "var(--t-red)" : "var(--t-line-3)" }} aria-hidden="true" /><span>{t("owner.pay.overdue")}</span><b data-testid="pay-overdue" className={p.overdueInstallments > 0 ? "occ-red" : undefined}>{p.overdueInstallments}</b></div>
+        <div><span className="occ-dot" style={{ background: p.signedNotPaid > 0 ? "var(--occ-umber-soft)" : "var(--t-line-3)" }} aria-hidden="true" /><span>{t("owner.pay.signed")}</span><b data-testid="pay-signed">{p.signedNotPaid}</b></div>
+        <div><span className="occ-dot" style={{ background: p.overdueInstallments > 0 ? "var(--occ-umber)" : "var(--t-line-3)" }} aria-hidden="true" /><span>{t("owner.pay.overdue")}</span><b data-testid="pay-overdue" className={p.overdueInstallments > 0 ? "occ-strong-umber" : undefined}>{p.overdueInstallments}</b></div>
       </div>
     </Card>
   );

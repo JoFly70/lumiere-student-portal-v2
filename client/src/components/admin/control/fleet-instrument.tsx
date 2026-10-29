@@ -105,8 +105,8 @@ export function FleetInstrument({ rows, hrefOf }: FleetProps) {
             <text x={g.A.x} y={g.A.y + 24} textAnchor={narrow ? "start" : "middle"} fill="var(--t-heading)" style={{ font: "600 12px var(--font-sans)" }}>{t("owner.fleet.start")}</text>
             <g transform={`translate(${g.B.x},${g.B.y}) scale(${sealScale})`}>
               <circle r="62" fill={`url(#${uid}halo)`} />
-              <path d="M-14,22 L-26,62 L-16,56 L-9,66 L-2,28Z" fill="#9E2B2B" />
-              <path d="M14,22 L26,62 L16,56 L9,66 L2,28Z" fill="#7E1F22" />
+              <path d="M-14,22 L-26,62 L-16,56 L-9,66 L-2,28Z" fill="var(--occ-ribbon-1)" />
+              <path d="M14,22 L26,62 L16,56 L9,66 L2,28Z" fill="var(--occ-ribbon-2)" />
               <path d={rosette()} fill={`url(#${uid}gold)`} />
               <circle r="24" fill="var(--t-panel)" stroke="#B48A45" strokeWidth="1" />
               <image href={crestUrl} x="-14" y="-15" width="28" height="29" />
