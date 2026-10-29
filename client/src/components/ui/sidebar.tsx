@@ -88,6 +88,18 @@ function SidebarProvider({
     [setOpenProp, open]
   )
 
+  // Tablet widths (768-1023px): dock the sidebar as an icon rail so the content keeps its width; it re-expands
+  // at >= 1024px. Only when the sidebar is uncontrolled; the toggle still works inside either range.
+  React.useEffect(() => {
+    if (openProp !== undefined || typeof window === "undefined" || !window.matchMedia) return undefined
+    const mql = window.matchMedia("(min-width: 768px) and (max-width: 1023px)")
+    const sync = () => _setOpen(!mql.matches && defaultOpen)
+    sync()
+    mql.addEventListener("change", sync)
+    return () => mql.removeEventListener("change", sync)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   // Helper to toggle the sidebar.
   const toggleSidebar = React.useCallback(() => {
     return isMobile ? setOpenMobile((open) => !open) : setOpen((open) => !open)
