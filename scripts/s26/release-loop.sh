@@ -104,7 +104,7 @@ while [ "$(date +%s)" -lt "$DEADLINE" ]; do
       if need_pg; then bash scripts/release/s27/apply-s27.sh --apply --i-understand-this-writes-to-production > "$EVID/schema-s27.log" 2>&1
       else nix-shell -p postgresql_16 --run "bash scripts/release/s27/apply-s27.sh --apply --i-understand-this-writes-to-production" > "$EVID/schema-s27.log" 2>&1; fi
       if grep -q "S27 production schema release: DONE" "$EVID/schema-s27.log"; then status schema_s27 PASS "backup + S27 migration + post-verify of 4 tables"
-      else status schema_s27 FAIL "$(grep -E 'REFUSED|ERROR|FAIL' "$EVID/schema-s27.log" | head -5 | tr '\n' ' ' | cut -c1-400)"; DONE_SHA=$SHA; continue; fi
+      else status schema_s27 FAIL "$( { grep -iE 'refused|error|fail|fatal' "$EVID/schema-s27.log" | head -5; tail -3 "$EVID/schema-s27.log"; } | tr '\n' ' ' | cut -c1-500)"; DONE_SHA=$SHA; continue; fi
     fi
     if npx tsx scripts/s26/provision-demo-student.ts --ref "$REF" --real-code LCA-2026-0001 > "$EVID/provision.json" 2> "$EVID/provision.err" \
        && grep -q '"verdict": "PASS"' "$EVID/provision.json"; then
