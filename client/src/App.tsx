@@ -23,6 +23,7 @@ import Roadmap from "@/pages/roadmap";
 import Documents from "@/pages/documents";
 import Billing from "@/pages/billing";
 import Support from "@/pages/support";
+import Beyond from "@/pages/beyond";
 import NotFound from "@/pages/not-found";
 import { StudentBottomNav, StudentHeader } from "@/components/student-shell";
 import { cn } from "@/lib/utils";
@@ -240,6 +241,14 @@ function Router() {
         {() => (
           <ProtectedRoute requireRole="student">
             <HighSchool />
+          </ProtectedRoute>
+        )}
+      </Route>
+
+      <Route path="/beyond">
+        {() => (
+          <ProtectedRoute requireRole="student">
+            <Beyond />
           </ProtectedRoute>
         )}
       </Route>

@@ -60,6 +60,7 @@ const studentMenuItems: { title: string; labelKey?: TranslationKey; url: string;
   { title: "High School", labelKey: "nav.highSchool", url: "/high-school", icon: School },
   { title: "Flight Deck", labelKey: "nav.flightDeck", url: "/flight-deck", icon: Gauge },
   { title: "High School Flight Deck", labelKey: "nav.highSchoolFlightDeck", url: "/high-school/flight-deck", icon: Gauge },
+  { title: "Beyond the Diploma", labelKey: "s27.nav.beyondDiploma", url: "/beyond", icon: GraduationCap },
   { title: "Library", labelKey: "ux.nav.library", url: "/library", icon: Library },
   { title: "Student Profile", labelKey: "nav.profile", url: "/profile", icon: User },
   { title: "Your Roadmap", labelKey: "nav.roadmap", url: "/roadmap", icon: BookOpen },
@@ -69,7 +70,7 @@ const studentMenuItems: { title: string; labelKey?: TranslationKey; url: string;
 ];
 
 // Student navigation is grouped: the journey first, then the student's file.
-const JOURNEY_URLS = ["/high-school", "/flight-deck", "/high-school/flight-deck", "/roadmap", "/library"];
+const JOURNEY_URLS = ["/high-school", "/flight-deck", "/high-school/flight-deck", "/roadmap", "/beyond", "/library"];
 const studentJourneyItems = studentMenuItems.filter((i) => JOURNEY_URLS.includes(i.url));
 const studentFileItems = studentMenuItems.filter((i) => !JOURNEY_URLS.includes(i.url));
 
@@ -140,7 +141,8 @@ export function AppSidebar() {
       <SidebarMenu className="gap-0.5">
         {items.map((item) => {
           const active = location === item.url;
-          const label = item.labelKey ? t(item.labelKey) : item.title;
+          // "Beyond the Diploma" for high-school students, "Beyond the Bachelor's" for everyone else.
+          const label = item.url === "/beyond" && !programs.hasHighSchool ? t("s27.nav.beyondBachelor") : item.labelKey ? t(item.labelKey) : item.title;
           return (
             <SidebarMenuItem key={item.title}>
               <SidebarMenuButton

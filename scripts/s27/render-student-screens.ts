@@ -208,6 +208,32 @@ async function chatShots(browser: any) {
   process.exitCode = checks.every((c) => c.ok) ? 0 : 1;
 }
 
+/** Beyond: slot picker -> POST /api/student/orientation-sessions, service question -> support ticket, empty state on 404. */
+async function beyondFlow(browser: any) {
+  {
+    const { page, ctx } = await newPage(browser, "beyond", { width: 1440, height: 900, theme: "lumiere" });
+    requests.length = 0;
+    check("Beyond shows the university postcards from the goal", (await page.$$('[data-testid="beyond-postcards"] .pcard')).length === 3);
+    await page.click('[data-testid="slot-1"]');
+    await page.click('[role="group"] >> text=Media');
+    await page.click('[data-testid="bd-book"]');
+    await page.waitForTimeout(800);
+    const post = requests.find((r) => r.url === "/api/student/orientation-sessions");
+    check("booking POSTs slotAt (ISO with offset), prep and channel", !!post && /^\d{4}-\d{2}-\d{2}T/.test(post.body.slotAt) && post.body.prep.fields?.[0] === "Media" && post.body.channel === "portal", JSON.stringify(post?.body));
+    await page.click('[data-testid="svc-application"]');
+    await page.waitForTimeout(800);
+    const ticket = requests.find((r) => r.url === "/api/tickets");
+    check("'Ask about this' creates a support request", !!ticket && /Application package/.test(ticket.body.subject), JSON.stringify(ticket?.body?.subject));
+    await ctx.close();
+  }
+  {
+    const { page, ctx } = await newPage(browser, "beyond", { width: 390, height: 844, theme: "lumiere", journey: "404" });
+    check("journey 404: designed empty state", (await page.$('[data-testid="beyond-empty"]')) !== null);
+    await ctx.close();
+  }
+  process.exitCode = checks.every((c) => c.ok) ? 0 : 1;
+}
+
 async function main() {
   const wanted = (process.argv[2] && process.argv[2] !== "all" ? process.argv[2].split(",") : Object.keys(SCREENS));
   fs.mkdirSync(OUT, { recursive: true });
@@ -215,6 +241,7 @@ async function main() {
   const browser = await chromium.launch();
   const report: Record<string, unknown> = {};
   try {
+    if (process.argv[2] === "beyond-flow") { await beyondFlow(browser); return; }
     if (process.argv[2] === "chat") { await chatShots(browser); return; }
     if (process.argv[2] === "log-flow") { await logFlow(browser); return; }
     for (const screen of wanted) {
