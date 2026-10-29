@@ -389,7 +389,10 @@ function makePng(w = 32, h = 32, rgb: [number, number, number] = [212, 175, 55])
 // A real 16x16 baseline JPEG (632 bytes), embedded.
 const JPEG_B64 =
   "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAA0JCgsKCA0LCgsODg0PEyAVExISEyccHhcgLikxMC4pLSwzOko+MzZGNywtQFdBRkxOUlNSMj5aYVpQYEpRUk//2wBDAQ4ODhMREyYVFSZPNS01T09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0//wAARCAAQABADASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwDbooor5k9A/9k=";
-const makeJpeg = () => Buffer.from(JPEG_B64, "base64");
+// The replacement image is the synthetic DEMO avatar, so the account ends in a presentable state.
+const makeJpeg = () => {
+  try { return fs.readFileSync("scripts/s26/assets/demo-avatar.jpg"); } catch { return Buffer.from(JPEG_B64, "base64"); }
+};
 /** A minimal valid one-page PDF with correct xref offsets. */
 function makePdf(line: string): Buffer {
   const text = line.replace(/[^\x20-\x7E]/g, "?").replace(/[()\\]/g, "");
@@ -438,7 +441,7 @@ async function fetchBytesLike(url: unknown, kind: "png" | "jpg" | "pdf"): Promis
 const ctx: {
   admin?: Sess; adminClient?: SupabaseClient; adminUserId?: string;
   student?: Sess; studentPassword?: string;
-  sid?: string; sid2?: string; studentUserId?: string;
+  sid?: string; sid2?: string; studentUserId?: string; realStudentId?: string;
   studentDocId?: string; staffDocId?: string;
   ticketId?: string;
   photo1?: { id8: string; ext: string }; photo2?: { id8: string; ext: string };
@@ -893,6 +896,23 @@ async function assistantChecks() {
 /** S26: billing journey on the SYNTHETIC student only (records provisioned by the release; no real money). */
 async function billingChecks() {
   const A = ctx.admin, S = ctx.student, id = ctx.sid;
+  // The real pre-enrollment record (draft only): read-only checks, never written by this script.
+  await run("real-student.draft-plan", "real-student", true, async () => {
+    if (!A) return skip("no admin session");
+    const list = await get(`/api/students?search=LCA-2026-0001&limit=5`, A);
+    const real = (list.json?.students ?? []).find((x: any) => x.student_code === "LCA-2026-0001");
+    if (!real) return { ok: false, status: list.status, detail: "LCA-2026-0001 not found" };
+    ctx.realStudentId = real.id;
+    const hs = await get(`/api/admin/students/${real.id}/high-school`, A);
+    const cur = hs.json?.current;
+    const courses = cur?.draft?.content?.courses ?? [];
+    const electives = courses.filter((c: any) => c.areaKey === "electives").map((c: any) => String(c.title).split(" — ")[0]);
+    const ok = hs.status === 200 && cur?.enrollment?.status === "planned" && !cur?.published && courses.length === 22
+      && courses.reduce((n: number, c: any) => n + c.halfUnits, 0) === 42 && (cur?.credits?.earnedHalfUnits ?? -1) === 0
+      && electives.join("|") === "Microsoft Word & Excel|Business Math|English Communications|Human Relations|Reading Skills";
+    return { ok, status: hs.status, detail: `enrollment ${cur?.enrollment?.status}; published ${!!cur?.published}; draft courses ${courses.length}; electives ${electives.join(", ")}; official ${cur?.credits?.earnedHalfUnits}` ,
+      observed: { studentStatus: real.status, portalLinked: !!real.user_id, hasPhoto: !!real.photo_url } };
+  });
   await run("billing.admin-ledger", "billing", true, async () => {
     if (!A || !id) return skip("no admin session or demo id");
     const r = await get(`/api/admin/students/${id}/billing`, A);
@@ -1059,14 +1079,16 @@ class Page {
 
 interface Shot { name: string; viewport: string; bytes: number; chunks: number }
 const shots: Shot[] = [];
-function saveShot(name: string, viewport: "desktop" | "mobile", b64: string) {
+function saveShot(name: string, viewport: string, b64: string) {
   const dir = path.join(OUT, "shots"), bdir = path.join(OUT, "shots-b64");
   fs.mkdirSync(dir, { recursive: true }); fs.mkdirSync(bdir, { recursive: true });
   const file = `${name}-${viewport}`;
   fs.writeFileSync(path.join(dir, `${file}.jpg`), Buffer.from(b64, "base64"), { mode: 0o600 });
-  let n = 0;
-  for (let i = 0; i < b64.length; i += 90_000) { n++; fs.writeFileSync(path.join(bdir, `${file}.${n}.txt`), b64.slice(i, i + 90_000), { mode: 0o600 }); }
-  shots.push({ name: file, viewport, bytes: Math.round((b64.length * 3) / 4), chunks: n });
+  // One base64 file per image, padded with trailing whitespace to >= 80,000 characters so a remote
+  // file reader always hands it over as a file (decoders ignore whitespace).
+  const padded = b64.length >= 80_000 ? b64 : b64 + "\n".repeat(80_000 - b64.length);
+  fs.writeFileSync(path.join(bdir, `${file}.b64.txt`), padded, { mode: 0o600 });
+  shots.push({ name: file, viewport, bytes: Math.round((b64.length * 3) / 4), chunks: 1 });
   evidence.browser.shots = shots;
 }
 
@@ -1088,20 +1110,31 @@ async function launchBrowser(exe: string, port: number, profileDir: string, bloc
   return { page, proc };
 }
 
-const DESKTOP = { width: 1280, height: 820, deviceScaleFactor: 1, mobile: false };
+const DESKTOP = { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false };
 const MOBILE = { width: 390, height: 844, deviceScaleFactor: 1, mobile: true };
+/** Owner-required widths: desktop 1440 and 1920, tablet 768, phones 390 and Samsung S24 Ultra (384 CSS px). */
+const VIEWPORTS: Array<[string, { width: number; height: number; deviceScaleFactor: number; mobile: boolean }]> = [
+  ["desktop", DESKTOP],
+  ["wide", { width: 1920, height: 1080, deviceScaleFactor: 1, mobile: false }],
+  ["tablet", { width: 768, height: 1024, deviceScaleFactor: 1, mobile: true }],
+  ["mobile", MOBILE],
+  ["s24ultra", { width: 384, height: 832, deviceScaleFactor: 1, mobile: true }],
+];
+const overflow: Record<string, string[]> = {};
 
 async function shoot(page: Page, name: string, both = true) {
-  await page.eval(MASK_JS).catch(() => {});
-  await page.cmd("Emulation.setDeviceMetricsOverride", DESKTOP);
-  await sleep(350);
-  await page.eval(MASK_JS).catch(() => {});
-  saveShot(name, "desktop", (await page.cmd("Page.captureScreenshot", { format: "jpeg", quality: 60, captureBeyondViewport: false })).data);
-  if (!both) return;
-  await page.cmd("Emulation.setDeviceMetricsOverride", MOBILE);
-  await sleep(900);
-  await page.eval(MASK_JS).catch(() => {});
-  saveShot(name, "mobile", (await page.cmd("Page.captureScreenshot", { format: "jpeg", quality: 60, captureBeyondViewport: false })).data);
+  for (const [label, vp] of both ? VIEWPORTS : VIEWPORTS.slice(0, 1)) {
+    await page.cmd("Emulation.setDeviceMetricsOverride", vp);
+    await sleep(label === "desktop" ? 350 : 900);
+    await page.eval(MASK_JS).catch(() => {});
+    // Horizontal clipping/overflow is a defect at every width.
+    const wide = await page.eval(`document.documentElement.scrollWidth>window.innerWidth+1`).catch(() => false);
+    if (wide) { (overflow[name] ??= []).push(label); evidence.browser.horizontalOverflow = overflow; }
+    // Capture the page down to 2,400 CSS px so whole screens can be reviewed, not just the fold.
+    const h = Number(await page.eval(`Math.min(2400,Math.max(document.documentElement.scrollHeight,${vp.height}))`).catch(() => vp.height)) || vp.height;
+    const shot = await page.cmd("Page.captureScreenshot", { format: "jpeg", quality: 55, captureBeyondViewport: true, clip: { x: 0, y: 0, width: vp.width, height: h, scale: 1 } });
+    saveShot(name, label, shot.data);
+  }
   await page.cmd("Emulation.setDeviceMetricsOverride", DESKTOP);
   await sleep(300);
 }
@@ -1172,8 +1205,12 @@ async function browserPhase() {
 
   await run1("admin", ctx.admin, 9341, async (page) => {
     const sid = ctx.sid ?? "";
-    await visit(page, "admin", "control-center", "/admin", "admin-control-center");
-    await visit(page, "admin", "support-center", "/admin/support-center", "admin-support-center");
+    await visit(page, "admin", "control-center", "/admin/support-center", "admin-control-center");
+    await visit(page, "admin", "administration", "/admin", "admin-administration");
+    await visit(page, "admin", "billing", `/admin/students/${sid}/billing`, "admin-student-billing");
+    await visit(page, "admin", "elective-requests", "/admin/elective-requests", "admin-elective-requests");
+    await visit(page, "admin", "support-desk", "/support", "admin-support-desk");
+    if (ctx.realStudentId) await visit(page, "admin", "real-student-file", `/admin/students/${ctx.realStudentId}`, "admin-real-student-file");
     await visit(page, "admin", "dossier", `/admin/students/${sid}`, "admin-student-dossier");
     await visit(page, "admin", "high-school", `/admin/students/${sid}/high-school`, "admin-student-high-school");
     await visit(page, "admin", "assistant", `/admin/assistant?studentId=${sid}`, "admin-owner-assistant");
@@ -1215,6 +1252,7 @@ async function browserPhase() {
     });
     await visit(page, "student", "profile", "/profile", "student-profile");
     await visit(page, "student", "documents", "/documents", "student-documents");
+    await visit(page, "student", "billing", "/billing", "student-billing");
     await visit(page, "student", "support", "/support", "student-support");
     await run("browser.student.assistant-widget", "browser", false, async () => {
       await budget.reserve(8, "assistant widget");

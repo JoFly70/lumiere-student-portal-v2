@@ -126,7 +126,8 @@ async function main() {
 
     // 4. Portrait (actual photo supplied by the owner), via the authenticated photo endpoint.
     const photo = findFile(/\.(jpe?g|png|webp)$/i);
-    if (!photo) step("photo", { result: "GAP — no portrait file in s26-private-intake/" });
+    if (stored.photo_url) step("photo", { result: "already on file (unchanged)" });
+    else if (!photo) step("photo", { result: "GAP — no portrait file in s26-private-intake/" });
     else {
       const bytes = fs.readFileSync(photo);
       const mime = /\.png$/i.test(photo) ? "image/png" : /\.webp$/i.test(photo) ? "image/webp" : "image/jpeg";

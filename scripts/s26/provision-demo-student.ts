@@ -173,6 +173,19 @@ async function main() {
       milestones: plan.pacing.milestones.length, tasks: plan.courses.reduce((n, c) => n + c.tasks.length, 0),
     };
 
+    // Synthetic DEMO portraits (generated artwork, clearly labelled; never a real person). Same bucket,
+    // path shape and stored reference as POST /api/students/:id/photo. Only set when no photo exists.
+    await soft("demoPhotos", async () => {
+      const { updateStudent } = await import("../../server/services/student-service");
+      for (const [st, file] of [[student, "demo-avatar.jpg"], [second, "demo-avatar-second.jpg"]] as const) {
+        if (st.photo_url) continue;
+        const path = `profile-photos/${st.id}_${crypto.randomUUID()}.jpg`;
+        const up = await supabaseAdmin.storage.from("student-documents").upload(path, fs.readFileSync(`scripts/s26/assets/${file}`), { contentType: "image/jpeg", upsert: false });
+        if (up.error) throw new Error(`photo upload: ${up.error.message}`);
+        await updateStudent(st.id, { photo_url: `storage:student-documents/${path}` } as never, actorId);
+      }
+    });
+
     // Representative SYNTHETIC billing for the demo student only (never the real student): agreed price,
     // one documented adjustment and one partial payment, so the staff and student billing views have
     // real ledger rows. Payment processing does not exist; these are records of external events.
@@ -217,6 +230,16 @@ async function main() {
         draftCourses: dc?.courses.length ?? null, draftPlannedCredits: dc ? dc.courses.reduce((n, c) => n + c.halfUnits, 0) / 2 : null,
         officialCreditsEarned: rs.current!.credits.earnedHalfUnits / 2, studentStatus: real!.status, portalLinked: !!real!.user_id,
       };
+    }
+    // Confidential first-student intake (portrait, contract PDF, proposed billing): only when the owner has
+    // placed the private handoff in the git-ignored s26-private-intake/ folder. Runs through the live app's
+    // authenticated APIs; its evidence (s26-evidence/intake.json) holds field names and statuses only.
+    if (fs.existsSync("s26-private-intake")) {
+      const { spawnSync } = await import("node:child_process");
+      const r = spawnSync("npx", ["tsx", "scripts/s26/private-intake.ts", "--base", "https://lumiere-student-portal-v-2.replit.app", "--ref", ref!], { stdio: "ignore", timeout: 15 * 60_000 });
+      out.privateIntake = r.status === 0 ? "PASS (see s26-evidence/intake.json)" : `FAIL exit ${r.status} (see s26-evidence/intake.json)`;
+    } else {
+      out.privateIntake = "PENDING — no s26-private-intake/ folder in the production workspace";
     }
     out.verdict = "PASS";
   } finally {
