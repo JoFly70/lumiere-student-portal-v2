@@ -7,6 +7,7 @@
  * Every fact comes from a stored record; nothing is estimated or invented here.
  */
 import { formatHalfUnits, type StudentHighSchoolView, type HsReviewQueueItem } from "@shared/high-school-contract";
+import type { StudentJourneyView } from "@shared/s27-contract";
 
 export interface OwnerContextStudent {
   readonly id: string;
@@ -43,6 +44,16 @@ export interface OwnerContextBilling {
   readonly nextDue?: { readonly dueDate: string; readonly amountCents: number; readonly status?: string } | null;
   readonly lastReceipt?: { readonly receivedDate: string; readonly amountCents: number; readonly methodLabel: string } | null;
   readonly evidenceAwaiting?: number;
+  /** S27: installment schedule (dates, amounts and statuses only). */
+  readonly schedule?: ReadonlyArray<{ readonly dueDate: string; readonly amountCents: number; readonly status: string }>;
+}
+
+/** S27: the student's program journey as the owner sees it. Note bodies are provided only to the admin-only owner AI. */
+export interface OwnerContextProgram {
+  readonly journey: StudentJourneyView | null;
+  readonly notesCount: number;
+  /** Latest staff notes (newest first). Omitted unless the viewer is an administrator. */
+  readonly noteBodies?: readonly string[];
 }
 
 export interface OwnerContextInput {
@@ -52,11 +63,12 @@ export interface OwnerContextInput {
   readonly reviewQueue: readonly HsReviewQueueItem[];
   readonly documents: readonly OwnerContextDocument[];
   readonly tickets: readonly OwnerContextTicket[];
+  readonly program?: OwnerContextProgram | null;
 }
 
 export interface OwnerSourceRecord {
   readonly ref: string;
-  readonly kind: "student" | "credits" | "course" | "graduation" | "guardians" | "documents" | "document" | "tickets" | "ticket" | "review" | "pace";
+  readonly kind: "program" | "checkpoints" | "notes" | "student" | "credits" | "course" | "graduation" | "guardians" | "documents" | "document" | "tickets" | "ticket" | "review" | "pace";
   readonly label: string;
   /** Admin portal path the owner can open to check the record. */
   readonly path: string;
@@ -152,6 +164,43 @@ export function composeOwnerContext(input: OwnerContextInput): OwnerSourceRecord
   return appendDocsTickets(out, input, base, push);
 }
 
+function scheduleSummary(schedule: OwnerContextBilling["schedule"]): string {
+  if (!schedule || schedule.length === 0) return "";
+  const count = (st: string) => schedule.filter((i) => i.status === st).length;
+  return ` Installment schedule: ${schedule.length} installment(s); ${count("paid")} paid, ${count("overdue")} overdue, ${count("due")} due today, ${count("partially_paid") + count("upcoming")} upcoming.`;
+}
+
+function appendProgram(input: OwnerContextInput, base: string, push: (r: Omit<OwnerSourceRecord, "ref">) => void): void {
+  const prog = input.program;
+  if (!prog) return;
+  const j = prog.journey;
+  const a = j?.agreement;
+  if (a) {
+    push({
+      kind: "program", label: "Program agreement", path: `${base}?tab=overview`,
+      text: `Agreement signed ${a.signedOn ?? "not yet"}; activated ${a.activatedOn ?? "not yet"}; Lumière support ${a.supportEndsOn ? `until ${a.supportEndsOn} (${a.supportMonthsLeft} month(s) left)` : `${a.supportMonths} months from activation`}; platform access ${a.accessEndsOn ? `until ${a.accessEndsOn}` : `${a.accessMonths} months from activation`}. Deadlines: ${a.deadlines.map((d) => `${d.label} ${d.status === "done" ? "done" : d.status === "waived" ? "waived" : d.dueOn ? `due ${d.dueOn}${d.daysLeft !== null && d.daysLeft < 0 ? " (OVERDUE)" : ""}` : "no date yet"}`).join("; ")}. Orientation sessions ${a.orientationSessionsUsed}/${a.orientationSessionsIncluded} used.`,
+    });
+  } else {
+    push({ kind: "program", label: "Program agreement", path: `${base}?tab=overview`, text: "No program agreement is recorded yet." });
+  }
+  if (j) {
+    push({
+      kind: "checkpoints", label: "Checkpoints", path: `${base}?tab=overview`,
+      text: j.checkpoints.map((c) => `${c.label}: ${c.status}${c.doneOn ? ` (${c.doneOn})` : c.plannedOn ? ` (planned ${c.plannedOn})` : ""}`).join("; ") + ".",
+    });
+    if (j.pace) {
+      push({
+        kind: "pace", label: "Logged pace", path: `${base}?tab=roadmap`,
+        text: `Student-logged pace (estimate, not official credit): ${j.pace.creditsPerWeek} credit(s) per week from ${j.pace.itemsLogged28d} item(s) in 28 days; last logged ${j.pace.lastLoggedOn ?? "never"}${j.pace.stale ? " (stale: nothing in 7 days)" : ""}; estimated finish ${j.pace.estimatedFinishOn ?? "not estimable"}; exams this week ${j.pace.examsThisWeek}${j.pace.weeklyExamLimit ? `/${j.pace.weeklyExamLimit}` : ""}.`,
+      });
+    }
+  }
+  push({
+    kind: "notes", label: "Staff notes", path: `${base}?tab=notes`,
+    text: `${prog.notesCount} internal staff note(s) on file.${prog.noteBodies?.length ? ` Latest: ${prog.noteBodies.slice(0, 5).map((n) => `"${scrubFreeText(n, 160)}"`).join("; ")}` : ""}`,
+  });
+}
+
 function appendDocsTickets(
   out: OwnerSourceRecord[],
   input: OwnerContextInput,
@@ -166,7 +215,7 @@ function appendDocsTickets(
       label: "Billing ledger",
       path: `${base}/billing`,
       text: b.state !== "configured" ? "No billing obligation is recorded." :
-        `Agreed ${m(b.agreedCents)}; adjustments ${m(b.discountCents)}; paid (staff-confirmed receipts only) ${m(b.paidCents)}; remaining ${m(b.remainingCents)}.${b.nextDue ? ` Next installment ${m(b.nextDue.amountCents)} due ${b.nextDue.dueDate}${b.nextDue.status ? ` (${b.nextDue.status})` : ""}.` : ""}${b.lastReceipt ? ` Last confirmed payment ${m(b.lastReceipt.amountCents)} on ${b.lastReceipt.receivedDate} (${scrubFreeText(b.lastReceipt.methodLabel, 40)}).` : " No payment confirmed yet."} Payment evidence awaiting review: ${b.evidenceAwaiting ?? 0}.`,
+        `Agreed ${m(b.agreedCents)}; adjustments ${m(b.discountCents)}; paid (staff-confirmed receipts only) ${m(b.paidCents)}; remaining ${m(b.remainingCents)}.${b.nextDue ? ` Next installment ${m(b.nextDue.amountCents)} due ${b.nextDue.dueDate}${b.nextDue.status ? ` (${b.nextDue.status})` : ""}.` : ""}${b.lastReceipt ? ` Last confirmed payment ${m(b.lastReceipt.amountCents)} on ${b.lastReceipt.receivedDate} (${scrubFreeText(b.lastReceipt.methodLabel, 40)}).` : " No payment confirmed yet."} Payment evidence awaiting review: ${b.evidenceAwaiting ?? 0}.${scheduleSummary(b.schedule)}`,
     });
   }
   if (input.documents.length === 0) {
@@ -193,6 +242,7 @@ function appendDocsTickets(
       });
     }
   }
+  appendProgram(input, base, push);
   return out;
 }
 
