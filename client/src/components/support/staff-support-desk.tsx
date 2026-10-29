@@ -14,7 +14,7 @@ import { STAGE_LABEL, parseStageNote } from "@/lib/elective-stage";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "wouter";
 import { formatDistanceToNowStrict } from "date-fns";
-import { AlertTriangle, ArrowLeft, Clock, Download, EyeOff, Inbox, Loader2, Lock, MessageSquare, Paperclip, Search, X } from "lucide-react";
+import { AlertTriangle, ArrowLeft, CheckCircle2, Clock, Download, Inbox, Loader2, Lock, MessageSquare, Paperclip, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -59,13 +59,13 @@ import {
   StaffNotice,
   StaffPage,
   StaffPageHeader,
-  StaffPill,
-  StatusPill,
   staffBtn,
   staffField,
   staffLabel,
 } from "@/components/staff/staff-ui";
 import { cn } from "@/lib/utils";
+import { TonePill } from "@/components/admin/control/owner-ui";
+import type { Tone } from "@/lib/owner-presentation";
 import { supportSearchWithStudent, supportSearchWithTicket, supportStudentFromSearch, supportTicketFromSearch } from "./support-navigation";
 
 // ---------------------------------------------------------------------------
@@ -83,14 +83,24 @@ const STATUS_LABEL: Record<TicketStatus, string> = {
 
 const PRIORITY_LABEL: Record<TicketPriority, string> = { low: "Low", medium: "Medium", high: "High", urgent: "Urgent" };
 
+/**
+ * One restrained pill family (the Control Center's TonePill): "New" is the single gold accent, working states
+ * are neutral, resolved is a quiet green, and red is kept for "Overdue" only.
+ */
+const STATUS_TONE: Record<TicketStatus, Tone> = { open: "gold", in_progress: "neutral", waiting_on_student: "neutral", resolved: "ok", closed: "neutral" };
+
 function TicketStatusPill({ status, testId }: { status: TicketStatus; testId?: string }) {
-  return <StatusPill status={ticketStatusKey(status)} label={STATUS_LABEL[status]} data-testid={testId} />;
+  return <TonePill tone={STATUS_TONE[status]} testId={testId}><span data-status={ticketStatusKey(status)}>{STATUS_LABEL[status]}</span></TonePill>;
 }
 
 function PriorityPill({ priority, always }: { priority: TicketPriority; always?: boolean }) {
-  if (priority === "urgent") return <StaffPill tone="urgent-solid" icon={<AlertTriangle className="h-3 w-3" aria-hidden="true" />}>Urgent</StaffPill>;
-  if (priority === "high") return <StaffPill tone="attention">High priority</StaffPill>;
-  return always ? <StaffPill tone="neutral">{PRIORITY_LABEL[priority]} priority</StaffPill> : null;
+  if (priority === "urgent") return <TonePill tone="attention" dot={false}><AlertTriangle className="mr-1 inline h-3 w-3 align-[-2px]" aria-hidden="true" />Urgent</TonePill>;
+  if (priority === "high") return <TonePill tone="neutral" dot={false}>High priority</TonePill>;
+  return always ? <TonePill tone="neutral" dot={false}>{PRIORITY_LABEL[priority]} priority</TonePill> : null;
+}
+
+function OverduePill({ testId }: { testId?: string }) {
+  return <TonePill tone="urgent" testId={testId}>Overdue</TonePill>;
 }
 
 function age(iso: string): string {
@@ -124,7 +134,7 @@ const EMPTY_COPY: Record<QueueKey, { title: string; body: string }> = {
 const TILES: { queue: QueueKey; label: string; hint: string; tone?: "urgent" | "attention"; pick: (s: SupportStatsResponse["stats"]) => number }[] = [
   { queue: "needs", label: "Needs response", hint: "Waiting on Lumière", pick: (s) => s.awaitingStaff },
   { queue: "overdue", label: "Overdue", hint: "Past the response target", tone: "urgent", pick: (s) => s.overdue },
-  { queue: "unassigned", label: "Unassigned", hint: "No advisor yet", tone: "attention", pick: (s) => s.unassigned },
+  { queue: "unassigned", label: "Unassigned", hint: "No advisor yet", pick: (s) => s.unassigned },
   { queue: "waiting", label: "Waiting on student", hint: "Ball is with the student", pick: (s) => s.awaitingStudent },
 ];
 
@@ -165,49 +175,47 @@ export function TicketRow({ ticket, selected, onSelect }: { ticket: SupportTicke
         data-testid="staff-ticket-row"
         data-ticket-id={ticket.id}
         className={cn(
-          "relative w-full overflow-hidden rounded-xl border py-3 pl-5 pr-3.5 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-student-gold-ink",
-          selected ? "border-student-gold-ink bg-student-gold-soft" : "border-student-line bg-student-card hover:border-student-line-strong hover:bg-student-gold-soft/40",
+          "relative w-full overflow-hidden rounded-xl border px-4 py-3 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-student-gold-ink",
+          selected ? "border-student-gold bg-student-gold-soft/60 shadow-[0_1px_2px_hsl(var(--s-ink)/0.05)]" : "border-student-line bg-student-card hover:border-student-line-strong hover:bg-student-gold-soft/30",
         )}
       >
-        <span
-          aria-hidden="true"
-          className={cn("absolute inset-y-0 left-0 w-1.5", overdue ? "bg-st-urgent" : selected ? "bg-student-gold-ink" : needsOwner ? "bg-st-attention" : "bg-transparent")}
-        />
         <div className="flex items-start justify-between gap-3">
           <span className="min-w-0 truncate text-sm font-semibold text-student-ink">{ticket.reporter_name}</span>
-          <span className={cn("inline-flex shrink-0 items-center gap-1 text-xs font-medium", overdue ? "text-st-urgent" : "text-student-muted")}>
+          <span className={cn("inline-flex shrink-0 items-center gap-1 text-xs", overdue ? "font-medium text-st-urgent" : "text-student-muted")}>
             <Clock className="h-3.5 w-3.5" aria-hidden="true" />
             {staffRowAge(ticket, now)}
           </span>
         </div>
         <div className="mt-1 line-clamp-2 text-sm leading-snug text-student-ink">{ticket.subject}</div>
         <div className="mt-1 text-xs text-student-muted">{topic.label} · <span className="font-mono">{ticket.ticket_number}</span></div>
-        <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-          <TicketStatusPill status={ticket.status} />
-          {overdue && (
-            <StaffPill tone="urgent" testId="overdue-flag" icon={<AlertTriangle className="h-3 w-3" aria-hidden="true" />}>
-              Overdue
-            </StaffPill>
-          )}
-          <PriorityPill priority={ticket.priority} />
-        </div>
-        <div className="mt-2.5 flex items-center gap-2 text-xs">
-          {ticket.assignee ? (
-            <>
-              <StaffAvatar name={ticket.assignee.name} size="sm" />
-              <span className="min-w-0 truncate text-student-muted">Assigned: {ticket.assignee.name}</span>
-            </>
-          ) : (
-            <>
-              <StaffAvatar name="?" size="sm" muted />
-              <span className={cn("font-medium", needsOwner ? "text-st-attention" : "text-student-muted")}>Unassigned</span>
-            </>
-          )}
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-t border-student-line pt-2.5">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <TicketStatusPill status={ticket.status} />
+            {overdue && <OverduePill testId="overdue-flag" />}
+            <PriorityPill priority={ticket.priority} />
+          </div>
+          <div className="flex min-w-0 items-center gap-1.5 text-xs">
+            {ticket.assignee ? (
+              <>
+                <StaffAvatar name={ticket.assignee.name} size="sm" />
+                <span className="min-w-0 truncate text-student-muted">Assigned: {ticket.assignee.name}</span>
+              </>
+            ) : (
+              <>
+                <StaffAvatar name="?" size="sm" muted />
+                <span className={cn(needsOwner ? "font-medium text-student-gold-ink" : "text-student-muted")}>Unassigned</span>
+              </>
+            )}
+          </div>
         </div>
       </button>
     </li>
   );
 }
+
+const SEGMENT = "inline-flex min-h-9 items-center gap-1.5 rounded-md px-4 font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-student-gold-ink";
+const SEGMENT_ON = "bg-student-card text-student-ink shadow-[0_1px_2px_hsl(var(--s-ink)/0.08)] ring-1 ring-student-line-strong";
+const SEGMENT_OFF = "text-student-muted hover:text-student-ink";
 
 // ---------------------------------------------------------------------------
 // Conversation
@@ -217,13 +225,13 @@ function CommentBubble({ comment }: { comment: SupportComment }) {
   if (comment.is_internal) {
     const stage = parseStageNote(comment.content);
     return (
-      <li data-testid="internal-note" className="rounded-xl border-2 border-dashed border-st-attention bg-st-attention-soft p-4">
-        <div className="mb-1 flex items-center gap-2 text-xs font-semibold text-st-attention">
-          <EyeOff className="h-3.5 w-3.5" aria-hidden="true" />
-          Internal note — not visible to the student
-        </div>
-        <div className="mb-1.5 text-xs text-student-muted">
-          {comment.author_name} · {age(comment.created_at)} ago
+      <li data-testid="internal-note" className="rounded-xl border border-dashed border-student-line-strong bg-student-bg/70 px-4 py-3">
+        <div className="mb-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-student-muted">
+          <span className="inline-flex items-center gap-1.5 font-semibold text-student-ink">
+            <Lock className="h-3.5 w-3.5 text-student-gold-ink" aria-hidden="true" />
+            Internal note
+          </span>
+          <span>· not visible to the student · {comment.author_name} · {age(comment.created_at)} ago</span>
         </div>
         {stage ? (
           <p className="text-sm leading-relaxed text-student-ink" data-testid="elective-stage-note"><span className="font-semibold">Elective stage: {STAGE_LABEL[stage.stage]}</span>{stage.reason ? <span className="block whitespace-pre-wrap">{stage.reason}</span> : null}</p>
@@ -237,7 +245,7 @@ function CommentBubble({ comment }: { comment: SupportComment }) {
   return (
     <li className={cn("flex gap-3", staff && "flex-row-reverse")} data-testid={staff ? "staff-message" : "student-message"}>
       <StaffAvatar name={comment.author_name} muted={!staff} />
-      <div className={cn("min-w-0 max-w-[92%] rounded-2xl border p-4", staff ? "border-student-gold bg-student-gold-soft" : "border-student-line bg-student-card")}>
+      <div className={cn("min-w-0 max-w-[92%] rounded-2xl border p-4", staff ? "border-student-gold/60 bg-student-gold-soft/60" : "border-student-line bg-student-card")}>
         <div className="mb-1 text-xs text-student-muted">
           <span className="font-semibold text-student-ink">{comment.author_name}</span> · {staff ? "Lumière team" : "Student"} · {age(comment.created_at)} ago
         </div>
@@ -254,12 +262,12 @@ function WaitingBanner({ ticket }: { ticket: SupportTicketDetail }) {
   if (ticket.awaiting === "staff") {
     return (
       <StaffNotice
-        tone={over ? "urgent" : "attention"}
+        tone={over ? "urgent" : "gold"}
         icon={<Clock className="h-4 w-4" />}
         role="status"
         testId="waiting-banner"
       >
-        <p className="font-semibold">{over ? "Overdue" : "Waiting on Lumière"} · {staffRowAge(ticket, now)}</p>
+        <p className="font-medium">{over ? "Overdue" : "Waiting on Lumière"} · {staffRowAge(ticket, now)}</p>
         <p className="text-student-muted">
           {over ? `${over}. ` : ""}{ticket.assignee ? `Owner: ${ticket.assignee.name}.` : "Nobody owns this request yet. Assign an advisor."}
         </p>
@@ -269,14 +277,14 @@ function WaitingBanner({ ticket }: { ticket: SupportTicketDetail }) {
   if (ticket.awaiting === "student") {
     return (
       <StaffNotice tone="info" icon={<Clock className="h-4 w-4" />} testId="waiting-banner">
-        <p className="font-semibold">Waiting on the student · {staffRowAge(ticket, now)}</p>
+        <p className="font-medium">Waiting on the student · {staffRowAge(ticket, now)}</p>
         <p className="text-student-muted">No action is needed from Lumière until the student replies.</p>
       </StaffNotice>
     );
   }
   return (
     <StaffNotice tone="success" testId="waiting-banner">
-      <p className="font-semibold">{staffRowAge(ticket, now)}</p>
+      <p className="font-medium">{staffRowAge(ticket, now)}</p>
     </StaffNotice>
   );
 }
@@ -307,10 +315,9 @@ function TicketDetailPane({ ticketId, staff, onBack }: { ticketId: string; staff
   }
   if (error || !ticket) {
     return (
-      <div role="alert" className="rounded-xl border border-st-urgent bg-st-urgent-soft p-4 text-sm text-student-ink">
+      <StaffNotice tone="urgent" role="alert" action={<Button variant="outline" size="sm" className={staffBtn.outline} onClick={onBack}>Back to queue</Button>}>
         {error ? errorText(error) : "This ticket is not available."}
-        <div className="mt-3"><Button variant="outline" size="sm" className={staffBtn.outline} onClick={onBack}>Back to queue</Button></div>
-      </div>
+      </StaffNotice>
     );
   }
 
@@ -388,8 +395,8 @@ function TicketDetailPane({ ticketId, staff, onBack }: { ticketId: string; staff
           <span className="font-mono text-xs text-student-muted">{ticket.ticket_number}</span>
           <TicketStatusPill status={ticket.status} testId="detail-status" />
           <PriorityPill priority={ticket.priority} always />
-          {ticket.is_overdue && <StaffPill tone="urgent" icon={<AlertTriangle className="h-3 w-3" aria-hidden="true" />}>Overdue</StaffPill>}
-          {isElectiveChangeSubject(ticket.subject) && <StaffPill tone="attention" testId="pill-elective-change">Elective change</StaffPill>}
+          {ticket.is_overdue && <OverduePill />}
+          {isElectiveChangeSubject(ticket.subject) && <TonePill tone="neutral" dot={false} testId="pill-elective-change">Elective change</TonePill>}
         </div>
         <h2 tabIndex={-1} data-testid="staff-ticket-title" className="font-serif text-2xl leading-snug tracking-tight text-student-ink focus-visible:outline-none">{ticket.subject}</h2>
         <p className="text-sm text-student-muted">
@@ -487,7 +494,7 @@ function TicketDetailPane({ ticketId, staff, onBack }: { ticketId: string; staff
       </section>
 
       {ticket.resolution_notes && (
-        <section className="rounded-xl border border-st-applied bg-st-applied-soft p-4 text-sm text-student-ink" aria-label="Resolution">
+        <section className="rounded-xl border border-l-[3px] border-student-line border-l-st-applied bg-st-applied-soft/40 px-4 py-3 text-sm text-student-ink" aria-label="Resolution">
           <div className="text-xs font-semibold uppercase tracking-[0.1em] text-st-applied">Resolution shown to the student</div>
           <p className="mt-1.5 whitespace-pre-wrap leading-relaxed">{ticket.resolution_notes}</p>
         </section>
@@ -515,27 +522,30 @@ function TicketDetailPane({ ticketId, staff, onBack }: { ticketId: string; staff
         )}
       </section>
 
-      {msg && (
-        <div role={msg.kind === "error" ? "alert" : "status"} className={cn("rounded-xl border px-4 py-2.5 text-sm text-student-ink", msg.kind === "error" ? "border-st-urgent bg-st-urgent-soft" : "border-st-applied bg-st-applied-soft")}>
+      {msg && (msg.kind === "error" ? (
+        <StaffNotice tone="urgent" role="alert" testId="desk-message">{msg.text}</StaffNotice>
+      ) : (
+        <p role="status" data-testid="desk-message" className="flex items-center gap-2 text-sm text-student-muted">
+          <CheckCircle2 className="h-4 w-4 shrink-0 text-st-applied" aria-hidden="true" />
           {msg.text}
-        </div>
-      )}
+        </p>
+      ))}
 
       {perms.can_reply && !closedTicket ? (
-        <section aria-label="Reply" className={cn("space-y-3 rounded-2xl border p-4", mode === "internal" ? "border-dashed border-st-attention bg-st-attention-soft" : "border-student-line-strong bg-student-card")}>
-          <div role="group" aria-label="Message type" className="inline-flex rounded-lg border border-student-line-strong bg-student-bg p-0.5 text-sm">
-            <button type="button" aria-pressed={mode === "public"} onClick={() => setMode("public")} className={cn("min-h-10 rounded-md px-4 font-medium", mode === "public" ? "bg-student-seal text-student-seal-ink" : "text-student-ink hover:bg-student-gold-soft")}>Public reply</button>
+        <section aria-label="Reply" data-mode={mode} className={cn("space-y-3 rounded-2xl border p-4 transition-colors", mode === "internal" ? "border-dashed border-student-line-strong bg-student-bg/70" : "border-student-line bg-student-card")}>
+          <div role="group" aria-label="Message type" className="inline-flex rounded-lg border border-student-line bg-student-bg p-1 text-sm">
+            <button type="button" aria-pressed={mode === "public"} onClick={() => setMode("public")} className={cn(SEGMENT, mode === "public" ? SEGMENT_ON : SEGMENT_OFF)}>Public reply</button>
             {perms.can_add_internal_note && (
-              <button type="button" aria-pressed={mode === "internal"} onClick={() => setMode("internal")} className={cn("min-h-10 rounded-md px-4 font-medium", mode === "internal" ? "bg-st-attention text-student-card" : "text-student-ink hover:bg-student-gold-soft")}>Internal note</button>
+              <button type="button" aria-pressed={mode === "internal"} onClick={() => setMode("internal")} className={cn(SEGMENT, mode === "internal" ? SEGMENT_ON : SEGMENT_OFF)}><Lock className="h-3.5 w-3.5" aria-hidden="true" />Internal note</button>
             )}
           </div>
           {mode === "internal" ? (
-            <p className="flex items-center gap-1.5 text-xs text-st-attention"><Lock className="h-3.5 w-3.5" aria-hidden="true" /> Internal note — not visible to the student. It never changes the status.</p>
+            <p className="flex items-center gap-1.5 text-xs text-student-muted"><Lock className="h-3.5 w-3.5 text-student-gold-ink" aria-hidden="true" /> Internal note · only the Lumière team sees it. It never changes the status.</p>
           ) : (
             <p className="text-xs leading-relaxed text-student-muted">The student reads this. Use plain, student-safe language: no internal jargon, no other students' details, no promises about credit acceptance or outcomes you cannot guarantee.</p>
           )}
           <label htmlFor="staff-composer" className="sr-only">{mode === "internal" ? "Internal note" : "Reply to student"}</label>
-          <Textarea id="staff-composer" rows={4} value={text} onChange={(e) => setText(e.target.value)} placeholder={mode === "internal" ? "Write a note for the team…" : "Write your reply to the student…"} className={cn(staffField, "min-h-[112px] py-2.5", mode === "internal" && "border-st-attention")} />
+          <Textarea id="staff-composer" rows={4} value={text} onChange={(e) => setText(e.target.value)} placeholder={mode === "internal" ? "Write a note for the team…" : "Write your reply to the student…"} className={cn(staffField, "min-h-[112px] py-2.5")} />
           {perms.can_attach && mode === "public" && (
             <div className="flex flex-wrap items-center gap-2 text-sm">
               <input ref={fileRef} type="file" className="sr-only" id="staff-file" aria-label="Attach files" multiple accept=".pdf,.png,.jpg,.jpeg,.webp,.txt,.doc,.docx" onChange={(e) => { setFiles((p) => [...p, ...Array.from(e.target.files ?? [])]); if (fileRef.current) fileRef.current.value = ""; }} />
@@ -709,7 +719,7 @@ export function StaffSupportDesk() {
           {list.isLoading ? (
             <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-student-muted" aria-label="Loading tickets" /></div>
           ) : list.error ? (
-            <div role="alert" className="rounded-xl border border-st-urgent bg-st-urgent-soft p-4 text-sm text-student-ink">{errorText(list.error)}</div>
+            <StaffNotice tone="urgent" role="alert">{errorText(list.error)}</StaffNotice>
           ) : tickets.length === 0 ? (
             <StaffEmpty icon={<Inbox className="h-8 w-8" />} title={empty.title} testId="queue-empty">{empty.body}</StaffEmpty>
           ) : (
