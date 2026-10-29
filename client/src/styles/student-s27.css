@@ -341,8 +341,13 @@
 .s27 .rm2-st{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .s27 .rm2-st h2{font-size:1.7rem}
 .s27 .rm2-st span{font-size:.82rem;color:var(--t-muted)}
-.s27 .nowgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:14px}
-.s27 .nc{background:var(--t-panel);border:1px solid var(--t-line);border-radius:16px;padding:18px;display:grid;gap:12px;box-shadow:var(--t-card-shadow));align-content:start}
+.s27 .nowgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.s27 .nowgrid:has(>:nth-child(3):last-child),.s27 .nowgrid:has(>:nth-child(6):last-child){grid-template-columns:repeat(3,minmax(0,1fr))}
+.s27 .nowgrid:has(>:only-child){grid-template-columns:minmax(0,1fr)}
+@media (max-width:1100px){.s27 .nowgrid,.s27 .nowgrid:has(>:nth-child(3):last-child),.s27 .nowgrid:has(>:nth-child(6):last-child){grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:700px){.s27 .nowgrid,.s27 .nowgrid:has(>:nth-child(3):last-child),.s27 .nowgrid:has(>:nth-child(6):last-child){grid-template-columns:minmax(0,1fr)}}
+.s27 .nc{background:var(--t-panel);border:1px solid var(--t-line);border-radius:16px;padding:18px;display:grid;gap:12px;box-shadow:var(--t-card-shadow));align-content:start;grid-template-rows:none;display:flex;flex-direction:column;gap:12px}
+.s27 .nc>.row{margin-top:auto}
 .s27 .nc.wait{background:linear-gradient(160deg,var(--t-accent-dim),transparent 60%),var(--t-panel)}
 .s27 .nc .sj{font:600 .64rem var(--font-sans));letter-spacing:.14em;text-transform:uppercase;color:var(--t-muted)}
 .s27 .nc h3{font-size:1.4rem;line-height:1.1}

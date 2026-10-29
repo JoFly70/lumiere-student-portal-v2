@@ -5,7 +5,7 @@
  */
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "wouter";
-import { Plus } from "lucide-react";
+import { Plus, RotateCcw } from "lucide-react";
 import type { HsCourseView, StudentHighSchoolView } from "@shared/high-school-contract";
 import type { StudentJourneyView } from "@shared/s27-contract";
 import { courseDescription } from "@/lib/hs-course-descriptions";
@@ -196,7 +196,7 @@ function NowCard({ course, onLog, canLog, lang }: { course: HsCourseView; onLog:
       ) : next ? (
         <p className={`nx${retake ? " warn" : ""}`}>
           {t("s27.rm.next")} <b>{next.title}</b>{next.dueDate ? <> · {t("s27.rm.planned", { date: formatDay(next.dueDate, lang, "weekday") })}</> : null}
-          {retake && <><br />{t("s27.rm.retake")}</>}
+          {retake && <><br /><RotateCcw className="mr-1 inline h-3.5 w-3.5 align-[-2px]" aria-hidden="true" />{t("s27.rm.retake")}</>}
         </p>
       ) : null}
       {!waiting && k.waiting > 0 && <p className="nx">{t("s27.rm.waitGrade", { n: k.waiting })}</p>}
