@@ -19,6 +19,7 @@ const OUT = process.argv[3] ?? "/tmp/claude-0/-home-user-lumiere-student-portal-
 const PORT = Number(process.env.S27_PORT ?? 5273);
 const BASE = `http://localhost:${PORT}`;
 const NOW = new Date("2026-10-29T18:30:00");
+const SIZES: [number, number][] = process.env.S27_SIZES ? process.env.S27_SIZES.split(",").map((x) => x.split("x").map(Number) as [number, number]) : [[1440, 900], [390, 844]];
 
 const SCREENS: Record<string, { path: string; wait: string }> = {
   "flight-deck": { path: "/flight-deck", wait: '[data-testid="hs-flight-deck"]' },
@@ -217,12 +218,16 @@ async function main() {
     if (process.argv[2] === "chat") { await chatShots(browser); return; }
     if (process.argv[2] === "log-flow") { await logFlow(browser); return; }
     for (const screen of wanted) {
-      for (const [width, height] of [[1440, 900], [390, 844]] as const) {
+      for (const [width, height] of SIZES) {
         for (const theme of ["lumiere", "lumiere-dark"] as const) {
-          const { page, ctx, errors } = await newPage(browser, screen, { width, height, theme });
+          const { page, ctx, errors } = await newPage(browser, screen, { width, height, theme, lang: (process.env.S27_LANG as "en" | "fr") || "en" });
           const overflow = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth, main: (() => { const m = document.querySelector("main"); return m ? [m.scrollWidth, m.clientWidth] : null; })() }));
-          const name = `${screen}-${width}-${theme === "lumiere" ? "light" : "dark"}.png`;
+          const name = `${screen}${process.env.S27_LANG === "fr" ? "-fr" : ""}-${width}-${theme === "lumiere" ? "light" : "dark"}.png`;
           await fullShot(page, path.join(OUT, name));
+          if (process.env.S27_PROBE) {
+            const off = await page.evaluate(() => { const m = document.querySelector("main")!; const w = m.clientWidth; return [...m.querySelectorAll("*")].filter((e) => e.getBoundingClientRect().right > w + 1 && e.getBoundingClientRect().width > 0).slice(0, 6).map((e) => `${e.tagName}.${(e.className && e.className.toString().slice(0, 60)) || ""}:${Math.round(e.getBoundingClientRect().right)}`); });
+            console.log("  overflow offenders:", off.join(" | "));
+          }
           report[name] = { overflow, errors };
           console.log(name, JSON.stringify(overflow), errors.join(" | "));
           await ctx.close();

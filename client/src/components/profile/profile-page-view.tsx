@@ -82,7 +82,7 @@ function ReadinessRow({ item }: { item: ProfileReadinessItem }) {
     <li className="rounded-lg border border-st-attention bg-student-attn-soft" data-testid="readiness-item" data-kind={item.kind}>
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-3 py-2.5">
         {body}
-        <span className="flex shrink-0 flex-wrap items-center gap-2">
+        <span className="flex min-w-0 max-w-full flex-wrap items-center gap-2">
           <StatusChip label={chip.label} tone={chip.tone} />
           {action.external ? (
             <Link href={action.href} className={buttonClass.solid} data-testid="readiness-action">{action.label}</Link>
