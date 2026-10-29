@@ -565,8 +565,10 @@ export function StaffSupportDesk() {
   const { user } = useAuth();
   const isManager = user?.role === "admin" || user?.role === "staff";
   const [queue, setQueue] = useState<QueueKey>("needs");
-  const [searchInput, setSearchInput] = useState("");
-  const [search, setSearch] = useState("");
+  // ?search= deep link (e.g. the Control Center's "Elective change requests" tile) pre-fills the search.
+  const initialSearch = typeof window === "undefined" ? "" : (new URLSearchParams(window.location.search).get("search") ?? "").trim().slice(0, 100);
+  const [searchInput, setSearchInput] = useState(initialSearch);
+  const [search, setSearch] = useState(initialSearch);
   const [selectedId, setSelectedId] = useState<string | null>(() =>
     typeof window === "undefined" ? null : supportTicketFromSearch(window.location.search),
   );

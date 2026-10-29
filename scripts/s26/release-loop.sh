@@ -21,7 +21,7 @@ REF=rheronevecsffaejteoj
 BRANCH=claude/s26-owner-and-first-student-finish
 REMOTE_URL=https://github.com/JoFly70/lumiere-student-portal-v2.git
 LIVE=https://lumiere-student-portal-v-2.replit.app
-HOURS="${S26_LOOP_HOURS:-6}"
+HOURS="${S26_LOOP_HOURS:-2}"
 EVID=s26-evidence
 PRIV=.s26-private-backup
 
@@ -118,6 +118,7 @@ while [ "$(date +%s)" -lt "$DEADLINE" ]; do
       if npx tsx scripts/s26/production-acceptance.ts --base "$LIVE" --ref "$REF" > "$EVID/acceptance.out" 2>&1; then status acceptance PASS
       else status acceptance FAIL "see $EVID/acceptance.json"; fi
       ACCEPTED=1
+      if [ -n "${S26_PIN_SHA:-}" ]; then log "pinned release ${DONE_SHA:0:7} verified live; exiting"; break; fi
     fi
   fi
   sleep 60
