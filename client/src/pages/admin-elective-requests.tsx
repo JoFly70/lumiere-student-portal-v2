@@ -81,7 +81,7 @@ export default function AdminElectiveRequests() {
 
       {list.isError ? <StaffNotice tone="urgent" role="alert" action={<Button type="button" variant="outline" className={staffBtn.outline} onClick={() => void list.refetch()}>Retry</Button>}>Requests could not be loaded.</StaffNotice> : null}
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] xl:items-start">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] xl:items-start">
         <section aria-label="Request queue" className="min-w-0">
           {list.isLoading ? <div role="status" className="h-40 animate-pulse rounded-2xl bg-student-gold-soft/40"><span className="sr-only">Loading requests</span></div>
             : shown.length === 0 ? (
@@ -92,20 +92,19 @@ export default function AdminElectiveRequests() {
               <>
                 <div className={`${staffTable.frame} hidden overflow-x-auto md:block`}>
                   <table className={staffTable.table} data-testid="elective-queue">
-                    <thead><tr><th className={staffTable.th}>Student</th><th className={staffTable.th}>Change</th><th className={staffTable.th}>Stage</th><th className={staffTable.th}>Age</th></tr></thead>
+                    <thead><tr><th className={staffTable.th}>Student</th><th className={staffTable.th}>Change</th><th className={staffTable.th}>Stage</th></tr></thead>
                     <tbody>
                       {shown.map((r) => (
                         <tr key={r.ticket.id} className={`${staffTable.tr} ${selectedId === r.ticket.id ? "bg-student-gold-soft/60" : ""}`}>
-                          <td className={`${staffTable.td} min-w-[13rem]`}>
+                          <td className={`${staffTable.td} min-w-[15rem]`}>
                             <button type="button" onClick={() => select(r.ticket.id)} aria-current={selectedId === r.ticket.id} className="flex min-w-0 items-start gap-2.5 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-student-gold-ink" data-testid="elective-row">
                               <StaffAvatar name={r.ticket.reporter_name} size="sm" />
-                              <span className="min-w-0"><span className="block font-medium text-student-ink">{r.ticket.reporter_name}</span><span className="block text-xs text-student-muted">{r.ticket.assignee?.name ?? "Unassigned"}</span></span>
+                              <span className="min-w-0"><span className="block font-medium text-student-ink" title={r.ticket.reporter_name}>{r.ticket.reporter_name}</span><span className="block text-xs text-student-muted">{r.ticket.assignee?.name ?? "Unassigned"}</span></span>
                             </button>
                           </td>
                           <td className={`${staffTable.td} min-w-[11rem]`}><span className="block break-words">{r.from || "Course"}</span><span className="block break-words text-student-muted">→ {r.to || "Requested course"}</span></td>
-                          <td className={staffTable.td}>{r.stage ? <StagePill stage={r.stage} /> : <span className="text-xs text-student-muted">Loading…</span>}</td>
-                          <td className={`${staffTable.td} whitespace-nowrap tabular-nums`}>{ageLabel(r.ticket.created_at)}</td>
-                        </tr>
+                          <td className={staffTable.td}>{r.stage ? <StagePill stage={r.stage} /> : <span className="text-xs text-student-muted">Loading…</span>}<span className="mt-1 block text-xs tabular-nums text-student-muted">{ageLabel(r.ticket.created_at)}</span></td>
+                                                  </tr>
                       ))}
                     </tbody>
                   </table>

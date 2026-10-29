@@ -170,7 +170,7 @@ export default function AdminStudents() {
 
       {rows.length > 0 ? (
         <StaffCard padded={false} className="overflow-hidden" aria-label="Student list">
-          <div className="hidden grid-cols-[minmax(0,2.3fr)_8.5rem_minmax(0,1.9fr)_minmax(0,1.3fr)_6.5rem_7.5rem_1.5rem] gap-4 border-b border-student-line bg-student-gold-soft/50 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-student-muted lg:grid" aria-hidden="true">
+          <div className="hidden grid-cols-[minmax(0,2.4fr)_8.5rem_minmax(0,2.2fr)_minmax(0,1.3fr)_7rem_5.5rem_1.25rem] gap-4 border-b border-student-line bg-student-gold-soft/50 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-student-muted lg:grid" aria-hidden="true">
             <span>Student</span><span>Status</span><span>Program</span><span>Needs attention</span><span>Latest activity</span><span className="text-right">Balance</span><span />
           </div>
           <ul className="divide-y divide-student-line" data-testid="students-list">
@@ -191,7 +191,7 @@ function StudentRow({ s, f, docs, waiting }: { s: DirectoryStudent; f?: Director
   return (
     <li>
       <Link href={adminStudentWorkspacePath(s.id)} aria-label={`Open ${name}`} data-testid="student-row"
-        className="group grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 px-4 py-3 transition-colors hover:bg-student-gold-soft/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-student-gold-ink lg:grid-cols-[minmax(0,2.3fr)_8.5rem_minmax(0,1.9fr)_minmax(0,1.3fr)_6.5rem_7.5rem_1.5rem] lg:gap-x-4">
+        className="group grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 px-4 py-3 transition-colors hover:bg-student-gold-soft/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-student-gold-ink lg:grid-cols-[minmax(0,2.4fr)_8.5rem_minmax(0,2.2fr)_minmax(0,1.3fr)_7rem_5.5rem_1.25rem] lg:gap-x-4">
         <span className="flex min-w-0 items-center gap-3 lg:col-start-1">
           <StudentPhoto student={s} size="md" />
           <span className="min-w-0">

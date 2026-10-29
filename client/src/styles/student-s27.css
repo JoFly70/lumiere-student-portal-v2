@@ -426,3 +426,11 @@
 .ai-head{display:flex;align-items:center;gap:14px}
 .ai-head h2{font-size:1.45rem;line-height:1.05}
 .ai-head span{display:block;font-size:.76rem;color:var(--t-muted)}
+
+/* Narrow journey chart: stop names move out of the SVG into this legend so nothing collides. */
+.s27 .fi-legend{list-style:none;margin:10px 0 14px;padding:0 4px;display:grid;gap:6px}
+.s27 .fi-legend li{display:grid;grid-template-columns:12px auto 1fr;align-items:baseline;gap:8px;font-size:.8rem;color:var(--t-muted)}
+.s27 .fi-legend i{width:9px;height:9px;border-radius:50%;border:2px solid var(--t-line-3);background:var(--t-panel);align-self:center}
+.s27 .fi-legend li[data-reached="true"] i{background:var(--t-accent);border-color:var(--t-accent)}
+.s27 .fi-legend b{font:500 1rem var(--font-display);color:var(--t-heading)}
+.s27 .fi-legend span{text-align:right;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase}

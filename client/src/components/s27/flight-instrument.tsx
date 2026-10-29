@@ -136,6 +136,7 @@ export function FlightInstrument(p: InstrumentProps) {
   const layout = g ? placeLabels(g, p.stops, p.required, now, p.youLabel, width, height) : null;
 
   return (
+    <>
     <div className="map" ref={mapRef} role="group" aria-label={p.ariaLabel} data-testid="flight-instrument" style={{ height }}>
       {g && (
         <svg viewBox={`0 0 ${width} ${height}`} width={width} height={height} aria-hidden="false">
@@ -175,7 +176,7 @@ export function FlightInstrument(p: InstrumentProps) {
                 <circle cx={pt.x} cy={pt.y} r="18" fill="transparent" />
                 <circle className="stopdot" cx={pt.x} cy={pt.y} r="7" fill={s.reached ? "var(--t-accent)" : "var(--t-panel)"} stroke={s.reached ? "var(--t-panel)" : "var(--t-line-3)"} strokeWidth={s.reached ? 3 : 2} />
                 {s.reached && <path d={`M${pt.x - 3},${pt.y} l2,2.2 l4,-4.2`} fill="none" stroke="var(--t-accent-ink)" strokeWidth="1.6" strokeLinecap="round" />}
-                <text x={nx} y={ny} textAnchor={anchor} fill="var(--t-heading)" style={{ font: `500 ${narrow ? 16 : 20}px var(--font-display)` }}>{s.name}</text>
+                {!narrow && <text x={nx} y={ny} textAnchor={anchor} fill="var(--t-heading)" style={{ font: "500 20px var(--font-display)" }}>{s.name}</text>}
                 {!narrow && <text x={nx} y={ny - 20} textAnchor={anchor} fill={s.reached ? "var(--t-accent-text)" : "var(--t-muted)"} style={{ font: "500 10px var(--font-sans)", letterSpacing: ".08em", textTransform: "uppercase" }}>{s.sub}</text>}
               </g>
             );
@@ -209,6 +210,18 @@ export function FlightInstrument(p: InstrumentProps) {
         {tip && (<><b>{tip.title}</b>{tip.body ? <><br />{tip.body}</> : null}</>)}
       </div>
     </div>
+    {narrow && (
+      <ul className="fi-legend" data-testid="flight-instrument-legend" aria-label={p.ariaLabel}>
+        {p.stops.map((s) => (
+          <li key={s.id} data-reached={s.reached ? "true" : "false"}>
+            <i aria-hidden="true" />
+            <b>{s.name}</b>
+            <span>{s.sub}</span>
+          </li>
+        ))}
+      </ul>
+    )}
+    </>
   );
 }
 
