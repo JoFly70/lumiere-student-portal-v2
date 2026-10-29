@@ -7,7 +7,7 @@
 import { formatHalfUnits, type HsCreditSummary } from "@shared/high-school-contract";
 import { creditSlots, remainingHalfUnits } from "@/lib/admin-high-school-logic";
 
-const FILL = { core: "bg-st-progress", elective: "bg-student-gold" } as const;
+const FILL = { core: "bg-student-gold", elective: "bg-student-gold-ink" } as const;
 
 export function CreditBar({ credits }: { credits: HsCreditSummary }) {
   const slots = creditSlots(credits);

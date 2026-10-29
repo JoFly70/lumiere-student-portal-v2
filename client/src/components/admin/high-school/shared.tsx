@@ -117,7 +117,7 @@ export function SectionCard({ title, description, action, children, testId, body
     <section data-testid={testId} className="rounded-lg border bg-card text-card-foreground shadow-sm">
       <header className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3 p-4 sm:p-5">
         <div className="min-w-0 flex-1 basis-60">
-          <h3 className="text-base font-semibold leading-tight tracking-tight">{title}</h3>
+          <h3 className="font-serif text-xl font-normal leading-tight tracking-tight">{title}</h3>
           {description ? <p className="mt-1 max-w-prose text-sm text-muted-foreground">{description}</p> : null}
         </div>
         {action ? <div className="shrink-0">{action}</div> : null}
