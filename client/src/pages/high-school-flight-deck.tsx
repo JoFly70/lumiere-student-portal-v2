@@ -14,7 +14,11 @@ import { useT } from "@/i18n";
 import { isNoHighSchoolEnrollment, useAcademicProjection } from "@/lib/academic-projection-queries";
 import { deckState } from "@/lib/academic-flight-deck-presentation";
 import { WelcomeBanner } from "@/components/cockpit/welcome-banner";
-import { StudentHome } from "@/components/high-school/student-home";
+import { FlightDeckS27, type DeckBilling, type DeckDoc, type JourneyState } from "@/components/s27/flight-deck";
+import { useStudentJourney } from "@/lib/s27/journey-queries";
+import { useDocuments, useMyProfile } from "@/hooks/use-documents";
+import { useStudentBilling } from "@/lib/billing-queries";
+import { ApiError } from "@/lib/api";
 import { HsActionsProvider } from "@/components/high-school/hs-actions";
 import { HsNoRoadmap } from "@/components/high-school/states";
 import { useStudentProfile } from "@/hooks/use-student-profile";
@@ -110,31 +114,39 @@ export function HighSchoolFlightDeckView({ projection }: { projection: AcademicP
   );
 }
 
-/** The flagship home: next action, 21-credit progress, tasks, milestones, support and billing at a glance. */
+/** The flagship home (S27 cockpit): countdowns, flight path, pace planner, credits, checkpoints, documents, billing. */
 function StudentHomeContainer() {
   const { data: view, isLoading, error, refetch } = useHighSchoolView();
   const { data: profile } = useStudentProfile();
-  const { ops } = useCockpitOps();
+  const journey = useStudentJourney();
+  const me = useMyProfile();
+  const docs = useDocuments(me.data?.id ?? null);
   const tickets = useTickets({ limit: 100 });
+  const billing = useStudentBilling();
   if (isLoading) return <Loading />;
   if (isNoEnrollment(error)) return <NoEnrollment />;
   if (error || !view) return <LoadError onRetry={() => refetch()} />;
   const identity = profile?.identity;
-  const name = identity ? (identity.preferredName?.trim() || identity.firstName) : "";
+  const name = identity ? (identity.preferredName?.trim() || identity.firstName) : null;
   if (!view.roadmap) {
     return <Shell testId="hs-flight-deck-not-ready"><div className="mx-auto max-w-3xl"><HsNoRoadmap /></div></Shell>;
   }
+  const journeyState: JourneyState = journey.isLoading ? "loading" : journey.unavailable ? "unavailable" : journey.failed ? "failed" : "ready";
+  const documents: readonly DeckDoc[] | null | "loading" = me.isLoading || (me.data && docs.isLoading) ? "loading" : docs.data ? (docs.data as unknown as readonly DeckDoc[]) : null;
+  const deckBilling: DeckBilling = billing.isLoading ? "loading" : billing.data ?? (billing.error instanceof ApiError && billing.error.status === 404 ? null : "unavailable");
   return (
     <HsActionsProvider>
-      <StudentSurface testId="hs-flight-deck">
-        <StudentHome
-          view={view}
-          identity={identity ? { name, photoUrl: identity.photoUrl ?? null } : null}
-          ops={ops}
-          tickets={tickets.data?.tickets ?? null}
-          today={todayIso()}
-        />
-      </StudentSurface>
+      <FlightDeckS27
+        view={view}
+        journey={journey.journey}
+        journeyState={journeyState}
+        firstName={name}
+        documents={documents}
+        tickets={tickets.data?.tickets ?? null}
+        billing={deckBilling}
+        today={todayIso()}
+        hour={new Date().getHours()}
+      />
     </HsActionsProvider>
   );
 }

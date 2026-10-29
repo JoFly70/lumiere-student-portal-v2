@@ -613,16 +613,22 @@ export function AcademicAssistant({ defaultOpen = false }: { defaultOpen?: boole
     if (latest) void loadConversation(latest.id);
   }, [open, listQuery.data, activeId, entries.length, loadConversation]);
 
-  // Deep link and cross-component open (global search).
+  // Deep link and cross-component open (global search, S27 suggestion chips).
+  const [queued, setQueued] = useState<string | null>(null);
   useEffect(() => {
     const onOpen = (ev: Event) => {
-      const id = (ev as CustomEvent<{ conversationId?: string | null }>).detail?.conversationId;
+      const detail = (ev as CustomEvent<{ conversationId?: string | null; message?: string }>).detail;
+      const id = detail?.conversationId;
       setOpen(true);
       if (id) void loadConversation(id);
+      else if (typeof detail?.message === "string" && detail.message.trim()) {
+        startNew();
+        setQueued(detail.message);
+      }
     };
     window.addEventListener(ASSISTANT_OPEN_EVENT, onOpen);
     return () => window.removeEventListener(ASSISTANT_OPEN_EVENT, onOpen);
-  }, [loadConversation]);
+  }, [loadConversation, startNew]);
   useEffect(() => {
     const { conversationId, memoryId } = deepLinkFromSearch(search);
     if (location !== ASSISTANT_PATH && !conversationId && !memoryId) return;
@@ -803,6 +809,14 @@ export function AcademicAssistant({ defaultOpen = false }: { defaultOpen?: boole
     },
     [pending, cooling, attach, activeId, language, qc],
   );
+
+  // A question handed over by another page is sent once the panel is idle.
+  useEffect(() => {
+    if (!queued || !open || pending || cooling) return;
+    const text = queued;
+    setQueued(null);
+    void send(text);
+  }, [queued, open, pending, cooling, send]);
 
   const onRetry = useCallback(() => {
     if (failure) void send(failure.text, pendingRef.current?.attachmentIds);

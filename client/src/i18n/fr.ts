@@ -8,6 +8,7 @@ import { studentOsFr } from "./modules/student-os";
 import { welcomeFr } from "./modules/welcome";
 import { highSchoolFr } from "./modules/high-school";
 import { studentUxFr } from "./modules/student-ux";
+import { s27Fr } from "./modules/s27";
 
 /**
  * Dictionnaire français (vouvoiement). Typé contre `en.ts` : toute clé anglaise doit exister ici.
@@ -24,6 +25,7 @@ export const fr: Record<TranslationKey, string> = {
   ...welcomeFr,
   ...highSchoolFr,
   ...studentUxFr,
+  ...s27Fr,
   "language.label": "Langue",
   "language.en": "English",
   "language.fr": "Français",

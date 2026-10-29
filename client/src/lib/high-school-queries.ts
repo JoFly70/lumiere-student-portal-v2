@@ -9,7 +9,7 @@ import { HS_API, HS_ERROR_CODES, type HsStudentProgressInput, type StudentHighSc
 import { ApiError, getAuthToken, getCsrfToken } from "@/lib/api";
 
 /** fetch that understands the contract's `{ error: { code, message } }` envelope (and the flat legacy shape). */
-async function hsRequest<T>(url: string, init: { method?: string; body?: string } = {}): Promise<T> {
+export async function hsRequest<T>(url: string, init: { method?: string; body?: string } = {}): Promise<T> {
   const headers: Record<string, string> = {};
   const token = getAuthToken();
   if (token) headers.Authorization = `Bearer ${token}`;

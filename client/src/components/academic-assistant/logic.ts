@@ -124,6 +124,15 @@ export function openAssistantConversation(conversationId?: string): void {
   window.dispatchEvent(new CustomEvent(ASSISTANT_OPEN_EVENT, { detail: { conversationId: conversationId ?? null } }));
 }
 
+/**
+ * S27: opens the assistant on a NEW conversation and sends `message` as the first question (suggestion chips on the
+ * cockpit, Beyond and Support pages). The existing send path is used, so safety behaviour is unchanged.
+ */
+export function askAssistant(message: string): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent(ASSISTANT_OPEN_EVENT, { detail: { conversationId: null, message } }));
+}
+
 /** Deep link: `/assistant?conversation=<id>`. */
 export function assistantDeepLink(conversationId: string): string {
   return `${ASSISTANT_PATH}?${CONVERSATION_PARAM}=${encodeURIComponent(conversationId)}`;
