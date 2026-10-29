@@ -14,7 +14,7 @@ export default function Login() {
   // Redirect if already authenticated (role-based)
   useEffect(() => {
     if (isAuthenticated) {
-      setLocation(user?.role === 'admin' ? '/admin' : user?.role === 'coach' || user?.role === 'staff' ? '/support' : '/');
+      setLocation(user?.role === 'admin' ? '/admin/support-center' : user?.role === 'coach' || user?.role === 'staff' ? '/support' : '/');
     }
   }, [isAuthenticated, user, setLocation]);
 

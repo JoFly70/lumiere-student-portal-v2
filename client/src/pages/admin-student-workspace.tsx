@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
 import { useParams, Link } from "wouter";
-import { AlertCircle, ArrowLeft, ArrowRight, ChevronDown, Database, FileCheck2, Eye, FileText, Fingerprint, LayoutDashboard, LifeBuoy, RefreshCw, Route, ShieldCheck, UserCheck } from "lucide-react";
+import { AlertCircle, ArrowLeft, BrainCircuit, ArrowRight, ChevronDown, Database, FileCheck2, Eye, FileText, Fingerprint, LayoutDashboard, LifeBuoy, RefreshCw, Route, ShieldCheck, UserCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -56,6 +56,8 @@ import {
   validSnapshotFingerprint,
 } from "./controlled-placement-workflow";
 import { StudentDocumentsReview } from "@/components/admin/student-documents-review";
+import StudentFileHs, { type StudentFileRecord } from "@/components/admin/student-file-hs";
+import { OwnerAssistantPanel } from "@/components/owner-assistant/owner-assistant-panel";
 import { StudentPortalAccountCard } from "@/components/admin/student-portal-account-card";
 import StudentProfileReview, { useStaffProfileData } from "@/components/admin/student-profile-review";
 import { STAFF_PROFILE_QUERY_KEY } from "@/components/admin/student-profile-review-logic";
@@ -69,7 +71,7 @@ import { useTickets, type Ticket } from "@/hooks/use-tickets";
 import { SUPPORT_TOPIC_INFO, awaitingFor, staffStatusLabel, topicForTicket } from "@shared/support-contract";
 import { canActivateLeadForRole } from "@/components/admin/student-documents-upload-logic";
 
-const WORKSPACE_TABS = ["overview", "profile", "documents", "support"] as const;
+const WORKSPACE_TABS = ["overview", "profile", "documents", "support", "ai"] as const;
 type WorkspaceTab = typeof WORKSPACE_TABS[number];
 /** Older anchors (#workspace-documents, ...) keep working as deep links. */
 const WORKSPACE_TAB_ALIASES: Readonly<Record<string, WorkspaceTab>> = {
@@ -155,7 +157,7 @@ export default function AdminStudentWorkspace() {
   const state = selectWorkspaceState(query);
   // New leads can exist before an academic assignment. Keep lifecycle actions
   // available without changing the canonical academic workspace's 404 contract.
-  const unassignedStudent = useQuery<{ id: string; status: string }>({
+  const unassignedStudent = useQuery<StudentFileRecord>({
     queryKey: [`/api/students/${encodeURIComponent(studentId)}`],
     enabled: state.kind === "empty" && state.reason === "not-found" && !!studentId,
   });
@@ -192,13 +194,8 @@ export default function AdminStudentWorkspace() {
   if (state.kind === "error") return <Card><CardContent className="flex flex-col items-center gap-3 py-16 text-center"><AlertCircle className="h-8 w-8 text-destructive" /><h2 className="text-lg font-semibold">Workspace unavailable</h2><p className="text-sm text-muted-foreground">The canonical student workspace could not be loaded.</p><Button onClick={() => query.refetch()}><RefreshCw className="mr-2 h-4 w-4" />Retry</Button></CardContent></Card>;
   if (state.kind === "empty") {
     const student = unassignedStudent.data?.id === studentId ? unassignedStudent.data : undefined;
-    if (student) return <Card><CardContent className="flex flex-col items-center gap-3 py-16 text-center">
-      <h2 className="text-lg font-semibold">Student academic workspace not assigned</h2>
-      <p className="text-sm text-muted-foreground">This student has no active academic assignment yet. Student status: <span className="font-medium capitalize">{student.status}</span>.</p>
-      {canActivateLeadForRole(user?.role, student.status) ? <Button type="button" disabled={activateLead.isPending} onClick={() => activateLead.mutate(student.id)} data-testid="button-activate-lead">{activateLead.isPending ? "Activating…" : "Activate lead"}</Button> : null}
-      {activationFeedback ? <p role={activationFeedback.kind === "error" ? "alert" : "status"}>{activationFeedback.message}</p> : null}
-      <Link href={`/admin/students/${encodeURIComponent(student.id)}/high-school`} className="text-sm underline">Open high school pathway</Link>
-    </CardContent></Card>;
+    // No university workspace (e.g. a high-school-only student): show the full student file.
+    if (student) return <StudentFileHs studentId={studentId} student={student} />;
     return <Card><CardContent className="flex flex-col items-center gap-3 py-16 text-center"><h2 className="text-lg font-semibold">{state.reason === "not-found" ? "Student workspace not found" : "Workspace unavailable"}</h2><p className="text-sm text-muted-foreground">{unassignedStudent.isLoading ? "Loading student status…" : state.reason === "not-found" ? "There is no canonical workspace for this student." : "No workspace record is available for this student."}</p></CardContent></Card>;
   }
   const vm = state.viewModel;
@@ -229,7 +226,9 @@ export default function AdminStudentWorkspace() {
     { key: "profile", label: "Profile & identity", icon: <Fingerprint className="h-4 w-4" />, count: profileCount, countLabel: "decisions waiting" },
     { key: "documents", label: "Documents", icon: <FileText className="h-4 w-4" />, count: docsPending, countLabel: "waiting for review" },
     { key: "support", label: "Support", icon: <LifeBuoy className="h-4 w-4" />, count: supportAwaiting, countLabel: "waiting for a response" },
+    ...(user?.role === "admin" ? [{ key: "ai", label: "Lumière AI", icon: <BrainCircuit className="h-4 w-4" /> }] : []),
   ];
+  const activeTab = tab === "ai" && user?.role !== "admin" ? "overview" : tab;
   const identity = resolveWorkspaceStudentIdentity(vm.student);
   const name = identity.name;
   const placementStudentId = identity.id;
@@ -300,9 +299,9 @@ export default function AdminStudentWorkspace() {
         void queryClient.invalidateQueries({ queryKey: ADMIN_STUDENT_WORKSPACE_QUERY_KEY(studentId) });
       }}
     /> : null}
-    <StaffTabList tabs={tabs} active={tab} onChange={(key) => setTab(key as WorkspaceTab)} label="Student workspace sections" idPrefix="ws" />
+    <StaffTabList tabs={tabs} active={activeTab} onChange={(key) => setTab(key as WorkspaceTab)} label="Student workspace sections" idPrefix="ws" />
 
-    <StaffTabPanel idPrefix="ws" tabKey="overview" active={tab === "overview"}>
+    <StaffTabPanel idPrefix="ws" tabKey="overview" active={activeTab === "overview"}>
     <div id="workspace-overview" aria-label="Overview" className="space-y-6">
     <section className="grid gap-4 md:grid-cols-3" aria-label="Summary">
       <StaffCard as="div"><p className={staffLabel}>Current program</p>{programName === "Not provided" ? <p className="mt-2 font-serif text-xl text-student-ink">No program assigned</p> : <><p className="mt-2 font-serif text-xl leading-snug text-student-ink">{programName}</p>{programVersionName !== "Not provided" ? <p className="mt-1 text-sm text-student-muted">Version {programVersionName}</p> : null}</>}</StaffCard>
@@ -539,11 +538,11 @@ export default function AdminStudentWorkspace() {
      </div>
     </StaffTabPanel>
 
-    <StaffTabPanel idPrefix="ws" tabKey="profile" active={tab === "profile"}>
+    <StaffTabPanel idPrefix="ws" tabKey="profile" active={activeTab === "profile"}>
       {canonicalStudentId ? <StudentProfileReview studentId={canonicalStudentId} /> : null}
     </StaffTabPanel>
 
-    <StaffTabPanel idPrefix="ws" tabKey="documents" active={tab === "documents"}>
+    <StaffTabPanel idPrefix="ws" tabKey="documents" active={activeTab === "documents"}>
      <section id="workspace-documents" aria-labelledby="workspace-documents-heading" className="space-y-4">
        <StaffSectionHeader id="workspace-documents-heading" icon={<FileText className="h-5 w-5" />} title="Documents" description="Verify, reject or request a new upload. The reason you write for the student is shown to them; the internal note never is." />
        <WorkspaceResourceState loading={documentsQuery.isLoading} error={documentsQuery.isError} empty={false} onRetry={() => void documentsQuery.refetch()}>
@@ -552,7 +551,7 @@ export default function AdminStudentWorkspace() {
      </section>
     </StaffTabPanel>
 
-    <StaffTabPanel idPrefix="ws" tabKey="support" active={tab === "support"}>
+    <StaffTabPanel idPrefix="ws" tabKey="support" active={activeTab === "support"}>
      <section id="workspace-support" aria-labelledby="workspace-support-heading" className="space-y-4">
        <StaffSectionHeader id="workspace-support-heading" icon={<LifeBuoy className="h-5 w-5" />} title="Support" description="Support tickets associated with this student. This workspace is read-only; replies happen in the Support desk." actions={canonicalStudentId ? <Link href={`/support?studentId=${encodeURIComponent(canonicalStudentId)}`} className={`${staffBtn.outline} inline-flex items-center justify-center border`}>Open Support desk</Link> : undefined} />
        <WorkspaceResourceState loading={ticketsQuery.isLoading} error={ticketsQuery.isError} empty={!ticketsQuery.data?.tickets.length} onRetry={() => void ticketsQuery.refetch()}>
@@ -560,5 +559,8 @@ export default function AdminStudentWorkspace() {
        </WorkspaceResourceState>
      </section>
     </StaffTabPanel>
+    {user?.role === "admin" && canonicalStudentId ? <StaffTabPanel idPrefix="ws" tabKey="ai" active={activeTab === "ai"}>
+      <OwnerAssistantPanel studentId={canonicalStudentId} studentLabel={name} />
+    </StaffTabPanel> : null}
   </StaffPage>;
 }

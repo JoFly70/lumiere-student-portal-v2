@@ -15,7 +15,7 @@ import { docStatusLabel, docTypeLabel } from "@/lib/document-type-labels";
 import { fetchDocumentWithDownloadUrl, useCreateDocument, useGenerateUploadUrl } from "@/hooks/use-documents";
 import { useAuth } from "@/lib/auth";
 import { DocumentReviewDialog, type DocumentReviewAction, type DocumentReviewPayload } from "./document-review-dialog";
-import { canUploadDocumentOnBehalfForRole, STAFF_DOCUMENT_ACCEPT, validateStaffDocumentFile } from "./student-documents-upload-logic";
+import { canUploadDocumentOnBehalfForRole, STAFF_UPLOAD_ACCEPT, staffUploadMime, validateStaffUploadFile } from "./student-documents-upload-logic";
 
 type ReviewCall = { id: string; action: "verify" | DocumentReviewAction; body: Record<string, unknown> };
 
@@ -43,11 +43,12 @@ export function StaffDocumentUpload({ studentId }: { studentId: string }) {
   const [uploadType, setUploadType] = useState<string>("hs_transcript");
   const [uploadMessage, setUploadMessage] = useState<{ kind: "success" | "error"; text: string } | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadNote, setUploadNote] = useState("");
   const fileInput = useRef<HTMLInputElement>(null);
   const uploadFile = async (file: File) => {
     if (uploading) return;
     setUploadMessage(null);
-    const validation = validateStaffDocumentFile(file);
+    const validation = validateStaffUploadFile(file);
     if (!validation.valid) {
       setUploadMessage({ kind: "error", text: validation.message });
       return;
@@ -58,19 +59,21 @@ export function StaffDocumentUpload({ studentId }: { studentId: string }) {
         doc_type: uploadType,
         file_name: file.name,
         file_size: file.size,
-        mime_type: file.type || "application/octet-stream",
+        mime_type: staffUploadMime(file) ?? file.type,
       });
       const uploaded = await fetch(signed.upload_url, {
         method: "PUT",
         body: file,
-        headers: { "Content-Type": file.type || "application/octet-stream" },
+        headers: { "Content-Type": staffUploadMime(file) ?? file.type },
       });
       if (!uploaded.ok) throw new Error("The file could not be stored. Please try again.");
       await createDocument.mutateAsync({
         doc_type: uploadType,
         file_name: file.name,
         storage_path: signed.storage_path,
+        ...(uploadNote.trim() ? { notes: uploadNote.trim().slice(0, 2000) } : {}),
       });
+      setUploadNote("");
       await qc.invalidateQueries({ queryKey: ["documents", studentId] });
       setUploadMessage({ kind: "success", text: "File uploaded. It is pending review and has not been verified." });
     } catch (error) {
@@ -83,9 +86,9 @@ export function StaffDocumentUpload({ studentId }: { studentId: string }) {
   const uploadPending = uploading || generateUploadUrl.isPending || createDocument.isPending;
   if (!canUploadOnBehalf) return null;
   return (
-      <StaffCard as="div" className="space-y-3" data-testid="staff-document-upload">
+      <StaffCard as="div" className="space-y-3" data-testid="staff-upload-on-behalf">
         <div>
-          <h3 className={staffLabel}>Upload on behalf of student</h3>
+          <h3 className={staffLabel}>Upload on the student's behalf</h3>
           <p className="mt-1 text-sm text-student-muted">The file will be visible to the student and staff (student_staff). New uploads remain pending review; uploading does not verify a document.</p>
         </div>
         <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_auto] sm:items-end">
@@ -97,17 +100,21 @@ export function StaffDocumentUpload({ studentId }: { studentId: string }) {
           </div>
           <div>
             <label className={staffLabel} htmlFor="staff-upload-document-file">File</label>
-            <Input ref={fileInput} id="staff-upload-document-file" className={`${staffField} mt-1`} type="file" accept={STAFF_DOCUMENT_ACCEPT} disabled={uploadPending} data-testid="input-staff-document-file" onChange={(event) => {
+            <Input ref={fileInput} id="staff-upload-document-file" className={`${staffField} mt-1`} type="file" accept={STAFF_UPLOAD_ACCEPT} disabled={uploadPending} data-testid="input-staff-document-file" onChange={(event) => {
               const file = event.currentTarget.files?.[0];
               if (file) void uploadFile(file);
             }} />
-            <p className="mt-1 text-xs text-student-muted">PDF, PNG, JPG, DOC, DOCX, XLS, or XLSX · up to 10 MB</p>
+            <p className="mt-1 text-xs text-student-muted">PDF, PNG, JPG or WebP · up to 10 MB</p>
           </div>
           <Button type="button" className={staffBtn.outline} variant="outline" disabled={uploadPending} onClick={() => fileInput.current?.click()} data-testid="button-staff-upload-document">
             <Upload className="h-4 w-4" aria-hidden="true" />{uploadPending ? "Uploading…" : "Choose file"}
           </Button>
         </div>
-        {uploadPending ? <p role="status" aria-live="polite" className="text-sm text-student-muted">Uploading file securely…</p> : null}
+        <div>
+          <label className={staffLabel} htmlFor="staff-upload-document-note">Note (optional, add before choosing the file)</label>
+          <input id="staff-upload-document-note" className={`${staffField} mt-1 w-full`} maxLength={500} value={uploadNote} disabled={uploadPending} placeholder="e.g. Received by email on 12 Oct" onChange={(event) => setUploadNote(event.target.value)} />
+        </div>
+        {uploadPending ? <div role="status" aria-live="polite" className="space-y-1"><div className="h-1.5 overflow-hidden rounded-full bg-student-line"><div className="h-full w-1/2 animate-pulse rounded-full bg-student-gold" /></div><p className="text-sm text-student-muted">Uploading file securely…</p></div> : null}
         {uploadMessage ? <StaffNotice tone={uploadMessage.kind === "error" ? "urgent" : "gold"} role={uploadMessage.kind === "error" ? "alert" : "status"}>{uploadMessage.text}</StaffNotice> : null}
       </StaffCard>
   );

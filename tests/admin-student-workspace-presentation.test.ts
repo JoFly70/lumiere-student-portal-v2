@@ -42,9 +42,13 @@ vi.mock("@/components/admin/student-portal-account-card", () => ({
 }));
 vi.mock("@/lib/auth", () => ({
   useAuthFetch: vi.fn(() => vi.fn()),
+  useAuth: vi.fn(() => ({ user: { role: "admin" } })),
 }));
 vi.mock("@/hooks/use-documents", () => ({
   useDocuments: useDocumentsMock,
+  useGenerateUploadUrl: vi.fn(() => ({ isPending: false, mutateAsync: vi.fn() })),
+  useCreateDocument: vi.fn(() => ({ isPending: false, mutateAsync: vi.fn() })),
+  fetchDocumentWithDownloadUrl: vi.fn(),
 }));
 vi.mock("@/hooks/use-tickets", () => ({
   useTickets: useTicketsMock,

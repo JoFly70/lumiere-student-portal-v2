@@ -11,12 +11,12 @@ describe("Phase 5F production truth and routing", () => {
     const login = read("client/src/pages/login.tsx");
 
     expect(app).toContain('user?.role === "admin"');
-    expect(app).toContain('<Redirect to="/admin" />');
+    expect(app).toContain('<Redirect to="/admin/support-center" />');
     expect(app).toContain('location === "/login"');
     expect(app).toContain('location === "/reset-password"');
     expect(app).toContain('location === "/auth/verify"');
     expect(app).toContain('requireRole="student"');
-    expect(login).toContain("user?.role === 'admin' ? '/admin'");
+    expect(login).toContain("user?.role === 'admin' ? '/admin/support-center'");
   });
 
   it("uses role-aware sidebar navigation without querying a student profile for admins", () => {

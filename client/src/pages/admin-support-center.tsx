@@ -21,6 +21,7 @@ import {
   StaffSectionHeader,
   staffBtn,
 } from "@/components/staff/staff-ui";
+import { ControlCenterLive } from "@/components/admin/control-center-live";
 
 const STUDENTS_PATH = "/admin?tab=students";
 const SUPPORT_PATH = "/support";
@@ -131,6 +132,8 @@ export default function AdminSupportCenter() {
           </span>
         }
       />
+
+      <ControlCenterLive />
 
       <section aria-labelledby="start-here-heading" className="space-y-4">
         <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">

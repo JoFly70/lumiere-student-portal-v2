@@ -59,7 +59,7 @@ function RoleLanding() {
   }
 
   if (user?.role === "admin") {
-    return <Redirect to="/admin" />;
+    return <Redirect to="/admin/support-center" />;
   }
 
   if (user?.role === "coach" || user?.role === "staff") {
