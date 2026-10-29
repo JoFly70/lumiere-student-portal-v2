@@ -73,8 +73,27 @@ Before/after screenshots (downscaled, synthetic data): `screens/`.
   human-approval flag, requested model; French text for the draft) and adds `--ai-only` (no writes) plus a required
   `admin.owner-ai-model-identity` check. The server now reports `{ requested, served }` model on live owner answers;
   production does not have that change yet, so served-model identity reports **NOT VERIFIED** there until S27 ships.
-- Status at the time of writing: **NOT VERIFIED** — the test needs the production Supabase service credentials, which
-  exist only in the Replit workspace, and the live host is outside this cloud environment's network policy.
+- **Live result (2026-10-29 14:01–14:02 UTC, `--ai-only` at commit `6cf90d6`, run from the Replit Shell, evidence
+  `s27-ai-evidence/acceptance.json` in the workspace): verdict PASS, 14/14 required checks.**
+  - Owner AI status: `live`.
+  - English answer: live, 1,203 characters, 32 citations, every one matching one of the 45 records returned for the
+    synthetic demo student; human approval required.
+  - French draft: live, 1,083 characters, in French, 5 citations matching returned records; human approval required.
+  - Requested model and provider-served model: **NOT VERIFIED** (reported separately, optional). The deployed server
+    does not return these fields yet (added in S27); the request is pinned server-side to `muse-spark-1.3-contributor`.
+  - Earlier attempts failed for test-harness reasons only, all fixed: the workspace lacks `ws`/`tsx` (the test now runs
+    in a throwaway `/tmp` folder with its own packages), Node 20 needs `ws` for supabase-js (`d27a166`), and the client
+    gave up after 20 s while the server allows Spark 30 s (`6cf90d6`, 90 s, no retries).
+
+## Release SHAs (reconciled, nothing deployed)
+
+- S27 branch head: see `git log` on `claude/s27-premium-ux-excellence` (unpublished).
+- Live `/health` reports `8fe5ee6`; that label is stale, because the release runner only rewrites `release.json` after
+  a fully successful run and its `4e25572` build failed (the workspace `node_modules` is incomplete).
+- The Replit workspace holds the runner's `4e25572` checkout plus a local commit `53856aef` that is not on GitHub;
+  the owner's republish built from those files. `8fe5ee6` → `4e25572` differs only by the pace-horizon fix and
+  provisioning diagnostics. Before any S27 release, `53856aef` must be reviewed and either pushed or discarded, and the
+  workspace dependencies reinstalled.
 
 ## Release boundary
 
