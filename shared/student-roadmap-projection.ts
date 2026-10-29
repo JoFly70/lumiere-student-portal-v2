@@ -297,6 +297,7 @@ export function projectStudentRoadmap(input: ProjectStudentRoadmapInput): Studen
       title: item.title,
       provider: item.provider ?? null,
       institution: item.institution ?? null,
+      ...(item.providerUrl ? { providerUrl: item.providerUrl } : {}),
       credits: item.credits ?? null,
       plannedStart: item.plannedStart ?? null,
       plannedEnd: item.plannedEnd ?? null,
