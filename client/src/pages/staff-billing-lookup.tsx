@@ -8,9 +8,10 @@ import React from "react";
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, Search } from "lucide-react";
+import { ArrowRight, ChevronRight, Search } from "lucide-react";
 import { api } from "@/lib/api";
-import { StaffAvatar, StaffCard, StaffEmpty, StaffNotice, StaffPage, StaffPageHeader, staffBtn, staffField, staffLabel } from "@/components/staff/staff-ui";
+import { factsById, formatMoney, useDirectoryFacts } from "@/components/admin/directory/directory-data";
+import { StaffAvatar, StaffPill, StaffCard, StaffEmpty, StaffNotice, StaffPage, StaffPageHeader, staffBtn, staffField, staffLabel } from "@/components/staff/staff-ui";
 
 void React;
 
@@ -29,6 +30,15 @@ export default function StaffBillingLookup() {
     enabled: q.length >= 2,
     retry: false,
   });
+  // Start state: students to begin from. Overdue instalments float to the top when the directory facts are readable.
+  const recent = useQuery<{ students: StudentRow[]; total: number }>({
+    queryKey: ["/api/students", "billing-lookup", "recent"],
+    queryFn: () => api.get("/api/students?limit=12"),
+    enabled: q.length < 2,
+    retry: false,
+  });
+  const facts = factsById(useDirectoryFacts().data?.facts);
+  const startRows = [...(recent.data?.students ?? [])].sort((a, b) => Number(!!facts.get(b.id)?.billing?.overdue) - Number(!!facts.get(a.id)?.billing?.overdue)).slice(0, 8);
   const valid = studentId.trim().length > 0 && studentId.trim().length <= 128;
   const rows = students.data?.students ?? [];
   return (
@@ -40,7 +50,32 @@ export default function StaffBillingLookup() {
           <Search className="pointer-events-none absolute left-2.5 top-3 h-4 w-4 text-student-muted" aria-hidden="true" />
           <input id="staff-billing-search" className={`${staffField} pl-8`} placeholder="Name, email or student code" value={term} onChange={(e) => setTerm(e.target.value)} autoComplete="off" data-testid="input-billing-search" />
         </div>
-        {q.length < 2 ? <p className="text-sm text-student-muted">Type at least two characters.</p>
+        {q.length < 2 ? (
+          startRows.length === 0 ? <p className="text-sm text-student-muted">Type at least two characters.</p> : (
+            <div data-testid="billing-start-list">
+              <p className="mb-1 text-xs font-semibold uppercase tracking-[0.14em] text-student-muted">Start from a student</p>
+              <ul className="divide-y divide-student-line">
+                {startRows.map((st) => {
+                  const name = `${st.preferred_name || st.first_name} ${st.last_name}`;
+                  const bal = facts.get(st.id)?.billing;
+                  return (
+                    <li key={st.id}>
+                      <Link href={staffStudentBillingHref(st.id)} className="flex min-h-14 items-center justify-between gap-3 py-2 hover:bg-student-gold-soft/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-student-gold-ink">
+                        <span className="flex min-w-0 items-center gap-3"><StaffAvatar name={name} size="sm" /><span className="min-w-0"><span className="block truncate font-medium text-student-ink">{name}</span><span className="block truncate text-xs text-student-muted">{st.student_code ?? st.email ?? ""}</span></span></span>
+                        <span className="flex shrink-0 items-center gap-3 text-sm">
+                          {bal?.overdue ? <StaffPill tone="attention">Payment overdue</StaffPill> : null}
+                          {bal ? <span className="tabular-nums text-student-muted">{formatMoney(bal.balanceCents, bal.currency)}</span> : null}
+                          <ArrowRight className="h-4 w-4 text-student-gold-ink" aria-hidden="true" />
+                        </span>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+              <p className="mt-2 text-xs text-student-muted">Or type at least two characters to search by name, email or student code.</p>
+            </div>
+          )
+        )
           : students.isLoading ? <p role="status" className="text-sm text-student-muted">Searching…</p>
           : students.isError ? <StaffNotice tone="urgent" role="alert">Students could not be loaded. Try again, or open billing by student ID below.</StaffNotice>
           : rows.length === 0 ? <StaffEmpty title="No student matches">Try another name or code.</StaffEmpty>
@@ -60,8 +95,8 @@ export default function StaffBillingLookup() {
             </ul>
           )}
       </StaffCard>
-      <details className="rounded-xl border border-student-line bg-student-card px-4 py-3 text-sm">
-        <summary className="cursor-pointer font-medium text-student-ink">Open by student ID instead</summary>
+      <details className="group rounded-xl border border-student-line bg-student-card px-4 py-3 text-sm">
+        <summary className="flex cursor-pointer list-none items-center gap-2 font-medium text-student-ink [&::-webkit-details-marker]:hidden"><ChevronRight className="h-4 w-4 text-student-muted transition-transform group-open:rotate-90" aria-hidden="true" />Open by student ID instead</summary>
         <form className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end" onSubmit={(e) => { e.preventDefault(); if (valid) navigate(staffStudentBillingHref(studentId)); }}>
           <div className="min-w-0 flex-1">
             <label className={staffLabel} htmlFor="staff-billing-student-id">Student ID</label>

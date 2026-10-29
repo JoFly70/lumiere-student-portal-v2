@@ -93,6 +93,8 @@ export const s27OwnerEn = {
   // students table
   "owner.students.title": "All students",
   "owner.students.count": "{n} shown",
+  "owner.students.showAll": "Show all {n} students",
+  "owner.students.showFewer": "Show fewer",
   "owner.students.empty": "No student matches this filter.",
   "owner.filter.label": "Filter students",
   "owner.filter.all": "All",
@@ -611,6 +613,8 @@ export const s27OwnerFr: Record<keyof typeof s27OwnerEn, string> = {
 
   "owner.students.title": "Tous les étudiants",
   "owner.students.count": "{n} affichés",
+  "owner.students.showAll": "Afficher les {n} étudiants",
+  "owner.students.showFewer": "Afficher moins",
   "owner.students.empty": "Aucun étudiant ne correspond à ce filtre.",
   "owner.filter.label": "Filtrer les étudiants",
   "owner.filter.all": "Tous",

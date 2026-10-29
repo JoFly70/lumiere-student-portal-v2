@@ -32,14 +32,29 @@ import { useT } from "@/i18n";
  */
 export function ProfileSectionNav() {
   const sections = PROFILE_SECTIONS.map((s) => ({ id: sectionDomId(s.id), label: pt(s.label) }));
+  const [active, setActive] = React.useState<string | null>(null);
+  // Scroll-spy: the section whose top has most recently passed the sticky bar is "current".
+  React.useEffect(() => {
+    if (typeof IntersectionObserver === "undefined") return undefined;
+    const seen = new Map<string, boolean>();
+    const io = new IntersectionObserver((entries) => {
+      for (const e of entries) seen.set(e.target.id, e.isIntersecting);
+      const first = sections.find((s) => seen.get(s.id));
+      if (first) setActive(first.id);
+    }, { rootMargin: "-80px 0px -55% 0px" });
+    for (const s of sections) { const el = document.getElementById(s.id); if (el) io.observe(el); }
+    return () => io.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   return (
-    <nav aria-label={pt("Profile sections")} className="min-w-0" data-testid="section-nav">
-      <ul className="flex flex-wrap gap-2">
+    <nav aria-label={pt("Profile sections")} className="sticky top-0 z-20 -mx-4 min-w-0 border-b border-student-line bg-student-bg/95 px-4 py-2 backdrop-blur sm:-mx-6 sm:px-6 md:-mx-8 md:px-8" data-testid="section-nav">
+      <ul className="flex gap-2 overflow-x-auto pb-0.5 sm:flex-wrap sm:overflow-visible">
         {sections.map((s) => (
-          <li key={s.id}>
+          <li key={s.id} className="shrink-0">
             <a
               href={`#${s.id}`}
-              className="inline-flex min-h-[44px] items-center rounded-full border border-student-line-strong bg-student-card px-4 text-sm font-medium text-student-ink hover:bg-student-gold-soft"
+              aria-current={active === s.id ? "location" : undefined}
+              className={cn("inline-flex min-h-[44px] items-center rounded-full border px-4 text-sm font-medium", active === s.id ? "border-student-gold bg-student-gold-soft text-student-gold-ink" : "border-student-line-strong bg-student-card text-student-ink hover:bg-student-gold-soft")}
             >
               {s.label}
             </a>
@@ -111,35 +126,37 @@ export function ReadinessPanel({ items }: { items: readonly ProfileReadinessItem
         </p>
       ) : null}
       {clear && completed.length === 0 ? null : (
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-4">
           {!clear && <div data-testid="readiness-attention">
             <h3 className="mb-1 text-sm font-semibold text-student-ink">{pt("Needs your attention")}</h3>
             {attention.length ? (
-              <ul>{attention.map((i) => <ReadinessRow key={i.key} item={i} />)}</ul>
+              <ul className="grid gap-2 md:grid-cols-2">{attention.map((i) => <ReadinessRow key={i.key} item={i} />)}</ul>
             ) : (
               <p className="px-3 text-sm text-student-muted">{pt("Nothing for you to do right now.")}</p>
             )}
           </div>}
-          {!clear && <div data-testid="readiness-waiting">
-            <h3 className="mb-1 text-sm font-semibold text-student-ink">{pt("Waiting on Lumière")}</h3>
-            {waiting.length ? (
-              <ul>{waiting.map((i) => <ReadinessRow key={i.key} item={i} />)}</ul>
-            ) : (
-              <p className="px-3 text-sm text-student-muted">{pt("Nothing is waiting for review.")}</p>
+          <div className="grid gap-4 md:grid-cols-[repeat(auto-fit,minmax(16rem,1fr))]">
+            {!clear && <div data-testid="readiness-waiting">
+              <h3 className="mb-1 text-sm font-semibold text-student-ink">{pt("Waiting on Lumière")}</h3>
+              {waiting.length ? (
+                <ul>{waiting.map((i) => <ReadinessRow key={i.key} item={i} />)}</ul>
+              ) : (
+                <p className="px-3 text-sm text-student-muted">{pt("Nothing is waiting for review.")}</p>
+              )}
+            </div>}
+            {external.length > 0 && (
+              <div data-testid="readiness-external">
+                <h3 className="mb-1 text-sm font-semibold text-student-ink">{pt("Waiting on an outside institution")}</h3>
+                <ul>{external.map((i) => <ReadinessRow key={i.key} item={i} />)}</ul>
+              </div>
             )}
-          </div>}
-          {external.length > 0 && (
-            <div data-testid="readiness-external">
-              <h3 className="mb-1 text-sm font-semibold text-student-ink">{pt("Waiting on an outside institution")}</h3>
-              <ul>{external.map((i) => <ReadinessRow key={i.key} item={i} />)}</ul>
-            </div>
-          )}
-          {completed.length > 0 && (
-            <div data-testid="readiness-completed">
-              <h3 className="mb-1 text-sm font-semibold text-student-ink">{pt("Completed")}</h3>
-              <ul>{completed.map((i) => <ReadinessRow key={i.key} item={i} />)}</ul>
-            </div>
-          )}
+            {completed.length > 0 && (
+              <details className="group" data-testid="readiness-completed">
+                <summary className="mb-1 cursor-pointer list-none text-sm font-semibold text-student-ink [&::-webkit-details-marker]:hidden">{pt("Completed")} <span className="font-normal text-student-muted">({completed.length})</span></summary>
+                <ul>{completed.map((i) => <ReadinessRow key={i.key} item={i} />)}</ul>
+              </details>
+            )}
+          </div>
         </div>
       )}
     </section>
