@@ -113,3 +113,58 @@ Live Muse/Meta AI requires `META_MODEL_API_KEY`, `SPARK_ASSISTANT_ENABLED`, `SPA
 A nontechnical owner can sign into a stylish, intuitive administrator dashboard containing real operational records and an obvious toggle to explore 6–8 fully documented synthetic student cases. They can open one dossier, understand it, manage tuition, roadmap, documents and tickets in minutes. They can open a separate synthetic student login without creating another email account and see a convincing populated academic experience with tasks, courses, billing, support conversations and personalized assistance. All demonstrated actions persist and are safely scoped, and every screen looks intentionally designed.
 
 **Do not respond with a plan or claim "finished" just because the code builds. Execute all fixes, populate the demo, inspect the production interface and show what works in real browser sessions.**
+
+
+---
+
+## MANDATORY OWNER CORRECTION — REUSE THE PREVIOUSLY APPROVED PRODUCT; MAKE THE FULL STUDENT EXPERIENCE ACCESSIBLE (OCTOBER 29, 2026)
+
+This is a controlling amendment, NOT a new planning exercise. The owner rejects the current piecemeal "Control Center," huge empty cards, obscure student navigation, the unhelpful owner AI, the thin demo and a read-only view that omits the academic roadmap and real user actions. **Stop citing the student's account state as an obstacle to seeing the product. Create a safe, full-function demonstration now.**
+
+### 1. Reuse the work we ALREADY designed
+
+**PowerED screenshot supplied by owner**: polished course-by-course degree-map/cockpit with top outcome cards, grouped progress bars, individual course rows, warnings/holds, cost, clear evidence/sources and explicit milestones. Adapt that quality and clarity to **21-credit high-school** curriculum, with **16 compulsory and 5 proposed electives**, milestones and timelines, source-of-truth grades vs planned progress. Do NOT import TESU/CPA 120-credit semantics. Do not copy universities, prices, policy or transfer decisions.
+
+**Verified PowerED GitHub references:**
+- Repo: \`JoFly70/powered-dev\`; design branch \`claude/powered-s11-product-ux-reimagination\`.
+- \`design/README.md\`, \`design/CONTRACT.md\`, \`design/components/COMPONENT-INVENTORY.md\`, \`design/system/DESIGN-SYSTEM.md\`, \`design/ux/INFORMATION-ARCHITECTURE.md\`.
+- Visual reference gallery \`design/gallery/after/\`, especially \`closeup-degree-map-light.png\`, \`cockpit-desktop-light.png\`, \`planner-overview-desktop-light.png\`, \`closeup-timeline-light.png\`, \`planner-requirements-desktop-light.png\`.
+- \`academic-library/README.md\`: proven academic library interface requirements (per-student workspace, categorized uploads, versions, provenance, indexed search, source linking), but local storage adapters are DEV-ONLY and must not be copied to production. Adapt requirements atop the Portal's existing secure document storage and permissions.
+- Use same visual DNA and interaction patterns, **NOT PowerED's code, DB, services, or synthetic credit numbers without compatibility review**. Source repositories stay independent.
+
+**Student Portal's previously approved original UX:** recover actual visual references and code already in the Portal, especially \`docs/recovery/s17-evidence/screens/\`, \`docs/recovery/s18-evidence/screens/\`, \`docs/recovery/s19-evidence/screens/\`, and the original Support, Billing, Flight Deck, Roadmap, Documents and Profile references from the product planning context. Original Support experience must not be replaced by an inferior generic queue; original billing summary cards, payment history, upcoming installments, and progress visualization are acceptance references. Current files already exist (\`client/src/pages/billing.tsx\`, \`documents.tsx\`, \`support.tsx\`, \`flight-deck.tsx\`, \`high-school-flight-deck.tsx\`, \`client/src/components/student-shell.tsx\`, and admin billing/support components). **Don't reimplement and lose working capabilities.**
+
+Before implementation, assemble ONE concise full-parity matrix for both roles: feature, existing component, live status, missing journey, visual reference, responsible lane. Do this internally and move immediately to code; no owner approval loop.
+
+### 2. Owner must experience the FULL student journey AS the first student's scenario
+
+This is nonnegotiable and is **NOT** the existing read-only "View as Student" page.
+
+Provide a one-click, owner-visible **"Experience as Student"** action prominently in the first real student's dossier. It opens the **complete student UI**, not a seven-tab admin projection: welcome/home, photograph, fully populated 21-credit academic cockpit, real course details, assignments, planned milestones, online academic library and document lists, tuition/installment/balance presentation, support tickets, profile, settings, AI, languages, mobile navigation and notifications.
+
+The owner must be able to **actually interact**, including opening sample course tasks, reporting simulated progress, creating a demo support ticket, viewing staff replies, exploring file/document workflows and navigating billing, with data persisting in a separate clearly marked DEMO scenario. **Use a student-role authenticated demo mirror of the first student's academic scenario, or an equivalently isolated interactive demo session**, preserving the real first student's factual record and consent/financial status. One-click entry from the admin can open an isolated sandbox session; an independently accessible test-student login must also work. Clearly mark simulated progress and bills as demonstration data. Do not ask the owner to create another real email address, manipulate user IDs, enter secrets repeatedly, or manually manage browser storage. Do NOT simulate official earned grades/paid receipts on the real record or mix test ticket activity into the real family's history.
+
+In other words: **seeing the full first-student journey is a PRODUCT FEATURE**, not a workaround, and should be accessible and usable from the owner's ordinary dashboard. It must feel as though one is logged in as the student in a fully populated, premium product.
+
+### 3. What MUST be fully functional and visible to students
+
+Student home: simple, extraordinary flagship visual; photo/name; next study action, progress and 21-credit summary; current courses and tasks; next deadlines; useful activity and latest support.
+Roadmap: PowerED-inspired grouped academic credit map, semester/week band timeline, 16 compulsory plus 5 elective classes, status and confidence/approval only where supported; elegant grouped subject lines, individual cards/drawers, clear Planned vs Student Reported vs Officially Verified. 16-week scenario as agreed, no fictitious activation date.
+Academic library: searchable and filterable subject resources, syllabus/course guides, document categories, uploaded student evidence, contracts, official documents when authorized, file previews, downloads, version history and provenance as appropriate. A document list alone is not a finished library; build an actual navigable library with per-course linked resources and proper viewer/upload flows.
+Billing: previous approved four-summary-card visual, fee schedule, amounts/receipts, installments, downloadable permitted evidence, correct outstanding balance and call-to-action to upload proof or contact Lumière; matched, editable owner-side ledger in student dossier.
+Support: real conversational support area with 10–15 realistic example cases across 6–8 test students, assignments, priorities, attachments, status histories, public reply, private staff note, response seen by student, closure/reopening.
+AI: **actual authorized student-record grounded assistant** that knows assigned courses, roadmap, tasks, dates, library resources, permitted student balance and support conversation state; owner AI with full selected-student context and operational abilities. Never assert generative AI works when API key is absent. Honest deterministic personalized data facts may function as fallback, not as a replacement for the required AI.
+Settings: EN/FR, profile photo/contact, account and notifications, proper route landing and secure logout/login.
+Every link, button, upload and state change must work and persist.
+
+### 4. Premium product experience, no filler
+
+The current owner's "Choose the right workspace" three oversized cards and redundant nested instructions are NOT an acceptable flagship dashboard. Redesign into a compact, well-organized and actionable professional command center where an owner immediately sees 1) what requires attention, 2) current students, 3) next actions, 4) financial and academic status. Abolish enormous dead space and duplicative navigation. Establish visual hierarchy, no clipped text, one coherent information architecture, beautiful course graphics and polished typography. A viewer must immediately understand where to click without explanation. Inspect EVERY screen at 1440/1920/768/390/384; compare actual screenshots with PowerED and original Portal references. Visually fix poor screens, not just take screenshots.
+
+**Mandatory real-data and demo parity**: real first-student record remains factual and separate; 6–8 synthetic scenarios cover typical lifecycle, with realistic courses, documents, billing, support messages, student and owner perspectives. Clearly distinguish demos, filter them out of real operational KPIs.
+
+### 5. Execution and nonnegotiable gate
+
+Use **two Sonnet subagents** supervised by Opus: (A) premium owner/UI architecture and restoration of original Billing/Support/Library design; (B) student-grade PowerED-inspired roadmap, interactive first-student scenario and populated demos; Opus owns security, contextual AI integration, test journeys and release. Verify functional end-to-end workflows in a live student-role session, not a read-only admin preview; test real-case owner preview, synthetic student authenticated write journeys, support request/reply, billing both ways, library uploads and academic task updates. Preserve every production datum, avoid mutations to real academic verification, finances or guardian authorization without evidence.
+
+Only after full user journeys and visual review are truly verified may the controlled release marker be moved and production published. **The requirement is one cohesive, premium, complete Student Portal, not another patch.**
