@@ -70,7 +70,7 @@ function Configured({ v, lang }: { v: StudentBillingConfigured; lang: "en" | "fr
       <section className="paid" data-testid="billing-hero" data-settled={settled ? "true" : "false"}>
         <div>
           <span className="eyebrow bd-eye">{t("s27.bill.title")}</span>
-          <h2 style={settled ? undefined : { color: "#f6f1e6" }}>{nothingPaid ? t("s27.bill.nothingTitle") : settled ? t("s27.bill.paidTitle") : t("s27.bill.balanceTitle", { amount: money(v.remainingCents) })}</h2>
+          <h2>{nothingPaid ? t("s27.bill.nothingTitle") : settled ? t("s27.bill.paidTitle") : t("s27.bill.balanceTitle", { amount: money(v.remainingCents) })}</h2>
           <p>
             {nothingPaid
               ? t("s27.bill.paidTextNoDate")
@@ -113,8 +113,9 @@ function Configured({ v, lang }: { v: StudentBillingConfigured; lang: "en" | "fr
         {v.receipts.length === 0 ? (
           <p className="small">{t("s27.bill.noReceipts")}</p>
         ) : (
-          <div className="lines">
-            {v.receipts.map((r) => <div key={r.id}><span>{r.methodLabel}</span><span>{formatDay(r.receivedDate, lang)} · {money(r.amountCents)}</span></div>)}
+          <div className="rcpts" role="table" aria-label={t("s27.bill.receipts")} data-testid="billing-receipts-table">
+            <div className="rh" role="row"><span role="columnheader">{t("common.date")}</span><span role="columnheader">{t("billing.method")}</span><span role="columnheader">{t("billing.amount")}</span></div>
+            {v.receipts.map((r) => <div key={r.id} className="rr" role="row"><span role="cell">{formatDay(r.receivedDate, lang)}</span><span role="cell">{r.methodLabel}</span><span role="cell">{money(r.amountCents)}</span></div>)}
           </div>
         )}
       </section>

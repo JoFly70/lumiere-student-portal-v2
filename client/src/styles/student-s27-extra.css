@@ -72,6 +72,6 @@
 .s27 .link-btn:hover{text-decoration:underline}
 .s27 .alert .rg b small{font-size:.5rem;letter-spacing:.04em}
 .s27 .b1{display:inline-flex;align-items:center;justify-content:center}
-.s27 .pm .chip.late{background:var(--t-red-dim);color:var(--t-red)}
-.s27 .paid .meter{background:rgba(255,255,255,.14)}
+.s27 .pm .chip.late{background:var(--t-red-dim);color:var(--t-red);font-weight:600}
+.s27 .paid .meter{background:rgba(255,255,255,.14);height:10px}
 .s27 .paid .meter i{background:#e9c77f}
