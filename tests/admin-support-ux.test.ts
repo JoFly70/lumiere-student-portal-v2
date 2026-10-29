@@ -28,11 +28,17 @@ describe("admin student support navigation", () => {
     expect(html).toContain("Billing");
   });
 
-  it("keeps Lumière AI truthful and non-interactive until safe grounding exists", () => {
+  it("asks the owner to choose a student before any AI question (no raw IDs, no unscoped chat)", () => {
+    const html = render(React.createElement(AdminAssistant), "/admin/assistant");
+    expect(html).toContain("Lumière Owner AI");
+    expect(html).toContain("Choose a student");
+    expect(html).not.toMatch(/<textarea\b/i);
+  });
+
+  it("scopes the owner AI panel to the selected student", () => {
     const html = render(React.createElement(AdminAssistant), "/admin/assistant?studentId=student-a");
-    expect(html).toContain("The admin assistant is not available yet");
-    expect(html).toContain("no student data has been loaded or sent");
-    expect(html).not.toMatch(/<(form|input|textarea)\b/i);
+    expect(html).toContain('data-testid="owner-assistant-panel"');
+    expect(html).toContain("Drafts are never sent automatically");
   });
 
   it("preserves a selected student when adding or clearing a ticket deep link", () => {

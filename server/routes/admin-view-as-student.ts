@@ -18,6 +18,21 @@ import { HsError, toHsUnavailable } from "../services/high-school-service";
 import { emitAccessDenied } from "./high-school-audit";
 import { pgLanguagePreferenceStore, type PortalLanguage } from "./student-preferences";
 import { guardRoles, sendHsError } from "./high-school-http";
+import { loadAssistantConfig } from "../services/academic-assistant/config";
+import { decideLive } from "../services/academic-assistant/service";
+import { SUGGESTIONS } from "../data/academic-assistant/knowledge";
+
+/** The assistant status a student session would receive (policy only: no budget I/O, no model call). */
+export function studentAssistantPresentation(): NonNullable<ViewAsStudentResponse["assistant"]> {
+  const decision = decideLive({ id: "preview", role: "student" }, loadAssistantConfig());
+  return {
+    enabled: true,
+    liveModel: decision.live,
+    mode: decision.live ? "live" : "local",
+    ...(decision.live ? {} : { reason: decision.reason }),
+    suggestions: SUGGESTIONS.map(({ id, en, fr }) => ({ id, en, fr })),
+  };
+}
 
 const studentIdSchema = z.string().trim().min(1).max(128);
 
@@ -105,6 +120,7 @@ export function createAdminViewAsStudentRouter(deps: AdminViewAsStudentRouterDep
         highSchool: source?.view ?? null,
         academicProjection: source ? projectAcademic(source.view, source.meta) : null,
         summary,
+        assistant: studentAssistantPresentation(),
         generatedAt: new Date().toISOString(),
       };
       return res.json(body);

@@ -51,6 +51,17 @@ export interface ViewAsStudentResponse {
   readonly highSchool: StudentHighSchoolView | null;
   readonly academicProjection: AcademicProjection | null;
   readonly summary: ViewAsStudentSummary | null;
+  /**
+   * S26: what the student's Lumière assistant would show them (server policy for role "student";
+   * no budget lookup, no model call). Optional for older servers.
+   */
+  readonly assistant?: {
+    readonly enabled: boolean;
+    readonly liveModel: boolean;
+    readonly mode: "live" | "local";
+    readonly reason?: string;
+    readonly suggestions: readonly { readonly id: string; readonly en: string; readonly fr: string }[];
+  };
   readonly generatedAt: string;
 }
 

@@ -34,6 +34,8 @@ import { deckState } from "@/lib/academic-flight-deck-presentation";
 import { CockpitNotConfigured } from "@/pages/high-school-flight-deck";
 import "@/styles/flight-deck-preview.css";
 import "@/styles/academic-flight-deck.css";
+import { AssistantPanelView } from "@/components/academic-assistant";
+import { StaffAvatar } from "@/components/staff/staff-ui";
 
 export const viewAsStudentPath = (studentId: string) => `/api/admin/students/${encodeURIComponent(studentId)}/view-as-student`;
 
@@ -96,7 +98,7 @@ function PreviewDashboard({ data, ops }: { data: ViewAsStudentResponse; ops: Coc
 
 const PREVIEW_COPY = {
   en: {
-    dashboard: "Dashboard", highSchool: "High school", profile: "Profile", documents: "Documents", support: "Support", billing: "Billing",
+    dashboard: "Dashboard", highSchool: "High school", profile: "Profile", documents: "Documents", support: "Support", billing: "Billing", ai: "Lumière AI", aiNote: "This is the assistant panel the student sees, with the mode the server would give a student session. It is inert here: nothing is sent to the assistant and no conversation is created.",
     profileTitle: "Profile and contacts", identity: "Identity", name: "Name", preferredName: "Preferred name", preferredContact: "Preferred contact", email: "Email", phone: "Phone", address: "Address",
     studentCode: "Student code", timezone: "Time zone",
     loading: "Loading…",
@@ -121,7 +123,7 @@ const PREVIEW_COPY = {
     returnWorkspace: "Return to staff workspace", languageLabel: "Preview language",
   },
   fr: {
-    dashboard: "Tableau de bord", highSchool: "Secondaire", profile: "Profil", documents: "Documents", support: "Assistance", billing: "Facturation",
+    dashboard: "Tableau de bord", highSchool: "Secondaire", profile: "Profil", documents: "Documents", support: "Assistance", billing: "Facturation", ai: "Lumière IA", aiNote: "Voici le panneau d’assistant que voit l’élève, avec le mode que le serveur donnerait à une session élève. Il est inactif ici : rien n’est envoyé à l’assistant et aucune conversation n’est créée.",
     profileTitle: "Profil et contacts", identity: "Identité", name: "Nom", preferredName: "Nom préféré", preferredContact: "Contact préféré", email: "Courriel", phone: "Téléphone", address: "Adresse",
     studentCode: "Code étudiant", timezone: "Fuseau horaire",
     loading: "Chargement…",
@@ -166,7 +168,12 @@ function PreviewProfile({ profile, loading, failed, copy }: {
   const address = [contact.addressLine1, contact.addressLine2, contact.addressCity, contact.addressState, contact.addressPostal, contact.addressCountry].filter(Boolean).join(", ");
   return (
     <div className="space-y-5" data-testid="preview-profile">
-      <h2 className="text-xl font-semibold">{copy.profileTitle}</h2>
+      <div className="flex items-center gap-4">
+        {identity.photoUrl
+          ? <img src={identity.photoUrl} alt="" className="h-20 w-20 rounded-full border object-cover" data-testid="preview-profile-photo" />
+          : <StaffAvatar name={fullName || identity.preferredName || "?"} size="lg" />}
+        <h2 className="text-xl font-semibold">{copy.profileTitle}</h2>
+      </div>
       <section className="rounded-xl border bg-card p-4">
         <h3 className="font-medium">{copy.identity}</h3>
         <dl className="mt-3 grid gap-3 sm:grid-cols-2">
@@ -328,6 +335,34 @@ function PreviewBilling({ billing, loading, failed, copy, lang }: {
   );
 }
 
+const noop = () => {};
+/** The student's own assistant panel, rendered inert (fieldset disabled; contained so it cannot overlay the page). */
+function PreviewAssistant({ data, lang, copy }: { data: ViewAsStudentResponse; lang: Language; copy: (typeof PREVIEW_COPY)[Language] }) {
+  return (
+    <div className="space-y-3" data-testid="preview-assistant">
+      <p className="text-xs text-muted-foreground">{copy.aiNote}</p>
+      <fieldset disabled aria-label={copy.ai} className="relative h-[620px] overflow-hidden rounded-xl border" style={{ transform: "translateZ(0)" }}>
+        <AssistantPanelView
+          language={lang}
+          entries={[]}
+          status={data.assistant ? { ...data.assistant, suggestions: [...data.assistant.suggestions] } : undefined}
+          statusState={data.assistant ? "ready" : "error"}
+          pending={false}
+          failure={null}
+          cooling={false}
+          draft=""
+          onDraft={noop}
+          onSend={noop}
+          onRetry={noop}
+          onRetryStatus={noop}
+          onClear={noop}
+          onClose={noop}
+        />
+      </fieldset>
+    </div>
+  );
+}
+
 export function ViewAsStudentScreen({
   data,
   studentId,
@@ -409,13 +444,14 @@ export function ViewAsStudentScreen({
 
       <I18nProvider key={lang} initialLanguage={lang}>
         <Tabs defaultValue="dashboard" className="space-y-4">
-          <TabsList aria-label={lang === "fr" ? "Pages du portail étudiant" : "Student portal pages"}>
+          <TabsList className="flex h-auto flex-wrap justify-start" aria-label={lang === "fr" ? "Pages du portail étudiant" : "Student portal pages"}>
             <TabsTrigger value="dashboard">{copy.dashboard}</TabsTrigger>
             <TabsTrigger value="high-school">{copy.highSchool}</TabsTrigger>
             <TabsTrigger value="profile">{copy.profile}</TabsTrigger>
             <TabsTrigger value="documents">{copy.documents}</TabsTrigger>
             <TabsTrigger value="support">{copy.support}</TabsTrigger>
             <TabsTrigger value="billing">{copy.billing}</TabsTrigger>
+            <TabsTrigger value="ai">{copy.ai}</TabsTrigger>
           </TabsList>
           {/* onClickCapture: in-preview links never navigate; buttons that only toggle the view still work. */}
           <div onClickCapture={blockNavigation} lang={lang} data-testid="preview-surface">
@@ -426,6 +462,7 @@ export function ViewAsStudentScreen({
             <TabsContent value="profile" className="mt-0"><PreviewProfile profile={profile} loading={profileLoading} failed={profileError} copy={copy} /><p className="mt-4 text-xs text-muted-foreground">{copy.readonly}</p></TabsContent>
             <TabsContent value="documents" className="mt-0"><PreviewDocuments docs={docs as ReadonlyArray<Record<string, unknown>> | null} loading={documentsLoading} failed={documentsError} copy={copy} lang={lang} /></TabsContent>
             <TabsContent value="support" className="mt-0"><PreviewSupport tickets={tickets} loading={ticketsLoading} failed={ticketsError} copy={copy} /><p className="mt-4 text-xs text-muted-foreground">{copy.readonly}</p></TabsContent>
+            <TabsContent value="ai" className="mt-0"><PreviewAssistant data={data} lang={lang} copy={copy} /></TabsContent>
             <TabsContent value="billing" className="mt-0"><PreviewBilling billing={billing} loading={billingLoading} failed={billingError} copy={copy} lang={lang} /></TabsContent>
           </div>
         </Tabs>
