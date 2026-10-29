@@ -59,6 +59,13 @@ DONE_SHA=""
 while [ "$(date +%s)" -lt "$DEADLINE" ]; do
   git fetch -q s26gh "$BRANCH" 2>>"$EVID/loop.log" || { sleep 60; continue; }
   SHA=$(git rev-parse FETCH_HEAD)
+  # Controlled release: with S26_RELEASE_MARKER=1 the runner deploys ONLY the commit named in the
+  # branch file release/S26_RELEASE_SHA (changed deliberately by the release manager), never ordinary pushes.
+  if [ "${S26_RELEASE_MARKER:-}" = "1" ]; then
+    WANT=$(git show FETCH_HEAD:release/S26_RELEASE_SHA 2>/dev/null | tr -d '[:space:]')
+    if [ "$WANT" = "STOP" ]; then log "release marker says STOP; exiting"; break; fi
+    if git cat-file -e "${WANT}^{commit}" 2>/dev/null; then SHA=$WANT; else SHA=${DONE_SHA:-$SHA}; [ -z "$DONE_SHA" ] && { sleep 60; continue; }; fi
+  fi
   # Pinned release: with S26_PIN_SHA set, only that exact commit is ever synced.
   if [ -n "${S26_PIN_SHA:-}" ]; then SHA=$(git rev-parse --verify "${S26_PIN_SHA}^{commit}" 2>/dev/null || echo "$DONE_SHA"); fi
   if [ "$SHA" != "$DONE_SHA" ]; then
