@@ -5,7 +5,7 @@
  *
  * ASSUMPTIONS beyond the contract (kept in this one file so they are cheap to change):
  *  - GET agreement -> ProgramAgreementView (or { agreement }); PUT agreement returns the same (or anything: we refetch).
- *  - Complete a checkpoint: POST   S27_API.checkpoint(...) + "/complete"  with completeCheckpointSchema.
+ *  - Complete a checkpoint: POST   S27_API.checkpoint(...)               with completeCheckpointSchema.
  *    Plan a checkpoint:     PUT    S27_API.checkpoint(...)               with planCheckpointSchema.
  *  - GET sessions -> OrientationSessionView[] (or { sessions }); PATCH session with updateSessionSchema.
  *  - GET notes -> StaffNoteView[] (or { notes }); POST notes -> StaffNoteView (or { note }).
@@ -100,7 +100,7 @@ export function useCheckpointAction(studentId: string) {
   return useMutation<unknown, Error, { key: CheckpointKey; action: "complete" | "plan"; doneOn?: string; plannedOn?: string | null }>({
     mutationFn: (v) =>
       v.action === "complete"
-        ? api.post(`${S27_API.checkpoint(studentId, v.key)}/complete`, v.doneOn ? { doneOn: v.doneOn } : {})
+        ? api.post(S27_API.checkpoint(studentId, v.key), v.doneOn ? { doneOn: v.doneOn } : {})
         : api.put(S27_API.checkpoint(studentId, v.key), { plannedOn: v.plannedOn ?? null }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: [...journeyKey(studentId)] });
