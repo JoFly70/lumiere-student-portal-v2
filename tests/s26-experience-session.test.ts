@@ -72,8 +72,8 @@ describe('experience storage selection', () => {
     expect(readTabAuth(null, NOW)).toBeNull();
   });
   it('banner copy is bilingual and names the mirrored label', () => {
-    expect(banner('en', 'X').text).toBe('DEMO EXPERIENCE — synthetic student mirroring X. Actions here change only demo data.');
-    expect(banner('fr', 'X').text).toContain('EXPÉRIENCE DÉMO');
+    expect(banner('en', 'X').text).toBe('Demo session — X. Changes affect demo data only.');
+    expect(banner('fr', 'X').text).toContain('Session démo');
     expect(banner('fr', 'X').exit).toBe('Quitter');
   });
 });

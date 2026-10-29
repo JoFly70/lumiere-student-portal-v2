@@ -12,13 +12,13 @@ export function ExperienceBanner() {
     <div
       role="status"
       data-testid="experience-banner"
-      className="fixed inset-x-0 top-0 z-40 flex h-[var(--exp-h)] items-center gap-3 bg-[#b45309] px-3 text-white shadow sm:px-4"
+      className="fixed inset-x-0 top-0 z-40 flex h-[var(--exp-h)] items-center gap-3 border-b-2 border-[var(--t-accent)] bg-[var(--t-heading)] px-3 text-[var(--t-bg)] shadow sm:px-4"
     >
       <p className="min-w-0 flex-1 text-[12px] font-semibold leading-snug sm:text-sm">{copy.text}</p>
       <button
         type="button"
         onClick={() => { void logout().catch(() => leaveExperienceTab()); }}
-        className="min-h-[36px] shrink-0 rounded-md border border-white/70 bg-white/10 px-3 text-sm font-semibold hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
+        className="min-h-[36px] shrink-0 rounded-md border border-[var(--t-accent)] px-3 text-sm font-semibold hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--t-accent)]"
         data-testid="button-exit-experience"
       >
         {copy.exit}

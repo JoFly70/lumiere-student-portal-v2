@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 import { useAuth } from '@/lib/auth';
 import { Redirect } from 'wouter';
+import { flagAccessNotice } from '@/components/staff/access-notice';
 
 type Role = 'admin' | 'coach' | 'staff' | 'student';
 
@@ -36,10 +37,12 @@ export function ProtectedRoute({ children, requireRole }: ProtectedRouteProps) {
       return <Redirect to="/flight-deck" />;
     }
     if (user?.role === 'coach') {
-      // No dedicated coach UI yet — route to support as a safe interim view
+      // No dedicated coach UI yet — route to support as a safe interim view (with a one-time explanation)
+      flagAccessNotice();
       return <Redirect to="/support" />;
     }
     if (user?.role === 'staff') {
+      flagAccessNotice();
       return <Redirect to="/support" />;
     }
     if (user?.role === 'admin') {

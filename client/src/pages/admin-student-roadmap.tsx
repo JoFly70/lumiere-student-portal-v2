@@ -1,7 +1,7 @@
-import { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "wouter";
-import { AlertCircle, ArrowLeft, CheckCircle2, FileSpreadsheet, Loader2, RefreshCw } from "lucide-react";
+import { AlertCircle, ArrowLeft, CheckCircle2, ChevronRight, FileSpreadsheet, Loader2, RefreshCw, Upload } from "lucide-react";
 import type { AdminRoadmapDraftView, AdminRoadmapState, RoadmapException, RoadmapItem } from "@shared/student-roadmap-contract";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,7 @@ import {
 } from "@shared/student-roadmap-review-groups";
 import { StaffPageHeader } from "@/components/staff/staff-ui";
 import { useAuth } from "@/lib/auth";
+import { useT } from "@/i18n";
 import { adminRoadmapApi, RoadmapApiError } from "@/lib/admin-roadmap-api";
 import {
   ADMIN_ROADMAP_QUERY_KEY, acknowledgeBody, acknowledgedKeys, applyItemForm, diffHeadline, discardBody,
@@ -187,7 +188,7 @@ export default function AdminStudentRoadmap() {
       <section aria-labelledby="published-heading" className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle id="published-heading" className="text-base">Current published version</CardTitle>
+            <CardTitle id="published-heading" className="font-serif text-xl font-normal">Current published version</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
             {state.published ? (
@@ -205,7 +206,7 @@ export default function AdminStudentRoadmap() {
           </CardContent>
         </Card>
         <Card>
-          <CardHeader><CardTitle className="text-base">Version history</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="font-serif text-xl font-normal">Version history</CardTitle></CardHeader>
           <CardContent>
             {state.versions.length === 0 ? <p className="text-sm text-muted-foreground">No versions yet.</p> : (
               <ul className="divide-y text-sm">
@@ -221,19 +222,26 @@ export default function AdminStudentRoadmap() {
         </Card>
       </section>
 
-      {/* Import */}
-      <section aria-labelledby="import-heading">
+      {state.published ? <PublishedPlan content={state.published.content} /> : null}
+
+      {/* Import: folded behind a button once a plan exists, so the plan itself comes first. */}
+      <details className="group" open={!state.published}>
+        <summary className="inline-flex min-h-10 cursor-pointer list-none items-center gap-2 rounded-md border bg-background px-4 text-sm font-medium [&::-webkit-details-marker]:hidden" data-testid="roadmap-import-toggle">
+          <FileSpreadsheet className="h-4 w-4" aria-hidden="true" />{state.published ? "Replace plan from a workbook" : "Import a plan"}
+          <ChevronRight className="h-4 w-4 transition-transform group-open:rotate-90" aria-hidden="true" />
+        </summary>
+      <section aria-labelledby="import-heading" className="mt-3">
         <Card>
           <CardHeader>
-            <CardTitle id="import-heading" className="flex items-center gap-2 text-base"><FileSpreadsheet className="h-4 w-4" />Import</CardTitle>
-            <CardDescription>Creates a draft only. Start from the lumiere-roadmap-v1 template (docs/templates).</CardDescription>
+            <CardTitle id="import-heading" className="flex items-center gap-2 font-serif text-xl font-normal"><FileSpreadsheet className="h-4 w-4" />Import</CardTitle>
+            <CardDescription>Creates a draft only. Nothing the student sees changes until you review and publish it.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-6 md:grid-cols-2">
             <div className="space-y-3">
               <Label htmlFor="roadmap-workbook">Excel workbook (.xlsx)</Label>
-              <Input id="roadmap-workbook" ref={fileRef} type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+              <FilePicker id="roadmap-workbook" inputRef={fileRef} resetKey={busy} />
               <Label htmlFor="roadmap-companion">Execution workbook (companion, optional)</Label>
-              <Input id="roadmap-companion" ref={companionRef} type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+              <FilePicker id="roadmap-companion" inputRef={companionRef} resetKey={busy} />
               <p className="text-xs text-muted-foreground">Add the weekly execution schedule next to the master academic workbook to get ONE draft. Execution rows are matched to master courses and never added as new courses.</p>
               <Button type="button" disabled={busy !== null} onClick={onUploadFile}>{busy === "import" ? "Converting…" : "Upload and convert"}</Button>
             </div>
@@ -245,6 +253,7 @@ export default function AdminStudentRoadmap() {
           </CardContent>
         </Card>
       </section>
+      </details>
 
       {/* Draft review */}
       {draft && (
@@ -267,7 +276,7 @@ export default function AdminStudentRoadmap() {
       {draft && (
         <section aria-labelledby="actions-heading">
           <Card>
-            <CardHeader><CardTitle id="actions-heading" className="text-base">Preview and publish</CardTitle></CardHeader>
+            <CardHeader><CardTitle id="actions-heading" className="font-serif text-xl font-normal">Preview and publish</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div className="flex flex-wrap gap-2">
                 <Button type="button" variant="outline" aria-pressed={showPreview} onClick={() => setShowPreview((v) => !v)}>{showPreview ? "Hide preview" : "Preview as student"}</Button>
@@ -415,7 +424,7 @@ function DraftReview(props: DraftReviewProps) {
     <section aria-labelledby="draft-heading" className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle id="draft-heading" className="flex flex-wrap items-center gap-2 text-base">
+          <CardTitle id="draft-heading" className="flex flex-wrap items-center gap-2 font-serif text-xl font-normal">
             Draft v{draft.versionNumber} · {draft.content.title}
             <Badge variant={draft.publishable ? "secondary" : "outline"}>{draft.publishable ? "Publishable" : "Not publishable yet"}</Badge>
           </CardTitle>
@@ -444,7 +453,7 @@ function DraftReview(props: DraftReviewProps) {
       {draft.content.reportedHistory.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Reported history (not credit)</CardTitle>
+            <CardTitle className="font-serif text-xl font-normal">Reported history (not credit)</CardTitle>
             <CardDescription>Staff only. Prior education and completed work as REPORTED by the workbook. It is unverified, is never shown to the student and never counts as credit; the verified academic record is the only credit authority.</CardDescription>
           </CardHeader>
           <CardContent>
@@ -464,7 +473,7 @@ function DraftReview(props: DraftReviewProps) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Changes compared with the published plan</CardTitle>
+          <CardTitle className="font-serif text-xl font-normal">Changes compared with the published plan</CardTitle>
           <CardDescription>{diffHeadline(draft.diff)}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 text-sm">
@@ -508,7 +517,7 @@ function DraftReview(props: DraftReviewProps) {
       </Card>
 
       <Card>
-        <CardHeader><CardTitle className="text-base">Items</CardTitle><CardDescription>Edit the most common fixes here; use a new import for larger changes.</CardDescription></CardHeader>
+        <CardHeader><CardTitle className="font-serif text-xl font-normal">Items</CardTitle><CardDescription>Edit the most common fixes here; use a new import for larger changes.</CardDescription></CardHeader>
         <CardContent>
           {draft.content.items.length === 0 ? <p className="text-sm text-muted-foreground">The draft has no items.</p> : (
             <div className="relative overflow-x-auto">
@@ -534,6 +543,60 @@ function DraftReview(props: DraftReviewProps) {
               </table>
             </div>
           )}
+        </CardContent>
+      </Card>
+    </section>
+  );
+}
+
+const XLSX_ACCEPT = ".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
+/** Styled file picker: a visually hidden native input driven by a button, with translated labels. */
+function FilePicker({ id, inputRef, resetKey }: { id: string; inputRef: React.RefObject<HTMLInputElement>; resetKey?: unknown }) {
+  const { t } = useT();
+  const [name, setName] = useState<string | null>(null);
+  useEffect(() => { setName(inputRef.current?.files?.[0]?.name ?? null); }, [resetKey, inputRef]);
+  return (
+    <div className="flex min-w-0 items-center gap-3">
+      <input id={id} ref={inputRef} type="file" accept={XLSX_ACCEPT} className="sr-only" onChange={(e) => setName(e.currentTarget.files?.[0]?.name ?? null)} />
+      <Button type="button" variant="outline" className="shrink-0" onClick={() => inputRef.current?.click()}><Upload className="mr-2 h-4 w-4" aria-hidden="true" />{t("staff.docs.upload.choose")}</Button>
+      <span className={`min-w-0 truncate text-sm ${name ? "text-foreground" : "text-muted-foreground"}`} title={name ?? undefined}>{name ?? t("staff.docs.upload.noFile")}</span>
+    </div>
+  );
+}
+
+const PLAN_STATUS_LABEL: Record<string, string> = { planned: "Planned", hold: "On hold", alternative: "Alternative", dropped: "Dropped" };
+
+/** Read-only view of the published plan: phases with their items, status and planned dates (no draft needed to see it). */
+function PublishedPlan({ content }: { content: AdminRoadmapDraftView["content"] }) {
+  return (
+    <section aria-labelledby="published-plan-heading" data-testid="published-plan">
+      <Card>
+        <CardHeader>
+          <CardTitle id="published-plan-heading" className="font-serif text-xl font-normal">The published plan</CardTitle>
+          <CardDescription>What the student sees today: {content.items.length} items in {content.phases.length} phases. Read only.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          {content.phases.map((ph) => {
+            const items = content.items.filter((i) => i.phaseKey === ph.key);
+            if (items.length === 0) return null;
+            return (
+              <div key={ph.key}>
+                <h3 className="mb-1 font-serif text-lg">{ph.title} <span className="text-sm text-muted-foreground">· {items.length}</span></h3>
+                <ul className="divide-y rounded-md border text-sm">
+                  {items.map((i) => (
+                    <li key={i.key} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-3 py-2" data-testid="published-item">
+                      <span className="min-w-0 break-words"><span className="font-medium">{i.title}</span>{i.code ? <span className="text-muted-foreground"> · {i.code}</span> : null}</span>
+                      <span className="flex shrink-0 items-center gap-2 text-xs text-muted-foreground">
+                        {i.plannedStart ? <span className="tabular-nums">{formatDate(i.plannedStart)}</span> : null}
+                        <Badge variant="outline">{PLAN_STATUS_LABEL[i.planStatus] ?? i.planStatus}</Badge>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })}
         </CardContent>
       </Card>
     </section>
@@ -646,7 +709,7 @@ export function ReviewPanel(props: {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Review findings</CardTitle>
+        <CardTitle className="font-serif text-xl font-normal">Review findings</CardTitle>
         <CardDescription>
           {raw.total === 0
             ? "Nothing to review."
