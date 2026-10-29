@@ -76,8 +76,9 @@ export function interpretProgressError(error: unknown): HsProgressFailure {
   return { kind: "error", refetch: false, message: error instanceof Error ? error.message : "Your update could not be saved." };
 }
 
-export function useHighSchoolView() {
+export function useHighSchoolView(enabled = true) {
   return useQuery<StudentHighSchoolView>({
+    enabled,
     queryKey: [...HS_QUERY_KEY],
     queryFn: () => hsRequest<StudentHighSchoolView>(HS_API.student),
     ...HS_QUERY_OPTIONS,
