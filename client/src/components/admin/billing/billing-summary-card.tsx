@@ -1,9 +1,12 @@
 /** Compact billing summary for the student file Overview. Links to the full billing page. */
+import React from "react";
 import { Link } from "wouter";
 import { ArrowRight, CreditCard } from "lucide-react";
 import { formatMoney, type StaffBillingView } from "@shared/billing-contract";
 import { StaffCard, StaffEmpty, StaffPill, StaffSectionHeader, staffBtn, staffLabel } from "@/components/staff/staff-ui";
 import { BILLING_STATUS_LABEL, BILLING_STATUS_TONE, summarizeBilling } from "./billing-summary";
+
+void React;
 
 const LINK = `${staffBtn.outline} inline-flex items-center justify-center border`;
 

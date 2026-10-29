@@ -9,6 +9,7 @@ import { AlertCircle, ArrowLeft, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatHalfUnits, type StaffHighSchoolState } from "@shared/high-school-contract";
+import { StaffPageHeader } from "@/components/staff/staff-ui";
 import { useAuth } from "@/lib/auth";
 import { useDocuments } from "@/hooks/use-documents";
 import { useHsState } from "@/lib/admin-high-school-api";
@@ -87,21 +88,20 @@ export function HighSchoolWorkspace({ state, studentId, isAdmin, docs, defaultTa
   }, [tab]);
   return (
     <div className="space-y-6">
-      <header className="space-y-3">
-        <Link href={`/admin/students/${encodeURIComponent(studentId)}`} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" aria-hidden="true" />Back to student workspace</Link>
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0">
-            <h1 className="text-3xl font-semibold tracking-tight">High school pathway</h1>
-            <p className="mt-1 text-muted-foreground">{c ? c.enrollment.programTitle : "No high school program yet"}</p>
-          </div>
+      <StaffPageHeader
+        back={<Link href={`/admin/students/${encodeURIComponent(studentId)}`} className="inline-flex min-h-10 items-center gap-2 text-sm font-medium text-student-gold-ink underline-offset-4 hover:underline"><ArrowLeft className="h-4 w-4" aria-hidden="true" />Back to student file</Link>}
+        eyebrow="Staff Portal · High school"
+        title="High school pathway"
+        description={c ? c.enrollment.programTitle : "No high school program yet. Create the program in the Program tab to start."}
+        meta={
           <div className="flex flex-wrap gap-2">
             {c ? <Pill tone={c.enrollment.status === "active" ? "good" : "neutral"}>{statusLabel(c.enrollment.status)}</Pill> : null}
             {state.hasUniversityProgram ? <Pill>Also in a university program</Pill> : null}
             {!isAdmin ? <Pill tone="warn">Staff view: publishing, eligibility sign-off and conferral are admin-only</Pill> : null}
           </div>
-        </div>
-        {tab === "program" ? <Notice tone="official" testId="governance-banner">Lumière plans and coordinates. The awarding school decides course completion, credit, grades and the diploma. A student's report is never official until you record the school's result with a verified document.</Notice> : null}
-      </header>
+        }
+      />
+      {tab === "program" ? <Notice tone="official" testId="governance-banner">Lumière plans and coordinates. The awarding school decides course completion, credit, grades and the diploma. A student's report is never official until you record the school's result with a verified document.</Notice> : null}
       <SummaryStrip state={state} />
       <Tabs value={tab} onValueChange={(v) => setTab(v as HsTabId)} className="space-y-5">
         {/* One row, never wrapped: an intended horizontal scroll region with edge fades as the scroll cue. */}

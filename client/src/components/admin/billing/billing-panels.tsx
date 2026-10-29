@@ -1,4 +1,5 @@
 /** Staff billing sections (S19/S26). Every action returns the refreshed view, so the page never computes money itself. */
+import React from "react";
 import { useRef, useState } from "react";
 import { AlertTriangle, ExternalLink, FileUp, Pencil, Plus, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,8 @@ import { ErrorLine, ReasonDialog, ReceiptDialog } from "./billing-dialogs";
 import { InstallmentEditDialog, ScheduleDialog } from "./schedule-editor";
 import { centsToInput, parseMoneyToCents } from "./money";
 import { BILLING_STATUS_LABEL, BILLING_STATUS_TONE, billingHistory, obligationFormProblem, summarizeBilling, type BillingHistoryKind } from "./billing-summary";
+
+void React;
 
 export interface PanelProps {
   readonly studentId: string;

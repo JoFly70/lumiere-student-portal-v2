@@ -2,6 +2,7 @@
  * Elective change requests (admin): the queue of student requests to swap an elective, with an
  * auditable stage workflow stored as internal notes on the support ticket (no database change).
  */
+import React from "react";
 import { useMemo, useState } from "react";
 import { Link, useLocation, useSearch } from "wouter";
 import { useQueries, useQueryClient } from "@tanstack/react-query";
@@ -14,6 +15,8 @@ import { ELECTIVE_SUBJECT_PREFIX } from "@/lib/elective-change";
 import { STAGE_LABEL, ageLabel, deriveStage, isClosedStage, parseElectiveRequest, type ElectiveStage } from "@/lib/elective-stage";
 import { ElectiveDetail } from "@/components/admin/elective/elective-detail";
 import { StagePill } from "@/components/admin/elective/stage-pill";
+
+void React;
 
 type Filter = "open" | "requested" | "lumiere_review" | "school_pending" | "approved" | "closed" | "all";
 const FILTERS: readonly { key: Filter; label: string }[] = [

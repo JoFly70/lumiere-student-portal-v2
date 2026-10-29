@@ -1,6 +1,9 @@
+import React from "react";
 import { CheckCircle2 } from "lucide-react";
 import { StaffPill } from "@/components/staff/staff-ui";
 import { STAGE_LABEL, type ElectiveStage } from "@/lib/elective-stage";
+
+void React;
 
 const TONE = { requested: "neutral", lumiere_review: "gold", school_pending: "attention", approved: "seal", rejected: "urgent", applied: "seal" } as const;
 

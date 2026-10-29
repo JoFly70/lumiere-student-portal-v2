@@ -86,7 +86,7 @@ describe("structure", () => {
   it("admins get a Students entry that opens the existing list route; staff keep Support only", () => {
     const sidebar = read("client/src/components/app-sidebar.tsx");
     expect(sidebar).toContain('title: "Students", url: ADMIN_STUDENTS_PATH');
-    expect(sidebar).toMatch(/const staffMenuItems = \[\s*\{ title: "Support"/);
+    expect(sidebar).toMatch(/const staffMenuItems = \[\s*\{ title: "Support desk"/);
   });
   it("gold is never used for a verified status in the staff panel", () => {
     expect(read("client/src/components/admin/student-profile-review.tsx")).toContain('verified: "border-st-official bg-st-official');

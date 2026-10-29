@@ -28,7 +28,7 @@ export default function AdminAssistant() {
         title="Lumière Owner AI"
         description="Ask questions about one student's authorized records. Answers cite the records they come from; nothing is changed."
       />
-      <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
+      <div className="grid min-w-0 gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
         <aside className="space-y-3 rounded-xl border border-student-line bg-student-card p-4" aria-label="Choose a student">
           <label htmlFor="assistant-student-search" className="text-sm font-medium text-student-ink">Student</label>
           <div className="relative">
@@ -41,7 +41,7 @@ export default function AdminAssistant() {
                 <button
                   type="button"
                   onClick={() => navigate(`/admin/assistant?studentId=${encodeURIComponent(s.id)}`)}
-                  className={`w-full rounded-md px-3 py-2 text-left text-sm ${s.id === studentId ? "bg-student-gold-soft font-semibold text-student-ink" : "hover:bg-student-gold-soft/60"}`}
+                  className={`min-h-11 w-full rounded-md px-3 py-2 text-left text-sm ${s.id === studentId ? "bg-student-gold-soft font-semibold text-student-ink" : "hover:bg-student-gold-soft/60"}`}
                   aria-current={s.id === studentId ? "true" : undefined}
                 >
                   {s.preferred_name || s.first_name} {s.last_name}
@@ -49,7 +49,9 @@ export default function AdminAssistant() {
                 </button>
               </li>
             ))}
-            {students.data && students.data.students.length === 0 && <li className="px-3 py-2 text-sm text-student-muted">No students match.</li>}
+            {students.isLoading && <li role="status" className="px-3 py-2 text-sm text-student-muted">Loading students…</li>}
+            {students.isError && <li role="alert" className="px-3 py-2 text-sm text-st-urgent">Students could not be loaded. <button type="button" className="font-semibold underline underline-offset-4" onClick={() => void students.refetch()}>Retry</button></li>}
+            {students.data && students.data.students.length === 0 && <li className="px-3 py-2 text-sm text-student-muted">No students match{term.trim() ? ` “${term.trim()}”` : ""}.</li>}
           </ul>
         </aside>
         <div className="rounded-xl border border-student-line bg-student-card p-5 sm:p-6">

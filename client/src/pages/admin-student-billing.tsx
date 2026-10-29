@@ -3,6 +3,7 @@
  * The whole owner journey on one page: agreed price, adjustments, schedule, payments, evidence, history.
  * Uses the S18 ledger API; every action returns the refreshed view. No gateway, no card data.
  */
+import React from "react";
 import { useCallback } from "react";
 import { Link, useParams } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -15,6 +16,8 @@ import { formatBillingDate, useStaffBilling, useStaffBillingAction, type StaffBi
 import { formatMoney } from "@shared/billing-contract";
 import { BalanceSummary, DiscountPanel, EvidencePanel, HistoryPanel, ObligationPanel, ReceiptsPanel, SchedulePanel, type PanelProps } from "@/components/admin/billing/billing-panels";
 import { BILLING_STATUS_LABEL, BILLING_STATUS_TONE, summarizeBilling } from "@/components/admin/billing/billing-summary";
+
+void React;
 
 export default function AdminStudentBilling() {
   const { studentId = "" } = useParams<{ studentId: string }>();

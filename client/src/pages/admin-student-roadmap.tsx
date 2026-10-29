@@ -19,6 +19,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import {
   buildReviewPlan, groupAckState, groupSelectionState, toggleGroupSelection, REVIEW_CATEGORY_LABEL, type ReviewGroup,
 } from "@shared/student-roadmap-review-groups";
+import { StaffPageHeader } from "@/components/staff/staff-ui";
 import { useAuth } from "@/lib/auth";
 import { adminRoadmapApi, RoadmapApiError } from "@/lib/admin-roadmap-api";
 import {
@@ -166,12 +167,12 @@ export default function AdminStudentRoadmap() {
 
   return (
     <div className="mx-auto w-full min-w-0 max-w-6xl space-y-6">
-      <Link href={`/admin/students/${encodeURIComponent(studentId)}`} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" />Back to student</Link>
-      <header className="border-b border-border/70 pb-6">
-        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary">Lumière / student roadmap</p>
-        <h1 className="text-3xl font-semibold tracking-tight">Roadmap</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Upload Excel, convert, review exceptions, preview, then publish. Nothing imported is an institutional decision; credit comes only from the verified academic record.</p>
-      </header>
+      <StaffPageHeader
+        back={<Link href={`/admin/students/${encodeURIComponent(studentId)}`} className="inline-flex min-h-10 items-center gap-2 text-sm font-medium text-student-gold-ink underline-offset-4 hover:underline"><ArrowLeft className="h-4 w-4" aria-hidden="true" />Back to student file</Link>}
+        eyebrow="Staff Portal · Student roadmap"
+        title="Roadmap"
+        description="Import the student's Excel plan, review the exceptions, preview it, then publish. An import is never an institutional decision: credit comes only from the verified academic record."
+      />
 
       <div aria-live="polite">
         {message && (

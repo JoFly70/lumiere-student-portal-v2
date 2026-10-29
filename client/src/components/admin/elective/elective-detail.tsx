@@ -1,4 +1,5 @@
 /** Elective request detail: facts, auditable stage history, stage actions and the roadmap hand-off. */
+import React from "react";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
@@ -17,6 +18,8 @@ import {
 } from "@/lib/elective-stage";
 import { staffStatusLabel } from "@shared/support-contract";
 import { StagePill } from "./stage-pill";
+
+void React;
 
 const LINK = `${staffBtn.outline} inline-flex items-center justify-center border`;
 const when = (iso: string) => new Date(iso).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" });

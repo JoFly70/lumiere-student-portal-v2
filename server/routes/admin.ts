@@ -586,11 +586,12 @@ router.get('/analytics/dashboard', asyncHandler(async (req: any, res) => {
     });
 
     // Total students by status (synthetic/test students excluded and counted separately)
-    const studentsRes = await supabaseAdmin.from('students').select('status, email, first_name, preferred_name');
+    const studentsRes = await supabaseAdmin.from('students').select('id, status, email, first_name, preferred_name');
     const studentsByStatus: Record<string, number> = {};
     let testStudents = 0;
+    const syntheticStudentIds = new Set<string>();
     (studentsRes.data ?? []).forEach((student: any) => {
-      if (isSyntheticAccount(student)) { testStudents += 1; return; }
+      if (isSyntheticAccount(student)) { testStudents += 1; syntheticStudentIds.add(student.id); return; }
       studentsByStatus[student.status] = (studentsByStatus[student.status] || 0) + 1;
     });
 
@@ -609,21 +610,31 @@ router.get('/analytics/dashboard', asyncHandler(async (req: any, res) => {
       .select('*', { count: 'exact', head: true })
       .gte('created_at', thirtyDaysAgo.toISOString());
 
-    // Total revenue (last 30 days)
-    const { data: recentPayments } = await supabaseAdmin
-      .from('payment_records')
-      .select('amount')
-      .eq('status', 'paid')
-      .gte('payment_date', thirtyDaysAgo.toISOString());
+    // High-school enrollments that are open (planned/active/on hold), real students only.
+    const { data: hsOpen } = await supabaseAdmin
+      .from('hs_enrollments')
+      .select('student_id, status')
+      .in('status', ['planned', 'active', 'on_hold']);
+    const realHs = (hsOpen ?? []).filter((e: any) => !syntheticStudentIds.has(e.student_id));
+    const hsEnrollments = { active: realHs.filter((e: any) => e.status === 'active').length, pending: realHs.filter((e: any) => e.status !== 'active').length };
 
-    const totalRevenue = recentPayments?.reduce((sum: number, p: any) => sum + (p.amount || 0), 0) || 0;
+    // Money received in the last 30 days: staff-confirmed billing receipts (voided rows excluded),
+    // real students only. Amounts are in each student's agreed currency; all current obligations are USD.
+    const { data: recentReceipts } = await supabaseAdmin
+      .from('student_billing_receipts')
+      .select('student_id, amount_cents, voided_at')
+      .gte('received_date', thirtyDaysAgo.toISOString().slice(0, 10));
+    const totalRevenue = (recentReceipts ?? [])
+      .filter((r: any) => !r.voided_at && !syntheticStudentIds.has(r.student_id))
+      .reduce((sum: number, r: any) => sum + Number(r.amount_cents || 0), 0); // cents, like the previous field
 
     res.json({
       analytics: {
         usersByRole,
         studentsByStatus,
         testAccounts: { users: testUsers, students: testStudents },
-        activeEnrollments: activeEnrollments || 0,
+        hsEnrollments,
+        activeEnrollments: (activeEnrollments || 0) + hsEnrollments.active,
         recentSignups: recentSignups || 0,
         totalRevenue,
       },

@@ -4,12 +4,15 @@
  * name, email or student code and open their billing. A student ID can still be pasted as a fallback.
  * It grants nothing; the billing API enforces the role on every call.
  */
+import React from "react";
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, Search } from "lucide-react";
 import { api } from "@/lib/api";
 import { StaffAvatar, StaffCard, StaffEmpty, StaffNotice, StaffPage, StaffPageHeader, staffBtn, staffField, staffLabel } from "@/components/staff/staff-ui";
+
+void React;
 
 export const staffStudentBillingHref = (studentId: string) => `/admin/students/${encodeURIComponent(studentId.trim())}/billing`;
 

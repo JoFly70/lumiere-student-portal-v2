@@ -72,6 +72,7 @@ interface Analytics {
   activeEnrollments: number;
   recentSignups: number;
   totalRevenue: number;
+  hsEnrollments?: { active: number; pending: number };
   testAccounts?: { users: number; students: number };
 }
 
@@ -158,9 +159,9 @@ function DashboardOverview() {
           value={stats?.studentsByStatus ? Object.values(stats.studentsByStatus).reduce((a, b) => a + b, 0) : 0}
           icon={<GraduationCap className="h-5 w-5" />}
         />
-        <KpiTile label="Active enrollments" value={stats?.activeEnrollments || 0} icon={<BookOpen className="h-5 w-5" />} />
+        <KpiTile label="Active enrollments" value={stats?.activeEnrollments || 0} hint={stats?.hsEnrollments ? `${stats.hsEnrollments.pending} high-school enrollment(s) pending activation` : undefined} icon={<BookOpen className="h-5 w-5" />} />
         <KpiTile label="New signups (30d)" value={stats?.recentSignups || 0} icon={<Users className="h-5 w-5" />} />
-        <KpiTile label="Revenue (30d)" value={`$${((stats?.totalRevenue || 0) / 100).toLocaleString()}`} icon={<DollarSign className="h-5 w-5" />} />
+        <KpiTile label="Payments received (30d)" hint="Staff-confirmed billing receipts, test accounts excluded" value={`$${((stats?.totalRevenue || 0) / 100).toLocaleString()}`} icon={<DollarSign className="h-5 w-5" />} />
       </div>
 
       {stats?.testAccounts && (stats.testAccounts.users > 0 || stats.testAccounts.students > 0) ? (
@@ -282,7 +283,12 @@ function UserManagement() {
                 <td className={cn(staffTable.td, "text-right")}>
                   <Select
                     value={user.role}
-                    onValueChange={(role) => updateRoleMutation.mutate({ userId: user.id, role })}
+                    onValueChange={(role) => {
+                      // A role change alters what this account can see and do: confirm it explicitly.
+                      if (role !== user.role && window.confirm(`Change ${user.name}'s role from ${roleLabel(user.role)} to ${roleLabel(role)}? This changes what the account can access.`)) {
+                        updateRoleMutation.mutate({ userId: user.id, role });
+                      }
+                    }}
                   >
                     <SelectTrigger className={cn(selectTrigger, "ml-auto w-32")} aria-label={`Change role for ${user.name}`}>
                       <SelectValue />
