@@ -111,7 +111,15 @@ export type AuditEventType =
   | 'billing.receipt_voided'
   | 'billing.discount_voided'
   | 'billing.installment_updated'
-  | 'billing.access_denied';
+  | 'billing.access_denied'
+  // Program journey events (S27). Must also exist in the Postgres audit_event_type enum
+  // (supabase/migrations/20261105100000_s27_program_journey.sql).
+  | 'program.agreement_updated'
+  | 'program.checkpoint_updated'
+  | 'program.session_requested'
+  | 'program.session_updated'
+  | 'program.note_added'
+  | 'program.access_denied';
 
 export type AuditSeverity = 'info' | 'warning' | 'error' | 'critical';
 
