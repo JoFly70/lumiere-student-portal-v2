@@ -523,7 +523,7 @@ export default function Documents() {
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
             className={`
-              border-2 border-dashed rounded-lg p-8 text-center transition-all duration-200
+              border-2 border-dashed rounded-lg px-6 py-5 text-center transition-all duration-200
               ${isDragging 
                 ? "border-student-gold-ink bg-student-gold-soft" 
                 : "border-muted-foreground/25 hover:border-muted-foreground/50"}
@@ -541,9 +541,9 @@ export default function Documents() {
               </div>
             ) : (
               <>
-                <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <p className="font-semibold mb-2">{t("documents.dropHere")}</p>
-                <p className="text-sm text-muted-foreground mb-4">{t("documents.orBrowse")}</p>
+                <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                <p className="font-semibold mb-1">{t("documents.dropHere")}</p>
+                <p className="text-sm text-muted-foreground mb-3">{t("documents.orBrowse")}</p>
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -565,7 +565,7 @@ export default function Documents() {
                 <label htmlFor="file-upload" className={cn(buttonClass.solid, "cursor-pointer")} data-testid="button-browse">
                   {t("documents.browse")}
                 </label>
-                <p className="text-xs text-muted-foreground mt-4">
+                <p className="text-xs text-muted-foreground mt-3">
                   {t("documents.accepted")}
                 </p>
               </>
@@ -609,8 +609,8 @@ export default function Documents() {
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as DocumentCategory | "all")}>
-            <TabsList className="mb-4 flex-wrap h-auto gap-1">
-              <TabsTrigger value="all" className="gap-2" data-testid="tab-all">
+            <TabsList className="mb-4 flex h-auto w-full flex-nowrap justify-start gap-1 overflow-x-auto" data-testid="documents-tab-strip">
+              <TabsTrigger value="all" className="shrink-0 gap-2" data-testid="tab-all">
                 {t("common.all")}
                 <Badge variant="secondary" className="ml-1">{categoryCounts.all}</Badge>
               </TabsTrigger>
@@ -620,10 +620,10 @@ export default function Documents() {
                   <TabsTrigger 
                     key={key} 
                     value={key} 
-                    className="gap-2"
+                    className="shrink-0 gap-1.5 px-2.5"
                     data-testid={`tab-${key}`}
                   >
-                    <Icon className={`h-4 w-4 ${config.color}`} aria-hidden="true" />
+                    <Icon className={`hidden h-4 w-4 2xl:block ${config.color}`} aria-hidden="true" />
                     <span className="sm:hidden">{t(`documents.cat.${key}.short` as TranslationKey)}</span>
                     <span className="hidden sm:inline">{t(`documents.cat.${key}.label` as TranslationKey)}</span>
                     <Badge variant="secondary" className="ml-1">{categoryCounts[key] || 0}</Badge>
@@ -661,7 +661,7 @@ export default function Documents() {
                         <div className="mt-2 flex gap-2 border-t border-student-line pt-2">
                           <button type="button" className={cn(buttonClass.outline, "flex-1 px-2")} onClick={() => handlePreview(doc)} aria-label={t("documents.previewFile", { name: doc.file_name })} data-testid={`card-preview-${doc.id}`}><Eye className="h-4 w-4" aria-hidden="true" />{t("common.view")}</button>
                           <button type="button" className={cn(buttonClass.outline, "flex-1 px-2")} onClick={() => handleDownload(doc)} aria-label={t("documents.downloadFile", { name: doc.file_name })} data-testid={`card-download-${doc.id}`}><Download className="h-4 w-4" aria-hidden="true" />{t("common.download")}</button>
-                          <button type="button" className={cn(buttonClass.outline, "px-3")} onClick={() => handleDelete(doc.id, doc.file_name)} aria-label={t("documents.deleteFile", { name: doc.file_name })} disabled={deleteDocument.isPending} data-testid={`card-delete-${doc.id}`}><Trash2 className="h-4 w-4" aria-hidden="true" /></button>
+                          {doc.status !== "verified" && <button type="button" className={cn(buttonClass.outline, "px-3")} onClick={() => handleDelete(doc.id, doc.file_name)} aria-label={t("documents.deleteFile", { name: doc.file_name })} disabled={deleteDocument.isPending} data-testid={`card-delete-${doc.id}`}><Trash2 className="h-4 w-4" aria-hidden="true" /></button>}
                         </div>
                       </li>
                     );
@@ -723,9 +723,9 @@ export default function Documents() {
                                   <Button variant="ghost" size="icon" onClick={() => handleDownload(doc)} aria-label={t("documents.downloadFile", { name: doc.file_name })} data-testid={`button-download-${doc.id}`}>
                                     <Download className="h-4 w-4" />
                                   </Button>
-                                  <Button variant="ghost" size="icon" onClick={() => handleDelete(doc.id, doc.file_name)} aria-label={t("documents.deleteFile", { name: doc.file_name })} data-testid={`button-delete-${doc.id}`} disabled={deleteDocument.isPending}>
+                                  {doc.status !== "verified" && (<Button variant="ghost" size="icon" onClick={() => handleDelete(doc.id, doc.file_name)} aria-label={t("documents.deleteFile", { name: doc.file_name })} data-testid={`button-delete-${doc.id}`} disabled={deleteDocument.isPending}>
                                     <Trash2 className="h-4 w-4" />
-                                  </Button>
+                                  </Button>)}
                                 </div>
                               </td>
                             </tr>
