@@ -890,6 +890,32 @@ async function assistantChecks() {
   });
 }
 
+/** S26: billing journey on the SYNTHETIC student only (records provisioned by the release; no real money). */
+async function billingChecks() {
+  const A = ctx.admin, S = ctx.student, id = ctx.sid;
+  await run("billing.admin-ledger", "billing", true, async () => {
+    if (!A || !id) return skip("no admin session or demo id");
+    const r = await get(`/api/admin/students/${id}/billing`, A);
+    const b = r.json?.student;
+    return { ok: r.status === 200 && b?.state === "configured" && b.netObligationCents === b.agreedCents - b.discountCents && b.remainingCents === Math.max(0, b.netObligationCents - b.paidCents),
+      status: r.status, detail: r.status === 200 ? `state ${b?.state}; agreed ${b?.agreedCents}; adjustment ${b?.discountCents}; paid ${b?.paidCents}; remaining ${b?.remainingCents}` : brief(r),
+      observed: { state: b?.state, receipts: r.json?.receipts?.length ?? null, installments: b?.installments?.length ?? null } };
+  });
+  await run("billing.student-summary", "billing", true, async () => {
+    if (!S) return skip("no student session");
+    const r = await get("/api/student/billing", S);
+    const b = r.json;
+    const leaked = JSON.stringify(b ?? {}).match(/"note"|internal/i);
+    return { ok: r.status === 200 && b?.state === "configured" && typeof b?.remainingCents === "number" && !leaked, status: r.status,
+      detail: r.status === 200 ? `student sees remaining ${b?.remainingCents}, paid ${b?.paidCents}; staff notes leaked: ${!!leaked}` : brief(r) };
+  });
+  await run("billing.student-denied-staff-ledger", "billing", true, async () => {
+    if (!S || !id) return skip("no student session");
+    const r = await get(`/api/admin/students/${id}/billing`, S);
+    return { ok: r.status === 403, status: r.status, detail: brief(r) };
+  });
+}
+
 async function authorizationChecks() {
   const S = ctx.student;
   await run("authz.student-denied-view-as-student", "authorization", true, async () => {
@@ -1235,6 +1261,7 @@ async function main() {
   await photoChecks();
   await documentChecks();
   await supportChecks();
+  await billingChecks();
   await assistantChecks();
   await authorizationChecks();
   await browserPhase();

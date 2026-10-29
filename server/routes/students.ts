@@ -164,7 +164,8 @@ router.get('/', requireStaff, async (req, res) => {
 
     const result = await listStudents(filters);
 
-    return res.json(result);
+    // Same presentation as single-record reads: government id masked, photo as a short-lived signed URL.
+    return res.json({ ...result, students: await Promise.all(result.students.map((st) => presentStudent(st))) });
   } catch (error) {
     logger.error('List students error', { error });
     return res.status(500).json({ error: 'Failed to list students' });

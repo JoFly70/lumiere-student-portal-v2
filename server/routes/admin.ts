@@ -6,6 +6,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { supabaseAdmin } from '../lib/supabase';
+import { isSyntheticAccount } from '@shared/synthetic-accounts';
 import { logger } from '../lib/logger';
 import { asyncHandler } from '../lib/errors';
 import { requireAuth } from '../middleware/auth';
@@ -575,38 +576,23 @@ router.get('/audit-logs', asyncHandler(async (req: any, res) => {
  */
 router.get('/analytics/dashboard', asyncHandler(async (req: any, res) => {
   try {
-    // Total users by role
-    const { data: usersByRole } = await supabaseAdmin
-      .from('users')
-      .select('role')
-      .then(result => {
-        const counts: Record<string, number> = {
-          student: 0,
-          coach: 0,
-          staff: 0,
-          admin: 0,
-        };
-        if (result.data) {
-          result.data.forEach((user: any) => {
-            counts[user.role] = (counts[user.role] || 0) + 1;
-          });
-        }
-        return { data: counts };
-      });
+    // Total users by role (synthetic/test accounts excluded and counted separately)
+    const usersRes = await supabaseAdmin.from('users').select('role, email, name');
+    const usersByRole: Record<string, number> = { student: 0, coach: 0, staff: 0, admin: 0 };
+    let testUsers = 0;
+    (usersRes.data ?? []).forEach((user: any) => {
+      if (isSyntheticAccount(user)) { testUsers += 1; return; }
+      usersByRole[user.role] = (usersByRole[user.role] || 0) + 1;
+    });
 
-    // Total students by status
-    const { data: studentsByStatus } = await supabaseAdmin
-      .from('students')
-      .select('status')
-      .then(result => {
-        const counts: Record<string, number> = {};
-        if (result.data) {
-          result.data.forEach((student: any) => {
-            counts[student.status] = (counts[student.status] || 0) + 1;
-          });
-        }
-        return { data: counts };
-      });
+    // Total students by status (synthetic/test students excluded and counted separately)
+    const studentsRes = await supabaseAdmin.from('students').select('status, email, first_name, preferred_name');
+    const studentsByStatus: Record<string, number> = {};
+    let testStudents = 0;
+    (studentsRes.data ?? []).forEach((student: any) => {
+      if (isSyntheticAccount(student)) { testStudents += 1; return; }
+      studentsByStatus[student.status] = (studentsByStatus[student.status] || 0) + 1;
+    });
 
     // Active enrollments
     const { count: activeEnrollments } = await supabaseAdmin
@@ -636,6 +622,7 @@ router.get('/analytics/dashboard', asyncHandler(async (req: any, res) => {
       analytics: {
         usersByRole,
         studentsByStatus,
+        testAccounts: { users: testUsers, students: testStudents },
         activeEnrollments: activeEnrollments || 0,
         recentSignups: recentSignups || 0,
         totalRevenue,

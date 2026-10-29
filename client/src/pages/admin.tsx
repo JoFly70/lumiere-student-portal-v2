@@ -14,12 +14,14 @@ import {
   Search,
   ArrowRight,
   BarChart3,
+  LifeBuoy,
 } from "lucide-react";
 import { apiRequest } from "@/lib/api";
 import { AddStudentDialog } from "@/components/admin/add-student-dialog";
 import { ProgramsManagement } from "@/components/programs-management";
 import { KnowledgeSources } from "@/components/knowledge-sources";
-import { useLocation, useSearch } from "wouter";
+import { Link, useLocation, useSearch } from "wouter";
+import { isSyntheticAccount } from "@shared/synthetic-accounts";
 import {
   adminStudentWorkspacePath,
   adminTabFromSearch,
@@ -53,6 +55,7 @@ interface User {
 }
 
 interface Student {
+  preferred_name?: string | null;
   id: string;
   student_code: string;
   first_name: string;
@@ -69,6 +72,7 @@ interface Analytics {
   activeEnrollments: number;
   recentSignups: number;
   totalRevenue: number;
+  testAccounts?: { users: number; students: number };
 }
 
 interface AuditLogEntry {
@@ -123,6 +127,17 @@ function DistributionList({ entries, label }: { entries: [string, number][]; lab
   );
 }
 
+/** Labeled switch that reveals synthetic/test accounts; they are hidden by default. */
+function TestAccountsToggle({ id, count, checked, onChange, noun = "accounts" }: { id: string; count: number; checked: boolean; onChange: (v: boolean) => void; noun?: string }) {
+  if (count === 0 && !checked) return null;
+  return (
+    <label htmlFor={id} className="inline-flex min-h-10 cursor-pointer items-center gap-2 text-sm text-student-ink">
+      <input id={id} type="checkbox" className="h-4 w-4 accent-[hsl(var(--s-ink))]" checked={checked} onChange={(e) => onChange(e.target.checked)} data-testid={id} />
+      Show test {noun} ({count})
+    </label>
+  );
+}
+
 // Dashboard Overview Tab
 function DashboardOverview() {
   const { data: analytics, isLoading } = useQuery<{ analytics: Analytics }>({
@@ -136,10 +151,10 @@ function DashboardOverview() {
   const stats = analytics?.analytics;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <KpiTile
-          label="Total students"
+          label="Students (excl. test)"
           value={stats?.studentsByStatus ? Object.values(stats.studentsByStatus).reduce((a, b) => a + b, 0) : 0}
           icon={<GraduationCap className="h-5 w-5" />}
         />
@@ -148,13 +163,19 @@ function DashboardOverview() {
         <KpiTile label="Revenue (30d)" value={`$${((stats?.totalRevenue || 0) / 100).toLocaleString()}`} icon={<DollarSign className="h-5 w-5" />} />
       </div>
 
+      {stats?.testAccounts && (stats.testAccounts.users > 0 || stats.testAccounts.students > 0) ? (
+        <p className="text-xs text-student-muted" data-testid="overview-test-accounts-note">
+          Real accounts only. Excluded from these counts: {stats.testAccounts.users} test user{stats.testAccounts.users === 1 ? "" : "s"} and {stats.testAccounts.students} test student{stats.testAccounts.students === 1 ? "" : "s"}.
+        </p>
+      ) : null}
+
       <div className="grid gap-4 md:grid-cols-2">
         <StaffCard>
-          <StaffSectionHeader title="Users by role" description="Distribution of user roles" />
+          <StaffSectionHeader title="Users by role" description="Real accounts only" />
           <DistributionList entries={Object.entries(stats?.usersByRole ?? {})} label={roleLabel} />
         </StaffCard>
         <StaffCard>
-          <StaffSectionHeader title="Students by status" description="Current student status distribution" />
+          <StaffSectionHeader title="Students by status" description="Real students only" />
           <DistributionList entries={Object.entries(stats?.studentsByStatus ?? {})} label={(k) => STUDENT_STATUS[k]?.label ?? sentence(k)} />
         </StaffCard>
       </div>
@@ -173,6 +194,7 @@ function DashboardOverview() {
 function UserManagement() {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
+  const [showTest, setShowTest] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -196,6 +218,9 @@ function UserManagement() {
   if (isLoading) {
     return <div className="py-12 text-center text-student-muted">Loading users...</div>;
   }
+  const allUsers = data?.users ?? [];
+  const testCount = allUsers.filter((u) => isSyntheticAccount(u)).length;
+  const users = showTest ? allUsers : allUsers.filter((u) => !isSyntheticAccount(u));
 
   return (
     <div className="space-y-4">
@@ -223,10 +248,11 @@ function UserManagement() {
             <SelectItem value="admin">Admin</SelectItem>
           </SelectContent>
         </Select>
+        <TestAccountsToggle id="admin-users-show-test" count={testCount} checked={showTest} onChange={setShowTest} />
       </div>
 
-      <div className={staffTable.frame}>
-        <table className={staffTable.table}>
+      <div className={cn(staffTable.frame, "overflow-x-auto")}>
+        <table className={cn(staffTable.table, "min-w-[34rem]")}>
           <caption className="sr-only">Users</caption>
           <thead>
             <tr>
@@ -238,15 +264,15 @@ function UserManagement() {
             </tr>
           </thead>
           <tbody>
-            {data?.users.map((user) => (
+            {users.map((user) => (
               <tr key={user.id} className={staffTable.tr}>
                 <td className={staffTable.td}>
                   <div className="flex items-center gap-3">
                     <StaffAvatar name={user.name} />
-                    <div className="min-w-0"><p className="truncate font-medium text-student-ink">{user.name}</p><p className="truncate text-xs text-student-muted md:hidden">{user.email}</p></div>
+                    <div className="min-w-0 max-w-[16rem]"><div className="flex min-w-0 items-center gap-2"><p className="min-w-0 truncate font-medium text-student-ink" title={user.name}>{user.name}</p>{isSyntheticAccount(user) ? <StaffPill tone="attention" className="shrink-0">Test account</StaffPill> : null}</div><p className="min-w-0 truncate text-xs text-student-muted md:hidden" title={user.email}>{user.email}</p></div>
                   </div>
                 </td>
-                <td className={cn(staffTable.td, "hidden text-student-muted md:table-cell")}>{user.email}</td>
+                <td className={cn(staffTable.td, "hidden max-w-[16rem] text-student-muted md:table-cell")}><span className="block min-w-0 truncate" title={user.email}>{user.email}</span></td>
                 <td className={staffTable.td}><StaffPill tone={user.role === "admin" ? "seal" : "neutral"}>{roleLabel(user.role)}</StaffPill></td>
                 <td className={cn(staffTable.td, "hidden text-student-muted lg:table-cell")}>{new Date(user.created_at).toLocaleDateString()}</td>
                 <td className={cn(staffTable.td, "text-right")}>
@@ -269,7 +295,7 @@ function UserManagement() {
             ))}
           </tbody>
         </table>
-        {!data?.users?.length && <p className="px-4 py-8 text-center text-sm text-student-muted">No users match.</p>}
+        {!users.length && <p className="px-4 py-6 text-center text-sm text-student-muted">No users match.</p>}
       </div>
     </div>
   );
@@ -279,6 +305,7 @@ function UserManagement() {
 function StudentManagement() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [showTest, setShowTest] = useState(false);
   const [, setLocation] = useLocation();
 
   const { data, isLoading } = useQuery<{ students: Student[] }>({
@@ -288,6 +315,10 @@ function StudentManagement() {
   if (isLoading) {
     return <div className="py-12 text-center text-student-muted">Loading students...</div>;
   }
+  const isTest = (st: Student) => isSyntheticAccount({ email: st.email, first_name: st.first_name, preferred_name: st.preferred_name, name: `${st.first_name} ${st.last_name}` });
+  const allStudents = data?.students ?? [];
+  const testCount = allStudents.filter(isTest).length;
+  const students = showTest ? allStudents : allStudents.filter((st) => !isTest(st));
 
   return (
     <div className="space-y-4">
@@ -315,11 +346,12 @@ function StudentManagement() {
             <SelectItem value="graduated">Graduated</SelectItem>
           </SelectContent>
         </Select>
+        <TestAccountsToggle id="admin-students-show-test" count={testCount} checked={showTest} onChange={setShowTest} noun="students" />
         <AddStudentDialog />
       </div>
 
-      <div className={staffTable.frame}>
-        <table className={cn(staffTable.table, "table-fixed sm:table-auto")} data-testid="students-table">
+      <div className={cn(staffTable.frame, "overflow-x-auto")}>
+        <table className={cn(staffTable.table, "min-w-[22rem] sm:min-w-[32rem]")} data-testid="students-table">
           <caption className="sr-only">Students</caption>
           <thead>
             <tr>
@@ -327,18 +359,18 @@ function StudentManagement() {
               <th scope="col" className={cn(staffTable.th, "hidden md:table-cell")}>Code</th>
               <th scope="col" className={cn(staffTable.th, "hidden sm:table-cell")}>Status</th>
               <th scope="col" className={cn(staffTable.th, "hidden lg:table-cell")}>Residency</th>
-              <th scope="col" className={cn(staffTable.th, "w-16 text-right sm:w-auto")}><span className="sr-only">Actions</span></th>
+              <th scope="col" className={cn(staffTable.th, "text-right")}><span className="sr-only">Actions</span></th>
             </tr>
           </thead>
           <tbody>
-            {data?.students.map((student) => (
+            {students.map((student) => (
               <tr key={student.id} className={staffTable.tr}>
                 <td className={staffTable.td}>
                   <div className="flex items-center gap-3">
                     <StaffAvatar name={`${student.first_name} ${student.last_name}`} />
-                    <div className="min-w-0">
-                      <p className="truncate font-medium text-student-ink">{student.first_name} {student.last_name}</p>
-                      <p className="truncate text-xs text-student-muted">{student.email}</p>
+                    <div className="min-w-0 max-w-[14rem] sm:max-w-[18rem]">
+                      <div className="flex min-w-0 items-center gap-2"><p className="min-w-0 truncate font-medium text-student-ink" title={`${student.first_name} ${student.last_name}`}>{student.first_name} {student.last_name}</p>{isTest(student) ? <StaffPill tone="attention" className="shrink-0">Test account</StaffPill> : null}</div>
+                      <p className="min-w-0 truncate text-xs text-student-muted" title={student.email}>{student.email}</p>
                       <div className="mt-1 sm:hidden"><StudentStatusPill status={student.status} /></div>
                     </div>
                   </div>
@@ -355,7 +387,7 @@ function StudentManagement() {
             ))}
           </tbody>
         </table>
-        {!data?.students?.length && <p className="px-4 py-8 text-center text-sm text-student-muted">No students match.</p>}
+        {!students.length && <p className="px-4 py-6 text-center text-sm text-student-muted">No students match.</p>}
       </div>
     </div>
   );
@@ -425,14 +457,29 @@ export default function Admin() {
     <StaffPage>
       <StaffPageHeader
         eyebrow="Staff Portal · Administration"
-        title="Admin Dashboard"
-        description="System management and analytics."
+        title="Lumière Administration"
+        description="Accounts, programs, knowledge and audit trail."
       />
+
+      <Link
+        href="/admin/support-center"
+        className="flex items-center justify-between gap-3 rounded-2xl border-2 border-student-gold-ink bg-student-gold-soft p-4 text-student-ink hover:bg-student-gold-soft/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-student-gold-ink"
+        data-testid="link-support-center"
+      >
+        <span className="flex min-w-0 items-center gap-3">
+          <LifeBuoy className="h-6 w-6 shrink-0" aria-hidden="true" />
+          <span className="min-w-0">
+            <span className="block font-serif text-lg">Student Support Control Center</span>
+            <span className="block text-sm text-student-muted">Who needs help now: open cases, documents awaiting review, student files.</span>
+          </span>
+        </span>
+        <ArrowRight className="h-5 w-5 shrink-0" aria-hidden="true" />
+      </Link>
 
       <Tabs
         value={selectedTab}
         onValueChange={(tab) => setLocation(adminTabPath(tab as AdminTab))}
-        className="space-y-6"
+        className="space-y-4"
       >
         <div className="-mx-1 overflow-x-auto px-1">
           <TabsList className="h-auto min-w-max justify-start gap-1 rounded-none border-b border-student-line bg-transparent p-0">

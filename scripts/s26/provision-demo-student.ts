@@ -113,18 +113,29 @@ async function main() {
     });
     out.students = { demo: { id: student.id, code: student.student_code }, second: { id: second.id, code: second.student_code } };
 
+    // Non-critical steps are reported individually and never stop the academic provisioning.
+    const warnings: Record<string, string> = {};
+    out.warnings = warnings;
+    const soft = async (name: string, fn: () => Promise<unknown>) => {
+      try { await fn(); } catch (e) { warnings[name] = String((e as Error)?.message ?? e).slice(0, 200); }
+    };
     // French preference (the student's own saved portal language).
-    const { pgLanguagePreferenceStore } = await import("../../server/routes/student-preferences");
-    await pgLanguagePreferenceStore.set(userId, "fr", new Date());
+    await soft("language", async () => {
+      const { pgLanguagePreferenceStore } = await import("../../server/routes/student-preferences");
+      await pgLanguagePreferenceStore.set(userId, "fr", new Date());
+    });
 
     // Synthetic guardian: listed, NOT verified, no consent document.
+    await soft("guardian", async () => {
     const contacts = await getStudentContacts(student.id);
     if (!contacts.some((c) => c.full_name.startsWith("DEMO"))) {
       await addStudentContact(student.id, {
         type: "guardian", full_name: "DEMO Tuteur Synthétique (fictional guardian)", relationship: "Guardian (DEMO)",
         phone: "+212600000001", email: "s26.demo.guardian@lumiere-demo.invalid", language: "fr", scopes: [],
+        consent_doc_url: null, authority_status: "listed",
       } as never, actorId);
     }
+    });
 
     const { defaultHighSchoolService: hs } = await import("../../server/services/high-school-service.default");
     const { createEnrollmentSchema, recordPriorEducationSchema } = await import("../../shared/high-school-contract");
@@ -136,12 +147,12 @@ async function main() {
     }
     const enrollment = state.current!.enrollment;
     check(enrollment.templateVersion === 2 && enrollment.totalRequiredHalfUnits === 42, "DEMO_ENROLLMENT_MODEL_MISMATCH");
-    if (state.current!.priorEducation.length === 0) {
+    if (state.current!.priorEducation.length === 0) await soft("priorEducation", async () => {
       state = (await hs.recordPriorEducation(student.id, enrollment.id, actorId, recordPriorEducationSchema.parse({
         schoolName: "DEMO — fictional Moroccan collège (synthetic)", country: "Morocco", gradeLevels: "DEMO 3e année collège",
         status: "reported", staffNote: `${DEMO_TAG}. Evidence not requested; no transfer credit claimed.`,
       }))).result;
-    }
+    });
     const published = state.current!.published;
     if (!published?.content?.studentMessage?.startsWith(DEMO_TAG)) {
       if (!state.current!.draft) state = (await hs.draftFromTemplate(student.id, enrollment.id, actorId, undefined)).result;
@@ -161,6 +172,22 @@ async function main() {
       plannedCredits: plannedHalf / 2, officialCreditsEarned: state.current!.credits.earnedHalfUnits / 2,
       milestones: plan.pacing.milestones.length, tasks: plan.courses.reduce((n, c) => n + c.tasks.length, 0),
     };
+
+    // Representative SYNTHETIC billing for the demo student only (never the real student): agreed price,
+    // one documented adjustment and one partial payment, so the staff and student billing views have
+    // real ledger rows. Payment processing does not exist; these are records of external events.
+    await soft("demoBilling", async () => {
+      const { defaultBillingService: billing } = await import("../../server/services/billing-service.default");
+      const view = await billing.getStaffView(student.id);
+      if (view.student.state === "configured") return;
+      await billing.setObligation(student.id, actorId, { agreedCents: 400000, currency: "USD", note: `${DEMO_TAG} — synthetic agreed price for QA` });
+      await billing.addDiscount(student.id, actorId, { amountCents: 25000, reason: `${DEMO_TAG} — synthetic approved adjustment` });
+      await billing.setInstallments(student.id, actorId, { installments: [
+        { dueDate: "2026-11-02", amountCents: 200000, label: "DEMO installment 1" },
+        { dueDate: "2027-01-04", amountCents: 175000, label: "DEMO installment 2" },
+      ] });
+      await billing.recordReceipt(student.id, actorId, { amountCents: 200000, receivedDate: "2026-10-29", methodLabel: "DEMO bank transfer (synthetic)", reference: "DEMO-S26-0001", note: `${DEMO_TAG} — not a real payment` });
+    });
 
     // REAL first student (pre-enrollment record created by the owner; S26 contract override):
     // prepare the contract-aligned DRAFT only. No identity/contact change, no publish, no dates,

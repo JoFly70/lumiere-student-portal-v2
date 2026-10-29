@@ -1392,6 +1392,7 @@ window.ENV = {
   app.use('/api/admin', adminHighSchoolRouter);
   // S25 owner "View as Student": read-only student projection preview (per-route auth, admin only, audited).
   app.use('/api/admin', (await import('./routes/admin-view-as-student')).default);
+  app.use('/api/admin', (await import('./routes/admin-documents-queue')).default);
   // S26 Lumière Owner AI: admin-only, one student's records, read-only, cited, audited.
   app.use('/api/admin', (await import('./routes/admin-owner-assistant')).default);
   // S18 billing ledger: staff/admin entry and review (per-route role checks)

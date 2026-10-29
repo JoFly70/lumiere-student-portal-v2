@@ -59,6 +59,8 @@ DONE_SHA=""
 while [ "$(date +%s)" -lt "$DEADLINE" ]; do
   git fetch -q s26gh "$BRANCH" 2>>"$EVID/loop.log" || { sleep 60; continue; }
   SHA=$(git rev-parse FETCH_HEAD)
+  # Pinned release: with S26_PIN_SHA set, only that exact commit is ever synced.
+  if [ -n "${S26_PIN_SHA:-}" ]; then SHA=$(git rev-parse --verify "${S26_PIN_SHA}^{commit}" 2>/dev/null || echo "$DONE_SHA"); fi
   if [ "$SHA" != "$DONE_SHA" ]; then
     log "new commit ${SHA:0:7}: syncing"
     rm -f "$EVID/status.json" "$EVID/acceptance.json"
@@ -82,10 +84,15 @@ while [ "$(date +%s)" -lt "$DEADLINE" ]; do
       if grep -q "S26 production schema release: DONE" "$EVID/schema.log"; then status schema PASS "backup + additive migrations + row preservation + post-verify"
       else status schema FAIL "$(grep -E 'REFUSED|ERROR|FAIL' "$EVID/schema.log" | head -5 | tr '\n' ' ' | cut -c1-400)"; DONE_SHA=$SHA; continue; fi
     fi
-    if npx tsx scripts/s26/provision-demo-student.ts --ref "$REF" --real-code LCA-2026-0001 > "$EVID/provision.json" 2> "$EVID/provision.err"; then
+    if npx tsx scripts/s26/provision-demo-student.ts --ref "$REF" --real-code LCA-2026-0001 > "$EVID/provision.json" 2> "$EVID/provision.err" \
+       && grep -q '"verdict": "PASS"' "$EVID/provision.json"; then
       status provision PASS
     else
+      # Gate: a release whose student/academic provisioning failed is NOT ready to publish.
       status provision FAIL "see $EVID/provision.json"
+      status ready_to_publish FAIL "provisioning failed; not publishable"
+      log "provisioning FAILED for ${SHA:0:7}; release blocked (fix and push a new commit)"
+      DONE_SHA=$SHA; ACCEPTED=1; continue
     fi
     printf '{"sha":"%s"}\n' "$SHA" > release.json
     for k in META_MODEL_API_KEY SPARK_ASSISTANT_ENABLED SPARK_ASSISTANT_LIVE_ROLES SPARK_ASSISTANT_STUDENT_POLICY REDIS_URL SESSION_SECRET SUPABASE_SERVICE_KEY; do
