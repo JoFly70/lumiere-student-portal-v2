@@ -8,10 +8,10 @@
  * produce queue items, deadlines, payment figures, support windows or counts. Dates are UTC calendar days.
  */
 import { sql } from "drizzle-orm";
+import { isDemoPreferredName } from "@shared/synthetic-accounts";
 import { allocateReceipts } from "@shared/billing-ledger";
 import type { ControlCenterView, ControlQueueItem, ControlStudentRow, QueueKind } from "@shared/s27-contract";
 import {
-  addDays,
   buildPaceInput,
   computeDeadlines,
   computePace,
@@ -58,9 +58,11 @@ export interface ControlCenterFacts {
   receiptsThisMonth: Array<{ studentId: string; amountCents: number }>;
   tickets: CcTicket[];
   sessionRequests: Array<{ id: string; studentId: string; slotAt: string }>;
+  /** True when any row cap was hit while loading (the view is then incomplete). */
+  truncated: boolean;
 }
 
-const isDemo = (s: CcStudent) => /^DEMO/i.test(s.preferredName ?? "");
+const isDemo = (s: CcStudent) => isDemoPreferredName(s.preferredName);
 const groupBy = <T,>(xs: readonly T[], key: (x: T) => string) => {
   const m = new Map<string, T[]>();
   for (const x of xs) { const k = key(x); const a = m.get(k); if (a) a.push(x); else m.set(k, [x]); }
@@ -234,6 +236,7 @@ export function buildControlCenter(facts: ControlCenterFacts, now: Date): Contro
 
   return {
     generatedAt: now.toISOString(),
+    truncated: facts.truncated,
     queue,
     students: rowsOut,
     deadlines,
@@ -250,44 +253,65 @@ const rows = (r: unknown): Row[] => Array.from(r as Row[]);
 const iso = (v: unknown): string => (v instanceof Date ? v.toISOString() : new Date(String(v)).toISOString());
 const str = (v: unknown): string | null => (v === null || v === undefined ? null : String(v));
 
-export async function loadControlCenterFacts(db: SqlExecutor, now: Date): Promise<ControlCenterFacts> {
+/** Per-query row caps. Hitting any cap (or the student cap) sets ControlCenterView.truncated. */
+export const CC_LIMITS = { students: STUDENT_LIMIT, progress: 20000, awards: 20000, results: 20000, installments: 5000, tickets: 300, sessions: 200 } as const;
+
+export async function loadControlCenterFacts(db: SqlExecutor, now: Date, limits: typeof CC_LIMITS = CC_LIMITS): Promise<ControlCenterFacts> {
   const monthStart = `${now.toISOString().slice(0, 7)}-01`;
   const OPEN = sql`('planned','active','on_hold')`;
-  const [students, enrollments, progress, awards, results, agreements, docs, evidence, obligations, discounts, receipts, installments, monthReceipts, tickets, sessions] = await Promise.all([
-    db.execute(sql`SELECT id, student_code, first_name, last_name, preferred_name, user_id FROM students ORDER BY created_at DESC, id LIMIT ${STUDENT_LIMIT}`),
+  let truncated = false;
+  // Fetch one extra row to detect that a cap was hit; every list is cut to its cap afterwards.
+  const capped = <T,>(list: T[], cap: number): T[] => { if (list.length > cap) { truncated = true; return list.slice(0, cap); } return list; };
+
+  const studentRows = capped(rows(await db.execute(sql`SELECT id, student_code, first_name, last_name, preferred_name, user_id FROM students ORDER BY created_at DESC, id LIMIT ${limits.students + 1}`)), limits.students);
+  const ids = studentRows.map((r) => String(r.id));
+  // Every other query is restricted to the students actually loaded, with a deterministic order.
+  const IN = ids.length ? sql`(${sql.join(ids.map((i) => sql`${i}`), sql`, `)})` : sql`(NULL)`;
+  const [enrollments, progress, awards, results, agreements, docs, evidence, obligations, discounts, receipts, installments, monthReceipts, tickets, sessions] = await Promise.all([
     db.execute(sql`SELECT e.id, e.student_id, e.status, e.total_required_half_units, e.started_on::text AS started_on, e.created_at, v.content
                      FROM hs_enrollments e LEFT JOIN hs_roadmap_versions v ON v.enrollment_id = e.id AND v.status = 'published'
-                    WHERE e.status IN ${OPEN} LIMIT ${STUDENT_LIMIT}`),
+                    WHERE e.status IN ${OPEN} AND e.student_id IN ${IN} ORDER BY e.created_at DESC, e.id`),
     db.execute(sql`SELECT p.enrollment_id, p.student_id, p.course_key, p.task_key, p.status, p.reported_score_percent, p.updated_at
-                     FROM hs_task_progress p JOIN hs_enrollments e ON e.id = p.enrollment_id WHERE e.status IN ${OPEN} LIMIT 20000`),
+                     FROM hs_task_progress p JOIN hs_enrollments e ON e.id = p.enrollment_id WHERE e.status IN ${OPEN} AND p.student_id IN ${IN}
+                    ORDER BY p.updated_at DESC, p.id LIMIT ${limits.progress + 1}`),
     db.execute(sql`SELECT a.enrollment_id, a.student_id, a.course_key, a.source, a.half_units
-                     FROM hs_credit_awards a JOIN hs_enrollments e ON e.id = a.enrollment_id WHERE a.status = 'active' AND e.status IN ${OPEN} LIMIT 20000`),
+                     FROM hs_credit_awards a JOIN hs_enrollments e ON e.id = a.enrollment_id WHERE a.status = 'active' AND e.status IN ${OPEN} AND a.student_id IN ${IN}
+                    ORDER BY a.recorded_at DESC, a.id LIMIT ${limits.awards + 1}`),
     db.execute(sql`SELECT r.enrollment_id, r.student_id, r.course_key, r.task_key, r.outcome
-                     FROM hs_official_results r JOIN hs_enrollments e ON e.id = r.enrollment_id WHERE r.status = 'active' AND e.status IN ${OPEN} LIMIT 20000`),
+                     FROM hs_official_results r JOIN hs_enrollments e ON e.id = r.enrollment_id WHERE r.status = 'active' AND e.status IN ${OPEN} AND r.student_id IN ${IN}
+                    ORDER BY r.recorded_at DESC, r.id LIMIT ${limits.results + 1}`),
     db.execute(sql`SELECT student_id, signed_on::text AS signed_on, activated_on::text AS activated_on, support_months, access_months, language_test_days, prior_schooling_days,
                           language_test_status, language_test_done_on::text AS language_test_done_on, prior_schooling_status, prior_schooling_done_on::text AS prior_schooling_done_on
-                     FROM student_agreements LIMIT ${STUDENT_LIMIT}`),
-    db.execute(sql`SELECT student_id, count(*)::int AS n FROM student_documents WHERE status = 'pending' AND soft_deleted = false AND doc_type <> 'chat_attachment' GROUP BY student_id LIMIT ${STUDENT_LIMIT}`),
-    db.execute(sql`SELECT student_id, count(*)::int AS n FROM student_billing_evidence WHERE status = 'awaiting_review' GROUP BY student_id LIMIT ${STUDENT_LIMIT}`),
-    db.execute(sql`SELECT student_id, agreed_cents::bigint AS agreed_cents, currency FROM student_billing_obligations LIMIT ${STUDENT_LIMIT}`),
-    db.execute(sql`SELECT student_id, COALESCE(SUM(amount_cents),0)::bigint AS total FROM student_billing_discounts WHERE voided_at IS NULL GROUP BY student_id LIMIT ${STUDENT_LIMIT}`),
-    db.execute(sql`SELECT student_id, COALESCE(SUM(amount_cents),0)::bigint AS total FROM student_billing_receipts WHERE voided_at IS NULL GROUP BY student_id LIMIT ${STUDENT_LIMIT}`),
-    db.execute(sql`SELECT id, student_id, due_date::text AS due_date, amount_cents::bigint AS amount_cents, label, sort_order FROM student_billing_installments ORDER BY due_date LIMIT 5000`),
-    db.execute(sql`SELECT student_id, COALESCE(SUM(amount_cents),0)::bigint AS total FROM student_billing_receipts WHERE voided_at IS NULL AND received_date >= ${monthStart}::date GROUP BY student_id LIMIT ${STUDENT_LIMIT}`),
+                     FROM student_agreements WHERE student_id IN ${IN} ORDER BY student_id`),
+    db.execute(sql`SELECT student_id, count(*)::int AS n FROM student_documents WHERE status = 'pending' AND soft_deleted = false AND doc_type <> 'chat_attachment' AND student_id IN ${IN} GROUP BY student_id ORDER BY student_id`),
+    db.execute(sql`SELECT student_id, count(*)::int AS n FROM student_billing_evidence WHERE status = 'awaiting_review' AND student_id IN ${IN} GROUP BY student_id ORDER BY student_id`),
+    db.execute(sql`SELECT student_id, agreed_cents::bigint AS agreed_cents, currency FROM student_billing_obligations WHERE student_id IN ${IN} ORDER BY student_id`),
+    db.execute(sql`SELECT student_id, COALESCE(SUM(amount_cents),0)::bigint AS total FROM student_billing_discounts WHERE voided_at IS NULL AND student_id IN ${IN} GROUP BY student_id ORDER BY student_id`),
+    db.execute(sql`SELECT student_id, COALESCE(SUM(amount_cents),0)::bigint AS total FROM student_billing_receipts WHERE voided_at IS NULL AND student_id IN ${IN} GROUP BY student_id ORDER BY student_id`),
+    db.execute(sql`SELECT id, student_id, due_date::text AS due_date, amount_cents::bigint AS amount_cents, label, sort_order FROM student_billing_installments
+                    WHERE student_id IN ${IN} ORDER BY due_date, sort_order, id LIMIT ${limits.installments + 1}`),
+    db.execute(sql`SELECT student_id, COALESCE(SUM(amount_cents),0)::bigint AS total FROM student_billing_receipts WHERE voided_at IS NULL AND received_date >= ${monthStart}::date AND student_id IN ${IN} GROUP BY student_id ORDER BY student_id`),
     db.execute(sql`SELECT t.id, t.subject, t.status, t.created_at, s.id AS student_id FROM support_tickets t JOIN students s ON s.user_id = t.reporter_id
-                    WHERE t.status IN ('open','in_progress','waiting_on_student') ORDER BY t.created_at LIMIT 300`),
-    db.execute(sql`SELECT id, student_id, slot_at FROM orientation_sessions WHERE status = 'requested' ORDER BY slot_at LIMIT 200`),
+                    WHERE t.status IN ('open','in_progress','waiting_on_student') AND s.id IN ${IN} ORDER BY t.created_at, t.id LIMIT ${limits.tickets + 1}`),
+    db.execute(sql`SELECT id, student_id, slot_at FROM orientation_sessions WHERE status = 'requested' AND student_id IN ${IN} ORDER BY slot_at, id LIMIT ${limits.sessions + 1}`),
   ]);
+  const cap = (r: unknown, n: number) => capped(rows(r), n);
+  const progressRows = cap(progress, limits.progress);
+  const awardRows = cap(awards, limits.awards);
+  const resultRows = cap(results, limits.results);
+  const installmentRows = cap(installments, limits.installments);
+  const ticketRows = cap(tickets, limits.tickets);
+  const sessionRows = cap(sessions, limits.sessions);
 
   const discBy = new Map(rows(discounts).map((r) => [String(r.student_id), Number(r.total)] as const));
   const paidBy = new Map(rows(receipts).map((r) => [String(r.student_id), Number(r.total)] as const));
-  const instBy = groupBy(rows(installments), (r) => String(r.student_id));
+  const instBy = groupBy(installmentRows, (r) => String(r.student_id));
   return {
-    students: rows(students).map((r) => ({ id: String(r.id), code: str(r.student_code), name: `${r.first_name} ${r.last_name}`.trim(), preferredName: str(r.preferred_name), userId: str(r.user_id) })),
+    students: studentRows.map((r) => ({ id: String(r.id), code: str(r.student_code), name: `${r.first_name} ${r.last_name}`.trim(), preferredName: str(r.preferred_name), userId: str(r.user_id) })),
     enrollments: rows(enrollments).map((r) => ({ id: String(r.id), studentId: String(r.student_id), status: String(r.status), requiredHalfUnits: Number(r.total_required_half_units), startedOn: str(r.started_on), createdAt: iso(r.created_at), content: (r.content as CcEnrollment["content"]) ?? null })),
-    progress: rows(progress).map((r) => ({ enrollmentId: String(r.enrollment_id), studentId: String(r.student_id), courseKey: String(r.course_key), taskKey: String(r.task_key), status: String(r.status), reportedScorePercent: r.reported_score_percent === null ? null : Number(r.reported_score_percent), updatedAt: iso(r.updated_at) })),
-    awards: rows(awards).map((r) => ({ enrollmentId: String(r.enrollment_id), studentId: String(r.student_id), courseKey: str(r.course_key), source: String(r.source), halfUnits: Number(r.half_units) })),
-    results: rows(results).map((r) => ({ enrollmentId: String(r.enrollment_id), studentId: String(r.student_id), courseKey: String(r.course_key), taskKey: str(r.task_key), outcome: String(r.outcome) })),
+    progress: progressRows.map((r) => ({ enrollmentId: String(r.enrollment_id), studentId: String(r.student_id), courseKey: String(r.course_key), taskKey: String(r.task_key), status: String(r.status), reportedScorePercent: r.reported_score_percent === null ? null : Number(r.reported_score_percent), updatedAt: iso(r.updated_at) })),
+    awards: awardRows.map((r) => ({ enrollmentId: String(r.enrollment_id), studentId: String(r.student_id), courseKey: str(r.course_key), source: String(r.source), halfUnits: Number(r.half_units) })),
+    results: resultRows.map((r) => ({ enrollmentId: String(r.enrollment_id), studentId: String(r.student_id), courseKey: String(r.course_key), taskKey: str(r.task_key), outcome: String(r.outcome) })),
     agreements: rows(agreements).map((r) => ({
       studentId: String(r.student_id), signedOn: str(r.signed_on), activatedOn: str(r.activated_on), supportMonths: Number(r.support_months), accessMonths: Number(r.access_months),
       languageTestDays: Number(r.language_test_days), priorSchoolingDays: Number(r.prior_schooling_days),
@@ -302,8 +326,9 @@ export async function loadControlCenterFacts(db: SqlExecutor, now: Date): Promis
       installments: (instBy.get(String(r.student_id)) ?? []).map((i) => ({ id: String(i.id), dueDate: String(i.due_date), amountCents: Number(i.amount_cents), sortOrder: Number(i.sort_order), label: str(i.label) })),
     })),
     receiptsThisMonth: rows(monthReceipts).map((r) => ({ studentId: String(r.student_id), amountCents: Number(r.total) })),
-    tickets: rows(tickets).map((r) => ({ id: String(r.id), studentId: String(r.student_id), subject: String(r.subject), status: String(r.status), createdAt: iso(r.created_at) })),
-    sessionRequests: rows(sessions).map((r) => ({ id: String(r.id), studentId: String(r.student_id), slotAt: iso(r.slot_at) })),
+    tickets: ticketRows.map((r) => ({ id: String(r.id), studentId: String(r.student_id), subject: String(r.subject), status: String(r.status), createdAt: iso(r.created_at) })),
+    sessionRequests: sessionRows.map((r) => ({ id: String(r.id), studentId: String(r.student_id), slotAt: iso(r.slot_at) })),
+    truncated,
   };
 }
 
@@ -311,5 +336,3 @@ export async function computeControlCenter(db: SqlExecutor, now: Date): Promise<
   return buildControlCenter(await loadControlCenterFacts(db, now), now);
 }
 
-// re-export for callers that only need the date helper
-export { addDays };

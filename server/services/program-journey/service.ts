@@ -222,6 +222,7 @@ export function createProgramJourneyService(deps: JourneyDeps) {
       }
       if (input.goal !== undefined) set("goal", input.goal as PostSecondaryGoal | null);
 
+      if (next.signedOn && next.activatedOn && next.activatedOn < next.signedOn) throw new JourneyError(E.VALIDATION, 400, "Activation cannot be before signing");
       await tx.execute(sql`
         INSERT INTO student_agreements (student_id, signed_on, activated_on, support_months, access_months, language_test_days, prior_schooling_days,
           orientation_sessions_included, language_test_status, language_test_done_on, language_test_score, language_test_target,

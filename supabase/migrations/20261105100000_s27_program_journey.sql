@@ -13,10 +13,19 @@
   20261104110000_s25_client_write_lockdown.sql. Student-facing data is served only through server projections
   (agreement view, checkpoints, own sessions); staff notes are never part of any student projection.
 
-  Audit: the new audit event types are added at the end (ALTER TYPE ... ADD VALUE IF NOT EXISTS). This file
+  Audit: the new audit event types are added first (ALTER TYPE ... ADD VALUE IF NOT EXISTS). This file
   deliberately has no BEGIN/COMMIT so each statement commits on its own (a new enum value cannot be used in the
   transaction that adds it, and nothing here uses them).
 */
+
+-- Enum values FIRST: a run that stops part-way can never leave the tables present without their audit event types
+-- (the release check treats "4 tables + RLS + privileges + 6 enum values" as applied).
+ALTER TYPE public.audit_event_type ADD VALUE IF NOT EXISTS 'program.agreement_updated';
+ALTER TYPE public.audit_event_type ADD VALUE IF NOT EXISTS 'program.checkpoint_updated';
+ALTER TYPE public.audit_event_type ADD VALUE IF NOT EXISTS 'program.session_requested';
+ALTER TYPE public.audit_event_type ADD VALUE IF NOT EXISTS 'program.session_updated';
+ALTER TYPE public.audit_event_type ADD VALUE IF NOT EXISTS 'program.note_added';
+ALTER TYPE public.audit_event_type ADD VALUE IF NOT EXISTS 'program.access_denied';
 
 CREATE TABLE IF NOT EXISTS student_agreements (
   student_id text PRIMARY KEY REFERENCES students(id) ON DELETE CASCADE,
@@ -94,10 +103,3 @@ BEGIN
   END LOOP;
 END
 $$;
-
-ALTER TYPE public.audit_event_type ADD VALUE IF NOT EXISTS 'program.agreement_updated';
-ALTER TYPE public.audit_event_type ADD VALUE IF NOT EXISTS 'program.checkpoint_updated';
-ALTER TYPE public.audit_event_type ADD VALUE IF NOT EXISTS 'program.session_requested';
-ALTER TYPE public.audit_event_type ADD VALUE IF NOT EXISTS 'program.session_updated';
-ALTER TYPE public.audit_event_type ADD VALUE IF NOT EXISTS 'program.note_added';
-ALTER TYPE public.audit_event_type ADD VALUE IF NOT EXISTS 'program.access_denied';
