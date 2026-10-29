@@ -1,9 +1,9 @@
 {
-  "studentId": "1ca8f50f-1d01-4779-bc61-0617a9842f49",
-  "planId": "dc1e1e9b-eaf0-411d-9541-5b76da2c066e",
+  "studentId": "6a6c7f61-66b9-44a5-ac84-8c6a9fa23018",
+  "planId": "be7ab83a-ecd9-4823-b605-a5ab84a1b6b3",
   "published": null,
   "draft": {
-    "versionId": "6347ed72-ec5e-4bcd-bdc3-d0577987ec68",
+    "versionId": "e27da3b6-22d2-4fb6-a74c-030c374c8103",
     "versionNumber": 1,
     "draftRevision": 0,
     "baseVersionId": null,
@@ -3516,7 +3516,7 @@
         "key": "SCHEDULE_STALE:plan",
         "code": "SCHEDULE_STALE",
         "severity": "warning",
-        "message": "The schedule dates from 2026-08-24 (more than 21 days before 2026-10-27); 4 planned item(s) are past due and the student has recorded no progress. Rebaseline the schedule before publishing.",
+        "message": "The schedule dates from 2026-08-24 (more than 21 days before 2026-10-29); 4 planned item(s) are past due and the student has recorded no progress. Rebaseline the schedule before publishing.",
         "ref": {
           "path": "schedule"
         }
@@ -3636,10 +3636,10 @@
       "milestonesChanged": false
     },
     "import": {
-      "importId": "59e3ead0-c2f0-4c44-abff-f6125b14de7f",
+      "importId": "c2b3d047-1b35-45d6-bfa4-ff5636065a21",
       "templateId": "lumiere-degree-master-v1+lumiere-execution-v1",
       "fileName": "eph-master-v1.xlsx + eph-execution-v1.xlsx",
-      "fileSha256": "e67f4f2126ef1b83b2a2afa8487a8f547bcf555edd1d8039c40b40f7aa23a3c9",
+      "fileSha256": "06c50b17d1708ce580fda89ae851fd6f11a120faec9f558649fd40e1e1708707",
       "summary": {
         "kind": "workbook",
         "fileName": "eph-master-v1.xlsx + eph-execution-v1.xlsx",
@@ -3668,15 +3668,15 @@
   },
   "versions": [
     {
-      "versionId": "6347ed72-ec5e-4bcd-bdc3-d0577987ec68",
+      "versionId": "e27da3b6-22d2-4fb6-a74c-030c374c8103",
       "versionNumber": 1,
       "status": "draft",
       "title": "TESU BSBA in Accounting roadmap",
-      "createdAt": "2026-10-27T21:37:33.852Z",
-      "createdBy": "e268b5f6-f527-4061-864f-8316bac4f018",
+      "createdAt": "2026-10-29T10:43:23.570Z",
+      "createdBy": "1d7b028f-de8c-4cfe-ba9e-0f6465fc6ea3",
       "publishedAt": null,
       "publishedBy": null,
-      "importId": "59e3ead0-c2f0-4c44-abff-f6125b14de7f"
+      "importId": "c2b3d047-1b35-45d6-bfa4-ff5636065a21"
     }
   ]
 }

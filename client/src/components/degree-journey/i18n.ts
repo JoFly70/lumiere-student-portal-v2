@@ -120,7 +120,7 @@ export const djEn = {
   "dj.sheet.none": "Nothing to log yet. Courses you can work on will appear here.",
   "dj.sheet.due": "planned {date}",
   "dj.sheet.statusAria": "{task}: status. Change status",
-  "dj.sheet.saved": "Saved. {title} updated.",
+  "dj.sheet.saved": "{title} updated",
 
   "dj.state.notPublished.title": "Your roadmap is being prepared",
   "dj.state.notPublished.body": "Lumière has not published your plan yet. We will let you know when it is ready.",
@@ -242,7 +242,7 @@ export const djFr: Record<DjKey, string> = {
   "dj.sheet.none": "Rien à noter pour l’instant. Les cours sur lesquels vous pouvez travailler apparaîtront ici.",
   "dj.sheet.due": "prévu le {date}",
   "dj.sheet.statusAria": "{task} : état. Changer l’état",
-  "dj.sheet.saved": "Enregistré. {title} est à jour.",
+  "dj.sheet.saved": "{title} mis à jour",
 
   "dj.state.notPublished.title": "Votre feuille de route est en préparation",
   "dj.state.notPublished.body": "Lumière n’a pas encore publié votre plan. Nous vous préviendrons dès qu’il sera prêt.",

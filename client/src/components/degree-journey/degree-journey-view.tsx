@@ -10,7 +10,8 @@ import type { StudentRoadmapView } from "@shared/student-roadmap-contract";
 import type { StudentDegreeProgressView } from "@shared/student-degree-progress-view";
 import { primaryObjectiveTitle, FLIGHT_DECK_PATH, itemsByKey } from "@/pages/student-roadmap-presentation";
 import { Eyebrow, StudentSurface, buttonClass } from "@/components/student-progress/student-ui";
-import { buildCreditsBySource, splitCourses } from "./model";
+import { buildCreditsBySource, buildWarnings, splitCourses } from "./model";
+import { WarningsCard } from "./warnings";
 import { CreditsCard } from "./credits-card";
 import { CompletedSection, NowSection, UpNextSection } from "./courses";
 import { LogSheet } from "./log-sheet";
@@ -20,6 +21,7 @@ export function DegreeJourneyView({ roadmap, progress }: { roadmap: StudentRoadm
   const { t } = useDj();
   const buckets = useMemo(() => splitCourses(roadmap), [roadmap]);
   const credits = useMemo(() => buildCreditsBySource(roadmap, progress), [roadmap, progress]);
+  const warnings = useMemo(() => buildWarnings(roadmap, progress), [roadmap, progress]);
   const byKey = useMemo(() => itemsByKey(roadmap), [roadmap]);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
@@ -55,6 +57,7 @@ export function DegreeJourneyView({ roadmap, progress }: { roadmap: StudentRoadm
         </header>
 
         <CreditsCard data={credits} />
+        <WarningsCard warnings={warnings} />
         <NowSection items={buckets.now} onLog={(key, el) => openLog(key, el)} />
         <UpNextSection items={buckets.upNext} startNumber={buckets.now.length + 1} titleOf={(k) => byKey.get(k)?.title ?? null} />
         <CompletedSection items={buckets.completed} />
