@@ -37,23 +37,26 @@ export function DegreePlanTab({ studentId, vm }: { studentId: string; vm?: Works
   const sources = creditsBySource(academicCreditRows(vm.academicDetail) as never, t("owner.plan.otherSource"));
   const total = sources.reduce((a, s) => a + s.accepted + s.waiting, 0);
   const accepted = sources.reduce((a, s) => a + s.accepted, 0);
+  const waitingTotal = total - accepted;
+  const noneAccepted = accepted === 0 && waitingTotal > 0;
   const checks = vm.attention.items;
   return (
     <div className="space-y-6" data-testid="degree-plan-tab">
-      <Panel id="dp-sources" title={t("owner.plan.where", { n: fmtN(accepted) })} testId="degree-sources"
+      <Panel id="dp-sources" title={noneAccepted ? t("owner.plan.whereWaiting", { n: fmtN(waitingTotal) }) : t("owner.plan.where", { n: fmtN(accepted) })} testId="degree-sources"
         actions={<Link href={`${base}/roadmap`} className={cn(ownerBtn.seal, "inline-flex items-center")} data-testid="degree-open-full">{t("owner.plan.open")}</Link>}>
         {total === 0 ? <p className="text-sm text-student-muted">{t("owner.plan.noCredits")}</p> : (
           <>
+            {noneAccepted ? <p className="mb-2 text-sm font-medium text-student-ink" data-testid="degree-none-accepted">{t("owner.plan.noneAccepted")}</p> : null}
             <div role="img" aria-label={sources.map((s) => `${s.source}: ${fmtN(s.accepted + s.waiting)}`).join(", ")} className="flex h-3 overflow-hidden rounded-full bg-student-line">
-              {sources.map((s, i) => (s.accepted + s.waiting > 0 ? <span key={s.source} className={cn("h-full border-r-2 border-student-card last:border-r-0", SWATCH[i % SWATCH.length])} style={{ width: `${((s.accepted + s.waiting) / total) * 100}%` }} /> : null))}
+              {sources.map((s, i) => (s.accepted + s.waiting > 0 ? <span key={s.source} className={cn("h-full border-r-2 border-student-card last:border-r-0", noneAccepted ? "bg-student-line-strong/60" : SWATCH[i % SWATCH.length])} style={{ width: `${((s.accepted + s.waiting) / total) * 100}%` }} /> : null))}
             </div>
             <ul className="mt-4 space-y-2" data-testid="degree-source-list">
               {sources.map((s, i) => (
                 <li key={s.source} className="flex items-center gap-3 text-sm">
-                  <span aria-hidden="true" className={cn("h-3 w-3 shrink-0 rounded-sm", SWATCH[i % SWATCH.length])} />
+                  <span aria-hidden="true" className={cn("h-3 w-3 shrink-0 rounded-sm", noneAccepted ? "border border-dashed border-student-line-strong bg-student-card" : SWATCH[i % SWATCH.length])} />
                   <span className="min-w-0 flex-1 truncate text-student-ink">{s.source}</span>
                   {s.waiting > 0 ? <span className="text-xs text-student-muted">{t("owner.plan.waiting", { n: fmtN(s.waiting) })}</span> : null}
-                  <span className="font-semibold tabular-nums text-student-ink">{fmtN(s.accepted)}</span>
+                  <span className="font-semibold tabular-nums text-student-ink">{noneAccepted ? "–" : fmtN(s.accepted)}</span>
                 </li>
               ))}
             </ul>
