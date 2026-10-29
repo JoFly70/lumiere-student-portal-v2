@@ -6,6 +6,8 @@
  * numeric conversions (`barFraction`) size graphics and are never rendered.
  * There is deliberately no weighted overall percentage.
  */
+import { currentLanguage, type Language } from "@/i18n";
+import { djTranslate } from "@/components/degree-journey/i18n";
 import type {
   RoadmapTaskKind,
   StudentItemStage,
@@ -341,8 +343,8 @@ export const PROVIDER_COMPLETE_CONFIRM = {
   cancel: "Not yet",
 } as const;
 
-export function savedMessage(label: string): string {
-  return `Saved: ${label}.`;
+export function savedMessage(label: string, lang: Language = currentLanguage()): string {
+  return djTranslate(lang, "dj.save.saved", { label });
 }
 
 export function taskSavedLabel(task: StudentTaskView, status: StudentTaskStatus): string {

@@ -251,7 +251,7 @@ function findCycles(content: RoadmapContent): string[][] {
 const RESCHEDULE_FIELDS = new Set(["plannedStart", "plannedEnd", "sequence", "phaseKey", "taskSchedule"]);
 // S07 fields are compared too; `provenance` is deliberately not (it is not a plan change).
 const ITEM_FIELDS: readonly (keyof RoadmapItem)[] = [
-  "phaseKey", "objectiveKey", "sequence", "kind", "code", "title", "provider", "institution", "credits",
+  "phaseKey", "objectiveKey", "sequence", "kind", "code", "title", "provider", "institution", "providerUrl", "credits",
   "plannedStart", "plannedEnd", "dependsOn", "planStatus", "hold", "approval", "alternativeOf",
   "linkedCreditRecordId", "studentNote", "staffNote",
   "condition", "registration", "registrationGate", "creditUse", "equivalency",

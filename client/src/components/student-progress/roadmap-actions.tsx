@@ -16,6 +16,8 @@ import {
   postStudentProgress,
 } from "@/lib/student-roadmap-queries";
 import type { StudentRoadmapView } from "@shared/student-roadmap-contract";
+import { currentLanguage } from "@/i18n";
+import { djTranslate } from "@/components/degree-journey/i18n";
 import { rowKey, savedMessage } from "@/pages/student-roadmap-presentation";
 
 /** The revision the authoritative view now holds for a row. */
@@ -43,11 +45,14 @@ export interface RoadmapActions {
   /** `previous` is the status before this change; when given, the confirmation offers Undo. */
   report(update: StudentProgressUpdate, label: string, previous?: StudentProgressUpdate["status"]): Promise<void>;
   isPending(key: string): boolean;
+  /** Latest save/failure message (also announced by the provider's own live region). */
+  message: string;
 }
 
 const RoadmapActionsContext = createContext<RoadmapActions>({
   report: async () => {},
   isPending: () => false,
+  message: "",
 });
 
 export function useRoadmapActions(): RoadmapActions {
@@ -81,7 +86,7 @@ export function RoadmapActionsProvider({ children }: { children: React.ReactNode
         const rev = previous !== undefined ? revisionIn(view, update) : null;
         setUndo(
           previous !== undefined && rev !== null
-            ? { update: { ...update, status: previous, expectedRevision: rev }, label: "your last change was undone" }
+            ? { update: { ...update, status: previous, expectedRevision: rev }, label: djTranslate(currentLanguage(), "dj.save.undone") }
             : null,
         );
       } catch (error) {
@@ -92,7 +97,7 @@ export function RoadmapActionsProvider({ children }: { children: React.ReactNode
         setMessage(failure.message);
         setUndo(null);
         toast({
-          title: failure.kind === "conflict" ? "Your roadmap was refreshed" : "We could not save that",
+          title: djTranslate(currentLanguage(), failure.kind === "conflict" ? "dj.save.refreshedTitle" : "dj.save.failedTitle"),
           description: failure.message,
           variant: failure.kind === "error" ? "destructive" : undefined,
         });
@@ -108,8 +113,8 @@ export function RoadmapActionsProvider({ children }: { children: React.ReactNode
   );
 
   const value = useMemo<RoadmapActions>(
-    () => ({ report, isPending: (key) => pending.has(key) }),
-    [report, pending],
+    () => ({ report, isPending: (key) => pending.has(key), message }),
+    [report, pending, message],
   );
 
   return (
@@ -120,7 +125,7 @@ export function RoadmapActionsProvider({ children }: { children: React.ReactNode
       </div>
       {message && (
         <div
-          className="student-surface pointer-events-none fixed inset-x-3 bottom-[calc(4rem+env(safe-area-inset-bottom)+0.5rem)] z-40 mx-auto flex w-fit max-w-[calc(100vw-1.5rem)] items-center gap-3 rounded-full bg-student-seal py-1.5 pl-4 pr-2 text-sm font-medium text-student-seal-ink shadow-lg md:inset-x-auto md:bottom-4 md:left-1/2 md:-translate-x-1/2"
+          className="student-surface pointer-events-none fixed inset-x-3 bottom-[calc(4rem+env(safe-area-inset-bottom)+0.5rem)] z-[60] mx-auto flex w-fit max-w-[calc(100vw-1.5rem)] items-center gap-3 rounded-full bg-student-seal py-1.5 pl-4 pr-2 text-sm font-medium text-student-seal-ink shadow-lg md:inset-x-auto md:bottom-4 md:left-1/2 md:-translate-x-1/2"
           data-testid="save-toast"
         >
           <span aria-hidden="true">{message}</span>
@@ -136,7 +141,7 @@ export function RoadmapActionsProvider({ children }: { children: React.ReactNode
               className="pointer-events-auto min-h-[36px] rounded-full border border-student-seal-ink px-3 text-sm font-semibold hover:opacity-80"
               data-testid="button-undo"
             >
-              Undo
+              {djTranslate(currentLanguage(), "dj.save.undo")}
             </button>
           )}
         </div>

@@ -124,6 +124,25 @@ export const roadmapItemSchema = z.object({
   provider: optText(120),
   /** Institution that will grant/accept the credit (e.g. the degree school). */
   institution: optText(200),
+  /**
+   * Optional https link to open the course at its provider (shown to the student as
+   * "Open course"). Staff-authored; never a credit or acceptance claim.
+   */
+  providerUrl: z
+    .string()
+    .trim()
+    .max(500)
+    .regex(/^https:\/\/[^\s]+$/i, "must be an https:// link")
+    .refine((v) => {
+      try {
+        const u = new URL(v);
+        return u.protocol === "https:" && !u.username && !u.password && u.hostname.length > 0;
+      } catch {
+        return false;
+      }
+    }, "must be an https:// link without a username or password")
+    .nullable()
+    .optional(),
   /** Planned credit value (informational; never an award). */
   credits: creditAmountSchema.nullable().optional(),
   plannedStart: isoDateSchema.nullable().optional(),
@@ -563,6 +582,8 @@ export interface StudentRoadmapItemView {
   readonly title: string;
   readonly provider: string | null;
   readonly institution: string | null;
+  /** Optional https link to the course at its provider; absent when staff have not set one. */
+  readonly providerUrl?: string;
   readonly credits: string | null;
   readonly plannedStart: string | null;
   readonly plannedEnd: string | null;
