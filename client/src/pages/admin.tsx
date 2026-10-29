@@ -17,10 +17,9 @@ import {
   LifeBuoy,
 } from "lucide-react";
 import { apiRequest } from "@/lib/api";
-import { AddStudentDialog } from "@/components/admin/add-student-dialog";
 import { ProgramsManagement } from "@/components/programs-management";
 import { KnowledgeSources } from "@/components/knowledge-sources";
-import { Link, useLocation, useSearch } from "wouter";
+import { Link, Redirect, useLocation, useSearch } from "wouter";
 import { isSyntheticAccount } from "@shared/synthetic-accounts";
 import {
   adminStudentWorkspacePath,
@@ -311,98 +310,6 @@ function UserManagement() {
   );
 }
 
-// Student Management Tab
-function StudentManagement() {
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [showTest, setShowTest] = useState(false);
-  const [, setLocation] = useLocation();
-
-  const { data, isLoading } = useQuery<{ students: Student[] }>({
-    queryKey: ['/api/admin/students', { search, status: statusFilter !== 'all' ? statusFilter : undefined }],
-  });
-
-  if (isLoading) {
-    return <div className="py-12 text-center text-student-muted">Loading students...</div>;
-  }
-  const isTest = (st: Student) => isSyntheticAccount({ email: st.email, first_name: st.first_name, preferred_name: st.preferred_name, name: `${st.first_name} ${st.last_name}` });
-  const allStudents = data?.students ?? [];
-  const testCount = allStudents.filter(isTest).length;
-  const students = showTest ? allStudents : allStudents.filter((st) => !isTest(st));
-
-  return (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="relative flex-1">
-          <Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-student-muted" aria-hidden="true" />
-          <label htmlFor="admin-student-search" className="sr-only">Search students</label>
-          <Input
-            id="admin-student-search"
-            placeholder="Search students..."
-            className={cn(staffField, "pl-9")}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className={cn(selectTrigger, "sm:w-44")} aria-label="Filter by status">
-            <SelectValue placeholder="Filter by status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All statuses</SelectItem>
-            <SelectItem value="lead">Lead</SelectItem>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="paused">Paused</SelectItem>
-            <SelectItem value="graduated">Graduated</SelectItem>
-          </SelectContent>
-        </Select>
-        <TestAccountsToggle id="admin-students-show-test" count={testCount} checked={showTest} onChange={setShowTest} noun="students" />
-        <AddStudentDialog />
-      </div>
-
-      <div className={cn(staffTable.frame, "relative overflow-x-auto")}>
-        <table className={cn(staffTable.table, "min-w-[22rem] sm:min-w-[32rem]")} data-testid="students-table">
-          <caption className="sr-only">Students</caption>
-          <thead>
-            <tr>
-              <th scope="col" className={staffTable.th}>Student</th>
-              <th scope="col" className={cn(staffTable.th, "hidden md:table-cell")}>Code</th>
-              <th scope="col" className={cn(staffTable.th, "hidden sm:table-cell")}>Status</th>
-              <th scope="col" className={cn(staffTable.th, "hidden lg:table-cell")}>Residency</th>
-              <th scope="col" className={cn(staffTable.th, "text-right")}><span className="sr-only">Actions</span></th>
-            </tr>
-          </thead>
-          <tbody>
-            {students.map((student) => (
-              <tr key={student.id} className={staffTable.tr}>
-                <td className={staffTable.td}>
-                  <div className="flex items-center gap-3">
-                    <StaffAvatar name={`${student.first_name} ${student.last_name}`} />
-                    <div className="min-w-0 max-w-[14rem] sm:max-w-[18rem]">
-                      <div className="flex min-w-0 items-center gap-2"><p className="min-w-0 truncate font-medium text-student-ink" title={`${student.first_name} ${student.last_name}`}>{student.first_name} {student.last_name}</p>{isTest(student) ? <StaffPill tone="attention" className="shrink-0">Test account</StaffPill> : null}</div>
-                      <p className="min-w-0 truncate text-xs text-student-muted" title={student.email}>{student.email}</p>
-                      <div className="mt-1 sm:hidden"><StudentStatusPill status={student.status} /></div>
-                    </div>
-                  </div>
-                </td>
-                <td className={cn(staffTable.td, "hidden font-mono text-xs text-student-muted md:table-cell")}>{student.student_code}</td>
-                <td className={cn(staffTable.td, "hidden sm:table-cell")}><StudentStatusPill status={student.status} /></td>
-                <td className={cn(staffTable.td, "hidden text-student-muted lg:table-cell")}>{sentence(student.residency)}</td>
-                <td className={cn(staffTable.td, "text-right")}>
-                  <Button variant="outline" size="sm" className={staffBtn.outline} aria-label={`Open ${student.first_name} ${student.last_name}`} onClick={() => setLocation(adminStudentWorkspacePath(student.id))}>
-                    <span className="hidden sm:inline">Open workspace</span><ArrowRight className="h-4 w-4" aria-hidden="true" />
-                  </Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {!students.length && <p className="px-4 py-6 text-center text-sm text-student-muted">No students match.</p>}
-      </div>
-    </div>
-  );
-}
-
 // Audit Logs Tab
 function AuditLogs() {
   const [dateRange, setDateRange] = useState("7d");
@@ -470,6 +377,8 @@ export default function Admin() {
   const [, setLocation] = useLocation();
   const search = useSearch();
   const selectedTab = adminTabFromSearch(search);
+  // The directory moved to its own page; the legacy /admin?tab=students link keeps working.
+  if (selectedTab === "students") return <Redirect to="/admin/students" />;
   return (
     <StaffPage>
       <StaffPageHeader
@@ -486,7 +395,7 @@ export default function Admin() {
         <span className="flex min-w-0 items-center gap-3">
           <LifeBuoy className="h-6 w-6 shrink-0" aria-hidden="true" />
           <span className="min-w-0">
-            <span className="block font-serif text-lg">Control Center</span>
+            <span className="block font-serif text-lg">Command Center</span>
             <span className="block text-sm text-student-muted">Who needs help now: open cases, documents awaiting review, student files.</span>
           </span>
         </span>
@@ -507,10 +416,6 @@ export default function Admin() {
             <TabsTrigger value="users" className={TAB_TRIGGER}>
               <Users className="h-4 w-4" aria-hidden="true" />
               Users
-            </TabsTrigger>
-            <TabsTrigger value="students" className={TAB_TRIGGER}>
-              <GraduationCap className="h-4 w-4" aria-hidden="true" />
-              Students
             </TabsTrigger>
             <TabsTrigger value="programs" className={TAB_TRIGGER}>
               <BookOpen className="h-4 w-4" aria-hidden="true" />
@@ -533,10 +438,6 @@ export default function Admin() {
 
         <TabsContent value="users" className="mt-0">
           <UserManagement />
-        </TabsContent>
-
-        <TabsContent value="students" className="mt-0">
-          <StudentManagement />
         </TabsContent>
 
         <TabsContent value="programs" className="mt-0">

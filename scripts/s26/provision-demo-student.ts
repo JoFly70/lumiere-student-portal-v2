@@ -231,6 +231,15 @@ async function main() {
         officialCreditsEarned: rs.current!.credits.earnedHalfUnits / 2, studentStatus: real!.status, portalLinked: !!real!.user_id,
       };
     }
+    // DEMO cohort (owner order S26-PREMIUM-UX…): synthetic personas, tickets, documents, billing and the
+    // DEMO MIRROR of the first student's scenario. Failures are reported per persona/step, never fatal.
+    try {
+      const { provisionDemoCohort } = await import("./demo-cohort");
+      out.demoCohort = await provisionDemoCohort({ actorId, supabaseAdmin, warnings }, arg("--real-code"));
+    } catch (e) {
+      warnings.demoCohort = String((e as Error)?.message ?? e).slice(0, 200);
+    }
+
     // Confidential first-student intake (portrait, contract PDF, proposed billing): only when the owner has
     // placed the private handoff in the git-ignored s26-private-intake/ folder. Runs through the live app's
     // authenticated APIs; its evidence (s26-evidence/intake.json) holds field names and statuses only.

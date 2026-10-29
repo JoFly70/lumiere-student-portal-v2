@@ -4,7 +4,7 @@
  * support and billing queries for the operational pulse. Read-only. No synthetic data is imported here.
  * Renders inside the normal student shell (the shell provides navigation).
  */
-import { Link } from "wouter";
+import { Link, useSearch } from "wouter";
 import type { AcademicProjection } from "@shared/academic-projection-contract";
 import { StudentSurface } from "@/components/student-progress/student-ui";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,6 +14,13 @@ import { useT } from "@/i18n";
 import { isNoHighSchoolEnrollment, useAcademicProjection } from "@/lib/academic-projection-queries";
 import { deckState } from "@/lib/academic-flight-deck-presentation";
 import { WelcomeBanner } from "@/components/cockpit/welcome-banner";
+import { StudentHome } from "@/components/high-school/student-home";
+import { HsActionsProvider } from "@/components/high-school/hs-actions";
+import { HsNoRoadmap } from "@/components/high-school/states";
+import { useStudentProfile } from "@/hooks/use-student-profile";
+import { useTickets } from "@/hooks/use-tickets";
+import { isNoEnrollment, useHighSchoolView } from "@/lib/high-school-queries";
+import { todayIso } from "@/pages/high-school-presentation";
 import "@/styles/flight-deck-preview.css";
 import "@/styles/academic-flight-deck.css";
 
@@ -103,11 +110,46 @@ export function HighSchoolFlightDeckView({ projection }: { projection: AcademicP
   );
 }
 
-export default function HighSchoolFlightDeck() {
+/** The flagship home: next action, 21-credit progress, tasks, milestones, support and billing at a glance. */
+function StudentHomeContainer() {
+  const { data: view, isLoading, error, refetch } = useHighSchoolView();
+  const { data: profile } = useStudentProfile();
+  const { ops } = useCockpitOps();
+  const tickets = useTickets({ limit: 100 });
+  if (isLoading) return <Loading />;
+  if (isNoEnrollment(error)) return <NoEnrollment />;
+  if (error || !view) return <LoadError onRetry={() => refetch()} />;
+  const identity = profile?.identity;
+  const name = identity ? (identity.preferredName?.trim() || identity.firstName) : "";
+  if (!view.roadmap) {
+    return <Shell testId="hs-flight-deck-not-ready"><div className="mx-auto max-w-3xl"><HsNoRoadmap /></div></Shell>;
+  }
+  return (
+    <HsActionsProvider>
+      <StudentSurface testId="hs-flight-deck">
+        <StudentHome
+          view={view}
+          identity={identity ? { name, photoUrl: identity.photoUrl ?? null } : null}
+          ops={ops}
+          tickets={tickets.data?.tickets ?? null}
+          today={todayIso()}
+        />
+      </StudentSurface>
+    </HsActionsProvider>
+  );
+}
+
+/** Legacy credit cockpit (detailed official / awaiting / in-progress view), reachable with ?view=credits. */
+function CreditCockpit() {
   const { data, isLoading, error, refetch } = useAcademicProjection();
   if (isLoading) return <Loading />;
   if (error) return isNoHighSchoolEnrollment(error) ? <NoEnrollment /> : <LoadError onRetry={() => refetch()} />;
   if (!data) return <Loading />;
   if (deckState(data) === "not_configured") return <CockpitNotConfigured projection={data} />;
   return <HighSchoolFlightDeckView projection={data} />;
+}
+
+export default function HighSchoolFlightDeck() {
+  const view = new URLSearchParams(useSearch()).get("view");
+  return view === "credits" ? <CreditCockpit /> : <StudentHomeContainer />;
 }

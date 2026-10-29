@@ -6,7 +6,7 @@
  */
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PG_BINARIES_AVAILABLE, S05_PG_SKIP_MESSAGE, type LocalPg } from "./helpers/s05-local-pg";
-import { bootHighSchoolApp, seedStaff, seedStudent, startHighSchoolPg, type HighSchoolApp } from "./helpers/s11-hs-stack";
+import { bootHighSchoolApp, seedStaff, seedStudent, seedVerifiedDocument, startHighSchoolPg, type HighSchoolApp } from "./helpers/s11-hs-stack";
 import { createEnrollmentSchema } from "../shared/high-school-contract";
 import { makeDemoPlan, makeContractPlan, DEMO_START, DEMO_TARGET } from "../scripts/s26/demo-plan.mjs";
 
@@ -36,6 +36,9 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("S26 provisioning sequence on real Postg
     expect(view.credits.requiredHalfUnits).toBe(42);
     expect(view.subjects.flatMap((s) => s.courses)).toHaveLength(22);
     expect(view.roadmap?.studentMessage).toMatch(/^DEMO \/ SYNTHETIC/);
+    // Optional: export the projected view for offline assistant evaluations (synthetic data only).
+    await svc.reportProgress(st.studentId, st.userId, { courseKey: "startup-personal-growth", taskKey: "startup-personal-growth-enter", status: "in_progress", scorePercent: null, note: null, expectedRevision: 0 } as never).catch(() => undefined);
+    if (process.env.S26_EXPORT_VIEW) (await import("node:fs")).writeFileSync(process.env.S26_EXPORT_VIEW, JSON.stringify(await svc.getStudentView(st.studentId)));
   }, 120_000);
 
   it("pre-enrollment real-student pattern: planned enrollment and contract DRAFT only (no publish, no dates)", async () => {
@@ -78,5 +81,28 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("S26 provisioning sequence on real Postg
     expect(view.student.paidCents).toBe(200000);
     expect(view.student.remainingCents).toBe(175000);
     expect(view.scheduleMismatchCents).toBe(0);
+  }, 120_000);
+
+  it("demo cohort mid-program persona: plan from a custom start, synthetic official results for 5 months = 9 credits, progress reported", async () => {
+    const admin = await seedStaff(pg, "admin");
+    const st = await seedStudent(pg, { name: "DEMO Amira" });
+    const svc = hs.service;
+    let state = (await svc.createEnrollment(st.studentId, admin.userId, createEnrollmentSchema.parse({ templateKey: "us-hs-diploma-21", templateVersion: 2, status: "active", startedOn: "2026-04-06" }))).result;
+    const eid = state.current!.enrollment.id;
+    state = (await svc.draftFromTemplate(st.studentId, eid, admin.userId, undefined)).result;
+    const d = state.current!.draft!;
+    state = (await svc.saveDraft(st.studentId, eid, admin.userId, { expectedDraftRevision: d.draftRevision, content: makeDemoPlan(d.content, "2026-04-06") })).result;
+    state = (await svc.publish(st.studentId, eid, admin.userId, { expectedDraftRevision: state.current!.draft!.draftRevision, expectedPublishedVersionId: null })).result;
+    const plan = state.current!.published!.content;
+    expect(plan.pacing.milestones[0].month).toBe("2026-04");
+    const evidence = await seedVerifiedDocument(pg, st.studentId, "other" as never);
+    const cutoff = Date.parse("2026-09-06T00:00:00Z");
+    const done = plan.courses.filter((c) => c.plannedEnd && Date.parse(`${c.plannedEnd}T00:00:00Z`) < cutoff);
+    for (const c of done) await svc.recordCourseResult(st.studentId, eid, admin.userId, { courseKey: c.key, outcome: "completed", evidenceDocumentId: evidence, note: "DEMO" } as never);
+    const view = await svc.getStudentView(st.studentId);
+    expect(view.credits.earnedHalfUnits).toBe(18);
+    const first = plan.courses.find((c) => c.key === "science-biology")!;
+    await svc.reportProgress(st.studentId, st.userId, { courseKey: "science-biology", taskKey: first.tasks[0].key, status: "submitted", note: "DEMO progress", expectedRevision: 0 } as never);
+    expect((await svc.getStudentView(st.studentId)).credits.earnedHalfUnits).toBe(18);
   }, 120_000);
 });

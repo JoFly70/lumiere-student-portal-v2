@@ -3,6 +3,7 @@ import { useLocation } from 'wouter';
 import { isRestorableAuthState, publishAuthLifecycle } from './auth-lifecycle';
 import { AuthRequestError, authErrorFromResponse } from './auth-errors';
 import { SESSION_EXPIRED_EVENT } from './session-expiry';
+import { TAB_AUTH_STORAGE_KEY, chooseAuthStorage, readTabAuth, type StorageLike } from './experience-session';
 
 interface User {
   id: string;
@@ -26,17 +27,36 @@ interface AuthContextType {
   signup: (email: string, password: string, fullName: string, invitationToken: string) => Promise<void>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
+  /** Set only in an "Experience as student" tab (session kept in sessionStorage, never localStorage). */
+  experience: { label: string; code: string } | null;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
 const AUTH_STORAGE_KEY = 'lumiere_auth';
 
+function tabStorage(): StorageLike | null {
+  try { return typeof sessionStorage === 'undefined' ? null : sessionStorage; } catch { return null; }
+}
+function persistentStorage(): StorageLike | null {
+  try { return typeof localStorage === 'undefined' ? null : localStorage; } catch { return null; }
+}
+
+/** Leave a demo-experience tab: close it, or (if the browser refuses) reload into the person's own session. */
+export function leaveExperienceTab() {
+  try { sessionStorage.removeItem(TAB_AUTH_STORAGE_KEY); } catch { /* ignore */ }
+  try { window.close(); } catch { /* ignore */ }
+  window.setTimeout(() => { window.location.assign('/'); }, 250);
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<AuthSession | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const identityRef = useRef<string | null>(null);
+  // Decided once per page load: a demo-experience tab keeps its session ONLY in sessionStorage.
+  const tabAuthRef = useRef(readTabAuth(tabStorage()));
+  const experience = tabAuthRef.current?.experience ?? null;
   const [, setLocation] = useLocation();
 
   const publishAuthState = (nextUser: User | null, nextSession: AuthSession | null) => {
@@ -58,6 +78,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       let nextSession: AuthSession | null = null;
 
       try {
+        const tabState = tabAuthRef.current;
+        if (tabState) {
+          nextUser = tabState.user;
+          nextSession = tabState.session;
+          return;
+        }
         const stored = localStorage.getItem(AUTH_STORAGE_KEY);
         if (stored) {
           const data = JSON.parse(stored);
@@ -86,6 +112,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (user && session) {
       try {
+        if (tabAuthRef.current) {
+          const tab = chooseAuthStorage(tabStorage(), null);
+          if (tab.kind === 'tab') tab.storage.setItem(TAB_AUTH_STORAGE_KEY, JSON.stringify({ user, session, experience: tabAuthRef.current.experience }));
+          return; // never write the tab's student session to localStorage
+        }
         localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({ user, session }));
       } catch (error) {
         console.error('Failed to store session:', error);
@@ -176,6 +207,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const expire = () => {
       if (cancelled) return;
       publishAuthState(null, null);
+      if (tabAuthRef.current) { leaveExperienceTab(); return; }
       try { localStorage.removeItem(AUTH_STORAGE_KEY); } catch { /* ignore */ }
       setLocation('/login?expired=1');
     };
@@ -244,8 +276,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error('Logout request failed:', error);
     } finally {
       publishAuthState(null, null);
-      localStorage.removeItem(AUTH_STORAGE_KEY);
-      setLocation('/login');
+      if (tabAuthRef.current) {
+        leaveExperienceTab();
+      } else {
+        localStorage.removeItem(AUTH_STORAGE_KEY);
+        setLocation('/login');
+      }
     }
   };
 
@@ -257,6 +293,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signup,
     logout,
     isAuthenticated: !!user && !!session,
+    experience,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

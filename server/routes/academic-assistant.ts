@@ -62,7 +62,11 @@ export function createAcademicAssistantRouter(opts: RouterOptions = {}): Router 
       return res.status(400).json({ error: 'Invalid request.', code: 'invalid_request' });
     }
     try {
-      const reply = await answerMessage({ id: req.user!.id, role: req.user!.role }, parsed.data, deps);
+      let records: import('../services/academic-assistant/student-record').StudentRecord[] = [];
+      if (req.user!.role === 'student' && !opts.deps) {
+        try { records = await (await import('../services/academic-assistant/student-record')).loadOwnStudentRecord(req.user!.id); } catch { records = []; }
+      }
+      const reply = await answerMessage({ id: req.user!.id, role: req.user!.role }, { ...parsed.data, records }, deps);
       res.json(reply);
     } catch (err) {
       logger.error('Assistant message failed', { error: (err as Error).message });

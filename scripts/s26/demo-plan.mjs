@@ -37,7 +37,7 @@ export const DEMO_ELECTIVES = [
 
 const iso = (d) => d.toISOString().slice(0, 10);
 function addDays(isoDate, days) { const d = new Date(`${isoDate}T00:00:00Z`); d.setUTCDate(d.getUTCDate() + days); return iso(d); }
-function monthStart(i) { const d = new Date(`${DEMO_START}T00:00:00Z`); d.setUTCMonth(d.getUTCMonth() + i); return iso(d); }
+function monthStart(i, start = DEMO_START) { const d = new Date(`${start}T00:00:00Z`); d.setUTCMonth(d.getUTCMonth() + i); return iso(d); }
 
 function tasksFor(key, start, end) {
   const span = Math.max(7, Math.round((Date.parse(end) - Date.parse(start)) / 86400000));
@@ -52,7 +52,7 @@ function tasksFor(key, start, end) {
 }
 
 /** Turns a template-v2 draft into the full 21-credit demonstration plan. */
-export function makeDemoPlan(draftContent) {
+export function makeDemoPlan(draftContent, start = DEMO_START) {
   const content = structuredClone(draftContent);
   const electiveArea = content.areas.find((a) => a.kind === "elective");
   const coreHalf = content.areas.filter((a) => a.kind === "core").reduce((n, a) => n + a.requiredHalfUnits, 0);
@@ -67,21 +67,21 @@ export function makeDemoPlan(draftContent) {
   }));
   const courses = [...base, ...electives];
   MONTH_PLAN.forEach((keys, m) => {
-    const start = monthStart(m), end = addDays(monthStart(m + 1), -1);
+    const s0 = monthStart(m, start), end = addDays(monthStart(m + 1, start), -1);
     for (const key of keys) {
       const course = courses.find((c) => c.key === key);
       if (!course) throw new Error(`DEMO_COURSE_MISSING_${key}`);
-      Object.assign(course, { plannedStart: start, plannedEnd: end, tasks: tasksFor(key, start, end) });
+      Object.assign(course, { plannedStart: s0, plannedEnd: end, tasks: tasksFor(key, s0, end) });
     }
   });
   let cumulative = 0;
   const milestones = MONTH_PLAN.map((keys, m) => {
     cumulative += keys.reduce((n, k) => n + courses.find((c) => c.key === k).halfUnits, 0);
-    return { month: monthStart(m).slice(0, 7), cumulativeHalfUnits: cumulative };
+    return { month: monthStart(m, start).slice(0, 7), cumulativeHalfUnits: cumulative };
   });
   if (cumulative !== 42 || courses.length !== 22) throw new Error("DEMO_PLAN_TOTAL_MISMATCH");
   content.courses = courses;
-  content.pacing = { targetCompletionDate: DEMO_TARGET, weeklyTargetHalfUnits: null, milestones };
+  content.pacing = { targetCompletionDate: start === DEMO_START ? DEMO_TARGET : addDays(monthStart(12, start), -3), weeklyTargetHalfUnits: null, milestones };
   content.studentMessage =
     `${DEMO_TAG}. Plan de démonstration sur 12 mois / 12-month demonstration plan: 21 crédits prévus (16 obligatoires + 5 options ${ELECTIVE_TAG}). ` +
     "0 crédit officiel. Les dates sont des objectifs, pas des exigences de l’école. / Dates are targets, not school requirements; only the school awards credit.";

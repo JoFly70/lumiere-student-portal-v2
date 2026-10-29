@@ -1,6 +1,6 @@
-import { BookOpen, FileText, CreditCard, GraduationCap, HelpCircle, LogOut, User, Gauge, ShieldCheck, School, Sparkles, Shuffle } from "lucide-react";
+import { BookOpen, FileText, CreditCard, GraduationCap, HelpCircle, LogOut, User, Gauge, ShieldCheck, School, Sparkles, Shuffle, Library } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Link, useLocation, useSearch } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import {
   Sidebar,
@@ -20,7 +20,7 @@ import { filterStudentNav, useStudentPrograms } from "@/lib/student-programs";
 import { useT, type TranslationKey } from "@/i18n";
 import { StaffAvatar } from "@/components/staff/staff-ui";
 import { staffRoleLabel } from "@/components/staff/staff-shell";
-import { ADMIN_STUDENTS_PATH, adminTabFromSearch } from "@/pages/admin-student-workspace-presentation";
+import { ADMIN_STUDENTS_PATH } from "@/pages/admin-student-workspace-presentation";
 import { LumiereCrest, BRAND } from "@/components/brand/lumiere-brand";
 import type { Student } from "@shared/schema";
 
@@ -60,6 +60,7 @@ const studentMenuItems: { title: string; labelKey?: TranslationKey; url: string;
   { title: "High School", labelKey: "nav.highSchool", url: "/high-school", icon: School },
   { title: "Flight Deck", labelKey: "nav.flightDeck", url: "/flight-deck", icon: Gauge },
   { title: "High School Flight Deck", labelKey: "nav.highSchoolFlightDeck", url: "/high-school/flight-deck", icon: Gauge },
+  { title: "Library", labelKey: "ux.nav.library", url: "/library", icon: Library },
   { title: "Student Profile", labelKey: "nav.profile", url: "/profile", icon: User },
   { title: "Your Roadmap", labelKey: "nav.roadmap", url: "/roadmap", icon: BookOpen },
   { title: "Documents", labelKey: "nav.documents", url: "/documents", icon: FileText },
@@ -68,14 +69,14 @@ const studentMenuItems: { title: string; labelKey?: TranslationKey; url: string;
 ];
 
 // Student navigation is grouped: the journey first, then the student's file.
-const JOURNEY_URLS = ["/high-school", "/flight-deck", "/high-school/flight-deck", "/roadmap"];
+const JOURNEY_URLS = ["/high-school", "/flight-deck", "/high-school/flight-deck", "/roadmap", "/library"];
 const studentJourneyItems = studentMenuItems.filter((i) => JOURNEY_URLS.includes(i.url));
 const studentFileItems = studentMenuItems.filter((i) => !JOURNEY_URLS.includes(i.url));
 
 // Staff navigation. "Students" opens the existing admin Students list (admin only: the
 // list route is admin-gated). Staff and coaches work from the support desk.
 const adminMenuItems = [
-  { title: "Control Center", url: "/admin/support-center", icon: Gauge },
+  { title: "Command Center", url: "/admin/support-center", icon: Gauge },
   { title: "Students", url: ADMIN_STUDENTS_PATH, icon: GraduationCap },
   { title: "Support desk", url: "/support", icon: HelpCircle },
   { title: "Elective requests", url: "/admin/elective-requests", icon: Shuffle },
@@ -94,7 +95,6 @@ const staffBillingItem = { title: "Student billing", url: STAFF_BILLING_PATH, ic
 
 export function AppSidebar() {
   const [location] = useLocation();
-  const search = useSearch();
   const { user, logout } = useAuth();
   const accessToken = useAuthToken();
   const isStudent = user?.role === "student";
@@ -219,7 +219,7 @@ export function AppSidebar() {
   }
 
   // Which staff item is current. Students is the admin dashboard's Students tab or any workspace.
-  const onStudents = location.startsWith("/admin/students") || (location === "/admin" && adminTabFromSearch(search) === "students");
+  const onStudents = location.startsWith("/admin/students");
   const isActive = (url: string) => {
     if (url === ADMIN_STUDENTS_PATH) return onStudents;
     if (url === STAFF_BILLING_PATH) return location === url || /^\/admin\/students\/[^/]+\/billing$/.test(location);

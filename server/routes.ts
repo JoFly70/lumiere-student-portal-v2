@@ -1423,8 +1423,14 @@ window.ENV = {
   // S25 owner "View as Student": read-only student projection preview (per-route auth, admin only, audited).
   app.use('/api/admin', (await import('./routes/admin-view-as-student')).default);
   app.use('/api/admin', (await import('./routes/admin-documents-queue')).default);
+  // S26 per-student activity feed (admin only, read-only, last 50 audit rows).
+  app.use('/api/admin', (await import('./routes/admin-student-activity')).default);
+  // S26 students directory facts (admin/staff, read-only aggregate: program, balance, last activity).
+  app.use('/api/admin', (await import('./routes/admin-students-directory')).default);
   // S26 Lumière Owner AI: admin-only, one student's records, read-only, cited, audited.
   app.use('/api/admin', (await import('./routes/admin-owner-assistant')).default);
+  // S26 "Experience as student": admin-only, synthetic demo accounts / demo mirrors only, audited.
+  app.use('/api/admin', (await import('./routes/admin-student-experience')).default);
   // S18 billing ledger: staff/admin entry and review (per-route role checks)
   app.use('/api/admin', (await import('./routes/admin-billing')).default);
   // S13 staff-only student <-> portal account linkage (per-route auth, admin only).

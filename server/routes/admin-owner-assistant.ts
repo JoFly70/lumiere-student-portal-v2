@@ -73,7 +73,22 @@ export async function defaultLoadOwnerContext(studentId: string): Promise<OwnerC
     if (error) logger.warn("Owner assistant ticket lookup failed", { code: error.code });
     else tickets = data ?? [];
   }
-  return { student, highSchool, reviewQueue, documents, tickets };
+  let billing: OwnerContextInput["billing"] = null;
+  try {
+    const { defaultBillingService } = await import("../services/billing-service.default");
+    const v = await defaultBillingService.getStaffView(studentId);
+    const s = v.student;
+    const last = [...v.receipts].sort((a, b) => b.receivedDate.localeCompare(a.receivedDate))[0];
+    billing = s.state === "configured"
+      ? { state: "configured", currency: s.currency, agreedCents: s.agreedCents, discountCents: s.discountCents, paidCents: s.paidCents, remainingCents: s.remainingCents,
+          nextDue: s.nextDue ? { dueDate: s.nextDue.dueDate, amountCents: s.nextDue.amountCents, status: s.nextDue.status } : null,
+          lastReceipt: last ? { receivedDate: last.receivedDate, amountCents: last.amountCents, methodLabel: last.methodLabel } : null,
+          evidenceAwaiting: v.evidence.filter((e) => e.status === "awaiting_review").length }
+      : { state: "not_configured" };
+  } catch (error) {
+    logger.warn("Owner assistant billing lookup failed", { error: error instanceof Error ? error.message : String(error) });
+  }
+  return { student, highSchool, reviewQueue, documents, tickets, billing };
 }
 
 export function createAdminOwnerAssistantRouter(opts: OwnerAssistantRouterOptions = {}): Router {

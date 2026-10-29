@@ -9,7 +9,8 @@ export const adminStudentWorkspacePath = (studentId: string) =>
   `/admin/students/${encodeURIComponent(studentId)}`;
 export const ADMIN_TABS = ["overview", "users", "students", "programs", "knowledge", "logs"] as const;
 export type AdminTab = typeof ADMIN_TABS[number];
-export const ADMIN_STUDENTS_PATH = "/admin?tab=students";
+/** The owner students directory. The legacy /admin?tab=students link redirects here. */
+export const ADMIN_STUDENTS_PATH = "/admin/students";
 
 export function adminTabFromSearch(search: string): AdminTab {
   const tab = new URLSearchParams(search).get("tab");

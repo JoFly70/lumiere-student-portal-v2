@@ -30,8 +30,10 @@ import AdminSupportCenter from "@/pages/admin-support-center";
 import AdminAssistant from "@/pages/admin-assistant";
 import AdminElectiveRequests from "@/pages/admin-elective-requests";
 import AdminStudentWorkspace from "@/pages/admin-student-workspace";
+import AdminStudents from "@/pages/admin-students";
 import AdminStudentRoadmap from "@/pages/admin-student-roadmap";
 import HighSchool from "@/pages/high-school";
+import Library from "@/pages/library";
 import { UniversityOnly } from "@/components/university-only";
 import { studentLandingPath, useStudentPrograms } from "@/lib/student-programs";
 import AdminStudentHighSchool from "@/pages/admin-student-high-school";
@@ -40,6 +42,8 @@ import StaffBillingLookup from "@/pages/staff-billing-lookup";
 import { AcademicAssistant } from "@/components/academic-assistant";
 import { LanguagePreferenceSync } from "@/lib/language-preference";
 import AdminViewAsStudent from "@/pages/admin-view-as-student";
+import ExperiencePage from "@/pages/experience";
+import { ExperienceBanner } from "@/components/experience-banner";
 import { PROTOTYPES_ENABLED, PREVIEW_FLIGHT_DECK_PATH } from "@/components/os/prototype-gate";
 
 // Prototype-only route (S17). Compiled out of normal production builds; see components/os/prototype-gate.
@@ -79,6 +83,7 @@ function Router() {
     <Switch>
       <Route path="/login" component={Login} />
       <Route path="/reset-password" component={ResetPassword} />
+      <Route path="/experience" component={ExperiencePage} />
       <Route path="/auth/verify" component={VerifyEmail} />
       <Route path="/verify-email" component={VerifyEmail} />
       <Route path="/resend-verification" component={ResendVerification} />
@@ -103,6 +108,13 @@ function Router() {
         {() => (
           <ProtectedRoute requireRole="admin">
             <AdminElectiveRequests />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/admin/students">
+        {() => (
+          <ProtectedRoute requireRole="admin">
+            <AdminStudents />
           </ProtectedRoute>
         )}
       </Route>
@@ -207,6 +219,14 @@ function Router() {
         )}
       </Route>
 
+      <Route path="/library">
+        {() => (
+          <ProtectedRoute requireRole="student">
+            <Library />
+          </ProtectedRoute>
+        )}
+      </Route>
+
       <Route path="/documents">
         {() => (
           <ProtectedRoute requireRole="student">
@@ -239,7 +259,7 @@ function Router() {
 }
 
 function AuthenticatedLayout() {
-  const { user } = useAuth();
+  const { user, experience } = useAuth();
   const isStudent = user?.role === "student";
   // Staff, coach and admin share the Lumière staff shell; students keep their own.
   const isStaffShell = !!user && !isStudent;
@@ -258,17 +278,25 @@ function AuthenticatedLayout() {
     return () => document.body.classList.remove("staff-shell");
   }, [isStaffShell]);
 
+  useEffect(() => {
+    if (!experience) return;
+    document.body.classList.add("demo-experience");
+    return () => document.body.classList.remove("demo-experience");
+  }, [experience]);
+
   const style = {
     "--sidebar-width": "16rem",
     "--sidebar-width-icon": "3.75rem",
   };
 
   return (
+    <>
+    {experience && <ExperienceBanner />}
     <SidebarProvider
       style={style as React.CSSProperties}
       {...(isStaffShell ? { open: staffSidebarOpen, onOpenChange: setStaffSidebarOpen } : {})}
     >
-      <div className={cn("flex h-dvh w-full", isStudent && "student-surface", isStaffShell && "staff-surface")}>
+      <div className={cn("flex w-full", experience ? "h-[calc(100dvh-var(--exp-h))] mt-[var(--exp-h)]" : "h-dvh", isStudent && "student-surface", isStaffShell && "staff-surface")}>
         {isStaffShell && <StaffSkipLink />}
         <AppSidebar />
         <div className="flex min-w-0 flex-1 flex-col">
@@ -295,6 +323,7 @@ function AuthenticatedLayout() {
         </div>
       </div>
     </SidebarProvider>
+    </>
   );
 }
 
@@ -302,6 +331,7 @@ function ApplicationLayout() {
   const [location] = useLocation();
   const isAuthRoute =
     location === "/login" ||
+    location === "/experience" ||
     location === "/reset-password" ||
     location === "/auth/verify" ||
     location === "/verify-email" ||

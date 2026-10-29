@@ -611,3 +611,8 @@ html[data-theme] .os-nav-item:hover:not([data-active="true"]) { color: var(--t-r
 html[data-theme] .os-nav-item[data-active="true"]::before { background-color: var(--t-rail-act); }
 /* Brand wordmark type. */
 .font-display { font-feature-settings: "liga", "kern"; }
+
+/* Owner "Experience as student" tab: a fixed banner; the shell is offset beneath it. */
+body.demo-experience { --exp-h: 4.5rem; }
+@media (min-width: 640px) { body.demo-experience { --exp-h: 2.75rem; } }
+body.demo-experience .group\/sidebar-wrapper .fixed.inset-y-0 { top: var(--exp-h); height: calc(100svh - var(--exp-h)); }

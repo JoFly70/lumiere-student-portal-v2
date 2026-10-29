@@ -9,11 +9,13 @@ import { HsActionsProvider } from "@/components/high-school/hs-actions";
 import { HsError, HsNoEnrollment, HsSkeleton } from "@/components/high-school/states";
 import { StudentSurface } from "@/components/student-progress/student-ui";
 import { useStudentProfile } from "@/hooks/use-student-profile";
+import { useSearch } from "wouter";
 import { isNoEnrollment, useHighSchoolView } from "@/lib/high-school-queries";
 
 export default function HighSchool() {
   const { data, isLoading, error, refetch } = useHighSchoolView();
   const { data: profile } = useStudentProfile();
+  const course = new URLSearchParams(useSearch()).get("course");
   const identity = profile?.identity;
   const name = identity ? (identity.preferredName?.trim() || identity.firstName) : "";
   const welcome = identity && name ? { name, photoUrl: identity.photoUrl ?? null } : null;
@@ -29,7 +31,7 @@ export default function HighSchool() {
   }
   return (
     <HsActionsProvider>
-      <HighSchoolPageView view={data} welcome={welcome} />
+      <HighSchoolPageView view={data} welcome={welcome} initialTab="roadmap" defaultOpenCourse={course} />
     </HsActionsProvider>
   );
 }

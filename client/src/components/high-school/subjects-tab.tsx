@@ -120,7 +120,7 @@ function TaskReport({ course, task }: { course: HsCourseView; task: HsTaskView }
   );
 }
 
-function TaskRow({ course, task, today }: { course: HsCourseView; task: HsTaskView; today: string }) {
+export function TaskRow({ course, task, today }: { course: HsCourseView; task: HsTaskView; today: string }) {
   const { t, language } = useT();
   const st = taskStatusView(task.status, language);
   const when = dueLabel(task.dueDate, today, (iso) => formatShortDate(iso, language), language);
@@ -155,7 +155,7 @@ function TaskRow({ course, task, today }: { course: HsCourseView; task: HsTaskVi
   );
 }
 
-function CourseSupport({ course, schoolLine }: { course: HsCourseView; schoolLine: string }) {
+export function CourseSupport({ course, schoolLine }: { course: HsCourseView; schoolLine: string }) {
   const actions = useHsActions();
   const { t, language } = useT();
   const uid = useId();
@@ -206,7 +206,7 @@ function CourseSupport({ course, schoolLine }: { course: HsCourseView; schoolLin
   );
 }
 
-function ElectiveChange({ course }: { course: HsCourseView }) {
+export function ElectiveChange({ course }: { course: HsCourseView }) {
   const actions = useHsActions();
   const { t, language } = useT();
   const uid = useId();

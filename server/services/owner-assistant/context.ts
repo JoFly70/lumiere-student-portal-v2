@@ -33,7 +33,20 @@ export interface OwnerContextTicket {
   readonly updated_at?: string | null;
 }
 
+export interface OwnerContextBilling {
+  readonly state: "configured" | "not_configured";
+  readonly currency?: string | null;
+  readonly agreedCents?: number | null;
+  readonly discountCents?: number | null;
+  readonly paidCents?: number | null;
+  readonly remainingCents?: number | null;
+  readonly nextDue?: { readonly dueDate: string; readonly amountCents: number; readonly status?: string } | null;
+  readonly lastReceipt?: { readonly receivedDate: string; readonly amountCents: number; readonly methodLabel: string } | null;
+  readonly evidenceAwaiting?: number;
+}
+
 export interface OwnerContextInput {
+  readonly billing?: OwnerContextBilling | null;
   readonly student: OwnerContextStudent;
   readonly highSchool: StudentHighSchoolView | null;
   readonly reviewQueue: readonly HsReviewQueueItem[];
@@ -145,6 +158,17 @@ function appendDocsTickets(
   base: string,
   push: (r: Omit<OwnerSourceRecord, "ref">) => void,
 ): OwnerSourceRecord[] {
+  const b = input.billing;
+  if (b) {
+    const m = (c: number | null | undefined) => `${((c ?? 0) / 100).toFixed(2)} ${b.currency ?? ""}`.trim();
+    push({
+      kind: "documents",
+      label: "Billing ledger",
+      path: `${base}/billing`,
+      text: b.state !== "configured" ? "No billing obligation is recorded." :
+        `Agreed ${m(b.agreedCents)}; adjustments ${m(b.discountCents)}; paid (staff-confirmed receipts only) ${m(b.paidCents)}; remaining ${m(b.remainingCents)}.${b.nextDue ? ` Next installment ${m(b.nextDue.amountCents)} due ${b.nextDue.dueDate}${b.nextDue.status ? ` (${b.nextDue.status})` : ""}.` : ""}${b.lastReceipt ? ` Last confirmed payment ${m(b.lastReceipt.amountCents)} on ${b.lastReceipt.receivedDate} (${scrubFreeText(b.lastReceipt.methodLabel, 40)}).` : " No payment confirmed yet."} Payment evidence awaiting review: ${b.evidenceAwaiting ?? 0}.`,
+    });
+  }
   if (input.documents.length === 0) {
     push({ kind: "documents", label: "Documents", path: `${base}?tab=documents`, text: "No documents are on file." });
   } else {
@@ -192,7 +216,7 @@ export function extractCitations(reply: string, records: readonly OwnerSourceRec
 export function recordSummary(records: readonly OwnerSourceRecord[]): string {
   const pick = (k: OwnerSourceRecord["kind"]) => records.filter((r) => r.kind === k);
   const lines: string[] = [];
-  for (const r of [...pick("student"), ...pick("credits"), ...pick("graduation")]) lines.push(`${r.text} [${r.ref}]`);
+  for (const r of [...pick("student"), ...pick("credits"), ...pick("graduation"), ...records.filter((x) => x.label === "Billing ledger")]) lines.push(`${r.text} [${r.ref}]`);
   const docs = pick("document").filter((d) => !/status verified/.test(d.text));
   if (docs.length) lines.push(`Documents needing action: ${docs.map((d) => `${d.label.replace("Document: ", "")} [${d.ref}]`).join(", ")}.`);
   const open = pick("ticket").filter((t) => !/status (resolved|closed)/.test(t.text));

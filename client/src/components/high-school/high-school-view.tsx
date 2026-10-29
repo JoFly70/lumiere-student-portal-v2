@@ -13,6 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { StudentSurface } from "@/components/student-progress/student-ui";
 import { JourneyTab } from "./journey-tab";
 import { SubjectsTab } from "./subjects-tab";
+import { DegreeMapView } from "./degree-map";
 import { GraduationTab } from "./graduation-tab";
 import { FamilyCard } from "./family-card";
 import { PriorEducationCard } from "./prior-education-card";
@@ -162,7 +163,7 @@ export function HighSchoolPageView({
           </div>
         ) : (
           <>
-            <div role="tablist" aria-label={t("hs.tabs.label")} className="grid grid-cols-3 gap-1 rounded-2xl border border-student-line bg-student-card p-1" data-testid="hs-tabs">
+            <div role="tablist" aria-label={t("hs.tabs.label")} className="grid grid-cols-4 gap-1 rounded-2xl border border-student-line bg-student-card p-1" data-testid="hs-tabs">
               {HS_TABS.map((tb, i) => {
                 const selected = tab === tb.id;
                 const parts = hsTabParts(tb.id, language);
@@ -194,6 +195,7 @@ export function HighSchoolPageView({
             {HS_TABS.map((tb) => (
               <div key={tb.id} role="tabpanel" id={`hs-panel-${tb.id}`} aria-labelledby={`hs-tab-${tb.id}`} hidden={tab !== tb.id} tabIndex={0} className="focus-visible:outline-offset-4">
                 <h2 className="sr-only">{hsTabParts(tb.id, language).prefix}{hsTabParts(tb.id, language).rest}</h2>
+                {tb.id === "roadmap" && <DegreeMapView view={view} today={today} initialCourse={defaultOpenCourse} />}
                 {tb.id === "journey" && <JourneyTab {...props} />}
                 {tb.id === "subjects" && <SubjectsTab view={view} today={today} focusCourseKey={focusCourse} defaultOpenSubject={defaultOpenSubject} defaultOpenCourse={defaultOpenCourse} />}
                 {tb.id === "graduation" && <GraduationTab {...props} />}

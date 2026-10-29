@@ -29,9 +29,14 @@ let defaultDeps: AssistantDeps | null = null;
 
 export async function generateReply(args: GenerateReplyArgs, deps?: AssistantDeps): Promise<GeneratedReply> {
   const d = deps ?? (defaultDeps ??= { budget: new PgBudgetStore() });
+  // S26: the student's OWN record (resolved from the session user id) grounds personal answers.
+  let records: import('../academic-assistant/student-record').StudentRecord[] = [];
+  if (args.user.role === 'student' && !deps) {
+    try { records = await (await import('../academic-assistant/student-record')).loadOwnStudentRecord(args.user.id); } catch { records = []; }
+  }
   const out = await answerMessage(
     args.user,
-    { message: args.message, language: args.language, history: args.recentTurns.slice(-MAX_RECENT_TURNS) },
+    { message: args.message, language: args.language, history: args.recentTurns.slice(-MAX_RECENT_TURNS), records },
     d,
   );
   return { content: out.reply, mode: out.mode, sources: out.sources, links: out.links, notice: out.notice ?? null, privateRefs: [] };

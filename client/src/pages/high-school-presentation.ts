@@ -41,6 +41,7 @@ export const creditUnit = (half: HalfUnits, lang: Language = "en") => tr(lang, (
 
 export const HS_PATH = "/high-school";
 export const HS_TABS = [
+  { id: "roadmap", label: "Roadmap" },
   { id: "journey", label: "My Journey" },
   { id: "subjects", label: "My Subjects" },
   { id: "graduation", label: "My Graduation" },
