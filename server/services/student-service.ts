@@ -405,8 +405,10 @@ export async function listStudents(filters?: {
       query = query.eq('residency', filters.residency);
     }
 
-    if (filters?.search) {
-      query = query.or(`first_name.ilike.%${filters.search}%,last_name.ilike.%${filters.search}%,email.ilike.%${filters.search}%,student_code.ilike.%${filters.search}%`);
+    // Strip PostgREST filter syntax (commas, parentheses, wildcards) so the term cannot add clauses.
+    const term = (filters?.search ?? '').replace(/[%_,()\\*:]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 100);
+    if (term) {
+      query = query.or(`first_name.ilike.%${term}%,last_name.ilike.%${term}%,preferred_name.ilike.%${term}%,email.ilike.%${term}%,student_code.ilike.%${term}%`);
     }
 
     const limit = filters?.limit || 50;
