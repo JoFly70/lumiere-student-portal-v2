@@ -225,8 +225,8 @@ function DetailBody({ ticketId, onClose }: { ticketId: string; onClose: () => vo
             </div>
 
             {done && (
-              <div className="rounded-lg border border-green-200 bg-green-50 p-3 dark:border-green-800 dark:bg-green-950/30" data-testid="resolution-card">
-                <h4 className="mb-1 flex items-center gap-2 text-sm font-medium"><CheckCircle2 className="h-4 w-4 text-green-700 dark:text-green-400" />{T.detail.resolutionHeading}</h4>
+              <div className="rounded-xl border border-l-[3px] border-student-line border-l-st-applied bg-st-applied-soft/40 p-3" data-testid="resolution-card">
+                <h4 className="mb-1 flex items-center gap-2 text-sm font-medium"><CheckCircle2 className="h-4 w-4 text-st-applied" />{T.detail.resolutionHeading}</h4>
                 <p className="whitespace-pre-wrap text-sm">{ticket.resolutionNotes ?? T.detail.resolutionDefault}</p>
               </div>
             )}
@@ -261,7 +261,7 @@ function DetailBody({ ticketId, onClose }: { ticketId: string; onClose: () => vo
                   data-author-kind={c.authorKind}
                   className={cn(
                     "rounded-lg p-4",
-                    c.authorKind === "student" ? "bg-muted" : "border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30",
+                    c.authorKind === "student" ? "bg-muted" : "border border-student-gold/60 bg-student-gold-soft/60",
                   )}
                 >
                   <div className="mb-2 flex items-center justify-between gap-2">

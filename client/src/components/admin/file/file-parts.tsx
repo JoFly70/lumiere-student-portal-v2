@@ -6,13 +6,18 @@ import { useT } from "@/i18n";
 import { isUnavailable } from "@/lib/s27-queries";
 import { cn } from "@/lib/utils";
 
-export function Panel({ title, aside, actions, children, className, testId, id }: {
+export function Panel({ title, aside, description, actions, children, className, testId, id }: {
   title: React.ReactNode; aside?: React.ReactNode; actions?: React.ReactNode; children: React.ReactNode; className?: string; testId?: string; id: string;
+  /** A sentence under the heading (use instead of `aside` when it explains the section). */
+  description?: React.ReactNode;
 }) {
   return (
     <StaffCard aria-labelledby={id} className={className} data-testid={testId}>
-      <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-2">
-        <h2 id={id} className="font-serif text-xl tracking-tight text-student-ink sm:text-2xl">{title}</h2>
+      <div className={cn("flex flex-wrap justify-between gap-x-3 gap-y-2", description ? "mb-5 items-start" : "mb-3 items-baseline")}>
+        <div className="min-w-0 space-y-1">
+          <h2 id={id} className="font-serif text-xl tracking-tight text-student-ink sm:text-2xl">{title}</h2>
+          {description ? <p className="max-w-2xl text-sm leading-relaxed text-student-muted">{description}</p> : null}
+        </div>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           {aside ? <p className="text-xs text-student-muted">{aside}</p> : null}
           {actions}

@@ -24,7 +24,6 @@ import {
   NO_FILTERS,
   ORIGINAL_CATEGORY_STYLE,
   ORIGINAL_PRIORITY_STYLE,
-  ORIGINAL_STATUS_STYLE,
   filterCards,
   hasActiveFilters,
   showPriorityOnCard,
@@ -40,6 +39,8 @@ import { STATUS_ICON, StatusBadge, formatDate, formatFileSize } from "./original
 import { OriginalCreateDialog, type CreatedTicket } from "./original-create-dialog";
 import { OriginalTicketDetailModal } from "./original-ticket-detail";
 import { SupportLead } from "@/components/s27/support-lead";
+import { staffBtn } from "@/components/staff/staff-ui";
+import { cn } from "@/lib/utils";
 
 export { SUPPORT_TEXT } from "./original-support-text";
 
@@ -79,7 +80,7 @@ function TicketCard({
               {ticket.attachmentCount > 0 && (
                 <span className="flex items-center gap-1"><Paperclip className="h-3 w-3" aria-hidden="true" />{ticket.attachmentCount}</span>
               )}
-              {ticket.awaitingYou && <span className="font-medium text-purple-700 dark:text-purple-400">{T.list.needsReply}</span>}
+              {ticket.awaitingYou && <span className="font-medium text-student-gold-ink">{T.list.needsReply}</span>}
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-1 sm:gap-2">
@@ -138,7 +139,7 @@ function PostCreateUploads({ created, onDone }: { created: CreatedTicket; onDone
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return (
-    <div role="status" aria-live="polite" className="flex items-start justify-between gap-3 rounded-lg border border-green-200 bg-green-50 p-3 text-sm dark:border-green-800 dark:bg-green-950/30" data-testid="create-confirmation">
+    <div role="status" aria-live="polite" className="flex items-start justify-between gap-3 rounded-xl border border-l-[3px] border-student-line border-l-st-applied bg-st-applied-soft/40 px-4 py-3 text-sm text-student-ink" data-testid="create-confirmation">
       <div className="space-y-1">
         <p className="font-medium">{T.notice.created(created.ticketNumber)}</p>
         {created.files.length > 0 && state.running && <p>{T.notice.uploadingFiles(created.files.length)}</p>}
@@ -177,8 +178,8 @@ export function OriginalStudentSupport() {
     <div className="mx-auto w-full max-w-6xl space-y-6" data-testid="original-student-support">
       <SupportLead
         action={(
-          <Button onClick={() => setCreateOpen(true)} data-testid="button-create-ticket">
-            <Plus className="mr-2 h-4 w-4" />
+          <Button onClick={() => setCreateOpen(true)} className={staffBtn.primary} data-testid="button-create-ticket">
+            <Plus className="h-4 w-4" aria-hidden="true" />
             {T.createTicket}
           </Button>
         )}
@@ -188,26 +189,27 @@ export function OriginalStudentSupport() {
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4" role="group" aria-label={T.list.statusFilterLabel}>
         {COUNTER_KEYS.map((key) => {
-          const style = ORIGINAL_STATUS_STYLE[key];
           const Icon = STATUS_ICON[key];
           const active = filters.status === key;
+          // One restrained style: neutral icons; gold only for "Waiting on you" when something is waiting.
+          const hot = key === "waiting_on_student" && tickets.isSuccess && counts[key] > 0;
           return (
             <Card
               key={key}
-              className={`hover-elevate cursor-pointer ${active ? "ring-2 ring-primary" : ""}`}
+              className={cn("cursor-pointer border-student-line bg-student-card shadow-none transition-colors hover:border-student-line-strong", active && "border-student-gold bg-student-gold-soft/60 ring-1 ring-inset ring-student-gold", hot && !active && "border-student-gold")}
               data-testid={`card-status-${key}`}
             >
               <button
                 type="button"
                 onClick={() => setStatus(key)}
                 aria-pressed={active}
-                className="block w-full rounded-lg p-3 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:p-4"
+                className="block w-full rounded-lg p-3 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-student-gold-ink sm:p-4"
               >
                 <div className="flex items-center gap-3">
-                  <div className={`rounded-lg p-2 ${style.bgColor}`}><Icon className={`h-4 w-4 ${style.color}`} aria-hidden="true" /></div>
-                  <div>
-                    <p className="text-2xl font-bold" data-testid={`count-${key}`}>{tickets.isSuccess ? counts[key] : "–"}</p>
-                    <p className="text-xs text-muted-foreground">{T.status[key]}</p>
+                  <div className={cn("grid h-9 w-9 shrink-0 place-items-center rounded-lg border", hot ? "border-student-gold bg-student-gold-soft text-student-gold-ink" : "border-student-line bg-student-bg text-student-muted")}><Icon className="h-4 w-4" aria-hidden="true" /></div>
+                  <div className="min-w-0">
+                    <p className="font-serif text-2xl leading-none tabular-nums text-student-ink" data-testid={`count-${key}`}>{tickets.isSuccess ? counts[key] : "–"}</p>
+                    <p className="mt-1 text-xs text-student-muted">{T.status[key]}</p>
                   </div>
                 </div>
               </button>

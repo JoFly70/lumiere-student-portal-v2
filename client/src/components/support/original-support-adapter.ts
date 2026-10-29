@@ -260,33 +260,37 @@ export function sortByRecent<T extends { readonly updatedAt: string }>(items: re
 }
 
 // ---------------------------------------------------------------------------
-// Original look: colours carried over verbatim from support-old.tsx
-// (waiting -> waiting_on_student; closed gets a neutral slate).
+// Look (S28 polish): Lumière theme tokens only, one restrained palette. Gold marks the one state that needs the
+// student ("Waiting on you"); working states are neutral; resolved is a quiet green; red only for urgent.
+// Every pill keeps a hairline border so it reads on both light and dark themes.
 // ---------------------------------------------------------------------------
 
+const NEUTRAL = { color: "text-student-muted", bgColor: "border border-student-line-strong bg-student-card" } as const;
+
 export const ORIGINAL_STATUS_STYLE: Readonly<Record<TicketStatus, { readonly color: string; readonly bgColor: string }>> = {
-  open: { color: "text-blue-700 dark:text-blue-400", bgColor: "bg-blue-100 dark:bg-blue-900/30" },
-  in_progress: { color: "text-amber-700 dark:text-amber-400", bgColor: "bg-amber-100 dark:bg-amber-900/30" },
-  waiting_on_student: { color: "text-purple-700 dark:text-purple-400", bgColor: "bg-purple-100 dark:bg-purple-900/30" },
-  resolved: { color: "text-green-700 dark:text-green-400", bgColor: "bg-green-100 dark:bg-green-900/30" },
-  closed: { color: "text-slate-700 dark:text-slate-300", bgColor: "bg-slate-100 dark:bg-slate-800/50" },
+  open: NEUTRAL,
+  in_progress: NEUTRAL,
+  waiting_on_student: { color: "text-student-gold-ink", bgColor: "border border-student-gold bg-student-gold-soft" },
+  resolved: { color: "text-st-applied", bgColor: "border border-st-applied/40 bg-st-applied-soft" },
+  closed: NEUTRAL,
 };
 
 export const ORIGINAL_PRIORITY_STYLE: Readonly<Record<TicketPriority, { readonly color: string; readonly bgColor: string }>> = {
-  low: { color: "text-slate-700 dark:text-slate-400", bgColor: "bg-slate-100 dark:bg-slate-900/30" },
-  medium: { color: "text-blue-700 dark:text-blue-400", bgColor: "bg-blue-100 dark:bg-blue-900/30" },
-  high: { color: "text-orange-700 dark:text-orange-400", bgColor: "bg-orange-100 dark:bg-orange-900/30" },
-  urgent: { color: "text-red-700 dark:text-red-400", bgColor: "bg-red-100 dark:bg-red-900/30" },
+  low: NEUTRAL,
+  medium: NEUTRAL,
+  high: { color: "text-st-attention", bgColor: "border border-st-attention/40 bg-st-attention-soft" },
+  urgent: { color: "text-st-urgent", bgColor: "border border-st-urgent/40 bg-st-urgent-soft" },
 };
 
-/** Original category colours, keyed by S16 category (enrollment reuses the academic indigo family: violet). */
+/** Topic chips are labels, not states: one neutral style for every category. */
+const TOPIC_CHIP = "border border-student-line bg-student-card text-student-muted";
 export const ORIGINAL_CATEGORY_STYLE: Readonly<Record<TicketCategory, string>> = {
-  academic: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400",
-  technical: "bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-400",
-  billing: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400",
-  document: "bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-400",
-  general: "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400",
-  enrollment: "bg-violet-100 text-violet-800 dark:bg-violet-900/30 dark:text-violet-400",
+  academic: TOPIC_CHIP,
+  technical: TOPIC_CHIP,
+  billing: TOPIC_CHIP,
+  document: TOPIC_CHIP,
+  general: TOPIC_CHIP,
+  enrollment: TOPIC_CHIP,
 };
 
 /** The original card shows a priority chip; students are always "medium", so only a staff-raised level is worth a chip on the list. */

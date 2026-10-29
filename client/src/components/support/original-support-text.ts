@@ -8,7 +8,7 @@ import { frTypo, useT, type Language } from "@/i18n";
 export const SUPPORT_TEXT_EN = {
   title: "Student Support Center",
   subtitle: "Submit and track your support requests",
-  createTicket: "Create Ticket",
+  createTicket: "New request",
   status: {
     open: "Open",
     in_progress: "In progress",

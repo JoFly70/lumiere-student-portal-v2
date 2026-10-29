@@ -17,7 +17,7 @@ import { useDocuments } from "@/hooks/use-documents";
 import { useHsState } from "@/lib/admin-high-school-api";
 import { useStaffBilling } from "@/lib/billing-queries";
 import { useStaffProfileData } from "@/components/admin/student-profile-review";
-import { StudentDocumentsReview, StaffDocumentUpload } from "@/components/admin/student-documents-review";
+import { StudentDocumentsReview } from "@/components/admin/student-documents-review";
 import { useExperienceAction, ExperienceError } from "@/components/admin/dossier/dossier-parts";
 import { DemoPill, isDemoStudent, shortProgram, studentFullName, studentStatusLabel } from "@/components/admin/directory/directory-data";
 import { canActivateLeadForRole } from "@/components/admin/student-documents-upload-logic";
@@ -166,10 +166,9 @@ export function StudentFile({ studentId }: { studentId: string }) {
           <StaffTabPanel idPrefix="sf" tabKey="documents" active={tab === "documents"}>
             {tab === "documents" ? (
               <div className="space-y-6" data-testid="documents-tab">
-                <Panel id="doc-title" title={t("owner.docs.title")} aside={t("owner.docs.aside")}>
+                <Panel id="doc-title" title={t("owner.docs.title")} description={t("owner.docs.aside")}>
                   <StudentDocumentsReview studentId={studentId} documents={documents.data ?? []} />
                 </Panel>
-                <StaffDocumentUpload studentId={studentId} />
               </div>
             ) : null}
           </StaffTabPanel>

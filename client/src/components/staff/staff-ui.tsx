@@ -160,12 +160,23 @@ export function StaffSectionHeader({ id, title, description, icon, actions, leve
   );
 }
 
+/**
+ * Calm notices: a hairline frame, a barely-there tint and a 3px left accent in the tone colour. The icon
+ * carries the tone; the text stays ink. Never a full-strength coloured box.
+ */
 const NOTICE_TONE = {
-  info: "border-student-line-strong bg-student-card",
-  gold: "border-student-gold bg-student-gold-soft",
-  attention: "border-st-attention bg-st-attention-soft",
-  urgent: "border-st-urgent bg-st-urgent-soft",
-  success: "border-st-applied bg-st-applied-soft",
+  info: "border-student-line border-l-student-line-strong bg-student-card",
+  gold: "border-student-line border-l-student-gold bg-student-gold-soft/50",
+  attention: "border-student-line border-l-st-attention bg-student-gold-soft/40",
+  urgent: "border-st-urgent/25 border-l-st-urgent bg-st-urgent-soft/50",
+  success: "border-student-line border-l-st-applied bg-st-applied-soft/40",
+} as const;
+const NOTICE_ICON = {
+  info: "text-student-muted",
+  gold: "text-student-gold-ink",
+  attention: "text-st-attention",
+  urgent: "text-st-urgent",
+  success: "text-st-applied",
 } as const;
 
 export function StaffNotice({ tone = "info", icon, children, action, role, className, testId }: {
@@ -178,9 +189,9 @@ export function StaffNotice({ tone = "info", icon, children, action, role, class
   testId?: string;
 }) {
   return (
-    <div role={role} data-testid={testId} className={cn("flex flex-col gap-3 rounded-xl border px-4 py-3 text-sm text-student-ink sm:flex-row sm:items-center sm:justify-between", NOTICE_TONE[tone], className)}>
+    <div role={role} data-testid={testId} data-tone={tone} className={cn("flex flex-col gap-3 rounded-xl border border-l-[3px] px-4 py-3 text-sm text-student-ink sm:flex-row sm:items-center sm:justify-between", NOTICE_TONE[tone], className)}>
       <div className="flex min-w-0 items-start gap-3">
-        {icon && <span className="mt-0.5 shrink-0" aria-hidden="true">{icon}</span>}
+        {icon && <span className={cn("mt-0.5 shrink-0", NOTICE_ICON[tone])} aria-hidden="true">{icon}</span>}
         <div className="min-w-0 leading-relaxed">{children}</div>
       </div>
       {action}
@@ -213,8 +224,8 @@ export function StaffEmpty({ icon, title, children, action, testId, className }:
 const PILL_TONE = {
   neutral: "border-student-line-strong bg-student-card text-student-muted",
   gold: "border-student-gold bg-student-gold-soft text-student-gold-ink",
-  attention: "border-st-attention bg-st-attention-soft text-st-attention",
-  urgent: "border-st-urgent bg-st-urgent-soft text-st-urgent",
+  attention: "border-st-attention/40 bg-st-attention-soft text-st-attention",
+  urgent: "border-st-urgent/40 bg-st-urgent-soft text-st-urgent",
   "urgent-solid": "border-st-urgent bg-st-urgent text-student-card",
   dashed: "border-dashed border-student-line-strong bg-student-card text-student-muted",
   seal: "border-student-seal bg-student-seal text-student-seal-ink",
@@ -229,7 +240,7 @@ export function StaffPill({ children, tone = "neutral", icon, className, testId 
   testId?: string;
 }) {
   return (
-    <span data-testid={testId} className={cn("inline-flex w-fit max-w-full items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold leading-none", PILL_TONE[tone], className)}>
+    <span data-testid={testId} className={cn("inline-flex w-fit max-w-full items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium leading-none", PILL_TONE[tone], className)}>
       {icon}
       {children}
     </span>
@@ -275,7 +286,7 @@ export function KpiTile({ label, value, hint, tone = "default", pressed, onClick
       <span className="flex w-full items-center justify-between gap-2">
         <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-student-muted">{label}</span>
         {pressed ? (
-          <span className="inline-flex items-center gap-1 rounded-full bg-student-seal px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-student-seal-ink">
+          <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-student-gold bg-student-card px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-student-gold-ink">
             <Check className="h-3 w-3" aria-hidden="true" />Showing
           </span>
         ) : icon ? <span className="text-student-muted" aria-hidden="true">{icon}</span> : null}
@@ -286,7 +297,7 @@ export function KpiTile({ label, value, hint, tone = "default", pressed, onClick
   );
   const cls = cn(
     "flex min-h-[104px] w-full min-w-0 flex-col items-start justify-between gap-2 rounded-2xl border p-4 text-left",
-    pressed ? "border-2 border-student-gold-ink bg-student-gold-soft" : "border-student-line bg-student-card",
+    pressed ? "border-student-gold bg-student-gold-soft/70 ring-1 ring-inset ring-student-gold" : "border-student-line bg-student-card",
     onClick && !pressed && "transition-colors hover:border-student-line-strong hover:bg-student-gold-soft/50",
   );
   return onClick ? (

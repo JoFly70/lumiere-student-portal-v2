@@ -172,7 +172,7 @@ export function AssistantPanelView(p: AssistantViewProps) {
               <ArrowLeft aria-hidden="true" size={20} />
             </button>
           ) : (
-            <div className="aa-orb-wrap" data-testid="assistant-orb"><LumiereOrb size={68} state={orbState} /></div>
+            <div className="aa-orb-wrap" data-testid="assistant-orb"><LumiereOrb size={52} state={orbState} /></div>
           )}
           <div className="aa-head-text">
             <h2 id={titleId} ref={p.titleRef} tabIndex={-1} className="aa-title">{tr("assistant.title")}</h2>

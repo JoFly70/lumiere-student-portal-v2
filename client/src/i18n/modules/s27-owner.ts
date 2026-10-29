@@ -462,7 +462,7 @@ export const s27OwnerEn = {
 
   // documents
   "owner.docs.title": "Documents",
-  "owner.docs.aside": "verify, reject or ask for a new copy · the student sees your reason",
+  "owner.docs.aside": "Verify, reject or ask for a new copy. The student sees the reason you give.",
 } as const satisfies Record<string, string>;
 
 export const s27OwnerFr: Record<keyof typeof s27OwnerEn, string> = {
@@ -908,5 +908,5 @@ export const s27OwnerFr: Record<keyof typeof s27OwnerEn, string> = {
   "owner.sess.error": "La séance n’a pas été mise à jour.",
 
   "owner.docs.title": "Documents",
-  "owner.docs.aside": "vérifier, refuser ou demander une nouvelle copie · l’étudiant voit votre motif",
+  "owner.docs.aside": "Vérifiez, refusez ou demandez une nouvelle copie. L’étudiant voit le motif que vous indiquez.",
 };
