@@ -117,6 +117,10 @@ const evidence: {
   notes: string[];
   /** Spark served-model verification from the provider's own report: PASS / FAIL / NOT_VERIFIED. */
   aiModelVerification: "PASS" | "FAIL" | "NOT_VERIFIED";
+  /** Live Spark functionality (status live + English answer + French draft with valid citations): PASS / FAIL / NOT_RUN. */
+  aiFunctional: "PASS" | "FAIL" | "NOT_RUN";
+  /** Requested-model evidence from the response (S27+ builds): PASS / FAIL / NOT_VERIFIED. */
+  aiModelRequested: "PASS" | "FAIL" | "NOT_VERIFIED";
 } = {
   script: "scripts/s26/production-acceptance.ts",
   startedAt: new Date().toISOString(),
@@ -130,6 +134,8 @@ const evidence: {
   checks: [],
   browser: {},
   aiModelVerification: "NOT_VERIFIED",
+  aiFunctional: "NOT_RUN",
+  aiModelRequested: "NOT_VERIFIED",
   notes: [],
 };
 
@@ -611,7 +617,8 @@ async function adminChecks() {
       if (reply.trim().length < 40) problems.push("reply empty or too short");
       if (citations.length < 1) problems.push("no [R#] record citations");
       if (citations.some((c) => !sourceRefs.has(c?.ref))) problems.push("a citation does not match a returned source record");
-      if (j?.model?.requested !== EXPECTED_MODEL) problems.push(`requested model ${short(j?.model?.requested ?? "not reported", 60)}`);
+      // Model identity is judged separately (fields exist only on S27+ builds); a reported mismatch still fails here.
+      if (j?.model && j.model.requested !== EXPECTED_MODEL) problems.push(`requested model ${short(j.model.requested ?? "missing", 60)}`);
       if (language === "fr" && !FRENCH.test(reply)) problems.push("draft is not in French");
     }
     if (j?.requiresHumanApproval !== true) problems.push("requiresHumanApproval missing");
@@ -621,14 +628,26 @@ async function adminChecks() {
   await run("admin.owner-ai-answer-en", "admin", true, () => ownerAsk("For this test student, which courses and documents still require action? Cite records.", "en", "answer"));
   await sleep(2500);
   await run("admin.owner-ai-draft-reply-fr", "admin", true, () => ownerAsk("Rédige un brouillon de réponse courtois pour cet élève test concernant l'avancement de sa feuille de route. Cite les dossiers.", "fr", "draft_reply"));
-  // Served-model identity: the provider's own report. Older builds do not expose it -> NOT VERIFIED (never PASS).
-  await run("admin.owner-ai-model-identity", "admin", true, async () => {
-    const live = Object.values(answers).filter((j) => j?.mode === "live");
-    if (live.length === 0) return { ok: false, detail: "NOT VERIFIED: no live Spark answer to inspect" };
-    const served = live.map((j) => j?.model?.served ?? null);
-    if (served.some((m) => m === null || m === undefined)) {
+  const functionalIds = ["admin.owner-ai-status", "admin.owner-ai-answer-en", "admin.owner-ai-draft-reply-fr"];
+  const functional = evidence.checks.filter((c) => functionalIds.includes(c.id));
+  evidence.aiFunctional = functional.length === 3 && functional.every((c) => c.result === "PASS") ? "PASS" : "FAIL";
+  // Model identity, reported separately. Builds without the model fields -> NOT VERIFIED (optional, never PASS);
+  // builds with them -> required and strict.
+  const live = Object.values(answers).filter((j) => j?.mode === "live");
+  const reported = live.length > 0 && live.every((j) => j?.model && typeof j.model === "object");
+  await run("admin.owner-ai-model-requested", "admin", reported, async () => {
+    if (!reported) return skip(live.length ? "NOT VERIFIED: the deployed server does not report the requested model (added in S27); it is pinned server-side to " + EXPECTED_MODEL : "NOT VERIFIED: no live Spark answer to inspect");
+    const req = live.map((j) => j.model.requested ?? null);
+    const ok = req.every((m) => m === EXPECTED_MODEL);
+    evidence.aiModelRequested = ok ? "PASS" : "FAIL";
+    return { ok, detail: ok ? `requested ${EXPECTED_MODEL} for ${req.length} answers` : `requested ${req.join(", ")}`, observed: { requested: req } };
+  });
+  await run("admin.owner-ai-model-served", "admin", reported, async () => {
+    if (!reported) return skip(live.length ? "NOT VERIFIED: the deployed server does not report the provider-served model (added in S27)" : "NOT VERIFIED: no live Spark answer to inspect");
+    const served = live.map((j) => j.model.served ?? null);
+    if (served.some((m) => m === null)) {
       evidence.aiModelVerification = "NOT_VERIFIED";
-      return { ok: false, detail: `NOT VERIFIED: this build does not report the provider-served model (requested, pinned server-side: ${live[0]?.model?.requested ?? "unknown"})`, observed: { served } };
+      return { ok: false, detail: "NOT VERIFIED: the provider response did not name a model", observed: { served } };
     }
     const ok = served.every((m) => m === EXPECTED_MODEL);
     evidence.aiModelVerification = ok ? "PASS" : "FAIL";
@@ -1375,6 +1394,7 @@ main()
     finalize();
     const s = evidence.summary;
     log(`verdict ${evidence.verdict}: required ${s.requiredPass}/${s.required} PASS (${s.requiredFail} FAIL, ${s.requiredSkipped} SKIPPED); optional ${s.optionalPass} PASS / ${s.optionalFail} FAIL / ${s.optionalSkipped} SKIPPED; evidence in ${OUT}/acceptance.json`);
+    if (!SKIP_AI) log(`AI: functional ${evidence.aiFunctional}; requested model ${evidence.aiModelRequested}; provider-served model ${evidence.aiModelVerification}`);
     process.exit(evidence.verdict === "PASS" ? 0 : 1);
   });
 
