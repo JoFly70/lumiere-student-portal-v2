@@ -3,6 +3,7 @@ import React, { useId, useRef, useState } from "react";
 import { Loader2, Paperclip, X } from "lucide-react";
 import type { SupportTopic } from "@shared/support-contract";
 import type { SupportContextOptionsResponse } from "@/hooks/use-tickets";
+import { useT } from "@/i18n";
 import { cn } from "@/lib/utils";
 import { buttonClass, cardClass } from "@/components/student-progress/student-ui";
 import {
@@ -44,6 +45,7 @@ export function NewRequestForm({
   onSubmit: (values: NewRequestValues) => void;
   onCancel: () => void;
 }) {
+  const { t } = useT();
   const uid = useId();
   const fileRef = useRef<HTMLInputElement>(null);
   const options = contextOptions?.available ? contextOptions.items : [];
@@ -86,7 +88,7 @@ export function NewRequestForm({
     <form onSubmit={submit} noValidate className={cn(cardClass, "space-y-6")} data-testid="new-request-form" aria-labelledby={`${uid}-title`}>
       <div className="space-y-1">
         <h2 id={`${uid}-title`} tabIndex={-1} className="font-serif text-2xl tracking-tight text-student-ink sm:text-3xl" data-focus-target>
-          New request
+          {t("support.newRequest")}
         </h2>
         <p className="text-sm leading-relaxed text-student-muted">
           Tell us what you need. A Lumière advisor will reply here, and you can follow the conversation at any time.
