@@ -1,3 +1,38 @@
+# S26 — CONTROLLING DESIGN CORRECTION: CLIENTDESK FRAMEWORK STAYS
+
+**Owner decision, 29 October 2026 — highest priority; supersedes every conflicting visual direction in this document.**
+
+The previous instruction to replace the application shell, imitate PowerED, use the old PowerED gallery as the visual benchmark, or invent an entirely new Lumière design system is **CANCELLED**. The owner explicitly rejects that direction. **Do not use PowerED screenshots, the old cockpit/requirement-tile layouts, or random third-party websites as the appearance reference.** The older design-reference passages below remain historical context ONLY and are NOT executable visual instructions.
+
+### PRESERVE — established ClientDesk application framework
+
+Use the current ClientDesk framework as the **authoritative shell**: its layout conventions, sidebar, header, global navigation, theme system, account/identity controls, responsive framework, utility patterns and overarching brand consistency. Retain existing working shared infrastructure. Inspect the ACTUAL ClientDesk implementation/screens before making visual changes; do not guess its details, fabricate access, or mistake a conceptual reference for verified source. Where the Student Portal already uses ClientDesk-derived shell components, retain and reuse them; if there is a mismatch, align minimally without replacing the architecture.
+
+**Do not replace the shell, create a new design language, install a new UI framework, or redesign unrelated ClientDesk systems.**
+
+### REDESIGN — ONLY interiors of the existing framework
+
+Make the content and interactions INSIDE the existing screens exceptionally beautiful, sophisticated, simple and useful:
+
+1. Owner home and complete student dossier: instantly understandable priorities, students, enrollment, academic status, billing, support, documents and contextual AI.
+2. Student home: stunning welcome, portrait, personalized next action, current subjects, milestones, progress and quick access.
+3. 21-credit high-school academic journey: visually rich, elegant and readable 16-compulsory + 5-elective course roadmap, milestones, assignments, per-subject detail, progress and official-vs-planned status. Do NOT imitate PowerED's former degree-map/tile visual design or 120-credit logic.
+4. Student academic LIBRARY: per-course materials, guides, files, category/search, preview, download, upload and version provenance using the Portal's real secure storage; not merely a document file list.
+5. Billing: beautiful and functional summary, installments, receipts, evidence, balance and owner editing, within the existing shell. Existing approved product behavior is preserved; previous visuals are NOT mandatory if the owner dislikes them.
+6. Documents, support conversations, elective approval, profile and AI: consistent premium interiors, intuitive interactions, meaningful populated content and smooth complete journeys.
+7. A complete **owner-controlled interactive experience as the first student's scenario**, plus separate genuinely authenticated synthetic student sessions. Keep simulated actions isolated from the actual student's factual academic, family and financial records.
+8. Six to eight carefully differentiated synthetic students, enough conversations, documents, different progress and balances to inspect a realistically functioning operation. Demo data unmistakably labeled.
+
+**Beautiful does NOT mean huge whitespace, ornamental cards, school-ERP jargon, or sterile dashboards.** Prioritize excellent hierarchy, information-rich but uncluttered layouts, thoughtful type, imagery/visualizations, elegant microinteraction, fast comprehension and mobile perfection. Stay INSIDE ClientDesk framework styling and navigation.
+
+### Execution / evidence gate
+
+Opus leads, **two Sonnet subagents are mandatory**, split by owner interiors vs student interiors; integration enforces scope and data isolation. First inspect the REAL ClientDesk framework and existing Portal components. Then implement screen interiors and flows. Verify BOTH roles with actual hosted sessions, complete journeys and visually inspected full-page screenshots at desktop/tablet/mobile resolutions. Reject any interior screens that are mediocre. Do not declare done from compilation or test counts. No deployment of partial visual changes.
+
+**If anything below contradicts this instruction, this instruction prevails.** Retain below sections' valid functional, academic, security and test requirements only; their incompatible visual-architecture prescriptions are rescinded.
+
+---
+
 # S26 — PRODUCT COMPLETION ORDER: PREMIUM PORTAL, POPULATED DEMO, CONTEXTUAL AI
 
 **Status: RELEASE BLOCKER. Execute on the existing S26 implementation; do not restart the repository or run another planning-only session.**
