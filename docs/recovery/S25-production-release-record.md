@@ -170,3 +170,17 @@ real-email login journey has passed once on production before the student is inv
 ## 12. Immediate next action
 
 Owner approves (or amends) the S26 cutover package in `docs/recovery/S26-production-cutover-package.md`.
+
+## S26 production release status (2026-10-29 00:30 UTC)
+
+Release point: `e58b88a` (S25 code `a970639` + production env `.replit` fix + guarded runner
+`scripts/release/s26/apply-production.sh`).
+
+**RELEASE BLOCKED — production Repl agent not executing.** Two release instructions were sent to the production Repl
+(`lumiere-student-portal-v2`, 33a30f4f-…) at 23:50 and 00:16 UTC. Its agent accepted each but returns empty
+replies in a "paused" state and has not run anything: `scripts/release/s26/` and `.s26-private-backup/` are absent
+in its workspace (code not synced, no backup taken, no migration applied). The staging Repl's agent responds normally,
+so this is specific to the production Repl (likely waiting on an approval, plan or credit prompt in its Replit UI).
+
+Production is unchanged and serving: deployment `a24d52bb-…` status success at
+https://lumiere-student-portal-v-2.replit.app (S16 build); production database not touched; domain unchanged.
