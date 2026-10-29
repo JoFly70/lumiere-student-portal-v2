@@ -277,7 +277,6 @@ function FlightCard(props: FlightDeckProps & { figures: ReturnType<typeof credit
     <section className="card flight" aria-labelledby="fl-h" data-testid="fd-flight">
       <div className="ch">
         <div style={{ display: "grid", gap: 4 }}><Eyebrow>{t("s27.fi.eyebrow")}</Eyebrow><h2 id="fl-h">{t("s27.fi.title")}</h2></div>
-        <Link className="link" href="/beyond">{t("s27.fi.beyond")} →</Link>
       </div>
       <FlightInstrument
         required={figures.required} confirmed={figures.confirmed} stops={instrumentStops} beadPace={shownPace} today={today}
@@ -543,7 +542,7 @@ function BillingCard({ billing }: { billing: DeckBilling }) {
     const last = billing.receipts[0];
     body = (
       <>
-        <div className="stat"><b style={{ color: "var(--t-green)" }}>{t("s27.bl.paid")}</b></div>
+        <div className="stat"><b style={{ color: "var(--t-green)" }}>{billing.paidCents > 0 ? t("s27.bl.paid") : t("s27.bl.nothing")}</b></div>
         {last && <div className="lines"><div><span>{formatMoney(last.amountCents, billing.currency, locale)}</span><span>{t("s27.bl.received", { date: formatDay(last.receivedDate, lang) })}</span></div></div>}
       </>
     );

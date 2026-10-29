@@ -15,7 +15,8 @@ export interface LogBody {
   readonly courseKey: string;
   readonly taskKey: string;
   readonly status: "submitted";
-  readonly reportedScorePercent: number | null;
+  /** Absent = keep any score already reported. */
+  readonly reportedScorePercent?: number;
   readonly expectedRevision: number;
 }
 export interface LogVars { readonly body: LogBody; readonly kind: HsTaskKind }

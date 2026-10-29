@@ -83,7 +83,7 @@ describe("S27 log sheet", () => {
   });
   it("POST body: Submitted sends no score, Graded needs one; expectedRevision is always carried", () => {
     expect(progressPayload({ courseKey: "c", taskKey: "t", mode: "submitted", scoreRaw: "", expectedRevision: 3 })).toEqual({
-      ok: true, body: { courseKey: "c", taskKey: "t", status: "submitted", reportedScorePercent: null, expectedRevision: 3 },
+      ok: true, body: { courseKey: "c", taskKey: "t", status: "submitted", expectedRevision: 3 },
     });
     expect(progressPayload({ courseKey: "c", taskKey: "t", mode: "graded", scoreRaw: "84", expectedRevision: 0 })).toMatchObject({ ok: true, body: { reportedScorePercent: 84, expectedRevision: 0 } });
     expect(progressPayload({ courseKey: "c", taskKey: "t", mode: "graded", scoreRaw: "", expectedRevision: 0 })).toEqual({ ok: false, reason: "score" });
@@ -95,6 +95,14 @@ describe("S27 log sheet", () => {
     expect(updated).toMatchObject({ status: "pending_review", reportedScorePercent: 88, progressRevision: task.progressRevision + 1 });
     expect(next.credits).toEqual(view.credits);
     expect(view.subjects.flatMap((s) => s.courses).find((c) => c.key === "english-3")!.tasks.find((t) => t.key === task.key)!.status).toBe("not_started");
+  });
+  it("re-logging as Submitted keeps a score already reported (no null is sent)", () => {
+    const body = progressPayload({ courseKey: "c", taskKey: "t", mode: "submitted", scoreRaw: "", expectedRevision: 2 });
+    expect(body.ok && "reportedScorePercent" in body.body).toBe(false);
+    const task = course("english-3").tasks.find((t) => t.status === "not_started")!;
+    const scored = applyOptimisticProgress(view, { courseKey: "english-3", taskKey: task.key, reportedScorePercent: 82 });
+    const again = applyOptimisticProgress(scored, { courseKey: "english-3", taskKey: task.key });
+    expect(again.subjects.flatMap((s) => s.courses).find((c) => c.key === "english-3")!.tasks.find((t) => t.key === task.key)!.reportedScorePercent).toBe(82);
   });
   it("failures: a 409 revision conflict refetches and tells the student; locked and changed-plan too; others do not refetch", () => {
     expect(describeLogFailure(new ApiError("x", 409, "HS_REVISION_CONFLICT"))).toMatchObject({ kind: "conflict", refetch: true });

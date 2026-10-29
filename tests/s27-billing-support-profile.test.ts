@@ -32,6 +32,12 @@ describe("S27 Billing", () => {
     expect(html).toContain("Paid in full");
     expect(html).toContain('data-settled="true"');
   });
+  it("a zero balance with nothing received is 'Nothing to pay', never 'Paid in full'", () => {
+    const free = { ...cfg, paidCents: 0, netObligationCents: 0, remainingCents: 0, receipts: [], evidenceAwaitingReview: [] } as StudentBillingConfigured;
+    const html = wrap("en", createElement(BillingS27, { data: free }));
+    expect(html).toContain("Nothing to pay");
+    expect(html).not.toContain("Paid in full");
+  });
   it("not configured is an explicit state, never zeros", () => {
     const html = wrap("en", createElement(BillingS27, { data: BILLING_NOT_CONFIGURED }));
     expect(html).toContain('data-testid="billing-not-configured"');

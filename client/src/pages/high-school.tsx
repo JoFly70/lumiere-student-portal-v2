@@ -31,7 +31,7 @@ function LogRoadmap({ view }: { view: NonNullable<ReturnType<typeof useHighSchoo
       await mutation.mutateAsync({ body: input.body, kind: input.kind });
       toast({
         title: t("s27.log.toast.saved"),
-        description: input.mode === "graded" && input.body.reportedScorePercent !== null
+        description: input.mode === "graded" && input.body.reportedScorePercent !== undefined
           ? t("s27.log.toast.graded", { item: input.label, score: input.body.reportedScorePercent })
           : t("s27.log.toast.sent", { item: input.label }),
       });

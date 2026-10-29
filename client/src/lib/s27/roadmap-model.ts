@@ -200,24 +200,25 @@ export function logGuidance(input: { mode: LogMode; scoreRaw: string; kind: HsTa
   return { key: "below_generic", tone: "bad", note };
 }
 
-/** What the POST carries: Submitted -> submitted without a score; Graded -> submitted with the score. */
+/** What the POST carries: Submitted -> submitted without a score field (so a score already reported is kept;
+ *  null would erase it); Graded -> submitted with the score. */
 export function progressPayload(input: { courseKey: string; taskKey: string; mode: LogMode; scoreRaw: string; expectedRevision: number }):
-  | { ok: true; body: { courseKey: string; taskKey: string; status: "submitted"; reportedScorePercent: number | null; expectedRevision: number } }
+  | { ok: true; body: { courseKey: string; taskKey: string; status: "submitted"; reportedScorePercent?: number; expectedRevision: number } }
   | { ok: false; reason: "score" } {
   if (input.mode === "graded") {
     const score = parseScore(input.scoreRaw);
     if (score === null || score === "invalid") return { ok: false, reason: "score" };
     return { ok: true, body: { courseKey: input.courseKey, taskKey: input.taskKey, status: "submitted", reportedScorePercent: score, expectedRevision: input.expectedRevision } };
   }
-  return { ok: true, body: { courseKey: input.courseKey, taskKey: input.taskKey, status: "submitted", reportedScorePercent: null, expectedRevision: input.expectedRevision } };
+  return { ok: true, body: { courseKey: input.courseKey, taskKey: input.taskKey, status: "submitted", expectedRevision: input.expectedRevision } };
 }
 
 /** Optimistic update of the cached view: the task shows as "waiting for the school" with the reported score. */
 export function applyOptimisticProgress(
   view: StudentHighSchoolView,
-  body: { courseKey: string; taskKey: string; reportedScorePercent: number | null },
+  body: { courseKey: string; taskKey: string; reportedScorePercent?: number | null },
 ): StudentHighSchoolView {
-  const patchTask = (t: HsTaskView): HsTaskView => ({ ...t, status: "pending_review", reportedScorePercent: body.reportedScorePercent, progressRevision: t.progressRevision + 1, overdue: false });
+  const patchTask = (t: HsTaskView): HsTaskView => ({ ...t, status: "pending_review", reportedScorePercent: body.reportedScorePercent ?? t.reportedScorePercent, progressRevision: t.progressRevision + 1, overdue: false });
   return {
     ...view,
     subjects: view.subjects.map((s) => ({

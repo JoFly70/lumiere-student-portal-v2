@@ -60,17 +60,21 @@ function Configured({ v, lang }: { v: StudentBillingConfigured; lang: "en" | "fr
   const { t } = useS27T();
   const locale = lang === "fr" ? "fr-CA" : "en-US";
   const money = (c: number) => formatMoney(c, v.currency, locale);
+  // "Paid in full" needs real receipts; a zero balance with nothing paid (e.g. a full discount) is "nothing to pay".
   const settled = v.remainingCents === 0;
+  const nothingPaid = settled && v.paidCents === 0;
   const pct = paidPercent(v.paidCents, v.netObligationCents);
   const lastReceipt = v.receipts[0];
   return (
     <>
       <section className="paid" data-testid="billing-hero" data-settled={settled ? "true" : "false"}>
         <div>
-          <span className="eyebrow bd-eye">{settled ? t("s27.bill.paidTitle") : t("s27.bill.title")}</span>
-          <h2 style={settled ? undefined : { color: "#f6f1e6" }}>{settled ? t("s27.bill.paidTitle") : t("s27.bill.balanceTitle", { amount: money(v.remainingCents) })}</h2>
+          <span className="eyebrow bd-eye">{t("s27.bill.title")}</span>
+          <h2 style={settled ? undefined : { color: "#f6f1e6" }}>{nothingPaid ? t("s27.bill.nothingTitle") : settled ? t("s27.bill.paidTitle") : t("s27.bill.balanceTitle", { amount: money(v.remainingCents) })}</h2>
           <p>
-            {settled
+            {nothingPaid
+              ? t("s27.bill.paidTextNoDate")
+              : settled
               ? lastReceipt ? t("s27.bill.paidText", { date: formatDay(lastReceipt.receivedDate, lang) }) : t("s27.bill.paidTextNoDate")
               : t("s27.bill.balanceText", { paid: money(v.paidCents), net: money(v.netObligationCents) })}
           </p>
