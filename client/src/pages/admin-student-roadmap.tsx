@@ -511,7 +511,7 @@ function DraftReview(props: DraftReviewProps) {
         <CardHeader><CardTitle className="text-base">Items</CardTitle><CardDescription>Edit the most common fixes here; use a new import for larger changes.</CardDescription></CardHeader>
         <CardContent>
           {draft.content.items.length === 0 ? <p className="text-sm text-muted-foreground">The draft has no items.</p> : (
-            <div className="overflow-x-auto">
+            <div className="relative overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <caption className="sr-only">Draft roadmap items</caption>
                 <thead className="text-xs uppercase tracking-wide text-muted-foreground">

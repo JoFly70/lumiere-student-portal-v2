@@ -529,6 +529,36 @@ window.ENV = {
 
   // Authentication endpoint
   // Apply aggressive rate limiting: 5 attempts per 15 minutes per IP
+  // S26: renew a session before its access token expires (sessions otherwise end after ~1 hour).
+  // Takes only the refresh token; returns a new access/refresh pair. The account must still be
+  // active and email-confirmed, exactly as at login. Invalid/revoked refresh tokens get 401.
+  app.post("/api/auth/refresh", authRateLimit, async (req, res) => {
+    const refreshToken = req.body?.refresh_token;
+    if (typeof refreshToken !== "string" || refreshToken.length < 10 || refreshToken.length > 4096) {
+      return res.status(400).json({ error: "refresh_token required" });
+    }
+    if (!isSupabaseConfigured) return res.status(503).json({ error: "Authentication service unavailable" });
+    try {
+      const client = createUserAuthClient();
+      const { data, error } = await client.auth.refreshSession({ refresh_token: refreshToken });
+      if (error || !data.session || !data.user) {
+        const upstream = typeof error?.status === "number" && (error.status >= 500 || error.status === 429);
+        return upstream
+          ? res.status(503).json({ error: "Authentication service temporarily unavailable" })
+          : res.status(401).json({ error: "Invalid or expired session" });
+      }
+      if (!hasRequiredEmailConfirmation(data.user)) return res.status(403).json(EMAIL_VERIFICATION_REQUIRED_RESPONSE);
+      if ((await getAccountStatus(data.user.id)) !== "active") {
+        try { await client.auth.signOut({ scope: "global" }); } catch { /* deny anyway */ }
+        return res.status(403).json(ACCOUNT_INACTIVE_RESPONSE);
+      }
+      return res.json({ session: { access_token: data.session.access_token, refresh_token: data.session.refresh_token, expires_at: data.session.expires_at } });
+    } catch (error) {
+      logger.error("Session refresh error", { error: error instanceof Error ? error.message : String(error) });
+      return res.status(503).json({ error: "Authentication service temporarily unavailable" });
+    }
+  });
+
   app.post("/api/auth/login", authRateLimit, async (req, res) => {
     try {
       const { email, password } = req.body;

@@ -186,7 +186,7 @@ export function SchedulePanel({ view, pending, error, run, resetError }: PanelPr
       </div>
       {s.installments.length === 0 ? <div className="p-5 pt-0 text-sm text-student-muted">No schedule yet. Create one to spread the amount due over dates.</div> : (
         <>
-          <div className="hidden overflow-x-auto md:block">
+          <div className="relative hidden overflow-x-auto md:block">
             <table className={staffTable.table}>
               <thead><tr><th className={staffTable.th}>Due</th><th className={staffTable.th}>Label</th><th className={`${staffTable.th} text-right`}>Amount</th><th className={`${staffTable.th} text-right`}>Covered</th><th className={staffTable.th}>Status</th><th className={staffTable.th}><span className="sr-only">Actions</span></th></tr></thead>
               <tbody>
@@ -235,7 +235,7 @@ export function ReceiptsPanel({ view, pending, error, run, resetError }: PanelPr
       </div>
       {view.receipts.length === 0 ? <div className="p-5 pt-0 text-sm text-student-muted" data-testid="receipts-empty">No payments confirmed yet. Record one when money is received, or confirm uploaded evidence.</div> : (
         <>
-          <div className="hidden overflow-x-auto md:block">
+          <div className="relative hidden overflow-x-auto md:block">
             <table className={staffTable.table}>
               <thead><tr><th className={staffTable.th}>Received</th><th className={staffTable.th}>Method</th><th className={staffTable.th}>Reference</th><th className={`${staffTable.th} text-right`}>Amount</th><th className={staffTable.th}><span className="sr-only">Actions</span></th></tr></thead>
               <tbody>

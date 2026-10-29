@@ -161,6 +161,13 @@ export async function requireAuth(
       const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
 
       if (error || !user) {
+        // A failure of the auth service itself (network, rate limit, 5xx) is not an invalid session:
+        // answer 503 so clients retry instead of signing the person out.
+        const status = (error as { status?: number } | null)?.status;
+        if (error && (status === undefined || status >= 500 || status === 429) && !/jwt|token|expired|invalid/i.test(error.message ?? '')) {
+          logger.warn('Auth verification unavailable', { error: error.message, status });
+          return res.status(503).json({ error: 'Authentication service temporarily unavailable' });
+        }
         logger.warn('Invalid auth token', { error: error?.message });
         return res.status(401).json({ error: 'Invalid or expired token' });
       }

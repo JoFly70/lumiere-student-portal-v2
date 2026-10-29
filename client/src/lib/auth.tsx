@@ -165,20 +165,68 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Expired/revoked session (a 401 on an authenticated call, or the stored expiry passing):
-  // clear everything locally and send the person to sign in with an explanation.
+  // Session lifetime: renew the access token shortly before it expires (POST /api/auth/refresh), and
+  // when an authenticated call gets a 401 try one renewal before giving up. Only a refresh the server
+  // refuses (revoked/invalid session, inactive account) or an expiry we could not renew signs the
+  // person out, with an explanation. Temporary outages (503/network) never sign anyone out.
   useEffect(() => {
     if (!user || !session) return;
+    let cancelled = false;
+    let refreshing: Promise<boolean> | null = null;
     const expire = () => {
+      if (cancelled) return;
       publishAuthState(null, null);
       try { localStorage.removeItem(AUTH_STORAGE_KEY); } catch { /* ignore */ }
       setLocation('/login?expired=1');
     };
-    window.addEventListener(SESSION_EXPIRED_EVENT, expire);
-    const ms = session.expires_at * 1000 - Date.now();
-    const timer = Number.isFinite(ms) ? window.setTimeout(expire, Math.min(Math.max(ms, 0), 2_000_000_000)) : undefined;
+    const refresh = (): Promise<boolean> => {
+      if (refreshing) return refreshing;
+      refreshing = (async () => {
+        if (!session.refresh_token) return false;
+        try {
+          const res = await fetch('/api/auth/refresh', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refresh_token: session.refresh_token }),
+          });
+          if (res.ok) {
+            const body = await res.json();
+            if (!cancelled && body?.session?.access_token) {
+              publishAuthState(user, { ...session, ...body.session });
+              return true;
+            }
+            return false;
+          }
+          if (res.status === 401 || res.status === 403) { expire(); return false; }
+          return false; // 503 / rate limited: keep the session, try again later
+        } catch {
+          return false; // offline: keep the session
+        } finally {
+          refreshing = null;
+        }
+      })();
+      return refreshing;
+    };
+    const onUnauthorized = async () => {
+      const ok = await refresh();
+      if (!ok && !cancelled && session.expires_at * 1000 <= Date.now()) expire();
+    };
+    window.addEventListener(SESSION_EXPIRED_EVENT, onUnauthorized);
+    const msLeft = session.expires_at * 1000 - Date.now();
+    let timer: number | undefined;
+    const schedule = (ms: number) => {
+      timer = window.setTimeout(async () => {
+        const ok = await refresh();
+        if (!ok && !cancelled) {
+          if (session.expires_at * 1000 <= Date.now() && !session.refresh_token) expire();
+          else schedule(30_000); // retry; expiry is handled by the refresh outcome
+        }
+      }, Math.min(Math.max(ms, 0), 2_000_000_000));
+    };
+    if (Number.isFinite(msLeft)) schedule(msLeft - 120_000);
     return () => {
-      window.removeEventListener(SESSION_EXPIRED_EVENT, expire);
+      cancelled = true;
+      window.removeEventListener(SESSION_EXPIRED_EVENT, onUnauthorized);
       if (timer !== undefined) window.clearTimeout(timer);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -190,7 +190,7 @@ export function CorrectionTable({ request }: { request: IdentityCorrectionReques
         <p className="text-xs text-student-muted">On record → Requested</p>
       </li>)}
     </ul>
-    <div className="hidden overflow-x-auto md:block"><table className="w-full text-sm">
+    <div className="relative hidden overflow-x-auto md:block"><table className="w-full text-sm">
       <caption className="sr-only">Current and requested identity values</caption>
       <thead><tr className="text-left text-xs uppercase tracking-wide text-student-muted"><th scope="col" className="py-1 pr-3 font-medium">Field</th><th scope="col" className="py-1 pr-3 font-medium">On record</th><th scope="col" className="py-1 font-medium">Requested</th></tr></thead>
       <tbody className="divide-y">{rows.map((r) => <tr key={r.field}><th scope="row" className="py-2 pr-3 text-left font-medium">{r.label}</th><td className="py-2 pr-3 text-student-muted">{r.current}</td><td className="py-2 font-medium">{r.requested}</td></tr>)}</tbody>

@@ -75,7 +75,7 @@ export default function AdminStudentBilling() {
           <KpiTile label="Remaining" value={formatMoney(sum.remainingCents, s.currency)} hint="left on the amount due" />
         </div>
       ) : null}
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] xl:items-start">
+      <div className="grid gap-6 2xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] 2xl:items-start">
         <div className="min-w-0 space-y-6">
           {s.state === "configured" ? <BalanceSummary view={view} /> : null}
           <ObligationPanel {...props} />

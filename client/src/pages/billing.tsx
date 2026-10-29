@@ -305,7 +305,7 @@ function ScheduleTable({ rows, all, currency, limit }: { rows: readonly StudentI
   const stacked = limit ? "block" : "block sm:hidden";
   if (rows.length === 0) return <p className="px-4 py-8 text-center text-sm text-muted-foreground sm:px-5">{t("billing.noUpcoming")}</p>;
   return (
-    <div className="overflow-x-auto" tabIndex={0} role="region" aria-label={BT.scheduleTitle}>
+    <div className="relative overflow-x-auto" tabIndex={0} role="region" aria-label={BT.scheduleTitle}>
       <table className="w-full text-sm" data-testid="table-installments">
         <thead>
           <tr className="border-b text-left text-xs uppercase tracking-wide text-muted-foreground">
@@ -338,7 +338,7 @@ function HistoryTable({ v, limit }: { v: StudentBillingConfigured; limit?: numbe
   const rows = limit ? v.receipts.slice(0, limit) : v.receipts;
   if (v.receipts.length === 0) return <p className="px-4 py-8 text-center text-sm text-muted-foreground sm:px-5">{t("billing.noPayments")}</p>;
   return (
-    <div className="overflow-x-auto" tabIndex={0} role="region" aria-label={BT.historyTitle}>
+    <div className="relative overflow-x-auto" tabIndex={0} role="region" aria-label={BT.historyTitle}>
       <table className="w-full text-sm" data-testid="table-receipts">
         <thead>
           <tr className="border-b text-left text-xs uppercase tracking-wide text-muted-foreground">

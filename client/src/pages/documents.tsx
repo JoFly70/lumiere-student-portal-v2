@@ -713,7 +713,7 @@ export default function Documents() {
                   })}
                 </ul>
                 <div className="hidden overflow-hidden rounded-lg border md:block">
-                  <div className="overflow-x-auto">
+                  <div className="relative overflow-x-auto">
                     <table className="w-full">
                       <thead>
                         <tr className="border-b bg-muted/50">

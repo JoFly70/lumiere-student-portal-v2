@@ -256,7 +256,7 @@ function UserManagement() {
         <TestAccountsToggle id="admin-users-show-test" count={testCount} checked={showTest} onChange={setShowTest} />
       </div>
 
-      <div className={cn(staffTable.frame, "overflow-x-auto")}>
+      <div className={cn(staffTable.frame, "relative overflow-x-auto")}>
         <table className={cn(staffTable.table, "min-w-[34rem]")}>
           <caption className="sr-only">Users</caption>
           <thead>
@@ -360,7 +360,7 @@ function StudentManagement() {
         <AddStudentDialog />
       </div>
 
-      <div className={cn(staffTable.frame, "overflow-x-auto")}>
+      <div className={cn(staffTable.frame, "relative overflow-x-auto")}>
         <table className={cn(staffTable.table, "min-w-[22rem] sm:min-w-[32rem]")} data-testid="students-table">
           <caption className="sr-only">Students</caption>
           <thead>
