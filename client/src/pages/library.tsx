@@ -9,7 +9,7 @@ import { BookOpen, CheckCircle2, Clock, Download, Eye, FileText, GraduationCap, 
 import { cn } from "@/lib/utils";
 import type { HsCourseView, HsSubjectView } from "@shared/high-school-contract";
 import type { StudentDocument } from "@shared/schema";
-import { StatusPill, StudentSurface, buttonClass } from "@/components/student-progress/student-ui";
+import { Eyebrow, StatusPill, StudentSurface, buttonClass } from "@/components/student-progress/student-ui";
 import { DocumentViewer, downloadDocument } from "@/components/library/document-viewer";
 import { UploadEvidence } from "@/components/library/upload-evidence";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -171,6 +171,7 @@ export default function Library() {
     <StudentSurface testId="library-page">
       <div className="mx-auto w-full max-w-6xl space-y-5">
         <header className="space-y-2">
+          <Eyebrow>{t("s27.fi.eyebrow")}</Eyebrow>
           <h1 className="font-serif text-3xl tracking-tight text-student-ink sm:text-4xl">{t("ux.lib.title")}</h1>
           <p className="max-w-3xl text-sm leading-relaxed text-student-muted">{t("ux.lib.subtitle")}</p>
           <p className="flex items-start gap-2 rounded-xl border border-student-gold/50 bg-student-gold-soft px-3 py-2.5 text-sm text-student-ink" role="note" data-testid="lms-note"><Info className="mt-0.5 h-4 w-4 shrink-0 text-student-gold-ink" aria-hidden="true" />{t("ux.lib.lmsNote")}</p>
@@ -211,8 +212,8 @@ export default function Library() {
                         const n = countFor(c.key);
                         return (
                           <li key={c.key}>
-                            <button type="button" onClick={() => setShelf(c.key)} aria-current={active ? "page" : undefined} className={cn("flex min-h-[40px] w-full items-center justify-between gap-2 rounded-lg px-3 text-left text-sm", active ? "bg-student-seal text-student-seal-ink" : "text-student-ink hover:bg-student-gold-soft")} data-testid="shelf-link">
-                              <span className="min-w-0 break-words">{displayTitle(c.title)}</span>
+                            <button type="button" onClick={() => setShelf(c.key)} aria-current={active ? "page" : undefined} className={cn("flex min-h-[40px] w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-sm", active ? "bg-student-seal text-student-seal-ink" : "text-student-ink hover:bg-student-gold-soft")} data-testid="shelf-link">
+                              <span className="line-clamp-2 min-w-0 break-words leading-snug">{displayTitle(c.title)}</span>
                               {n > 0 && <span className="shrink-0 rounded-full bg-student-gold-soft px-1.5 text-[11px] font-semibold text-student-gold-ink tnum">{n}</span>}
                             </button>
                           </li>

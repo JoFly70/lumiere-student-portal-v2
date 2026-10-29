@@ -170,8 +170,8 @@ export default function AdminStudents() {
 
       {rows.length > 0 ? (
         <StaffCard padded={false} className="overflow-hidden" aria-label="Student list">
-          <div className="hidden grid-cols-[minmax(0,2.3fr)_9rem_minmax(0,1.6fr)_8rem_8.5rem_1.5rem] gap-4 border-b border-student-line bg-student-gold-soft/50 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-student-muted lg:grid" aria-hidden="true">
-            <span>Student</span><span>Status</span><span>Program</span><span>Latest activity</span><span className="text-right">Balance</span><span />
+          <div className="hidden grid-cols-[minmax(0,2.3fr)_8.5rem_minmax(0,1.9fr)_minmax(0,1.3fr)_6.5rem_7.5rem_1.5rem] gap-4 border-b border-student-line bg-student-gold-soft/50 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-student-muted lg:grid" aria-hidden="true">
+            <span>Student</span><span>Status</span><span>Program</span><span>Needs attention</span><span>Latest activity</span><span className="text-right">Balance</span><span />
           </div>
           <ul className="divide-y divide-student-line" data-testid="students-list">
             {rows.map((s) => <StudentRow key={s.id} s={s} f={byId.get(s.id)} docs={docCounts.get(s.id) ?? 0} waiting={waiting.get(s.id) ?? 0} />)}
@@ -191,7 +191,7 @@ function StudentRow({ s, f, docs, waiting }: { s: DirectoryStudent; f?: Director
   return (
     <li>
       <Link href={adminStudentWorkspacePath(s.id)} aria-label={`Open ${name}`} data-testid="student-row"
-        className="group grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 px-4 py-3 transition-colors hover:bg-student-gold-soft/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-student-gold-ink lg:grid-cols-[minmax(0,2.3fr)_9rem_minmax(0,1.6fr)_8rem_8.5rem_1.5rem] lg:gap-x-4">
+        className="group grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 px-4 py-3 transition-colors hover:bg-student-gold-soft/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-student-gold-ink lg:grid-cols-[minmax(0,2.3fr)_8.5rem_minmax(0,1.9fr)_minmax(0,1.3fr)_6.5rem_7.5rem_1.5rem] lg:gap-x-4">
         <span className="flex min-w-0 items-center gap-3 lg:col-start-1">
           <StudentPhoto student={s} size="md" />
           <span className="min-w-0">
@@ -202,17 +202,18 @@ function StudentRow({ s, f, docs, waiting }: { s: DirectoryStudent; f?: Director
         <span className="col-start-3 row-start-1 flex justify-end lg:col-start-2 lg:row-start-1 lg:justify-start"><StudentStatusPill status={s.status} /></span>
         <span className="col-span-3 col-start-1 min-w-0 text-sm text-student-muted lg:col-span-1 lg:col-start-3">
           <span className="block text-student-ink" title={f?.program?.title}>{f?.program ? shortProgram(f.program.title) : "No program yet"}</span>
-          {(docs || waiting || bal?.overdue) ? <span className="mt-1 flex flex-wrap gap-1.5">
-            {waiting ? <StaffPill tone="attention">{waiting} awaiting reply</StaffPill> : null}
-            {docs ? <StaffPill tone="attention">{docs} to review</StaffPill> : null}
-            {bal?.overdue ? <StaffPill tone="urgent">Payment overdue</StaffPill> : null}
-          </span> : null}
         </span>
-        <span className="col-span-3 col-start-1 text-xs text-student-muted lg:col-span-1 lg:col-start-4 lg:text-sm"><span className="lg:hidden">Last activity: </span>{relativeTime(f?.lastActivityAt)}</span>
-        <span className="col-span-3 col-start-1 text-sm tabular-nums text-student-ink lg:col-span-1 lg:col-start-5 lg:text-right">
+        <span className={`col-span-3 col-start-1 min-w-0 flex-wrap gap-1.5 lg:col-span-1 lg:col-start-4 ${(docs || waiting || bal?.overdue) ? "flex" : "hidden lg:block"}`} data-testid="student-attention">
+          {waiting ? <StaffPill tone="attention">{waiting} awaiting reply</StaffPill> : null}
+          {docs ? <StaffPill tone="attention">{docs} to review</StaffPill> : null}
+          {bal?.overdue ? <StaffPill tone="urgent">Payment overdue</StaffPill> : null}
+          {!(docs || waiting || bal?.overdue) ? <span className="text-xs text-student-muted">Nothing waiting</span> : null}
+        </span>
+        <span className="col-span-3 col-start-1 text-xs text-student-muted lg:col-span-1 lg:col-start-5 lg:text-sm"><span className="lg:hidden">Last activity: </span>{relativeTime(f?.lastActivityAt)}</span>
+        <span className="col-span-3 col-start-1 text-sm tabular-nums text-student-ink lg:col-span-1 lg:col-start-6 lg:text-right">
           {bal ? <><span className="lg:hidden text-xs text-student-muted">Balance: </span><span className="font-medium">{formatMoney(bal.balanceCents, bal.currency)}</span>{bal.balanceCents === 0 ? <span className="ml-1 text-xs text-student-muted">paid</span> : null}</> : <span className="text-xs text-student-muted">No fee on file</span>}
         </span>
-        <ChevronRight className="col-start-3 row-start-2 hidden h-4 w-4 justify-self-end text-student-muted transition-transform group-hover:translate-x-0.5 lg:col-start-6 lg:row-start-1 lg:block" aria-hidden="true" />
+        <ChevronRight className="col-start-3 row-start-2 hidden h-4 w-4 justify-self-end text-student-muted transition-transform group-hover:translate-x-0.5 lg:col-start-7 lg:row-start-1 lg:block" aria-hidden="true" />
       </Link>
     </li>
   );

@@ -81,7 +81,7 @@ export default function AdminElectiveRequests() {
 
       {list.isError ? <StaffNotice tone="urgent" role="alert" action={<Button type="button" variant="outline" className={staffBtn.outline} onClick={() => void list.refetch()}>Retry</Button>}>Requests could not be loaded.</StaffNotice> : null}
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] xl:items-start">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] xl:items-start">
         <section aria-label="Request queue" className="min-w-0">
           {list.isLoading ? <div role="status" className="h-40 animate-pulse rounded-2xl bg-student-gold-soft/40"><span className="sr-only">Loading requests</span></div>
             : shown.length === 0 ? (
@@ -96,10 +96,10 @@ export default function AdminElectiveRequests() {
                     <tbody>
                       {shown.map((r) => (
                         <tr key={r.ticket.id} className={`${staffTable.tr} ${selectedId === r.ticket.id ? "bg-student-gold-soft/60" : ""}`}>
-                          <td className={staffTable.td}>
+                          <td className={`${staffTable.td} min-w-[13rem]`}>
                             <button type="button" onClick={() => select(r.ticket.id)} aria-current={selectedId === r.ticket.id} className="flex min-w-0 items-start gap-2.5 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-student-gold-ink" data-testid="elective-row">
                               <StaffAvatar name={r.ticket.reporter_name} size="sm" />
-                              <span className="min-w-0"><span className="block break-words font-medium text-student-ink">{r.ticket.reporter_name}</span><span className="block text-xs text-student-muted">{r.ticket.assignee?.name ?? "Unassigned"}</span></span>
+                              <span className="min-w-0"><span className="block font-medium text-student-ink">{r.ticket.reporter_name}</span><span className="block text-xs text-student-muted">{r.ticket.assignee?.name ?? "Unassigned"}</span></span>
                             </button>
                           </td>
                           <td className={`${staffTable.td} min-w-[11rem]`}><span className="block break-words">{r.from || "Course"}</span><span className="block break-words text-student-muted">→ {r.to || "Requested course"}</span></td>
@@ -125,7 +125,7 @@ export default function AdminElectiveRequests() {
             )}
         </section>
 
-        <section aria-label="Request detail" className="min-w-0">
+        <section aria-label="Request detail" className="min-w-0 xl:sticky xl:top-4 xl:max-h-[calc(100vh-2rem)] xl:overflow-y-auto">
           {selectedId ? <ElectiveDetail ticketId={selectedId} onChanged={refresh} />
             : shown.length > 0 ? <StaffEmpty title="Select a request" testId="elective-select-hint">Choose a request to see its history and decide.</StaffEmpty> : null}
         </section>
