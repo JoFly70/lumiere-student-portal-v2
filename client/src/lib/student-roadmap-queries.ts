@@ -8,7 +8,7 @@
 import type { StudentProgressUpdate, StudentRoadmapView } from "@shared/student-roadmap-contract";
 import { currentLanguage } from "@/i18n";
 import { djTranslate, type DjKey } from "@/components/degree-journey/i18n";
-import { getAuthToken, getCsrfToken } from "@/lib/api";
+import { getAuthToken, freshCsrfToken } from "@/lib/api";
 
 export const STUDENT_ROADMAP_QUERY_KEY = ["/api/student/roadmap"] as const;
 export const STUDENT_ROADMAP_PROGRESS_URL = "/api/student/roadmap/progress";
@@ -50,13 +50,13 @@ async function parseError(response: Response): Promise<RoadmapApiError> {
   return new RoadmapApiError(response.status, code, message);
 }
 
-function authHeaders(json: boolean): Record<string, string> {
+async function authHeaders(json: boolean): Promise<Record<string, string>> {
   const headers: Record<string, string> = {};
   const token = getAuthToken();
   if (token) headers.Authorization = `Bearer ${token}`;
   if (json) {
     headers["Content-Type"] = "application/json";
-    const csrf = getCsrfToken();
+    const csrf = await freshCsrfToken();
     if (csrf) headers["X-CSRF-Token"] = csrf;
   }
   return headers;
@@ -65,7 +65,7 @@ function authHeaders(json: boolean): Record<string, string> {
 export async function fetchStudentRoadmap(): Promise<StudentRoadmapView> {
   const response = await fetch(STUDENT_ROADMAP_QUERY_KEY[0], {
     credentials: "include",
-    headers: authHeaders(false),
+    headers: await authHeaders(false),
   });
   if (!response.ok) throw await parseError(response);
   return (await response.json()) as StudentRoadmapView;
@@ -75,7 +75,7 @@ export async function postStudentProgress(update: StudentProgressUpdate): Promis
   const response = await fetch(STUDENT_ROADMAP_PROGRESS_URL, {
     method: "POST",
     credentials: "include",
-    headers: authHeaders(true),
+    headers: await authHeaders(true),
     body: JSON.stringify(update),
   });
   if (!response.ok) throw await parseError(response);

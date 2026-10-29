@@ -6,7 +6,7 @@
  */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { HS_API, HS_ERROR_CODES, type HsStudentProgressInput, type StudentHighSchoolView } from "@shared/high-school-contract";
-import { ApiError, getAuthToken, getCsrfToken } from "@/lib/api";
+import { ApiError, getAuthToken, freshCsrfToken } from "@/lib/api";
 
 /** fetch that understands the contract's `{ error: { code, message } }` envelope (and the flat legacy shape). */
 export async function hsRequest<T>(url: string, init: { method?: string; body?: string } = {}): Promise<T> {
@@ -15,7 +15,7 @@ export async function hsRequest<T>(url: string, init: { method?: string; body?: 
   if (token) headers.Authorization = `Bearer ${token}`;
   if (init.body !== undefined) {
     headers["Content-Type"] = "application/json";
-    const csrf = getCsrfToken();
+    const csrf = await freshCsrfToken();
     if (csrf) headers["X-CSRF-Token"] = csrf;
   }
   const response = await fetch(url, { method: init.method ?? "GET", credentials: "include", headers, body: init.body });

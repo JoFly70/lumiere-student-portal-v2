@@ -4,7 +4,7 @@
  */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { HsCurriculumTemplate, StaffHighSchoolState } from "@shared/high-school-contract";
-import { getAuthToken, getCsrfToken } from "./api";
+import { getAuthToken, freshCsrfToken } from "./api";
 import { HS_STAFF_QUERY_KEY, classifyHsFailure, hsStaffPaths, type HsFailure } from "./admin-high-school-logic";
 
 export class HsApiError extends Error {
@@ -21,7 +21,7 @@ async function send<T>(method: "GET" | "POST" | "PUT" | "PATCH", url: string, da
   const token = getAuthToken();
   if (token) headers.set("Authorization", `Bearer ${token}`);
   if (method !== "GET") {
-    const csrf = getCsrfToken();
+    const csrf = await freshCsrfToken();
     if (csrf) headers.set("X-CSRF-Token", csrf);
     headers.set("Content-Type", "application/json");
   }

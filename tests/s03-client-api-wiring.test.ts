@@ -27,6 +27,7 @@ describe('S03 client API helper', () => {
     const fetchMock = vi.fn().mockResolvedValue(response(204));
     vi.stubGlobal('fetch', fetchMock);
     setAuthToken('tok');
+    setCsrfToken(`${Date.now() + 3_600_000}.n.s`); // a valid, unexpired token: no renewal call before the DELETE
     await expect(apiRequest('/api/documents/d1', { method: 'DELETE' })).resolves.toBeUndefined();
     const headers = fetchMock.mock.calls[0][1].headers as Headers;
     expect(headers.get('Authorization')).toBe('Bearer tok');

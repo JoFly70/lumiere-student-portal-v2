@@ -15,7 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { getAuthToken, getCsrfToken } from "@/lib/api";
+import { getAuthToken, freshCsrfToken } from "@/lib/api";
 import { StaffSectionHeader } from "@/components/staff/staff-ui";
 import type { IdentityCorrectionRequestView, StudentContactView, StudentProfileView } from "@shared/student-profile-contract";
 import {
@@ -53,7 +53,7 @@ async function staffRequest<T>(method: "GET" | "POST", url: string, body?: unkno
   const token = getAuthToken();
   if (token) headers.Authorization = `Bearer ${token}`;
   if (method !== "GET") {
-    const csrf = getCsrfToken();
+    const csrf = await freshCsrfToken();
     if (csrf) headers["X-CSRF-Token"] = csrf;
     headers["Content-Type"] = "application/json";
   }

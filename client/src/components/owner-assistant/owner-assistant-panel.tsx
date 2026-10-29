@@ -99,7 +99,9 @@ export function OwnerAssistantPanel({ studentId, studentLabel }: { studentId: st
 
       {ask.isError && (
         <StaffNotice tone="urgent" role="alert" testId="owner-ai-error">
-          {ask.error instanceof ApiError && ask.error.status === 403 ? "Only administrators can use Owner AI." : "The request failed. Nothing was changed."}
+          {ask.error instanceof ApiError && ask.error.status === 403
+            ? (ask.error.code === "CSRF_TOKEN_INVALID" || ask.error.code === "CSRF_TOKEN_MISSING" ? "Your session's security check expired. Refresh the page and ask again." : "Only administrators can use Owner AI.")
+            : "The request failed. Nothing was changed."}
         </StaffNotice>
       )}
 

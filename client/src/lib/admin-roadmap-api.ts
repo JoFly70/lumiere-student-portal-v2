@@ -1,5 +1,5 @@
 import type { AdminRoadmapState, StudentRoadmapView } from "@shared/student-roadmap-contract";
-import { getAuthToken, getCsrfToken } from "./api";
+import { getAuthToken, freshCsrfToken } from "./api";
 import { classifyRoadmapFailure, roadmapEndpoint, type RoadmapFailure } from "./admin-roadmap-logic";
 
 export class RoadmapApiError extends Error {
@@ -11,12 +11,12 @@ export class RoadmapApiError extends Error {
   }
 }
 
-function headers(json: boolean, method: string): Headers {
+async function headers(json: boolean, method: string): Promise<Headers> {
   const h = new Headers();
   const token = getAuthToken();
   if (token) h.set("Authorization", `Bearer ${token}`);
   if (method !== "GET") {
-    const csrf = getCsrfToken();
+    const csrf = await freshCsrfToken();
     if (csrf) h.set("X-CSRF-Token", csrf);
   }
   if (json) h.set("Content-Type", "application/json");
@@ -25,7 +25,7 @@ function headers(json: boolean, method: string): Headers {
 
 async function send<T>(method: string, url: string, body?: BodyInit | null, json = false): Promise<T> {
   // Multipart bodies must NOT get a Content-Type header: the browser adds the boundary.
-  const res = await fetch(url, { method, headers: headers(json, method), body: body ?? undefined, credentials: "include" });
+  const res = await fetch(url, { method, headers: await headers(json, method), body: body ?? undefined, credentials: "include" });
   if (!res.ok) {
     let parsed: unknown = null;
     try {

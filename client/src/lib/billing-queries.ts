@@ -4,7 +4,7 @@
  */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { StaffBillingView, StudentBillingView } from "@shared/billing-contract";
-import { ApiError, getAuthToken, getCsrfToken } from "@/lib/api";
+import { ApiError, getAuthToken, freshCsrfToken } from "@/lib/api";
 
 export const BILLING_API = "/api/student/billing";
 export const BILLING_QUERY_KEY = [BILLING_API] as const;
@@ -65,7 +65,7 @@ async function staffRequest<T>(url: string, method: "GET" | "POST", body?: unkno
   if (token) headers.Authorization = `Bearer ${token}`;
   if (method === "POST") {
     headers["Content-Type"] = "application/json";
-    const csrf = getCsrfToken();
+    const csrf = await freshCsrfToken();
     if (csrf) headers["X-CSRF-Token"] = csrf;
   }
   const response = await fetch(url, { method, credentials: "include", headers, body: body === undefined ? undefined : JSON.stringify(body) });

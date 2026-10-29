@@ -11,7 +11,7 @@ import type {
   StudentProfileView,
   StudentSelfServiceUpdate,
 } from "@shared/student-profile-contract";
-import { getAuthToken, getCsrfToken } from "@/lib/api";
+import { getAuthToken, freshCsrfToken } from "@/lib/api";
 import type { ProfileActions } from "@/components/profile/profile-actions";
 
 export const PROFILE_QUERY_KEY = ["/api/students/me/profile"] as const;
@@ -48,7 +48,7 @@ export async function profileRequest<T = unknown>(method: string, url: string, b
   const token = getAuthToken();
   if (token) headers.Authorization = `Bearer ${token}`;
   if (method !== "GET") {
-    const csrf = getCsrfToken();
+    const csrf = await freshCsrfToken();
     if (csrf) headers["X-CSRF-Token"] = csrf;
   }
   if (body !== undefined) headers["Content-Type"] = "application/json";
