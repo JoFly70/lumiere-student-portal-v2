@@ -408,3 +408,47 @@ export function sessionActions(status: "requested" | "confirmed" | "completed" |
 export function supportWindowTone(monthsLeft: number): Tone {
   return monthsLeft <= 1 ? "urgent" : monthsLeft <= 3 ? "attention" : "ok";
 }
+
+// ── Control Center cockpit (S28) ──────────────────────────────────────────────
+
+/** Arrival dates more than three years out are not an estimate anyone can use: treat them as "too early". */
+export function plausibleArrival(iso: string | null, todayIso: string): string | null {
+  if (!iso) return null;
+  const n = daysBetween(todayIso, iso);
+  if (n === null) return null;
+  return n > 3 * 366 ? null : iso;
+}
+
+/**
+ * Vertical lane offsets (px) so planes that sit close together on the fleet arc do not hide each other.
+ * `xs` are the planes' x positions in input order; a plane within `minGap` px of an already placed plane in the
+ * same lane moves to the next lane (0, -26, +26, -52, +52, ...). Returns one offset per input, in input order.
+ */
+export function fleetLanes(xs: readonly number[], minGap: number): number[] {
+  const order = xs.map((x, i) => ({ x, i })).sort((a, b) => a.x - b.x || a.i - b.i);
+  const steps = [0, -26, 26, -52, 52];
+  const lastX: number[] = steps.map(() => Number.NEGATIVE_INFINITY);
+  const out = new Array<number>(xs.length).fill(0);
+  for (const { x, i } of order) {
+    let lane = steps.findIndex((_, k) => x - lastX[k]! >= minGap);
+    if (lane < 0) lane = 0;
+    lastX[lane] = x;
+    out[i] = steps[lane]!;
+  }
+  return out;
+}
+
+/** Queue items by severity, demo students left out (the headline count is real students only). */
+export function queueSeverityCounts(queue: readonly Pick<ControlQueueItem, "severity" | "studentId">[], demoIds: ReadonlySet<string>): { critical: number; warning: number; info: number } {
+  const out = { critical: 0, warning: 0, info: 0 };
+  for (const q of queue) if (!demoIds.has(q.studentId)) out[q.severity] += 1;
+  return out;
+}
+
+/** Day of the month, days in the month and days left after today (local calendar). */
+export function monthProgress(todayIso: string): { day: number; days: number; left: number } | null {
+  const p = isoParts(todayIso);
+  if (!p) return null;
+  const days = new Date(Date.UTC(p.year, p.month + 1, 0)).getUTCDate();
+  return { day: p.day, days, left: days - p.day };
+}

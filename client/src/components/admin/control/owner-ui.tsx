@@ -10,14 +10,15 @@ import { staffBtn } from "@/components/staff/staff-ui";
 import { arcGeometry, arcStops, formatDay, isoParts, type QueueIconKey, type Tone } from "@/lib/owner-presentation";
 
 const TONE_PILL: Record<Tone, string> = {
-  urgent: "border-st-urgent/40 bg-st-urgent-soft text-st-urgent",
-  attention: "border-st-attention/40 bg-st-attention-soft text-st-attention",
-  ok: "border-st-applied/40 bg-st-applied-soft text-st-applied",
+  // Owner rule: no red/orange/green. Urgent and attention are muted umber (urgent is heavier), ok is muted sage.
+  urgent: "border-[#6b4a2e]/40 bg-[#6b4a2e]/[0.08] text-[#6b4a2e] font-semibold dark:border-[#d3b48f]/40 dark:bg-[#d3b48f]/[0.12] dark:text-[#d3b48f]",
+  attention: "border-[#a3835f]/40 bg-[#6b4a2e]/[0.05] text-[#6b4a2e] dark:border-[#a98d6c]/40 dark:bg-[#d3b48f]/[0.08] dark:text-[#d3b48f]",
+  ok: "border-[#5f7563]/35 bg-[#5f7563]/[0.10] text-[#4f6453] dark:border-[#a3b8a5]/35 dark:bg-[#a3b8a5]/[0.12] dark:text-[#a3b8a5]",
   gold: "border-student-gold bg-student-gold-soft text-student-gold-ink",
   neutral: "border-student-line-strong bg-student-card text-student-muted",
 };
 const TONE_DOT: Record<Tone, string> = {
-  urgent: "bg-st-urgent", attention: "bg-st-attention", ok: "bg-st-applied", gold: "bg-student-gold-ink", neutral: "bg-student-muted",
+  urgent: "bg-[#6b4a2e] dark:bg-[#d3b48f]", attention: "bg-[#a3835f] dark:bg-[#a98d6c]", ok: "bg-[#5f7563] dark:bg-[#a3b8a5]", gold: "bg-student-gold-ink", neutral: "bg-student-muted",
 };
 
 export function TonePill({ tone, children, dot = true, className, testId }: { tone: Tone; children: React.ReactNode; dot?: boolean; className?: string; testId?: string }) {
@@ -33,9 +34,9 @@ const ICONS: Record<QueueIconKey, typeof FileText> = {
   document: FileText, alert: AlertTriangle, clock: Clock, card: CreditCard, check: Check, message: MessageSquare, calendar: CalendarClock, shuffle: Shuffle, flag: Flag,
 };
 const BADGE_TONE: Record<Tone, string> = {
-  urgent: "border-st-urgent/40 bg-st-urgent-soft text-st-urgent",
-  attention: "border-st-attention/30 bg-st-attention-soft text-st-attention",
-  ok: "border-st-applied/30 bg-st-applied-soft text-st-applied",
+  urgent: "border-[#6b4a2e]/45 bg-[#6b4a2e]/[0.08] text-[#6b4a2e] dark:border-[#d3b48f]/45 dark:bg-[#d3b48f]/[0.12] dark:text-[#d3b48f]",
+  attention: "border-[#a3835f]/35 bg-[#6b4a2e]/[0.05] text-[#7c5c3c] dark:border-[#a98d6c]/35 dark:bg-[#d3b48f]/[0.08] dark:text-[#c9ad8a]",
+  ok: "border-[#5f7563]/35 bg-[#5f7563]/[0.10] text-[#4f6453] dark:border-[#a3b8a5]/35 dark:bg-[#a3b8a5]/[0.12] dark:text-[#a3b8a5]",
   gold: "border-student-gold bg-student-gold-soft text-student-gold-ink",
   neutral: "border-student-line bg-student-gold-soft/50 text-student-muted",
 };

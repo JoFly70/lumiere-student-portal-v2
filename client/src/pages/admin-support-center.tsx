@@ -9,7 +9,7 @@ import { StaffPage } from "@/components/staff/staff-ui";
 
 export default function AdminSupportCenter() {
   return (
-    <StaffPage width="wide" className="pb-8" testId="admin-support-center">
+    <StaffPage width="wide" className="max-w-[1640px] pb-8" testId="admin-support-center">
       <ControlCenter />
     </StaffPage>
   );
