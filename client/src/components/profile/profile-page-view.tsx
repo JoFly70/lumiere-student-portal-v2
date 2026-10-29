@@ -21,6 +21,8 @@ import { ContactsSection } from "./contacts-section";
 import { EligibilitySection } from "./eligibility-section";
 import { AccountSection } from "./account-section";
 import { pt } from "./pt";
+import { AgreementCard } from "@/components/s27/profile-agreement";
+import type { StudentJourneyView } from "@shared/s27-contract";
 import { useT } from "@/i18n";
 
 
@@ -174,7 +176,7 @@ export function ProfileHeader({ identity }: { identity: StudentProfileView["iden
   );
 }
 
-export function ProfilePageView({ profile }: { profile: StudentProfileView }) {
+export function ProfilePageView({ profile, journey = null }: { profile: StudentProfileView; journey?: StudentJourneyView | null }) {
   // Subscribing here re-renders the whole (non-memoised) profile tree when the language changes.
   useT();
   return (
@@ -183,6 +185,7 @@ export function ProfilePageView({ profile }: { profile: StudentProfileView }) {
         <ProfileHeader identity={profile.identity} />
         <ProfileSectionNav />
         <ReadinessPanel items={profile.readiness} />
+        <AgreementCard journey={journey} />
         <IdentitySection identity={profile.identity} />
         <ContactSection contact={profile.contact} />
         <BackgroundSection background={profile.academicBackground} />

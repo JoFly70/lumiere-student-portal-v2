@@ -1,0 +1,77 @@
+/*
+ * S27 additions on top of student-s27.css: pieces the app needs that the design mock did not carry
+ * (real buttons-as-links, empty states, form controls, overflow guards). Scoped under .s27.
+ */
+.s27 a{color:inherit}
+.s27 .mono{font-family:var(--font-mono);font-size:.72rem;color:var(--t-muted)}
+.s27 .num{font-family:var(--font-sans);font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.s27 .eyebrow{display:flex;align-items:center;gap:10px;font:600 .68rem var(--font-sans);letter-spacing:.16em;text-transform:uppercase;color:var(--t-accent-text)}
+.s27 .eyebrow::before{content:"";width:22px;height:1px;background:var(--t-accent)}
+.s27 .k{font:500 .63rem var(--font-sans);letter-spacing:.14em;text-transform:uppercase;color:var(--t-muted)}
+.s27 .bd-eye{color:#e2cb98}.s27 .bd-eye::before{background:#c9aa6c}
+.s27 .chat-x{width:32px;height:32px;border-radius:8px;border:0;background:none;cursor:pointer;color:var(--t-muted);display:inline-grid;place-items:center}
+.s27 .chat-x:hover{background:var(--t-hover)}
+.s27 a.b1,.s27 a.b2,.s27 a.b-log,.s27 a.b-gold,.s27 a.b2l{display:inline-flex;align-items:center;justify-content:center;text-decoration:none}
+.s27 .b1[disabled],.s27 .b2[disabled],.s27 .b-gold[disabled]{opacity:.5;cursor:default}
+.s27 .b1{min-height:40px}
+.s27 .b2{min-height:40px;display:inline-flex;align-items:center}
+.s27 .b-sm{min-height:36px}
+.s27 .link{min-height:24px}
+.s27 .state{border:1px dashed var(--t-line-3);border-radius:14px;padding:22px;display:grid;gap:8px;justify-items:start;background:var(--t-panel)}
+.s27 .state h2,.s27 .state h3{font-size:1.4rem}
+.s27 .state p{color:var(--t-text-2);max-width:60ch}
+.s27 .notice{border:1px solid var(--t-line-2);border-left:3px solid var(--t-accent);border-radius:12px;padding:12px 14px;background:var(--t-panel);font-size:.84rem;color:var(--t-text-2)}
+.s27 .notice.warn{border-left-color:var(--t-amber)}
+.s27 .skeleton{border-radius:14px;background:linear-gradient(90deg,var(--t-panel-3),var(--t-panel-2),var(--t-panel-3));background-size:200% 100%;min-height:120px}
+@media (prefers-reduced-motion:no-preference){.s27 .skeleton{animation:s27-shimmer 1.6s linear infinite}}
+@keyframes s27-shimmer{to{background-position:-200% 0}}
+.s27 .alert{overflow:hidden}
+.s27 .alert .a{margin-top:4px}
+.s27 .alert .a a,.s27 .alert .a button{display:inline-block}
+.s27 .alert .d,.s27 .alert .t{overflow-wrap:anywhere}
+.s27 .chipbtn{text-decoration:none;max-width:100%;text-align:left}
+.s27 .chipbtn span{min-width:0;overflow-wrap:anywhere}
+.s27 .tip{font-family:var(--font-sans)}
+.s27 .map svg text{font-family:var(--font-sans)}
+.s27 .map .stop{cursor:pointer;outline:none}
+.s27 .map .stop:focus-visible circle.stopdot{stroke:var(--t-accent);stroke-width:3}
+.s27 select,.s27 input[type=number],.s27 input[type=text]{width:100%;background:var(--t-panel-2);border:1px solid var(--t-line-2);border-radius:10px;padding:11px 12px;font:inherit;color:var(--t-text);min-height:44px}
+.s27 .askmini input{min-height:40px;padding:9px 11px;border-radius:9px}
+.s27 textarea{min-height:96px}
+.s27 .rm2-sum .meter,.s27 .rm2-sum span.meter{display:block}
+.s27 .rm2-sum .k{display:block}
+.s27 .dt2{flex:none}
+.s27 .dt2 svg{width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:3}
+.s27 .nc h3{overflow-wrap:anywhere}
+.s27 .uplist li>span{min-width:0}
+.s27 .uplist b{overflow-wrap:anywhere}
+.s27 .rm2-st h2{overflow-wrap:anywhere}
+.s27 .stripe-legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.74rem;color:var(--t-muted)}
+.s27 .more-link{justify-self:start}
+.s27 .ci svg,.s27 .si svg,.s27 .fi svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.7}
+.s27 .pcard .pc-art svg{display:block}
+.s27 .btns .b2,.s27 .btns .b1{text-align:center}
+.s27 .pm{min-width:0}
+.s27 .pm b{overflow-wrap:anywhere}
+.s27 .th{background:none;border-width:0 0 1px;border-style:solid;border-color:var(--t-line);text-align:left;width:100%;color:inherit}
+.s27 .th:focus-visible{outline-offset:-2px}
+.s27 .needc .btns{justify-content:flex-end}
+.s27 .doclist small{overflow-wrap:anywhere}
+.s27 .doclist li>span{min-width:0}
+.s27 .doclist b,.s27 .doclist strong{overflow-wrap:anywhere}
+.s27 .fileinput{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.s27 .pill{max-width:100%;white-space:normal}
+.s27 [data-testid="beyond-future-timeline"] .tl-n{min-width:0}
+@media (max-width:480px){.s27 .alert{grid-template-columns:56px minmax(0,1fr)}.s27 .alert .rg,.s27 .alert .rg svg{width:56px;height:56px}.s27 .studio-l,.s27 .studio-r{padding:16px}.s27 .flight .ch,.s27 .planner-toggle,.s27 .info>div{padding-left:16px;padding-right:16px}.s27 .card{padding:18px 16px}}
+.s27 .ai-card .qs{margin:4px 0}
+/* Beyond: hero art always fills the card */
+.s27 .bd-hero{isolation:isolate}
+.s27 .bd-sky{z-index:0}
+/* assistant panel link used from cards */
+.s27 .link-btn{background:none;border:0;padding:0;color:var(--t-accent-text);font-weight:600;font-size:.8rem;cursor:pointer;text-decoration:none}
+.s27 .link-btn:hover{text-decoration:underline}
+.s27 .alert .rg b small{font-size:.5rem;letter-spacing:.04em}
+.s27 .b1{display:inline-flex;align-items:center;justify-content:center}
+.s27 .pm .chip.late{background:var(--t-red-dim);color:var(--t-red)}
+.s27 .paid .meter{background:rgba(255,255,255,.14)}
+.s27 .paid .meter i{background:#e9c77f}

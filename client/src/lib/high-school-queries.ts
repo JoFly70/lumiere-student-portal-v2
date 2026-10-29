@@ -9,7 +9,7 @@ import { HS_API, HS_ERROR_CODES, type HsStudentProgressInput, type StudentHighSc
 import { ApiError, getAuthToken, getCsrfToken } from "@/lib/api";
 
 /** fetch that understands the contract's `{ error: { code, message } }` envelope (and the flat legacy shape). */
-async function hsRequest<T>(url: string, init: { method?: string; body?: string } = {}): Promise<T> {
+export async function hsRequest<T>(url: string, init: { method?: string; body?: string } = {}): Promise<T> {
   const headers: Record<string, string> = {};
   const token = getAuthToken();
   if (token) headers.Authorization = `Bearer ${token}`;
@@ -76,8 +76,9 @@ export function interpretProgressError(error: unknown): HsProgressFailure {
   return { kind: "error", refetch: false, message: error instanceof Error ? error.message : "Your update could not be saved." };
 }
 
-export function useHighSchoolView() {
+export function useHighSchoolView(enabled = true) {
   return useQuery<StudentHighSchoolView>({
+    enabled,
     queryKey: [...HS_QUERY_KEY],
     queryFn: () => hsRequest<StudentHighSchoolView>(HS_API.student),
     ...HS_QUERY_OPTIONS,

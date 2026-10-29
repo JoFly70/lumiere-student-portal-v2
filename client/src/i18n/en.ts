@@ -16,6 +16,7 @@ import { welcomeEn } from "./modules/welcome";
 import { highSchoolEn } from "./modules/high-school";
 import { studentUxEn } from "./modules/student-ux";
 import { s27OwnerEn } from "./modules/s27-owner";
+import { s27En } from "./modules/s27";
 
 export const en = {
   ...authEn,
@@ -28,6 +29,7 @@ export const en = {
   ...highSchoolEn,
   ...studentUxEn,
   ...s27OwnerEn,
+  ...s27En,
   // Language
   "language.label": "Language",
   "language.en": "English",

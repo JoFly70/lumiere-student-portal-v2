@@ -39,6 +39,7 @@ import { useSupportText } from "./original-support-text";
 import { STATUS_ICON, StatusBadge, formatDate, formatFileSize } from "./original-support-bits";
 import { OriginalCreateDialog, type CreatedTicket } from "./original-create-dialog";
 import { OriginalTicketDetailModal } from "./original-ticket-detail";
+import { SupportLead } from "@/components/s27/support-lead";
 
 export { SUPPORT_TEXT } from "./original-support-text";
 
@@ -174,16 +175,14 @@ export function OriginalStudentSupport() {
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6" data-testid="original-student-support">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold sm:text-3xl" data-testid="text-page-title">{T.title}</h1>
-          <p className="mt-1 text-muted-foreground">{T.subtitle}</p>
-        </div>
-        <Button onClick={() => setCreateOpen(true)} data-testid="button-create-ticket">
-          <Plus className="mr-2 h-4 w-4" />
-          {T.createTicket}
-        </Button>
-      </div>
+      <SupportLead
+        action={(
+          <Button onClick={() => setCreateOpen(true)} data-testid="button-create-ticket">
+            <Plus className="mr-2 h-4 w-4" />
+            {T.createTicket}
+          </Button>
+        )}
+      />
 
       {created && <PostCreateUploads key={created.id} created={created} onDone={() => setCreated(null)} />}
 

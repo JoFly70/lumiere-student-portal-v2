@@ -14,6 +14,7 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { BillingS27 } from "@/components/s27/billing-view";
 import { StudentSurface } from "@/components/student-progress/student-ui";
 import { useT, type TranslationKey } from "@/i18n";
 import { formatBillingDate, paidPercent, useStudentBilling } from "@/lib/billing-queries";
@@ -464,31 +465,8 @@ function LoadError({ onRetry }: { onRetry: () => void }) {
 }
 
 export default function Billing() {
-  const { t, language } = useT();
-  const BT = billingText(language);
   const { data, isLoading, error, refetch } = useStudentBilling();
-
-  return (
-    <StudentSurface testId="page-billing">
-      <div className="mx-auto max-w-6xl space-y-5">
-        <header>
-          <h1 className="flex items-center gap-2 text-3xl font-bold" data-testid="text-page-title">
-            <ReceiptText className="h-7 w-7 text-muted-foreground" aria-hidden />
-            {t("billing.title")}
-          </h1>
-          <p className="mt-1 text-muted-foreground">{t("billing.subtitle")}</p>
-        </header>
-        {isLoading ? (
-          <Loading />
-        ) : error || !data ? (
-          <LoadError onRetry={() => void refetch()} />
-        ) : data.state === "not_configured" ? (
-          <NotConfigured awaiting={data.evidenceAwaitingReview.length} />
-        ) : (
-          <Configured v={data} />
-        )}
-      </div>
-    </StudentSurface>
-  );
+  if (isLoading) return <StudentSurface testId="page-billing"><div className="mx-auto max-w-6xl"><Loading /></div></StudentSurface>;
+  if (error || !data) return <StudentSurface testId="page-billing"><div className="mx-auto max-w-6xl"><LoadError onRetry={() => void refetch()} /></div></StudentSurface>;
+  return <BillingS27 data={data} />;
 }
-

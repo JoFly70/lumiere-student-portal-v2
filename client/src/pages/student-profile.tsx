@@ -1,3 +1,4 @@
+import { useStudentJourney } from "@/lib/s27/journey-queries";
 import { useStudentProfile, useLiveProfileActions } from "@/hooks/use-student-profile";
 import { ProfileActionsProvider } from "@/components/profile/profile-actions";
 import { ProfileErrorState, ProfileNotReady, ProfilePageView, ProfileSkeleton } from "@/components/profile/profile-page-view";
@@ -10,13 +11,14 @@ import { ProfileErrorState, ProfileNotReady, ProfilePageView, ProfileSkeleton } 
 export default function StudentProfile() {
   const { data: profile, isLoading, isError, refetch } = useStudentProfile();
   const actions = useLiveProfileActions(profile?.identity.studentId);
+  const journey = useStudentJourney();
 
   if (isLoading) return <ProfileSkeleton />;
   if (isError) return <ProfileErrorState onRetry={() => void refetch()} />;
   if (!profile) return <ProfileNotReady />;
   return (
     <ProfileActionsProvider value={actions}>
-      <ProfilePageView profile={profile} />
+      <ProfilePageView profile={profile} journey={journey.journey} />
     </ProfileActionsProvider>
   );
 }

@@ -301,3 +301,24 @@
 .aa-head > :first-child { margin-right: 6px; }
 .aa-title { font-size: 1.3rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .aa-subtitle { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ---- S27: Lumière orb avatar, hero header, source line ------------------------------------------------ */
+.aa-fab-crest { background: none; }
+.aa-head-hero { position: relative; flex-direction: column; justify-content: center; text-align: center; gap: 6px; padding: calc(20px + env(safe-area-inset-top, 0px)) 16px 16px; background: radial-gradient(120% 90% at 50% 0%, var(--t-accent-dim), transparent 70%), var(--t-panel-2); }
+@media (min-width: 768px) { .aa-head-hero { padding-top: 20px; } }
+.aa-head-hero .aa-head-text { flex: none; }
+.aa-head-hero .aa-title { font-size: 1.5rem; }
+.aa-orb-wrap { display: grid; place-items: center; padding: 6px 0 2px; }
+.aa-head-actions { display: flex; align-items: center; flex: none; }
+.aa-head-hero .aa-head-actions { position: absolute; top: calc(6px + env(safe-area-inset-top, 0px)); right: 6px; }
+@media (min-width: 768px) { .aa-head-hero .aa-head-actions { top: 6px; } }
+.aa-head-hero .aa-iconbtn { width: 40px; height: 40px; }
+.aa-msg-assistant { display: grid; grid-template-columns: 26px minmax(0, 1fr); column-gap: 8px; align-items: end; max-width: 100%; }
+.aa-msg-assistant > .aa-avatar { grid-column: 1; grid-row: 2; margin-bottom: 4px; }
+.aa-msg-assistant > .aa-msg-label { grid-column: 2; grid-row: 1; }
+.aa-msg-assistant > .aa-bubble { grid-column: 2; grid-row: 2; max-width: 92%; justify-self: start; }
+.aa-from { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+.aa-from .aa-block-title { margin: 0; font-family: var(--font-mono); text-transform: none; letter-spacing: 0; font-size: 0.6875rem; color: var(--t-accent-text); }
+.aa-from .aa-sourcelist { display: flex; flex-wrap: wrap; gap: 4px 10px; }
+.aa-from .aa-source-link, .aa-from .aa-verified { font-family: var(--font-mono); font-size: 0.6875rem; }
+.aa-dots i { background: var(--t-muted); }

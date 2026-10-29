@@ -43,6 +43,10 @@ import { Eyebrow, Pill, StudentSurface, buttonClass } from "@/components/student
 import { cn } from "@/lib/utils";
 import { useT, type Language, type TranslationKey } from "@/i18n";
 import { docTypeLabel } from "@/lib/document-type-labels";
+import { DocumentsLead, type LeadDoc } from "@/components/s27/documents-lead";
+import { useStudentJourney } from "@/lib/s27/journey-queries";
+import { useStudentPrograms } from "@/lib/student-programs";
+import { useHighSchoolView } from "@/lib/high-school-queries";
 import { DOCUMENT_ACCEPT_ATTR, checkDocumentFile, resolveDocumentMime } from "@/lib/document-upload-policy";
 
 type DocumentCategory =
@@ -265,6 +269,10 @@ export default function Documents() {
   const [replaceDocType, setReplaceDocType] = useState<string | null>(null);
 
   const documents = documentsData || [];
+  const journey = useStudentJourney();
+  const programs = useStudentPrograms();
+  const hsView = useHighSchoolView(programs.hasHighSchool);
+  const graduation = hsView.data?.graduation ?? null;
   const isLoading = profileLoading || documentsLoading;
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -493,67 +501,14 @@ export default function Documents() {
   return (
     <StudentSurface testId="page-documents">
     <div className="mx-auto max-w-6xl space-y-6">
-      <header className="space-y-3">
-        <Eyebrow>{t("nav.file")}</Eyebrow>
-        <h1 className="font-serif text-3xl leading-tight tracking-tight text-student-ink sm:text-5xl" data-testid="text-page-title">{t("documents.pageTitle")}</h1>
-        <p className="max-w-2xl text-sm leading-relaxed text-student-muted">
-          {t("documents.intro")}
-        </p>
-      </header>
-
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-        {isLoading ? (
-          <Card className="col-span-2">
-            <CardContent className="p-4 flex items-center justify-center">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            </CardContent>
-          </Card>
-        ) : (
-          <>
-            {Object.entries(statusCounts).map(([status, count]) => {
-              const config = statusConfig[status as DocumentStatus];
-              const StatusIcon = config.icon;
-              return (
-                <Card
-                  key={status}
-                  className="hover-elevate cursor-pointer"
-                  onClick={() => setSelectedStatus(selectedStatus === status ? "all" : status as DocumentStatus)}
-                  data-testid={`card-status-${status}`}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg bg-student-gold-soft">
-                        <StatusIcon className="h-5 w-5 text-student-gold-ink" aria-hidden="true" />
-                      </div>
-                      <div>
-                        <p className="font-serif text-3xl text-student-ink">{count}</p>
-                        <p className="text-xs text-muted-foreground">{t(`documents.statusLabel.${status}` as TranslationKey)}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-            <Card
-              className="hover-elevate cursor-pointer col-span-2"
-              onClick={() => setSelectedStatus("all")}
-              data-testid="card-status-total"
-            >
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-student-gold-soft">
-                    <FileText className="h-5 w-5 text-student-gold-ink" aria-hidden="true" />
-                  </div>
-                  <div>
-                    <p className="font-serif text-3xl text-student-ink">{documents.length}</p>
-                    <p className="text-xs text-muted-foreground">{t("documents.total")}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </>
-        )}
-      </div>
+      <DocumentsLead
+        docs={documents as unknown as LeadDoc[]}
+        journey={journey.journey}
+        graduation={graduation}
+        onReplace={(doc) => startReplace(doc as unknown as StudentDocument)}
+        onUploadFor={(docType) => { setReplaceDocType(docType); replaceInputRef.current?.click(); }}
+        busy={uploadProgress !== null}
+      />
 
       <Card>
         <CardHeader>
