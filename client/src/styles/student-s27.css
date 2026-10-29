@@ -123,6 +123,8 @@
 .s27 .next h3{font-size:1.55rem;line-height:1.1}
 .s27 .next p{color:var(--t-text-2);font-size:.86rem}
 .s27 .agenda{display:grid}
+.s27 .pair{align-items:start}
+.s27 .ch .meta{font:500 .78rem var(--font-sans);color:var(--t-muted)}
 .s27 .ag{display:grid;grid-template-columns:3.2rem minmax(0,1fr) auto;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--t-line);font-size:.84rem}
 .s27 .ag:last-child{border-bottom:0}
 .s27 .ag .dt{font:600 .72rem var(--font-sans));color:var(--t-muted);text-transform:uppercase;letter-spacing:.06em}

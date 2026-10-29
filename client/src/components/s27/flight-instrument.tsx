@@ -133,6 +133,7 @@ export function FlightInstrument(p: InstrumentProps) {
 
   const beads = g ? beadFractions(p.confirmed, p.required, p.beadPace) : [];
   const narrow = g?.narrow ?? false;
+  const layout = g ? placeLabels(g, p.stops, p.required, now, p.youLabel, width, height) : null;
 
   return (
     <div className="map" ref={mapRef} role="group" aria-label={p.ariaLabel} data-testid="flight-instrument" style={{ height }}>
@@ -162,9 +163,10 @@ export function FlightInstrument(p: InstrumentProps) {
           {p.stops.map((s) => {
             const f = p.required > 0 ? s.credits / p.required : 0;
             const pt = pointOnArc(g, f);
-            const near = Math.abs(f - now) < 0.1;
-            const nx = near ? pt.x - (narrow ? 14 : 20) : pt.x;
-            const anchor = near ? "end" : "middle";
+            const slot = layout?.stops[s.id];
+            const nx = slot?.x ?? pt.x;
+            const anchor = slot?.anchor ?? "middle";
+            const ny = slot?.y ?? pt.y - (narrow ? 14 : 20);
             const show = () => showTip(pt.x, pt.y - (narrow ? 30 : 56), `${s.name} · ${s.sub}`, s.tipBody);
             return (
               <g key={s.id} className="stop" tabIndex={0} role="button" aria-label={`${s.name}. ${s.sub}`}
@@ -173,8 +175,8 @@ export function FlightInstrument(p: InstrumentProps) {
                 <circle cx={pt.x} cy={pt.y} r="18" fill="transparent" />
                 <circle className="stopdot" cx={pt.x} cy={pt.y} r="7" fill={s.reached ? "var(--t-accent)" : "var(--t-panel)"} stroke={s.reached ? "var(--t-panel)" : "var(--t-line-3)"} strokeWidth={s.reached ? 3 : 2} />
                 {s.reached && <path d={`M${pt.x - 3},${pt.y} l2,2.2 l4,-4.2`} fill="none" stroke="var(--t-accent-ink)" strokeWidth="1.6" strokeLinecap="round" />}
-                <text x={nx} y={pt.y - (narrow ? 14 : 20)} textAnchor={anchor} fill="var(--t-heading)" style={{ font: `500 ${narrow ? 16 : 20}px var(--font-display)` }}>{s.name}</text>
-                {!narrow && <text x={nx} y={pt.y - 40} textAnchor={anchor} fill={s.reached ? "var(--t-accent-text)" : "var(--t-muted)"} style={{ font: "500 10px var(--font-sans)", letterSpacing: ".08em", textTransform: "uppercase" }}>{s.sub}</text>}
+                <text x={nx} y={ny} textAnchor={anchor} fill="var(--t-heading)" style={{ font: `500 ${narrow ? 16 : 20}px var(--font-display)` }}>{s.name}</text>
+                {!narrow && <text x={nx} y={ny - 20} textAnchor={anchor} fill={s.reached ? "var(--t-accent-text)" : "var(--t-muted)"} style={{ font: "500 10px var(--font-sans)", letterSpacing: ".08em", textTransform: "uppercase" }}>{s.sub}</text>}
               </g>
             );
           })}
@@ -200,7 +202,7 @@ export function FlightInstrument(p: InstrumentProps) {
           {ghost && <GhostPlane g={g} ghost={ghost} width={width} />}
 
           {/* you */}
-          <Traveller g={g} t={planeT} label={p.youLabel} narrow={narrow} />
+          <Traveller g={g} t={planeT} label={p.youLabel} narrow={narrow} tag={layout?.tag} />
         </svg>
       )}
       <div className="tip" role="status" style={tip ? { left: tip.x, top: tip.y, opacity: 1 } : { opacity: 0 }}>
@@ -220,10 +222,63 @@ export function rosette(): string {
   return `${d}Z`;
 }
 
-function Traveller({ g, t, label, narrow }: { g: ReturnType<typeof arcGeometry>; t: number; label: string; narrow: boolean }) {
+type Box = { x: number; y: number; w: number; h: number };
+const hit = (a: Box, b: Box) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+const tagWidth = (label: string) => Math.max(70, label.length * 6.6 + 18);
+
+/**
+ * Collision-aware label placement for the journey arc. Stop names try above-centre, above-left, above-right and
+ * below the dot, taking the first slot that clears the plane, the "You" tag, the enrolled label and earlier names.
+ * The tag then tries below the plane (centre, right, left, lower) against every stop label and dot.
+ */
+function placeLabels(g: ReturnType<typeof arcGeometry>, stops: readonly { id: string; name: string; sub: string; credits: number }[], required: number, now: number, youLabel: string, width: number, height: number) {
+  const narrow = g.narrow;
+  const size = narrow ? 16 : 20;
+  const plane = pointOnArc(g, now);
+  const planeBox: Box = { x: plane.x - 24, y: plane.y - 24, w: 48, h: 48 };
+  const enrolled: Box = { x: narrow ? g.A.x : g.A.x - 40, y: g.A.y + 14, w: 80, h: 34 };
+  const placed: Box[] = [];
+  const out: Record<string, { x: number; y: number; anchor: "start" | "middle" | "end" }> = {};
+  const dots: Box[] = [];
+  const tagH = 24;
+  const tagW = tagWidth(youLabel);
+  const tagBelow: Box = { x: plane.x - tagW / 2, y: plane.y + 26, w: tagW, h: tagH };
+  for (const s of stops) {
+    const f = required > 0 ? s.credits / required : 0;
+    const pt = pointOnArc(g, f);
+    dots.push({ x: pt.x - 9, y: pt.y - 9, w: 18, h: 18 });
+    const w = Math.max(s.name.length * size * 0.52, narrow ? 0 : s.sub.length * 6.4);
+    const h = narrow ? size + 4 : 50;
+    const up = pt.y - (narrow ? 14 : 20);
+    const cands: { x: number; y: number; anchor: "start" | "middle" | "end" }[] = [
+      { x: pt.x, y: up, anchor: "middle" },
+      { x: pt.x - 14, y: up, anchor: "end" },
+      { x: pt.x + 14, y: up, anchor: "start" },
+      { x: pt.x, y: pt.y + (narrow ? 30 : 56), anchor: "middle" },
+    ];
+    const boxOf = (c: (typeof cands)[number]): Box => ({ x: c.anchor === "middle" ? c.x - w / 2 : c.anchor === "end" ? c.x - w : c.x, y: c.y - h + 4, w, h });
+    const ok = (b: Box) => b.x >= 2 && b.x + b.w <= width - 2 && b.y >= 0 && !hit(b, planeBox) && !hit(b, enrolled) && !placed.some((q) => hit(b, q)) && !hit(b, tagBelow);
+    const pick = cands.find((c) => ok(boxOf(c))) ?? cands.find((c) => { const b = boxOf(c); return !hit(b, planeBox) && b.x >= 2 && b.x + b.w <= width - 2; }) ?? cands[0]!;
+    out[s.id] = pick;
+    placed.push(boxOf(pick));
+  }
+  const tagCands: Box[] = [
+    tagBelow,
+    { ...tagBelow, x: plane.x + 14 },
+    { ...tagBelow, x: plane.x - 14 - tagW },
+    { ...tagBelow, y: plane.y + 56 },
+    { ...tagBelow, x: plane.x + 14, y: plane.y + 56 },
+  ];
+  const clear = (b: Box) => b.x >= 2 && b.x + b.w <= width - 2 && b.y + b.h <= height - 2 && !placed.some((q) => hit(b, q)) && !dots.some((q) => hit(b, q)) && !hit(b, enrolled);
+  const t = tagCands.find(clear) ?? tagBelow;
+  return { stops: out, tag: { dx: t.x - plane.x, dy: t.y - plane.y - 26, w: t.w } };
+}
+
+function Traveller({ g, t, label, narrow, tag }: { g: ReturnType<typeof arcGeometry>; t: number; label: string; narrow: boolean; tag?: { dx: number; dy: number; w: number } }) {
   const p = pointOnArc(g, t);
   const w = Math.max(70, label.length * 6.6 + 18);
-  const lx = narrow ? p.x - w / 2 + 10 : p.x - w / 2;
+  const lx = tag ? p.x + tag.dx : narrow ? p.x - w / 2 + 10 : p.x - w / 2;
+  const ty = tag ? tag.dy : 0;
   return (
     <g>
       <g transform={`translate(${p.x},${p.y})`}>
@@ -231,8 +286,8 @@ function Traveller({ g, t, label, narrow }: { g: ReturnType<typeof arcGeometry>;
         <circle r="15" fill="var(--t-heading)" />
         <path d={PLANE} fill="var(--t-bg)" transform={`rotate(${angleOnArc(g, t)})`} />
       </g>
-      <rect x={lx} y={p.y + 26} width={w} height="24" rx="6" fill="var(--t-panel)" stroke="var(--t-accent-line)" />
-      <text x={lx + 9} y={p.y + 42} fill="var(--t-heading)" style={{ font: "600 11.5px var(--font-sans)" }}>{label}</text>
+      <rect x={lx} y={p.y + 26 + ty} width={w} height="24" rx="6" fill="var(--t-panel)" stroke="var(--t-accent-line)" />
+      <text x={lx + 9} y={p.y + 42 + ty} fill="var(--t-heading)" style={{ font: "600 11.5px var(--font-sans)" }}>{label}</text>
     </g>
   );
 }

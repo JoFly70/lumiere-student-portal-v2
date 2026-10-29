@@ -400,12 +400,18 @@ function UpNextCard({ task, course, today }: { task: ReturnType<typeof openTasks
 
 function WeekCard({ open, today }: { open: ReturnType<typeof openTasks>; today: string }) {
   const { t, lang } = useS27T();
-  const items = weekAgenda(open.map((o) => ({ courseKey: o.courseKey, courseTitle: o.courseTitle, key: o.key, title: o.title, dueDate: o.dueDate, overdue: o.overdue })), today);
+  const all = open.map((o) => ({ courseKey: o.courseKey, courseTitle: o.courseTitle, key: o.key, title: o.title, dueDate: o.dueDate, overdue: o.overdue }));
+  const week = weekAgenda(all, today);
+  // Nothing due this week: show the nearest dated item after it so the card still answers "what next".
+  const later = week.length === 0
+    ? all.filter((o) => o.dueDate && o.dueDate > today).sort((x, y) => String(x.dueDate).localeCompare(String(y.dueDate)))[0]
+    : undefined;
+  const items = week.length ? week : later ? [later] : [];
   return (
-    <section className="card" aria-labelledby="wk-h" data-testid="fd-week">
-      <div className="ch"><h2 id="wk-h">{t("s27.week.title")}</h2><span className="mono">{t("s27.week.count", { n: items.length })}</span></div>
+    <section className="card wk-card" aria-labelledby="wk-h" data-testid="fd-week">
+      <div className="ch"><h2 id="wk-h">{t("s27.week.title")}</h2><span className="meta">{t("s27.week.count", { n: week.length })}</span></div>
       <div className="agenda">
-        {items.length === 0 && <p className="small">{t("s27.week.empty")}</p>}
+        {week.length === 0 && <p className="small">{t("s27.week.empty")}</p>}
         {items.map((it, i) => {
           const d = it.dueDate ? daysBetween(today, it.dueDate) : null;
           const pill = it.overdue ? { cls: "crit", text: t("s27.week.late") } : i === 0 ? { cls: "wait", text: t("s27.week.next") } : d === 0 ? { cls: "wait", text: t("s27.week.today") } : { cls: "plan", text: t("s27.week.in", { n: d ?? 0 }) };
