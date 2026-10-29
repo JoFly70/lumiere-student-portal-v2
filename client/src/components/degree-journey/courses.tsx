@@ -135,8 +135,30 @@ export function NowSection({ items, onLog }: { items: readonly StudentRoadmapIte
       {items.length === 0 ? (
         <p className="rounded-2xl border border-dashed border-student-line-strong p-4 text-sm text-student-muted">{t("dj.now.empty")}</p>
       ) : (
-        <ul className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{items.map((i) => <NowCard key={i.key} item={i} onLog={onLog} />)}</ul>
+        <ul className={cn("grid gap-4 md:grid-cols-2", (items.length === 3 || items.length === 6) && "xl:grid-cols-3")} data-testid="now-grid">{items.map((i) => <NowCard key={i.key} item={i} onLog={onLog} />)}</ul>
       )}
+    </section>
+  );
+}
+
+/** Courses whose work is all in: a quiet list (no Log button) so "act" and "wait" are not mixed. */
+export function WaitingSection({ items }: { items: readonly StudentRoadmapItemView[] }) {
+  const { t } = useDj();
+  if (items.length === 0) return null;
+  return (
+    <section aria-labelledby="dj-wait" className="space-y-2" data-testid="section-waiting">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+        <h2 id="dj-wait" className="font-serif text-2xl tracking-tight text-student-ink sm:text-3xl">{t("dj.wait.title")}</h2>
+        <p className="text-sm text-student-muted">{t("dj.wait.help")}</p>
+      </div>
+      <ul className="divide-y divide-student-line overflow-hidden rounded-2xl border border-student-line bg-student-card">
+        {items.map((i) => (
+          <li key={i.key} className="flex min-w-0 items-center justify-between gap-3 px-4 py-2.5" data-testid="waiting-row">
+            <span className="min-w-0 break-words text-sm text-student-ink">{i.code ? `${i.code} · ` : ""}{i.title}</span>
+            <span className="shrink-0 text-xs text-student-muted">{i.provider ?? i.institution ?? ""}</span>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }
@@ -168,9 +190,8 @@ export function UpNextSection({ items, startNumber, titleOf }: { items: readonly
                   <span className="block break-words text-sm font-semibold text-student-ink">{i.code ? `${i.code} · ` : ""}{i.title}</span>
                   <span className="block break-words text-xs text-student-muted">{i.provider ?? i.institution ?? ""}</span>
                 </span>
-                <span className="max-w-[45%] shrink-0 text-right text-xs text-student-muted">
-                  {creditsText(i.credits) && <span className="block">{creditsText(i.credits)}</span>}
-                  {side.map((s, k) => <span key={k} className="block">{s}</span>)}
+                <span className="max-w-[55%] shrink-0 text-right text-xs text-student-muted">
+                  {[creditsText(i.credits), ...side].filter(Boolean).join(" · ")}
                 </span>
               </li>
             );

@@ -13,7 +13,8 @@ import { Eyebrow, StudentSurface, buttonClass } from "@/components/student-progr
 import { buildCreditsBySource, buildWarnings, splitCourses } from "./model";
 import { WarningsCard } from "./warnings";
 import { CreditsCard } from "./credits-card";
-import { CompletedSection, NowSection, UpNextSection } from "./courses";
+import { CompletedSection, NowSection, UpNextSection, WaitingSection } from "./courses";
+import { RequirementsCard } from "./requirements-card";
 import { LogSheet } from "./log-sheet";
 import { useDj } from "./i18n";
 
@@ -23,6 +24,9 @@ export function DegreeJourneyView({ roadmap, progress }: { roadmap: StudentRoadm
   const credits = useMemo(() => buildCreditsBySource(roadmap, progress), [roadmap, progress]);
   const warnings = useMemo(() => buildWarnings(roadmap, progress), [roadmap, progress]);
   const byKey = useMemo(() => itemsByKey(roadmap), [roadmap]);
+  // Work all in (graded or sent): shown as "waiting", not as something to act on.
+  const waiting = useMemo(() => buckets.now.filter((i) => i.taskCounts.total > 0 && i.taskCounts.graded + i.taskCounts.submitted === i.taskCounts.total), [buckets]);
+  const actNow = useMemo(() => buckets.now.filter((i) => !waiting.includes(i)), [buckets, waiting]);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
   const trigger = useRef<HTMLElement | null>(null);
@@ -41,8 +45,8 @@ export function DegreeJourneyView({ roadmap, progress }: { roadmap: StudentRoadm
       <div className="mx-auto w-full max-w-6xl space-y-8" data-state="PUBLISHED" data-view="degree-journey">
         <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
           <div className="min-w-0 max-w-2xl space-y-2">
-            <Eyebrow>{t("dj.eyebrow")}</Eyebrow>
-            <h1 className="break-words font-serif text-3xl leading-tight tracking-tight text-student-ink sm:text-5xl" data-testid="text-page-title">{title}</h1>
+            <Eyebrow>{title}</Eyebrow>
+            <h1 className="break-words font-serif text-3xl leading-tight tracking-tight text-student-ink sm:text-5xl" data-testid="text-page-title">{t("dj.eyebrow")}</h1>
             <p className="text-sm text-student-muted">{t("dj.subtitle")}</p>
             <p className="text-sm text-student-muted">
               {t("dj.flightDeck")}{" "}
@@ -57,9 +61,11 @@ export function DegreeJourneyView({ roadmap, progress }: { roadmap: StudentRoadm
         </header>
 
         <CreditsCard data={credits} />
+        <RequirementsCard progress={progress} />
         <WarningsCard warnings={warnings} />
-        <NowSection items={buckets.now} onLog={(key, el) => openLog(key, el)} />
-        <UpNextSection items={buckets.upNext} startNumber={buckets.now.length + 1} titleOf={(k) => byKey.get(k)?.title ?? null} />
+        <NowSection items={actNow} onLog={(key, el) => openLog(key, el)} />
+        <WaitingSection items={waiting} />
+        <UpNextSection items={buckets.upNext} startNumber={actNow.length + 1} titleOf={(k) => byKey.get(k)?.title ?? null} />
         <CompletedSection items={buckets.completed} />
       </div>
 
