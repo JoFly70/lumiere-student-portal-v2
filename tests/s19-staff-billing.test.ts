@@ -31,6 +31,17 @@ describe("S19 money input parsing (no float drift)", () => {
   it("parses to integer cents from strings", () => {
     expect(parseMoneyToCents("1250.50", "USD")).toBe(125050);
     expect(parseMoneyToCents("1,250.5", "USD")).toBe(125050);
+    // French decimal comma must never inflate an amount (S27 review B1).
+    expect(parseMoneyToCents("900,50", "USD")).toBe(90050);
+    expect(parseMoneyToCents("1 250,50", "USD")).toBe(125050);
+    expect(parseMoneyToCents("1\u202f250,50", "USD")).toBe(125050);
+    expect(parseMoneyToCents("1.250,50", "USD")).toBe(125050);
+    expect(parseMoneyToCents("1,5", "USD")).toBe(150);
+    expect(parseMoneyToCents("1,500", "USD")).toBe(150000);
+    expect(parseMoneyToCents("1.250.000,00", "USD")).toBe(125000000);
+    expect(parseMoneyToCents("1,2,50", "USD")).toBeNull();
+    expect(parseMoneyToCents("1,2345", "USD")).toBeNull();
+    expect(parseMoneyToCents("1,25,0", "USD")).toBeNull();
     expect(parseMoneyToCents("0.10", "USD")).toBe(10);
     expect(parseMoneyToCents("19.99", "USD")).toBe(1999);
     expect(parseMoneyToCents("1500", "JPY")).toBe(1500);

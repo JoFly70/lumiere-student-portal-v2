@@ -31,6 +31,18 @@ const HISTORY_KEY: Record<BillingHistoryKind, TranslationKey> = {
 
 // ── dialogs ─────────────────────────────────────────────────────────────────
 
+/** Echoes the parsed amount so a mistyped separator is visible before anything is recorded. */
+function AmountEcho({ cents, currency }: { cents: number | null; currency: string }) {
+  const { t, language } = useT();
+  if (cents === null) return null;
+  let text: string;
+  try {
+    const nf = new Intl.NumberFormat(localeOf(language), { style: "currency", currency });
+    text = nf.format(cents / 10 ** (nf.resolvedOptions().maximumFractionDigits ?? 2));
+  } catch { text = `${centsToInput(cents, currency)} ${currency}`; }
+  return <p className="text-sm text-student-ink" aria-live="polite" data-testid="amount-echo">{t("owner.bill.pay.echo", { amount: text })}</p>;
+}
+
 function Field({ id, label, children }: { id: string; label: string; children: React.ReactNode }) {
   return <div className="space-y-1.5"><label htmlFor={id} className="block text-sm font-medium text-student-ink">{label}</label>{children}</div>;
 }
@@ -57,6 +69,7 @@ export function PaymentDialog({ open, onOpenChange, currency, initialCents, titl
           <Field id="pay-method" label={t("owner.bill.pay.method")}><input id="pay-method" className={staffField} maxLength={80} value={method} onChange={(e) => setMethod(e.target.value)} /></Field>
           <Field id="pay-ref" label={t("owner.bill.pay.ref")}><input id="pay-ref" className={staffField} maxLength={120} value={reference} onChange={(e) => setReference(e.target.value)} /></Field>
         </div>
+        <AmountEcho cents={cents} currency={currency} />
         <p className="text-xs text-student-muted">{t("owner.bill.pay.oldest")}</p>
         <ErrorLine error={error} />
         <DialogFooter>
@@ -81,6 +94,7 @@ function AdjustmentDialog({ open, onOpenChange, currency, pending, error, onSubm
       <DialogContent data-testid="dialog-adjustment">
         <DialogHeader><DialogTitle className="font-serif text-2xl">{t("owner.bill.adj.title")}</DialogTitle><DialogDescription>{t("owner.bill.adj.desc")}</DialogDescription></DialogHeader>
         <Field id="adj-amount" label={t("owner.bill.adj.amount", { currency })}><input id="adj-amount" inputMode="decimal" className={staffField} value={amount} onChange={(e) => setAmount(e.target.value)} aria-invalid={amount !== "" && cents === null} /></Field>
+        <AmountEcho cents={cents} currency={currency} />
         <Field id="adj-reason" label={t("owner.bill.adj.reason")}><textarea id="adj-reason" rows={3} maxLength={300} className={cn(staffField, "py-2")} value={reason} onChange={(e) => setReason(e.target.value)} /></Field>
         <ErrorLine error={error} />
         <DialogFooter>

@@ -89,7 +89,7 @@ describe("Phase 5F production truth and routing", () => {
     expect(flightDeck).toContain("<PlanNotReady />");
     const states = read("client/src/components/student-progress/states.tsx");
     expect(states).toContain("plan is not ready yet");
-    expect(states).toContain("before your academic progress can be shown");
+    expect(states).toContain("before your progress can appear here");
 
     expect(profile).toContain("Student record not ready");
     expect(profile).toContain("Your Lumière advisor must create your student record");

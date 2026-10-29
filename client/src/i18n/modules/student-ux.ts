@@ -311,7 +311,7 @@ export const studentUxFr = {
   "ux.lib.type.residency_doc": "Preuve de résidence",
   "ux.lib.type.consent_form": "Formulaire de consentement",
   "ux.lib.type.chat_attachment": "Pièce jointe de conversation",
-  "ux.lib.type.other": "Document",
+  "ux.lib.type.other": "Autre document",
   "ux.lib.upload.title": "Téléverser une preuve",
   "ux.lib.upload.intro": "Ajoutez un fichier à votre bibliothèque. Lumière l’examine et vous verrez son statut ici.",
   "ux.lib.upload.category": "Catégorie",

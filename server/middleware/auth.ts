@@ -163,8 +163,11 @@ export async function requireAuth(
       if (error || !user) {
         // A failure of the auth service itself (network, rate limit, 5xx) is not an invalid session:
         // answer 503 so clients retry instead of signing the person out.
+        // Only transport/upstream failures qualify; an unknown or token error stays a 401.
         const status = (error as { status?: number } | null)?.status;
-        if (error && (status === undefined || status >= 500 || status === 429) && !/jwt|token|expired|invalid/i.test(error.message ?? '')) {
+        const name = (error as { name?: string } | null)?.name ?? '';
+        const upstream = name === 'AuthRetryableFetchError' || status === 0 || (typeof status === 'number' && (status >= 500 || status === 429));
+        if (error && upstream && !/jwt|token|expired|invalid/i.test((error as { message?: string }).message ?? '')) {
           logger.warn('Auth verification unavailable', { error: error.message, status });
           return res.status(503).json({ error: 'Authentication service temporarily unavailable' });
         }

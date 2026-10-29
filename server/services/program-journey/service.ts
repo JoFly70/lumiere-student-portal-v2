@@ -372,7 +372,7 @@ export function createProgramJourneyService(deps: JourneyDeps) {
   async function listNotes(studentId: string): Promise<StaffNoteView[]> {
     await requireStudent(db, studentId);
     return rows(await db.execute(sql`SELECT n.id, n.body, n.created_at, u.name AS author_name
-      FROM student_staff_notes n LEFT JOIN users u ON u.id = n.author_id WHERE n.student_id = ${studentId} ORDER BY n.created_at DESC, n.id LIMIT 200`))
+      FROM student_staff_notes n LEFT JOIN users u ON u.id = n.author_id WHERE n.student_id = ${studentId} ORDER BY n.created_at DESC, n.seq DESC LIMIT 200`))
       .map((r) => ({ id: String(r.id), body: String(r.body), authorName: str(r.author_name), createdAt: iso(r.created_at) }));
   }
 

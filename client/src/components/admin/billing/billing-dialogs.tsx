@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label";
 import { staffBtn, staffField, StaffNotice } from "@/components/staff/staff-ui";
 import { parseMoneyToCents } from "./money";
 
-export const todayIso = () => new Date().toISOString().slice(0, 10);
+/** Today's date in the staff member's own time zone (a UTC date would be tomorrow on an Americas evening). */
+export const todayIso = () => { const d = new Date(); const pad = (n: number) => String(n).padStart(2, "0"); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
 
 export function ErrorLine({ error }: { error: Error | null | undefined }) {
   if (!error) return null;

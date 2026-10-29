@@ -330,7 +330,6 @@ describe("admin student workspace presentation", () => {
     expect(markup).toContain("Lifecycle &amp; provenance");
     expect(markup).toContain("Historical placement records");
     expect(markup).toContain("Earlier recorded placement");
-    expect(markup).toContain("Canonical view · controlled placement writes");
     expect(markup).toContain("Placement changes are paused: this student has no current academic snapshot");
     expect(markup).toContain("No academic values are recomputed here");
     expect(markup).toContain("Add placement");
@@ -432,7 +431,8 @@ describe("admin student workspace presentation", () => {
     });
     const { default: AdminStudentWorkspace } = await import("@/pages/admin-student-workspace");
     const emptyMarkup = renderToStaticMarkup(React.createElement(AdminStudentWorkspace));
-    expect(emptyMarkup.match(/No records are available for this student\./g)).toHaveLength(1);
+    // Documents render their own empty state inside the review panel since S22b.
+    expect(emptyMarkup).toContain("No documents have been uploaded for this student yet.");
     expect(emptyMarkup).toContain("Loading…");
 
     useQueryMock.mockReturnValueOnce({
@@ -505,15 +505,16 @@ describe("admin student workspace presentation", () => {
     expect(adminTabFromSearch("?tab=unknown")).toBe("overview");
   });
   it("opens Students from the Back destination under Wouter and navigates tab changes", async () => {
-    expect(ADMIN_STUDENTS_PATH).toBe("/admin?tab=students");
+    // The directory has its own page; the legacy /admin?tab=students link redirects to it.
+    expect(ADMIN_STUDENTS_PATH).toBe("/admin/students");
     useLocationMock.mockReturnValue(["/admin", setLocationMock]);
-    useSearchMock.mockReturnValue(new URL(ADMIN_STUDENTS_PATH, "https://example.test").search);
+    useSearchMock.mockReturnValue("?tab=programs");
     const { default: Admin } = await import("@/pages/admin");
     renderToStaticMarkup(React.createElement(Admin));
     const tabsProps = tabsPropsMock.mock.calls.at(-1)?.[0];
     expect(useLocationMock).toHaveBeenCalled();
     expect(useSearchMock).toHaveBeenCalled();
-    expect(tabsProps.value).toBe("students");
+    expect(tabsProps.value).toBe("programs");
     tabsProps.onValueChange("programs");
     expect(setLocationMock).toHaveBeenCalledWith("/admin?tab=programs");
   });

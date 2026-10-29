@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { Router } from "wouter";
 import { renderToStaticMarkup } from "react-dom/server";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { StudentFileHsOverview, enrollmentCheckpoints, plannedHalfUnits } from "../client/src/components/admin/student-file-hs";
+import { StudentFileHsOverview, StudentFileHsAcademics, enrollmentCheckpoints, plannedHalfUnits } from "../client/src/components/admin/student-file-hs";
 import { validateStaffUploadFile } from "../client/src/components/admin/student-documents-upload-logic";
 
 const course = (key: string, title: string, halfUnits: number, status = "planned") => ({ key, title, areaKey: "core", halfUnits, status, replacesCourseKey: null, plannedStart: "2026-11-01", plannedEnd: "2026-12-15", tasks: [] });
@@ -30,7 +30,11 @@ describe("HS-only student file overview", () => {
     expect(html).toContain("Planned");
     expect(html).toContain("Officially earned");
     expect(html).toContain("Reported, awaiting confirmation");
-    expect(html).toContain("Approval pending");
+    // The course list lives on the Academics tab since S26.
+    const academics = renderToStaticMarkup(React.createElement(QueryClientProvider, { client: new QueryClient() }, React.createElement(Router, { ssrPath: "/x" },
+      React.createElement(StudentFileHsAcademics, { studentId: "s1", state }))));
+    expect(academics).toContain("Approval pending");
+    expect(academics).not.toContain(">Old<");
     expect(html).toContain("Pending");
     expect(html).not.toContain("Old");
     expect(html).toContain('href="/admin/students/s1/high-school"');

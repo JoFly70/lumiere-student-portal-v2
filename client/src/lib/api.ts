@@ -67,12 +67,16 @@ export async function apiRequest<T = any>(
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: 'Request failed' }));
-    if (token && isSessionExpiredResponse(response.status, error?.error)) notifySessionExpired();
+    // Most routes answer { error: "message", code }; newer ones answer { error: { code, message, details } }.
+    const nested = error?.error && typeof error.error === 'object' ? error.error : null;
+    const message = nested ? nested.message : error?.error;
+    const code = nested ? nested.code : error?.code;
+    if (token && isSessionExpiredResponse(response.status, typeof message === 'string' ? message : undefined)) notifySessionExpired();
     throw new ApiError(
-      error.error || `HTTP ${response.status}: ${response.statusText}`,
+      typeof message === 'string' && message ? message : `HTTP ${response.status}: ${response.statusText}`,
       response.status,
-      typeof error.code === 'string' ? error.code : undefined,
-      error.details,
+      typeof code === 'string' ? code : undefined,
+      nested ? nested.details : error.details,
     );
   }
 

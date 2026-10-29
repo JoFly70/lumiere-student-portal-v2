@@ -44,10 +44,12 @@ export function agreementToForm(a: ProgramAgreementView | null | undefined): Agr
   return {
     signedOn: a?.signedOn ?? "", activatedOn: a?.activatedOn ?? "",
     supportMonths: String(a?.supportMonths ?? 9), accessMonths: String(a?.accessMonths ?? 36),
-    languageTestDays: String(firstInt(lt?.rule, 30)), priorSchoolingDays: String(firstInt(ps?.rule, 90)),
+    // Prefer the structured fields the server supplies; the text parse only covers older fixtures without them.
+    languageTestDays: String(a?.languageTestDays ?? firstInt(lt?.rule, 30)), priorSchoolingDays: String(a?.priorSchoolingDays ?? firstInt(ps?.rule, 90)),
     sessionsIncluded: String(a?.orientationSessionsIncluded ?? 2),
     ltStatus: lt?.status ?? "open", ltDoneOn: lt?.doneOn ?? "",
-    ltScore: /score\s+(\d+)/i.exec(lt?.detail ?? "")?.[1] ?? "", ltTarget: /target\s+([^)]+)/i.exec(lt?.detail ?? "")?.[1]?.trim() ?? "",
+    ltScore: a && a.languageTestScore !== undefined ? (a.languageTestScore === null ? "" : String(a.languageTestScore)) : /score\s+(\d+)/i.exec(lt?.detail ?? "")?.[1] ?? "",
+    ltTarget: a && a.languageTestTarget !== undefined ? (a.languageTestTarget ?? "") : /target\s+([^)]+)/i.exec(lt?.detail ?? "")?.[1]?.trim() ?? "",
     psStatus: ps?.status ?? "open", psDoneOn: ps?.doneOn ?? "",
     hasGoal: !!a?.goal, goal: goalToForm(a?.goal),
   };

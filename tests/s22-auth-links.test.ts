@@ -212,6 +212,8 @@ describe("S22 link format guarantees (static)", () => {
         if (/\.(resetPasswordForEmail|inviteUserByEmail|signInWithOtp|generateLink)\(|auth\.resend\(/.test(line)) senders.push(`${f.replace(root + "/", "")}:${i + 1}`);
       });
     }
-    expect(senders.map((s) => s.split(":")[0]).sort()).toEqual(["server/routes.ts", "server/routes.ts"]);
+    // admin-student-experience.ts calls auth.admin.generateLink only to mint a session for a SYNTHETIC demo
+    // account and exchanges it server-side at once (verifyOtp): admin generateLink sends no email.
+    expect(senders.map((s) => s.split(":")[0]).sort()).toEqual(["server/routes.ts", "server/routes.ts", "server/routes/admin-student-experience.ts"]);
   });
 });

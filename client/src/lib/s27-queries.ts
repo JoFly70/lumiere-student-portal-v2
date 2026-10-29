@@ -1,7 +1,7 @@
 /**
  * S27 data access for the owner Control Center and the Student file. Written against shared/s27-contract.ts.
- * The S27 endpoints are built in parallel by another engineer, so every read here tolerates a missing route:
- * 404/501/503 become a designed "not available yet" state (`isUnavailable`) instead of an error page.
+ * The S27 routes are mounted in server/routes.ts; when the S27 tables are not applied the server answers
+ * 503 S27_UNAVAILABLE, which becomes a designed "not available yet" state (`isUnavailable`) instead of an error page.
  *
  * ASSUMPTIONS beyond the contract (kept in this one file so they are cheap to change):
  *  - GET agreement -> ProgramAgreementView (or { agreement }); PUT agreement returns the same (or anything: we refetch).
@@ -24,9 +24,10 @@ import {
   type UpdateAgreementInput,
 } from "@shared/s27-contract";
 
-/** True when the route does not exist (yet) or the service is down: show the designed unavailable state. */
+/** True when the service is down or the S27 tables are not applied yet: show the designed unavailable state.
+ *  A 404 means the student or record does not exist and is shown as an error, not as "not switched on". */
 export function isUnavailable(error: unknown): boolean {
-  return error instanceof ApiError && [404, 501, 502, 503].includes(error.status);
+  return error instanceof ApiError && ([501, 502, 503].includes(error.status) || error.code === "S27_UNAVAILABLE");
 }
 
 export function errorText(error: unknown, fallback: string): string {

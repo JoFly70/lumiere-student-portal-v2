@@ -35,7 +35,8 @@ echo "identity: project $REF; public base tables: $TABLES" | tee -a "$LOG"
 [ "$TABLES" -ge 60 ] || die "only $TABLES public tables; this does not look like the production database"
 "${PSQL[@]}" -At -c "SELECT to_regclass('public.hs_enrollments') IS NOT NULL AND to_regclass('public.students') IS NOT NULL" | grep -q t || die "prerequisite tables (students, hs_enrollments) are missing; apply the S26 release first"
 
-ENUMS="SELECT 'audit_event_types (6) | ' || ((SELECT count(*) FROM pg_enum e JOIN pg_type t ON t.oid = e.enumtypid WHERE t.typname = 'audit_event_type' AND e.enumlabel IN ('program.agreement_updated','program.checkpoint_updated','program.session_requested','program.session_updated','program.note_added','program.access_denied')) = 6)::text"
+ENUMS="SELECT 'audit_event_types (6) and notes order column | ' || ((SELECT count(*) FROM pg_enum e JOIN pg_type t ON t.oid = e.enumtypid WHERE t.typname = 'audit_event_type' AND e.enumlabel IN ('program.agreement_updated','program.checkpoint_updated','program.session_requested','program.session_updated','program.note_added','program.access_denied')) = 6
+  AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'student_staff_notes' AND column_name = 'seq'))::text"
 POSTVERIFY="SELECT t.name || ' | ' || (c.oid IS NOT NULL AND c.relrowsecurity AND NOT has_table_privilege('anon', c.oid, 'SELECT,INSERT,UPDATE,DELETE') AND NOT has_table_privilege('authenticated', c.oid, 'SELECT,INSERT,UPDATE,DELETE'))::text
   FROM (VALUES ('student_agreements'),('student_checkpoints'),('orientation_sessions'),('student_staff_notes')) AS t(name)
   LEFT JOIN pg_class c ON c.relname = t.name AND c.relnamespace = 'public'::regnamespace"

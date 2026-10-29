@@ -256,7 +256,22 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("S22 hosted-journey harness against an i
     const store = makeByteStorage(() => base);
     holder.storage = store;
 
-    holder.getUser.mockResolvedValue({ data: { user: null }, error: { message: "invalid token" } });
+    // Stand-in for Supabase verifying its own access tokens: since S23, local JWTs are not accepted while
+    // email verification is enforced, so the mocked provider resolves the harness's locally minted tokens.
+    holder.getUser.mockImplementation(async (token: string) => {
+      const invalid = { data: { user: null }, error: { message: "invalid token", status: 401 } };
+      const parts = String(token ?? "").split(".");
+      if (parts.length !== 3) return invalid;
+      let claims: { userId?: string; email?: string; exp?: number };
+      try { claims = JSON.parse(Buffer.from(parts[1]!, "base64url").toString("utf8")); } catch { return invalid; }
+      if (!claims.userId || !claims.email || (claims.exp ?? 0) * 1000 < Date.now()) return invalid;
+      const secret = process.env.SESSION_SECRET || "local-dev-secret-change-in-production";
+      const expected = crypto.createHmac("sha256", secret).update(`${parts[0]}.${parts[1]}`).digest("base64url");
+      if (parts[2] !== expected) return invalid;
+      const [u] = await pg.sql(`select id, email from users where id = '${claims.userId}'`);
+      if (!u) return invalid;
+      return { data: { user: { id: String(u.id), email: String(u.email), email_confirmed_at: holder.confirmedEmails.has(String(u.email)) ? new Date().toISOString() : null } }, error: null };
+    });
     holder.signIn.mockImplementation(async ({ email }: { email: string }) =>
       holder.confirmedEmails.has(email) ? { data: { session: { access_token: "a", refresh_token: "b", expires_at: 1 } }, error: null } : { data: { session: null }, error: { message: "Email not confirmed" } });
     holder.createUser.mockImplementation(async (arg: { email: string; email_confirm: boolean }) => {

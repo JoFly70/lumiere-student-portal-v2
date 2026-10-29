@@ -1,4 +1,6 @@
-import { useState } from "react";
+import React, { useState } from "react";
+
+void React; // classic JSX runtime under vitest/esbuild
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { KeyRound, Link2, Unlink } from "lucide-react";
 import { Button } from "@/components/ui/button";
