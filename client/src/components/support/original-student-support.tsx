@@ -221,7 +221,7 @@ export function OriginalStudentSupport() {
       <Card>
         <CardHeader className="pb-4">
           <div className="flex flex-wrap items-center justify-between gap-4">
-            <CardTitle className="text-lg">{T.list.heading}</CardTitle>
+            <CardTitle className="font-serif text-2xl font-normal tracking-tight">{T.list.heading}</CardTitle>
             <div className="flex w-full flex-wrap items-center gap-3 sm:w-auto">
               <div className="relative w-full sm:w-64">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />

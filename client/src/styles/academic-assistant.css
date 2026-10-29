@@ -28,6 +28,8 @@
   cursor: pointer;
   transition: box-shadow 160ms ease, border-color 160ms ease, background-color 160ms ease;
 }
+/* The Flight Deck embeds its own Lumière card: no second entry point on wide screens (still reachable from the card). */
+@media (min-width: 700px) { .aa-fab[data-inline-card="true"][data-open="false"] { display: none; } }
 .aa-fab:hover { border-color: var(--t-accent); background: var(--t-panel-2); }
 .aa-fab:focus-visible { outline: 2px solid var(--t-focus); outline-offset: 3px; }
 .aa-fab[data-open="true"] { visibility: hidden; }

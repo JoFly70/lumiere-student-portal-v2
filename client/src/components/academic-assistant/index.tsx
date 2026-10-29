@@ -952,6 +952,7 @@ export function AcademicAssistant({ defaultOpen = false }: { defaultOpen?: boole
       ref={fabRef}
       type="button"
       className="aa-fab"
+      data-inline-card={/^\/(flight-deck|support)(\/|$)/.test(location) ? "true" : "false"}
       data-open={open ? "true" : "false"}
       aria-haspopup="dialog"
       aria-expanded={open}
