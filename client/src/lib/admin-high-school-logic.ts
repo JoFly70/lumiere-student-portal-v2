@@ -284,11 +284,15 @@ export function removeMilestone(content: HsRoadmapContent, month: string): HsRoa
   return setPacing(content, { milestones: content.pacing.milestones.filter((m) => m.month !== month) });
 }
 
-export const POLICY_LABELS: Record<keyof HsPolicies, { label: string; hint: string; unit: string }> = {
+/** Numeric policy fields the staff form edits (retakeNote is text and comes from the template). */
+export type PolicyNumberKey = "maxExamAttempts" | "minDaysBetweenExams" | "maxTransferHalfUnits" | "passingPercent" | "weeklyExamLimit";
+
+export const POLICY_LABELS: Record<PolicyNumberKey, { label: string; hint: string; unit: string }> = {
   maxExamAttempts: { label: "Maximum attempts per exam", hint: "Failed attempts beyond this are refused when staff record them.", unit: "attempts" },
   minDaysBetweenExams: { label: "Minimum days between exams", hint: "Informational pacing rule for this student.", unit: "days" },
   maxTransferHalfUnits: { label: "Maximum transfer credit", hint: "Cap on transfer awards; the school decides acceptance.", unit: "credits" },
   passingPercent: { label: "Passing percentage (staff view only)", hint: "Never shown to the student as a rule.", unit: "%" },
+  weeklyExamLimit: { label: "Maximum exams per week", hint: "Informational; shown next to the student's weekly exam count.", unit: "exams" },
 };
 
 /** Areas to open by default: the first one that still needs planning, else the first with changed courses, else the first. */
@@ -304,7 +308,7 @@ export function defaultOpenAreas(content: HsRoadmapContent): string[] {
 export const NOT_CONFIGURED_TEXT = "Not configured — the school's rules apply";
 
 /** Policy fields are stored as numbers (maxTransfer in half-units) or null; blank = null. */
-export function setPolicy(content: HsRoadmapContent, key: keyof HsPolicies, raw: string): HsRoadmapContent {
+export function setPolicy(content: HsRoadmapContent, key: PolicyNumberKey, raw: string): HsRoadmapContent {
   const t = raw.trim();
   let value: number | null = null;
   if (t !== "") {
@@ -314,12 +318,12 @@ export function setPolicy(content: HsRoadmapContent, key: keyof HsPolicies, raw:
   return { ...content, policies: { ...content.policies, [key]: value } };
 }
 
-export function policyDisplay(key: keyof HsPolicies, value: number | null): string {
-  if (value === null) return "";
+export function policyDisplay(key: PolicyNumberKey, value: number | null | undefined): string {
+  if (value === null || value === undefined) return "";
   return key === "maxTransferHalfUnits" ? formatHalfUnits(value) : String(value);
 }
 
-export const configuredPolicyCount = (p: HsPolicies): number => Object.values(p).filter((v) => v !== null).length;
+export const configuredPolicyCount = (p: HsPolicies): number => Object.values(p).filter((v) => v !== null && v !== undefined).length;
 
 // ── draft save / publish ─────────────────────────────────────────────────────
 

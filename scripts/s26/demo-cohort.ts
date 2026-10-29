@@ -27,6 +27,13 @@ export interface Persona {
   officialMonths?: number;   // months of courses recorded as officially completed (synthetic)
   progressCourses?: string[];// course keys with student-reported progress
   billing?: { agreed: number; discount?: number; installments?: Array<[string, number]>; receipts?: Array<[string, number, string]>; voidFirstReceipt?: boolean };
+  /** S27 (synthetic): agreement dates are offsets in days from today (negative = past). */
+  program?: { signedDaysAgo: number; activatedDaysAgo?: number; languageTestDone?: boolean; goal?: boolean };
+  checkpointsDone?: string[];
+  sessionRequest?: boolean;
+  notes?: string[];
+  /** S27: a student-submitted payment proof awaiting staff review. */
+  evidencePending?: boolean;
   documents?: Array<{ type: string; name: string; state: "verified" | "pending" | "resubmit_requested" | "rejected"; message?: string }>;
   tickets?: Array<{ seed: string; subject: string; topic: string; category: string; priority: string; status: string; messages: Array<{ by: "student" | "staff"; internal?: boolean; text: string; daysAgo: number }> }>;
 }
@@ -36,6 +43,8 @@ export const PERSONAS: Persona[] = [
     key: "DEMO-S26-P3", first: "DEMO Amira", last: "Mid-program (synthetic)", email: `s26.p3@${DOMAIN}`,
     story: "Mid-program: 9 credits officially confirmed, two courses in progress, installment plan.",
     start: "2026-04-06", officialMonths: 5, progressCourses: ["science-biology", "math-general-2"],
+    program: { signedDaysAgo: 200, activatedDaysAgo: 190, languageTestDone: true, goal: true }, checkpointsDone: ["file_opened", "program_activated", "kickoff_call"],
+    notes: ["DEMO internal: steady pace; midpoint check due next month."],
     billing: { agreed: 400000, installments: [["2026-04-06", 100000], ["2026-06-01", 100000], ["2026-08-03", 100000], ["2026-11-02", 100000]], receipts: [["2026-04-06", 100000, "DEMO-P3-1"], ["2026-06-02", 100000, "DEMO-P3-2"], ["2026-08-04", 100000, "DEMO-P3-3"]] },
     documents: [{ type: "hs_transcript", name: "DEMO-prior-school-report.pdf", state: "verified" }, { type: "id_gov", name: "DEMO-id.pdf", state: "verified" }],
     tickets: [
@@ -50,6 +59,8 @@ export const PERSONAS: Persona[] = [
     key: "DEMO-S26-P4", first: "DEMO Yanis", last: "At-risk (synthetic)", email: `s26.p4@${DOMAIN}`,
     story: "At risk: behind the monthly plan, overdue tasks, a document to re-upload, an unresolved ticket.",
     start: "2026-06-01", officialMonths: 1, progressCourses: ["english-1"],
+    program: { signedDaysAgo: 150, activatedDaysAgo: 140 }, checkpointsDone: ["file_opened", "program_activated"], sessionRequest: true,
+    notes: ["DEMO internal: behind plan; language test deadline passed, follow up."],
     billing: { agreed: 400000, installments: [["2026-06-01", 200000], ["2026-09-01", 200000]], receipts: [["2026-06-02", 200000, "DEMO-P4-1"]] },
     documents: [{ type: "id_gov", name: "DEMO-passport-scan.pdf", state: "resubmit_requested", message: "DEMO: The photo page is blurry. Please upload a clearer scan." }],
     tickets: [
@@ -64,10 +75,11 @@ export const PERSONAS: Persona[] = [
     key: "DEMO-S26-P5", first: "DEMO Lina", last: "Elective change (synthetic)", email: `s26.p5@${DOMAIN}`,
     story: "Elective substitution: request reviewed by Lumière, waiting for the school's decision.",
     start: "2026-09-07", officialMonths: 0, progressCourses: ["startup-personal-growth"],
+    program: { signedDaysAgo: 50, activatedDaysAgo: 45 }, checkpointsDone: ["file_opened", "program_activated"],
     billing: { agreed: 400000, installments: [["2026-09-07", 400000]], receipts: [["2026-09-07", 400000, "DEMO-P5-1"]] },
     tickets: [
-      { seed: "p5-t1", subject: "Elective change request: Art Appreciation → Psychology", topic: "roadmap_question", category: "academic", priority: "medium", status: "in_progress", messages: [
-        { by: "student", text: "DEMO request.\nCurrent course: Art Appreciation (demo-elective-art-appreciation)\nRequested alternate: Psychology\nReason: I want to study communication and psychology is closer to it.\nStatus: REQUESTED — awaiting Lumière review, then school approval. The roadmap changes only after approval (new roadmap version).", daysAgo: 6 },
+      { seed: "p5-t1", subject: "Elective change request: Reading Skills → Psychology", topic: "roadmap_question", category: "academic", priority: "medium", status: "in_progress", messages: [
+        { by: "student", text: "DEMO request.\nCurrent course: Reading Skills (key: elective-reading-skills)\nRequested alternate: Psychology\nReason: I want to study communication and psychology is closer to it.\nStatus: REQUESTED — awaiting Lumière review, then school approval. The roadmap changes only after approval (new roadmap version).", daysAgo: 6 },
         { by: "staff", internal: true, text: "[ELECTIVE-STAGE] lumiere_review\nDEMO: reasonable request; checking availability.", daysAgo: 5 },
         { by: "staff", internal: true, text: "[ELECTIVE-STAGE] school_pending\nDEMO: substitute submitted to the school for acceptance.", daysAgo: 2 },
         { by: "staff", text: "DEMO: Thanks — we asked the school whether Psychology can replace Art Appreciation. Your roadmap stays the same until they answer.", daysAgo: 2 }] },
@@ -76,7 +88,7 @@ export const PERSONAS: Persona[] = [
   {
     key: "DEMO-S26-P6", first: "DEMO Omar", last: "Near completion (synthetic)", email: `s26.p6@${DOMAIN}`,
     story: "Near completion: 20 credits officially confirmed, last elective in progress, transcript questions.",
-    start: "2025-11-03", officialMonths: 11, progressCourses: ["demo-elective-economics"],
+    start: "2025-11-03", officialMonths: 11, progressCourses: ["elective-reading-skills"],
     billing: { agreed: 400000, installments: [["2025-11-03", 400000]], receipts: [["2025-11-03", 400000, "DEMO-P6-1"]] },
     documents: [{ type: "hs_transcript", name: "DEMO-school-progress-report.pdf", state: "verified" }],
     tickets: [
@@ -96,6 +108,15 @@ export const PERSONAS: Persona[] = [
         { by: "staff", text: "DEMO: Please upload the transfer confirmation in Billing; we confirm payments only from the bank record.", daysAgo: 1 },
         { by: "staff", internal: true, text: "DEMO internal: no transfer seen on the bank statement yet.", daysAgo: 1 }] },
     ],
+  },
+  {
+    key: "DEMO-S27-P8", first: "DEMO Karim", last: "Installment plan (synthetic)", email: `s27.p8@${DOMAIN}`,
+    story: "Installment plan: 4 installments, 2 paid with receipts, a student payment proof awaiting review, agreement deadline approaching.",
+    start: "2026-10-05", officialMonths: 0, progressCourses: ["startup-personal-growth", "startup-learning-tech"],
+    program: { signedDaysAgo: 26, activatedDaysAgo: 20 }, checkpointsDone: ["file_opened"], sessionRequest: true,
+    notes: ["DEMO internal: parents asked to split the payment in four; third installment proof received, not yet checked."],
+    evidencePending: true,
+    billing: { agreed: 400000, installments: [["2026-10-05", 100000], ["2026-11-02", 100000], ["2026-12-01", 100000], ["2027-01-04", 100000]], receipts: [["2026-10-05", 100000, "DEMO-P8-1"], ["2026-11-02", 100000, "DEMO-P8-2"]] },
   },
 ];
 
@@ -174,7 +195,7 @@ async function seedAcademics(ctx: Ctx, student: any, userId: string, p: Persona)
   let state = await hs.getStaffState(student.id);
   if (!state.current) {
     state = (await hs.createEnrollment(student.id, ctx.actorId, createEnrollmentSchema.parse({
-      templateKey: "us-hs-diploma-21", templateVersion: 2, status: "active", startedOn: p.contract ? null : p.start, targetCompletionDate: null,
+      templateKey: "us-hs-diploma-21", templateVersion: 3, status: "active", startedOn: p.contract ? null : p.start, targetCompletionDate: null,
     }))).result;
   }
   const eid = state.current!.enrollment.id;
@@ -224,6 +245,35 @@ async function seedBilling(ctx: Ctx, studentId: string, b: NonNullable<Persona["
     const v = await billing.getStaffView(studentId);
     const wrong = v.receipts.find((r) => r.reference === "DEMO-P7-WRONG");
     if (wrong) await billing.voidReceipt(studentId, ctx.actorId, wrong.id, "DEMO — entered with the wrong amount; corrected");
+  }
+}
+
+const dayOffset = (n: number) => new Date(Date.now() - n * 86400000).toISOString().slice(0, 10);
+
+/** S27 (synthetic students only): agreement, checkpoints, an orientation-session request, staff notes, a pending payment proof. */
+async function seedProgram(ctx: Ctx, student: any, userId: string, p: Persona) {
+  const { defaultProgramJourneyService: journey } = await import("../../server/services/program-journey/service.default");
+  if (p.program && !(await journey.getAgreementView(student.id))) {
+    const g = p.program;
+    await journey.updateAgreement(student.id, ctx.actorId, {
+      signedOn: dayOffset(g.signedDaysAgo),
+      ...(g.activatedDaysAgo !== undefined ? { activatedOn: dayOffset(g.activatedDaysAgo) } : {}),
+      ...(g.languageTestDone ? { languageTest: { status: "done" as const, doneOn: dayOffset(g.signedDaysAgo - 12), score: 112, target: "105–115" } } : {}),
+      ...(g.goal ? { goal: { field: "Communication", region: "Québec", interests: ["Media", "Languages"], targets: [{ name: "DEMO University (fictional)", city: "DEMO city", track: "French track", program: "Communication (demo)", why: "DEMO — synthetic example.", admission: "DEMO — synthetic example.", url: null }], alsoReviewed: ["DEMO College (fictional)"], studyOn: null } } : {}),
+    });
+  }
+  for (const key of p.checkpointsDone ?? []) await journey.completeCheckpoint(student.id, key as never, ctx.actorId, { doneOn: dayOffset(30) });
+  if (p.sessionRequest && (await journey.listStudentSessions(student.id)).length === 0) {
+    await journey.requestSession(student.id, userId, { slotAt: new Date(Date.now() + 5 * 86400000).toISOString(), prep: { "DEMO question": ["Plan my weeks"] }, channel: "portal" });
+  }
+  if ((await journey.countNotes(student.id)) === 0) for (const n of p.notes ?? []) await journey.addNote(student.id, ctx.actorId, n);
+  if (p.evidencePending) {
+    const { defaultBillingService: billing } = await import("../../server/services/billing-service.default");
+    const view = await billing.getStaffView(student.id);
+    if (view.evidence.length === 0) {
+      const doc = await uploadDemoPdf(ctx, student, "other", "DEMO-payment-proof.pdf");
+      await billing.registerEvidence(student.id, userId, { documentId: doc, note: "DEMO payment proof (synthetic)" });
+    }
   }
 }
 
@@ -296,6 +346,7 @@ export async function provisionDemoCohort(ctx: Ctx, realCode: string | null): Pr
     if (p.start || p.contract) await step(p.key, "academics", () => seedAcademics(ctx, student, userId, p));
     if (p.documents) await step(p.key, "documents", () => seedDocuments(ctx, student, p.documents!));
     if (p.billing) await step(p.key, "billing", () => seedBilling(ctx, student.id, p.billing!));
+    if (p.program || p.checkpointsDone || p.notes) await step(p.key, "program", () => seedProgram(ctx, student, userId, p));
     if (p.tickets) await step(p.key, "tickets", () => seedTickets(ctx, student, userId, p.tickets!));
     report[p.key] = { studentId: student.id, code: student.student_code };
   }

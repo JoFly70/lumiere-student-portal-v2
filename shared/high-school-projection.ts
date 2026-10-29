@@ -35,6 +35,7 @@ import {
   type HsGuardianView,
   type HsOfficialCourseOutcome,
   type HsOfficialTaskOutcome,
+  type HsPlanTask,
   type HsPolicies,
   type HsRequirementArea,
   type HsReportedStatus,
@@ -673,6 +674,18 @@ export function validateRoadmapPublicationCoverage(
   return errors;
 }
 
+/** S27: exam-1..exam-N tasks plus an optional project, from a template course's assessment structure. */
+export function tasksFromAssessments(c: HsCurriculumTemplate["courses"][number]): HsPlanTask[] {
+  const a = c.assessments;
+  if (!a) return [];
+  const tasks: HsPlanTask[] = [];
+  for (let n = 1; n <= a.exams; n++) {
+    tasks.push({ key: `${c.key}-exam-${n}`, kind: "exam", title: `Exam ${n}`, dueDate: null });
+    if (a.projectAfterExam === n) tasks.push({ key: `${c.key}-project`, kind: "project", title: "Written project", dueDate: null });
+  }
+  return tasks;
+}
+
 /** Builds the first draft of a roadmap from a template, adjusting electives to a configured total. */
 export function contentFromTemplate(
   template: HsCurriculumTemplate,
@@ -704,7 +717,7 @@ export function contentFromTemplate(
         replacesCourseKey: null,
         plannedStart: null,
         plannedEnd: null,
-        tasks: [],
+        tasks: tasksFromAssessments(c),
       })),
       pacing: { targetCompletionDate, weeklyTargetHalfUnits: null, milestones: [] },
       policies: { ...template.policies },
@@ -789,6 +802,10 @@ export const hsCurriculumTemplateSchema = z
             areaKey: templateKeySchema,
             halfUnits: z.number().int().min(1).max(200),
             required: z.boolean(),
+            assessments: z
+              .object({ exams: z.number().int().min(0).max(60), projectAfterExam: z.number().int().min(0).max(60).optional() })
+              .strict()
+              .optional(),
           })
           .strict(),
       )

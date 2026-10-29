@@ -3,9 +3,9 @@ import { useState } from "react";
 import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { formatHalfUnits, type HsPolicies, type HsRoadmapContent, type HsVersionStatus } from "@shared/high-school-contract";
+import { formatHalfUnits, type HsRoadmapContent, type HsVersionStatus } from "@shared/high-school-contract";
 import {
-  MONTH_NAMES, NOT_CONFIGURED_TEXT, POLICY_LABELS, addMilestone, configuredPolicyCount, formatDate, formatMonth, policyDisplay, statusLabel, removeMilestone, setPacing, setPolicy,
+  MONTH_NAMES, NOT_CONFIGURED_TEXT, POLICY_LABELS, type PolicyNumberKey, addMilestone, configuredPolicyCount, formatDate, formatMonth, policyDisplay, statusLabel, removeMilestone, setPacing, setPolicy,
 } from "@/lib/admin-high-school-logic";
 import { FIELD_CLASS, Field, FormPanel, Notice, Pill, RecordButton, SectionCard, type OpenForm } from "./shared";
 
@@ -79,7 +79,7 @@ export function PacingCard({ content, onChange, form }: { content: HsRoadmapCont
 }
 
 export function PoliciesCard({ content, onChange, form }: { content: HsRoadmapContent; onChange: (c: HsRoadmapContent) => void; form: OpenForm }) {
-  const keys = Object.keys(POLICY_LABELS) as (keyof HsPolicies)[];
+  const keys = Object.keys(POLICY_LABELS) as PolicyNumberKey[];
   const [raw, setRaw] = useState<Record<string, string>>(() => Object.fromEntries(keys.map((k) => [k, policyDisplay(k, content.policies[k])])));
   const n = configuredPolicyCount(content.policies);
   return (

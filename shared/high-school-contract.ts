@@ -116,6 +116,17 @@ export interface HsTemplateCourse {
   readonly halfUnits: HalfUnits;
   /** false = an illustrative/elective choice, not mandated by the template. */
   readonly required: boolean;
+  /**
+   * S27: assessment structure used to generate the plan's tasks (exam-1..exam-N, plus one project placed after
+   * exam `projectAfterExam`). Absent on older template versions, which generate no tasks.
+   */
+  readonly assessments?: HsTemplateAssessments;
+}
+
+export interface HsTemplateAssessments {
+  readonly exams: number;
+  /** 1-based exam number after which the single written project is placed; absent = no project. */
+  readonly projectAfterExam?: number;
 }
 
 /**
@@ -132,6 +143,10 @@ export interface HsPolicies {
   readonly maxTransferHalfUnits: HalfUnits | null;
   /** Informational passing percentage shown to staff only; null = not configured. */
   readonly passingPercent: number | null;
+  /** S27: max exams a student may take in one week (Monday to Sunday); null/absent = not configured. */
+  readonly weeklyExamLimit?: number | null;
+  /** S27: plain-language retake rule shown to staff and students; null/absent = not configured. */
+  readonly retakeNote?: string | null;
 }
 
 export const NO_POLICIES: HsPolicies = {
@@ -163,12 +178,20 @@ const area = (key: string, label: string, kind: HsRequirementKind, subject: HsSu
   subject,
   requiredHalfUnits: creditsToHalfUnits(credits),
 });
-const course = (key: string, title: string, areaKey: string, credits: number, required = true): HsTemplateCourse => ({
+const course = (
+  key: string,
+  title: string,
+  areaKey: string,
+  credits: number,
+  required = true,
+  assessments?: HsTemplateAssessments,
+): HsTemplateCourse => ({
   key,
   title,
   areaKey,
   halfUnits: creditsToHalfUnits(credits),
   required,
+  ...(assessments ? { assessments } : {}),
 });
 
 /**
@@ -254,6 +277,66 @@ export const TEMPLATE_STANDARD_21_V2: HsCurriculumTemplate = {
 };
 
 /**
+ * Version 3 of the standard 21-credit diploma (S27): the course list, order and assessment structure of the
+ * program as contracted, with the five electives as template courses. Versions 1 and 2 stay stored and in force
+ * for enrollments created on them (templates are immutable once inserted).
+ *
+ * Assessment counts (exams; one written project for English 2, 3 and 4):
+ *   CONFIRMED from the program outline: Foundations of Personal Growth 7, Learning Success through Technology 8,
+ *   English 1 10, General Math I 6, English 2 5 + project after exam 3, General Math II 4, Digital Literacy 6,
+ *   Earth Science 6, World History 6, Biology 6, English 3 5 + project, Physical Science 6, U.S. History 6,
+ *   English 4 5 + project, Microsoft Word & Excel 2, Business Math 3, English Communications 3.
+ *   ESTIMATES (to be replaced when the school confirms): Health and Nutrition 5, Personal Finance 5,
+ *   U.S. Government and Economics 6, Human Relations 3, Reading Skills 3. The project position for
+ *   English 3 and English 4 is assumed to be the same as English 2 (after exam 3).
+ * Personal Finance counts as the third math credit. Policies: passing 65%, at most 15 exams per week, and the
+ * retake rule below. They are shown to staff and students; the school applies them.
+ *
+ * Course order is the contracted listing order. The 16-week reference phases (weeks 1-4 -> 3 credits,
+ * 5-8 -> 8, 9-13 -> 16, 14-16 -> 21) are applied by the plan builders (scripts/s26/demo-plan.mjs), not stored here.
+ */
+export const TEMPLATE_STANDARD_21_V3: HsCurriculumTemplate = {
+  ...TEMPLATE_STANDARD_21,
+  version: 3,
+  courses: [
+    course("startup-personal-growth", "Foundations of Personal Growth", "startup", 0.5, true, { exams: 7 }),
+    course("startup-learning-tech", "Learning Success through Technology", "startup", 0.5, true, { exams: 8 }),
+    course("english-1", "English 1", "english", 1, true, { exams: 10 }),
+    course("math-general-1", "General Math I", "math", 1, true, { exams: 6 }),
+    course("english-2", "English 2", "english", 1, true, { exams: 5, projectAfterExam: 3 }),
+    course("math-general-2", "General Math II", "math", 1, true, { exams: 4 }),
+    course("humanities-digital-literacy", "Digital Literacy", "humanities", 1, true, { exams: 6 }),
+    course("science-earth", "Earth Science", "science", 1, true, { exams: 6 }),
+    course("social-world-history", "World History", "social", 1, true, { exams: 6 }),
+    course("health-nutrition", "Health and Nutrition", "health_pe", 1, true, { exams: 5 }),
+    course("science-biology", "Biology", "science", 1, true, { exams: 6 }),
+    course("english-3", "English 3", "english", 1, true, { exams: 5, projectAfterExam: 3 }),
+    course("science-physical", "Physical Science", "science", 1, true, { exams: 6 }),
+    course("social-us-history", "U.S. History", "social", 1, true, { exams: 6 }),
+    course("english-4", "English 4", "english", 1, true, { exams: 5, projectAfterExam: 3 }),
+    course("math-personal-finance", "Personal Finance", "math", 1, true, { exams: 5 }),
+    course("social-us-gov-econ", "U.S. Government and Economics", "social", 1, true, { exams: 6 }),
+    course("elective-word-excel", "Microsoft Word & Excel", "electives", 1, false, { exams: 2 }),
+    course("elective-business-math", "Business Math", "electives", 1, false, { exams: 3 }),
+    course("elective-english-communications", "English Communications", "electives", 1, false, { exams: 3 }),
+    course("elective-human-relations", "Human Relations", "electives", 1, false, { exams: 3 }),
+    course("elective-reading-skills", "Reading Skills", "electives", 1, false, { exams: 3 }),
+  ],
+  policies: {
+    ...NO_POLICIES,
+    passingPercent: 65,
+    weeklyExamLimit: 15,
+    retakeNote:
+      "Multiple-choice exams: one retake within 30 days, the higher score counts. Written work: a failed first try must be redone; the new grade is capped at 65%.",
+  },
+  sourceNote:
+    "Course list, order and assessment counts from the contracted program outline (S27); five counts are estimates " +
+    "(Health and Nutrition, Personal Finance, U.S. Government and Economics, Human Relations, Reading Skills). " +
+    "Discipline credit totals from the awarding school's public student catalog (Academic Year 2026 edition). " +
+    "The school applies passing grades, retakes and time limits; the portal shows them without enforcing them.",
+};
+
+/**
  * Tennessee residents: 22 credits, minimum 4 ELA, 4 math, 3 science, 3 social
  * studies. The extra credit is modelled as a fourth math credit (18 core + 5
  * elective courses per the school's TN program outline). Staff must confirm
@@ -272,7 +355,7 @@ export const TEMPLATE_TN_22: HsCurriculumTemplate = {
     "catalog and TN program outline (checked 2026-10-26). Course list to be confirmed per enrollment.",
 };
 
-export const BUILT_IN_TEMPLATES: readonly HsCurriculumTemplate[] = [TEMPLATE_STANDARD_21, TEMPLATE_STANDARD_21_V2, TEMPLATE_TN_22];
+export const BUILT_IN_TEMPLATES: readonly HsCurriculumTemplate[] = [TEMPLATE_STANDARD_21, TEMPLATE_STANDARD_21_V2, TEMPLATE_STANDARD_21_V3, TEMPLATE_TN_22];
 
 /** The highest version of each template key, in first-seen key order. New enrollments start from these. */
 export function latestTemplateVersions(templates: readonly HsCurriculumTemplate[]): HsCurriculumTemplate[] {
@@ -379,6 +462,8 @@ export const hsPolicySchema = z
     minDaysBetweenExams: z.number().int().min(0).max(60).nullable(),
     maxTransferHalfUnits: z.number().int().min(0).max(200).nullable(),
     passingPercent: z.number().int().min(0).max(100).nullable(),
+    weeklyExamLimit: z.number().int().min(1).max(100).nullable().optional(),
+    retakeNote: z.string().trim().max(400).nullable().optional(),
   })
   .strict();
 
