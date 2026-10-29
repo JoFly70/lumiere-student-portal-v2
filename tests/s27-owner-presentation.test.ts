@@ -3,7 +3,28 @@ import {
   arcGeometry, creditsFraction, daysLeftTone, filterStudentRows, formatArrival, greetingKey, installmentStatusMeta, mergeTimeline,
   offsetIsoToLocal, planPayload, queueActionHref, queueItemMeta, sessionActions, sortQueue, splitRemainingEvenly, toOffsetIso,
   validatePlan, fileTabFromSearch, fileTabsFor, type PlanRow,
+  plausibleArrival, fleetLanes, queueSeverityCounts, monthProgress,
 } from "../client/src/lib/owner-presentation";
+
+describe("S28 Control Center cockpit helpers", () => {
+  it("treats arrival estimates more than three years out as too early", () => {
+    expect(plausibleArrival(null, "2026-10-29")).toBeNull();
+    expect(plausibleArrival("2027-03-01", "2026-10-29")).toBe("2027-03-01");
+    expect(plausibleArrival("2031-01-01", "2026-10-29")).toBeNull();
+    expect(plausibleArrival("not-a-date", "2026-10-29")).toBeNull();
+  });
+  it("puts planes that would overlap on the fleet arc into separate lanes", () => {
+    expect(fleetLanes([100, 300, 500], 30)).toEqual([0, 0, 0]);
+    expect(fleetLanes([100, 110, 120], 30)).toEqual([0, -26, 26]);
+    expect(fleetLanes([110, 100], 30)).toEqual([-26, 0]);
+  });
+  it("counts real (non-demo) queue items by severity, and the month progress", () => {
+    const q = [{ severity: "critical" as const, studentId: "a" }, { severity: "warning" as const, studentId: "demo" }, { severity: "info" as const, studentId: "b" }];
+    expect(queueSeverityCounts(q, new Set(["demo"]))).toEqual({ critical: 1, warning: 0, info: 1 });
+    expect(monthProgress("2026-10-29")).toEqual({ day: 29, days: 31, left: 2 });
+    expect(monthProgress("2028-02-10")).toEqual({ day: 10, days: 29, left: 19 });
+  });
+});
 import { agreementToForm, formToUpdate } from "../client/src/lib/agreement-form";
 import { buildDecisions, courseAverage, creditsBySource } from "../client/src/lib/file-decisions";
 import type { ProgramAgreementView } from "../shared/s27-contract";

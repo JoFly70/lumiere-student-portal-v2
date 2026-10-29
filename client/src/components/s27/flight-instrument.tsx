@@ -9,7 +9,7 @@ import crestUrl from "@/assets/brand/crest-96.webp";
 import { addDaysIso } from "@/lib/s27/dates";
 import { angleOnArc, arcGeometry, arcPath, beadFractions, pointOnArc } from "@/lib/s27/cockpit-model";
 
-const PLANE = "M-7,1.2 L-1.5,1.2 L-4.8,7 L-2.6,7 L3,1.2 L6.2,1.2 Q8,1.2 8,0 Q8,-1.2 6.2,-1.2 L3,-1.2 L-2.6,-7 L-4.8,-7 L-1.5,-1.2 L-7,-1.2 L-8.4,-3.6 L-9.8,-3.6 L-8.8,0 L-9.8,3.6 L-8.4,3.6 Z";
+export const PLANE = "M-7,1.2 L-1.5,1.2 L-4.8,7 L-2.6,7 L3,1.2 L6.2,1.2 Q8,1.2 8,0 Q8,-1.2 6.2,-1.2 L3,-1.2 L-2.6,-7 L-4.8,-7 L-1.5,-1.2 L-7,-1.2 L-8.4,-3.6 L-9.8,-3.6 L-8.8,0 L-9.8,3.6 L-8.4,3.6 Z";
 
 export interface InstrumentStop {
   readonly id: string;
@@ -210,7 +210,7 @@ export function FlightInstrument(p: InstrumentProps) {
   );
 }
 
-function rosette(): string {
+export function rosette(): string {
   let d = "";
   for (let i = 0; i <= 48; i++) {
     const a = (i / 48) * Math.PI * 2;
