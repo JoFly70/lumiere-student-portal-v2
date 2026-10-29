@@ -226,6 +226,8 @@ export type StudentBillingView = StudentBillingNotConfigured | StudentBillingCon
 
 export interface StaffBillingView {
   readonly student: StudentBillingView;
+  /** Staff-entered note stored with the agreed price (null when none). Never part of the student view. */
+  readonly obligationNote: string | null;
   readonly discounts: readonly BillingDiscount[];
   readonly receipts: readonly BillingReceiptRow[];
   readonly evidence: readonly BillingEvidenceRow[];

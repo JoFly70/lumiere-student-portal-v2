@@ -129,6 +129,7 @@ export function computeStaffBilling(data: BillingLedgerData, today: string): Sta
   const net = student.state === "configured" ? student.netObligationCents : null;
   return {
     student,
+    obligationNote: data.obligation?.note ?? null,
     discounts: data.discounts,
     receipts: [...data.receipts].sort((a, b) => b.receivedDate.localeCompare(a.receivedDate)),
     evidence: data.evidence,

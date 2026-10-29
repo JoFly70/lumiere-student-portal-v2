@@ -187,6 +187,14 @@ export function AssistantPanelView(p: AssistantViewProps) {
           </button>
         </header>
 
+        {p.statusState === "ready" && p.status && p.status.enabled !== false && !sub && (
+          p.status.mode === "local" ? (
+            <p className="aa-note aa-mode-banner" role="note" data-testid="assistant-mode-banner" data-mode="local">{tr("assistant.banner.local")}</p>
+          ) : (
+            <p className="aa-note aa-mode-banner" role="note" data-testid="assistant-mode-banner" data-mode="live">{tr("assistant.banner.live")}</p>
+          )
+        )}
+
         {f && panel === "history" && <HistoryView tr={tr} language={p.language} {...f.history} />}
         {f && panel === "memory" && f.memory && <MemoryView tr={tr} language={p.language} {...f.memory} />}
         {f && panel === "picker" && (

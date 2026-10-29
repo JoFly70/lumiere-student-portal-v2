@@ -58,6 +58,8 @@ export const BILLING_TEXT = {
   uploadProof: "Upload proof of payment in Documents",
   contactNote: "Questions about your balance? Contact Lumière support.",
   installmentN: (n: number) => `Installment ${n}`,
+  installmentsOverdue: (n: number) => (n === 1 ? "1 installment overdue" : `${n} installments overdue`),
+  installmentsDue: (n: number) => (n === 1 ? "1 installment due now" : `${n} installments due now`),
 } as const;
 
 /** French counterpart of BILLING_TEXT (same shape; checked by the type below). */
@@ -98,6 +100,8 @@ export const BILLING_TEXT_FR: { readonly [K in keyof typeof BILLING_TEXT]: (type
   uploadProof: "Déposer un justificatif de paiement dans Documents",
   contactNote: "Une question sur votre solde ? Contactez l’assistance Lumière.",
   installmentN: (n: number) => `Échéance ${n}`,
+  installmentsOverdue: (n: number) => (n === 1 ? "1 échéance en retard" : `${n} échéances en retard`),
+  installmentsDue: (n: number) => (n === 1 ? "1 échéance à payer maintenant" : `${n} échéances à payer maintenant`),
 };
 
 /** Billing strings for the active language. */
@@ -211,6 +215,8 @@ function ProgressPanel({ v }: { v: StudentBillingConfigured }) {
   const BT = billingText(language);
   const money = (c: number) => formatMoney(c, v.currency, language);
   const pct = paidPercent(v.paidCents, v.netObligationCents);
+  const overdueN = v.installments.filter((i) => i.status === "overdue").length;
+  const dueN = v.installments.filter((i) => i.status === "due").length;
   return (
     <section
       className="overflow-hidden rounded-2xl border border-white/10 p-5 text-[#f2ede3] shadow-md sm:p-6"
@@ -237,10 +243,11 @@ function ProgressPanel({ v }: { v: StudentBillingConfigured }) {
       >
         <div className="h-full rounded-full" style={{ width: `${pct}%`, background: "linear-gradient(90deg, #c8ae76, #e6d3a3)" }} />
       </div>
-      <dl className="mt-5 grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-4">
+      <dl className="mt-5 grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-5">
         {[
           [t("billing.summary.agreedAmount"), money(v.agreedCents)],
           [t("billing.summary.discount"), v.discountCents > 0 ? `−${money(v.discountCents)}` : money(0)],
+          [BT.netAmount, money(v.netObligationCents)],
           [t("billing.summary.paid"), money(v.paidCents)],
           [t("billing.summary.remaining"), money(v.remainingCents)],
         ].map(([k, val]) => (
@@ -250,6 +257,11 @@ function ProgressPanel({ v }: { v: StudentBillingConfigured }) {
           </div>
         ))}
       </dl>
+      {(overdueN > 0 || dueN > 0) && (
+        <p className="mt-4 text-sm font-semibold text-[#ddca9e]" role="status" data-testid="billing-installment-alert">
+          {[overdueN > 0 ? BT.installmentsOverdue(overdueN) : null, dueN > 0 ? BT.installmentsDue(dueN) : null].filter(Boolean).join(" · ")}
+        </p>
+      )}
     </section>
   );
 }

@@ -805,6 +805,20 @@ describe('PASSWORD RESET — POST /api/auth/reset-password', () => {
     expect(res.body.success).toBe(true);
   });
 
+  it('gives an identical response for registered and unknown emails and for provider errors', async () => {
+    mockResetPasswordForEmail.mockResolvedValueOnce({ error: null });
+    const known = await request(app).post('/api/auth/reset-password').send({ email: 'known@test.com' });
+    mockResetPasswordForEmail.mockResolvedValueOnce({ error: { message: 'User not found' } });
+    const unknown = await request(app).post('/api/auth/reset-password').send({ email: 'nobody@test.com' });
+    mockResetPasswordForEmail.mockRejectedValueOnce(new Error('provider down'));
+    const failing = await request(app).post('/api/auth/reset-password').send({ email: 'boom@test.com' });
+    expect(unknown.status).toBe(known.status);
+    expect(unknown.body).toEqual(known.body);
+    expect(failing.status).toBe(known.status);
+    expect(failing.body).toEqual(known.body);
+    expect(JSON.stringify(known.body)).not.toMatch(/known@test|not found|exists/i);
+  });
+
   it('returns 400 when email is missing', async () => {
     const res = await request(app)
       .post('/api/auth/reset-password')

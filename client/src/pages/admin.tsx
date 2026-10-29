@@ -213,6 +213,10 @@ function UserManagement() {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
       toast({ title: "Role updated successfully" });
     },
+    onError: (e: unknown) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
+      toast({ title: "The role was not changed", description: e instanceof Error ? e.message : "Please try again.", variant: "destructive" });
+    },
   });
 
   if (isLoading) {
@@ -397,9 +401,12 @@ function StudentManagement() {
 function AuditLogs() {
   const [dateRange, setDateRange] = useState("7d");
 
-  const { data, isLoading } = useQuery<{ logs: AuditLogEntry[] }>({
+  const { data, isLoading, isError, refetch } = useQuery<{ logs: AuditLogEntry[] }>({
     queryKey: ['/api/admin/audit-logs', { limit: 100 }],
   });
+  const days = { "1d": 1, "7d": 7, "30d": 30, "90d": 90 }[dateRange] ?? 7;
+  const since = Date.now() - days * 86_400_000;
+  const logs = (data?.logs ?? []).filter((l) => new Date(l.created_at).getTime() >= since);
 
   if (isLoading) {
     return <div className="py-12 text-center text-student-muted">Loading audit logs...</div>;
@@ -423,8 +430,12 @@ function AuditLogs() {
 
       <StaffCard>
         <StaffSectionHeader title="Recent activity log" description="FERPA-compliant audit trail of all sensitive operations" />
+        {isError ? <p role="alert" className="text-sm text-st-urgent">The audit log could not be loaded. <button type="button" className="font-semibold underline underline-offset-4" onClick={() => void refetch()}>Retry</button></p> : null}
+        {!isError && logs.length === 0 ? (
+          <StaffEmpty icon={<Activity className="h-6 w-6" />} title="No activity in this period">Choose a longer range to see earlier entries.</StaffEmpty>
+        ) : null}
         <ul className="space-y-2">
-          {data?.logs?.slice(0, 20).map((log) => (
+          {logs.slice(0, 20).map((log) => (
             <li key={log.id} className="flex items-start gap-3 rounded-xl border border-student-line p-3">
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
@@ -469,7 +480,7 @@ export default function Admin() {
         <span className="flex min-w-0 items-center gap-3">
           <LifeBuoy className="h-6 w-6 shrink-0" aria-hidden="true" />
           <span className="min-w-0">
-            <span className="block font-serif text-lg">Student Support Control Center</span>
+            <span className="block font-serif text-lg">Control Center</span>
             <span className="block text-sm text-student-muted">Who needs help now: open cases, documents awaiting review, student files.</span>
           </span>
         </span>

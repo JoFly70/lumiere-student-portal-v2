@@ -9,6 +9,7 @@ import type { StudentHighSchoolView } from "@shared/high-school-contract";
 import { formatShortDate } from "@/pages/student-roadmap-presentation";
 import { governanceCopy, hsTabParts, HS_TABS, tabFromHash, todayIso, type HsTabId } from "@/pages/high-school-presentation";
 import { useT } from "@/i18n";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { StudentSurface } from "@/components/student-progress/student-ui";
 import { JourneyTab } from "./journey-tab";
 import { SubjectsTab } from "./subjects-tab";
@@ -17,7 +18,9 @@ import { FamilyCard } from "./family-card";
 import { PriorEducationCard } from "./prior-education-card";
 import { HsNoRoadmap } from "./states";
 
-function Header({ view }: { view: StudentHighSchoolView }) {
+export interface HsWelcome { readonly name: string; readonly photoUrl: string | null }
+
+function Header({ view, welcome }: { view: StudentHighSchoolView; welcome?: HsWelcome | null }) {
   const { t, language } = useT();
   const gov = governanceCopy(language);
   const e = view.enrollment;
@@ -25,6 +28,18 @@ function Header({ view }: { view: StudentHighSchoolView }) {
   const [open, setOpen] = useState(false);
   return (
     <header className="space-y-2" data-testid="hs-header">
+      {welcome && (
+        <div className="flex items-center gap-3" data-testid="hs-welcome">
+          <Avatar className="h-12 w-12 sm:h-14 sm:w-14">
+            <AvatarImage src={welcome.photoUrl || undefined} alt="" />
+            <AvatarFallback aria-hidden="true">{welcome.name.trim().charAt(0).toUpperCase() || "?"}</AvatarFallback>
+          </Avatar>
+          <div className="min-w-0">
+            <p className="break-words font-serif text-xl text-student-ink" data-testid="hs-welcome-name">{t("hs.welcome.hello", { name: welcome.name })}</p>
+            <p className="break-words text-sm text-student-muted" data-testid="hs-welcome-program">{t("hs.welcome.program", { program: view.enrollment.programTitle })}</p>
+          </div>
+        </div>
+      )}
       <h1 className="font-serif text-3xl tracking-tight text-student-ink sm:text-4xl">{t("hs.title")}</h1>
       <p className="flex flex-col items-start gap-y-1 text-sm text-student-muted sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-2" data-testid="school-line">
         <span className="flex items-center gap-2">
@@ -83,7 +98,9 @@ export function HighSchoolPageView({
   initialTab = "journey",
   defaultOpenSubject = null,
   defaultOpenCourse = null,
+  welcome = null,
 }: {
+  welcome?: HsWelcome | null;
   view: StudentHighSchoolView;
   today?: string;
   initialTab?: HsTabId;
@@ -133,7 +150,7 @@ export function HighSchoolPageView({
   return (
     <StudentSurface testId="high-school-page">
       <div className="mx-auto w-full max-w-6xl space-y-6">
-        <Header view={view} />
+        <Header view={view} welcome={welcome} />
         {graduated && <GraduatedBanner view={view} />}
         {!view.roadmap ? (
           <div className="space-y-4 sm:space-y-6">

@@ -117,5 +117,6 @@ export function courseDescription(courseKey: string, language: "en" | "fr"): str
 
 export const HS_DESCRIBED_COURSE_KEYS = [
   ...Object.keys(CORE),
-  ...Object.keys(ELECTIVE).flatMap((k) => [`demo-elective-${k}`, `contract-elective-${k}`]),
+  ...["business-math", "word-excel", "english-communications", "art-appreciation", "economics"].map((k) => `demo-elective-${k}`),
+  ...["word-excel", "business-math", "english-communications", "human-relations", "reading-skills"].map((k) => `contract-elective-${k}`),
 ];

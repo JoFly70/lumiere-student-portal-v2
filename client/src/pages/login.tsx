@@ -9,6 +9,7 @@ export default function Login() {
   const { login, signup, isAuthenticated, user } = useAuth();
   const { t } = useT();
   // Account creation is invitation-only; an invite link carries ?invite=<code>.
+  const expired = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('expired') === '1';
   const initialInvite = typeof window === 'undefined' ? '' : parseInviteCode(window.location.search);
 
   // Redirect if already authenticated (role-based)
@@ -20,5 +21,5 @@ export default function Login() {
 
   if (isAuthenticated) return <p className="sr-only" role="status">{t('auth.redirecting')}</p>;
 
-  return <LoginView login={login} signup={signup} onNavigate={setLocation} initialInvite={initialInvite} />;
+  return <LoginView login={login} signup={signup} onNavigate={setLocation} initialInvite={initialInvite} notice={expired ? t('auth.sessionExpired') : undefined} />;
 }

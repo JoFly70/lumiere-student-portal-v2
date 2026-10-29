@@ -9,6 +9,7 @@ import {
   GraduationCap,
   Headphones,
   Map,
+  Shuffle,
   ShieldCheck,
   UserRound,
   UsersRound,
@@ -122,13 +123,13 @@ export default function AdminSupportCenter() {
   return (
     <StaffPage width="wide" className="pb-8" testId="admin-support-center">
       <StaffPageHeader
-        eyebrow="Lumière · Admin support center"
-        title="Student Support Control Center"
-        description="Start with the student's academic record, then resolve their support request with the right context close at hand."
+        eyebrow="Staff Portal · Control Center"
+        title="Control Center"
+        description="Who needs help now: open cases, documents to review, elective change requests and every student file, one click away."
         meta={
           <span className="inline-flex items-center gap-2 text-xs font-medium text-student-muted">
             <span className="h-1.5 w-1.5 rounded-full bg-student-gold-ink" aria-hidden="true" />
-            Admin navigation
+            Administrator
           </span>
         }
       />
@@ -149,11 +150,11 @@ export default function AdminSupportCenter() {
             </h2>
           </div>
           <p className="max-w-md text-sm leading-relaxed text-student-muted">
-            Both destinations are existing work areas. No new records or workflows start here.
+            The three places you work most. Each opens with the student's context in view.
           </p>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           <DestinationLink
             href={STUDENTS_PATH}
             eyebrow="01 · Academic context"
@@ -170,6 +171,14 @@ export default function AdminSupportCenter() {
             description="Open the support desk to review and resolve student requests in its existing queue."
             icon={Headphones}
             action="Go to support desk"
+          />
+          <DestinationLink
+            href="/admin/elective-requests"
+            eyebrow="03 · Roadmap changes"
+            title="Decide elective changes"
+            description="Move each student request through Lumière review and school approval, then apply it to the roadmap as a new version."
+            icon={Shuffle}
+            action="Go to elective requests"
           />
         </div>
       </section>

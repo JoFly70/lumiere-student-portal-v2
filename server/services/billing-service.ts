@@ -142,6 +142,10 @@ export function createBillingService<Tx>(deps: BillingServiceDeps<Tx>) {
         if (before.obligation && before.obligation.currency !== input.currency && history > 0) {
           throw new BillingError(E.VALIDATION, 400, "Currency cannot change after receipts or discounts exist");
         }
+        const activeDiscounts = before.discounts.reduce((a, d) => a + d.amountCents, 0);
+        if (input.agreedCents < activeDiscounts) {
+          throw new BillingError(E.VALIDATION, 400, "The agreed price cannot be lower than the discounts already approved. Void a discount first.");
+        }
         await repo.upsertObligation(tx, studentId, actorId, input, at);
         return [{ event: "billing.ledger_updated", description: "Agreed program price set", studentId, metadata: { change: "obligation", agreedCents: input.agreedCents, currency: input.currency } }];
       });

@@ -30,6 +30,8 @@ import {
 import { useT } from "@/i18n";
 import { StatusGlyph, StatusPill, buttonClass } from "@/components/student-progress/student-ui";
 import { TaskRing } from "@/components/student-progress/journey-graphics";
+import { monthLabel } from "@/pages/high-school-presentation";
+import { milestoneRows, plannedHalfUnits, upcomingTasks, type UpcomingGroup } from "@/lib/hs-journey-extras";
 import { CreditRing, Fact, MoreList, PaceMeter, Panel, linkButton } from "./hs-ui";
 
 export interface TabProps {
@@ -143,6 +145,11 @@ function CreditsCard({ view }: { view: StudentHighSchoolView }) {
       <div className="grid grid-cols-[auto_1fr] items-start gap-4 sm:gap-6">
         <CreditRing earned={c.earnedHalfUnits} required={c.requiredHalfUnits} size={160} />
         <dl className="space-y-3 text-left">
+          <Fact label={t("hs.journey.officialCredits")}><span data-testid="credits-official">{creditsLabel(c.earnedHalfUnits, language)}</span></Fact>
+          <Fact label={t("hs.journey.planned")}><span data-testid="credits-planned">{creditsLabel(plannedHalfUnits(view), language)}</span></Fact>
+          {c.awaitingConfirmationHalfUnits > 0 && (
+            <Fact label={t("hs.journey.reportedCredits")}><span data-testid="credits-reported-value">{creditsLabel(c.awaitingConfirmationHalfUnits, language)}</span></Fact>
+          )}
           <Fact label={t("hs.journey.stillToEarn")}><span data-testid="credits-remaining">{creditsLabel(c.remainingHalfUnits, language)}</span></Fact>
           {rows.map((r) => (
             <Fact key={r.id} label={r.id === "core" ? t("hs.credits.coreShort") : t("hs.credits.electiveShort")}>
@@ -156,6 +163,7 @@ function CreditsCard({ view }: { view: StudentHighSchoolView }) {
       ) : (
         <p className="border-t border-student-line pt-3 text-sm text-student-muted" data-testid="credits-official-note">{t("hs.journey.officialOnly")}</p>
       )}
+      <p className="text-xs text-student-muted" data-testid="credits-planned-note">{t("hs.journey.plannedNote")}</p>
     </Panel>
   );
 }
@@ -232,6 +240,75 @@ function WaitingCard({ view, today, onNavigate }: TabProps) {
   );
 }
 
+const UPCOMING_GROUPS: readonly UpcomingGroup[] = ["overdue", "thisWeek", "nextWeek", "later"];
+
+function UpcomingCard({ view, today, onNavigate }: TabProps) {
+  const { t, language } = useT();
+  const nextKey = view.current.nextTask ? `${view.current.nextTask.courseKey}:${view.current.nextTask.key}` : null;
+  const all = upcomingTasks(view, today).filter((x) => `${x.courseKey}:${x.task.key}` !== nextKey);
+  const label = (g: UpcomingGroup) => t(g === "overdue" ? "hs.upcoming.overdue" : g === "thisWeek" ? "hs.upcoming.thisWeek" : g === "nextWeek" ? "hs.upcoming.nextWeek" : "hs.upcoming.later");
+  return (
+    <Panel title={t("hs.upcoming.title")} headingId="hs-upcoming" testId="upcoming-tasks">
+      {all.length === 0 ? (
+        <p className="text-sm text-student-muted" data-testid="upcoming-empty">{t("hs.upcoming.empty")}</p>
+      ) : (
+        <div className="space-y-3">
+          {UPCOMING_GROUPS.map((g) => {
+            const items = all.filter((x) => x.group === g);
+            if (items.length === 0) return null;
+            return (
+              <div key={g} data-testid={`upcoming-${g}`}>
+                <h4 className="text-xs font-semibold uppercase tracking-[0.1em] text-student-muted">{label(g)}</h4>
+                <MoreList
+                  items={items}
+                  max={g === "later" ? 3 : 5}
+                  testId={`upcoming-list-${g}`}
+                  listClass="divide-y divide-student-line"
+                  ariaLabel={t("hs.upcoming.aria", { group: label(g) })}
+                  render={(x) => (
+                    <li key={`${x.courseKey}:${x.task.key}`} className="py-1 first:pt-0 last:pb-0">
+                      <button type="button" className="min-h-[44px] w-full text-left" onClick={() => onNavigate("subjects", x.courseKey)}>
+                        <span className="block text-sm font-semibold text-student-ink underline-offset-4 hover:underline">{cleanCourseTitle(x.courseTitle)}</span>
+                        <span className="block text-xs text-student-muted">
+                          {x.task.title} · {formatShortDate(x.task.dueDate, language)}
+                        </span>
+                      </button>
+                    </li>
+                  )}
+                />
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </Panel>
+  );
+}
+
+function MilestonesCard({ view, today }: { view: StudentHighSchoolView; today: string }) {
+  const { t, language } = useT();
+  const rows = milestoneRows(view, today);
+  return (
+    <Panel title={t("hs.milestones.title")} headingId="hs-milestones" testId="milestones-card">
+      <p className="text-sm text-student-muted">{t("hs.milestones.intro")}</p>
+      {rows.length === 0 ? (
+        <p className="text-sm text-student-muted" data-testid="milestones-empty">{t("hs.milestones.empty")}</p>
+      ) : (
+        <ol className="divide-y divide-student-line" data-testid="milestones-list">
+          {rows.map((r) => (
+            <li key={r.month} className="flex flex-wrap items-center justify-between gap-x-3 py-1.5 text-sm" data-current={r.current ? "true" : undefined}>
+              <span className={r.past ? "text-student-muted" : "text-student-ink"}>
+                {t("hs.milestones.row", { credits: creditsLabel(r.cumulativeHalfUnits, language), month: monthLabel(r.month, language) })}
+              </span>
+              {r.current && <StatusPill status="attention" label={t("hs.milestones.current")} />}
+            </li>
+          ))}
+        </ol>
+      )}
+    </Panel>
+  );
+}
+
 function HelpLinks() {
   const { t } = useT();
   return (
@@ -252,11 +329,13 @@ export function JourneyTab(props: TabProps) {
       <div className="grid items-start gap-4 sm:gap-6 lg:grid-cols-2">
         <div className="contents lg:flex lg:flex-col lg:gap-6">
           <div className="order-1 min-w-0 lg:order-none"><NextStepCard {...props} /></div>
-          <div className="order-4 min-w-0 lg:order-none"><WaitingCard {...props} /></div>
+          <div className="order-4 min-w-0 lg:order-none"><UpcomingCard {...props} /></div>
+          <div className="order-5 min-w-0 lg:order-none"><WaitingCard {...props} /></div>
         </div>
         <div className="contents lg:flex lg:flex-col lg:gap-6">
           <div className="order-2 min-w-0 lg:order-none"><CreditsCard view={view} /></div>
           <div className="order-3 min-w-0 lg:order-none"><PaceCard view={view} /></div>
+          <div className="order-6 min-w-0 lg:order-none"><MilestonesCard view={view} today={props.today} /></div>
         </div>
       </div>
       <HelpLinks />

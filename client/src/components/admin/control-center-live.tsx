@@ -52,8 +52,8 @@ export function ControlCenterLive() {
         <KpiTile label="Waiting on Lumière" value={s ? String(s.awaitingStaff) : "—"} hint="tickets needing a reply" tone={s && s.awaitingStaff > 0 ? "attention" : "default"} icon={<Inbox className="h-4 w-4" />} testId="kpi-awaiting" />
         <KpiTile label="Overdue" value={s ? String(s.overdue) : "—"} hint="past response target" tone={s && s.overdue > 0 ? "urgent" : "default"} testId="kpi-overdue" />
         <KpiTile label="Unassigned" value={s ? String(s.unassigned) : "—"} hint="open, no owner" testId="kpi-unassigned" />
-        <Link href="/support?search=Elective%20change" className="block min-w-0 rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-student-gold-ink" data-testid="kpi-elective-link">
-          <KpiTile label="Elective change requests" value={electives.data ? String(electiveCount) : "—"} hint="open the tickets" tone={electiveCount > 0 ? "attention" : "default"} icon={<MessageSquareWarning className="h-4 w-4" />} testId="kpi-elective" />
+        <Link href="/admin/elective-requests" className="block min-w-0 rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-student-gold-ink" data-testid="kpi-elective-link">
+          <KpiTile label="Elective change requests" value={electives.data ? String(electiveCount) : "—"} hint="review and decide" tone={electiveCount > 0 ? "attention" : "default"} icon={<MessageSquareWarning className="h-4 w-4" />} testId="kpi-elective" />
         </Link>
         <a href="#cc-documents" className="block min-w-0 rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-student-gold-ink" data-testid="kpi-documents-link">
           <KpiTile label="Documents awaiting review" value={docs.data ? String(queue.length) : "—"} hint="pending or resubmit" tone={queue.length > 0 ? "attention" : "default"} icon={<FileCheck2 className="h-4 w-4" />} testId="kpi-documents" />

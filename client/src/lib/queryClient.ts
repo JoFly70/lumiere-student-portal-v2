@@ -1,9 +1,11 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 import { getAuthToken } from "./api";
+import { isSessionExpiredResponse, notifySessionExpired } from "./session-expiry";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
+    if (getAuthToken() && isSessionExpiredResponse(res.status, text)) notifySessionExpired();
     throw new Error(`${res.status}: ${text}`);
   }
 }

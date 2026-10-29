@@ -77,11 +77,11 @@ export function ScheduleDialog({ open, onOpenChange, currency, netCents, initial
         <div className="space-y-2">
           {rows.length === 0 && <p className="text-sm text-student-muted">No installments. Split evenly above or add one.</p>}
           {rows.map((r, i) => (
-            <div key={i} className="grid grid-cols-[1fr_1fr_1.2fr_auto] items-center gap-2" data-testid={`schedule-row-${i}`}>
+            <div key={i} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-center gap-2 rounded-lg border border-student-line p-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.2fr)_auto] sm:border-0 sm:p-0" data-testid={`schedule-row-${i}`}>
               <input type="date" aria-label={`Due date ${i + 1}`} className={staffField} value={r.dueDate} onChange={(e) => set(i, { dueDate: e.target.value })} />
               <input aria-label={`Amount ${i + 1}`} inputMode="decimal" className={staffField} value={r.amount} onChange={(e) => set(i, { amount: e.target.value })} aria-invalid={parseMoneyToCents(r.amount, currency) === null} />
-              <input aria-label={`Label ${i + 1}`} className={staffField} placeholder="Label (optional)" maxLength={120} value={r.label} onChange={(e) => set(i, { label: e.target.value })} />
-              <Button type="button" variant="ghost" size="icon" aria-label={`Remove installment ${i + 1}`} onClick={() => setRows((rs) => rs.filter((_, j) => j !== i))}><Trash2 className="h-4 w-4" /></Button>
+              <input aria-label={`Label ${i + 1}`} className={`${staffField} col-span-2 row-start-2 sm:col-span-1 sm:row-start-auto`} placeholder="Label (optional)" maxLength={120} value={r.label} onChange={(e) => set(i, { label: e.target.value })} />
+              <Button type="button" variant="ghost" size="icon" className="row-span-1 sm:row-auto" aria-label={`Remove installment ${i + 1}`} onClick={() => setRows((rs) => rs.filter((_, j) => j !== i))}><Trash2 className="h-4 w-4" /></Button>
             </div>
           ))}
           <Button type="button" className={staffBtn.ghost} variant="ghost" onClick={() => setRows((rs) => [...rs, { dueDate: todayIso(), amount: "", label: "" }])}><Plus className="h-4 w-4" />Add installment</Button>

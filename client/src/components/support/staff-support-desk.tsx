@@ -10,6 +10,7 @@
  * one student status vocabulary (SUPPORT_STATUS_LABEL + StatusPill).
  */
 import { isElectiveChangeSubject } from "@/lib/elective-change";
+import { STAGE_LABEL, parseStageNote } from "@/lib/elective-stage";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "wouter";
 import { formatDistanceToNowStrict } from "date-fns";
@@ -214,6 +215,7 @@ export function TicketRow({ ticket, selected, onSelect }: { ticket: SupportTicke
 
 function CommentBubble({ comment }: { comment: SupportComment }) {
   if (comment.is_internal) {
+    const stage = parseStageNote(comment.content);
     return (
       <li data-testid="internal-note" className="rounded-xl border-2 border-dashed border-st-attention bg-st-attention-soft p-4">
         <div className="mb-1 flex items-center gap-2 text-xs font-semibold text-st-attention">
@@ -223,7 +225,11 @@ function CommentBubble({ comment }: { comment: SupportComment }) {
         <div className="mb-1.5 text-xs text-student-muted">
           {comment.author_name} · {age(comment.created_at)} ago
         </div>
-        <p className="whitespace-pre-wrap text-sm leading-relaxed text-student-ink">{comment.content}</p>
+        {stage ? (
+          <p className="text-sm leading-relaxed text-student-ink" data-testid="elective-stage-note"><span className="font-semibold">Elective stage: {STAGE_LABEL[stage.stage]}</span>{stage.reason ? <span className="block whitespace-pre-wrap">{stage.reason}</span> : null}</p>
+        ) : (
+          <p className="whitespace-pre-wrap text-sm leading-relaxed text-student-ink">{comment.content}</p>
+        )}
       </li>
     );
   }
@@ -401,9 +407,17 @@ function TicketDetailPane({ ticketId, staff, onBack }: { ticketId: string; staff
         {isElectiveChangeSubject(ticket.subject) && (
           <p className="rounded-lg border border-student-line-strong bg-student-card px-3 py-2 text-sm text-student-ink" data-testid="elective-change-hint">
             {ELECTIVE_STAFF_HINT}
-            {user?.role === "admin" && ticket.student_id ? (
+            {user?.role === "admin" ? (
               <>
                 {" "}
+                <Link href={`/admin/elective-requests?ticket=${encodeURIComponent(ticket.id)}`} className="font-semibold text-student-gold-ink underline underline-offset-4" data-testid="link-elective-requests">
+                  Decide in Elective requests
+                </Link>
+              </>
+            ) : null}
+            {user?.role === "admin" && ticket.student_id ? (
+              <>
+                {" · "}
                 <Link href={`/admin/students/${encodeURIComponent(ticket.student_id)}/high-school`} className="font-semibold text-student-gold-ink underline underline-offset-4" data-testid="link-elective-high-school">
                   Open High school pathway
                 </Link>

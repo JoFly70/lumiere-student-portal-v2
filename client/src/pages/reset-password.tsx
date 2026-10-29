@@ -4,6 +4,7 @@ import { CheckCircle2, MailCheck } from 'lucide-react';
 import { useT } from '@/i18n';
 import { AuthLayout } from '@/components/auth/auth-layout';
 import { AuthAlert, AuthField, AuthHeading, AuthStatus, AuthSubmit } from '@/components/auth/auth-parts';
+import { authErrorFromResponse, resetErrorMessage } from '@/lib/auth-errors';
 import { parseRecoveryLink, recoveryUrlWithoutCredentials } from '@/lib/recovery-token';
 
 export default function ResetPassword() {
@@ -46,13 +47,12 @@ export default function ResetPassword() {
       });
 
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || t('auth.reset.failed'));
+        throw await authErrorFromResponse(response, t('auth.reset.failed'));
       }
 
       setSuccess(true);
     } catch (error) {
-      setError(error instanceof Error ? error.message : t('auth.reset.failed'));
+      setError(resetErrorMessage(error, t, 'auth.reset.failed'));
     } finally {
       setLoading(false);
     }
@@ -81,13 +81,12 @@ export default function ResetPassword() {
       });
 
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || t('auth.newPassword.failed'));
+        throw await authErrorFromResponse(response, t('auth.newPassword.failed'));
       }
 
       setSuccess(true);
     } catch (error) {
-      setError(error instanceof Error ? error.message : t('auth.newPassword.failed'));
+      setError(resetErrorMessage(error, t, 'auth.newPassword.failed'));
     } finally {
       setLoading(false);
     }

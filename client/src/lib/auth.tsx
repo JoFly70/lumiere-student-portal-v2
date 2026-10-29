@@ -1,6 +1,8 @@
 import { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { useLocation } from 'wouter';
 import { isRestorableAuthState, publishAuthLifecycle } from './auth-lifecycle';
+import { AuthRequestError, authErrorFromResponse } from './auth-errors';
+import { SESSION_EXPIRED_EVENT } from './session-expiry';
 
 interface User {
   id: string;
@@ -99,8 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Login failed');
+      throw await authErrorFromResponse(response, 'Login failed');
     }
 
     const data = await response.json();
@@ -164,17 +165,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Expired/revoked session (a 401 on an authenticated call, or the stored expiry passing):
+  // clear everything locally and send the person to sign in with an explanation.
+  useEffect(() => {
+    if (!user || !session) return;
+    const expire = () => {
+      publishAuthState(null, null);
+      try { localStorage.removeItem(AUTH_STORAGE_KEY); } catch { /* ignore */ }
+      setLocation('/login?expired=1');
+    };
+    window.addEventListener(SESSION_EXPIRED_EVENT, expire);
+    const ms = session.expires_at * 1000 - Date.now();
+    const timer = Number.isFinite(ms) ? window.setTimeout(expire, Math.min(Math.max(ms, 0), 2_000_000_000)) : undefined;
+    return () => {
+      window.removeEventListener(SESSION_EXPIRED_EVENT, expire);
+      if (timer !== undefined) window.clearTimeout(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, session?.access_token, session?.expires_at]);
+
   const logout = async () => {
     try {
-      // Call logout endpoint to clear CSRF token on server before local auth state.
-      if (session?.access_token && session?.csrf_token) {
-        await fetch('/api/auth/logout', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'X-CSRF-Token': session.csrf_token,
-          },
-        });
+      // Revoke the server session whenever we hold a token (the CSRF header is optional on logout).
+      if (session?.access_token) {
+        const headers: Record<string, string> = { 'Authorization': `Bearer ${session.access_token}` };
+        if (session.csrf_token) headers['X-CSRF-Token'] = session.csrf_token;
+        await fetch('/api/auth/logout', { method: 'POST', headers });
       }
     } catch (error) {
       console.error('Logout request failed:', error);

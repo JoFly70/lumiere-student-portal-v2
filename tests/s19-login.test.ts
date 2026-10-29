@@ -69,7 +69,7 @@ describe("S19 login", () => {
   });
 
   it("keeps the role-based redirect and request bodies unchanged", () => {
-    expect(read("client/src/pages/login.tsx")).toContain("user?.role === 'admin' ? '/admin'");
+    expect(read("client/src/pages/login.tsx")).toContain("user?.role === 'admin' ? '/admin/support-center'");
     const reset = read("client/src/pages/reset-password.tsx");
     expect(reset).toContain("'/api/auth/update-password'");
     expect(reset).toContain("recovery_type: 'recovery'");

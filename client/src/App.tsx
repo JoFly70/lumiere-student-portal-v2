@@ -28,6 +28,7 @@ import { cn } from "@/lib/utils";
 import Admin from "@/pages/admin";
 import AdminSupportCenter from "@/pages/admin-support-center";
 import AdminAssistant from "@/pages/admin-assistant";
+import AdminElectiveRequests from "@/pages/admin-elective-requests";
 import AdminStudentWorkspace from "@/pages/admin-student-workspace";
 import AdminStudentRoadmap from "@/pages/admin-student-roadmap";
 import HighSchool from "@/pages/high-school";
@@ -95,6 +96,13 @@ function Router() {
         {() => (
           <ProtectedRoute requireRole="admin">
             <AdminAssistant />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/admin/elective-requests">
+        {() => (
+          <ProtectedRoute requireRole="admin">
+            <AdminElectiveRequests />
           </ProtectedRoute>
         )}
       </Route>

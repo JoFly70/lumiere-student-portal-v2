@@ -1,4 +1,5 @@
 // Authenticated API client utility
+import { isSessionExpiredResponse, notifySessionExpired } from './session-expiry';
 
 let authToken: string | null = null;
 let csrfToken: string | null = null;
@@ -66,6 +67,7 @@ export async function apiRequest<T = any>(
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: 'Request failed' }));
+    if (token && isSessionExpiredResponse(response.status, error?.error)) notifySessionExpired();
     throw new ApiError(
       error.error || `HTTP ${response.status}: ${response.statusText}`,
       response.status,

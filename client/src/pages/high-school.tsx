@@ -8,10 +8,15 @@ import { HighSchoolPageView } from "@/components/high-school/high-school-view";
 import { HsActionsProvider } from "@/components/high-school/hs-actions";
 import { HsError, HsNoEnrollment, HsSkeleton } from "@/components/high-school/states";
 import { StudentSurface } from "@/components/student-progress/student-ui";
+import { useStudentProfile } from "@/hooks/use-student-profile";
 import { isNoEnrollment, useHighSchoolView } from "@/lib/high-school-queries";
 
 export default function HighSchool() {
   const { data, isLoading, error, refetch } = useHighSchoolView();
+  const { data: profile } = useStudentProfile();
+  const identity = profile?.identity;
+  const name = identity ? (identity.preferredName?.trim() || identity.firstName) : "";
+  const welcome = identity && name ? { name, photoUrl: identity.photoUrl ?? null } : null;
 
   if (isLoading) return <StudentSurface><HsSkeleton /></StudentSurface>;
   if (isNoEnrollment(error)) return <StudentSurface><HsNoEnrollment /></StudentSurface>;
@@ -24,7 +29,7 @@ export default function HighSchool() {
   }
   return (
     <HsActionsProvider>
-      <HighSchoolPageView view={data} />
+      <HighSchoolPageView view={data} welcome={welcome} />
     </HsActionsProvider>
   );
 }

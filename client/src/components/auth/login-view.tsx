@@ -1,6 +1,7 @@
 import { useId, useState } from "react";
 import { useT } from "@/i18n";
 import { AuthLayout } from "./auth-layout";
+import { signInErrorMessage } from "@/lib/auth-errors";
 import { AuthAlert, AuthField, AuthHeading, AuthNote, AuthSubmit } from "./auth-parts";
 
 export type LoginMode = "signin" | "invite";
@@ -21,9 +22,11 @@ export interface LoginViewProps {
   /** Initial invitation code (from the URL); a non-empty value opens the invitation tab. */
   initialInvite?: string;
   initialMode?: LoginMode;
+  /** Shown above the form, e.g. "Your session has expired". */
+  notice?: string;
 }
 
-export function LoginView({ login, signup, onNavigate, initialInvite = "", initialMode }: LoginViewProps) {
+export function LoginView({ login, signup, onNavigate, initialInvite = "", initialMode, notice }: LoginViewProps) {
   const { t } = useT();
   const tabsId = useId();
   const [mode, setMode] = useState<LoginMode>(initialMode ?? (initialInvite ? "invite" : "signin"));
@@ -48,7 +51,7 @@ export function LoginView({ login, signup, onNavigate, initialInvite = "", initi
     try {
       await login(loginEmail, loginPassword);
     } catch (error) {
-      setLoginError(error instanceof Error && error.message ? error.message : t("auth.signin.failed"));
+      setLoginError(signInErrorMessage(error, t));
     } finally {
       setLoginLoading(false);
     }
@@ -115,6 +118,7 @@ export function LoginView({ login, signup, onNavigate, initialInvite = "", initi
           <span className="auth-tab-bar" data-pos={mode === "signin" ? "0" : "1"} aria-hidden="true" />
         </div>
 
+        {notice && mode === "signin" && <AuthNote testId="text-session-notice">{notice}</AuthNote>}
         {signupNotice && mode === "signin" && <AuthNote testId="text-signup-notice">{signupNotice}</AuthNote>}
 
         {mode === "signin" ? (
