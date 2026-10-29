@@ -129,7 +129,7 @@ function InlinePlacementFeedback({ feedback }: { feedback?: PlacementActionFeedb
     className={`mt-3 rounded-md border px-3 py-2 text-sm ${
       feedback.kind === "error"
         ? "border-destructive/40 bg-destructive/5 text-destructive"
-        : "border-green-600/30 bg-green-600/5 text-green-800 dark:text-green-300"
+        : "border-st-applied/30 bg-st-applied/5 text-st-applied"
     }`}
   >
     {feedback.message}

@@ -120,10 +120,10 @@ const STATUS_KEY: Record<InstallmentStatus, TranslationKey> = {
 };
 
 const STATUS_STYLE: Record<InstallmentStatus, string> = {
-  paid: "border-emerald-600/30 bg-emerald-600/10 text-emerald-800 dark:border-emerald-400/30 dark:bg-emerald-400/10 dark:text-emerald-300",
-  partially_paid: "border-amber-600/35 bg-amber-500/10 text-amber-900 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-200",
-  due: "border-sky-600/35 bg-sky-600/10 text-sky-900 dark:border-sky-400/30 dark:bg-sky-400/10 dark:text-sky-200",
-  overdue: "border-red-600/35 bg-red-600/10 text-red-800 dark:border-red-400/35 dark:bg-red-400/10 dark:text-red-200",
+  paid: "border-st-applied/30 bg-st-applied/10 text-st-applied",
+  partially_paid: "border-st-attention/35 bg-st-attention/10 text-st-attention",
+  due: "border-st-progress/35 bg-st-progress/10 text-st-progress",
+  overdue: "border-st-attention/35 bg-st-attention/10 text-st-attention",
   upcoming: "border-border bg-muted text-muted-foreground",
 };
 
@@ -271,8 +271,8 @@ function Awaiting({ n }: { n: number }) {
   const BT = billingText(useT().language);
   if (n === 0) return null;
   return (
-    <div className="flex items-start gap-3 rounded-xl border border-amber-600/35 bg-amber-500/10 p-4 text-sm text-foreground" role="status" data-testid="billing-awaiting">
-      <Hourglass className="mt-0.5 h-4 w-4 shrink-0 text-amber-700 dark:text-amber-300" aria-hidden />
+    <div className="flex items-start gap-3 rounded-xl border border-st-attention/35 bg-st-attention/10 p-4 text-sm text-foreground" role="status" data-testid="billing-awaiting">
+      <Hourglass className="mt-0.5 h-4 w-4 shrink-0 text-st-attention" aria-hidden />
       <div className="min-w-0">
         <p className="font-semibold">{BT.awaitingTitle(n)}</p>
         <p className="mt-0.5 text-muted-foreground">{BT.awaitingDetail}</p>

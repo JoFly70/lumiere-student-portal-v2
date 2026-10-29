@@ -42,9 +42,9 @@ export function SectionHeading({ id, title, children }: { id: string; title: str
 
 const NOTICE_TONE = {
   info: { cls: "border-border bg-muted/40", Icon: Info },
-  warn: { cls: "border-amber-600/40 bg-amber-500/10", Icon: AlertCircle },
+  warn: { cls: "border-st-attention/40 bg-st-attention/10", Icon: AlertCircle },
   error: { cls: "border-destructive/40 bg-destructive/5", Icon: AlertCircle },
-  success: { cls: "border-green-700/30 bg-green-600/5", Icon: CheckCircle2 },
+  success: { cls: "border-st-applied/30 bg-st-applied/5", Icon: CheckCircle2 },
   official: { cls: "border-foreground/30 bg-muted/60", Icon: ShieldCheck },
 } as const;
 
@@ -71,7 +71,7 @@ export function GatedButton({ gate, id, children, onClick, pending, variant, typ
   const locked = !gate.enabled && !pending;
   return (
     <div className="inline-flex max-w-full flex-col items-start gap-1.5">
-      <Button id={id} type={type} variant={variant} size={size} disabled={!gate.enabled || pending} onClick={onClick} aria-describedby={gate.reason ? `${id}-why` : undefined} data-locked={locked ? "true" : undefined} className={`min-h-10 ${DISABLED_CLASS} ${!variant || variant === "default" ? "dark:bg-blue-700 dark:text-white dark:hover:bg-blue-800" : ""}`}>
+      <Button id={id} type={type} variant={variant} size={size} disabled={!gate.enabled || pending} onClick={onClick} aria-describedby={gate.reason ? `${id}-why` : undefined} data-locked={locked ? "true" : undefined} className={`min-h-10 ${DISABLED_CLASS} ${!variant || variant === "default" ? " dark:text-white" : ""}`}>
         {pending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" /> : locked ? <Lock className="mr-2 h-4 w-4" aria-hidden="true" /> : null}
         {children}
       </Button>
@@ -149,8 +149,8 @@ export function ActionMessage({ message }: { message: { tone: "success" | "error
 export function Pill({ children, tone = "neutral" }: { children: ReactNode; tone?: "neutral" | "good" | "warn" | "bad" | "official" }) {
   const cls = {
     neutral: "border-border bg-muted/50 text-foreground",
-    good: "border-green-700/40 bg-green-600/10 text-green-900 dark:text-green-200",
-    warn: "border-amber-700/40 bg-amber-500/10 text-amber-900 dark:text-amber-200",
+    good: "border-st-applied/40 bg-st-applied/10 text-st-applied",
+    warn: "border-st-attention/40 bg-st-attention/10 text-st-attention",
     bad: "border-destructive/50 bg-destructive/10 text-destructive",
     official: "border-foreground/40 bg-foreground/5 text-foreground",
   }[tone];
@@ -162,7 +162,7 @@ export function MiniBar({ value, max, over = false, className = "" }: { value: n
   const pct = max <= 0 ? 0 : Math.min(100, Math.round((value * 100) / max));
   return (
     <span aria-hidden="true" className={`block h-1.5 w-full overflow-hidden rounded-full bg-muted ${className}`}>
-      <span className={`block h-full rounded-full ${over ? "bg-amber-600" : value >= max && max > 0 ? "bg-green-700 dark:bg-green-500" : "bg-blue-600 dark:bg-blue-400"}`} style={{ width: `${pct}%` }} />
+      <span className={`block h-full rounded-full ${over ? "bg-st-attention" : value >= max && max > 0 ? "bg-st-applied" : "bg-st-progress"}`} style={{ width: `${pct}%` }} />
     </span>
   );
 }

@@ -253,7 +253,7 @@ export function PlacementActionDialog({
           </>}
         </dl>
 
-        {(locallyDisabled || staleDraft) && <div id={dialogLockMessageId} role="status" className="flex gap-2 rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-sm text-amber-900 dark:text-amber-200">
+        {(locallyDisabled || staleDraft) && <div id={dialogLockMessageId} role="status" className="flex gap-2 rounded-md border border-st-attention/40 bg-st-attention/5 p-3 text-sm text-st-attention">
           <LockKeyhole className="mt-0.5 h-4 w-4 shrink-0" />
           <span>{staleDraft ? "This draft is read-only because the student record changed." : lockReason}</span>
         </div>}

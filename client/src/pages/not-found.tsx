@@ -10,7 +10,7 @@ export default function NotFound() {
       <Card className="w-full max-w-md mx-4">
         <CardContent className="pt-6">
           <div className="flex mb-4 gap-2">
-            <AlertCircle className="h-8 w-8 text-red-500" aria-hidden="true" />
+            <AlertCircle className="h-8 w-8 text-muted-foreground" aria-hidden="true" />
             <h1 className="text-2xl font-bold text-gray-900">{t("common.notFound.title")}</h1>
           </div>
 

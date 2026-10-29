@@ -226,7 +226,7 @@ function PreviewDocuments({ docs, loading, failed, copy, lang }: {
   return (
     <section className="space-y-3" data-testid="preview-documents">
       <h2 className="text-xl font-semibold">{copy.docsTitle}</h2>
-      <p className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950 dark:bg-amber-950 dark:text-amber-50">{copy.fileContents}</p>
+      <p className="rounded-md border border-st-attention bg-st-attention-soft p-3 text-sm text-st-attention">{copy.fileContents}</p>
       {!docs?.length ? <p className="rounded-md border border-dashed p-5 text-sm text-muted-foreground">{copy.noDocs}</p> : (
         <ul className="space-y-2">
           {docs.map((doc, index) => (
@@ -412,7 +412,7 @@ export function ViewAsStudentScreen({
   const saved = data.student.preferredLanguage;
   return (
     <div className="space-y-5" data-testid="view-as-student">
-      <div role="status" className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-3 rounded-md border border-amber-400 bg-amber-50 p-3 text-sm text-amber-950 dark:bg-amber-950 dark:text-amber-50" data-testid="preview-banner">
+      <div role="status" className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-3 rounded-md border border-st-attention bg-st-attention-soft p-3 text-sm text-st-attention" data-testid="preview-banner">
         <p className="flex items-center gap-2">
           <Eye className="h-4 w-4 shrink-0" aria-hidden="true" />
           <span><strong>{lang === "fr" ? "Aperçu en lecture seule" : "Read-only preview"}</strong> {lang === "fr" ? `du portail de ${data.student.displayName}. Aucune donnée n'est modifiée.` : `of ${data.student.displayName}'s portal. Nothing here changes the student's records.`}</span>

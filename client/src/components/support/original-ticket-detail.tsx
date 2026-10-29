@@ -266,7 +266,7 @@ function DetailBody({ ticketId, onClose }: { ticketId: string; onClose: () => vo
                 >
                   <div className="mb-2 flex items-center justify-between gap-2">
                     <div className="flex min-w-0 items-center gap-2">
-                      <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-full", c.authorKind === "student" ? "bg-primary text-primary-foreground" : "bg-blue-600 text-white")}>
+                      <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-full", c.authorKind === "student" ? "bg-primary text-primary-foreground" : "bg-st-progress text-white")}>
                         <User className="h-4 w-4" />
                       </div>
                       <span className="truncate text-sm font-medium">{c.authorKind === "student" ? T.detail.you : c.authorName || T.detail.team}</span>

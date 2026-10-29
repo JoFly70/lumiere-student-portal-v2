@@ -50,8 +50,8 @@ function DeliveryRow({ idp, label, current, docId, docs, studentId, eid, action,
 /** A finished step: ONE status line (what, when, who, evidence). No chip repeats it. */
 function DoneRow({ testId, title, when, who, evidence }: { testId: string; title: string; when: string | null; who: string | null; evidence: string }) {
   return (
-    <div data-testid={testId} className="flex items-start gap-3 rounded-lg border border-green-700/30 bg-green-600/5 px-4 py-3 text-sm">
-      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-green-800 dark:text-green-300" aria-hidden="true" />
+    <div data-testid={testId} className="flex items-start gap-3 rounded-lg border border-st-applied/30 bg-st-applied/5 px-4 py-3 text-sm">
+      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-st-applied" aria-hidden="true" />
       <div className="min-w-0">
         <p className="font-medium">{title}{when ? ` on ${formatDate(when)}` : ""}{who ? ` by ${who}` : ""}</p>
         <p className="break-words text-muted-foreground">Evidence: {evidence}</p>
@@ -98,7 +98,7 @@ export function GraduationSection({ state, studentId, isAdmin, docs, initialOpen
               <p className="mb-2 flex items-center gap-2 text-sm font-medium"><CircleAlert className="h-4 w-4" aria-hidden="true" />{g.blockers.length} {g.blockers.length === 1 ? "blocker" : "blockers"} before eligibility can be confirmed</p>
               <ul className="ml-6 list-disc space-y-1 text-sm">{g.blockers.map((b) => <li key={b}>{b}</li>)}</ul>
             </div>
-          ) : <p className="flex items-center gap-2 text-sm font-medium" data-testid="graduation-blockers"><CheckCircle2 className="h-4 w-4 text-green-800 dark:text-green-300" aria-hidden="true" />Ready to confirm. No credit blockers.</p>
+          ) : <p className="flex items-center gap-2 text-sm font-medium" data-testid="graduation-blockers"><CheckCircle2 className="h-4 w-4 text-st-applied" aria-hidden="true" />Ready to confirm. No credit blockers.</p>
         ) : closed && g.status !== "diploma_conferred" ? <p className="text-sm text-muted-foreground" data-testid="closed-record">{CLOSED_RECORD_TEXT} Graduation can no longer be recorded for this enrollment.</p>
         : <p className="text-sm text-muted-foreground">All credit requirements were met when eligibility was confirmed.</p>}
       </SectionCard>

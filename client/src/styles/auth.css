@@ -101,8 +101,8 @@
 .auth-spin { animation: auth-spin .8s linear infinite; }
 
 .auth-alert, .auth-note { display: flex; gap: 10px; align-items: flex-start; border-radius: 10px; padding: 12px 14px; font-size: 14px; line-height: 1.45; }
-.auth-alert { background: var(--t-red-dim, rgba(180,35,24,.08)); color: var(--t-red, #b42318); border: 1px solid color-mix(in srgb, var(--t-red, #b42318) 35%, transparent); }
-.auth-note { background: var(--t-green-dim, rgba(28,107,67,.08)); color: var(--t-green, #1c6b43); border: 1px solid color-mix(in srgb, var(--t-green, #1c6b43) 35%, transparent); }
+.auth-alert { background: var(--t-red-dim, rgba(123,68,48,.08)); color: var(--t-red, #7b4430); border: 1px solid color-mix(in srgb, var(--t-red, #7b4430) 35%, transparent); }
+.auth-note { background: var(--t-green-dim, rgba(68,104,79,.08)); color: var(--t-green, #44684f); border: 1px solid color-mix(in srgb, var(--t-green, #44684f) 35%, transparent); }
 .auth-alert svg, .auth-note svg { flex: none; margin-top: 2px; }
 
 .auth-foot { display: flex; flex-direction: column; gap: 12px; align-items: center; text-align: center; font-size: 13.5px; color: var(--t-muted, #535a66); padding-top: 4px; }
@@ -117,7 +117,7 @@
   width: 72px; height: 72px; border-radius: 50%; display: grid; place-items: center; border: 1px solid var(--t-accent-line, rgba(194,154,78,.5));
   background: var(--t-accent-dim, rgba(194,154,78,.13)); color: var(--t-accent-text, #74561b);
 }
-.auth-seal[data-tone="error"] { color: var(--t-red, #b42318); border-color: color-mix(in srgb, var(--t-red, #b42318) 40%, transparent); background: var(--t-red-dim, rgba(180,35,24,.08)); }
+.auth-seal[data-tone="error"] { color: var(--t-red, #7b4430); border-color: color-mix(in srgb, var(--t-red, #7b4430) 40%, transparent); background: var(--t-red-dim, rgba(123,68,48,.08)); }
 
 .auth-rise { animation: auth-rise .7s cubic-bezier(.2,.7,.2,1) both; animation-delay: var(--d, 0ms); }
 .auth-draw { stroke-dasharray: 1; stroke-dashoffset: 0; animation: auth-draw 2.6s cubic-bezier(.4,0,.2,1) both; animation-delay: var(--d, 0ms); }

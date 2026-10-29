@@ -474,7 +474,7 @@ function DraftReview(props: DraftReviewProps) {
               <h3 className="mb-1 font-semibold">Removed</h3>
               <ul className="space-y-1">
                 {draft.diff.removed.map((r) => (
-                  <li key={r.itemKey} className={r.hasProgress ? "rounded-md border border-amber-500/50 bg-amber-500/10 px-3 py-2" : ""}>
+                  <li key={r.itemKey} className={r.hasProgress ? "rounded-md border border-st-attention/50 bg-st-attention/10 px-3 py-2" : ""}>
                     {r.title} <span className="font-mono text-xs text-muted-foreground">({r.itemKey})</span>
                     {r.hasProgress && <span className="ml-2 font-medium">Student has progress here. It is kept in history and is not moved to any replacement.</span>}
                   </li>
@@ -521,7 +521,7 @@ function DraftReview(props: DraftReviewProps) {
                   {draft.content.items.map((item) => {
                     const issues = itemIssues.get(item.key) ?? [];
                     return (
-                      <tr key={item.key} className={removedProgress.has(item.key) ? "bg-amber-500/10" : ""}>
+                      <tr key={item.key} className={removedProgress.has(item.key) ? "bg-st-attention/10" : ""}>
                         <td className="py-2 pr-3"><span className="font-medium">{item.title}</span>{item.code && <span className="text-muted-foreground"> · {item.code}</span>}<span className="block break-all font-mono text-xs text-muted-foreground">{item.key}</span>{itemFacts(item).map((f) => <span key={f} className="block text-xs text-muted-foreground">{f}</span>)}<span className="block text-xs text-muted-foreground sm:hidden">{phaseTitle(draft, item)} · {formatDate(item.plannedStart)} → {formatDate(item.plannedEnd)}</span></td>
                         <td className="hidden py-2 pr-3 sm:table-cell">{phaseTitle(draft, item)}<span className="block text-xs text-muted-foreground md:hidden">{formatDate(item.plannedStart)} → {formatDate(item.plannedEnd)}</span></td>
                         <td className="hidden whitespace-nowrap py-2 pr-3 md:table-cell">{formatDate(item.plannedStart)} → {formatDate(item.plannedEnd)}</td>
