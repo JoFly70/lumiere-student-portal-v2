@@ -9,6 +9,7 @@
  * waiting, for how long and who owns it, and status words/colours come from the
  * one student status vocabulary (SUPPORT_STATUS_LABEL + StatusPill).
  */
+import { isElectiveChangeSubject } from "@/lib/elective-change";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "wouter";
 import { formatDistanceToNowStrict } from "date-fns";
@@ -102,6 +103,7 @@ function errorText(e: unknown): string {
   return "Something went wrong. Please try again.";
 }
 
+const ELECTIVE_STAFF_HINT = "Approve only after the awarding school accepts the substitute; apply by publishing a new roadmap version from the student's High school pathway (old version and progress are preserved).";
 const QUEUE_LABEL = Object.fromEntries(STAFF_QUEUES.map((q) => [q.key, q.label])) as Record<QueueKey, string>;
 
 const EMPTY_COPY: Record<QueueKey, { title: string; body: string }> = {
@@ -381,6 +383,7 @@ function TicketDetailPane({ ticketId, staff, onBack }: { ticketId: string; staff
           <TicketStatusPill status={ticket.status} testId="detail-status" />
           <PriorityPill priority={ticket.priority} always />
           {ticket.is_overdue && <StaffPill tone="urgent" icon={<AlertTriangle className="h-3 w-3" aria-hidden="true" />}>Overdue</StaffPill>}
+          {isElectiveChangeSubject(ticket.subject) && <StaffPill tone="attention" testId="pill-elective-change">Elective change</StaffPill>}
         </div>
         <h2 tabIndex={-1} data-testid="staff-ticket-title" className="font-serif text-2xl leading-snug tracking-tight text-student-ink focus-visible:outline-none">{ticket.subject}</h2>
         <p className="text-sm text-student-muted">
@@ -395,6 +398,19 @@ function TicketDetailPane({ ticketId, staff, onBack }: { ticketId: string; staff
             Open student record <ArrowLeft className="h-4 w-4 rotate-180" aria-hidden="true" />
           </Link>
         ) : null}
+        {isElectiveChangeSubject(ticket.subject) && (
+          <p className="rounded-lg border border-student-line-strong bg-student-card px-3 py-2 text-sm text-student-ink" data-testid="elective-change-hint">
+            {ELECTIVE_STAFF_HINT}
+            {user?.role === "admin" && ticket.student_id ? (
+              <>
+                {" "}
+                <Link href={`/admin/students/${encodeURIComponent(ticket.student_id)}/high-school`} className="font-semibold text-student-gold-ink underline underline-offset-4" data-testid="link-elective-high-school">
+                  Open High school pathway
+                </Link>
+              </>
+            ) : null}
+          </p>
+        )}
         {ticket.context && (
           <p className="inline-flex flex-wrap items-center gap-1.5 rounded-lg border border-student-line-strong bg-student-card px-2.5 py-1.5 text-xs" data-testid="academic-context">
             <span className="font-semibold text-student-ink">Academic context</span>

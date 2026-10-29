@@ -17,6 +17,8 @@ export interface SupportRequestInput {
   readonly courseKey: string;
   readonly subject: string;
   readonly description: string;
+  /** Defaults to "course_assistance". */
+  readonly topic?: "course_assistance" | "roadmap_question";
 }
 
 export type SupportResult = { readonly ok: true; readonly ticketNumber: string } | { readonly ok: false; readonly message: string };
@@ -27,6 +29,8 @@ export interface HsActions {
   requestSupport(input: SupportRequestInput): Promise<SupportResult>;
   isPending(key: string): boolean;
   transcriptPending: boolean;
+  /** True only inside HsActionsProvider (false in tests and the read-only admin preview). */
+  available: boolean;
 }
 
 const INERT: HsActions = {
@@ -35,6 +39,7 @@ const INERT: HsActions = {
   requestSupport: async () => ({ ok: false, message: "Support is not available in this preview." }),
   isPending: () => false,
   transcriptPending: false,
+  available: false,
 };
 
 const Ctx = createContext<HsActions>(INERT);
@@ -94,7 +99,7 @@ export function HsActionsProvider({ children }: { children: React.ReactNode }) {
         keys.current.set(fingerprint, key);
       }
       try {
-        const { ticket } = await createTicket.mutateAsync({ topic: "course_assistance", subject: input.subject, description: input.description, idempotencyKey: key });
+        const { ticket } = await createTicket.mutateAsync({ topic: input.topic ?? "course_assistance", subject: input.subject, description: input.description, idempotencyKey: key });
         keys.current.delete(fingerprint);
         return { ok: true, ticketNumber: ticket.ticket_number };
       } catch (error) {
@@ -105,7 +110,7 @@ export function HsActionsProvider({ children }: { children: React.ReactNode }) {
   );
 
   const value = useMemo<HsActions>(
-    () => ({ reportProgress, requestTranscript, requestSupport, isPending: (k) => pending.has(k), transcriptPending: transcript.isPending }),
+    () => ({ reportProgress, requestTranscript, requestSupport, isPending: (k) => pending.has(k), transcriptPending: transcript.isPending, available: true }),
     [reportProgress, requestTranscript, requestSupport, pending, transcript.isPending],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

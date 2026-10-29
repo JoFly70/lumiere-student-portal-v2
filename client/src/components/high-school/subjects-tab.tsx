@@ -35,6 +35,8 @@ import {
 import { useT } from "@/i18n";
 import { StatusPill, buttonClass } from "@/components/student-progress/student-ui";
 import type { HsReportedStatus } from "@shared/high-school-contract";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ELECTIVE_ALTERNATE_MAX, ELECTIVE_REASON_MAX, buildElectiveChangeTicket, electiveAwaitsApproval, electiveChangeValid } from "@/lib/elective-change";
 import { useHsActions } from "./hs-actions";
 import { Meter, solidButton } from "./hs-ui";
 
@@ -203,6 +205,77 @@ function CourseSupport({ course, schoolLine }: { course: HsCourseView; schoolLin
   );
 }
 
+function ElectiveChange({ course }: { course: HsCourseView }) {
+  const actions = useHsActions();
+  const { t, language } = useT();
+  const uid = useId();
+  const [open, setOpen] = useState(false);
+  const [alternate, setAlternate] = useState("");
+  const [reason, setReason] = useState("");
+  const [state, setState] = useState<{ kind: "idle" } | { kind: "sending" } | { kind: "sent"; ticketNumber: string } | { kind: "error"; message: string }>({ kind: "idle" });
+  const title = courseTitleView(course.title).title;
+  const valid = electiveChangeValid({ alternate, reason });
+  return (
+    <div className="space-y-2 rounded-xl border border-student-line p-3" data-testid="elective-change">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+        <span className="text-student-ink" data-testid="elective-credit">{t("hs.elective.credit", { credits: creditsLabel(course.halfUnits, language) })}</span>
+        {electiveAwaitsApproval(course.title) && <StatusPill status="attention" label={t("hs.elective.awaiting")} />}
+      </div>
+      {state.kind === "sent" ? (
+        <p className="flex flex-wrap items-center gap-x-2 rounded-lg bg-st-applied-soft px-3 py-2 text-sm text-st-applied" role="status" data-testid="elective-sent">
+          {t("hs.elective.sent", { number: state.ticketNumber })}
+          <Link href="/support" className="font-semibold underline underline-offset-4">{t("hs.elective.follow")}</Link>
+        </p>
+      ) : (
+        <>
+          <button type="button" className={buttonClass.outline} aria-disabled={!actions.available} onClick={() => actions.available && setOpen(true)} data-testid="button-request-elective-change" aria-label={t("hs.elective.requestAria", { title })}>
+            {t("hs.elective.request")}
+          </button>
+          {!actions.available && <p className="text-xs text-student-muted">{t("hs.elective.unavailable")}</p>}
+        </>
+      )}
+      {actions.available && (
+        <Dialog open={open} onOpenChange={(o) => state.kind !== "sending" && setOpen(o)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{t("hs.elective.dialogTitle")}</DialogTitle>
+              <DialogDescription>{t("hs.elective.dialogIntro", { title })}</DialogDescription>
+            </DialogHeader>
+            <form
+              className="space-y-3"
+              data-testid="elective-form"
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (state.kind === "sending" || !valid) return;
+                setState({ kind: "sending" });
+                const built = buildElectiveChangeTicket({ courseKey: course.key, courseTitle: course.title, alternate, reason });
+                const r = await actions.requestSupport({ courseKey: course.key, topic: "roadmap_question", ...built });
+                if (r.ok) {
+                  setState({ kind: "sent", ticketNumber: r.ticketNumber });
+                  setOpen(false);
+                } else setState({ kind: "error", message: r.message });
+              }}
+            >
+              <label htmlFor={`${uid}-alt`} className="block text-sm font-medium text-student-ink">{t("hs.elective.alternate")}</label>
+              <input id={`${uid}-alt`} className={fieldClass} value={alternate} onChange={(e) => setAlternate(e.target.value)} maxLength={ELECTIVE_ALTERNATE_MAX} required />
+              <label htmlFor={`${uid}-why`} className="block text-sm font-medium text-student-ink">{t("hs.elective.reason")}</label>
+              <textarea id={`${uid}-why`} className={cn(fieldClass, "min-h-[96px] py-2")} value={reason} onChange={(e) => setReason(e.target.value)} maxLength={ELECTIVE_REASON_MAX} required />
+              <p className="text-xs text-student-muted">{t("hs.elective.approvalNote")}</p>
+              {state.kind === "error" && <p role="alert" className="text-sm text-st-attention">{state.message}</p>}
+              <div className="flex flex-wrap gap-2">
+                <button type="submit" className={cn(buttonClass.solid, solidButton)} aria-disabled={state.kind === "sending" || !valid} data-testid="button-send-elective-change">
+                  {state.kind === "sending" ? t("hs.subjects.sending") : t("hs.elective.submit")}
+                </button>
+                <button type="button" className={buttonClass.outline} onClick={() => setOpen(false)}>{t("hs.subjects.cancel")}</button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+      )}
+    </div>
+  );
+}
+
 function CourseRow({ course, today, schoolLine, open, onToggle }: { course: HsCourseView; today: string; schoolLine: string; open: boolean; onToggle: () => void }) {
   const { t, language } = useT();
   const id = useId();
@@ -246,6 +319,7 @@ function CourseRow({ course, today, schoolLine, open, onToggle }: { course: HsCo
             ))}
           </ul>
         )}
+        {course.kind === "elective" && course.status !== "replaced" && <ElectiveChange course={course} />}
         {course.status !== "transfer_credit" && course.status !== "replaced" && <CourseSupport course={course} schoolLine={schoolLine} />}
       </div>
     </li>
