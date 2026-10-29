@@ -15,6 +15,7 @@ import { loadAssistantConfig, estimateCostUsd, type AssistantConfig } from "../a
 import { callMuseSpark, ProviderError, type FetchLike, type ProviderMessage } from "../academic-assistant/meta-adapter";
 import { currentMonth, usdToMicro, type BudgetStore } from "../academic-assistant/budget";
 import { composeOwnerContext, extractCitations, recordSummary, type OwnerContextInput, type OwnerSourceRecord } from "./context";
+import { searchKnowledge } from "../academic-assistant/retrieval";
 
 export type OwnerLang = "en" | "fr";
 export type OwnerTask = "answer" | "draft_reply";
@@ -23,6 +24,18 @@ export type OwnerUnavailableReason = "disabled" | "not_configured" | "not_eligib
 export const OWNER_MAX_QUESTION_CHARS = 800;
 const OWNER_MAX_OUTPUT_TOKENS = 1200;
 const OWNER_MAX_INPUT_TOKENS = 6000;
+/** Lumière program-guide entries (curated knowledge, school never named) appended as citable records. */
+const OWNER_GUIDE_RECORDS = 3;
+export function withProgramGuide(records: OwnerSourceRecord[], question: string): OwnerSourceRecord[] {
+  const hits = searchKnowledge(question, OWNER_GUIDE_RECORDS);
+  return [...records, ...hits.map((h, i) => ({
+    ref: `R${records.length + i + 1}`,
+    kind: "guide" as const,
+    label: `Lumière program guide: ${h.entry.title.en}`,
+    path: "",
+    text: h.entry.text.en,
+  }))];
+}
 
 export interface OwnerAssistantUser { readonly id: string; readonly role: string }
 
@@ -109,7 +122,7 @@ export async function askOwnerAssistant(
 ): Promise<OwnerAssistantAnswer> {
   const ctx = await deps.loadContext(input.studentId);
   if (!ctx) throw new OwnerStudentNotFoundError();
-  const records = composeOwnerContext(ctx);
+  const records = withProgramGuide(composeOwnerContext(ctx), input.question);
   const summary = recordSummary(records);
   const generatedAt = (deps.now?.() ?? new Date()).toISOString();
   const base = { task: input.task, recordSummary: summary, sources: records.map(sourceView), requiresHumanApproval: true as const, generatedAt };

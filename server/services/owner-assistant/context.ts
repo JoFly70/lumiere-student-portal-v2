@@ -68,7 +68,7 @@ export interface OwnerContextInput {
 
 export interface OwnerSourceRecord {
   readonly ref: string;
-  readonly kind: "program" | "checkpoints" | "notes" | "student" | "credits" | "course" | "graduation" | "guardians" | "documents" | "document" | "tickets" | "ticket" | "review" | "pace";
+  readonly kind: "program" | "checkpoints" | "notes" | "student" | "credits" | "course" | "graduation" | "guardians" | "documents" | "document" | "tickets" | "ticket" | "review" | "pace" | "guide";
   readonly label: string;
   /** Admin portal path the owner can open to check the record. */
   readonly path: string;

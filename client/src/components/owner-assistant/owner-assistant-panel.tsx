@@ -158,7 +158,9 @@ export function OwnerAnswerView({ answer }: { answer: OwnerAnswer }) {
           <p className="mb-1 flex items-center gap-1 text-xs font-semibold text-student-muted"><FileSearch className="h-3.5 w-3.5" aria-hidden="true" /> Sources cited</p>
           <ul className="flex flex-wrap gap-2" data-testid="owner-ai-citations">
             {answer.citations.map((c) => (
-              <li key={c.ref}><Link href={c.path} className="rounded border border-student-line px-2 py-0.5 text-xs text-student-ink hover:bg-student-gold/10">{c.ref} · {c.label}</Link></li>
+              <li key={c.ref}>{c.path
+                ? <Link href={c.path} className="rounded border border-student-line px-2 py-0.5 text-xs text-student-ink hover:bg-student-gold/10">{c.ref} · {c.label}</Link>
+                : <span className="rounded border border-dashed border-student-line px-2 py-0.5 text-xs text-student-muted">{c.ref} · {c.label}</span>}</li>
             ))}
           </ul>
         </div>
