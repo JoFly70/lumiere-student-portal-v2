@@ -42,7 +42,7 @@ export function DocumentViewer({ doc, onClose }: { doc: StudentDocument | null; 
   };
   return (
     <Dialog open={!!doc} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-h-[92vh] w-[calc(100vw-1.5rem)] max-w-4xl overflow-hidden p-4 sm:p-6" data-testid="library-viewer">
+      <DialogContent className="student-surface max-h-[92vh] w-[calc(100vw-1.5rem)] max-w-4xl overflow-hidden p-4 sm:p-6" data-testid="library-viewer">
         <DialogHeader className="pr-8 text-left">
           <DialogTitle className="break-all font-serif text-xl">{doc?.file_name}</DialogTitle>
           <DialogDescription>{t("ux.lib.viewer.note")}</DialogDescription>

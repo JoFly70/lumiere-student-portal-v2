@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
 import { useParams, Link } from "wouter";
-import { AlertCircle, ArrowLeft, BrainCircuit, ArrowRight, ChevronDown, Database, FileCheck2, Eye, FileText, Fingerprint, LayoutDashboard, LifeBuoy, RefreshCw, Route, ShieldCheck, UserCheck } from "lucide-react";
+import { Activity, AlertCircle, ArrowLeft, BrainCircuit, ArrowRight, ChevronDown, CreditCard, Database, FileCheck2, FileText, Fingerprint, GraduationCap, LayoutDashboard, LifeBuoy, RefreshCw, Route, UserCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -62,7 +62,8 @@ import { StudentPortalAccountCard } from "@/components/admin/student-portal-acco
 import StudentProfileReview, { useStaffProfileData } from "@/components/admin/student-profile-review";
 import { STAFF_PROFILE_QUERY_KEY } from "@/components/admin/student-profile-review-logic";
 import { AccountAvatar, PhotoDialog } from "@/components/os/account-menu";
-import { BillingSummaryCard } from "@/components/admin/billing/billing-summary-card";
+import { DossierActivity, DossierBilling, ExperienceButton, ExperienceError, NextStepBanner, ViewAsStudentLink, nextStep, useExperienceAction } from "@/components/admin/dossier/dossier-parts";
+import { DemoPill, isDemoStudent, shortProgram, studentStatusLabel } from "@/components/admin/directory/directory-data";
 import { useStaffBilling } from "@/lib/billing-queries";
 import { useT } from "@/i18n";
 import { profileDecisionCount } from "@/components/admin/student-profile-review-logic";
@@ -73,7 +74,7 @@ import { useTickets, type Ticket } from "@/hooks/use-tickets";
 import { SUPPORT_TOPIC_INFO, awaitingFor, staffStatusLabel, topicForTicket } from "@shared/support-contract";
 import { canActivateLeadForRole } from "@/components/admin/student-documents-upload-logic";
 
-const WORKSPACE_TABS = ["overview", "profile", "documents", "support", "ai"] as const;
+const WORKSPACE_TABS = ["overview", "academics", "documents", "billing", "support", "profile", "activity", "ai"] as const;
 type WorkspaceTab = typeof WORKSPACE_TABS[number];
 /** Older anchors (#workspace-documents, ...) keep working as deep links. */
 const WORKSPACE_TAB_ALIASES: Readonly<Record<string, WorkspaceTab>> = {
@@ -81,6 +82,11 @@ const WORKSPACE_TAB_ALIASES: Readonly<Record<string, WorkspaceTab>> = {
   "workspace-profile": "profile",
   "workspace-documents": "documents",
   "workspace-support": "support",
+  guardian: "profile",
+  guardians: "profile",
+  "workspace-billing": "billing",
+  "workspace-academics": "academics",
+  courses: "academics",
 };
 
 function value(row: unknown, ...keys: string[]) {
@@ -192,6 +198,7 @@ export default function AdminStudentWorkspace() {
     onError: (error) => setActivationFeedback({ kind: "error", message: error instanceof Error ? error.message : "Could not activate this lead." }),
   });
   const [photoOpen, setPhotoOpen] = useState(false);
+  const experience = useExperienceAction(canonicalStudentId ?? studentId);
   const [tab, setTab] = useHashTab(WORKSPACE_TABS, "overview", WORKSPACE_TAB_ALIASES);
   if (state.kind === "loading") return <div role={state.role} aria-live={state.ariaLive} className="space-y-4"><span className="sr-only">Loading student workspace</span><div className="h-8 w-64 animate-pulse rounded bg-muted" /><div className="h-32 animate-pulse rounded-lg bg-muted" /><div className="h-64 animate-pulse rounded-lg bg-muted" /></div>;
   if (state.kind === "error") return <Card><CardContent className="flex flex-col items-center gap-3 py-16 text-center"><AlertCircle className="h-8 w-8 text-destructive" /><h2 className="text-lg font-semibold">Workspace unavailable</h2><p className="text-sm text-muted-foreground">The canonical student workspace could not be loaded.</p><Button onClick={() => query.refetch()}><RefreshCw className="mr-2 h-4 w-4" />Retry</Button></CardContent></Card>;
@@ -226,13 +233,16 @@ export default function AdminStudentWorkspace() {
   ];
   const tabs: StaffTab[] = [
     { key: "overview", label: "Overview", icon: <LayoutDashboard className="h-4 w-4" /> },
-    { key: "profile", label: "Profile & identity", icon: <Fingerprint className="h-4 w-4" />, count: profileCount, countLabel: "decisions waiting" },
+    { key: "academics", label: "Academics", icon: <GraduationCap className="h-4 w-4" />, count: vm.attention.total, countLabel: "academic report items" },
     { key: "documents", label: "Documents", icon: <FileText className="h-4 w-4" />, count: docsPending, countLabel: "waiting for review" },
+    { key: "billing", label: "Billing", icon: <CreditCard className="h-4 w-4" /> },
     { key: "support", label: "Support", icon: <LifeBuoy className="h-4 w-4" />, count: supportAwaiting, countLabel: "waiting for a response" },
-    ...(user?.role === "admin" ? [{ key: "ai", label: "Lumière AI", icon: <BrainCircuit className="h-4 w-4" /> }] : []),
+    { key: "profile", label: "Guardian & identity", icon: <Fingerprint className="h-4 w-4" />, count: profileCount, countLabel: "decisions waiting" },
+    ...(user?.role === "admin" ? [{ key: "activity", label: "Activity", icon: <Activity className="h-4 w-4" /> }, { key: "ai", label: "Lumière AI", icon: <BrainCircuit className="h-4 w-4" /> }] : []),
   ];
   const activeTab = tab === "ai" && user?.role !== "admin" ? "overview" : tab;
   const identity = resolveWorkspaceStudentIdentity(vm.student);
+  const demo = isDemoStudent({ first_name: value(vm.student, "firstName", "first_name") === "Not provided" ? identity.name : value(vm.student, "firstName", "first_name"), last_name: value(vm.student, "lastName", "last_name") === "Not provided" ? "" : value(vm.student, "lastName", "last_name"), preferred_name: value(vm.student, "preferredName", "preferred_name") === "Not provided" ? null : value(vm.student, "preferredName", "preferred_name"), email: identity.email });
   const name = identity.name;
   const placementStudentId = identity.id;
   const academicRows = academicCreditRows(vm.academicDetail);
@@ -247,6 +257,12 @@ export default function AdminStudentWorkspace() {
   const academicRuleOptions = canonicalLabelOptions(vm.labels.academicRules);
   const studentStatus = value(vm.student, "status").toLowerCase();
   const canActivateLead = canActivateLeadForRole(user?.role, studentStatus);
+  const step = nextStep({
+    status: studentStatus, profileDecisions: profileCount, docsPending, supportAwaiting: supportAwaiting,
+    hasProgram: programName !== "Not provided" ? true : undefined,
+    billingConfigured: billingQuery.data ? billingQuery.data.student.state === "configured" : undefined,
+    canActivate: canActivateLead,
+  }, studentId);
   const writesDisabled = !placementStudentId || !placementWritesEnabled(
     snapshotFingerprint,
     snapshotUnavailable,
@@ -286,17 +302,22 @@ export default function AdminStudentWorkspace() {
       portrait={<AccountAvatar identity={{ studentId: identity.id, firstName: profileQuery.data?.identity.firstName, lastName: profileQuery.data?.identity.lastName, name, email: identity.email, photoUrl: profileQuery.data?.identity.photoUrl }} className="h-16 w-16 shrink-0 text-xl ring-2 ring-student-gold/50 sm:h-20 sm:w-20 sm:text-2xl" />}
       title={name}
       description={<>{identity.email ?? "Email not provided"} · <span className="font-mono">{identity.studentCode ?? "No student code"}</span></>}
-      meta={<StaffPill tone="neutral" icon={<ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />}>Canonical view · controlled placement writes</StaffPill>}
+      meta={<div className="flex flex-wrap items-center gap-2">
+        <StaffPill tone="seal">{studentStatusLabel(studentStatus)}</StaffPill>
+        {demo ? <DemoPill /> : null}
+        <StaffPill tone="neutral" icon={<GraduationCap className="h-3.5 w-3.5" aria-hidden="true" />}>{programName === "Not provided" ? "No program assigned" : shortProgram(programName)}</StaffPill>
+      </div>}
       actions={<>
+        <ExperienceButton action={experience} />
+        <ViewAsStudentLink studentId={studentId} />
         {canActivateLead ? <Button type="button" size="sm" className={staffBtn.seal} disabled={activateLead.isPending || !canonicalStudentId} onClick={() => canonicalStudentId && activateLead.mutate(canonicalStudentId)} data-testid="button-activate-lead">{activateLead.isPending ? "Activating…" : <><UserCheck className="h-4 w-4" aria-hidden="true" />Activate lead</>}</Button> : null}
         <Button type="button" variant="outline" size="sm" className={staffBtn.outline} onClick={() => setPhotoOpen(true)} data-testid="button-student-photo">{t("staff.photo.button")}</Button>
         <Link href={`/admin/students/${encodeURIComponent(studentId)}/roadmap`} className={`${staffBtn.outline} inline-flex items-center justify-center border`} data-testid="link-student-roadmap"><Route className="h-4 w-4" aria-hidden="true" />View roadmap</Link>
-        <Link href={`/admin/students/${encodeURIComponent(studentId)}/high-school`} className={`${staffBtn.outline} inline-flex items-center justify-center border`} data-testid="link-student-high-school">High school pathway</Link>
-        <Link href={`/admin/students/${encodeURIComponent(studentId)}/view-as-student`} className={`${staffBtn.outline} inline-flex items-center justify-center border`} data-testid="link-view-as-student"><Eye className="h-4 w-4" aria-hidden="true" />View as student</Link>
-        <Link href={`/admin/students/${encodeURIComponent(studentId)}/billing`} className={`${staffBtn.outline} inline-flex items-center justify-center border`} data-testid="link-student-billing">Billing</Link>
         {user?.role === "admin" && canonicalStudentId ? <Link href={`/admin/assistant?studentId=${encodeURIComponent(canonicalStudentId)}`} className={`${staffBtn.outline} inline-flex items-center justify-center border`} data-testid="link-student-ai"><BrainCircuit className="h-4 w-4" aria-hidden="true" />Ask Lumière AI</Link> : null}
       </>}
     />
+    <ExperienceError action={experience} />
+    {demo ? <StaffNotice tone="attention" role="status">This is a synthetic demo student. Nothing here is a real person, payment or school record, and it is never counted in real totals.</StaffNotice> : null}
     {activationFeedback ? <StaffNotice tone={activationFeedback.kind === "error" ? "urgent" : "gold"} role={activationFeedback.kind === "error" ? "alert" : "status"}>{activationFeedback.message}</StaffNotice> : null}
     {identity.id ? <PhotoDialog
       open={photoOpen}
@@ -309,6 +330,7 @@ export default function AdminStudentWorkspace() {
         void queryClient.invalidateQueries({ queryKey: ADMIN_STUDENT_WORKSPACE_QUERY_KEY(studentId) });
       }}
     /> : null}
+    <NextStepBanner step={step} onTab={(k) => setTab(k as WorkspaceTab)} experience={experience} />
     <StaffTabList tabs={tabs} active={activeTab} onChange={(key) => setTab(key as WorkspaceTab)} label="Student workspace sections" idPrefix="ws" />
 
     <StaffTabPanel idPrefix="ws" tabKey="overview" active={activeTab === "overview"}>
@@ -334,7 +356,6 @@ export default function AdminStudentWorkspace() {
       </StaffCard>
       <StaffCard as="div"><p className={staffLabel}>Snapshot</p><p className="mt-2 font-serif text-xl text-student-ink">{formatWorkspaceDateTime(snapshot.asOf ?? vm.asOf) ?? "No snapshot yet"}</p>{snapshotFingerprint ? <p className="mt-1 flex items-center gap-1 font-mono text-xs text-student-muted"><Fingerprint className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /><span className="min-w-0 truncate" title={snapshotFingerprint}>{snapshotFingerprint}</span></p> : null}</StaffCard>
     </section>
-    {canonicalStudentId ? <BillingSummaryCard studentId={canonicalStudentId} billing={billingQuery.data} loading={billingQuery.isLoading} error={billingQuery.isError} /> : null}
     {!snapshotFingerprint || snapshotUnavailable
       ? <StaffNotice tone="attention" role="status" icon={<AlertCircle className="h-4 w-4" />} action={<Button type="button" size="sm" variant="outline" className={staffBtn.outline} disabled={query.isFetching} onClick={() => void refreshCanonical()}>
             <RefreshCw className={`h-4 w-4 ${query.isFetching ? "animate-spin" : ""}`} />
@@ -356,6 +377,12 @@ export default function AdminStudentWorkspace() {
         </li>)}
       </ul>
     </StaffCard>
+     </div>
+    </StaffTabPanel>
+
+    <StaffTabPanel idPrefix="ws" tabKey="academics" active={activeTab === "academics"}>
+     <div id="workspace-academics" aria-label="Academics" className="space-y-6">
+    <StaffNotice tone="info" action={<Link href={`/admin/students/${encodeURIComponent(studentId)}/high-school`} className={`${staffBtn.outline} inline-flex items-center justify-center border`} data-testid="link-student-high-school">High school pathway<ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>}>The course roadmap, credits and school results live in the pathway and roadmap views. Below is the canonical degree report.</StaffNotice>
     {vm.attention.total > 0 ? <StaffCard id="workspace-report-review" aria-labelledby="report-review-heading" tone="attention">
       <StaffSectionHeader id="report-review-heading" title="Academic report review" description="Manual-review, conflict, missing or partial items from the canonical degree report." actions={<StaffPill tone="attention">{vm.attention.total} {vm.attention.total === 1 ? "item" : "items"}</StaffPill>} />
       <div className="divide-y">{vm.attention.items.map((item, i) => <div key={i} className="py-3">{isDiagnosticAttentionItem(item) ? <div className="flex items-center gap-2">{diagnosticItemStatus(item) && <Badge variant="outline">{diagnosticItemStatus(item)}</Badge>}<span className="font-medium">{item.kind === "integration-diagnostic" ? "Integration diagnostic" : "Diagnostic"}</span><span className="text-sm text-muted-foreground">{typeof item.diagnostic === "object" ? JSON.stringify(item.diagnostic) : String(item.diagnostic)}</span></div> : <><div className="flex flex-wrap items-center gap-2">{attentionItemStatus(vm, item) && <Badge variant="outline">{attentionItemStatus(vm, item)}</Badge>}<span className="font-medium">{attentionItemLabel(vm.labels, item)}</span>{item.reason && <span className="text-sm text-muted-foreground">· {item.reason}</span>}</div><Evidence item={item} /></>}</div>)}</div>
@@ -549,6 +576,10 @@ export default function AdminStudentWorkspace() {
      </div>
     </StaffTabPanel>
 
+    <StaffTabPanel idPrefix="ws" tabKey="billing" active={activeTab === "billing"}>
+      {canonicalStudentId ? <DossierBilling studentId={canonicalStudentId} billing={billingQuery.data} loading={billingQuery.isLoading} error={billingQuery.isError} /> : null}
+    </StaffTabPanel>
+
     <StaffTabPanel idPrefix="ws" tabKey="profile" active={activeTab === "profile"}>
       {canonicalStudentId ? <StudentProfileReview studentId={canonicalStudentId} /> : null}
     </StaffTabPanel>
@@ -570,6 +601,9 @@ export default function AdminStudentWorkspace() {
        </WorkspaceResourceState>
      </section>
     </StaffTabPanel>
+    {user?.role === "admin" && canonicalStudentId ? <StaffTabPanel idPrefix="ws" tabKey="activity" active={activeTab === "activity"}>
+      <DossierActivity studentId={canonicalStudentId} />
+    </StaffTabPanel> : null}
     {user?.role === "admin" && canonicalStudentId ? <StaffTabPanel idPrefix="ws" tabKey="ai" active={activeTab === "ai"}>
       <OwnerAssistantPanel studentId={canonicalStudentId} studentLabel={name} />
     </StaffTabPanel> : null}

@@ -36,7 +36,7 @@ export function CourseDrawer({ course, schoolLine, today, onClose }: { course: H
   const lang = language === "fr" ? "fr" : "en";
   return (
     <Sheet open={!!course} onOpenChange={(o) => !o && onClose()}>
-      <SheetContent side="right" className="w-full overflow-y-auto border-l border-student-line bg-student-card p-0 sm:max-w-lg" data-testid="course-drawer">
+      <SheetContent side="right" className="student-surface w-full overflow-y-auto border-l border-student-line bg-student-card p-0 sm:max-w-lg" data-testid="course-drawer">
         {course && <DrawerBody course={course} schoolLine={schoolLine} today={today} lang={lang} />}
       </SheetContent>
     </Sheet>
@@ -105,13 +105,15 @@ function DrawerBody({ course, schoolLine, today, lang }: { course: HsCourseView;
           )}
         </section>
 
-        <Link href={`/library?course=${encodeURIComponent(course.key)}`} className={buttonClass.outline} data-testid="drawer-library-link">
-          <BookOpen className="h-4 w-4" aria-hidden="true" />
-          {t("ux.drawer.library")}
-        </Link>
+        <div>
+          <Link href={`/library?course=${encodeURIComponent(course.key)}`} className={buttonClass.outline} data-testid="drawer-library-link">
+            <BookOpen className="h-4 w-4" aria-hidden="true" />
+            {t("ux.drawer.library")}
+          </Link>
+        </div>
 
         {course.kind === "elective" && course.status !== "replaced" && <ElectiveChange course={course} />}
-        {course.status !== "transfer_credit" && course.status !== "replaced" && <CourseSupport course={course} schoolLine={schoolLine} />}
+        {course.status !== "transfer_credit" && course.status !== "replaced" && <div><CourseSupport course={course} schoolLine={schoolLine} /></div>}
       </div>
     </>
   );

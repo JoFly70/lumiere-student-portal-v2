@@ -42,8 +42,8 @@ describe("S11 page structure and accessibility", () => {
   it("has an accessible tab list with three tabs and matching panels", () => {
     expect(markup).toContain('role="tablist"');
     expect(markup).toContain('aria-label="High school sections"');
-    expect(markup.match(/role="tab"/g)?.length).toBe(3);
-    expect(markup.match(/role="tabpanel"/g)?.length).toBe(3);
+    expect(markup.match(/role="tab"/g)?.length).toBe(4);
+    expect(markup.match(/role="tabpanel"/g)?.length).toBe(4);
     expect(markup).toContain('id="hs-tab-journey"');
     expect(markup).toContain('aria-controls="hs-panel-subjects"');
     expect(markup).toMatch(/id="hs-tab-journey"[^>]*aria-selected="true"/);

@@ -62,7 +62,7 @@ export function UploadEvidence({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !busy && onOpenChange(o)}>
-      <DialogContent className="max-w-lg" data-testid="library-upload">
+      <DialogContent className="student-surface max-w-lg" data-testid="library-upload">
         <DialogHeader className="text-left">
           <DialogTitle className="font-serif text-2xl">{t("ux.lib.upload.title")}</DialogTitle>
           <DialogDescription>{t("ux.lib.upload.intro")}</DialogDescription>
