@@ -58,7 +58,7 @@ import {
 import { StudentDocumentsReview } from "@/components/admin/student-documents-review";
 import StudentFileHs, { type StudentFileRecord } from "@/components/admin/student-file-hs";
 import { OwnerAssistantPanel } from "@/components/owner-assistant/owner-assistant-panel";
-import { StudentPortalAccountCard } from "@/components/admin/student-portal-account-card";
+import { StudentPortalAccountCard, errorMessage } from "@/components/admin/student-portal-account-card";
 import StudentProfileReview, { useStaffProfileData } from "@/components/admin/student-profile-review";
 import { STAFF_PROFILE_QUERY_KEY } from "@/components/admin/student-profile-review-logic";
 import { AccountAvatar, PhotoDialog } from "@/components/os/account-menu";
@@ -195,7 +195,7 @@ export default function AdminStudentWorkspace() {
         setActivationFeedback({ kind: "success", message: "Lead activated." });
       }
     },
-    onError: (error) => setActivationFeedback({ kind: "error", message: error instanceof Error ? error.message : "Could not activate this lead." }),
+    onError: (error) => setActivationFeedback({ kind: "error", message: errorMessage(error, "Could not activate this lead.") }),
   });
   const [photoOpen, setPhotoOpen] = useState(false);
   const experience = useExperienceAction(canonicalStudentId ?? studentId);

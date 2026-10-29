@@ -791,6 +791,10 @@ export interface CreditSlot { readonly key: string; readonly label: string; read
 /** Segments for the official-credit bar, one slot per area in order (core first); counted credit never exceeds the slot. */
 export function creditSlots(credits: HsCreditSummary): CreditSlot[] {
   const slots = credits.byArea.map((a) => ({ key: a.key, label: a.label, kind: a.kind, requiredHalfUnits: a.requiredHalfUnits, countedHalfUnits: Math.min(a.countedHalfUnits, a.requiredHalfUnits), earnedHalfUnits: a.earnedHalfUnits }));
+  // No per-area breakdown: draw the total as one slot so the bar still shows the official fill.
+  if (slots.length === 0 && credits.requiredHalfUnits > 0) {
+    return [{ key: "total", label: "Total credits", kind: "core", requiredHalfUnits: credits.requiredHalfUnits, countedHalfUnits: Math.min(credits.earnedHalfUnits, credits.requiredHalfUnits), earnedHalfUnits: credits.earnedHalfUnits }];
+  }
   return [...slots.filter((s) => s.kind === "core"), ...slots.filter((s) => s.kind === "elective")];
 }
 

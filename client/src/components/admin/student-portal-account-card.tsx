@@ -18,18 +18,30 @@ interface AccountView {
 }
 interface Invitation { email: string; expiresAt: string; token: string }
 
-/** apiRequest throws `${status}: ${body}`; surface the server's message when it sent one. */
-function errorMessage(error: unknown): string {
+const KNOWN_CODES: Record<string, string> = {
+  nf: "This record was not found.",
+  not_found: "This record was not found.",
+  forbidden: "You do not have access to this.",
+  unauthorized: "Please sign in again.",
+};
+
+/**
+ * apiRequest throws `${status}: ${body}`. Surface the server's message only when it is a readable sentence;
+ * bare codes ("nf") are mapped to text or dropped, so a raw code never reaches the screen.
+ */
+export function errorMessage(error: unknown, fallback = ""): string {
   const text = error instanceof Error ? error.message : String(error);
   const body = text.replace(/^\d+:\s*/, "");
+  let msg = body;
   try {
     const parsed = JSON.parse(body);
     const e = parsed?.error;
-    if (typeof e === "string") return e;
-    if (e?.message) return String(e.message);
+    if (typeof e === "string") msg = e;
+    else if (e?.message) msg = String(e.message);
   } catch { /* not JSON */ }
-  // Bare server codes such as "nf" are not messages a person can act on.
-  return body.length > 3 && /\s/.test(body) ? body : "";
+  msg = msg.trim();
+  if (KNOWN_CODES[msg.toLowerCase()]) return KNOWN_CODES[msg.toLowerCase()]!;
+  return msg.length > 3 && /\s/.test(msg) ? msg : fallback;
 }
 
 export const accountQueryKey = (studentId: string) => ["/api/admin/students", studentId, "account"] as const;
@@ -89,7 +101,7 @@ export function StudentPortalAccountCard({ studentId }: { studentId: string }) {
       </div>
 
       {query.isLoading ? <p className="text-sm text-student-muted">Loading portal account...</p> : null}
-      {query.isError ? <p role="alert" className="text-sm text-st-urgent">Portal account status is unavailable right now. {errorMessage(query.error) || "Try again in a moment."}</p> : null}
+      {query.isError ? <p role="alert" className="text-sm text-st-urgent">Portal account status is unavailable right now. {errorMessage(query.error, "Try again in a moment.")}</p> : null}
       {error ? <p role="alert" className="text-sm text-st-urgent" data-testid="portal-account-error">{error}</p> : null}
 
       {view?.linked ? (

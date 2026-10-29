@@ -34,7 +34,7 @@ export function Field({ id, label, hint, children, className }: { id: string; la
 export function SectionHeading({ id, title, children }: { id: string; title: string; children?: ReactNode }) {
   return (
     <div className="mb-3">
-      <h2 id={id} className="text-lg font-semibold tracking-tight">{title}</h2>
+      <h2 id={id} className="font-serif text-2xl font-normal tracking-tight">{title}</h2>
       {children ? <p className="mt-1 max-w-3xl text-sm text-muted-foreground">{children}</p> : null}
     </div>
   );

@@ -183,11 +183,11 @@ export function ProgramSection({ state, studentId, isAdmin, docs, templates, ini
   const query = useHsTemplates();
   const list = templates ?? query.data?.templates ?? BUILT_IN_TEMPLATES;
   const timeline = enrollmentTimeline(state);
-  const hasOpen = state.enrollments.some(isOpenEnrollment);
   const cur = state.current?.enrollment ?? null;
   const curOpen = !!cur && isOpenEnrollment(cur);
+  const hasOpen = state.enrollments.some(isOpenEnrollment) || curOpen;
   // A student with no program starts on the create form; otherwise every form stays folded until asked for.
-  const form = useOpenForm(initialOpenForm !== undefined ? initialOpenForm : state.enrollments.length === 0 ? "create" : null);
+  const form = useOpenForm(initialOpenForm !== undefined ? initialOpenForm : state.enrollments.length === 0 && !cur ? "create" : null);
   return (
     <section aria-labelledby="hs-program-h" className="space-y-5">
       <SectionHeading id="hs-program-h" title="High school program">
