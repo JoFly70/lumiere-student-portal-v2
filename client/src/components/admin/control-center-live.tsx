@@ -1,5 +1,5 @@
 /**
- * Owner Command Center body. Greeting + date, "Needs your attention now", a KPI row of REAL numbers (demo/test
+ * Owner Control Center body. Greeting + date, "Needs your attention now", a KPI row of REAL numbers (demo/test
  * students are excluded and revealed only by the "Show demo students" toggle), a students preview and recent
  * activity. Every number is a link to the filtered records. Reads only existing staff endpoints plus the two
  * read-only aggregates (/api/admin/documents/queue, /api/admin/directory/students).

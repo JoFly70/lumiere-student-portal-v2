@@ -52,7 +52,6 @@ export function StaffHeader({ name, role }: { name?: string; role?: string }) {
       <div className="flex min-w-0 items-center gap-3">
         <SidebarTrigger className="h-10 w-10" data-testid="button-sidebar-toggle" aria-label="Toggle navigation" />
         <div className="md:hidden" data-testid="text-header-brand"><LumiereWordmark variant="compact" tone="on-light" /></div>
-        <p className="hidden text-[11px] font-semibold uppercase tracking-[0.18em] text-student-muted md:block">Staff Portal</p>
       </div>
       <div className="ml-auto flex min-w-0 md:ml-0 md:flex-1 md:justify-center md:px-2" data-testid="staff-header-search">
         <GlobalSearch audience="staff" />

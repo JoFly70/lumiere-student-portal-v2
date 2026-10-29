@@ -236,8 +236,7 @@ export function AppSidebar() {
           <LumiereCrest size={42} className="group-data-[collapsible=icon]:h-9 group-data-[collapsible=icon]:w-auto" />
           <div className="min-w-0 group-data-[collapsible=icon]:hidden" data-testid="img-lumiere-logo">
             <p className="font-display text-[26px] font-medium leading-none tracking-[0.01em] text-[var(--t-rail-head,hsl(var(--sidebar-primary)))]">{BRAND.name}</p>
-            <p className="mt-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--t-rail-sub,hsl(var(--sidebar-foreground)/0.7))]">{BRAND.tagline}</p>
-            <p className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-sidebar-primary" data-testid="text-portal-label">{portalLabel}</p>
+            <p className="mt-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--t-rail-sub,hsl(var(--sidebar-foreground)/0.7))]" data-testid="text-portal-label">{portalLabel}</p>
           </div>
         </div>
         <div className="mt-4 h-px bg-gradient-to-r from-sidebar-primary/60 via-sidebar-primary/20 to-transparent" aria-hidden="true" />

@@ -370,8 +370,28 @@ export function StaffTabList({ tabs, active, onChange, label, idPrefix, classNam
     onChange(next.key);
     refs.current[next.key]?.focus();
   };
+  // Overflow affordance: an edge fade on whichever side still has hidden tabs, and the active tab scrolls into view.
+  const scroller = useRef<HTMLDivElement>(null);
+  const [edge, setEdge] = useState({ left: false, right: false });
+  const measure = () => {
+    const el = scroller.current;
+    if (!el) return;
+    setEdge({ left: el.scrollLeft > 4, right: el.scrollLeft + el.clientWidth < el.scrollWidth - 4 });
+  };
+  useEffect(() => {
+    measure();
+    refs.current[active]?.scrollIntoView?.({ block: "nearest", inline: "nearest" });
+    const el = scroller.current;
+    if (!el || typeof ResizeObserver === "undefined") return undefined;
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [active, tabs.length]);
+  const mask = edge.left || edge.right
+    ? `linear-gradient(to right, ${edge.left ? "transparent 0, #000 28px" : "#000 0"}, ${edge.right ? "#000 calc(100% - 36px), transparent 100%" : "#000 100%"})`
+    : undefined;
   return (
-    <div className={cn("-mx-1 overflow-x-auto px-1", className)}>
+    <div ref={scroller} onScroll={measure} className={cn("-mx-1 overflow-x-auto px-1", className)} style={mask ? { maskImage: mask, WebkitMaskImage: mask } : undefined}>
       <div
         role="tablist"
         aria-label={label}

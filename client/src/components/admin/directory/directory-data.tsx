@@ -1,6 +1,6 @@
 /**
  * Shared owner-side student directory data: one list request, one aggregate-facts request (program, balance,
- * last activity), demo/test classification and the avatar. Used by the Command Center and /admin/students.
+ * last activity), demo/test classification and the avatar. Used by the Control Center and /admin/students.
  */
 import React from "react";
 import { useQuery } from "@tanstack/react-query";

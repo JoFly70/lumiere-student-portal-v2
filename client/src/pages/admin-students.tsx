@@ -1,7 +1,7 @@
 /**
  * Owner students directory (/admin/students): search, filters, avatar cards with program, status, latest
  * activity and balance. Demo/test students are hidden until the owner switches "Show demo students" on, and
- * then wear a DEMO pill. Filters are addressable by URL so every Command Center number lands on its records.
+ * then wear a DEMO pill. Filters are addressable by URL so every Control Center number lands on its records.
  */
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useSearch } from "wouter";

@@ -395,7 +395,7 @@ export default function Admin() {
         <span className="flex min-w-0 items-center gap-3">
           <LifeBuoy className="h-6 w-6 shrink-0" aria-hidden="true" />
           <span className="min-w-0">
-            <span className="block font-serif text-lg">Command Center</span>
+            <span className="block font-serif text-lg">Control Center</span>
             <span className="block text-sm text-student-muted">Who needs help now: open cases, documents awaiting review, student files.</span>
           </span>
         </span>

@@ -28,7 +28,8 @@ function errorMessage(error: unknown): string {
     if (typeof e === "string") return e;
     if (e?.message) return String(e.message);
   } catch { /* not JSON */ }
-  return body || "Request failed";
+  // Bare server codes such as "nf" are not messages a person can act on.
+  return body.length > 3 && /\s/.test(body) ? body : "";
 }
 
 export const accountQueryKey = (studentId: string) => ["/api/admin/students", studentId, "account"] as const;
@@ -88,7 +89,7 @@ export function StudentPortalAccountCard({ studentId }: { studentId: string }) {
       </div>
 
       {query.isLoading ? <p className="text-sm text-student-muted">Loading portal account...</p> : null}
-      {query.isError ? <p role="alert" className="text-sm text-st-urgent">Portal account status could not be loaded. {errorMessage(query.error)}</p> : null}
+      {query.isError ? <p role="alert" className="text-sm text-st-urgent">Portal account status is unavailable right now. {errorMessage(query.error) || "Try again in a moment."}</p> : null}
       {error ? <p role="alert" className="text-sm text-st-urgent" data-testid="portal-account-error">{error}</p> : null}
 
       {view?.linked ? (
