@@ -32,6 +32,8 @@ import { SUPPORT_TOPIC_INFO, awaitingFor, staffStatusLabel, topicForTicket } fro
 import { formatHalfUnits, type HsPlanCourse, type StaffHighSchoolState } from "@shared/high-school-contract";
 import type { StudentProfileView } from "@shared/student-profile-contract";
 import type { StudentDocument } from "@shared/schema";
+import type { StaffBillingView } from "@shared/billing-contract";
+import { useStaffBilling } from "@/lib/billing-queries";
 
 void React;
 
@@ -55,14 +57,62 @@ export interface StudentFileRecord {
 
 export interface Checkpoint { key: string; label: string; done: boolean; detail: string }
 
-/** Plan facts. Planned = every course still in the plan (not replaced/removed) in the published roadmap. */
+/** Plan facts. Planned = every course still in the plan (not replaced/removed) in the published roadmap,
+ *  or in the unpublished draft when nothing is published yet (shown to staff only, labelled DRAFT). */
 export function plannedCourses(state: StaffHighSchoolState): readonly HsPlanCourse[] {
-  return (state.current?.published?.content.courses ?? []).filter((c) => c.status === "planned");
+  const content = state.current?.published?.content ?? state.current?.draft?.content;
+  return (content?.courses ?? []).filter((c) => c.status === "planned");
+}
+export const isDraftPlan = (state: StaffHighSchoolState): boolean => !state.current?.published && !!state.current?.draft;
+/** Relative planning phase stored on the course's first task (e.g. "accelerated weeks 1–4 after activation"). */
+export const coursePhase = (c: HsPlanCourse): string | null => {
+  const t = c.tasks[0]?.title ?? "";
+  const m = t.match(/weeks? ([0-9–-]+)/i);
+  return /^Planning target/i.test(t) && m ? `Weeks ${m[1]} after activation` : null;
+};
+
+export interface GateInput {
+  state: StaffHighSchoolState;
+  documents?: readonly StudentDocument[];
+  billing?: StaffBillingView;
+}
+export interface Gate { key: string; label: string; status: "done" | "pending" | "not_set"; detail: string }
+const addDays = (iso: string, days: number) => { const d = new Date(`${iso.slice(0, 10)}T00:00:00Z`); d.setUTCDate(d.getUTCDate() + days); return d.toISOString().slice(0, 10); };
+const addMonths = (iso: string, months: number) => { const d = new Date(`${iso.slice(0, 10)}T00:00:00Z`); d.setUTCMonth(d.getUTCMonth() + months); return d.toISOString().slice(0, 10); };
+/**
+ * Contract / pre-enrollment gates, derived ONLY from stored records. Relative deadlines (English test
+ * 30 days after two-party signature, school records 90 days after enrollment, 9 months of support from
+ * activation) show "date not yet set" until their anchor is actually recorded.
+ */
+export function contractGates({ state, documents = [], billing }: GateInput): Gate[] {
+  const cur = state.current;
+  const agreement = documents.find((d) => d.doc_type === "consent_form");
+  const signedOn = agreement?.status === "verified" ? String((agreement as { verified_at?: string | null }).verified_at ?? "").slice(0, 10) || null : null;
+  const english = documents.find((d) => d.doc_type === "english_cert");
+  const b = billing?.student;
+  const paid = b?.state === "configured" && b.netObligationCents > 0 && b.paidCents >= b.netObligationCents;
+  const activated = cur?.enrollment.startedOn ?? null;
+  return [
+    { key: "agreement", label: "Agreement signed by both parties", status: signedOn ? "done" : "pending",
+      detail: signedOn ? `Signed agreement verified (${signedOn}).` : agreement ? "Proposed agreement on file; signature not verified." : "No agreement on file." },
+    { key: "payment", label: "Contract amount received in full", status: paid ? "done" : b?.state === "configured" ? "pending" : "not_set",
+      detail: b?.state === "configured" ? `${(b.paidCents / 100).toLocaleString("en-US")} of ${(b.netObligationCents / 100).toLocaleString("en-US")} ${b.currency} received.` : "No contract amount recorded in Billing." },
+    { key: "disclosure", label: "School identity disclosed to the family", status: cur?.enrollment.institutionDisclosed ? "done" : "pending",
+      detail: cur?.enrollment.institutionDisclosed ? "Disclosed." : "Only after two-party signature and full cleared payment." },
+    { key: "english", label: "English test result (due 30 days after signature)", status: english?.status === "verified" ? "done" : signedOn ? "pending" : "not_set",
+      detail: english?.status === "verified" ? "Official result verified." : signedOn ? `Due by ${addDays(signedOn, 30)}.` : "Date not yet set (starts at two-party signature)." },
+    { key: "activation", label: "Academic program activated", status: activated ? "done" : "not_set",
+      detail: activated ? `Activated ${activated}.` : "Date not yet set (after signature and payment)." },
+    { key: "records", label: "Prior school records (due 90 days after school enrollment)", status: (cur?.priorEducation ?? []).some((p) => p.evidenceDocumentId) ? "done" : activated ? "pending" : "not_set",
+      detail: activated ? `Due by ${addDays(activated, 90)}.` : "Date not yet set (starts at school enrollment)." },
+    { key: "support", label: "Lumière support window (9 months from activation)", status: activated ? "done" : "not_set",
+      detail: activated ? `Runs to ${addMonths(activated, 9)}.` : "Date not yet set (starts at activation)." },
+  ];
 }
 export function plannedHalfUnits(state: StaffHighSchoolState): number {
   return plannedCourses(state).reduce((sum, c) => sum + c.halfUnits, 0);
 }
-export const isTestOnlyTitle = (title: string): boolean => /TEST ONLY/i.test(title);
+export const isTestOnlyTitle = (title: string): boolean => /TEST ONLY|APPROVAL PENDING|AWAITING SCHOOL|PROPOSED/i.test(title);
 
 /** Checklist derived only from stored facts. */
 export function enrollmentCheckpoints(input: { student: StudentFileRecord; state: StaffHighSchoolState; profile?: StudentProfileView }): Checkpoint[] {
@@ -97,10 +147,12 @@ export interface HsOverviewProps {
   profile?: StudentProfileView;
   attention: { label: string; count: number; detail: string; none: string; tab: FileTab }[];
   onTab?: (tab: FileTab) => void;
+  documents?: readonly StudentDocument[];
+  billing?: StaffBillingView;
 }
 
 /** High-school overview: pure, server-renderable. */
-export function StudentFileHsOverview({ studentId, student, state, profile, attention, onTab }: HsOverviewProps) {
+export function StudentFileHsOverview({ studentId, student, state, profile, attention, onTab, documents, billing }: HsOverviewProps) {
   const cur = state.current;
   const href = `/admin/students/${encodeURIComponent(studentId)}/high-school`;
   if (!cur) {
@@ -128,7 +180,7 @@ export function StudentFileHsOverview({ studentId, student, state, profile, atte
       <StaffSectionHeader icon={<GraduationCap className="h-5 w-5" />} title="Credits" description="Planned credit is a plan. Only the awarding school's confirmed results count as earned." />
       <StaffCard as="div">
         <dl className="grid grid-cols-2 gap-5 lg:grid-cols-4">
-          <Stat label="Planned" value={formatHalfUnits(planned)} hint={`${courses.length} course${courses.length === 1 ? "" : "s"} in the published plan`} />
+          <Stat label="Planned" value={formatHalfUnits(planned)} hint={`${courses.length} course${courses.length === 1 ? "" : "s"} in the ${isDraftPlan(state) ? "DRAFT (not visible to the student)" : "published"} plan`} />
           <Stat label="Officially earned" value={formatHalfUnits(credits.earnedHalfUnits)} hint={`of ${formatHalfUnits(credits.requiredHalfUnits)} required · school-confirmed only`} />
           <Stat label="Reported, awaiting confirmation" value={formatHalfUnits(credits.awaitingConfirmationHalfUnits)} hint="student-reported, not official" />
           <Stat label="Review queue" value={String(cur.reviewQueue.length)} hint={cur.reviewQueue.length ? "reports waiting for staff" : "nothing waiting"} />
@@ -138,14 +190,14 @@ export function StudentFileHsOverview({ studentId, student, state, profile, atte
     </section>
 
     <section aria-label="Courses" className="space-y-3">
-      <StaffSectionHeader title="Planned courses" description={cur.published ? `Roadmap version ${cur.published.versionNumber}` : "No roadmap published yet."} />
+      <StaffSectionHeader title="Planned courses" description={cur.published ? `Roadmap version ${cur.published.versionNumber}` : cur.draft ? "DRAFT plan — not published, not visible to the student." : "No roadmap published yet."} />
       {courses.length === 0 ? <StaffNotice tone="gold" role="status">No courses are planned yet.</StaffNotice> : <ul className="grid gap-3 md:grid-cols-2" data-testid="hs-course-list">
         {courses.map((c) => {
           const official = cur.results.some((r) => r.courseKey === c.key && r.taskKey === null);
           return <li key={c.key}><StaffCard as="div" className="space-y-1">
             <div className="flex flex-wrap items-start justify-between gap-2"><p className="min-w-0 break-words font-medium text-student-ink">{c.title}</p>
               <div className="flex flex-wrap gap-1.5">{isTestOnlyTitle(c.title) ? <StaffPill tone="attention">Approval pending</StaffPill> : null}<StaffPill tone={official ? "seal" : "neutral"}>{official ? "School result recorded" : "Planned"}</StaffPill></div></div>
-            <p className="text-sm text-student-muted">{formatHalfUnits(c.halfUnits)} credit{c.halfUnits === 2 ? "" : "s"} · {c.plannedStart || c.plannedEnd ? `${formatDate(c.plannedStart)} to ${formatDate(c.plannedEnd)}` : "No planned window"}</p>
+            <p className="text-sm text-student-muted">{formatHalfUnits(c.halfUnits)} credit{c.halfUnits === 2 ? "" : "s"} · {c.plannedStart || c.plannedEnd ? `${formatDate(c.plannedStart)} to ${formatDate(c.plannedEnd)}` : coursePhase(c) ?? "No planned window"}</p>
           </StaffCard></li>;
         })}
       </ul>}
@@ -161,6 +213,16 @@ export function StudentFileHsOverview({ studentId, student, state, profile, atte
       </ul></StaffCard>
     </section>
 
+
+    <section aria-label="Contract gates" className="space-y-3" data-testid="hs-contract-gates">
+      <StaffSectionHeader title="Contract and pre-enrollment gates" description="From stored documents, billing and enrollment records only. Nothing here is marked done without a record." />
+      <StaffCard as="div" padded={false}><ul className="divide-y divide-student-line">
+        {contractGates({ state, documents, billing }).map((g) => <li key={g.key} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3" data-testid={`gate-${g.key}`}>
+          <div className="min-w-0"><p className="font-medium text-student-ink">{g.label}</p><p className="text-sm text-student-muted">{g.detail}</p></div>
+          <StaffPill tone={g.status === "done" ? "seal" : g.status === "pending" ? "attention" : "dashed"}>{g.status === "done" ? "Done" : g.status === "pending" ? "Pending" : "Date not set"}</StaffPill>
+        </li>)}
+      </ul></StaffCard>
+    </section>
     <Attention rows={attention} onTab={onTab} />
     <Link href={href} className={LINK} data-testid="link-open-hs-pathway">Open full high-school pathway<ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>
   </div>;
@@ -211,6 +273,7 @@ export default function StudentFileHs({ studentId, student }: { studentId: strin
   const [activation, setActivation] = useState<{ kind: "success" | "error"; message: string } | null>(null);
   const hs = useHsState(studentId);
   const documentsQuery = useDocuments(studentId);
+  const billingQuery = useStaffBilling(studentId);
   const ticketsQuery = useTickets({ studentId });
   const { profileQuery } = useStaffProfileData(studentId);
   const record = useQuery<StudentFileRecord>({ queryKey: [`/api/students/${encodeURIComponent(studentId)}`], initialData: student });
@@ -281,7 +344,7 @@ export default function StudentFileHs({ studentId, student }: { studentId: strin
       <div id="workspace-overview" aria-label="Overview">
         {hs.isLoading ? <div role="status" className="rounded-md border p-6 text-center text-sm text-student-muted">Loading high school record…</div>
           : hs.isError || !hs.data ? <div role="alert" className="rounded-md border border-destructive/40 bg-destructive/5 p-6 text-center text-sm"><p>The high school record could not be loaded.</p><Button className="mt-3" type="button" size="sm" variant="outline" onClick={() => void hs.refetch()}>Retry</Button></div>
-          : <StudentFileHsOverview studentId={studentId} student={current} state={hs.data} profile={profile} attention={attention} onTab={setTab} />}
+          : <StudentFileHsOverview studentId={studentId} student={current} state={hs.data} profile={profile} attention={attention} onTab={setTab} documents={documentsQuery.data} billing={billingQuery.data} />}
       </div>
     </StaffTabPanel>
     <StaffTabPanel idPrefix="ws" tabKey="profile" active={activeTab === "profile"}><StudentProfileReview studentId={studentId} /></StaffTabPanel>

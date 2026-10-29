@@ -97,7 +97,15 @@ while [ "$(date +%s)" -lt "$DEADLINE" ]; do
   if [ -z "${ACCEPTED:-}" ] && [ -n "$DONE_SHA" ] && grep -q '"ready_to_publish"' "$EVID/status.json" 2>/dev/null; then
     LIVE_SHA=$(curl -fsS -m 20 "$LIVE/health" 2>/dev/null | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{process.stdout.write(JSON.parse(d).release||"")}catch{}})')
     if [ "$LIVE_SHA" = "$DONE_SHA" ]; then
-      log "live site serves ${DONE_SHA:0:7}; running hosted acceptance"
+      log "live site serves ${DONE_SHA:0:7}"
+      if [ -d s26-private-intake ]; then
+        log "running confidential first-student intake (private folder; evidence holds no personal data)"
+        if npx tsx scripts/s26/private-intake.ts --base "$LIVE" --ref "$REF" > "$EVID/intake.out" 2>&1; then status intake PASS "see $EVID/intake.json"
+        else status intake FAIL "see $EVID/intake.json"; fi
+      else
+        status intake SKIPPED "no s26-private-intake/ folder in the workspace"
+      fi
+      log "running hosted acceptance"
       if npx tsx scripts/s26/production-acceptance.ts --base "$LIVE" --ref "$REF" > "$EVID/acceptance.out" 2>&1; then status acceptance PASS
       else status acceptance FAIL "see $EVID/acceptance.json"; fi
       ACCEPTED=1

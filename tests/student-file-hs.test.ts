@@ -40,3 +40,30 @@ describe("HS-only student file overview", () => {
     expect(validateStaffUploadFile({ name: "a.docx", size: 5, type: "" }).valid).toBe(false);
   });
 });
+
+import { contractGates, plannedCourses, isDraftPlan, coursePhase, isTestOnlyTitle } from "../client/src/components/admin/student-file-hs";
+describe("S26 contract gates and draft plan (real-student pre-enrollment)", () => {
+  const course = { key: "english-1", title: "English 1", areaKey: "english", halfUnits: 2, status: "planned", replacesCourseKey: null, plannedStart: null, plannedEnd: null,
+    tasks: [{ key: "english-1-target", kind: "lesson", title: "Planning target: accelerated weeks 1–4 after activation (not a school deadline)", dueDate: null }] };
+  const base: any = { current: { enrollment: { startedOn: null, institutionDisclosed: false }, published: null, draft: { content: { courses: [course] } }, priorEducation: [] } };
+  it("shows the draft to staff, labelled as draft, with the relative phase", () => {
+    expect(isDraftPlan(base)).toBe(true);
+    expect(plannedCourses(base)).toHaveLength(1);
+    expect(coursePhase(course as any)).toBe("Weeks 1–4 after activation");
+    expect(isTestOnlyTitle("Human Relations — PROPOSED — AWAITING SCHOOL ACCEPTANCE")).toBe(true);
+  });
+  it("marks nothing done without a record; relative deadlines wait for their anchor", () => {
+    const gates = contractGates({ state: base, documents: [{ doc_type: "consent_form", status: "pending" } as any], billing: { student: { state: "configured", currency: "USD", netObligationCents: 1, paidCents: 0 } } as any });
+    const by = Object.fromEntries(gates.map((g) => [g.key, g]));
+    expect(gates.every((g) => g.status !== "done")).toBe(true);
+    expect(by.agreement.detail).toMatch(/signature not verified/);
+    expect(by.english.status).toBe("not_set");
+    expect(by.support.detail).toMatch(/Date not yet set/);
+    const signed = contractGates({ state: { current: { ...base.current, enrollment: { startedOn: "2027-01-04", institutionDisclosed: false } } } as any,
+      documents: [{ doc_type: "consent_form", status: "verified", verified_at: "2026-11-10T00:00:00Z" } as any] });
+    const s = Object.fromEntries(signed.map((g) => [g.key, g]));
+    expect(s.english.detail).toBe("Due by 2026-12-10.");
+    expect(s.records.detail).toBe("Due by 2027-04-04.");
+    expect(s.support.detail).toBe("Runs to 2027-10-04.");
+  });
+});
