@@ -67,7 +67,7 @@
 
   --accent-foreground: 210 6% 20%;
 
-  --destructive: 0 75% 42%;
+  --destructive: 22 48% 25%;
 
   --destructive-foreground: 0 5% 98%;
 
@@ -193,7 +193,7 @@
 
   --accent-foreground: 210 5% 92%;
 
-  --destructive: 0 70% 48%;
+  --destructive: 24 40% 69%;
 
   --destructive-foreground: 0 5% 98%;
 
@@ -385,12 +385,12 @@
 /* colour (>= 4.5:1 on the card, the page and its own tint) and a soft tint.   */
 /* Every use pairs the colour with an icon and a label, never colour alone.    */
 /*   official      charcoal seal   Lumiere verified it (credit, accepted course) */
-/*   applied       green           verified credit counted toward a requirement  */
-/*   provider      plum            student says finished at the provider         */
-/*   progress      blue            started or part-way                           */
-/*   submitted     teal            submitted, waiting to be graded               */
+/*   applied       sage            verified credit counted toward a requirement  */
+/*   provider      taupe           student says finished at the provider         */
+/*   progress      bronze          started or part-way                           */
+/*   submitted     taupe           submitted, waiting to be graded               */
 /*   notstarted    grey            nothing reported yet                          */
-/*   attention     terracotta      on hold, awaiting approval, overdue           */
+/*   attention     umber          on hold, awaiting approval, overdue           */
 /* tests/s07-student-ui-tokens.test.ts verifies the contrast ratios.           */
 /* ------------------------------------------------------------------------- */
 .student-surface,
@@ -408,28 +408,28 @@ body.staff-shell {
   --s-gold-soft: 42 62% 90%;
   --s-line: 40 20% 86%;
   --s-line-strong: 35 10% 48%;
-  --s-attn: 22 80% 32%;
-  --s-attn-soft: 30 90% 93%;
+  --s-attn: 27 52% 26%;
+  --s-attn-soft: 32 34% 89%;
   --s-seal: 30 10% 16%;
   --s-seal-ink: 43 60% 80%;
 
   --st-official: 30 10% 16%;
   --st-official-soft: 40 14% 90%;
-  --st-applied: 158 62% 20%;
-  --st-applied-soft: 150 35% 91%;
-  --st-provider: 275 38% 34%;
-  --st-provider-soft: 275 30% 93%;
-  --st-progress: 214 66% 34%;
-  --st-progress-soft: 214 60% 93%;
-  --st-submitted: 188 90% 19%;
-  --st-submitted-soft: 188 45% 91%;
+  --st-applied: 140 17% 29%;
+  --st-applied-soft: 120 9% 90%;
+  --st-provider: 32 14% 36%;
+  --st-provider-soft: 34 18% 90%;
+  --st-progress: 38 62% 27%;
+  --st-progress-soft: 41 42% 89%;
+  --st-submitted: 30 9% 33%;
+  --st-submitted-soft: 36 14% 90%;
   --st-notstarted: 30 6% 36%;
   --st-notstarted-soft: 40 12% 93%;
-  --st-attention: 18 78% 31%;
-  --st-attention-soft: 25 90% 93%;
+  --st-attention: 27 52% 26%;
+  --st-attention-soft: 32 34% 89%;
   /* Real errors and urgent work only (staff). Never a progress or credit state. */
-  --st-urgent: 358 62% 38%;
-  --st-urgent-soft: 358 70% 95%;
+  --st-urgent: 22 48% 25%;
+  --st-urgent-soft: 27 28% 87%;
 
   --font-serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
   background-color: hsl(var(--s-bg));
@@ -452,28 +452,28 @@ body.staff-shell {
   --s-gold-soft: 38 25% 17%;
   --s-line: 35 8% 22%;
   --s-line-strong: 35 8% 50%;
-  --s-attn: 30 85% 66%;
-  --s-attn-soft: 28 30% 16%;
+  --s-attn: 28 42% 70%;
+  --s-attn-soft: 28 14% 13%;
   --s-seal: 43 60% 80%;
   --s-seal-ink: 30 10% 12%;
 
   /* Official is ivory-white in dark mode (never gold, which is the brand/CTA accent). */
   --st-official: 40 30% 94%;
   --st-official-soft: 40 6% 24%;
-  --st-applied: 152 48% 62%;
-  --st-applied-soft: 152 25% 16%;
-  --st-provider: 280 55% 80%;
-  --st-provider-soft: 280 22% 20%;
-  --st-progress: 214 85% 74%;
-  --st-progress-soft: 214 35% 19%;
-  --st-submitted: 188 60% 62%;
-  --st-submitted-soft: 188 30% 16%;
+  --st-applied: 140 17% 68%;
+  --st-applied-soft: 140 8% 11%;
+  --st-provider: 32 14% 72%;
+  --st-provider-soft: 32 8% 13%;
+  --st-progress: 41 48% 68%;
+  --st-progress-soft: 40 14% 12%;
+  --st-submitted: 34 10% 70%;
+  --st-submitted-soft: 34 6% 12%;
   --st-notstarted: 40 10% 70%;
   --st-notstarted-soft: 35 8% 18%;
-  --st-attention: 25 88% 68%;
-  --st-attention-soft: 25 30% 17%;
-  --st-urgent: 4 82% 72%;
-  --st-urgent-soft: 4 32% 17%;
+  --st-attention: 28 42% 70%;
+  --st-attention-soft: 28 14% 13%;
+  --st-urgent: 24 40% 69%;
+  --st-urgent-soft: 24 14% 13%;
 }
 .student-surface :focus-visible,
 .staff-surface :focus-visible {

@@ -35,7 +35,7 @@ T = {
         acc='#c29a4e', acc2='#d0aa62', acct='#74561b', ink='#1a1407', brand='#1b1f27', brandsub='#535a66',
         red='#b42318', amber='#8a5300', green='#1c6b43', blue='#2b53b8',
         rail=dict(bg='#0f1522', bg2='#121a2a', text='#c9cfda', muted='#98a1b2', head='#f4efe4', sub='#c9b27f',
-                  act='#e8cc8e', actbg='rgba(201,170,108,0.15)', line='rgba(255,255,255,0.08)', hover='rgba(255,255,255,0.05)', alert='#ffb4a8', alertbg='rgba(255,140,120,0.18)')),
+                  act='#e8cc8e', actbg='rgba(201,170,108,0.15)', line='rgba(255,255,255,0.08)', hover='rgba(255,255,255,0.05)', alert='#e3c78f', alertbg='rgba(201,170,108,0.18)')),
     'lumiere-dark': dict(label='Lumière Dark', note='Classic', dark=1,
         bg='#09090a', side='#0c0c0e', panel='#0f0f11', p2='#141417', p3='#1a1a1e',
         text='#ebe6de', text2='#bdb7ae', muted='#99948b', faint='#8a857d', heading='#f1ece4', figure='#ebe6de',
@@ -78,6 +78,13 @@ T = {
         red='#d69b91', amber='#cfb27b', green='#a1c3a6'),
 }
 
+
+# S27 owner rule: no red / harsh colours. The ClientDesk status roles are remapped for every theme to the calm Lumiere set:
+# red -> deep umber (light) / muted clay (dark); green -> sage; blue -> warm ink slate; amber -> bronze.
+CALM_ROLES = {False: dict(red='#7b4430', amber='#7f5a1f', green='#44684f', blue='#4a4f5c'),
+              True: dict(red='#c9a48a', amber='#d7b56d', green='#a9c2ac', blue='#b9bfcc')}
+for _t in T.values():
+    _t.update(CALM_ROLES[bool(_t['dark'])])
 
 def hx(c):
     c = c.lstrip('#'); return tuple(int(c[i:i + 2], 16) for i in (0, 2, 4))

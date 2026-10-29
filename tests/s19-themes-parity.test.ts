@@ -11,15 +11,15 @@ const css = fs.readFileSync("client/src/styles/themes.css", "utf8");
 
 // id: [label, bg, panel, p2, p3, rail-bg, rail-head, rail-act, text, heading, muted, gold, gold-ink, accent-text, red, amber, green, blue]
 const CD: Record<string, string[]> = {
-  lumiere: ["Lumière Desk", "#f4f3ef", "#ffffff", "#fbfaf8", "#efede7", "#0f1522", "#f4efe4", "#e8cc8e", "#1b1f27", "#10141c", "#535a66", "#c29a4e", "#1a1407", "#74561b", "#b42318", "#8a5300", "#1c6b43", "#2b53b8"],
-  "lumiere-dark": ["Lumière Dark", "#09090a", "#0f0f11", "#141417", "#1a1a1e", "#0c0c0e", "#efe9df", "#e2cb98", "#ebe6de", "#f1ece4", "#99948b", "#c9aa6c", "#17130b", "#e2cb98", "#d98b7f", "#d7b56d", "#9ec4a7", "#a9bde6"],
-  midnight: ["Midnight Slate", "#0b0e14", "#121722", "#161c29", "#1c2331", "#0e121a", "#eef1f5", "#b3c2d8", "#e7eaf0", "#f2f4f8", "#9ca4b2", "#8b9fbb", "#0b0e14", "#b3c2d8", "#d49a91", "#cdb17c", "#9dbca7", "#a9bde6"],
-  monaco: ["Monaco Navy", "#0b1120", "#111a2e", "#151f36", "#1b2640", "#0d1425", "#f4efe5", "#ddca9e", "#f2ede3", "#f7f2e8", "#aaa599", "#c8ae76", "#0a1020", "#ddca9e", "#d99a90", "#d4b57a", "#a3c2ab", "#a9bde6"],
-  forest: ["Forest Ledger", "#0b100d", "#111915", "#16201a", "#1c2821", "#0e1411", "#efebdf", "#cdbd90", "#ece8dc", "#f3efe3", "#a1a496", "#b09a64", "#0b100d", "#cdbd90", "#d49b8e", "#cdb178", "#a4bd9c", "#a9bde6"],
-  bordeaux: ["Bordeaux Reserve", "#120a0c", "#1b1013", "#211419", "#29191f", "#160d10", "#f3ebe5", "#d9bcab", "#f0e8e2", "#f6eee8", "#ab9993", "#c09a85", "#150c0e", "#d9bcab", "#dca195", "#d1b47d", "#a9bea3", "#a9bde6"],
-  graphite: ["Graphite Executive", "#131416", "#1a1b1e", "#1f2124", "#26282c", "#161719", "#f3f1ed", "#d4d9de", "#f1efeb", "#f7f5f1", "#a7a6a2", "#b7bdc5", "#131416", "#d4d9de", "#d69c93", "#cfb47f", "#a3bfaa", "#a9bde6"],
-  sandstone: ["Sandstone Light", "#f3efe7", "#faf7f1", "#efe9de", "#e6dfd1", "#ece6da", "#23201b", "#634c24", "#23201b", "#1b1915", "#58514a", "#8a6d3c", "#fffcf6", "#634c24", "#9e4035", "#7f5a12", "#3b6a49", "#2b53b8"],
-  teal: ["Teal Reserve", "#091214", "#0f1c1e", "#142325", "#192b2e", "#0c1719", "#f0f2ed", "#b0cfcb", "#edefe9", "#f3f5f0", "#9daba8", "#86aba7", "#091214", "#b0cfcb", "#d69b91", "#cfb27b", "#a1c3a6", "#a9bde6"],
+  lumiere: ["Lumière Desk", "#f4f3ef", "#ffffff", "#fbfaf8", "#efede7", "#0f1522", "#f4efe4", "#e8cc8e", "#1b1f27", "#10141c", "#535a66", "#c29a4e", "#1a1407", "#74561b", "#7b4430", "#7f5a1f", "#44684f", "#4a4f5c"],
+  "lumiere-dark": ["Lumière Dark", "#09090a", "#0f0f11", "#141417", "#1a1a1e", "#0c0c0e", "#efe9df", "#e2cb98", "#ebe6de", "#f1ece4", "#99948b", "#c9aa6c", "#17130b", "#e2cb98", "#c9a48a", "#d7b56d", "#a9c2ac", "#b9bfcc"],
+  midnight: ["Midnight Slate", "#0b0e14", "#121722", "#161c29", "#1c2331", "#0e121a", "#eef1f5", "#b3c2d8", "#e7eaf0", "#f2f4f8", "#9ca4b2", "#8b9fbb", "#0b0e14", "#b3c2d8", "#c9a48a", "#d7b56d", "#a9c2ac", "#b9bfcc"],
+  monaco: ["Monaco Navy", "#0b1120", "#111a2e", "#151f36", "#1b2640", "#0d1425", "#f4efe5", "#ddca9e", "#f2ede3", "#f7f2e8", "#aaa599", "#c8ae76", "#0a1020", "#ddca9e", "#c9a48a", "#d7b56d", "#a9c2ac", "#b9bfcc"],
+  forest: ["Forest Ledger", "#0b100d", "#111915", "#16201a", "#1c2821", "#0e1411", "#efebdf", "#cdbd90", "#ece8dc", "#f3efe3", "#a1a496", "#b09a64", "#0b100d", "#cdbd90", "#c9a48a", "#d7b56d", "#a9c2ac", "#b9bfcc"],
+  bordeaux: ["Bordeaux Reserve", "#120a0c", "#1b1013", "#211419", "#29191f", "#160d10", "#f3ebe5", "#d9bcab", "#f0e8e2", "#f6eee8", "#ab9993", "#c09a85", "#150c0e", "#d9bcab", "#c9a48a", "#d7b56d", "#a9c2ac", "#b9bfcc"],
+  graphite: ["Graphite Executive", "#131416", "#1a1b1e", "#1f2124", "#26282c", "#161719", "#f3f1ed", "#d4d9de", "#f1efeb", "#f7f5f1", "#a7a6a2", "#b7bdc5", "#131416", "#d4d9de", "#c9a48a", "#d7b56d", "#a9c2ac", "#b9bfcc"],
+  sandstone: ["Sandstone Light", "#f3efe7", "#faf7f1", "#efe9de", "#e6dfd1", "#ece6da", "#23201b", "#634c24", "#23201b", "#1b1915", "#58514a", "#8a6d3c", "#fffcf6", "#634c24", "#7b4430", "#7f5a1f", "#44684f", "#4a4f5c"],
+  teal: ["Teal Reserve", "#091214", "#0f1c1e", "#142325", "#192b2e", "#0c1719", "#f0f2ed", "#b0cfcb", "#edefe9", "#f3f5f0", "#9daba8", "#86aba7", "#091214", "#b0cfcb", "#c9a48a", "#d7b56d", "#a9c2ac", "#b9bfcc"],
 };
 const ROLES = ["bg", "panel", "panel-2", "panel-3", "rail-bg", "rail-head", "rail-act", "text", "heading", "muted", "accent", "accent-ink", "accent-text", "red", "amber", "green", "blue"];
 
