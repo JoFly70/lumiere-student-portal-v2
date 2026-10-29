@@ -37,3 +37,11 @@
 - S27-FD-003 (reopened) aadff0c: <620px chart drops stop labels from the SVG and shows a legend (name, credits, est. date); "You" tag kept. Shots: repair/fd3-after/.
 - S27-ELEC-002 + S27-DIR-002 aadff0c: Age under the Stage pill, list column wider, names single line with title; directory Program column widened. Shots: repair/b3-after/.
 - Tests: tsc clean; hs staff/workspace presentation (302), s27 models pass.
+
+# Batch 4 (Agent B)
+- S27-DIR-002 (reopened): program cell = title on one line (nowrap) + muted "21 credits" second line; names wrap to 2 lines (anywhere-wrap) with title attribute; Program column min 14rem. Shots: repair/dir2-after/dir-{1440,390}.png. tsc clean (no tests reference the directory row).
+
+## S27-DIR-002 follow-up (Opus)
+- The phone card still clamped long names to two lines ("Benedict Sampleton-…") beside the status pill.
+- `client/src/pages/admin-students.tsx`: names may use three lines below `lg` (`line-clamp-3 lg:line-clamp-2`), still with a title attribute.
+- Verified by the lead on the rendered page at 390 and 1440 (synthetic data).

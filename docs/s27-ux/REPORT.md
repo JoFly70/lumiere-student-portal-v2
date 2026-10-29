@@ -36,7 +36,7 @@ without a mock, populated Administration tabs, the `/` role redirect).
 | P0 | 0 | 0 | 0 |
 | P1 | 2 | 2 | 0 |
 | P2 | 19 | 19 | 0 |
-| P3 | 9 | 8 | 1 (S27-DIR-002, cosmetic; final repair in progress) |
+| P3 | 9 | 9 | 0 |
 
 Highlights:
 - **Colour:** status, destructive, chart and alert tokens retuned through `scripts/s19/gen-portal-themes.py` for all 9

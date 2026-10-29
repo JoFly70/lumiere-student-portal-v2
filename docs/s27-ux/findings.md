@@ -215,7 +215,7 @@ Overall the staff side already meets the bar: calm palette, serif titles, consis
 - Likely files: client/src/pages/admin-elective-requests.tsx, components/admin/elective/*
 - Evidence: (local evidence) inspect/re2/s-elec-1440-light.png
 
-### S27-DIR-002  [P3]  STATUS: REOPENED (re4/s-students-1440-light.png: program still wraps 'U.S. High School Diploma · 21 / credits' and 'Benedict Sampleton-Lon...' truncates; P3, optional)
+### S27-DIR-002  [P3]  STATUS: VERIFIED (lead re-inspection at 390 and 1440 after a588b40 + follow-up: program on one line, long names wrap fully)
 - /admin/students · 1440
 - Problem: new Needs attention column works, but the program cell still wraps ("U.S. High School Diploma · 21 / credits") and long names truncate ("Benedict Sampleton-Lo...") while the Balance column is wide. Native selects unchanged.
 - Evidence: (local evidence) inspect/re2/s-students-1440-light.png

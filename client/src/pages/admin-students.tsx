@@ -195,7 +195,7 @@ function StudentRow({ s, f, docs, waiting }: { s: DirectoryStudent; f?: Director
         <span className="flex min-w-0 items-center gap-3 lg:col-start-1">
           <StudentPhoto student={s} size="md" />
           <span className="min-w-0">
-            <span className="flex min-w-0 items-center gap-2"><span className="min-w-0 [overflow-wrap:anywhere] font-medium leading-snug text-student-ink line-clamp-2" title={name}>{name}</span>{demo ? <DemoPill /> : null}</span>
+            <span className="flex min-w-0 items-center gap-2"><span className="min-w-0 [overflow-wrap:anywhere] font-medium leading-snug text-student-ink line-clamp-3 lg:line-clamp-2" title={name}>{name}</span>{demo ? <DemoPill /> : null}</span>
             <span className="block truncate font-mono text-xs text-student-muted">{s.student_code ?? "No code yet"}</span>
           </span>
         </span>
