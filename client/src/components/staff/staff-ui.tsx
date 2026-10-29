@@ -60,6 +60,47 @@ export function StaffPageHeader({ eyebrow, title, description, actions, back, me
   );
 }
 
+/**
+ * Entity header (student file). The identity block (portrait, name, contact, status) takes the full
+ * width so a long name wraps by words; the actions sit in their own toolbar row below it. On small
+ * screens the toolbar becomes a two-column grid and every action fills its cell.
+ */
+export function StaffFileHeader({ eyebrow, portrait, title, description, meta, actions, back, testId }: {
+  eyebrow?: string;
+  portrait?: React.ReactNode;
+  title: string;
+  description?: React.ReactNode;
+  meta?: React.ReactNode;
+  actions?: React.ReactNode;
+  back?: React.ReactNode;
+  testId?: string;
+}) {
+  return (
+    <header className="space-y-4 border-b border-student-line pb-5" data-testid={testId}>
+      {back}
+      <div className="flex min-w-0 items-start gap-4">
+        {portrait}
+        <div className="min-w-0 flex-1 space-y-1.5">
+          {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
+          <h1 className="font-serif text-2xl leading-snug tracking-tight text-student-ink [overflow-wrap:break-word] [word-break:normal] sm:text-3xl" data-testid="text-page-title">{title}</h1>
+          {description && <div className="break-words text-sm leading-relaxed text-student-muted">{description}</div>}
+          {meta && <div className="pt-1">{meta}</div>}
+        </div>
+      </div>
+      {actions && (
+        <div
+          className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center [&>*]:min-w-0 [&>*]:justify-center max-sm:[&>*]:w-full max-sm:[&>*]:whitespace-normal max-sm:[&>*]:text-center"
+          role="toolbar"
+          aria-label="Student file actions"
+          data-testid="file-actions"
+        >
+          {actions}
+        </div>
+      )}
+    </header>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Cards, section headings, notices
 // ---------------------------------------------------------------------------

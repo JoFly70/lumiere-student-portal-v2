@@ -623,6 +623,8 @@ export interface StudentHighSchoolView {
     readonly status: "on_track" | "behind" | "ahead" | "not_configured";
     readonly nextMilestone: { readonly month: string; readonly cumulativeHalfUnits: HalfUnits } | null;
   };
+  /** Monthly credit milestones of the published plan (cumulative half-units by end of month). */
+  readonly milestones?: readonly { readonly month: string; readonly cumulativeHalfUnits: HalfUnits }[];
   readonly writtenProjects: readonly (HsTaskView & { readonly courseKey: string; readonly courseTitle: string })[];
   readonly awaitingGrade: readonly (HsTaskView & { readonly courseKey: string; readonly courseTitle: string })[];
   readonly attention: readonly HsAttentionItem[];

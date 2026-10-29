@@ -9,7 +9,7 @@ import {
   StaffCard,
   StaffNotice,
   StaffPage,
-  StaffPageHeader,
+  StaffFileHeader,
   StaffPill,
   StaffSectionHeader,
   StaffTabList,
@@ -61,7 +61,9 @@ import { OwnerAssistantPanel } from "@/components/owner-assistant/owner-assistan
 import { StudentPortalAccountCard } from "@/components/admin/student-portal-account-card";
 import StudentProfileReview, { useStaffProfileData } from "@/components/admin/student-profile-review";
 import { STAFF_PROFILE_QUERY_KEY } from "@/components/admin/student-profile-review-logic";
-import { PhotoDialog } from "@/components/os/account-menu";
+import { AccountAvatar, PhotoDialog } from "@/components/os/account-menu";
+import { BillingSummaryCard } from "@/components/admin/billing/billing-summary-card";
+import { useStaffBilling } from "@/lib/billing-queries";
 import { useT } from "@/i18n";
 import { profileDecisionCount } from "@/components/admin/student-profile-review-logic";
 import { useDocuments } from "@/hooks/use-documents";
@@ -166,6 +168,7 @@ export default function AdminStudentWorkspace() {
   const canonicalStudentId = workspaceStudentIdFromData(query.data) ?? null;
   const documentsQuery = useDocuments(canonicalStudentId);
   const ticketsQuery = useTickets({ studentId: canonicalStudentId });
+  const billingQuery = useStaffBilling(canonicalStudentId ?? null);
   const { profileQuery } = useStaffProfileData(canonicalStudentId ?? "");
   const queryClient = useQueryClient();
   const { t } = useT();
@@ -276,17 +279,24 @@ export default function AdminStudentWorkspace() {
     return placementRequirementLabel(placement, vm.labels);
   };
   return <StaffPage testId="admin-student-workspace">
-    <StaffPageHeader
+    <StaffFileHeader
+      testId="student-file-header"
       back={<Link href={ADMIN_STUDENTS_PATH} className="inline-flex min-h-10 items-center gap-2 text-sm font-medium text-student-gold-ink underline-offset-4 hover:underline"><ArrowLeft className="h-4 w-4" aria-hidden="true" />Back to Students</Link>}
-      eyebrow="Staff Portal · Student workspace"
+      eyebrow="Staff Portal · Student file"
+      portrait={<AccountAvatar identity={{ studentId: identity.id, firstName: profileQuery.data?.identity.firstName, lastName: profileQuery.data?.identity.lastName, name, email: identity.email, photoUrl: profileQuery.data?.identity.photoUrl }} className="h-16 w-16 shrink-0 text-xl ring-2 ring-student-gold/50 sm:h-20 sm:w-20 sm:text-2xl" />}
       title={name}
-      description={<>{identity.email ?? "Not provided"} · <span className="font-mono">{identity.studentCode ?? "Not provided"}</span></>}
+      description={<>{identity.email ?? "Email not provided"} · <span className="font-mono">{identity.studentCode ?? "No student code"}</span></>}
       meta={<StaffPill tone="neutral" icon={<ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />}>Canonical view · controlled placement writes</StaffPill>}
-      actions={<>{canActivateLead ? <Button type="button" size="sm" className={staffBtn.seal} disabled={activateLead.isPending || !canonicalStudentId} onClick={() => canonicalStudentId && activateLead.mutate(canonicalStudentId)} data-testid="button-activate-lead">{activateLead.isPending ? "Activating…" : <><UserCheck className="h-4 w-4" aria-hidden="true" />Activate lead</>}</Button> : null}<Button type="button" variant="outline" size="sm" className={staffBtn.outline} onClick={() => setPhotoOpen(true)} data-testid="button-student-photo">{t("staff.photo.button")}</Button><Link href={`/admin/students/${encodeURIComponent(studentId)}/roadmap`} className={`${staffBtn.outline} inline-flex items-center justify-center border`} data-testid="link-student-roadmap"><Route className="h-4 w-4" aria-hidden="true" />View roadmap</Link><Link href={`/admin/students/${encodeURIComponent(studentId)}/high-school`} className={`${staffBtn.outline} inline-flex items-center justify-center border`} data-testid="link-student-high-school">High school pathway</Link><Link href={`/admin/students/${encodeURIComponent(studentId)}/view-as-student`} className={`${staffBtn.outline} inline-flex items-center justify-center border`} data-testid="link-view-as-student"><Eye className="h-4 w-4" aria-hidden="true" />View as student</Link><Link href={`/admin/students/${encodeURIComponent(studentId)}/billing`} className={`${staffBtn.outline} inline-flex items-center justify-center border`} data-testid="link-student-billing">Billing</Link></>}
+      actions={<>
+        {canActivateLead ? <Button type="button" size="sm" className={staffBtn.seal} disabled={activateLead.isPending || !canonicalStudentId} onClick={() => canonicalStudentId && activateLead.mutate(canonicalStudentId)} data-testid="button-activate-lead">{activateLead.isPending ? "Activating…" : <><UserCheck className="h-4 w-4" aria-hidden="true" />Activate lead</>}</Button> : null}
+        <Button type="button" variant="outline" size="sm" className={staffBtn.outline} onClick={() => setPhotoOpen(true)} data-testid="button-student-photo">{t("staff.photo.button")}</Button>
+        <Link href={`/admin/students/${encodeURIComponent(studentId)}/roadmap`} className={`${staffBtn.outline} inline-flex items-center justify-center border`} data-testid="link-student-roadmap"><Route className="h-4 w-4" aria-hidden="true" />View roadmap</Link>
+        <Link href={`/admin/students/${encodeURIComponent(studentId)}/high-school`} className={`${staffBtn.outline} inline-flex items-center justify-center border`} data-testid="link-student-high-school">High school pathway</Link>
+        <Link href={`/admin/students/${encodeURIComponent(studentId)}/view-as-student`} className={`${staffBtn.outline} inline-flex items-center justify-center border`} data-testid="link-view-as-student"><Eye className="h-4 w-4" aria-hidden="true" />View as student</Link>
+        <Link href={`/admin/students/${encodeURIComponent(studentId)}/billing`} className={`${staffBtn.outline} inline-flex items-center justify-center border`} data-testid="link-student-billing">Billing</Link>
+        {user?.role === "admin" && canonicalStudentId ? <Link href={`/admin/assistant?studentId=${encodeURIComponent(canonicalStudentId)}`} className={`${staffBtn.outline} inline-flex items-center justify-center border`} data-testid="link-student-ai"><BrainCircuit className="h-4 w-4" aria-hidden="true" />Ask Lumière AI</Link> : null}
+      </>}
     />
-     {user?.role === "admin" && canonicalStudentId ? <Link href={`/admin/assistant?studentId=${encodeURIComponent(canonicalStudentId)}`} className={`${staffBtn.outline} inline-flex items-center justify-center gap-2 border`} data-testid="link-student-ai">
-       Ask Lumière AI about this student
-     </Link> : null}
     {activationFeedback ? <StaffNotice tone={activationFeedback.kind === "error" ? "urgent" : "gold"} role={activationFeedback.kind === "error" ? "alert" : "status"}>{activationFeedback.message}</StaffNotice> : null}
     {identity.id ? <PhotoDialog
       open={photoOpen}
@@ -324,6 +334,7 @@ export default function AdminStudentWorkspace() {
       </StaffCard>
       <StaffCard as="div"><p className={staffLabel}>Snapshot</p><p className="mt-2 font-serif text-xl text-student-ink">{formatWorkspaceDateTime(snapshot.asOf ?? vm.asOf) ?? "No snapshot yet"}</p>{snapshotFingerprint ? <p className="mt-1 flex items-center gap-1 font-mono text-xs text-student-muted"><Fingerprint className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /><span className="min-w-0 truncate" title={snapshotFingerprint}>{snapshotFingerprint}</span></p> : null}</StaffCard>
     </section>
+    {canonicalStudentId ? <BillingSummaryCard studentId={canonicalStudentId} billing={billingQuery.data} loading={billingQuery.isLoading} error={billingQuery.isError} /> : null}
     {!snapshotFingerprint || snapshotUnavailable
       ? <StaffNotice tone="attention" role="status" icon={<AlertCircle className="h-4 w-4" />} action={<Button type="button" size="sm" variant="outline" className={staffBtn.outline} disabled={query.isFetching} onClick={() => void refreshCanonical()}>
             <RefreshCw className={`h-4 w-4 ${query.isFetching ? "animate-spin" : ""}`} />

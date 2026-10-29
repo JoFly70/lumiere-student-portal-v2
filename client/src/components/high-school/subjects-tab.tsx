@@ -37,6 +37,7 @@ import { StatusPill, buttonClass } from "@/components/student-progress/student-u
 import type { HsReportedStatus } from "@shared/high-school-contract";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ELECTIVE_ALTERNATE_MAX, ELECTIVE_REASON_MAX, buildElectiveChangeTicket, electiveAwaitsApproval, electiveChangeValid } from "@/lib/elective-change";
+import { courseDescription } from "@/lib/hs-course-descriptions";
 import { useHsActions } from "./hs-actions";
 import { Meter, solidButton } from "./hs-ui";
 
@@ -283,6 +284,7 @@ function CourseRow({ course, today, schoolLine, open, onToggle }: { course: HsCo
   const muted = course.status === "replaced";
   const title = courseTitleView(course.title);
   const tasks = sortedTasks(course.tasks);
+  const description = courseDescription(course.key, language === "fr" ? "fr" : "en");
   const window = course.status !== "official_complete" && (course.plannedStart || course.plannedEnd) ? [formatShortDate(course.plannedStart, language), formatShortDate(course.plannedEnd, language)].filter(Boolean).join(language === "fr" ? " au " : " to ") : null;
   return (
     <li className={cn("rounded-xl border border-student-line bg-student-card", muted && "bg-student-bg")} data-testid="course-row" data-course-key={course.key} data-course-status={course.status} id={`hs-course-${course.key}`}>
@@ -310,6 +312,12 @@ function CourseRow({ course, today, schoolLine, open, onToggle }: { course: HsCo
             <FileCheck2 className="mt-0.5 h-4 w-4 shrink-0 text-st-official" aria-hidden="true" />
             {t("hs.subjects.transferNote")}
           </p>
+        )}
+        {description && (
+          <div className="rounded-lg bg-student-bg p-3 text-sm leading-relaxed text-student-ink" data-testid="course-description">
+            <p>{description}</p>
+            <p className="mt-1 text-xs text-student-muted">{t("hs.subjects.descriptionNote")}</p>
+          </div>
         )}
         {window && <p className="text-xs text-student-muted">{t("hs.subjects.window", { window })}</p>}
         {tasks.length > 0 && (

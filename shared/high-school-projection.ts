@@ -499,6 +499,9 @@ export function projectStudentView(input: HsProjectionInput): StudentHighSchoolV
     credits,
     current: { course: currentCourse, nextTask: nextCourse && nextTaskSrc ? withCourse(nextCourse, nextTaskSrc) : null },
     pace,
+    milestones: [...(content?.pacing.milestones ?? [])]
+      .sort((a, b) => (a.month < b.month ? -1 : a.month > b.month ? 1 : 0))
+      .map((m) => ({ month: m.month, cumulativeHalfUnits: m.cumulativeHalfUnits })),
     writtenProjects,
     awaitingGrade,
     attention,

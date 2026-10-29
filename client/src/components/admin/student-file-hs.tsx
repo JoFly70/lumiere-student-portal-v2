@@ -10,7 +10,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, ArrowRight, BrainCircuit, CheckCircle2, CircleDashed, Eye, FileText, Fingerprint, GraduationCap, LayoutDashboard, LifeBuoy, UserCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
-  StaffCard, StaffNotice, StaffPage, StaffPageHeader, StaffPill, StaffSectionHeader, StaffTabList, StaffTabPanel,
+  StaffCard, StaffFileHeader, StaffNotice, StaffPage, StaffPill, StaffSectionHeader, StaffTabList, StaffTabPanel,
   StatusPill, staffBtn, staffLabel, useHashTab, type StaffTab,
 } from "@/components/staff/staff-ui";
 import StudentProfileReview, { useStaffProfileData } from "@/components/admin/student-profile-review";
@@ -34,6 +34,7 @@ import type { StudentProfileView } from "@shared/student-profile-contract";
 import type { StudentDocument } from "@shared/schema";
 import type { StaffBillingView } from "@shared/billing-contract";
 import { useStaffBilling } from "@/lib/billing-queries";
+import { BillingSummaryCard } from "@/components/admin/billing/billing-summary-card";
 
 void React;
 
@@ -149,16 +150,19 @@ export interface HsOverviewProps {
   onTab?: (tab: FileTab) => void;
   documents?: readonly StudentDocument[];
   billing?: StaffBillingView;
+  billingLoading?: boolean;
+  billingError?: boolean;
 }
 
 /** High-school overview: pure, server-renderable. */
-export function StudentFileHsOverview({ studentId, student, state, profile, attention, onTab, documents, billing }: HsOverviewProps) {
+export function StudentFileHsOverview({ studentId, student, state, profile, attention, onTab, documents, billing, billingLoading, billingError }: HsOverviewProps) {
   const cur = state.current;
   const href = `/admin/students/${encodeURIComponent(studentId)}/high-school`;
   if (!cur) {
     return <div className="space-y-4" data-testid="student-file-hs-overview">
       <StaffNotice tone="info">No high school program has been created for this student yet.</StaffNotice>
       <Link href={href} className={LINK}>Open full high-school pathway<ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>
+      <BillingSummaryCard studentId={studentId} billing={billing} loading={billingLoading} error={billingError} />
       <Attention rows={attention} onTab={onTab} />
     </div>;
   }
@@ -175,6 +179,8 @@ export function StudentFileHsOverview({ studentId, student, state, profile, atte
       </div>
       <dl className="grid grid-cols-2 gap-4 text-sm"><div><dt className={staffLabel}>Start</dt><dd className="mt-1">{formatDate(enrollment.startedOn)}</dd></div><div><dt className={staffLabel}>Target completion</dt><dd className="mt-1">{formatDate(enrollment.targetCompletionDate)}</dd><dd className="text-xs text-student-muted">a target, not a guarantee</dd></div></dl>
     </StaffCard>
+
+    <BillingSummaryCard studentId={studentId} billing={billing} loading={billingLoading} error={billingError} />
 
     <section aria-label="Credits" className="space-y-3" data-testid="hs-credit-summary">
       <StaffSectionHeader icon={<GraduationCap className="h-5 w-5" />} title="Credits" description="Planned credit is a plan. Only the awarding school's confirmed results count as earned." />
@@ -313,11 +319,12 @@ export default function StudentFileHs({ studentId, student }: { studentId: strin
   const identity = { studentId, firstName: profile?.identity.firstName ?? current.first_name, lastName: profile?.identity.lastName ?? current.last_name, name, photoUrl: profile?.identity.photoUrl };
 
   return <StaffPage testId="admin-student-workspace">
-    <StaffPageHeader
+    <StaffFileHeader
       testId="student-file-header"
       back={<Link href="/admin/students" className="inline-flex min-h-10 items-center gap-2 text-sm font-medium text-student-gold-ink underline-offset-4 hover:underline"><ArrowLeft className="h-4 w-4" aria-hidden="true" />Back to Students</Link>}
       eyebrow="Staff Portal · Student file"
-      title={<span className="flex items-center gap-4"><AccountAvatar identity={identity} className="h-16 w-16 shrink-0 text-xl ring-2 ring-student-gold/50" /><span className="min-w-0">{name}</span></span>}
+      portrait={<AccountAvatar identity={identity} className="h-16 w-16 shrink-0 text-xl ring-2 ring-student-gold/50 sm:h-20 sm:w-20 sm:text-2xl" />}
+      title={name}
       description={<>{current.email ?? profile?.contact.email ?? "Email not provided"} · <span className="font-mono">{current.student_code ?? profile?.identity.studentCode ?? "No student code"}</span></>}
       meta={<div className="flex flex-wrap gap-2"><StaffPill tone="seal" className="capitalize">{current.status}</StaffPill><StaffPill tone="neutral">No university program</StaffPill></div>}
       actions={<>
@@ -344,7 +351,7 @@ export default function StudentFileHs({ studentId, student }: { studentId: strin
       <div id="workspace-overview" aria-label="Overview">
         {hs.isLoading ? <div role="status" className="rounded-md border p-6 text-center text-sm text-student-muted">Loading high school record…</div>
           : hs.isError || !hs.data ? <div role="alert" className="rounded-md border border-destructive/40 bg-destructive/5 p-6 text-center text-sm"><p>The high school record could not be loaded.</p><Button className="mt-3" type="button" size="sm" variant="outline" onClick={() => void hs.refetch()}>Retry</Button></div>
-          : <StudentFileHsOverview studentId={studentId} student={current} state={hs.data} profile={profile} attention={attention} onTab={setTab} documents={documentsQuery.data} billing={billingQuery.data} />}
+          : <StudentFileHsOverview studentId={studentId} student={current} state={hs.data} profile={profile} attention={attention} onTab={setTab} documents={documentsQuery.data} billing={billingQuery.data} billingLoading={billingQuery.isLoading} billingError={billingQuery.isError} />}
       </div>
     </StaffTabPanel>
     <StaffTabPanel idPrefix="ws" tabKey="profile" active={activeTab === "profile"}><StudentProfileReview studentId={studentId} /></StaffTabPanel>

@@ -22,7 +22,7 @@ describe("Phase 5F production truth and routing", () => {
   it("uses role-aware sidebar navigation without querying a student profile for admins", () => {
     const sidebar = read("client/src/components/app-sidebar.tsx");
 
-    expect(sidebar).toContain('title: "Admin Dashboard"');
+    expect(sidebar).toContain('title: "Administration"');
     expect(sidebar).toContain('url: "/admin"');
     expect(sidebar).toContain('enabled: isStudent');
     // S10 staff pass: admin, staff and coach all work in the "Staff Portal"; students never see that label.

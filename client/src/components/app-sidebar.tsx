@@ -1,4 +1,4 @@
-import { BookOpen, FileText, CreditCard, GraduationCap, HelpCircle, LogOut, User, Gauge, ShieldCheck, School, Sparkles } from "lucide-react";
+import { BookOpen, FileText, CreditCard, GraduationCap, HelpCircle, LogOut, User, Gauge, ShieldCheck, School, Sparkles, Shuffle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Link, useLocation, useSearch } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -75,18 +75,19 @@ const studentFileItems = studentMenuItems.filter((i) => !JOURNEY_URLS.includes(i
 // Staff navigation. "Students" opens the existing admin Students list (admin only: the
 // list route is admin-gated). Staff and coaches work from the support desk.
 const adminMenuItems = [
-  { title: "Admin Dashboard", url: "/admin", icon: ShieldCheck },
-  { title: "Student Support Center", url: "/admin/support-center", icon: GraduationCap },
+  { title: "Control Center", url: "/admin/support-center", icon: Gauge },
   { title: "Students", url: ADMIN_STUDENTS_PATH, icon: GraduationCap },
-  { title: "Support", url: "/support", icon: HelpCircle },
+  { title: "Support desk", url: "/support", icon: HelpCircle },
+  { title: "Elective requests", url: "/admin/elective-requests", icon: Shuffle },
   { title: "Lumière AI", url: "/admin/assistant", icon: Sparkles },
+  { title: "Administration", url: "/admin", icon: ShieldCheck },
 ];
 
 // Staff (not admin) cannot open the admin student workspace; this is their way into student billing.
 export const STAFF_BILLING_PATH = "/staff/billing";
 
 const staffMenuItems = [
-  { title: "Support", url: "/support", icon: HelpCircle },
+  { title: "Support desk", url: "/support", icon: HelpCircle },
 ];
 // Billing routes allow staff + admin only (not coach), so the entry is role-specific.
 const staffBillingItem = { title: "Student billing", url: STAFF_BILLING_PATH, icon: CreditCard };
@@ -222,7 +223,7 @@ export function AppSidebar() {
   const isActive = (url: string) => {
     if (url === ADMIN_STUDENTS_PATH) return onStudents;
     if (url === STAFF_BILLING_PATH) return location === url || /^\/admin\/students\/[^/]+\/billing$/.test(location);
-    if (url === "/admin") return location.startsWith("/admin") && !onStudents;
+    if (url === "/admin") return location === "/admin" && !onStudents;
     return location === url;
   };
 

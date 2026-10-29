@@ -43,6 +43,7 @@ import { Eyebrow, Pill, StudentSurface, buttonClass } from "@/components/student
 import { cn } from "@/lib/utils";
 import { useT, type Language, type TranslationKey } from "@/i18n";
 import { docTypeLabel } from "@/lib/document-type-labels";
+import { DOCUMENT_ACCEPT_ATTR, checkDocumentFile, resolveDocumentMime } from "@/lib/document-upload-policy";
 
 type DocumentCategory =
   | "academic"
@@ -52,7 +53,7 @@ type DocumentCategory =
   | "transfer_credits"
   | "chat";
 
-type DocumentStatus = "pending" | "verified" | "rejected";
+type DocumentStatus = "pending" | "verified" | "rejected" | "resubmit_requested";
 
 const categoryConfig: Record<DocumentCategory, { label: string; short: string; icon: typeof FileText; color: string }> = {
   academic: { 
@@ -109,6 +110,11 @@ const statusConfig: Record<DocumentStatus, { label: string; variant: "default" |
     variant: "destructive",
     icon: AlertCircle
   },
+  resubmit_requested: {
+    label: "New version requested",
+    variant: "destructive",
+    icon: AlertCircle
+  },
 };
 
 // Map frontend categories to backend doc_type enums
@@ -141,12 +147,33 @@ function mapDocTypeToCategory(docType: string): DocumentCategory {
 }
 
 export { docTypeLabel };
+
+type DocWithReview = StudentDocument & { review_message?: string | null };
+const needsAction = (d: { status: string }) => d.status === "rejected" || d.status === "resubmit_requested";
+
+/** Staff reason (student-facing text only) and the replacement-upload button for rejected documents. */
+function DocReviewNote({ doc, onReplace, busy }: { doc: DocWithReview; onReplace: () => void; busy: boolean }) {
+  const { t } = useT();
+  if (!needsAction(doc)) return null;
+  return (
+    <div className="mt-2 space-y-2 rounded-md border border-st-attention bg-st-attention-soft p-2 text-sm text-student-ink" data-testid={`review-note-${doc.id}`}>
+      <p>
+        <span className="font-semibold">{t("documents.reviewReason")} </span>
+        {doc.review_message ? doc.review_message : t("documents.reviewNoReason")}
+      </p>
+      <button type="button" className={cn(buttonClass.outline, "px-3")} onClick={onReplace} disabled={busy} data-testid={`button-replace-${doc.id}`}>
+        <Upload className="h-4 w-4" aria-hidden="true" />{t("documents.uploadReplacement")}
+      </button>
+    </div>
+  );
+}
 const formatDocDate = (value: string, language: Language) => new Intl.DateTimeFormat(language, { month: "short", day: "numeric", year: "numeric" }).format(new Date(value));
 
 const STATUS_PILL: Record<DocumentStatus, string> = {
   verified: "border-2 border-student-gold-ink bg-student-card text-student-gold-ink",
   pending: "border-student-line-strong bg-student-card text-student-muted",
   rejected: "border-st-attention bg-st-attention-soft text-st-attention",
+  resubmit_requested: "border-st-attention bg-st-attention-soft text-st-attention",
 };
 function DocStatusPill({ status }: { status: DocumentStatus }) {
   const { t } = useT();
@@ -234,6 +261,8 @@ export default function Documents() {
   const [previewDocument, setPreviewDocument] = useState<StudentDocument | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const replaceInputRef = useRef<HTMLInputElement>(null);
+  const [replaceDocType, setReplaceDocType] = useState<string | null>(null);
 
   const documents = documentsData || [];
   const isLoading = profileLoading || documentsLoading;
@@ -250,7 +279,7 @@ export default function Documents() {
     setIsDragging(false);
   }, []);
 
-  const processFiles = useCallback(async (files: FileList) => {
+  const processFiles = useCallback(async (files: FileList, docTypeOverride?: string) => {
     if (!profile) {
       toast({
         variant: "destructive",
@@ -260,16 +289,24 @@ export default function Documents() {
       return;
     }
 
-    const maxSize = 10 * 1024 * 1024;
     const validFiles: File[] = [];
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      if (file.size > maxSize) {
+      const problem = checkDocumentFile(file);
+      if (problem === "tooLarge") {
         toast({
           variant: "destructive",
           title: t("documents.toast.tooLarge"),
           description: t("documents.toast.tooLargeDetail", { name: file.name }),
+        });
+        continue;
+      }
+      if (problem === "badType") {
+        toast({
+          variant: "destructive",
+          title: t("documents.toast.badType"),
+          description: t("documents.toast.badTypeDetail", { name: file.name }),
         });
         continue;
       }
@@ -286,13 +323,13 @@ export default function Documents() {
 
       try {
         const category = activeTab === "all" ? "academic" : activeTab;
-        const docType = categoryToDocType[category];
+        const docType = docTypeOverride ?? categoryToDocType[category];
 
         const uploadUrlData = await generateUploadUrl.mutateAsync({
           doc_type: docType,
           file_name: file.name,
           file_size: file.size,
-          mime_type: file.type || 'application/octet-stream',
+          mime_type: resolveDocumentMime(file),
           student_code: profile.student_code,
         });
 
@@ -300,7 +337,7 @@ export default function Documents() {
           method: 'PUT',
           body: file,
           headers: {
-            'Content-Type': file.type || 'application/octet-stream',
+            'Content-Type': resolveDocumentMime(file),
           },
         });
 
@@ -349,6 +386,19 @@ export default function Documents() {
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
+  };
+
+  const startReplace = (doc: StudentDocument) => {
+    setReplaceDocType(doc.doc_type);
+    replaceInputRef.current?.click();
+  };
+
+  const handleReplaceSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0 && replaceDocType) {
+      processFiles(e.target.files, replaceDocType);
+    }
+    if (replaceInputRef.current) replaceInputRef.current.value = "";
+    setReplaceDocType(null);
   };
 
   const handleDelete = async (id: string, name: string) => {
@@ -414,7 +464,9 @@ export default function Documents() {
   const filteredDocuments = documents.filter(doc => {
     const docCategory = mapDocTypeToCategory(doc.doc_type);
     if (activeTab !== "all" && docCategory !== activeTab) return false;
-    if (selectedStatus !== "all" && doc.status !== selectedStatus) return false;
+    if (selectedStatus === "rejected") {
+      if (doc.status !== "rejected" && doc.status !== "resubmit_requested") return false;
+    } else if (selectedStatus !== "all" && doc.status !== selectedStatus) return false;
     if (searchQuery && !doc.file_name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     return true;
   });
@@ -431,7 +483,7 @@ export default function Documents() {
     return {
       pending: documents.filter(d => d.status === "pending").length,
       verified: documents.filter(d => d.status === "verified").length,
-      rejected: documents.filter(d => d.status === "rejected").length,
+      rejected: documents.filter(d => d.status === "rejected" || d.status === "resubmit_requested").length,
     };
   };
 
@@ -543,9 +595,17 @@ export default function Documents() {
                   id="file-upload"
                   className="hidden"
                   multiple
-                  accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx"
+                  accept={DOCUMENT_ACCEPT_ATTR}
                   onChange={handleFileSelect}
                   data-testid="input-file-upload"
+                />
+                <input
+                  ref={replaceInputRef}
+                  type="file"
+                  className="hidden"
+                  accept={DOCUMENT_ACCEPT_ATTR}
+                  onChange={handleReplaceSelect}
+                  data-testid="input-file-replace"
                 />
                 <label htmlFor="file-upload" className={cn(buttonClass.solid, "cursor-pointer")} data-testid="button-browse">
                   {t("documents.browse")}
@@ -640,6 +700,7 @@ export default function Documents() {
                             <p className="break-words font-medium text-student-ink">{doc.file_name}</p>
                             <p className="text-sm text-student-muted">{docTypeDisplay(doc, t)} · {formatDocDate(doc.created_at, language)}</p>
                             <div className="mt-2"><DocStatusPill status={doc.status as DocumentStatus} /></div>
+                            <DocReviewNote doc={doc as DocWithReview} onReplace={() => startReplace(doc)} busy={uploadProgress !== null} />
                           </div>
                         </div>
                         <div className="mt-2 flex gap-2 border-t border-student-line pt-2">
@@ -697,6 +758,7 @@ export default function Documents() {
                               </td>
                               <td className="p-4">
                                 <DocStatusPill status={doc.status as DocumentStatus} />
+                                <DocReviewNote doc={doc as DocWithReview} onReplace={() => startReplace(doc)} busy={uploadProgress !== null} />
                               </td>
                               <td className="p-4">
                                 <div className="flex justify-end gap-1">
