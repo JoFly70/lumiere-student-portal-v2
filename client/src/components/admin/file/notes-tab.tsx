@@ -14,6 +14,7 @@ import { localeOf, mergeTimeline } from "@/lib/owner-presentation";
 import type { ActivityEvent } from "@/components/admin/dossier/dossier-parts";
 import { sentence } from "@/components/admin/directory/directory-data";
 import { cn } from "@/lib/utils";
+import { ownerBtn } from "@/components/admin/control/owner-ui";
 import { Panel, Unavailable } from "./file-parts";
 
 export function NotesTab({ studentId, hs, isAdmin }: { studentId: string; hs?: StaffHighSchoolState | null; isAdmin: boolean }) {
@@ -66,7 +67,7 @@ export function NotesTab({ studentId, hs, isAdmin }: { studentId: string; hs?: S
         <label htmlFor="staff-note" className="sr-only">{t("owner.notes.add")}</label>
         <textarea id="staff-note" rows={5} maxLength={4000} className={cn(staffField, "py-2")} placeholder={t("owner.notes.placeholder")} value={body} onChange={(e) => setBody(e.target.value)} data-testid="note-input" />
         {add.isError ? <StaffNotice tone="urgent" role="alert" className="mt-3">{errorText(add.error, t("owner.notes.error"))}</StaffNotice> : null}
-        <button type="button" className={cn(staffBtn.seal, "mt-3")} disabled={!body.trim() || add.isPending || notes.isError} onClick={save} data-testid="note-save">{add.isPending ? t("owner.saving") : t("owner.notes.save")}</button>
+        <button type="button" className={cn(ownerBtn.seal, "mt-3")} disabled={!body.trim() || add.isPending || notes.isError} onClick={save} data-testid="note-save">{add.isPending ? t("owner.saving") : t("owner.notes.save")}</button>
       </Panel>
     </div>
   );

@@ -8,18 +8,18 @@ import { useMutation } from "@tanstack/react-query";
 import { ArrowRight, Check, Loader2, Pencil, Sparkles } from "lucide-react";
 import { api } from "@/lib/api";
 import { formatHalfUnits, type StaffHighSchoolState } from "@shared/high-school-contract";
-import { formatMoney, type StaffBillingView } from "@shared/billing-contract";
+import type { StaffBillingView } from "@shared/billing-contract";
 import type { AgreementDeadlineView, CheckpointView, ProgramAgreementView, StudentJourneyView } from "@shared/s27-contract";
 import { StaffNotice, staffBtn, staffField } from "@/components/staff/staff-ui";
 import { OwnerAnswerView, type OwnerAnswer } from "@/components/owner-assistant/owner-assistant-panel";
 import { useT } from "@/i18n";
-import { addDaysIso, creditsFraction, daysLeftTone, formatArrival, formatDay, localeOf, todayIsoLocal, type FileTab, type ProgramKind } from "@/lib/owner-presentation";
+import { creditsFraction, formatMoneyCompact, daysLeftTone, formatArrival, formatDay, localeOf, todayIsoLocal, type FileTab, type ProgramKind } from "@/lib/owner-presentation";
 import { buildDecisions, type Decision } from "@/lib/file-decisions";
 import { summarizeBilling } from "@/components/admin/billing/billing-summary";
 import { errorText, useCheckpointAction } from "@/lib/s27-queries";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { FlightArc } from "@/components/admin/control/owner-ui";
+import { FlightArc, ownerBtn } from "@/components/admin/control/owner-ui";
 import { AgreementDialog } from "./agreement-dialog";
 import { KeyValue, Panel, Unavailable } from "./file-parts";
 import type { Query } from "./types";
@@ -91,7 +91,7 @@ function DecisionsCard({ p, decisions }: { p: OverviewProps; decisions: Decision
           {decisions.map((d) => (
             <li key={d.id} className={cn("flex flex-col gap-3 rounded-xl border px-4 py-3 sm:flex-row sm:items-center sm:justify-between", d.tone === "urgent" ? "border-st-urgent/50 bg-st-urgent-soft" : "border-student-gold bg-student-gold-soft/60")} data-testid="decision-item" data-kind={d.kind}>
               <p className="min-w-0 text-sm leading-snug text-student-ink">{t(d.key, d.vars)}</p>
-              <button type="button" className={cn(d.kind === "school_result" ? staffBtn.seal : cn(staffBtn.outline, "border"), "shrink-0")} onClick={() => p.go(d.tab, d.courseKey ? { record: d.courseKey } : undefined)}>
+              <button type="button" className={cn(d.kind === "school_result" ? ownerBtn.seal : cn(ownerBtn.outline, "border"), "shrink-0")} onClick={() => p.go(d.tab, d.courseKey ? { record: d.courseKey } : undefined)}>
                 {d.kind === "school_result" ? t("owner.dec.act.record") : t("owner.dec.act.review")}<ArrowRight className="h-4 w-4" aria-hidden="true" />
               </button>
             </li>
@@ -118,7 +118,7 @@ function SummaryCard({ studentId, studentLabel, isAdmin }: { studentId: string; 
       {ask.isError ? <StaffNotice tone="urgent" role="alert" className="mt-3">{errorText(ask.error, t("owner.sum.error"))}</StaffNotice> : null}
       {isAdmin ? (
         <div className="mt-3 flex flex-wrap items-center gap-3">
-          <button type="button" className={cn(staffBtn.outline, "border")} disabled={ask.isPending} onClick={() => ask.mutate()} data-testid="summary-generate">
+          <button type="button" className={cn(ownerBtn.outline, "border")} disabled={ask.isPending} onClick={() => ask.mutate()} data-testid="summary-generate">
             {ask.isPending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Sparkles className="h-4 w-4" aria-hidden="true" />}{ask.data ? t("owner.sum.again") : t("owner.sum.generate")}
           </button>
           <Link href={`/admin/assistant?studentId=${encodeURIComponent(studentId)}`} className="text-sm font-medium text-student-gold-ink underline-offset-4 hover:underline">{t("owner.sum.openAi")}</Link>
@@ -157,7 +157,7 @@ function CheckpointRow({ c, studentId, canEdit }: { c: CheckpointView; studentId
         <div className="mt-2 flex flex-wrap items-center gap-2 pl-9">
           <label className="sr-only" htmlFor={`cp-${c.key}`}>{t("owner.cp.planFor", { label: c.label })}</label>
           <input id={`cp-${c.key}`} type="date" className={cn(staffField, "w-44")} value={date} onChange={(e) => setDate(e.target.value)} />
-          <button type="button" className={staffBtn.seal} disabled={!date || act.isPending} onClick={() => run({ key: c.key, action: "plan", plannedOn: date }, t("owner.cp.planned"))}>{t("owner.save")}</button>
+          <button type="button" className={ownerBtn.seal} disabled={!date || act.isPending} onClick={() => run({ key: c.key, action: "plan", plannedOn: date }, t("owner.cp.planned"))}>{t("owner.save")}</button>
         </div>
       ) : null}
     </li>
@@ -194,12 +194,12 @@ function AgreementCard({ p }: { p: OverviewProps }) {
   const a = p.agreement;
   const ag = a.data ?? null;
   const bill = summarizeBilling(p.billing);
-  const money = (c: number) => (bill.currency ? formatMoney(c, bill.currency, locale) : String(c / 100));
+  const money = (c: number) => (bill.currency ? formatMoneyCompact(c, bill.currency, locale) : String(c / 100));
   const date = (iso: string | null) => (iso ? formatDay(iso, locale, { day: "numeric", month: "short", year: "numeric" }) : "·");
   return (
     <>
       <Panel id="ov-agreement" title={t("owner.agr.card")} aside={t("owner.agr.staffView")} testId="ov-agreement"
-        actions={p.isAdmin && !a.isError ? <button type="button" className={cn(staffBtn.outline, "border")} onClick={() => setEditing(true)} disabled={a.isLoading} data-testid="agreement-edit"><Pencil className="h-4 w-4" aria-hidden="true" />{t("owner.agr.edit")}</button> : undefined}>
+        actions={p.isAdmin && !a.isError ? <button type="button" className={cn(ownerBtn.outline, "border")} onClick={() => setEditing(true)} disabled={a.isLoading} data-testid="agreement-edit"><Pencil className="h-4 w-4" aria-hidden="true" />{t("owner.agr.edit")}</button> : undefined}>
         {a.isLoading ? <p role="status" className="text-sm text-student-muted">{t("owner.loading")}</p>
           : a.isError ? <Unavailable error={a.error} what={t("owner.agr.what")} onRetry={() => void a.refetch()} testId="agreement-unavailable" />
           : (

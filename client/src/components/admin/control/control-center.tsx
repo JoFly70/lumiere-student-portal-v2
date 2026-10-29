@@ -8,15 +8,14 @@ import { Link, useLocation } from "wouter";
 import { ArrowRight, Eye, Loader2, RefreshCw, Sparkles } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { useT, type TranslationKey } from "@/i18n";
-import { formatMoney } from "@shared/billing-contract";
 import type { ControlCenterView, ControlQueueItem, ControlStudentRow } from "@shared/s27-contract";
 import { StaffCard, StaffEmpty, StaffNotice, StaffPill, staffBtn, staffTable } from "@/components/staff/staff-ui";
 import { useExperienceAction } from "@/components/admin/dossier/dossier-parts";
 import { StudentPhoto } from "@/components/admin/directory/directory-data";
-import { FlightArc, DateBadge, IconBadge, Orb, TonePill } from "@/components/admin/control/owner-ui";
+import { FlightArc, DateBadge, IconBadge, Orb, TonePill, ownerBtn } from "@/components/admin/control/owner-ui";
 import { errorText, isUnavailable, useControlCenter } from "@/lib/s27-queries";
 import {
-  creditsFraction, daysLeftTone, filterStudentRows, formatArrival, formatDay, greetingKey, localeOf, programLabelKey, queueActionHref, queueItemMeta,
+  creditsFraction, daysLeftTone, formatMoneyCompact, filterStudentRows, formatArrival, formatDay, greetingKey, localeOf, programLabelKey, queueActionHref, queueItemMeta,
   sortQueue, supportWindowTone, todayIsoLocal, type StudentFilter, type Tone,
 } from "@/lib/owner-presentation";
 import { cn } from "@/lib/utils";
@@ -107,7 +106,7 @@ function QueueRow({ item, role }: { item: ControlQueueItem; role: string | undef
         </div>
       </div>
       <div className="shrink-0 pl-[3.25rem] sm:pl-0">
-        <button type="button" className={cn(staffBtn.seal, "w-full sm:w-auto")} onClick={() => navigate(href)} data-testid="queue-action">
+        <button type="button" className={cn(ownerBtn.seal, "w-full sm:w-auto")} onClick={() => navigate(href)} data-testid="queue-action">
           {t(meta.actionKey)}<ArrowRight className="h-4 w-4" aria-hidden="true" />
         </button>
       </div>
@@ -152,8 +151,8 @@ function StudentsTable({ rows, role, today, locale }: { rows: readonly ControlSt
         ))}
       </div>
       {shown.length === 0 ? <p className="py-6 text-center text-sm text-student-muted" data-testid="cc-students-empty">{t("owner.students.empty")}</p> : (
-        <div className="-mx-4 overflow-x-auto sm:-mx-5" tabIndex={0} role="region" aria-label={t("owner.students.title")}>
-          <table className={cn(staffTable.table, "min-w-[62rem]")}>
+        <div className="relative -mx-4 overflow-x-auto sm:-mx-5" tabIndex={0} role="region" aria-label={t("owner.students.title")}>
+          <table className={cn(staffTable.table, "min-w-[70rem]")}>
             <caption className="sr-only">{t("owner.students.title")}</caption>
             <thead>
               <tr className="text-left">
@@ -180,8 +179,8 @@ function StudentsTable({ rows, role, today, locale }: { rows: readonly ControlSt
                       </div>
                     </td>
                     <td className="px-4 py-3"><FlightArc fraction={fraction} /></td>
-                    <td className="px-4 py-3 tabular-nums"><span className="font-semibold text-student-ink">{r.creditsConfirmed}</span><span className="text-student-muted"> / {r.creditsRequired ?? "·"}</span></td>
-                    <td className="px-4 py-3">
+                    <td className="whitespace-nowrap px-4 py-3 tabular-nums"><span className="font-semibold text-student-ink">{r.creditsConfirmed}</span><span className="text-student-muted"> / {r.creditsRequired ?? "·"}</span></td>
+                    <td className="whitespace-nowrap px-4 py-3">
                       <p className="font-semibold tabular-nums text-student-ink">{arrival ?? "·"}</p>
                       <p className="text-xs text-student-muted">{r.paceLabel ?? "·"}</p>
                     </td>
@@ -193,14 +192,14 @@ function StudentsTable({ rows, role, today, locale }: { rows: readonly ControlSt
                       {r.nextDeadline ? (
                         <>
                           <p className="text-student-ink">{r.nextDeadline.label}</p>
-                          <p className="text-xs"><span className="text-student-muted">{formatDay(r.nextDeadline.dueOn, locale)} · </span><span className={cn("font-semibold", TONE_TEXT[daysLeftTone(r.nextDeadline.daysLeft)])}>{daysText(r.nextDeadline.daysLeft)}</span></p>
+                          <p className="whitespace-nowrap text-xs"><span className="text-student-muted">{formatDay(r.nextDeadline.dueOn, locale)} · </span><span className={cn("font-semibold", TONE_TEXT[daysLeftTone(r.nextDeadline.daysLeft)])}>{daysText(r.nextDeadline.daysLeft)}</span></p>
                         </>
                       ) : <span className="text-student-muted">·</span>}
                     </td>
                     <td className="px-4 py-3 text-student-ink">{r.supportMonthsLeft === null ? <span className="text-xs text-student-muted">{t("owner.row.afterPayment")}</span> : t(r.supportMonthsLeft === 1 ? "owner.months.one" : "owner.months.other", { n: r.supportMonthsLeft })}</td>
                     <td className="px-4 py-3 pr-5">
                       <div className="flex flex-col items-end gap-0.5">
-                        <Link href={studentOpenHref(r, role)} className={cn(staffBtn.outline, "inline-flex items-center justify-center border")} aria-label={t("owner.row.openNamed", { name: r.name })} data-testid="open-file">{t("owner.row.open")}</Link>
+                        <Link href={studentOpenHref(r, role)} className={cn(ownerBtn.outline, "inline-flex items-center justify-center border")} aria-label={t("owner.row.openNamed", { name: r.name })} data-testid="open-file">{t("owner.row.open")}</Link>
                         {role === "admin" ? <ViewAsButton studentId={r.studentId} name={r.name} /> : null}
                       </div>
                     </td>
@@ -238,7 +237,7 @@ function AssistantCard() {
           </li>
         ))}
       </ul>
-      <Link href="/admin/assistant" className={cn(staffBtn.outline, "mt-4 inline-flex items-center border")} data-testid="cc-assistant-open"><Sparkles className="h-4 w-4" aria-hidden="true" />{t("owner.ai.open")}</Link>
+      <Link href="/admin/assistant" className={cn(ownerBtn.outline, "mt-4 inline-flex items-center border")} data-testid="cc-assistant-open"><Sparkles className="h-4 w-4" aria-hidden="true" />{t("owner.ai.open")}</Link>
     </StaffCard>
   );
 }
@@ -247,7 +246,7 @@ function PaymentsCard({ data, locale }: { data: ControlCenterView; locale: strin
   const { t } = useT();
   const p = data.payments;
   const month = new Intl.DateTimeFormat(locale, { month: "long" }).format(new Date());
-  const money = p.currency ? formatMoney(p.receivedThisMonthCents, p.currency, locale).replace(/[.,]00(?=\D*$)/, "") : String(p.receivedThisMonthCents / 100);
+  const money = p.currency ? formatMoneyCompact(p.receivedThisMonthCents, p.currency, locale) : String(p.receivedThisMonthCents / 100);
   return (
     <Card title={t("owner.pay.title")} labelId="cc-pay-h" testId="cc-payments" aside={month}>
       <dl className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-3">
@@ -304,12 +303,12 @@ export function ControlCenter() {
     return (
       <div className="space-y-6">
         <StaffEmpty testId={unavailable ? "cc-unavailable" : "cc-error"} title={unavailable ? t("owner.cc.unavailable.title") : t("owner.cc.error.title")}
-          action={<button type="button" className={cn(staffBtn.outline, "border")} onClick={() => void query.refetch()}><RefreshCw className="h-4 w-4" aria-hidden="true" />{t("owner.retry")}</button>}>
+          action={<button type="button" className={cn(ownerBtn.outline, "border")} onClick={() => void query.refetch()}><RefreshCw className="h-4 w-4" aria-hidden="true" />{t("owner.retry")}</button>}>
           {unavailable ? t("owner.cc.unavailable.body") : errorText(query.error, t("owner.cc.error.body"))}
         </StaffEmpty>
         <div className="flex flex-wrap gap-2">
-          <Link href="/admin/students" className={cn(staffBtn.outline, "border")}>{t("owner.cc.goStudents")}</Link>
-          <Link href="/support" className={cn(staffBtn.outline, "border")}>{t("owner.cc.goSupport")}</Link>
+          <Link href="/admin/students" className={cn(ownerBtn.outline, "border")}>{t("owner.cc.goStudents")}</Link>
+          <Link href="/support" className={cn(ownerBtn.outline, "border")}>{t("owner.cc.goSupport")}</Link>
         </div>
       </div>
     );
@@ -319,7 +318,7 @@ export function ControlCenter() {
   const queue = sortQueue(d.queue);
   const demoCount = d.students.filter((s) => s.isDemo).length;
   const monthName = new Intl.DateTimeFormat(locale, { month: "long" }).format(new Date());
-  const received = d.payments.currency ? formatMoney(d.payments.receivedThisMonthCents, d.payments.currency, locale).replace(/[.,]00(?=\D*$)/, "") : "·";
+  const received = d.payments.currency ? formatMoneyCompact(d.payments.receivedThisMonthCents, d.payments.currency, locale) : "·";
 
   return (
     <div className="space-y-6" data-testid="control-center">

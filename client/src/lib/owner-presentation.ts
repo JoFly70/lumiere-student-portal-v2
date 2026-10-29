@@ -342,6 +342,19 @@ export function mergeTimeline(
   return out.sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : a.id < b.id ? 1 : -1));
 }
 
+/** Money for display: whole amounts without decimals ("$3,600"), otherwise two ("$3,600.50"). Integer minor units in. */
+export function formatMoneyCompact(cents: number, currency: string, locale: string): string {
+  let exp = 2;
+  try { exp = new Intl.NumberFormat("en", { style: "currency", currency }).resolvedOptions().maximumFractionDigits ?? 2; } catch { /* keep 2 */ }
+  const unit = 10 ** exp;
+  const whole = cents % unit === 0;
+  try {
+    return new Intl.NumberFormat(locale, { style: "currency", currency, minimumFractionDigits: whole ? 0 : exp, maximumFractionDigits: exp }).format(cents / unit);
+  } catch {
+    return `${(cents / unit).toFixed(whole ? 0 : exp)} ${currency}`;
+  }
+}
+
 /** UI language -> BCP 47 locale for dates and money. */
 export const localeOf = (language: string): string => (language === "fr" ? "fr-FR" : "en-US");
 

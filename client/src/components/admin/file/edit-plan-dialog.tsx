@@ -5,13 +5,14 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Lock, Plus, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { formatMoney, type StudentInstallment } from "@shared/billing-contract";
+import type { StudentInstallment } from "@shared/billing-contract";
 import { StaffNotice, staffBtn, staffField } from "@/components/staff/staff-ui";
 import { useT } from "@/i18n";
 import { centsToInput } from "@/components/admin/billing/money";
 import { addMonthsIso } from "@/components/admin/billing/schedule-editor";
-import { planPayload, splitRemainingEvenly, validatePlan, planTotalCents, localeOf, type PlanRow } from "@/lib/owner-presentation";
+import { formatMoneyCompact, planPayload, splitRemainingEvenly, validatePlan, planTotalCents, localeOf, type PlanRow } from "@/lib/owner-presentation";
 import { cn } from "@/lib/utils";
+import { ownerBtn } from "@/components/admin/control/owner-ui";
 
 let counter = 0;
 const nextKey = () => `row-${++counter}`;
@@ -36,7 +37,7 @@ export function EditPlanDialog({ open, onOpenChange, personName, currency, netCe
     const due = last && /^\d{4}-\d{2}-\d{2}$/.test(last.dueDate) ? addMonthsIso(last.dueDate, 1) : new Date().toISOString().slice(0, 10);
     return [...rs, { key: nextKey(), dueDate: due, amount: "", label: "", locked: false }];
   });
-  const money = (c: number) => formatMoney(c, currency, locale);
+  const money = (c: number) => formatMoneyCompact(c, currency, locale);
   const badRow = (i: number, code: "bad_date" | "bad_amount") => v.problems.some((p) => p.code === code && "row" in p && p.row === i);
   const matches = v.problems.length === 0;
 
@@ -58,13 +59,13 @@ export function EditPlanDialog({ open, onOpenChange, personName, currency, netCe
               {r.locked ? (
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-st-applied/40 bg-st-applied-soft px-2.5 py-1 text-xs font-medium text-st-applied"><Lock className="h-3 w-3" aria-hidden="true" />{t("owner.plan.paid")}</span>
               ) : (
-                <button type="button" className={cn(staffBtn.ghost, "text-student-gold-ink")} aria-label={t("owner.plan.removeN", { n: i + 1 })} onClick={() => setRows((rs) => rs.filter((x) => x.key !== r.key))}><Trash2 className="h-4 w-4" aria-hidden="true" /><span className="hidden sm:inline">{t("owner.plan.remove")}</span></button>
+                <button type="button" className={cn(ownerBtn.ghost, "text-student-gold-ink")} aria-label={t("owner.plan.removeN", { n: i + 1 })} onClick={() => setRows((rs) => rs.filter((x) => x.key !== r.key))}><Trash2 className="h-4 w-4" aria-hidden="true" /><span className="hidden sm:inline">{t("owner.plan.remove")}</span></button>
               )}
             </div>
           ))}
           <div className="flex flex-wrap gap-2 pt-1">
-            <button type="button" className={cn(staffBtn.outline, "border")} onClick={add} data-testid="plan-add"><Plus className="h-4 w-4" aria-hidden="true" />{t("owner.plan.add")}</button>
-            <button type="button" className={cn(staffBtn.outline, "border")} onClick={() => setRows((rs) => splitRemainingEvenly(rs, netCents, currency))} data-testid="plan-split">{t("owner.plan.split")}</button>
+            <button type="button" className={cn(ownerBtn.outline, "border")} onClick={add} data-testid="plan-add"><Plus className="h-4 w-4" aria-hidden="true" />{t("owner.plan.add")}</button>
+            <button type="button" className={cn(ownerBtn.outline, "border")} onClick={() => setRows((rs) => splitRemainingEvenly(rs, netCents, currency))} data-testid="plan-split">{t("owner.plan.split")}</button>
           </div>
         </div>
 
@@ -75,8 +76,8 @@ export function EditPlanDialog({ open, onOpenChange, personName, currency, netCe
         {error ? <StaffNotice tone="urgent" role="alert">{error.message}</StaffNotice> : null}
 
         <DialogFooter>
-          <button type="button" className={cn(staffBtn.outline, "border")} onClick={() => onOpenChange(false)} disabled={pending}>{t("owner.cancel")}</button>
-          <button type="button" className={staffBtn.seal} disabled={!v.ok || pending} onClick={() => onSubmit(planPayload(rows, currency))} data-testid="plan-save">{pending ? t("owner.saving") : t("owner.save")}</button>
+          <button type="button" className={cn(ownerBtn.outline, "border")} onClick={() => onOpenChange(false)} disabled={pending}>{t("owner.cancel")}</button>
+          <button type="button" className={ownerBtn.seal} disabled={!v.ok || pending} onClick={() => onSubmit(planPayload(rows, currency))} data-testid="plan-save">{pending ? t("owner.saving") : t("owner.save")}</button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

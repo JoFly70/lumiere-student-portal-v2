@@ -10,7 +10,7 @@ import { StaffEmpty, staffBtn } from "@/components/staff/staff-ui";
 import { academicCreditRows, attentionItemLabel, attentionItemStatus, isDiagnosticAttentionItem, type WorkspaceViewModel } from "@/pages/admin-student-workspace-presentation";
 import { creditsBySource } from "@/lib/file-decisions";
 import { useT, type TranslationKey } from "@/i18n";
-import { TonePill } from "@/components/admin/control/owner-ui";
+import { TonePill, ownerBtn } from "@/components/admin/control/owner-ui";
 import { cn } from "@/lib/utils";
 import type { Tone } from "@/lib/owner-presentation";
 import { Panel } from "./file-parts";
@@ -29,7 +29,7 @@ export function DegreePlanTab({ studentId, vm }: { studentId: string; vm?: Works
   const base = `/admin/students/${encodeURIComponent(studentId)}`;
   if (!vm) {
     return (
-      <StaffEmpty title={t("owner.plan.none.title")} testId="degree-empty" action={<Link href={`${base}/roadmap`} className={cn(staffBtn.primary, "inline-flex items-center border")}>{t("owner.plan.open")}<ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>}>
+      <StaffEmpty title={t("owner.plan.none.title")} testId="degree-empty" action={<Link href={`${base}/roadmap`} className={cn(ownerBtn.primary, "inline-flex items-center border")}>{t("owner.plan.open")}<ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>}>
         {t("owner.plan.none.body")}
       </StaffEmpty>
     );
@@ -41,7 +41,7 @@ export function DegreePlanTab({ studentId, vm }: { studentId: string; vm?: Works
   return (
     <div className="space-y-6" data-testid="degree-plan-tab">
       <Panel id="dp-sources" title={t("owner.plan.where", { n: fmtN(accepted) })} testId="degree-sources"
-        actions={<Link href={`${base}/roadmap`} className={cn(staffBtn.seal, "inline-flex items-center")} data-testid="degree-open-full">{t("owner.plan.open")}</Link>}>
+        actions={<Link href={`${base}/roadmap`} className={cn(ownerBtn.seal, "inline-flex items-center")} data-testid="degree-open-full">{t("owner.plan.open")}</Link>}>
         {total === 0 ? <p className="text-sm text-student-muted">{t("owner.plan.noCredits")}</p> : (
           <>
             <div role="img" aria-label={sources.map((s) => `${s.source}: ${fmtN(s.accepted + s.waiting)}`).join(", ")} className="flex h-3 overflow-hidden rounded-full bg-student-line">

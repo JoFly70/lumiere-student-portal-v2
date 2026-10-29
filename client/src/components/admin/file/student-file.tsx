@@ -27,6 +27,7 @@ import { creditsBySource } from "@/lib/file-decisions";
 import { academicCreditRows } from "@/pages/admin-student-workspace-presentation";
 import { fileTabFromSearch, fileTabsFor, type FileTab, type ProgramKind } from "@/lib/owner-presentation";
 import { cn } from "@/lib/utils";
+import { ownerBtn } from "@/components/admin/control/owner-ui";
 import { OverviewTab } from "./overview-tab";
 import { RoadmapTab } from "./roadmap-tab";
 import { DegreePlanTab } from "./degree-plan-tab";
@@ -94,7 +95,7 @@ export function StudentFile({ studentId }: { studentId: string }) {
 
   if (student.isLoading) return <StaffPage><div role="status" className="space-y-4"><span className="sr-only">{t("owner.loading")}</span><div className="h-24 animate-pulse rounded-2xl bg-student-line" /><div className="h-64 animate-pulse rounded-2xl bg-student-line" /></div></StaffPage>;
   if (student.isError || !student.data) {
-    return <StaffPage><StaffEmpty title={t("owner.file.notFound.title")} testId="file-not-found" action={<Link href={ADMIN_STUDENTS_PATH} className={cn(staffBtn.outline, "border")}>{t("owner.file.back")}</Link>}>{t("owner.file.notFound.body")}</StaffEmpty></StaffPage>;
+    return <StaffPage><StaffEmpty title={t("owner.file.notFound.title")} testId="file-not-found" action={<Link href={ADMIN_STUDENTS_PATH} className={cn(ownerBtn.outline, "border")}>{t("owner.file.back")}</Link>}>{t("owner.file.notFound.body")}</StaffEmpty></StaffPage>;
   }
 
   const s = student.data;
@@ -104,7 +105,7 @@ export function StudentFile({ studentId }: { studentId: string }) {
   const programName = hs?.current ? shortProgram(hs.current.enrollment.programTitle) : vm ? (typeof (vm.program as { name?: unknown } | undefined)?.name === "string" ? shortProgram(String((vm.program as { name: string }).name)) : t("owner.program.bachelor")) : null;
   const supportLeft = agreement.data?.supportMonthsLeft ?? journey.data?.agreement?.supportMonthsLeft ?? null;
   const guardians = profileQuery.data?.contacts.some((c) => c.type === "guardian" || c.type === "parent") || (hs?.guardians.length ?? 0) > 0;
-  const credits = hs?.current ? `${hs.current.credits.requiredHalfUnits / 2} ${t("owner.file.credits")}` : null;
+  const credits = hs?.current && !/credits/i.test(programName ?? "") ? `${hs.current.credits.requiredHalfUnits / 2} ${t("owner.file.credits")}` : null;
   const canActivate = canActivateLeadForRole(user?.role, (s.status ?? "").toLowerCase());
   const base = `/admin/students/${encodeURIComponent(studentId)}`;
 
@@ -135,13 +136,13 @@ export function StudentFile({ studentId }: { studentId: string }) {
           </div>
           <div role="toolbar" aria-label={t("owner.file.actions")} className="flex flex-wrap items-center gap-2" data-testid="file-actions">
             {isAdmin ? (
-              <button type="button" className={cn(staffBtn.seal, "min-h-10")} onClick={() => void experience.run()} disabled={experience.pending} data-testid="button-view-as-student">
+              <button type="button" className={cn(ownerBtn.seal, "min-h-10")} onClick={() => void experience.run()} disabled={experience.pending} data-testid="button-view-as-student">
                 {experience.pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}{t("owner.file.viewAs")}
               </button>
             ) : null}
-            <Link href={`/support?search=${encodeURIComponent(s.student_code ?? name)}`} className={cn(staffBtn.outline, "inline-flex items-center border")} data-testid="button-message"><MessageSquare className="h-4 w-4" aria-hidden="true" />{t("owner.file.message")}</Link>
-            {canActivate ? <button type="button" className={staffBtn.outline} disabled={activate.isPending} onClick={() => activate.mutate()} data-testid="button-activate-lead"><UserCheck className="h-4 w-4" aria-hidden="true" />{activate.isPending ? t("owner.saving") : t("owner.file.activate")}</button> : null}
-            {isAdmin ? <Link href={`${base}/workspace`} className={cn(staffBtn.ghost, "inline-flex items-center")} data-testid="link-workspace"><Wrench className="h-4 w-4" aria-hidden="true" />{t("owner.file.workspace")}</Link> : null}
+            <Link href={`/support?search=${encodeURIComponent(s.student_code ?? name)}`} className={cn(ownerBtn.outline, "inline-flex items-center border")} data-testid="button-message"><MessageSquare className="h-4 w-4" aria-hidden="true" />{t("owner.file.message")}</Link>
+            {canActivate ? <button type="button" className={ownerBtn.outline} disabled={activate.isPending} onClick={() => activate.mutate()} data-testid="button-activate-lead"><UserCheck className="h-4 w-4" aria-hidden="true" />{activate.isPending ? t("owner.saving") : t("owner.file.activate")}</button> : null}
+            {isAdmin ? <Link href={`${base}/workspace`} className={cn(ownerBtn.ghost, "inline-flex items-center")} data-testid="link-workspace"><Wrench className="h-4 w-4" aria-hidden="true" />{t("owner.file.workspace")}</Link> : null}
           </div>
         </div>
       </header>

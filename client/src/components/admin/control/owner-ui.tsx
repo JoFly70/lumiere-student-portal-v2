@@ -6,6 +6,7 @@
 import React from "react";
 import { AlertTriangle, CalendarClock, Check, Clock, CreditCard, FileText, Flag, MessageSquare, Shuffle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { staffBtn } from "@/components/staff/staff-ui";
 import { arcGeometry, arcStops, formatDay, isoParts, type QueueIconKey, type Tone } from "@/lib/owner-presentation";
 
 const TONE_PILL: Record<Tone, string> = {
@@ -92,3 +93,12 @@ export function FlightArc({ fraction, width = 120, height = 34, stops, large = f
     </svg>
   );
 }
+
+/** Staff button styles with the layout a plain <button>/<a> needs (icon beside the label, never wrapping). */
+const BASE = "inline-flex items-center justify-center whitespace-nowrap";
+export const ownerBtn = {
+  primary: cn(BASE, staffBtn.primary),
+  seal: cn(BASE, staffBtn.seal),
+  outline: cn(BASE, staffBtn.outline),
+  ghost: cn(BASE, staffBtn.ghost),
+} as const;

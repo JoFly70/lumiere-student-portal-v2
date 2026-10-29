@@ -9,7 +9,7 @@ import { useT, type TranslationKey } from "@/i18n";
 import { useToast } from "@/hooks/use-toast";
 import { errorText, useStaffSessions, useUpdateSession } from "@/lib/s27-queries";
 import { localeOf, offsetIsoToLocal, sessionActions, toOffsetIso, type Tone } from "@/lib/owner-presentation";
-import { TonePill } from "@/components/admin/control/owner-ui";
+import { TonePill, ownerBtn } from "@/components/admin/control/owner-ui";
 import { cn } from "@/lib/utils";
 import { Panel, Unavailable } from "./file-parts";
 
@@ -46,18 +46,18 @@ function SessionCard({ s, studentId, locale }: { s: OrientationSessionView; stud
       {s.notes ? <p className="rounded-lg bg-student-gold-soft/50 px-3 py-2 text-sm text-student-ink"><span className="font-medium">{t("owner.sess.notes")}</span> {s.notes}</p> : null}
       {actions.length ? (
         <div className="flex flex-wrap gap-2">
-          {actions.includes("confirm") ? <button type="button" className={staffBtn.seal} disabled={update.isPending} onClick={() => run({ status: "confirmed" }, t("owner.sess.confirmed"))} data-testid="session-confirm">{t("owner.sess.confirm")}</button> : null}
-          {actions.includes("complete") ? <button type="button" className={staffBtn.seal} onClick={() => setMode("complete")} data-testid="session-complete">{t("owner.sess.complete")}</button> : null}
-          {actions.includes("reschedule") ? <button type="button" className={cn(staffBtn.outline, "border")} onClick={() => setMode("reschedule")} data-testid="session-reschedule">{t("owner.sess.reschedule")}</button> : null}
-          {actions.includes("editNotes") ? <button type="button" className={cn(staffBtn.outline, "border")} onClick={() => setMode("editNotes")}>{t("owner.sess.editNotes")}</button> : null}
-          {actions.includes("cancel") ? <button type="button" className={cn(staffBtn.ghost, "text-st-urgent")} disabled={update.isPending} onClick={() => { if (window.confirm(t("owner.sess.cancelAsk"))) run({ status: "cancelled" }, t("owner.sess.cancelled")); }}>{t("owner.sess.cancel")}</button> : null}
+          {actions.includes("confirm") ? <button type="button" className={ownerBtn.seal} disabled={update.isPending} onClick={() => run({ status: "confirmed" }, t("owner.sess.confirmed"))} data-testid="session-confirm">{t("owner.sess.confirm")}</button> : null}
+          {actions.includes("complete") ? <button type="button" className={ownerBtn.seal} onClick={() => setMode("complete")} data-testid="session-complete">{t("owner.sess.complete")}</button> : null}
+          {actions.includes("reschedule") ? <button type="button" className={cn(ownerBtn.outline, "border")} onClick={() => setMode("reschedule")} data-testid="session-reschedule">{t("owner.sess.reschedule")}</button> : null}
+          {actions.includes("editNotes") ? <button type="button" className={cn(ownerBtn.outline, "border")} onClick={() => setMode("editNotes")}>{t("owner.sess.editNotes")}</button> : null}
+          {actions.includes("cancel") ? <button type="button" className={cn(ownerBtn.ghost, "text-st-urgent")} disabled={update.isPending} onClick={() => { if (window.confirm(t("owner.sess.cancelAsk"))) run({ status: "cancelled" }, t("owner.sess.cancelled")); }}>{t("owner.sess.cancel")}</button> : null}
         </div>
       ) : null}
       {mode === "reschedule" ? (
         <div className="flex flex-wrap items-end gap-2">
           <div><label htmlFor={`slot-${s.id}`} className="block text-sm font-medium text-student-ink">{t("owner.sess.newSlot")}</label><input id={`slot-${s.id}`} type="datetime-local" className={cn(staffField, "w-60")} value={slot} onChange={(e) => setSlot(e.target.value)} /></div>
-          <button type="button" className={staffBtn.seal} disabled={!toOffsetIso(slot) || update.isPending} onClick={() => { const iso = toOffsetIso(slot); if (iso) run({ slotAt: iso }, t("owner.sess.rescheduled")); }} data-testid="session-reschedule-save">{t("owner.save")}</button>
-          <button type="button" className={cn(staffBtn.outline, "border")} onClick={() => setMode(null)}>{t("owner.cancel")}</button>
+          <button type="button" className={ownerBtn.seal} disabled={!toOffsetIso(slot) || update.isPending} onClick={() => { const iso = toOffsetIso(slot); if (iso) run({ slotAt: iso }, t("owner.sess.rescheduled")); }} data-testid="session-reschedule-save">{t("owner.save")}</button>
+          <button type="button" className={cn(ownerBtn.outline, "border")} onClick={() => setMode(null)}>{t("owner.cancel")}</button>
         </div>
       ) : null}
       {mode === "complete" || mode === "editNotes" ? (
@@ -65,8 +65,8 @@ function SessionCard({ s, studentId, locale }: { s: OrientationSessionView; stud
           <label htmlFor={`notes-${s.id}`} className="block text-sm font-medium text-student-ink">{t("owner.sess.notesLabel")}<span className="block text-xs font-normal text-student-muted">{t("owner.sess.notesHint")}</span></label>
           <textarea id={`notes-${s.id}`} rows={4} maxLength={4000} className={cn(staffField, "py-2")} value={notes} onChange={(e) => setNotes(e.target.value)} />
           <div className="flex gap-2">
-            <button type="button" className={staffBtn.seal} disabled={update.isPending} onClick={() => run(mode === "complete" ? { status: "completed", notes: notes.trim() || null } : { notes: notes.trim() || null }, t("owner.sess.saved"))} data-testid="session-notes-save">{mode === "complete" ? t("owner.sess.markCompleted") : t("owner.save")}</button>
-            <button type="button" className={cn(staffBtn.outline, "border")} onClick={() => setMode(null)}>{t("owner.cancel")}</button>
+            <button type="button" className={ownerBtn.seal} disabled={update.isPending} onClick={() => run(mode === "complete" ? { status: "completed", notes: notes.trim() || null } : { notes: notes.trim() || null }, t("owner.sess.saved"))} data-testid="session-notes-save">{mode === "complete" ? t("owner.sess.markCompleted") : t("owner.save")}</button>
+            <button type="button" className={cn(ownerBtn.outline, "border")} onClick={() => setMode(null)}>{t("owner.cancel")}</button>
           </div>
         </div>
       ) : null}

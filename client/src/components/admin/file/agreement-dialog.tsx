@@ -9,6 +9,7 @@ import { EMPTY_TARGET, agreementToForm, formToUpdate, type AgreementForm, type T
 import { errorText, useUpdateAgreement } from "@/lib/s27-queries";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { ownerBtn } from "@/components/admin/control/owner-ui";
 import { FieldLabel } from "./file-parts";
 
 const STATUS_LABEL: Record<(typeof DEADLINE_STATUSES)[number], TranslationKey> = { open: "owner.agr.status.open", done: "owner.agr.status.done", waived: "owner.agr.status.waived" };
@@ -112,11 +113,11 @@ export function AgreementDialog({ open, onOpenChange, studentId, agreement }: { 
                       <div><FieldLabel htmlFor={`tg-${i}-adm`}>{t("owner.agr.t.admission")}</FieldLabel><input id={`tg-${i}-adm`} className={staffField} maxLength={500} value={tg.admission} onChange={(e) => setTarget(i, { admission: e.target.value })} /></div>
                       <div><FieldLabel htmlFor={`tg-${i}-url`}>{t("owner.agr.t.url")}</FieldLabel><input id={`tg-${i}-url`} type="url" className={staffField} placeholder="https://" value={tg.url} onChange={(e) => setTarget(i, { url: e.target.value })} /></div>
                     </div>
-                    <button type="button" className={cn(staffBtn.ghost, "text-st-urgent")} onClick={() => setForm((f) => ({ ...f, goal: { ...f.goal, targets: f.goal.targets.filter((_, j) => j !== i) } }))}><Trash2 className="h-4 w-4" aria-hidden="true" />{t("owner.agr.t.remove")}</button>
+                    <button type="button" className={cn(ownerBtn.ghost, "text-st-urgent")} onClick={() => setForm((f) => ({ ...f, goal: { ...f.goal, targets: f.goal.targets.filter((_, j) => j !== i) } }))}><Trash2 className="h-4 w-4" aria-hidden="true" />{t("owner.agr.t.remove")}</button>
                   </div>
                 ))}
                 {form.goal.targets.length < 6 ? (
-                  <button type="button" className={cn(staffBtn.outline, "border")} onClick={() => setForm((f) => ({ ...f, goal: { ...f.goal, targets: [...f.goal.targets, { ...EMPTY_TARGET }] } }))}><Plus className="h-4 w-4" aria-hidden="true" />{t("owner.agr.t.add")}</button>
+                  <button type="button" className={cn(ownerBtn.outline, "border")} onClick={() => setForm((f) => ({ ...f, goal: { ...f.goal, targets: [...f.goal.targets, { ...EMPTY_TARGET }] } }))}><Plus className="h-4 w-4" aria-hidden="true" />{t("owner.agr.t.add")}</button>
                 ) : null}
               </div>
             </div>
@@ -132,8 +133,8 @@ export function AgreementDialog({ open, onOpenChange, studentId, agreement }: { 
         {update.isError ? <StaffNotice tone="urgent" role="alert">{errorText(update.error, t("owner.agr.saveFailed"))}</StaffNotice> : null}
 
         <DialogFooter>
-          <button type="button" className={cn(staffBtn.outline, "border")} onClick={() => onOpenChange(false)} disabled={update.isPending}>{t("owner.cancel")}</button>
-          <button type="button" className={staffBtn.seal} onClick={submit} disabled={!result.changed || result.errors.length > 0 || update.isPending} data-testid="agreement-save">{update.isPending ? t("owner.saving") : t("owner.save")}</button>
+          <button type="button" className={cn(ownerBtn.outline, "border")} onClick={() => onOpenChange(false)} disabled={update.isPending}>{t("owner.cancel")}</button>
+          <button type="button" className={ownerBtn.seal} onClick={submit} disabled={!result.changed || result.errors.length > 0 || update.isPending} data-testid="agreement-save">{update.isPending ? t("owner.saving") : t("owner.save")}</button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

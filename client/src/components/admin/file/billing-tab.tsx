@@ -6,7 +6,7 @@
  */
 import React, { useCallback, useEffect, useState } from "react";
 import { ExternalLink, RefreshCw, Undo2 } from "lucide-react";
-import { formatMoney, type StaffBillingView, type BillingEvidenceRow } from "@shared/billing-contract";
+import type { StaffBillingView, BillingEvidenceRow } from "@shared/billing-contract";
 import type { StudentDocument } from "@shared/schema";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { StaffNotice, StaffEmpty, staffBtn, staffField, staffTable } from "@/components/staff/staff-ui";
@@ -18,8 +18,8 @@ import { ErrorLine, ReasonDialog, todayIso } from "@/components/admin/billing/bi
 import { EvidencePanel, ObligationPanel, type PanelProps } from "@/components/admin/billing/billing-panels";
 import { billingHistory, summarizeBilling, type BillingHistoryKind } from "@/components/admin/billing/billing-summary";
 import { centsToInput, parseMoneyToCents } from "@/components/admin/billing/money";
-import { formatDay, installmentStatusMeta, instalmentProgress, localeOf, todayIsoLocal } from "@/lib/owner-presentation";
-import { TonePill } from "@/components/admin/control/owner-ui";
+import { formatDay, formatMoneyCompact, installmentStatusMeta, instalmentProgress, localeOf, todayIsoLocal } from "@/lib/owner-presentation";
+import { TonePill, ownerBtn } from "@/components/admin/control/owner-ui";
 import { cn } from "@/lib/utils";
 import { KeyValue, Panel } from "./file-parts";
 import { EditPlanDialog } from "./edit-plan-dialog";
@@ -60,8 +60,8 @@ export function PaymentDialog({ open, onOpenChange, currency, initialCents, titl
         <p className="text-xs text-student-muted">{t("owner.bill.pay.oldest")}</p>
         <ErrorLine error={error} />
         <DialogFooter>
-          <button type="button" className={cn(staffBtn.outline, "border")} onClick={() => onOpenChange(false)} disabled={pending}>{t("owner.cancel")}</button>
-          <button type="button" className={staffBtn.seal} disabled={!valid || pending} data-testid="payment-submit" onClick={() => cents !== null && onSubmit({ amountCents: cents, receivedDate: date, methodLabel: method.trim(), ...(reference.trim() ? { reference: reference.trim() } : {}) })}>{pending ? t("owner.saving") : submitLabel}</button>
+          <button type="button" className={cn(ownerBtn.outline, "border")} onClick={() => onOpenChange(false)} disabled={pending}>{t("owner.cancel")}</button>
+          <button type="button" className={ownerBtn.seal} disabled={!valid || pending} data-testid="payment-submit" onClick={() => cents !== null && onSubmit({ amountCents: cents, receivedDate: date, methodLabel: method.trim(), ...(reference.trim() ? { reference: reference.trim() } : {}) })}>{pending ? t("owner.saving") : submitLabel}</button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -84,8 +84,8 @@ function AdjustmentDialog({ open, onOpenChange, currency, pending, error, onSubm
         <Field id="adj-reason" label={t("owner.bill.adj.reason")}><textarea id="adj-reason" rows={3} maxLength={300} className={cn(staffField, "py-2")} value={reason} onChange={(e) => setReason(e.target.value)} /></Field>
         <ErrorLine error={error} />
         <DialogFooter>
-          <button type="button" className={cn(staffBtn.outline, "border")} onClick={() => onOpenChange(false)} disabled={pending}>{t("owner.cancel")}</button>
-          <button type="button" className={staffBtn.seal} disabled={cents === null || !reason.trim() || pending} onClick={() => cents !== null && onSubmit({ amountCents: cents, reason: reason.trim() })} data-testid="adjustment-submit">{pending ? t("owner.saving") : t("owner.bill.adj.submit")}</button>
+          <button type="button" className={cn(ownerBtn.outline, "border")} onClick={() => onOpenChange(false)} disabled={pending}>{t("owner.cancel")}</button>
+          <button type="button" className={ownerBtn.seal} disabled={cents === null || !reason.trim() || pending} onClick={() => cents !== null && onSubmit({ amountCents: cents, reason: reason.trim() })} data-testid="adjustment-submit">{pending ? t("owner.saving") : t("owner.bill.adj.submit")}</button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -110,9 +110,9 @@ function EvidenceBanner({ e, docs, currency, view, call, pending, error, resetEr
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="min-w-0 text-sm leading-snug text-student-ink"><strong>{t("owner.bill.ev.uploaded", { name: personName })}</strong> · <span className="break-all">{name}</span> · {formatDay(e.submittedAt.slice(0, 10), locale)}{e.note ? ` · ${e.note}` : ""}</p>
         <div className="flex flex-wrap gap-2">
-          <button type="button" className={cn(staffBtn.outline, "border")} onClick={() => void open()}><ExternalLink className="h-4 w-4" aria-hidden="true" />{t("owner.bill.ev.view")}</button>
-          <button type="button" className={staffBtn.seal} onClick={() => { resetError(); setApproving(true); }} data-testid="evidence-approve">{t("owner.bill.ev.approve")}</button>
-          <button type="button" className={cn(staffBtn.outline, "border")} onClick={() => { resetError(); setRejecting(true); }} data-testid="evidence-reject">{t("owner.bill.ev.reject")}</button>
+          <button type="button" className={cn(ownerBtn.outline, "border")} onClick={() => void open()}><ExternalLink className="h-4 w-4" aria-hidden="true" />{t("owner.bill.ev.view")}</button>
+          <button type="button" className={ownerBtn.seal} onClick={() => { resetError(); setApproving(true); }} data-testid="evidence-approve">{t("owner.bill.ev.approve")}</button>
+          <button type="button" className={cn(ownerBtn.outline, "border")} onClick={() => { resetError(); setRejecting(true); }} data-testid="evidence-reject">{t("owner.bill.ev.reject")}</button>
         </div>
       </div>
       {openError ? <ErrorLine error={openError} /> : null}
@@ -140,7 +140,7 @@ export function BillingTab({ studentId, personName, documents }: { studentId: st
 
   if (query.isLoading) return <div role="status" className="h-48 animate-pulse rounded-2xl bg-student-gold-soft/40"><span className="sr-only">{t("owner.loading")}</span></div>;
   if (query.isError || !query.data) {
-    return <StaffNotice tone="urgent" role="alert" action={<button type="button" className={cn(staffBtn.outline, "border")} onClick={() => void query.refetch()}><RefreshCw className="h-4 w-4" aria-hidden="true" />{t("owner.retry")}</button>}>{query.error?.message ?? t("owner.bill.error")}</StaffNotice>;
+    return <StaffNotice tone="urgent" role="alert" action={<button type="button" className={cn(ownerBtn.outline, "border")} onClick={() => void query.refetch()}><RefreshCw className="h-4 w-4" aria-hidden="true" />{t("owner.retry")}</button>}>{query.error?.message ?? t("owner.bill.error")}</StaffNotice>;
   }
   const view = query.data;
   const s = view.student;
@@ -157,7 +157,7 @@ export function BillingTab({ studentId, personName, documents }: { studentId: st
 
   const sum = summarizeBilling(view);
   const cur = s.currency;
-  const money = (c: number) => formatMoney(c, cur, locale);
+  const money = (c: number) => formatMoneyCompact(c, cur, locale);
   const today = todayIsoLocal();
   const prog = instalmentProgress(s.installments);
   const awaiting = view.evidence.filter((e) => e.status === "awaiting_review");
@@ -186,15 +186,15 @@ export function BillingTab({ studentId, personName, documents }: { studentId: st
 
       <Panel id="bill-plan" title={t("owner.bill.plan.title", { n: s.installments.length })} testId="bill-plan"
         actions={<div className="flex flex-wrap gap-2">
-          <button type="button" className={cn(staffBtn.outline, "border")} onClick={() => { action.reset(); setDialog({ kind: "plan" }); }} data-testid="plan-edit">{t("owner.bill.plan.edit")}</button>
-          <button type="button" className={cn(staffBtn.outline, "border")} onClick={() => { action.reset(); setDialog({ kind: "adjust" }); }} data-testid="adjust-open">{t("owner.bill.plan.adjust")}</button>
-          <button type="button" className={staffBtn.seal} onClick={() => { action.reset(); setDialog({ kind: "pay", cents: null }); }} data-testid="pay-open">{t("owner.bill.plan.record")}</button>
+          <button type="button" className={cn(ownerBtn.outline, "border")} onClick={() => { action.reset(); setDialog({ kind: "plan" }); }} data-testid="plan-edit">{t("owner.bill.plan.edit")}</button>
+          <button type="button" className={cn(ownerBtn.outline, "border")} onClick={() => { action.reset(); setDialog({ kind: "adjust" }); }} data-testid="adjust-open">{t("owner.bill.plan.adjust")}</button>
+          <button type="button" className={ownerBtn.seal} onClick={() => { action.reset(); setDialog({ kind: "pay", cents: null }); }} data-testid="pay-open">{t("owner.bill.plan.record")}</button>
         </div>}>
         {view.scheduleMismatchCents !== 0 && s.installments.length > 0 ? (
           <StaffNotice tone="attention" role="status" className="mb-3" testId="schedule-mismatch">{t("owner.bill.mismatch", { total: money(view.scheduledCents), diff: money(Math.abs(view.scheduleMismatchCents)), dir: t(view.scheduleMismatchCents > 0 ? "owner.plan.over" : "owner.plan.under") })}</StaffNotice>
         ) : null}
         {s.installments.length === 0 ? <p className="text-sm text-student-muted">{t("owner.bill.plan.empty")}</p> : (
-          <div className="-mx-4 overflow-x-auto sm:-mx-5" tabIndex={0} role="region" aria-label={t("owner.bill.plan.table")}>
+          <div className="relative -mx-4 overflow-x-auto sm:-mx-5" tabIndex={0} role="region" aria-label={t("owner.bill.plan.table")}>
             <table className={cn(staffTable.table, "min-w-[40rem]")} data-testid="schedule-table">
               <caption className="sr-only">{t("owner.bill.plan.table")}</caption>
               <thead><tr className="text-left">{(["#", "owner.bill.c.due", "owner.bill.c.amount", "owner.bill.c.paid", "owner.bill.c.status"] as const).map((k, i) => <th key={k} scope="col" className={cn("px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-student-muted", i === 0 && "pl-5")}>{k === "#" ? "#" : t(k)}</th>)}<th scope="col" className="px-4 py-2 pr-5"><span className="sr-only">{t("owner.col.actions")}</span></th></tr></thead>
@@ -209,7 +209,7 @@ export function BillingTab({ studentId, personName, documents }: { studentId: st
                       <td className="px-4 py-3 font-semibold tabular-nums">{money(i.amountCents)}</td>
                       <td className="px-4 py-3 tabular-nums">{money(i.allocatedCents)}</td>
                       <td className="px-4 py-3"><TonePill tone={m.tone}>{t(m.key, m.key === "owner.bill.st.due" ? { date: formatDay(i.dueDate, locale) } : m.vars)}</TonePill></td>
-                      <td className="px-4 py-3 pr-5 text-right">{i.status !== "paid" ? <button type="button" className={cn(staffBtn.seal, "min-h-9")} onClick={() => { action.reset(); setDialog({ kind: "pay", cents: unpaid }); }} aria-label={t("owner.bill.recordRow", { n: idx + 1 })}>{t("owner.bill.recordShort")}</button> : null}</td>
+                      <td className="px-4 py-3 pr-5 text-right">{i.status !== "paid" ? <button type="button" className={cn(ownerBtn.seal, "min-h-9")} onClick={() => { action.reset(); setDialog({ kind: "pay", cents: unpaid }); }} aria-label={t("owner.bill.recordRow", { n: idx + 1 })}>{t("owner.bill.recordShort")}</button> : null}</td>
                     </tr>
                   );
                 })}

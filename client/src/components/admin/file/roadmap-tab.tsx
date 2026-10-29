@@ -18,7 +18,7 @@ import { ResultsSection } from "@/components/admin/high-school/results-section";
 import { COURSE_STATUS, courseAverage, coursesAwaitingSchoolResult, hsCourses } from "@/lib/file-decisions";
 import { useT, type TranslationKey } from "@/i18n";
 import { useToast } from "@/hooks/use-toast";
-import { TonePill } from "@/components/admin/control/owner-ui";
+import { TonePill, ownerBtn } from "@/components/admin/control/owner-ui";
 import { cn } from "@/lib/utils";
 import { Panel } from "./file-parts";
 import type { FileTab } from "@/lib/owner-presentation";
@@ -68,8 +68,8 @@ function RecordResultDialog({ open, onOpenChange, studentId, enrollmentId, cours
         {action.message?.tone === "error" ? <StaffNotice tone="urgent" role="alert">{action.message.text}</StaffNotice> : null}
         <DialogFooter className="items-center">
           {!gate.enabled && gate.reason ? <p className="mr-auto flex items-center gap-1.5 text-xs text-student-muted"><Lock className="h-3 w-3" aria-hidden="true" />{gate.reason}</p> : null}
-          <button type="button" className={cn(staffBtn.outline, "border")} onClick={() => onOpenChange(false)} disabled={action.pending}>{t("owner.cancel")}</button>
-          <button type="button" className={staffBtn.seal} disabled={!gate.enabled || action.pending || !course} data-testid="record-result-submit"
+          <button type="button" className={cn(ownerBtn.outline, "border")} onClick={() => onOpenChange(false)} disabled={action.pending}>{t("owner.cancel")}</button>
+          <button type="button" className={ownerBtn.seal} disabled={!gate.enabled || action.pending || !course} data-testid="record-result-submit"
             onClick={() => course && action.run(courseResultBody({ courseKey: course.key, outcome, evidenceDocumentId: evidence, note }), () => { toast({ title: t("owner.rm.rec.saved") }); onOpenChange(false); })}>
             {action.pending ? t("owner.saving") : t("owner.rm.rec.submit")}
           </button>
@@ -88,7 +88,7 @@ export function RoadmapTab({ studentId, state, docs, isAdmin, recordKey, go }: {
   useEffect(() => { if (recordKey) setRecording(recordKey); }, [recordKey]);
   if (!cur) {
     return (
-      <StaffEmpty title={t("owner.rm.none.title")} testId="roadmap-empty" action={<Link href={`/admin/students/${encodeURIComponent(studentId)}/high-school`} className={cn(staffBtn.primary, "inline-flex items-center border")}>{t("owner.rm.none.cta")}<ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>}>
+      <StaffEmpty title={t("owner.rm.none.title")} testId="roadmap-empty" action={<Link href={`/admin/students/${encodeURIComponent(studentId)}/high-school`} className={cn(ownerBtn.primary, "inline-flex items-center border")}>{t("owner.rm.none.cta")}<ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>}>
         {t("owner.rm.none.body")}
       </StaffEmpty>
     );
@@ -102,7 +102,7 @@ export function RoadmapTab({ studentId, state, docs, isAdmin, recordKey, go }: {
     <div className="space-y-6" data-testid="roadmap-tab">
       <Panel id="rm-courses" title={t("owner.rm.title")} aside={t("owner.rm.aside")} testId="roadmap-courses">
         {subjects.length === 0 ? <p className="text-sm text-student-muted" data-testid="roadmap-no-plan">{t("owner.rm.noPlan")}</p> : (
-          <div className="-mx-4 overflow-x-auto sm:-mx-5" tabIndex={0} role="region" aria-label={t("owner.rm.title")}>
+          <div className="relative -mx-4 overflow-x-auto sm:-mx-5" tabIndex={0} role="region" aria-label={t("owner.rm.title")}>
             <table className={cn(staffTable.table, "min-w-[42rem]")}>
               <caption className="sr-only">{t("owner.rm.title")}</caption>
               <thead><tr className="text-left">{(["owner.rm.c.course", "owner.rm.c.credits", "owner.rm.c.done", "owner.rm.c.avg", "owner.rm.c.status"] as TranslationKey[]).map((k, i) => <th key={k} scope="col" className={cn("px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-student-muted", i === 0 && "pl-5")}>{t(k)}</th>)}<th scope="col" className="px-4 py-2 pr-5"><span className="sr-only">{t("owner.col.actions")}</span></th></tr></thead>
@@ -119,7 +119,7 @@ export function RoadmapTab({ studentId, state, docs, isAdmin, recordKey, go }: {
                         <td className="px-4 py-3 tabular-nums">{c.tasksDone}/{c.tasksTotal}</td>
                         <td className={cn("px-4 py-3 tabular-nums", avg !== null && avg < 65 && "text-st-urgent")}>{avg === null ? "·" : `${avg}%`}</td>
                         <td className="px-4 py-3"><TonePill tone={meta.tone}>{t(meta.key as TranslationKey)}</TonePill></td>
-                        <td className="px-4 py-3 pr-5 text-right">{awaiting.has(c.key) && !closed ? <button type="button" className={cn(staffBtn.outline, "border")} onClick={() => setRecording(c.key)} data-testid="record-result-open" aria-label={t("owner.rm.recordNamed", { course: c.title })}>{t("owner.rm.record")}</button> : null}</td>
+                        <td className="px-4 py-3 pr-5 text-right">{awaiting.has(c.key) && !closed ? <button type="button" className={cn(ownerBtn.outline, "border")} onClick={() => setRecording(c.key)} data-testid="record-result-open" aria-label={t("owner.rm.recordNamed", { course: c.title })}>{t("owner.rm.record")}</button> : null}</td>
                       </tr>
                     );
                   })}
