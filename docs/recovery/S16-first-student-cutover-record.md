@@ -17,7 +17,7 @@
 |---|---|
 | S13 | Base of S16, unchanged apart from the changes listed in C. |
 | S14 | All 10 files were checked out verbatim from `11ea8e8`: the runbook, `scripts/release/s14/*` and the S14 record. S14 was a pure addition on S13's parent `21341a4`. S13 added no migration, `.replit` or `package.json` change after that commit, so S14's order still holds. Rehearsed again on S16 (F). |
-| S15 | Used **read-only**. None of its four staff documents or its record was copied: they name the awarding school, and the repository is public. Only the sanitized title corrections went in. `git grep -i "penn foster\|pfhs"` on S16 returns nothing. |
+| S15 | Used **read-only**. None of its four staff documents or its record was copied: they name the awarding school, and the repository is public. Only the sanitized title corrections went in. a case-insensitive `git grep` for the awarding school's name and abbreviation on S16 returns nothing. |
 
 ## C. Application changes (commit `3bec8f7`)
 
