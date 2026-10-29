@@ -124,6 +124,16 @@ export const djEn = {
 
   "dj.state.notPublished.title": "Your roadmap is being prepared",
   "dj.state.notPublished.body": "Lumière has not published your plan yet. We will let you know when it is ready.",
+  "dj.save.saved": "Saved: {label}.",
+  "dj.save.undo": "Undo",
+  "dj.save.undone": "your last change was undone",
+  "dj.save.refreshedTitle": "Your roadmap was refreshed",
+  "dj.save.failedTitle": "We could not save that",
+  "dj.save.err.conflict": "This was updated elsewhere. We refreshed your roadmap, so please check it and try again.",
+  "dj.save.err.itemChanged": "Lumière updated your roadmap and this item changed. We refreshed it for you.",
+  "dj.save.err.notReportable": "This item cannot be updated by you.",
+  "dj.save.err.generic": "Your update could not be saved.",
+
   "dj.state.noPlan": "No courses are planned yet.",
 } as const;
 
@@ -246,6 +256,16 @@ export const djFr: Record<DjKey, string> = {
 
   "dj.state.notPublished.title": "Votre feuille de route est en préparation",
   "dj.state.notPublished.body": "Lumière n’a pas encore publié votre plan. Nous vous préviendrons dès qu’il sera prêt.",
+  "dj.save.saved": "Enregistré : {label}.",
+  "dj.save.undo": "Annuler",
+  "dj.save.undone": "votre dernière modification a été annulée",
+  "dj.save.refreshedTitle": "Votre feuille de route a été actualisée",
+  "dj.save.failedTitle": "Nous n’avons pas pu enregistrer",
+  "dj.save.err.conflict": "Cet élément a été modifié ailleurs. Nous avons actualisé votre feuille de route : vérifiez-la puis réessayez.",
+  "dj.save.err.itemChanged": "Lumière a mis à jour votre feuille de route et cet élément a changé. Nous l’avons actualisée pour vous.",
+  "dj.save.err.notReportable": "Vous ne pouvez pas modifier cet élément.",
+  "dj.save.err.generic": "Votre mise à jour n’a pas pu être enregistrée.",
+
   "dj.state.noPlan": "Aucun cours n’est encore prévu.",
 };
 

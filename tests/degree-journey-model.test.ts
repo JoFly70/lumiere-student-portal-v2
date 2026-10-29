@@ -13,6 +13,7 @@ import {
   taskDots,
   toCents,
 } from "../client/src/components/degree-journey/model";
+import { roadmapItemSchema } from "../shared/student-roadmap-contract";
 import { djEn, djFr, djTranslate } from "../client/src/components/degree-journey/i18n";
 
 function task(key: string, status: "not_started" | "in_progress" | "submitted" | "graded") {
@@ -224,5 +225,28 @@ describe("i18n", () => {
       expect(ph(djFr[k]), k).toBe(ph(djEn[k]));
     }
     expect(Object.keys(djFr).length).toBe(Object.keys(djEn).length);
+  });
+});
+
+describe("providerUrl schema", () => {
+  const base = { key: "a", phaseKey: "p", objectiveKey: "o", sequence: 0, title: "T" };
+  const parse = (providerUrl: unknown) => roadmapItemSchema.safeParse({ ...base, providerUrl }).success;
+  it("accepts plain https and absent/null", () => {
+    expect(parse("https://example.org/course/1")).toBe(true);
+    expect(parse(null)).toBe(true);
+    expect(parse(undefined)).toBe(true);
+  });
+  it("rejects javascript:, data:, http: and userinfo", () => {
+    for (const bad of ["javascript:alert(1)", "data:text/html,x", "http://example.org", "https://user:pw@example.org", "https://user@example.org", "https:// spaced.org"]) {
+      expect(parse(bad), bad).toBe(false);
+    }
+  });
+});
+
+describe("credits bar guard", () => {
+  it("treats zero required credits as unavailable (no NaN)", () => {
+    const c = buildCreditsBySource(roadmap([], [], { required: "0", applied: "0" }), null);
+    expect(c.state).toBe("unavailable");
+    expect(c.requiredCents).toBeNull();
   });
 });

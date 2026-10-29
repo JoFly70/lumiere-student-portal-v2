@@ -1,19 +1,19 @@
 {
   "contractVersion": "student-degree-progress/1",
   "state": "UNDER_REVIEW",
-  "asOf": "2026-10-29T10:43:25.080Z",
+  "asOf": "2026-10-27T21:37:34.449Z",
   "program": {
-    "programName": "BA Liberal Studies mvtf0isu4",
-    "programCode": "BA-LS-mvtf0isu4",
+    "programName": "BA Liberal Studies mvr7i4r54",
+    "programCode": "BA-LS-mvr7i4r54",
     "versionLabel": "2026 Catalog",
-    "institutionName": "Pathways State University mvtf0isu4",
+    "institutionName": "Pathways State University mvr7i4r54",
     "cohortLabel": "Synthetic cohort"
   },
   "totals": null,
   "requirements": [],
   "credits": [
     {
-      "creditRecordId": "365eb9ef-f5dd-448d-997c-61078fa5269f",
+      "creditRecordId": "ab066f23-ec5b-4e6e-a7fd-913d024b13b6",
       "courseCode": "SYN101",
       "title": "Synthetic Composition",
       "term": "Fall 2025",
@@ -22,18 +22,18 @@
       "reportedCredits": "3",
       "awardedCredits": "3",
       "standing": "VERIFIED_NOT_APPLIED",
-      "sourceId": "de987f6c-cd3a-4a97-af58-fa2acc33b45a",
+      "sourceId": "fc55d0f1-49e6-4850-8761-af4cbae3eccc",
       "appliedToRequirementIds": []
     }
   ],
   "sources": [
     {
-      "sourceId": "de987f6c-cd3a-4a97-af58-fa2acc33b45a",
+      "sourceId": "fc55d0f1-49e6-4850-8761-af4cbae3eccc",
       "title": "Synthetic transcript",
       "sourceType": "transcript",
       "status": "verified",
       "sourceDate": "2026-01-15",
-      "receivedAt": "2026-10-29T10:43:20.244Z",
+      "receivedAt": "2026-10-27T21:37:32.566Z",
       "creditRecordCount": 1
     }
   ],

@@ -40,7 +40,7 @@ export function CreditsCard({ data }: { data: CreditsBySource }) {
   }
 
   const required = data.requiredCents;
-  const scale = Math.max(required, data.earnedCents + data.plannedCents);
+  const scale = Math.max(required, data.earnedCents + data.plannedCents, 1);
   let plannedIndex = -1;
   const rows = data.segments.map((seg) => {
     if (seg.group === "planned") plannedIndex += 1;

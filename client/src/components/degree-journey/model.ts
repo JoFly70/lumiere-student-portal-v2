@@ -114,7 +114,8 @@ export function isActivePlanItem(item: StudentRoadmapItemView): boolean {
 export function buildCreditsBySource(roadmap: StudentRoadmapView, progress: StudentDegreeProgressView | null): CreditsBySource {
   const totals = progress?.state === "COMPOSED" ? progress.totals : null;
   const ladder = roadmap.foundation.ladder;
-  const requiredCents = toCents(totals?.requiredCredits ?? ladder.required);
+  const requiredRaw = toCents(totals?.requiredCredits ?? ladder.required);
+  const requiredCents = requiredRaw !== null && requiredRaw > 0 ? requiredRaw : null; // 0 required credits has nothing to chart
   const earnedTotal = toCents(totals?.appliedCredits ?? (roadmap.foundation.degreeState === "COMPOSED" ? ladder.applied : null));
   const earnedKnown = earnedTotal !== null;
 

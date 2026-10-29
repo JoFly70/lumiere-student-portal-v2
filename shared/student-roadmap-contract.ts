@@ -133,6 +133,14 @@ export const roadmapItemSchema = z.object({
     .trim()
     .max(500)
     .regex(/^https:\/\/[^\s]+$/i, "must be an https:// link")
+    .refine((v) => {
+      try {
+        const u = new URL(v);
+        return u.protocol === "https:" && !u.username && !u.password && u.hostname.length > 0;
+      } catch {
+        return false;
+      }
+    }, "must be an https:// link without a username or password")
     .nullable()
     .optional(),
   /** Planned credit value (informational; never an award). */

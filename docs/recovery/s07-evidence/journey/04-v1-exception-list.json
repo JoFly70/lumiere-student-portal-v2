@@ -1059,7 +1059,7 @@
       "key": "SCHEDULE_STALE:plan",
       "code": "SCHEDULE_STALE",
       "severity": "warning",
-      "message": "The schedule dates from 2026-08-24 (more than 21 days before 2026-10-29); 4 planned item(s) are past due and the student has recorded no progress. Rebaseline the schedule before publishing.",
+      "message": "The schedule dates from 2026-08-24 (more than 21 days before 2026-10-27); 4 planned item(s) are past due and the student has recorded no progress. Rebaseline the schedule before publishing.",
       "ref": {
         "path": "schedule"
       }

@@ -6,6 +6,8 @@
  * React-free apart from the types so the contract is unit testable.
  */
 import type { StudentProgressUpdate, StudentRoadmapView } from "@shared/student-roadmap-contract";
+import { currentLanguage } from "@/i18n";
+import { djTranslate, type DjKey } from "@/components/degree-journey/i18n";
 import { getAuthToken, getCsrfToken } from "@/lib/api";
 
 export const STUDENT_ROADMAP_QUERY_KEY = ["/api/student/roadmap"] as const;
@@ -90,6 +92,8 @@ export type ProgressFailure =
   | { readonly kind: "conflict"; readonly message: string; readonly refetch: true }
   | { readonly kind: "error"; readonly message: string; readonly refetch: false };
 
+const msg = (key: DjKey) => djTranslate(currentLanguage(), key);
+
 /** Pure mapping of a failed update to what the UI should do. */
 export function interpretProgressError(error: unknown): ProgressFailure {
   if (error instanceof RoadmapApiError) {
@@ -97,24 +101,24 @@ export function interpretProgressError(error: unknown): ProgressFailure {
       return {
         kind: "conflict",
         refetch: true,
-        message: "This was updated elsewhere. We refreshed your roadmap, so please check it and try again.",
+        message: msg("dj.save.err.conflict"),
       };
     }
     if (error.code === "ROADMAP_ITEM_NOT_FOUND") {
       return {
         kind: "conflict",
         refetch: true,
-        message: "Lumière updated your roadmap and this item changed. We refreshed it for you.",
+        message: msg("dj.save.err.itemChanged"),
       };
     }
     if (error.code === "ROADMAP_ITEM_NOT_REPORTABLE") {
-      return { kind: "error", refetch: false, message: "This item cannot be updated by you." };
+      return { kind: "error", refetch: false, message: msg("dj.save.err.notReportable") };
     }
     return { kind: "error", refetch: false, message: error.message };
   }
   return {
     kind: "error",
     refetch: false,
-    message: error instanceof Error ? error.message : "Your update could not be saved.",
+    message: error instanceof Error ? error.message : msg("dj.save.err.generic"),
   };
 }

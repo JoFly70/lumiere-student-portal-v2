@@ -59,6 +59,10 @@ export function LogSheet({
       <SheetContent
         side="right"
         className="student-surface flex w-full flex-col gap-4 overflow-y-auto border-l-4 border-student-gold bg-student-card text-student-ink sm:max-w-md"
+        onInteractOutside={(e) => {
+          // The save toast (with Undo) floats above the sheet; using it must not close the sheet.
+          if ((e.target as HTMLElement | null)?.closest?.('[data-testid="save-toast"]')) e.preventDefault();
+        }}
         onCloseAutoFocus={(e) => {
           if (returnFocusTo && document.contains(returnFocusTo)) {
             e.preventDefault();
@@ -157,6 +161,8 @@ export function LogSheet({
           </div>
         )}
 
+        {/* The page's live region is hidden from assistive tech while the modal sheet is open, so announce saves here too. */}
+        <p role="status" aria-live="polite" className="sr-only" data-testid="log-save-status">{actions.message}</p>
         <div className="mt-auto pt-2">
           <button type="button" className={cn(buttonClass.solid, "w-full")} onClick={() => onOpenChange(false)} data-testid="log-close">{t("dj.sheet.close")}</button>
         </div>
