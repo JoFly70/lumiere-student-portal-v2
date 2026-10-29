@@ -206,6 +206,25 @@ ROLE_MAP = {
 ALIASES = {'--t-rail-accent': '--rail-actbg', '--t-shadow': '--card-shadow'}
 
 
+# S27 owner rule (no red / harsh colours): the --st-* status family is a calm palette shared by every theme -
+# bronze-gold progress, warm-taupe submitted/provider, deep-umber attention/urgent, muted sage done.
+# (value, soft) HSL triples, light canvases first, dark canvases second.
+CALM_ST = {
+    False: {'applied': ('140 17% 29%', '120 9% 90%'), 'progress': ('38 62% 27%', '41 42% 89%'), 'submitted': ('30 9% 33%', '36 14% 90%'),
+            'provider': ('32 14% 36%', '34 18% 90%'), 'attention': ('27 52% 26%', '32 34% 89%'), 'urgent': ('22 48% 25%', '27 28% 87%')},
+    True: {'applied': ('140 17% 68%', '140 8% 11%'), 'progress': ('41 48% 68%', '40 14% 12%'), 'submitted': ('34 10% 70%', '34 6% 12%'),
+           'provider': ('32 14% 72%', '32 8% 13%'), 'attention': ('28 42% 70%', '28 14% 13%'), 'urgent': ('24 40% 69%', '24 14% 13%')},
+}
+
+
+def calm_st(t):
+    out = {}
+    for k, (a, b) in CALM_ST[bool(t['dark'])].items():
+        out[f'--st-{k}'] = a
+        out[f'--st-{k}-soft'] = b
+    return out
+
+
 def blue(t):
     return t.get('blue') or ('#a9bde6' if t['dark'] else '#2b53b8')
 
@@ -305,6 +324,7 @@ def bridge(t, k):
         '--st-notstarted': t['muted'], '--st-notstarted-soft': mix(t['muted'], t['bg'], .1 if d else .08),
         '--st-urgent': t['red'], '--st-urgent-soft': soft(t['red']),
     }
+    s.update({n: v for n, v in calm_st(t).items() if n.split('-')[3] not in ('provider', 'submitted', 'attention')})
     sb = {
         '--sidebar': r['bg'], '--sidebar-foreground': r['text'], '--sidebar-border': over(r['line'], r['bg']),
         '--sidebar-primary': r['act'], '--sidebar-primary-foreground': r['bg'],
@@ -336,8 +356,9 @@ def block(k, t):
     L.append('}')
     L.append(',\n'.join(f'{sel} {x}' for x in ('.student-surface', '.staff-surface', 'body.staff-shell')) + ' {')
     L += [f'  {n}: {hv(v)};' for n, v in s.items()]
+    cs = calm_st(t)
     for n in ('st-provider', 'st-provider-soft', 'st-submitted', 'st-submitted-soft', 'st-attention', 'st-attention-soft'):
-        L.append(f'  --{n}: {ex[n]};')
+        L.append(f'  --{n}: {cs["--" + n]};')
     L += [f'  color-scheme: {scheme};', '}']
     L.append(f'{sel} body.student-shell,\n{sel} body.staff-shell {{')
     L += [f'  {n}: {hv(v)};' for n, v in sb.items()]
