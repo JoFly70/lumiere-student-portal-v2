@@ -168,3 +168,64 @@ The current owner's "Choose the right workspace" three oversized cards and redun
 Use **two Sonnet subagents** supervised by Opus: (A) premium owner/UI architecture and restoration of original Billing/Support/Library design; (B) student-grade PowerED-inspired roadmap, interactive first-student scenario and populated demos; Opus owns security, contextual AI integration, test journeys and release. Verify functional end-to-end workflows in a live student-role session, not a read-only admin preview; test real-case owner preview, synthetic student authenticated write journeys, support request/reply, billing both ways, library uploads and academic task updates. Preserve every production datum, avoid mutations to real academic verification, finances or guardian authorization without evidence.
 
 Only after full user journeys and visual review are truly verified may the controlled release marker be moved and production published. **The requirement is one cohesive, premium, complete Student Portal, not another patch.**
+
+
+---
+
+# OWNER'S HIGHEST PRIORITY: EXCEPTIONAL VISUAL DESIGN — EXACT REFERENCE AND DELIVERY CONTRACT
+
+**This overrides any interpretation that "premium" means a minor CSS tidy-up.** The owner wants the most beautiful, refined, effortless and fully working education platform possible. Treat visual excellence as a HARD release gate equal to security and the full functionality of the owner and student journeys. Current production "Control Center", giant dead-space cards, generic forms and thin academic pages are rejected. Do not just rearrange existing cards. Deliver a coherent flagship product.
+
+## Exact existing work to examine — no invention or starting over
+
+**PowerED design repo, READ ONLY reference**: \`JoFly70/powered-dev\`, branch \`claude/powered-s11-product-ux-reimagination\`. Inspect the files AND open/render the actual image galleries:
+- \`design/gallery/after/closeup-degree-map-light.png\` — explicitly supplied by owner as quality benchmark
+- \`design/gallery/after/cockpit-desktop-light.png\`
+- \`design/gallery/after/planner-overview-desktop-light.png\`
+- \`design/gallery/after/closeup-timeline-light.png\`
+- \`design/gallery/after/planner-requirements-desktop-light.png\`
+- \`design/system/DESIGN-SYSTEM.md\`
+- \`design/ux/INFORMATION-ARCHITECTURE.md\`
+- \`prototype/src/components/CreditLedger.tsx\` and \`CreditLedger.css\`
+- \`prototype/src/components/RequirementMap.tsx\`, \`RequirementMap.css\`, \`RequirementOverview.tsx\`, \`RequirementInspector.tsx\`
+- \`prototype/src/app/pages/Cockpit.tsx\`, \`Planner.tsx\`, \`cockpit.css\`, \`planner.css\`
+- \`prototype/src/app/pages/s08/LibraryView.tsx\`, \`DocumentsSection.tsx\`, \`DocumentDrawer.tsx\`
+- \`prototype/src/styles/tokens.css\`, \`base.css\`
+- \`academic-library/README.md\`, \`API.md\` for academic library and document provenance/organization contracts (development local-FS adapters NOT production-safe).
+
+**Portal's already approved originals**, in the Student Portal repo:
+- \`docs/recovery/s17-evidence/screens/student-shell-lumiere-1440.png\` and \`student-shell-lumiere-390.png\`
+- \`docs/recovery/s18-evidence/screens/billing-overview-1440-lumiere.png\`, \`billing-history-1440-lumiere.png\`, \`billing-upcoming-1440-lumiere.png\`, \`billing-overview-390-lumiere.png\`
+- \`docs/recovery/s19-evidence/screens/staff-billing-1440-lumiere.png\`
+- \`docs/recovery/s10-evidence/screens/09-support-student-1440-light.png\`, \`10-support-student-conversation-1440-light.png\`, \`14-support-staff-1440-light.png\`
+- \`docs/recovery/s17-evidence/screens/flight-deck-preview-lumiere-1440.png\`, \`flight-deck-preview-lumiere-390.png\`
+- Actual working existing UI: \`client/src/pages/billing.tsx\`, \`documents.tsx\`, \`support.tsx\`, \`high-school-flight-deck.tsx\`, \`client/src/components/student-shell.tsx\`, \`client/src/components/support/\`, \`client/src/components/admin/billing/\`, and \`client/src/components/student-progress/\`.
+
+**PowerED screenshot characteristics to adapt** (not duplicate its data): restrained premium cream/ivory background, expert editorial typography, crisp navy, beautiful compact cards, gold used sparingly, top-line relevant results, highly legible grouped course requirements, visible per-course status, horizontal progress bars, purposeful right-hand context, one obvious next action. Owner wants student-level 21-credit high-school requirements; DO NOT import the 120-credit TESU/CPA course data, institutional rules, prices or claims.
+
+## Mandatory polished end-to-end information architecture
+
+**Owner command center**: genuinely usable at first glance, not a marketing brochure or three huge "choose workspace" tiles. Strong top summary, priority work and next actions; populated real student list with portraits, progress and flags; billing due/paid; ticket backlog and recent replies; document needs and pending academic milestones; concise actions that work. Hidden test data by default but explicit Demo mode lets owner examine 6–8 varied synthetic students. Each student has one coherent dossier integrating profile, photo, academic program, library/documents, billing, support, activity and AI, no obscure routes or repeated navigation. Avoid static copy and verbose cautions in prime screen real estate.
+
+**Student/experience-as-Jonas**: owner one-click entry from dossier to complete, BEAUTIFUL STUDENT UI with actual first-student scenario (photo, name, real planned 21-credit academic map, course guides/tasks, week-based 16-week progression, library, permitted documents, proposed billing, support, messaging and contextual AI). In the interactive demo, simulated actions are sandboxed from the first student's actual academic and financial records. Not the inert View-as-Student admin page. Show full experience in browser with actual navigation and interactive sample actions.
+
+**Student flagship study cockpit and academic roadmap**: polished welcome and "Continue studying" CTA, course progress/credit ledger (planned, student-reported, verified distinctly), active and upcoming courses, useful timeline, program groups, electives and their status, visual milestone markers, rich course-detail drawer, assignment interactions, linked library resources. Every 21 credit figure must derive from actual scenario data. The layout should feel like the PowerED visual standard adapted to high school, not a generic dashboard or 120-credit university degree planner.
+
+**Student library**: searchable/filterable course-linked resources with document previews, library categories, source, versions, student-uploaded work and status. Document management and academic library are complementary; both actually work.
+
+**Billing**: restore/upgrade original approved aesthetic (four summary cards, due/paid/balance, installment table, history, proof attachments). Owner can edit ledger and verify evidence; student sees scoped read-only version. No processor required.
+
+**Support**: restore/improve the original conversation-first support UI, with realistic ticket histories, public replies, staff-only notes, state transitions, attachments and intuitive navigation. Student and owner see proper differentiated views.
+
+**AI**: actual, useful student-context and owner-context grounded answers in a premium conversational interface, not a blank chooser + canned FAQ. If no Meta provider key exists, label live AI unconfigured honestly, but still provide useful deterministic data facts without pretending they are model replies. The missing key is an independent release blocker for the fully enabled experience.
+
+**Aesthetics across EVERY page**: strong editorial typography and clear visual hierarchy; elegant information density; exceptional iconography, micro-interactions and state transitions (with reduced-motion support); cohesive design tokens; excellent portrait handling; sophisticated dashboard data visualization; comfortable spacing that is NEVER giant wasted whitespace; responsive at 1920 / 1440 / 768 / 390 / 384; dark/light modes if supported; accessible focus/contrast. Avoid huge blank panels, verbose instructional copy, technical jargon, garish gradients, page-to-page styling inconsistency, broken buttons and overflow.
+
+## Measurable evidence and veto gate
+
+1. Build ONE consolidated screen inventory for owner and student; map every route to its previous implementation, visual reference, expected data source and complete action sequence; use it internally immediately, not as another plan to seek approval for.
+2. Assign Sonnet A the premium visual system, navigation, command center, owner dossier, original billing/support recovery. Assign Sonnet B the student study cockpit, PowerED-inspired roadmap, rich library, populated first-student demonstration and synthetic cohort. Opus integrates interactive student login, AI contextual grounding, data security and browser-based quality assurance.
+3. Capture full-page AND critical-area screenshots from the REAL hosted build of the owner home, student file, student academic cockpit, 21-credit course map, course drawer, library, billing, support ticket conversation, AI, profile, document upload, on desktop and mobile. Compare against the galleries above. Inspect screenshots manually and repair all obvious typography, density, spacing, alignment, hierarchy, responsive and usability flaws; merely generating screenshots is insufficient.
+4. Conduct three visual critique passes: Sonnet A design review, Sonnet B cross-screen consistency review, Opus final adversarial visual+functional review. Unacceptable pages get fixed, not filed as accepted debts.
+5. Execute authenticated owner and student end-to-end workflows across every module; no fake or inert controls. Maintain genuine first student as factual record; synthetic/preview operations clearly separated. Browser test persists every action and proves cross-student permissions.
+6. **Do not move the release marker or publish another build until functional, security and visual gates pass and the experience is cohesive.** Do not declare "premium" by adjective or from unit test counts; demonstrate it with actual screenshots and live journeys.
