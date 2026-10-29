@@ -257,6 +257,8 @@ function CommentBubble({ comment }: { comment: SupportComment }) {
 
 /** One plain sentence: who is waiting, how long, and whether the target is missed. */
 function WaitingBanner({ ticket }: { ticket: SupportTicketDetail }) {
+  const { user } = useAuth();
+  const canAssign = user?.role === "admin" || user?.role === "staff";
   const now = new Date();
   const over = overdueByLabel(ticket, now);
   if (ticket.awaiting === "staff") {
@@ -269,7 +271,7 @@ function WaitingBanner({ ticket }: { ticket: SupportTicketDetail }) {
       >
         <p className="font-medium">{over ? "Overdue" : "Waiting on Lumière"} · {staffRowAge(ticket, now)}</p>
         <p className="text-student-muted">
-          {over ? `${over}. ` : ""}{ticket.assignee ? `Owner: ${ticket.assignee.name}.` : "Nobody owns this request yet. Assign an advisor."}
+          {over ? `${over}. ` : ""}{ticket.assignee ? `Owner: ${ticket.assignee.name}.` : (canAssign ? "Nobody owns this request yet. Assign an advisor." : "Nobody owns this request yet.")}
         </p>
       </StaffNotice>
     );

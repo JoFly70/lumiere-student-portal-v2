@@ -3,6 +3,8 @@
  * Keys are namespaced "staff.*". English is the source of truth; French must define every key.
  */
 export const staffEn = {
+  "staff.access.restricted": "That page is for administrators. Here is your support desk.",
+  "staff.access.dismiss": "Dismiss",
   "staff.docs.upload.title": "Upload on the student's behalf",
   "staff.docs.upload.intro": "The student and staff will see the file. New uploads stay pending review; uploading never verifies a document.",
   "staff.docs.upload.type": "Document type",
@@ -19,6 +21,8 @@ export const staffEn = {
 } as const satisfies Record<string, string>;
 
 export const staffFr: Record<keyof typeof staffEn, string> = {
+  "staff.access.restricted": "Cette page est réservée aux administrateurs. Voici votre bureau d’assistance.",
+  "staff.access.dismiss": "Fermer",
   "staff.docs.upload.title": "Téléverser au nom de l'étudiant",
   "staff.docs.upload.intro": "L'étudiant et l'équipe verront le fichier. Les nouveaux fichiers restent en attente de vérification ; le téléversement ne valide jamais un document.",
   "staff.docs.upload.type": "Type de document",

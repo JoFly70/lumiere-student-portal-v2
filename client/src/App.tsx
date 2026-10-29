@@ -8,6 +8,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { ThemeProvider } from "@/hooks/use-theme";
 import { I18nProvider } from "@/i18n";
+import { AccessNotice } from "@/components/staff/access-notice";
 import { StaffHeader, StaffSkipLink, useStaffSidebarDefaultOpen } from "@/components/staff/staff-shell";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
@@ -329,6 +330,7 @@ function AuthenticatedLayout() {
               isStudent ? "relative min-h-0 p-6 pb-24 md:p-8" : "p-4 focus-visible:outline-none sm:p-6 lg:p-8",
             )}
           >
+            {isStaffShell && <AccessNotice />}
             <Router />
           </main>
           {isStudent && <StudentBottomNav />}
