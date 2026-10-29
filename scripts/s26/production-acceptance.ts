@@ -264,9 +264,12 @@ interface Req {
   noBudget?: boolean;
   timeoutMs?: number;
 }
+/** Node 20 has no global WebSocket; newer supabase-js builds a realtime client eagerly, so hand it `ws` (never used here). */
+const REALTIME = { transport: WebSocket as unknown as never };
 const anonClient = (): SupabaseClient =>
   createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_ANON_KEY!, {
     auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false },
+    realtime: REALTIME,
   });
 
 async function rawFetch(method: string, url: string, init: { headers?: Record<string, string>; body?: any; timeoutMs?: number } = {}): Promise<Res> {
@@ -505,7 +508,7 @@ async function platformChecks() {
 async function adminSession(): Promise<Out> {
   const url = process.env.SUPABASE_URL, svc = process.env.SUPABASE_SERVICE_KEY, anon = process.env.SUPABASE_ANON_KEY;
   if (!url || !svc || !anon) return { ok: false, detail: "SUPABASE_URL / SUPABASE_SERVICE_KEY / SUPABASE_ANON_KEY missing" };
-  const service = createClient(url, svc, { auth: { autoRefreshToken: false, persistSession: false } });
+  const service = createClient(url, svc, { auth: { autoRefreshToken: false, persistSession: false }, realtime: REALTIME });
   const admins = await service.from("users").select("id,email,name,role,created_at").eq("role", "admin").order("created_at", { ascending: true }).limit(1);
   const owner = admins.data?.[0];
   if (admins.error || !owner) return { ok: false, detail: `no admin user found (${short(admins.error?.message ?? "empty")})` };
@@ -555,7 +558,7 @@ async function adminChecks() {
     if (second) ctx.sid2 = second.id;
     let fallback = "";
     if (!ctx.sid && process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY) {
-      const service = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
+      const service = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY, { auth: { persistSession: false, autoRefreshToken: false }, realtime: REALTIME });
       const q = await service.from("students").select("id,preferred_name,user_id").in("preferred_name", [DEMO_PREFERRED, DEMO_SECOND_PREFERRED]);
       for (const row of q.data ?? []) {
         if (row.preferred_name === DEMO_PREFERRED) ctx.sid = row.id;
