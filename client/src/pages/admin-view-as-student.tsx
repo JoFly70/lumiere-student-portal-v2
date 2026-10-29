@@ -70,21 +70,23 @@ export function StaffProgressSummary({ data, language = "en" }: { data: ViewAsSt
     [copy.nextMilestone, s.nextMilestone ? `${formatHalfUnits(s.nextMilestone.cumulativeHalfUnits)} ${copy.credits} · ${s.nextMilestone.month}` : copy.notConfigured],
   ];
   return (
-    <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" data-testid="preview-summary">
+    <dl className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5" data-testid="preview-summary">
       {items.map(([label, value, note]) => (
-        <div key={label} className="rounded-md border bg-card p-3">
+        <div key={label} className="min-w-0 rounded-md border bg-card px-3 py-2">
           <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</dt>
-          <dd className="mt-1 text-lg font-semibold tabular-nums">{value}</dd>
+          <dd className="mt-0.5 break-words text-base font-semibold tabular-nums">{value}</dd>
           {note ? <dd className="text-xs text-muted-foreground">{note}</dd> : null}
         </div>
       ))}
-      {!s.roadmapPublished ? <p className="text-sm text-muted-foreground sm:col-span-2 lg:col-span-3">{copy.noRoadmap}</p> : null}
+      {!s.roadmapPublished ? <p className="col-span-full text-sm text-muted-foreground">{copy.noRoadmap}</p> : null}
     </dl>
   );
 }
 
-function PreviewDashboard({ data, ops }: { data: ViewAsStudentResponse; ops: CockpitOps }) {
+function PreviewDashboard({ data, ops, copy }: { data: ViewAsStudentResponse; ops: CockpitOps; copy: (typeof PREVIEW_COPY)[Language] }) {
   const p = data.academicProjection;
+  // A plan can exist while the projection is missing: say the dashboard is unavailable, not that the plan is.
+  if (!p && data.highSchool) return <StudentSurface><p className="text-sm text-student-muted" data-testid="preview-dashboard-unavailable">{copy.dashboardUnavailable}</p></StudentSurface>;
   if (!p) return <StudentSurface><HsNoEnrollment /></StudentSurface>;
   if (deckState(p) === "not_configured") return <CockpitNotConfigured projection={p} />;
   return (
@@ -121,6 +123,8 @@ const PREVIEW_COPY = {
     sourceNote: "From stored records only: official credit comes from school-confirmed awards; student reports never count as earned.",
     chosenLanguage: "Student's chosen language", defaultLanguage: "not saved yet (English by default)",
     returnWorkspace: "Return to staff workspace", languageLabel: "Preview language",
+    showSummary: "Show summary", hideSummary: "Hide summary", dashboardUnavailable: "The dashboard is unavailable in this preview. The High school tab shows this student's plan.",
+    ticketStatus: { open: "Open", in_progress: "In progress", waiting_on_student: "Waiting on you", resolved: "Resolved", closed: "Closed" } as Record<string, string>,
   },
   fr: {
     dashboard: "Tableau de bord", highSchool: "Secondaire", profile: "Profil", documents: "Documents", support: "Assistance", billing: "Facturation", ai: "Lumière IA", aiNote: "Voici le panneau d’assistant que voit l’élève, avec le mode que le serveur donnerait à une session élève. Il est inactif ici : rien n’est envoyé à l’assistant et aucune conversation n’est créée.",
@@ -146,6 +150,8 @@ const PREVIEW_COPY = {
     sourceNote: "D'après les dossiers enregistrés : seuls les crédits confirmés par l'école comptent; les déclarations de l'étudiant ne sont pas des crédits obtenus.",
     chosenLanguage: "Langue choisie par l'étudiant", defaultLanguage: "non enregistrée (anglais par défaut)",
     returnWorkspace: "Retour au dossier du personnel", languageLabel: "Langue de l'aperçu",
+    showSummary: "Afficher le résumé", hideSummary: "Masquer le résumé", dashboardUnavailable: "Le tableau de bord n’est pas disponible dans cet aperçu. L’onglet Secondaire présente le plan de cet étudiant.",
+    ticketStatus: { open: "Ouverte", in_progress: "En cours", waiting_on_student: "En attente de votre réponse", resolved: "Résolue", closed: "Fermée" } as Record<string, string>,
   },
 } as const;
 
@@ -276,7 +282,7 @@ function PreviewSupport({ tickets, loading, failed, copy }: {
               <li key={item.id}>
                 <button type="button" onClick={() => setSelectedId(item.id)} aria-pressed={selectedTicket === item.id} className={`w-full rounded-lg border p-3 text-left ${selectedTicket === item.id ? "border-student-gold bg-student-gold-soft/50" : "bg-card"}`}>
                   <span className="block font-medium">{item.subject}</span>
-                  <span className="mt-1 block text-xs text-muted-foreground">{item.ticket_number} · {item.status}</span>
+                  <span className="mt-1 block text-xs text-muted-foreground">{item.ticket_number} · {copy.ticketStatus[item.status] ?? item.status.replace(/_/g, " ")}</span>
                 </button>
               </li>
             ))}
@@ -287,7 +293,7 @@ function PreviewSupport({ tickets, loading, failed, copy }: {
                 : ticket && thread ? (
                   <>
                     <h3 className="font-semibold">{ticket.subject}</h3>
-                    <p className="mt-1 text-xs text-muted-foreground">{copy.conversation} · {ticket.status}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{copy.conversation} · {copy.ticketStatus[ticket.status] ?? ticket.status.replace(/_/g, " ")}</p>
                     {ticket.resolution_notes ? <p className="mt-3 rounded-md bg-muted p-3 text-sm">{ticket.resolution_notes}</p> : null}
                     <ul className="mt-4 space-y-3">
                       {thread.comments.map((comment) => <li key={comment.id} className="rounded-lg border p-3">
@@ -395,6 +401,8 @@ export function ViewAsStudentScreen({
   billingError?: boolean;
 }) {
   const [lang, setLang] = useState<Language>(data.student.preferredLanguage ?? "en");
+  // Phones: start with the summary folded so the preview itself is near the top.
+  const [summaryOpen, setSummaryOpen] = useState(() => typeof window === "undefined" || !window.matchMedia || !window.matchMedia("(max-width: 639px)").matches);
   const copy = PREVIEW_COPY[lang];
   const ops: CockpitOps = {
     documents: docs ? { state: "ready", data: summarizeDocuments(docs) } : { state: "unavailable" },
@@ -433,13 +441,16 @@ export function ViewAsStudentScreen({
 
       <section aria-labelledby="preview-summary-heading" className="space-y-3">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h1 id="preview-summary-heading" className="text-2xl font-semibold tracking-tight">{lang === "fr" ? "Résumé de progression" : "Progress summary"}</h1>
+          <h1 id="preview-summary-heading" className="font-serif text-2xl font-normal tracking-tight">{lang === "fr" ? "Résumé de progression" : "Progress summary"}</h1>
           <p className="text-sm text-muted-foreground" data-testid="preview-language-saved">
             {copy.chosenLanguage}: {saved ? LANGUAGES.find((l) => l.code === saved)?.label : copy.defaultLanguage}
           </p>
         </div>
-        <StaffProgressSummary data={data} language={lang} />
-        <p className="text-xs text-muted-foreground">{copy.sourceNote}</p>
+        <button type="button" className="inline-flex min-h-10 items-center rounded-md border bg-background px-3 text-sm font-medium sm:hidden" aria-expanded={summaryOpen} aria-controls="preview-summary-body" onClick={() => setSummaryOpen((v) => !v)} data-testid="preview-summary-toggle">{summaryOpen ? copy.hideSummary : copy.showSummary}</button>
+        <div id="preview-summary-body" className={summaryOpen ? "space-y-3" : "hidden space-y-3 sm:block"}>
+          <StaffProgressSummary data={data} language={lang} />
+          <p className="text-xs text-muted-foreground">{copy.sourceNote}</p>
+        </div>
       </section>
 
       <I18nProvider key={lang} initialLanguage={lang}>
@@ -455,7 +466,7 @@ export function ViewAsStudentScreen({
           </TabsList>
           {/* onClickCapture: in-preview links never navigate; buttons that only toggle the view still work. */}
           <div onClickCapture={blockNavigation} lang={lang} data-testid="preview-surface">
-            <TabsContent value="dashboard" className="mt-0"><PreviewDashboard data={data} ops={ops} /></TabsContent>
+            <TabsContent value="dashboard" className="mt-0"><PreviewDashboard data={data} ops={ops} copy={copy} /></TabsContent>
             <TabsContent value="high-school" className="mt-0">
               {data.highSchool ? <HighSchoolPageView view={data.highSchool} /> : <StudentSurface><HsNoEnrollment /></StudentSurface>}
             </TabsContent>
