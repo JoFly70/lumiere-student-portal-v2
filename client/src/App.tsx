@@ -30,6 +30,7 @@ import AdminSupportCenter from "@/pages/admin-support-center";
 import AdminAssistant from "@/pages/admin-assistant";
 import AdminElectiveRequests from "@/pages/admin-elective-requests";
 import AdminStudentWorkspace from "@/pages/admin-student-workspace";
+import AdminStudentFile from "@/pages/admin-student-file";
 import AdminStudents from "@/pages/admin-students";
 import AdminStudentRoadmap from "@/pages/admin-student-roadmap";
 import HighSchool from "@/pages/high-school";
@@ -97,6 +98,14 @@ function Router() {
           </ProtectedRoute>
         )}
       </Route>
+      {/* S27: staff get the same Control Center (server scopes the data); the student file stays admin-only. */}
+      <Route path="/staff/control-center">
+        {() => (
+          <ProtectedRoute requireRole={["admin", "staff"]}>
+            <AdminSupportCenter />
+          </ProtectedRoute>
+        )}
+      </Route>
       <Route path="/admin/assistant">
         {() => (
           <ProtectedRoute requireRole="admin">
@@ -160,10 +169,17 @@ function Router() {
           </ProtectedRoute>
         )}
       </Route>
-      <Route path="/admin/students/:studentId">
+      <Route path="/admin/students/:studentId/workspace">
         {() => (
           <ProtectedRoute requireRole="admin">
             <AdminStudentWorkspace />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/admin/students/:studentId">
+        {() => (
+          <ProtectedRoute requireRole="admin">
+            <AdminStudentFile />
           </ProtectedRoute>
         )}
       </Route>
