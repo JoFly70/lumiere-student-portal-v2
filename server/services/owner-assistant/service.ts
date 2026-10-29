@@ -40,6 +40,8 @@ export interface OwnerAssistantAnswer {
   readonly task: OwnerTask;
   /** Live: the model's answer. Unavailable: null (no pretend AI text). */
   readonly reply: string | null;
+  /** Live only: the pinned model that was requested and the model the provider reported serving. */
+  readonly model?: { readonly requested: string; readonly served: string | null };
   /** Deterministic summary of the records (always present; labelled "not AI" in the UI). */
   readonly recordSummary: string;
   readonly citations: readonly { readonly ref: string; readonly label: string; readonly path: string }[];
@@ -134,7 +136,7 @@ export async function askOwnerAssistant(
     });
     try { await deps.budget.settle(month, reserveMicro, usdToMicro(estimateCostUsd(out.promptTokens, out.completionTokens))); } catch { /* conservative */ }
     const reply = out.text.slice(0, 4000);
-    return { ...base, mode: "live", reply, citations: extractCitations(reply, records).map(sourceView) };
+    return { ...base, mode: "live", reply, model: { requested: cfg.model, served: out.servedModel }, citations: extractCitations(reply, records).map(sourceView) };
   } catch (err) {
     const kind = err instanceof ProviderError ? err.kind : "unknown";
     logger.warn("Owner assistant provider call failed", { kind, status: err instanceof ProviderError ? err.status : undefined });

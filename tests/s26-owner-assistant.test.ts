@@ -41,11 +41,13 @@ describe("S26 owner AI grounding", () => {
   });
 
   it("answers live with citations for admins only, and is honestly unavailable otherwise", async () => {
-    const fetchImpl = vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ choices: [{ message: { content: "The transcript is pending review [R2]." }, finish_reason: "stop" }], usage: { prompt_tokens: 300, completion_tokens: 80 } }) }));
+    const fetchImpl = vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ model: "muse-spark-1.3-contributor", choices: [{ message: { content: "The transcript is pending review [R2]." }, finish_reason: "stop" }], usage: { prompt_tokens: 300, completion_tokens: 80 } }) }));
     const deps = { loadContext: async () => ctx, budget: new MemoryBudgetStore(), fetchImpl, config: live };
     const a = await askOwnerAssistant({ id: "admin", role: "admin" }, { studentId: "stu-1", question: "What is pending?", language: "en", task: "answer" }, deps);
     expect(a.mode).toBe("live");
     expect(a.citations.map((c) => c.ref)).toEqual(["R2"]);
+    // The answer reports the pinned model it requested and the model the provider says served it.
+    expect(a.model).toEqual({ requested: "muse-spark-1.3-contributor", served: "muse-spark-1.3-contributor" });
     const staff = await askOwnerAssistant({ id: "s", role: "staff" }, { studentId: "stu-1", question: "x", language: "en", task: "answer" }, deps);
     expect(staff).toMatchObject({ mode: "unavailable", reason: "not_eligible", reply: null });
     const off = await askOwnerAssistant({ id: "admin", role: "admin" }, { studentId: "stu-1", question: "x", language: "fr", task: "draft_reply" }, { ...deps, config: () => ({ ...live(), liveEnabled: false }) });

@@ -9,6 +9,8 @@
  *   --api-budget <n>     max /api requests per sliding 15-minute window (default 90; the server allows 100)
  *   --skip-browser       skip the Chromium screenshots
  *   --skip-ai            skip the Owner AI and student assistant calls
+ *   --ai-only            admin session + read-only admin checks + Owner AI checks only (no writes anywhere)
+ *   --allow-ai-unavailable  accept mode "unavailable" (only for deployments where Spark is deliberately off)
  *
  * Writes <out>/acceptance.json (always, also on failure/interrupt), <out>/shots/*.jpg and
  * <out>/shots-b64/<name>.<n>.txt (base64, chunks of at most 90000 characters).
@@ -63,6 +65,11 @@ const OUT = arg("--out") ?? "s26-evidence";
 const API_BUDGET = Math.max(5, Math.min(98, Number(arg("--api-budget") ?? 90) || 90));
 const SKIP_BROWSER = has("--skip-browser");
 const SKIP_AI = has("--skip-ai");
+/** Only the admin session, read-only admin checks and the Owner AI checks: no student, document, support or billing writes. */
+const AI_ONLY = has("--ai-only");
+/** Spark is activated: "unavailable" or any fallback is a FAIL unless this explicit opt-out is passed. */
+const ALLOW_AI_UNAVAILABLE = has("--allow-ai-unavailable");
+const EXPECTED_MODEL = "muse-spark-1.3-contributor";
 
 // ---------------------------------------------------------------------------------------------
 // Scrubbing: nothing secret / personal may reach the evidence file or the console
@@ -108,6 +115,8 @@ const evidence: {
   checks: CheckRecord[];
   browser: Record<string, unknown>;
   notes: string[];
+  /** Spark served-model verification from the provider's own report: PASS / FAIL / NOT_VERIFIED. */
+  aiModelVerification: "PASS" | "FAIL" | "NOT_VERIFIED";
 } = {
   script: "scripts/s26/production-acceptance.ts",
   startedAt: new Date().toISOString(),
@@ -120,6 +129,7 @@ const evidence: {
   rateLimit: {},
   checks: [],
   browser: {},
+  aiModelVerification: "NOT_VERIFIED",
   notes: [],
 };
 
@@ -580,18 +590,50 @@ async function adminChecks() {
   await run("admin.owner-ai-status", "admin", true, async () => {
     if (!A || !ctx.sid) return skip("no admin session or demo student id");
     const r = await get(`/api/admin/students/${ctx.sid}/owner-assistant/status`, A);
-    return { ok: r.status === 200 && typeof r.json?.mode === "string", status: r.status, detail: `mode ${short(r.json?.mode, 20)} reason ${short(r.json?.reason, 30)}`, observed: { mode: r.json?.mode, reason: r.json?.reason ?? null } };
+    const live = r.json?.mode === "live";
+    const ok = r.status === 200 && (live || (ALLOW_AI_UNAVAILABLE && r.json?.mode === "unavailable"));
+    return { ok, status: r.status, detail: `mode ${short(r.json?.mode, 20)}${r.json?.reason ? ` reason ${short(r.json?.reason, 30)}` : ""}${!live && !ALLOW_AI_UNAVAILABLE ? " — Spark must be live" : ""}`, observed: { mode: r.json?.mode, reason: r.json?.reason ?? null } };
   });
+  const FRENCH = /\b(vous|votre|bonjour|feuille de route|cours|merci|élève|dossier|nous)\b/i;
+  const answers: Record<string, any> = {};
   const ownerAsk = async (question: string, language: "en" | "fr", task: "answer" | "draft_reply"): Promise<Out> => {
     if (!A || !ctx.sid) return skip("no admin session or demo student id");
     const r = await post(`/api/admin/students/${ctx.sid}/owner-assistant`, { question, language, task }, A);
     const j = r.json;
-    const ok = r.status === 200 && (j?.mode === "live" || j?.mode === "unavailable") && Array.isArray(j?.citations) && j?.requiresHumanApproval === true;
-    return { ok, status: r.status, detail: ok ? `mode ${j.mode}${j.reason ? ` (${j.reason})` : ""}, ${j.citations.length} citations, reply ${typeof j.reply === "string" ? j.reply.length : 0} chars` : brief(r), observed: { task, language, mode: j?.mode ?? null, reason: j?.reason ?? null, citations: Array.isArray(j?.citations) ? j.citations.length : null, sources: Array.isArray(j?.sources) ? j.sources.length : null, replyLength: typeof j?.reply === "string" ? j.reply.length : 0, replyStart: typeof j?.reply === "string" ? short(j.reply, 400) : null, recordSummaryLength: typeof j?.recordSummary === "string" ? j.recordSummary.length : null, requiresHumanApproval: j?.requiresHumanApproval ?? null } };
+    answers[`${task}-${language}`] = j;
+    const sourceRefs = new Set(Array.isArray(j?.sources) ? j.sources.map((x: { ref?: string }) => x?.ref) : []);
+    const citations: Array<{ ref?: string }> = Array.isArray(j?.citations) ? j.citations : [];
+    const reply = typeof j?.reply === "string" ? j.reply : "";
+    const problems: string[] = [];
+    if (r.status !== 200) problems.push(`HTTP ${r.status}`);
+    if (j?.mode !== "live" && !(ALLOW_AI_UNAVAILABLE && j?.mode === "unavailable")) problems.push(`mode ${short(j?.mode, 20)}${j?.reason ? ` (${short(j.reason, 30)})` : ""}: Spark did not answer`);
+    if (j?.mode === "live") {
+      if (reply.trim().length < 40) problems.push("reply empty or too short");
+      if (citations.length < 1) problems.push("no [R#] record citations");
+      if (citations.some((c) => !sourceRefs.has(c?.ref))) problems.push("a citation does not match a returned source record");
+      if (j?.model?.requested !== EXPECTED_MODEL) problems.push(`requested model ${short(j?.model?.requested ?? "not reported", 60)}`);
+      if (language === "fr" && !FRENCH.test(reply)) problems.push("draft is not in French");
+    }
+    if (j?.requiresHumanApproval !== true) problems.push("requiresHumanApproval missing");
+    const ok = problems.length === 0;
+    return { ok, status: r.status, detail: ok ? `mode ${j.mode}, model ${j?.model?.requested ?? "-"} (served: ${j?.model?.served ?? "not reported"}), ${citations.length} citations, reply ${reply.length} chars` : problems.join("; "), observed: { task, language, mode: j?.mode ?? null, reason: j?.reason ?? null, model: j?.model ?? null, citations: citations.length, citationRefs: citations.map((c) => c?.ref ?? null), sources: sourceRefs.size, replyLength: reply.length, replyStart: reply ? short(reply, 400) : null, recordSummaryLength: typeof j?.recordSummary === "string" ? j.recordSummary.length : null, requiresHumanApproval: j?.requiresHumanApproval ?? null } };
   };
   await run("admin.owner-ai-answer-en", "admin", true, () => ownerAsk("For this test student, which courses and documents still require action? Cite records.", "en", "answer"));
   await sleep(2500);
   await run("admin.owner-ai-draft-reply-fr", "admin", true, () => ownerAsk("Rédige un brouillon de réponse courtois pour cet élève test concernant l'avancement de sa feuille de route. Cite les dossiers.", "fr", "draft_reply"));
+  // Served-model identity: the provider's own report. Older builds do not expose it -> NOT VERIFIED (never PASS).
+  await run("admin.owner-ai-model-identity", "admin", true, async () => {
+    const live = Object.values(answers).filter((j) => j?.mode === "live");
+    if (live.length === 0) return { ok: false, detail: "NOT VERIFIED: no live Spark answer to inspect" };
+    const served = live.map((j) => j?.model?.served ?? null);
+    if (served.some((m) => m === null || m === undefined)) {
+      evidence.aiModelVerification = "NOT_VERIFIED";
+      return { ok: false, detail: `NOT VERIFIED: this build does not report the provider-served model (requested, pinned server-side: ${live[0]?.model?.requested ?? "unknown"})`, observed: { served } };
+    }
+    const ok = served.every((m) => m === EXPECTED_MODEL);
+    evidence.aiModelVerification = ok ? "PASS" : "FAIL";
+    return { ok, detail: ok ? `provider reported ${EXPECTED_MODEL} for ${served.length} answers` : `provider reported ${served.join(", ")}`, observed: { served } };
+  });
 }
 
 function readPassword(): string | null {
@@ -1295,6 +1337,7 @@ async function main() {
   if (BASE) await platformChecks();
   if (!preflightOk) { evidence.notes.push("preflight failed: authenticated checks not attempted"); return; }
   await adminChecks();
+  if (AI_ONLY) { evidence.notes.push("--ai-only: student, photo, document, support, billing, assistant-write, authorization and browser phases skipped (no writes)"); return; }
   await studentChecks();
   await photoChecks();
   await documentChecks();

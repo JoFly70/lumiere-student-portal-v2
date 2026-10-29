@@ -32,6 +32,8 @@ export interface ProviderUsage {
 export interface ProviderResult extends ProviderUsage {
   text: string;
   finishReason: string | null;
+  /** The model the provider reports in its response body (`model`), or null when it does not say. */
+  servedModel: string | null;
 }
 
 export type ProviderErrorKind = 'not_configured' | 'model_rejected' | 'timeout' | 'http' | 'bad_response' | 'truncated' | 'network';
@@ -103,7 +105,8 @@ export async function callMuseSpark(
     // Empty answer cut off by the cap (reasoning consumed the budget): distinct kind, billed usage kept.
     if (empty && finishReason === 'length') throw new ProviderError('truncated', undefined, usage);
     if (empty || !usage) throw new ProviderError('bad_response', undefined, usage);
-    return { text: (text as string).trim(), ...usage, finishReason };
+    const servedModel = typeof body?.model === 'string' && body.model.trim() ? body.model.trim().slice(0, 120) : null;
+    return { text: (text as string).trim(), ...usage, finishReason, servedModel };
   } catch (err) {
     if (err instanceof ProviderError) throw err;
     if ((err as any)?.name === 'AbortError' || controller.signal.aborted) throw new ProviderError('timeout');
