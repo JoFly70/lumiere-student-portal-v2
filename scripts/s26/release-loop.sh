@@ -97,6 +97,9 @@ while [ "$(date +%s)" -lt "$DEADLINE" ]; do
     else nix-shell -p postgresql_16 --run "bash scripts/release/s27/apply-s27.sh --check" > "$EVID/schema-s27-check.log" 2>&1 && S27_OK=1 || S27_OK=0; fi
     if [ "$S27_OK" = "1" ]; then
       status schema_s27 SKIPPED "S27 schema fully applied (tables, RLS, privileges, audit enum values)"
+    elif ! grep -q "S27 check: NOT FULLY APPLIED" "$EVID/schema-s27-check.log"; then
+      # A refused identity check or a connection failure is not "not applied": never write to production on it.
+      status schema_s27 FAIL "check did not complete: $(grep -E 'REFUSED|ERROR|FATAL|could not' "$EVID/schema-s27-check.log" | head -3 | tr '\n' ' ' | cut -c1-300)"; DONE_SHA=$SHA; continue
     else
       if need_pg; then bash scripts/release/s27/apply-s27.sh --apply --i-understand-this-writes-to-production > "$EVID/schema-s27.log" 2>&1
       else nix-shell -p postgresql_16 --run "bash scripts/release/s27/apply-s27.sh --apply --i-understand-this-writes-to-production" > "$EVID/schema-s27.log" 2>&1; fi

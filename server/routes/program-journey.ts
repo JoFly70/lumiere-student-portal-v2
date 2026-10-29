@@ -95,7 +95,9 @@ function sendError(res: Response, error: unknown, context: string) {
       return res.status(503).json({ error: { code: "S27_UNAVAILABLE", message: "Program records are temporarily unavailable" } });
     }
   }
-  logger.error(`Program journey ${context} failed`, { error: error instanceof Error ? error.message : String(error) });
+  // Never log the message: a wrapped query error carries its parameters (note bodies, session notes, goal text).
+  const e = error as { name?: unknown; code?: unknown; cause?: { code?: unknown } } | null;
+  logger.error(`Program journey ${context} failed`, { name: typeof e?.name === "string" ? e.name : typeof error, code: typeof e?.cause?.code === "string" ? e.cause.code : typeof e?.code === "string" ? e.code : undefined });
   return res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
 }
 const validation = (res: Response, error: z.ZodError) =>
