@@ -54,8 +54,21 @@ counts() {
                          FROM pg_class c WHERE c.relnamespace='public'::regnamespace AND c.relkind IN ('r','p')" | LC_ALL=C sort
 }
 
-pg_dump "$DATABASE_URL" --schema=public --no-owner --no-privileges -Fc -f "$OUT/public-s27-$STAMP.dump"
-pg_restore -l "$OUT/public-s27-$STAMP.dump" > /dev/null || die "backup is unreadable"
+# The backup tools must be at least the server's major version (pg_dump refuses an older client). When the
+# workspace's pg_dump is older, run the matching postgresql_<major> from nix; the URL stays in the environment.
+SERVER_MAJOR=$("${PSQL[@]}" -At -c "SELECT current_setting('server_version_num')::int / 10000")
+DUMP_MAJOR=$(pg_dump --version 2>/dev/null | grep -oE '[0-9]+' | head -1 || true)
+export S27_DUMP_FILE="$OUT/public-s27-$STAMP.dump"
+BACKUP='pg_dump "$DATABASE_URL" --schema=public --no-owner --no-privileges -Fc -f "$S27_DUMP_FILE" && pg_restore -l "$S27_DUMP_FILE" > /dev/null'
+if [ -n "$DUMP_MAJOR" ] && [ "$DUMP_MAJOR" -ge "$SERVER_MAJOR" ]; then
+  echo "backup tools: pg_dump $DUMP_MAJOR for server $SERVER_MAJOR" | tee -a "$LOG"
+  bash -c "$BACKUP" || die "backup failed or is unreadable"
+else
+  command -v nix-shell >/dev/null || die "pg_dump ${DUMP_MAJOR:-missing} is older than server $SERVER_MAJOR and nix-shell is unavailable"
+  echo "backup tools: nix postgresql_$SERVER_MAJOR (workspace pg_dump ${DUMP_MAJOR:-missing} is older than server $SERVER_MAJOR)" | tee -a "$LOG"
+  nix-shell -p "postgresql_$SERVER_MAJOR" --run "$BACKUP" || die "backup with nix postgresql_$SERVER_MAJOR failed or is unreadable"
+fi
+[ -s "$S27_DUMP_FILE" ] || die "backup file is missing or empty"
 counts > "$OUT/rowcounts-s27-before-$STAMP.txt"
 echo "backup: $OUT/public-s27-$STAMP.dump ($(du -h "$OUT/public-s27-$STAMP.dump" | cut -f1))" | tee -a "$LOG"
 
