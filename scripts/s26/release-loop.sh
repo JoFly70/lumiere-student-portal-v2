@@ -68,8 +68,10 @@ while [ "$(date +%s)" -lt "$DEADLINE" ]; do
     else
       status build FAIL "$(tail -5 "$EVID/build.log" "$EVID/npm-ci.log" 2>/dev/null | tr '\n' ' ' | cut -c1-400)"; DONE_SHA=$SHA; continue
     fi
-    if ls "$PRIV"/apply-*.log >/dev/null 2>&1 && grep -q "S26 production schema release: DONE" "$PRIV"/apply-*.log; then
-      status schema SKIPPED "already applied (see $PRIV/apply-*.log)"
+    PV=$(ls -t "$PRIV"/postverify-*.txt 2>/dev/null | head -1)
+    if { ls "$PRIV"/apply-*.log >/dev/null 2>&1 && grep -q "S26 production schema release: DONE" "$PRIV"/apply-*.log; } \
+       || { [ -n "$PV" ] && grep -q "all 17 tables present *| t" "$PV" && ! grep -Eq '\| f( |$)' "$PV"; }; then
+      status schema SKIPPED "already applied and post-verified (${PV:-apply log})"
     else
       if need_pg; then RUN=(bash); else RUN=(nix-shell -p postgresql_16 --run); fi
       if [ "${RUN[0]}" = bash ]; then
