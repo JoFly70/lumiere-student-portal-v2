@@ -80,7 +80,7 @@ while [ "$(date +%s)" -lt "$DEADLINE" ]; do
       if grep -q "S26 production schema release: DONE" "$EVID/schema.log"; then status schema PASS "backup + additive migrations + row preservation + post-verify"
       else status schema FAIL "$(grep -E 'REFUSED|ERROR|FAIL' "$EVID/schema.log" | head -5 | tr '\n' ' ' | cut -c1-400)"; DONE_SHA=$SHA; continue; fi
     fi
-    if npx tsx scripts/s26/provision-demo-student.ts --ref "$REF" > "$EVID/provision.json" 2> "$EVID/provision.err"; then
+    if npx tsx scripts/s26/provision-demo-student.ts --ref "$REF" --real-code LCA-2026-0001 > "$EVID/provision.json" 2> "$EVID/provision.err"; then
       status provision PASS
     else
       status provision FAIL "see $EVID/provision.json"

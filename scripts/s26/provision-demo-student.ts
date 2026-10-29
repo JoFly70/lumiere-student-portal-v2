@@ -17,7 +17,7 @@
  */
 import fs from "node:fs";
 import crypto from "node:crypto";
-import { DEMO_TAG, DEMO_START, DEMO_TARGET, makeDemoPlan } from "./demo-plan.mjs";
+import { DEMO_TAG, DEMO_START, DEMO_TARGET, makeDemoPlan, makeContractPlan } from "./demo-plan.mjs";
 
 export const DEMO_STUDENT_EMAIL = "s26.demo.student@lumiere-demo.invalid";
 export const DEMO_SECOND_EMAIL = "s26.demo.second@lumiere-demo.invalid";
@@ -161,6 +161,36 @@ async function main() {
       plannedCredits: plannedHalf / 2, officialCreditsEarned: state.current!.credits.earnedHalfUnits / 2,
       milestones: plan.pacing.milestones.length, tasks: plan.courses.reduce((n, c) => n + c.tasks.length, 0),
     };
+
+    // REAL first student (pre-enrollment record created by the owner; S26 contract override):
+    // prepare the contract-aligned DRAFT only. No identity/contact change, no publish, no dates,
+    // no activation, no invitation. Skipped when --real-code is not given.
+    const realCode = arg("--real-code");
+    if (realCode) {
+      const { getStudentByCode } = await import("../../server/services/student-service");
+      const real = await getStudentByCode(realCode);
+      check(real && !String(real.preferred_name ?? "").startsWith("DEMO"), "REAL_STUDENT_NOT_FOUND");
+      let rs = await hs.getStaffState(real!.id);
+      if (!rs.current) {
+        rs = (await hs.createEnrollment(real!.id, actorId, createEnrollmentSchema.parse({
+          templateKey: "us-hs-diploma-21", templateVersion: 2, status: "planned",
+        }))).result;
+      }
+      const re = rs.current!.enrollment;
+      if (!rs.current!.published) {
+        if (!rs.current!.draft) rs = (await hs.draftFromTemplate(real!.id, re.id, actorId, undefined)).result;
+        const d = rs.current!.draft!;
+        if (!d.content.studentMessage?.startsWith("Plan indicatif")) {
+          rs = (await hs.saveDraft(real!.id, re.id, actorId, { expectedDraftRevision: d.draftRevision, content: makeContractPlan(d.content) })).result;
+        }
+      }
+      const dc = rs.current!.draft?.content;
+      out.realStudent = {
+        code: realCode, enrollmentStatus: re.status, published: !!rs.current!.published,
+        draftCourses: dc?.courses.length ?? null, draftPlannedCredits: dc ? dc.courses.reduce((n, c) => n + c.halfUnits, 0) / 2 : null,
+        officialCreditsEarned: rs.current!.credits.earnedHalfUnits / 2, studentStatus: real!.status, portalLinked: !!real!.user_id,
+      };
+    }
     out.verdict = "PASS";
   } finally {
     await closeDatabase?.().catch(() => {});

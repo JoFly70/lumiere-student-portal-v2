@@ -87,3 +87,54 @@ export function makeDemoPlan(draftContent) {
     "0 crédit officiel. Les dates sont des objectifs, pas des exigences de l’école. / Dates are targets, not school requirements; only the school awards credit.";
   return content;
 }
+
+/* ------------------------------------------------------------------------------------------------
+ * Contract-aligned plan for the REAL first student (docs/recovery/S26-CONTRACT-ALIGNED-FIRST-STUDENT-OVERRIDE.md).
+ * DRAFT ONLY until signature, payment and activation are verified: no dates are set (timelines are
+ * relative to actual academic activation), nothing is published, no credit is awarded.
+ * ---------------------------------------------------------------------------------------------- */
+export const CONTRACT_TAG = "PROPOSED — AWAITING SCHOOL ACCEPTANCE";
+export const CONTRACT_PHASES = [
+  { weeks: "1–4", cumulative: 3, keys: ["startup-personal-growth", "startup-learning-tech", "english-1", "math-general-1"] },
+  { weeks: "5–8", cumulative: 8, keys: ["english-2", "math-general-2", "humanities-digital-literacy", "science-earth", "social-world-history"] },
+  { weeks: "9–13", cumulative: 16, keys: ["english-3", "english-4", "science-biology", "science-physical", "math-personal-finance", "social-us-history", "social-us-gov-econ", "health-nutrition"] },
+  { weeks: "14–16", cumulative: 21, keys: ["contract-elective-word-excel", "contract-elective-business-math", "contract-elective-english-communications", "contract-elective-human-relations", "contract-elective-reading-skills"] },
+];
+export const CONTRACT_ELECTIVES = [
+  ["contract-elective-word-excel", "Microsoft Word & Excel"],
+  ["contract-elective-business-math", "Business Math"],
+  ["contract-elective-english-communications", "English Communications"],
+  ["contract-elective-human-relations", "Human Relations"],
+  ["contract-elective-reading-skills", "Reading Skills"],
+];
+
+export function makeContractPlan(draftContent) {
+  const content = structuredClone(draftContent);
+  const electiveArea = content.areas.find((a) => a.kind === "elective");
+  const base = content.courses.filter((c) => !/^(demo|contract)-elective-/.test(c.key) && !c.key.startsWith("s24-"));
+  if (content.totalRequiredHalfUnits !== 42 || base.length !== 17 || base.reduce((n, c) => n + c.halfUnits, 0) !== 32) throw new Error("CONTRACT_TEMPLATE_MISMATCH");
+  const electives = CONTRACT_ELECTIVES.map(([key, name]) => ({
+    key, title: `${name} — ${CONTRACT_TAG}`, areaKey: electiveArea.key, halfUnits: 2, status: "planned",
+    replacesCourseKey: null, plannedStart: null, plannedEnd: null, tasks: [],
+  }));
+  const byKey = new Map([...base, ...electives].map((c) => [c.key, c]));
+  const ordered = [];
+  let cumulative = 0;
+  for (const phase of CONTRACT_PHASES) {
+    for (const key of phase.keys) {
+      const c = byKey.get(key);
+      if (!c) throw new Error(`CONTRACT_COURSE_MISSING_${key}`);
+      cumulative += c.halfUnits;
+      c.tasks = [{ key: `${key}-target`, kind: "lesson", title: `Planning target: accelerated weeks ${phase.weeks} after activation (not a school deadline)`, dueDate: null }];
+      ordered.push(c);
+    }
+    if (cumulative !== phase.cumulative * 2) throw new Error(`CONTRACT_PHASE_TOTAL_${phase.weeks}`);
+  }
+  content.courses = ordered;
+  content.pacing = { targetCompletionDate: null, weeklyTargetHalfUnits: null, milestones: [] };
+  content.studentMessage =
+    "Plan indicatif (brouillon) : 21 crédits — 16 obligatoires + 5 options proposées en attente d’acceptation par l’école. " +
+    "Objectif accéléré de 16 semaines après l’activation (horizon indicatif de 4 à 6 mois) : 3 crédits prévus à la semaine 4, 8 à la semaine 8, 16 à la semaine 13, 21 à la semaine 16. " +
+    "Ce sont des objectifs de planification, pas des crédits obtenus ; seule l’école attribue les crédits.";
+  return content;
+}

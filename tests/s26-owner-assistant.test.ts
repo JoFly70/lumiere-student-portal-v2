@@ -7,7 +7,7 @@ import { answerMessage, buildProviderMessages, decideLive } from "../server/serv
 import { composeOwnerContext, extractCitations, scrubFreeText, type OwnerContextInput } from "../server/services/owner-assistant/context";
 import { askOwnerAssistant, buildOwnerMessages } from "../server/services/owner-assistant/service";
 import { createAdminOwnerAssistantRouter } from "../server/routes/admin-owner-assistant";
-import { makeDemoPlan } from "../scripts/s26/demo-plan.mjs";
+import { makeDemoPlan, makeContractPlan } from "../scripts/s26/demo-plan.mjs";
 import { TEMPLATE_STANDARD_21_V2 as T, hsRoadmapContentSchema } from "../shared/high-school-contract";
 
 const ctx: OwnerContextInput = {
@@ -107,5 +107,15 @@ describe("S26 synthetic 21-credit demo plan", () => {
     expect(plan.courses.filter((c) => c.title.includes("TEST ONLY / SCHOOL APPROVAL PENDING"))).toHaveLength(5);
     expect(plan.pacing.milestones.at(-1)).toEqual({ month: "2027-10", cumulativeHalfUnits: 42 });
     expect(plan.courses.every((c) => c.tasks.every((t) => t.title.startsWith("DEMO")))).toBe(true);
+  });
+
+  it("contract plan for the real student: 16-week phases 3/8/16/21, the five contract electives, draft-only (no dates)", () => {
+    const draft = { totalRequiredHalfUnits: 42, areas: T.areas.map((a) => ({ ...a })), courses: T.courses.map((c) => ({ key: c.key, title: c.title, areaKey: c.areaKey, halfUnits: c.halfUnits, status: "planned", replacesCourseKey: null, plannedStart: null, plannedEnd: null, tasks: [] })), pacing: { targetCompletionDate: null, weeklyTargetHalfUnits: null, milestones: [] }, policies: { maxExamAttempts: null, minDaysBetweenExams: null, maxTransferHalfUnits: null, passingPercent: null }, studentMessage: null };
+    const plan = hsRoadmapContentSchema.parse(makeContractPlan(draft));
+    expect(plan.courses).toHaveLength(22);
+    const electives = plan.courses.filter((c) => c.areaKey === "electives").map((c) => c.title.split(" — ")[0]);
+    expect(electives).toEqual(["Microsoft Word & Excel", "Business Math", "English Communications", "Human Relations", "Reading Skills"]);
+    expect(plan.courses.every((c) => c.plannedStart === null && c.tasks.every((t) => t.dueDate === null))).toBe(true);
+    expect(plan.pacing.targetCompletionDate).toBeNull();
   });
 });
