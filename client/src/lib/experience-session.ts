@@ -137,6 +137,6 @@ export function chooseAuthStorage(tab: StorageLike | null, persistent: StorageLi
 
 export function banner(language: string, label: string): { text: string; exit: string } {
   return language === "fr"
-    ? { text: `EXPÉRIENCE DÉMO — élève synthétique reflétant ${label}. Les actions ici ne modifient que des données de démonstration.`, exit: "Quitter" }
-    : { text: `DEMO EXPERIENCE — synthetic student mirroring ${label}. Actions here change only demo data.`, exit: "Exit" };
+    ? { text: `Session démo — ${label}. Les modifications n’affectent que des données de démonstration.`, exit: "Quitter" }
+    : { text: `Demo session — ${label}. Changes affect demo data only.`, exit: "Exit" };
 }

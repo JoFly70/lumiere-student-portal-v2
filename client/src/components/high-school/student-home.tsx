@@ -114,7 +114,7 @@ export function StudentHome({
               <p className="mt-1 break-words text-sm opacity-90" data-testid="home-program">{view.enrollment.programTitle} · {school}</p>
               <p className="mt-2 flex flex-wrap items-center gap-2 text-xs font-semibold" data-testid="home-status">
                 <span className="rounded-full bg-white/15 px-2.5 py-1">{t(`ux.home.enrollment.${view.enrollment.status}` as TranslationKey)}</span>
-                {paceKey && <span className={cn("rounded-full px-2.5 py-1", view.pace.status === "behind" ? "bg-[#b45309] text-white" : "bg-[#e6d3a3] text-[#1a1406]")}>{t(paceKey)}</span>}
+                {paceKey && <span className={cn("rounded-full px-2.5 py-1", view.pace.status === "behind" ? "border border-st-attention/40 bg-st-attention-soft text-st-attention" : "border border-student-gold bg-student-gold-soft text-student-gold-ink")}>{t(paceKey)}</span>}
               </p>
             </div>
           </div>
