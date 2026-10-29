@@ -7,7 +7,7 @@ import { callMuseSparkWebSearch } from "../server/services/academic-assistant/me
 import { askWebResearch, personalDataIn, webResearchDecision, WebResearchRejectedError } from "../server/services/web-research/service";
 import { createAdminWebResearchRouter } from "../server/routes/admin-web-research";
 
-const live = () => ({ ...loadAssistantConfig(), liveEnabled: true, hasApiKey: true });
+const live = () => ({ ...loadAssistantConfig(), liveEnabled: true, hasApiKey: true, liveRoles: new Set(["admin", "staff"]) });
 const providerBody = {
   model: "muse-spark-1.3-contributor",
   status: "completed",
@@ -43,6 +43,7 @@ describe("S27 web research (staff and admins only)", () => {
     expect(personalDataIn("Email jane@example.org about this")).toBe(true);
     expect(personalDataIn("call +1 (514) 555-0199")).toBe(true);
     expect(personalDataIn("what about LCA-2026-0001?")).toBe(true);
+    expect(personalDataIn("what about lca-2026-0001?")).toBe(true);
     expect(personalDataIn("DEAC transfer policy changes since 2026-10-29")).toBe(false);
     expect(personalDataIn("Is a 120 credit bachelor's possible in 2027?")).toBe(false);
   });
@@ -54,6 +55,8 @@ describe("S27 web research (staff and admins only)", () => {
     for (const role of ["coach", "student"]) expect(webResearchDecision(role, cfg, {})).toEqual({ live: false, reason: "not_eligible" });
     expect(webResearchDecision("staff", cfg, { SPARK_WEB_SEARCH: "off" })).toEqual({ live: false, reason: "disabled" });
     expect(webResearchDecision("staff", { ...cfg, hasApiKey: false }, {})).toEqual({ live: false, reason: "not_configured" });
+    // Ops can narrow live AI to admins only: staff then lose web research too.
+    expect(webResearchDecision("staff", { ...cfg, liveRoles: new Set(["admin"]) }, {})).toEqual({ live: false, reason: "not_eligible" });
   });
 
   it("sends only the question; personal data is refused before any provider call", async () => {
@@ -64,6 +67,17 @@ describe("S27 web research (staff and admins only)", () => {
     const a = await askWebResearch({ id: "s", role: "staff" }, { question: "What does DEAC accredit?", language: "fr" }, deps);
     expect(a).toMatchObject({ mode: "live", searched: true, sources: [{ url: "https://www.deac.org/" }], model: { requested: "muse-spark-1.3-contributor", served: "muse-spark-1.3-contributor" } });
     expect(JSON.parse((fetchImpl.mock.calls[0] as unknown as [string, { body: string }])[1].body).input).toBe("What does DEAC accredit?");
+  });
+
+  it("web research may only spend while the month is under its share of the cap (default half)", async () => {
+    const budget = new MemoryBudgetStore();
+    const cfg = () => ({ ...live(), monthlyBudgetUsd: 2 });
+    // Another assistant already spent $1.20 of the $2 cap this month: above the 50% web share.
+    await budget.reserve(new Date().toISOString().slice(0, 7), 1_200_000, 2_000_000);
+    const fetchImpl = okFetch();
+    const a = await askWebResearch({ id: "s", role: "staff" }, { question: "What does DEAC accredit?", language: "en" }, { budget, fetchImpl: fetchImpl as never, config: cfg, env: {} });
+    expect(a).toMatchObject({ mode: "unavailable", reason: "budget_exhausted" });
+    expect(fetchImpl).not.toHaveBeenCalled();
   });
 
   it("route: staff and admins allowed; coaches and students refused; personal data is a 400", async () => {

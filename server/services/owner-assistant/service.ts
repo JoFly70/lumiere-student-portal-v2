@@ -26,14 +26,14 @@ const OWNER_MAX_OUTPUT_TOKENS = 1200;
 const OWNER_MAX_INPUT_TOKENS = 6000;
 /** Lumière program-guide entries (curated knowledge, school never named) appended as citable records. */
 const OWNER_GUIDE_RECORDS = 3;
-export function withProgramGuide(records: OwnerSourceRecord[], question: string): OwnerSourceRecord[] {
+export function withProgramGuide(records: OwnerSourceRecord[], question: string, language: "en" | "fr" = "en"): OwnerSourceRecord[] {
   const hits = searchKnowledge(question, OWNER_GUIDE_RECORDS);
   return [...records, ...hits.map((h, i) => ({
     ref: `R${records.length + i + 1}`,
     kind: "guide" as const,
-    label: `Lumière program guide: ${h.entry.title.en}`,
+    label: `Lumière program guide: ${h.entry.title[language]}`,
     path: "",
-    text: h.entry.text.en,
+    text: h.entry.text[language],
   }))];
 }
 
@@ -122,7 +122,7 @@ export async function askOwnerAssistant(
 ): Promise<OwnerAssistantAnswer> {
   const ctx = await deps.loadContext(input.studentId);
   if (!ctx) throw new OwnerStudentNotFoundError();
-  const records = withProgramGuide(composeOwnerContext(ctx), input.question);
+  const records = withProgramGuide(composeOwnerContext(ctx), input.question, input.language);
   const summary = recordSummary(records);
   const generatedAt = (deps.now?.() ?? new Date()).toISOString();
   const base = { task: input.task, recordSummary: summary, sources: records.map(sourceView), requiresHumanApproval: true as const, generatedAt };

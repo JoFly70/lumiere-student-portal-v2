@@ -18,6 +18,14 @@ const MAX_OUTPUT_TOKENS = 1600;
 /** Meta bills web search separately: $2.50 per 1,000 searches. */
 const SEARCH_COST_USD = 0.0025;
 const MAX_INPUT_TOKENS_ESTIMATE = 12_000; // instructions + question + retrieved pages, conservative
+/**
+ * Web research shares the monthly AI budget but may only spend while the month's total is under this share
+ * of the cap, so the student assistant and Owner AI always keep the rest (SPARK_WEB_SEARCH_BUDGET_SHARE, 0.1–1).
+ */
+export function webBudgetShare(env: NodeJS.ProcessEnv = process.env): number {
+  const v = Number(env.SPARK_WEB_SEARCH_BUDGET_SHARE);
+  return Number.isFinite(v) && v >= 0.1 && v <= 1 ? v : 0.5;
+}
 
 export type WebResearchUnavailableReason = "not_eligible" | "disabled" | "not_configured" | "budget_exhausted" | "provider_error";
 export type WebResearchLang = "en" | "fr";
@@ -48,7 +56,7 @@ export class WebResearchRejectedError extends Error {
 /** Contact data or a Lumière student code in the question (dates and years are fine). */
 export function personalDataIn(question: string): boolean {
   if (/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(question)) return true;
-  if (/\b[A-Z]{2,5}-\d{4}-\d{3,5}\b/.test(question)) return true; // e.g. LCA-2026-0001
+  if (/\b[A-Z]{2,5}-\d{4}-\d{3,5}\b/i.test(question)) return true; // e.g. LCA-2026-0001, any case
   const runs: string[] = question.match(/\+?[\d][\d\s().-]{6,}[\d]/g) ?? [];
   return runs.some((r) => (r.match(/\d/g) ?? []).length >= 9);
 }
@@ -57,6 +65,8 @@ export function webResearchDecision(role: string, cfg: AssistantConfig, env: Nod
   if (!(WEB_RESEARCH_ROLES as readonly string[]).includes(role)) return { live: false, reason: "not_eligible" };
   if (!cfg.liveEnabled || String(env.SPARK_WEB_SEARCH ?? "").trim().toLowerCase() === "off") return { live: false, reason: "disabled" };
   if (!cfg.hasApiKey) return { live: false, reason: "not_configured" };
+  // Same allow-list as the other live assistants (SPARK_ASSISTANT_LIVE_ROLES).
+  if (!cfg.liveRoles.has(role)) return { live: false, reason: "not_eligible" };
   return { live: true };
 }
 
@@ -94,7 +104,7 @@ export async function askWebResearch(
   const month = currentMonth(deps.now?.());
   const reserveMicro = usdToMicro(estimateCostUsd(MAX_INPUT_TOKENS_ESTIMATE, MAX_OUTPUT_TOKENS) + MAX_SEARCHES * SEARCH_COST_USD);
   try {
-    if (!(await deps.budget.reserve(month, reserveMicro, usdToMicro(cfg.monthlyBudgetUsd)))) return unavailable("budget_exhausted");
+    if (!(await deps.budget.reserve(month, reserveMicro, usdToMicro(cfg.monthlyBudgetUsd * webBudgetShare(deps.env))))) return unavailable("budget_exhausted");
   } catch (err) {
     logger.error("Web research budget store unavailable", { error: (err as Error).message });
     return unavailable("budget_exhausted");
