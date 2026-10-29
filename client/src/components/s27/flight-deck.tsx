@@ -6,7 +6,6 @@
  */
 import React, { useMemo, useState } from "react";
 import { Link } from "wouter";
-import { Check } from "lucide-react";
 import type { StudentHighSchoolView } from "@shared/high-school-contract";
 import type { CheckpointKey, StudentJourneyView } from "@shared/s27-contract";
 import type { StudentBillingView } from "@shared/billing-contract";
@@ -165,7 +164,7 @@ function AlertCardView({ card, credits, accessMonths }: { card: AlertCard; credi
     <article className="alert" style={{ "--sev": color } as React.CSSProperties} data-testid={`alert-${card.key}`} data-done={card.done ? "true" : "false"} data-severity={card.severity}>
       <div className="rg">
         <Ring fraction={card.done ? 1 : card.fraction} color={color} />
-        {card.done ? <b><Check size={22} aria-hidden="true" /><small>{t("s27.unit.done")}</small></b> : <b>{card.big ?? "–"}<small>{unit}</small></b>}
+        {card.done ? <b><span aria-hidden="true">✓</span><small>{t("s27.unit.done")}</small></b> : <b>{card.big ?? "–"}<small>{unit}</small></b>}
       </div>
       <span className="t">{title}</span>
       <span className="d">{text}</span>

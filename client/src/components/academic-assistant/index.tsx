@@ -17,7 +17,7 @@ import { createPortal } from "react-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation, useSearch } from "wouter";
 import { ArrowLeft, ArrowRight, BookmarkCheck, ExternalLink, History, LifeBuoy, MessageSquarePlus, RotateCcw, SendHorizontal, X } from "lucide-react";
-import { LumiereCrest } from "@/components/brand/lumiere-brand";
+import { LumiereOrb, type OrbState } from "@/components/s27/lumiere-orb";
 import { api, apiRequest } from "@/lib/api";
 import { useT, type Language } from "@/i18n";
 import {
@@ -140,6 +140,17 @@ export function AssistantPanelView(p: AssistantViewProps) {
     tr(kind === "throttled" ? "assistant.throttled" : kind === "unavailable" ? "assistant.unavailable" : kind === "attachment" ? "at.err.send" : kind === "archived" ? "ah.archivedNotice" : "assistant.error.generic");
   const attachMenuId = `${uid}-attach-menu`;
   const sub = panel !== "chat";
+  // Orb: thinking while a reply is on its way, "talking" briefly when an answer arrives; static under reduced motion (CSS).
+  const [talking, setTalking] = useState(false);
+  const last = p.entries[p.entries.length - 1];
+  const lastId = last && last.role === "assistant" ? last.id : null;
+  useEffect(() => {
+    if (!lastId) return undefined;
+    setTalking(true);
+    const id = window.setTimeout(() => setTalking(false), 1800);
+    return () => window.clearTimeout(id);
+  }, [lastId]);
+  const orbState: OrbState = p.pending ? "think" : talking ? "talk" : "idle";
 
   return (
     <div className="aa-root" data-testid="assistant-root">
@@ -155,36 +166,38 @@ export function AssistantPanelView(p: AssistantViewProps) {
         data-testid="assistant-panel"
         data-panel={panel}
       >
-        <header className="aa-head">
+        <header className={`aa-head${sub ? "" : " aa-head-hero"}`}>
           {sub && f ? (
             <button type="button" className="aa-iconbtn" onClick={f.onBack} aria-label={tr("ah.back")} title={tr("ah.back")} data-testid="assistant-back">
               <ArrowLeft aria-hidden="true" size={20} />
             </button>
           ) : (
-            <LumiereCrest size={34} />
+            <div className="aa-orb-wrap" data-testid="assistant-orb"><LumiereOrb size={68} state={orbState} /></div>
           )}
           <div className="aa-head-text">
             <h2 id={titleId} ref={p.titleRef} tabIndex={-1} className="aa-title">{tr("assistant.title")}</h2>
             <p className="aa-subtitle" data-testid="assistant-subtitle">{f?.conversationTitle ? f.conversationTitle : tr("assistant.subtitle")}</p>
           </div>
-          {f && (
-            <button type="button" className="aa-iconbtn" onClick={f.onOpenHistory} aria-label={tr("ah.historyAria")} title={tr("ah.history")} data-testid="assistant-history-btn" aria-pressed={panel === "history"}>
-              <History aria-hidden="true" size={19} />
+          <div className="aa-head-actions">
+            {f && (
+              <button type="button" className="aa-iconbtn" onClick={f.onOpenHistory} aria-label={tr("ah.historyAria")} title={tr("ah.history")} data-testid="assistant-history-btn" aria-pressed={panel === "history"}>
+                <History aria-hidden="true" size={19} />
+              </button>
+            )}
+            {f?.onOpenMemory && (
+              <button type="button" className="aa-iconbtn" onClick={f.onOpenMemory} aria-label={tr("am.open")} title={tr("am.open")} data-testid="assistant-memory-btn" aria-pressed={panel === "memory"}>
+                <BookmarkCheck aria-hidden="true" size={19} />
+              </button>
+            )}
+            {(p.entries.length > 0 || (f && f.conversationTitle !== null)) && (
+              <button type="button" className="aa-iconbtn" onClick={p.onClear} aria-label={tr("assistant.clearAria")} title={tr("assistant.clear")} data-testid="assistant-clear">
+                {f ? <MessageSquarePlus aria-hidden="true" size={19} /> : <RotateCcw aria-hidden="true" size={18} />}
+              </button>
+            )}
+            <button type="button" className="aa-iconbtn" onClick={p.onClose} aria-label={tr("assistant.closeAria")} title={tr("assistant.close")} data-testid="assistant-close">
+              <X aria-hidden="true" size={20} />
             </button>
-          )}
-          {f?.onOpenMemory && (
-            <button type="button" className="aa-iconbtn" onClick={f.onOpenMemory} aria-label={tr("am.open")} title={tr("am.open")} data-testid="assistant-memory-btn" aria-pressed={panel === "memory"}>
-              <BookmarkCheck aria-hidden="true" size={19} />
-            </button>
-          )}
-          {(p.entries.length > 0 || (f && f.conversationTitle !== null)) && (
-            <button type="button" className="aa-iconbtn" onClick={p.onClear} aria-label={tr("assistant.clearAria")} title={tr("assistant.clear")} data-testid="assistant-clear">
-              {f ? <MessageSquarePlus aria-hidden="true" size={19} /> : <RotateCcw aria-hidden="true" size={18} />}
-            </button>
-          )}
-          <button type="button" className="aa-iconbtn" onClick={p.onClose} aria-label={tr("assistant.closeAria")} title={tr("assistant.close")} data-testid="assistant-close">
-            <X aria-hidden="true" size={20} />
-          </button>
+          </div>
         </header>
 
         {p.statusState === "ready" && p.status && p.status.enabled !== false && !sub && (
@@ -208,6 +221,7 @@ export function AssistantPanelView(p: AssistantViewProps) {
         <div ref={p.bodyRef} className="aa-body" hidden={sub} role="log" aria-live="polite" aria-relevant="additions" aria-label={tr("assistant.conversation")} data-testid="assistant-log">
           {showGreeting && (
             <div className="aa-msg aa-msg-assistant" data-testid="assistant-greeting">
+              <LumiereOrb size={26} className="aa-avatar" />
               <p className="aa-msg-label">{tr("assistant.title")}</p>
               <div className="aa-bubble"><p className="aa-text">{tr("assistant.greeting")}</p></div>
             </div>
@@ -254,6 +268,7 @@ export function AssistantPanelView(p: AssistantViewProps) {
 
           {p.pending && (
             <div className="aa-msg aa-msg-assistant" data-testid="assistant-thinking">
+              <LumiereOrb size={26} state="think" className="aa-avatar" />
               <div className="aa-bubble aa-thinking">
                 <span className="aa-dots" aria-hidden="true"><i /><i /><i /></span>
                 <span>{tr("assistant.thinking")}</span>
@@ -385,6 +400,7 @@ function AssistantAnswer({ entry, language, tr, onNavigate }: { entry: Extract<C
   const refs = entry.privateRefs ?? [];
   return (
     <div data-entry-id={entry.id} className={`aa-msg aa-msg-assistant ${local ? "aa-local" : "aa-live"}`} data-testid="assistant-answer" data-mode={entry.mode}>
+      <LumiereOrb size={26} className="aa-avatar" />
       <p className="aa-msg-label">
         <span className="aa-mode" data-testid="assistant-mode-label">{tr(local ? "assistant.label.local" : "assistant.label.live")}</span>
       </p>
@@ -416,7 +432,7 @@ function AssistantAnswer({ entry, language, tr, onNavigate }: { entry: Extract<C
           </div>
         )}
         {entry.sources.length > 0 && (
-          <div className="aa-block" data-testid="assistant-sources">
+          <div className="aa-block aa-from" data-testid="assistant-sources">
             <p className="aa-block-title">{tr("assistant.sources")}</p>
             <ul className="aa-sourcelist">
               {entry.sources.map((s) => (
@@ -943,7 +959,7 @@ export function AcademicAssistant({ defaultOpen = false }: { defaultOpen?: boole
       onClick={() => setOpen(true)}
       data-testid="assistant-fab"
     >
-      <span className="aa-fab-crest"><LumiereCrest size={30} /></span>
+      <span className="aa-fab-crest"><LumiereOrb size={28} /></span>
       <span className="aa-fab-label">{tr("assistant.open")}</span>
     </button>
   );

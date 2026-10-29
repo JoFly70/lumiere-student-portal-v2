@@ -39,13 +39,13 @@ describe("S20 assistant: closed / open shell", () => {
   const qc = new QueryClient();
   const render = (open: boolean, lang: "en" | "fr" = "en") =>
     renderToStaticMarkup(createElement(QueryClientProvider, { client: qc }, createElement(I18nProvider, { initialLanguage: lang }, createElement(Router, { ssrPath: "/" }, createElement(AcademicAssistant, { defaultOpen: open })))));
-  it("closed: only the labelled crest button, collapsed, no dialog", () => {
+  it("closed: only the labelled orb button, collapsed, no dialog", () => {
     const html = render(false);
     expect(html).toContain('data-testid="assistant-fab"');
     expect(html).toContain('aria-haspopup="dialog"');
     expect(html).toContain('aria-expanded="false"');
     expect(html).toContain('aria-label="Open the Lumière guide to ask a question"');
-    expect(html).toContain('data-testid="img-lumiere-crest"');
+    expect(html).toContain('class="lm-orb"');
     expect(html).not.toContain('role="dialog"');
   });
   it("open: modal dialog labelled by its title, with Close control", () => {

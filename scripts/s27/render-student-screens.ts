@@ -180,6 +180,33 @@ async function logFlow(browser: any) {
   process.exitCode = checks.every((c) => c.ok) ? 0 : 1;
 }
 
+/** Orb avatar + chat panel: open from the FAB, ask a suggestion, capture the answer with its "From:" line. */
+async function chatShots(browser: any) {
+  for (const [width, height] of [[1440, 900], [390, 844]] as const) {
+    for (const theme of ["lumiere", "lumiere-dark"] as const) {
+      const { page, ctx } = await newPage(browser, "flight-deck", { width, height, theme });
+      await page.click('[data-testid="assistant-fab"]');
+      await page.waitForSelector('[data-testid="assistant-panel"]');
+      await page.waitForTimeout(500);
+      const tag = `${width}-${theme === "lumiere" ? "light" : "dark"}`;
+      await page.screenshot({ path: path.join(OUT, `chat-open-${tag}.png`) });
+      await page.click('[data-testid="assistant-suggestion-roadmap-how"]');
+      await page.waitForSelector('[data-testid="assistant-answer"]');
+      await page.waitForTimeout(600);
+      await page.screenshot({ path: path.join(OUT, `chat-answer-${tag}.png`) });
+      check(`chat ${tag}: answer shows the From: source line and an orb avatar`, /From:/.test((await page.textContent('[data-testid="assistant-sources"]')) ?? "") && (await page.$('[data-testid="assistant-answer"] .lm-orb')) !== null);
+      await ctx.close();
+    }
+  }
+  // cockpit chip opens the assistant with the question
+  const { page, ctx } = await newPage(browser, "flight-deck", { width: 1440, height: 900, theme: "lumiere" });
+  await page.click('[data-testid="fd-ask"] .q >> nth=1');
+  await page.waitForSelector('[data-testid="assistant-answer"]');
+  check("cockpit chip sends the question through the assistant", (await page.textContent('[data-testid="assistant-user-message"]'))?.includes("urgent") === true);
+  await ctx.close();
+  process.exitCode = checks.every((c) => c.ok) ? 0 : 1;
+}
+
 async function main() {
   const wanted = (process.argv[2] && process.argv[2] !== "all" ? process.argv[2].split(",") : Object.keys(SCREENS));
   fs.mkdirSync(OUT, { recursive: true });
@@ -187,6 +214,7 @@ async function main() {
   const browser = await chromium.launch();
   const report: Record<string, unknown> = {};
   try {
+    if (process.argv[2] === "chat") { await chatShots(browser); return; }
     if (process.argv[2] === "log-flow") { await logFlow(browser); return; }
     for (const screen of wanted) {
       for (const [width, height] of [[1440, 900], [390, 844]] as const) {
