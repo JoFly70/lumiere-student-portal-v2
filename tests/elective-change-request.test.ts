@@ -31,7 +31,7 @@ describe("elective change request UI", () => {
     expect(html).toContain("Awaiting school approval");
     const btn = html.match(/<button[^>]*data-testid="button-request-elective-change"[^>]*>/)?.[0] ?? "";
     expect(btn).not.toBe("");
-    expect(btn).not.toContain("aria-disabled");
+    expect(btn).toContain('aria-disabled="false"');
     expect(html).toContain("Request a change");
   });
   it("is French when the language is French", () => {
