@@ -30,6 +30,9 @@
 }
 /* The Flight Deck embeds its own Lumière card: no second entry point on wide screens (still reachable from the card). */
 @media (min-width: 700px) { .aa-fab[data-inline-card="true"][data-open="false"] { display: none; } }
+/* Never float over an open sheet/dialog (e.g. the Log progress sheet): the form and its Save button win. */
+body[data-scroll-locked] .aa-fab,
+body:has([role="dialog"][data-state="open"]) .aa-fab { display: none; }
 .aa-fab:hover { border-color: var(--t-accent); background: var(--t-panel-2); }
 .aa-fab:focus-visible { outline: 2px solid var(--t-focus); outline-offset: 3px; }
 .aa-fab[data-open="true"] { visibility: hidden; }

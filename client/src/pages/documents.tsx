@@ -576,13 +576,13 @@ export default function Documents() {
 
       <Card>
         <CardHeader>
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div>
               <CardTitle className="font-serif text-2xl font-normal">{t("documents.libraryTitle")}</CardTitle>
               <CardDescription>{t("documents.libraryHelp")}</CardDescription>
             </div>
-            <div className="flex flex-col sm:flex-row gap-2">
-              <div className="relative">
+            <div className="flex flex-col sm:flex-row gap-2 min-w-0">
+              <div className="relative min-w-0">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder={t("documents.searchPlaceholder")}
@@ -644,7 +644,7 @@ export default function Documents() {
                 </div>
               ) : (
                 <>
-                <ul className="space-y-3 md:hidden" data-testid="document-cards">
+                <ul className="space-y-3 lg:hidden" data-testid="document-cards">
                   {filteredDocuments.map((doc) => {
                     const FileIcon = getFileIcon(docMime(doc.file_name));
                     return (
@@ -667,7 +667,7 @@ export default function Documents() {
                     );
                   })}
                 </ul>
-                <div className="hidden overflow-hidden rounded-lg border md:block">
+                <div className="hidden overflow-hidden rounded-lg border lg:block">
                   <div className="relative overflow-x-auto">
                     <table className="w-full">
                       <thead>
