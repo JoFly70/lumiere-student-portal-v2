@@ -261,5 +261,8 @@ main().catch((error) => {
   out.blocker = typeof error?.message === "string" && /^[A-Z0-9_]+$/.test(error.message) ? error.message : "PROVISIONING_FAILED";
   if (Array.isArray(error?.issues)) out.validation = error.issues.map((i: { path: unknown[]; code: string }) => ({ field: i.path.join("."), code: i.code }));
   if (!/^[A-Z0-9_]+$/.test(String(error?.message))) out.detail = String(error?.message ?? error).slice(0, 300);
+  // A wrapped query error hides the database's reason in `cause`; keep its code and first line (never the params).
+  const cause = error?.cause;
+  if (cause) (out as Record<string, unknown>).cause = { code: typeof cause.code === "string" ? cause.code : null, message: String(cause.message ?? "").split("\n")[0]!.slice(0, 200) };
   process.exitCode = 1;
 }).finally(() => console.log(JSON.stringify(out, null, 2)));
