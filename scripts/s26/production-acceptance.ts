@@ -45,6 +45,8 @@ const DEMO_SECOND_PREFERRED = "DEMO-S26-SECOND";
 const DEMO_TAG_PREFIX = "DEMO / SYNTHETIC";
 const CRED_FILE = ".s26-private-backup/demo-student-login.txt";
 const REQUEST_TIMEOUT_MS = 20_000;
+/** Owner AI calls: the server gives the provider up to 30 s plus context loading. */
+const OWNER_AI_TIMEOUT_MS = 90_000;
 const SERVER_WINDOW_MS = 15 * 60 * 1000;
 
 // ---------------------------------------------------------------------------------------------
@@ -607,14 +609,15 @@ async function adminChecks() {
   const answers: Record<string, any> = {};
   const ownerAsk = async (question: string, language: "en" | "fr", task: "answer" | "draft_reply"): Promise<Out> => {
     if (!A || !ctx.sid) return skip("no admin session or demo student id");
-    const r = await post(`/api/admin/students/${ctx.sid}/owner-assistant`, { question, language, task }, A);
+    // The server allows Spark up to 30 s (more with context loading); never cut a live answer off client-side.
+    const r = await http("POST", `/api/admin/students/${ctx.sid}/owner-assistant`, { session: A, json: { question, language, task }, timeoutMs: OWNER_AI_TIMEOUT_MS });
     const j = r.json;
     answers[`${task}-${language}`] = j;
     const sourceRefs = new Set(Array.isArray(j?.sources) ? j.sources.map((x: { ref?: string }) => x?.ref) : []);
     const citations: Array<{ ref?: string }> = Array.isArray(j?.citations) ? j.citations : [];
     const reply = typeof j?.reply === "string" ? j.reply : "";
     const problems: string[] = [];
-    if (r.status !== 200) problems.push(`HTTP ${r.status}`);
+    if (r.status !== 200) problems.push(`HTTP ${r.status}${r.status === 0 ? ` (${short((r as { error?: string }).error ?? "no response", 80)} after ${OWNER_AI_TIMEOUT_MS / 1000}s client wait)` : ""}`);
     if (j?.mode !== "live" && !(ALLOW_AI_UNAVAILABLE && j?.mode === "unavailable")) problems.push(`mode ${short(j?.mode, 20)}${j?.reason ? ` (${short(j.reason, 30)})` : ""}: Spark did not answer`);
     if (j?.mode === "live") {
       if (reply.trim().length < 40) problems.push("reply empty or too short");
