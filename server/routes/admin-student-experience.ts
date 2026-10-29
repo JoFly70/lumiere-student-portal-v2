@@ -20,6 +20,7 @@ import { createAuditLog, type AuditLogEntry } from "../lib/audit";
 import { logger } from "../lib/logger";
 import { emitAccessDenied } from "./high-school-audit";
 import { guardRoles } from "./high-school-http";
+import { isDemoPreferredName } from "@shared/synthetic-accounts";
 
 export const MIRROR_PREFIX = "DEMO-MIRROR-";
 
@@ -40,7 +41,7 @@ export interface ExperienceDeps {
 /** A demo account is synthetic beyond doubt: .invalid email, student role, DEMO-prefixed student name. */
 export function isDemoTarget(student: ExperienceStudent, account: ExperienceAccount | null): account is ExperienceAccount {
   return !!account && account.role === "student" && /\.invalid$/i.test(account.email)
-    && /^DEMO/i.test(student.preferred_name ?? "") && account.id === student.user_id;
+    && isDemoPreferredName(student.preferred_name) && account.id === student.user_id;
 }
 
 const idSchema = z.string().trim().min(1).max(128);
@@ -56,7 +57,7 @@ export function createAdminStudentExperienceRouter(deps: ExperienceDeps) {
       try {
         const student = await deps.getStudent(id.data);
         if (!student) return res.status(404).json({ error: { code: "STUDENT_NOT_FOUND", message: "Student not found" } });
-        const synthetic = /^DEMO/i.test(student.preferred_name ?? "");
+        const synthetic = isDemoPreferredName(student.preferred_name);
         const target = synthetic ? student : await deps.findMirror(student.student_code ?? "");
         if (!target?.user_id) {
           return res.status(404).json({ error: { code: "MIRROR_NOT_PROVISIONED", message: "No demonstration mirror exists for this student yet." } });

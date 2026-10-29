@@ -16,7 +16,11 @@
  */
 import { z } from "zod";
 
-const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use yyyy-mm-dd");
+/** yyyy-mm-dd that is a real calendar date (2026-02-31 is rejected). */
+const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use yyyy-mm-dd").refine((v) => {
+  const d = new Date(`${v}T00:00:00Z`);
+  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === v;
+}, "Not a real calendar date");
 const text = (max: number) => z.string().trim().min(1).max(max);
 const optText = (max: number) => z.string().trim().max(max).nullable().optional();
 
@@ -237,6 +241,11 @@ export interface ControlStudentRow {
 }
 export interface ControlCenterView {
   readonly generatedAt: string;
+  /**
+   * S27 backend addition: true when a server row cap was hit (more than 500 students, or very large progress /
+   * installment / ticket sets), so the view may be incomplete. The UI should say so instead of implying completeness.
+   */
+  readonly truncated: boolean;
   readonly queue: readonly ControlQueueItem[];
   readonly students: readonly ControlStudentRow[];
   readonly deadlines: readonly { readonly studentId: string; readonly studentName: string; readonly label: string; readonly dueOn: string; readonly daysLeft: number }[];

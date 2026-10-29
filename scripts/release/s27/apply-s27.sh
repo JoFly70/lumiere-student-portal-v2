@@ -35,13 +35,16 @@ echo "identity: project $REF; public base tables: $TABLES" | tee -a "$LOG"
 [ "$TABLES" -ge 60 ] || die "only $TABLES public tables; this does not look like the production database"
 "${PSQL[@]}" -At -c "SELECT to_regclass('public.hs_enrollments') IS NOT NULL AND to_regclass('public.students') IS NOT NULL" | grep -q t || die "prerequisite tables (students, hs_enrollments) are missing; apply the S26 release first"
 
+ENUMS="SELECT 'audit_event_types (6) | ' || ((SELECT count(*) FROM pg_enum e JOIN pg_type t ON t.oid = e.enumtypid WHERE t.typname = 'audit_event_type' AND e.enumlabel IN ('program.agreement_updated','program.checkpoint_updated','program.session_requested','program.session_updated','program.note_added','program.access_denied')) = 6)::text"
 POSTVERIFY="SELECT t.name || ' | ' || (c.oid IS NOT NULL AND c.relrowsecurity AND NOT has_table_privilege('anon', c.oid, 'SELECT,INSERT,UPDATE,DELETE') AND NOT has_table_privilege('authenticated', c.oid, 'SELECT,INSERT,UPDATE,DELETE'))::text
   FROM (VALUES ('student_agreements'),('student_checkpoints'),('orientation_sessions'),('student_staff_notes')) AS t(name)
   LEFT JOIN pg_class c ON c.relname = t.name AND c.relnamespace = 'public'::regnamespace"
 
 if [ "$MODE" = "--check" ]; then
-  "${PSQL[@]}" -At -c "$POSTVERIFY" | tee -a "$LOG"
-  exit 0
+  CHECK=$( { "${PSQL[@]}" -At -c "$POSTVERIFY"; "${PSQL[@]}" -At -c "$ENUMS"; } | tee -a "$LOG")
+  # Exit 0 only when everything is applied: 4 tables (RLS on, no client privileges) and all 6 enum values.
+  [ "$(echo "$CHECK" | grep -c '| true$')" = "5" ] && { echo "S27 check: APPLIED"; exit 0; }
+  echo "S27 check: NOT FULLY APPLIED"; exit 1
 fi
 [ "$MODE" = "--apply" ] && [ "$CONFIRM" = "--i-understand-this-writes-to-production" ] || die "usage: --check | --apply --i-understand-this-writes-to-production"
 
@@ -63,8 +66,8 @@ LOST=$(LC_ALL=C join -t= "$OUT/rowcounts-s27-before-$STAMP.txt" "$OUT/rowcounts-
 [ -z "$LOST" ] || { echo "$LOST" | tee -a "$LOG"; die "rows decreased after migration; restore from $OUT/public-s27-$STAMP.dump"; }
 echo "row preservation: PASS" | tee -a "$LOG"
 
-"${PSQL[@]}" -At -c "$POSTVERIFY" > "$OUT/postverify-s27-$STAMP.txt"
+{ "${PSQL[@]}" -At -c "$POSTVERIFY"; "${PSQL[@]}" -At -c "$ENUMS"; } > "$OUT/postverify-s27-$STAMP.txt"
 cat "$OUT/postverify-s27-$STAMP.txt" | tee -a "$LOG"
-[ "$(grep -c '| true$' "$OUT/postverify-s27-$STAMP.txt")" = "4" ] || die "post-verify: the 4 S27 tables are not all present with RLS on and no client privileges"
-echo "post-verify: PASS (all 4 tables present, RLS on, no client privileges)" | tee -a "$LOG"
+[ "$(grep -c '| true$' "$OUT/postverify-s27-$STAMP.txt")" = "5" ] || die "post-verify: the 4 S27 tables are not all present with RLS on and no client privileges, or the 6 audit event types are missing"
+echo "post-verify: PASS (4 tables present, RLS on, no client privileges, 6 audit event types)" | tee -a "$LOG"
 echo "S27 production schema release: DONE" | tee -a "$LOG"

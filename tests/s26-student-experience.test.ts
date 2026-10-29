@@ -63,6 +63,9 @@ describe("S26 Experience as student", () => {
   it("isDemoTarget requires .invalid email, student role, DEMO name and matching user", () => {
     expect(isDemoTarget(demo as any, accounts["u-demo"])).toBe(true);
     expect(isDemoTarget({ ...demo, preferred_name: "Jonas" } as any, accounts["u-demo"])).toBe(false);
+    // S27: the marker needs a separator, so a real name that merely starts with "Demo" is never a demo target
+    expect(isDemoTarget({ ...demo, preferred_name: "Demont" } as any, accounts["u-demo"])).toBe(false);
+    expect(isDemoTarget({ ...demo, preferred_name: "DEMO" } as any, accounts["u-demo"])).toBe(false);
     expect(isDemoTarget(demo as any, { ...accounts["u-demo"], role: "admin" })).toBe(false);
   });
 });

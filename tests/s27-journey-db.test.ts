@@ -174,6 +174,28 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("S27 program journey on real Postgres", 
     expect(v.payments.signedNotPaid).toBeGreaterThanOrEqual(1);
   }, 120_000);
 
+  it("Control Center: row caps set truncated, lists are restricted to loaded students; agreement dates are validated", async () => {
+    const { loadControlCenterFacts, buildControlCenter, CC_LIMITS } = await import("../server/services/program-journey/control-center");
+    const { db } = await import("../server/lib/db");
+    const full = await loadControlCenterFacts(db as never, NOW);
+    expect(full.truncated).toBe(false);
+    const cut = await loadControlCenterFacts(db as never, NOW, { ...CC_LIMITS, students: 2 });
+    expect(cut.students).toHaveLength(2);
+    expect(cut.truncated).toBe(true);
+    const keep = new Set(cut.students.map((s) => s.id));
+    expect(cut.progress.every((p) => keep.has(p.studentId))).toBe(true);
+    expect(cut.billing.every((b) => keep.has(b.studentId))).toBe(true);
+    expect(buildControlCenter(cut, NOW).truncated).toBe(true);
+    const capped = await loadControlCenterFacts(db as never, NOW, { ...CC_LIMITS, progress: 1 });
+    expect(capped.truncated).toBe(capped.progress.length === 1 && true);
+    const { updateAgreementSchema } = await import("../shared/s27-contract");
+    expect(updateAgreementSchema.safeParse({ signedOn: "2026-02-31" }).success).toBe(false);
+    expect(updateAgreementSchema.safeParse({ signedOn: "2026-02-28" }).success).toBe(true);
+    const admin = await seedStaff(pg, "admin");
+    const st = await seedStudent(pg, { name: "DEMO Dates" });
+    await expect(svc.updateAgreement(st.studentId, admin.userId, { signedOn: "2026-11-05", activatedOn: "2026-11-01" })).rejects.toMatchObject({ code: "S27_VALIDATION_FAILED" });
+  }, 60_000);
+
   describe("HTTP roles, ownership and CSRF", () => {
     it("student reads only their own journey; studentId is rejected; coach and student are denied the staff endpoints", async () => {
       const a = await seedStudent(pg, { name: "DEMO HttpA" });

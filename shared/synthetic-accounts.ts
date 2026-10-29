@@ -24,3 +24,11 @@ export function isSyntheticAccount(x: SyntheticAccountInput | null | undefined):
   }
   return false;
 }
+
+/**
+ * Strict marker for provisioned demo students (preferred_name "DEMO-S26-FR", "DEMO-MIRROR-<code>", "DEMO-S27-P8"):
+ * "DEMO" followed by a separator. A real name that merely starts with those letters ("Demont") does not match.
+ * Used where a wrong answer would hide a real student from counts or expose a session, so it is deliberately narrow.
+ */
+export const DEMO_PREFERRED_NAME = /^DEMO[-_ ]/i;
+export const isDemoPreferredName = (name: string | null | undefined): boolean => DEMO_PREFERRED_NAME.test(name ?? "");

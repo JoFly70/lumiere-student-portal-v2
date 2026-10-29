@@ -92,11 +92,11 @@ while [ "$(date +%s)" -lt "$DEADLINE" ]; do
       else status schema FAIL "$(grep -E 'REFUSED|ERROR|FAIL' "$EVID/schema.log" | head -5 | tr '\n' ' ' | cut -c1-400)"; DONE_SHA=$SHA; continue; fi
     fi
     # S27: program journey tables (additive). Runs when the 4 S27 tables are missing, after the S26 schema step.
-    S27_SQL="SELECT count(*) FROM pg_class WHERE relnamespace='public'::regnamespace AND relname IN ('student_agreements','student_checkpoints','orientation_sessions','student_staff_notes')"
-    if need_pg; then S27_OK=$(psql "$DATABASE_URL" -X -At -c "$S27_SQL" 2>/dev/null || echo 0)
-    else S27_OK=$(nix-shell -p postgresql_16 --run "psql \"\$DATABASE_URL\" -X -At -c \"$S27_SQL\"" 2>/dev/null || echo 0); fi
-    if [ "$S27_OK" = "4" ]; then
-      status schema_s27 SKIPPED "S27 tables already present"
+    # Full check (4 tables + RLS + no client privileges + 6 audit enum values), not just table presence.
+    if need_pg; then bash scripts/release/s27/apply-s27.sh --check > "$EVID/schema-s27-check.log" 2>&1 && S27_OK=1 || S27_OK=0
+    else nix-shell -p postgresql_16 --run "bash scripts/release/s27/apply-s27.sh --check" > "$EVID/schema-s27-check.log" 2>&1 && S27_OK=1 || S27_OK=0; fi
+    if [ "$S27_OK" = "1" ]; then
+      status schema_s27 SKIPPED "S27 schema fully applied (tables, RLS, privileges, audit enum values)"
     else
       if need_pg; then bash scripts/release/s27/apply-s27.sh --apply --i-understand-this-writes-to-production > "$EVID/schema-s27.log" 2>&1
       else nix-shell -p postgresql_16 --run "bash scripts/release/s27/apply-s27.sh --apply --i-understand-this-writes-to-production" > "$EVID/schema-s27.log" 2>&1; fi
