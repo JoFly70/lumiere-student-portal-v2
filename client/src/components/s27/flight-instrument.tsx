@@ -182,8 +182,8 @@ export function FlightInstrument(p: InstrumentProps) {
           {/* diploma seal: gold rosette, ribbons and the crest */}
           <g transform={`translate(${g.B.x},${g.B.y}) scale(${narrow ? 0.62 : 0.9})`}>
             <circle r="62" fill={`url(#${uid}halo)`} />
-            <path d="M-14,22 L-26,62 L-16,56 L-9,66 L-2,28Z" fill="#9E2B2B" />
-            <path d="M14,22 L26,62 L16,56 L9,66 L2,28Z" fill="#7E1F22" />
+            <path d="M-14,22 L-26,62 L-16,56 L-9,66 L-2,28Z" fill="#7a5a3a" />
+            <path d="M14,22 L26,62 L16,56 L9,66 L2,28Z" fill="#5e4329" />
             <path d={rosette()} fill={`url(#${uid}gold)`} />
             <circle r="28" fill="none" stroke="#7A5A22" strokeWidth=".8" opacity=".7" />
             {Array.from({ length: 60 }, (_, j) => {
