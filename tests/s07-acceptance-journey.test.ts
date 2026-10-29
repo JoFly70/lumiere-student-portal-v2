@@ -11,12 +11,14 @@
  * STUBBED (external services only): hosted Supabase auth/profile lookups
  * (replaced by the local JWT), audit logging.
  *
- * Writes synthetic-data JSON to docs/recovery/s07-evidence/journey/ for the
- * README and for scripts/s07/render-journey.ts.
+ * Writes synthetic-data JSON for the README and for scripts/s07/render-journey.ts. The committed copy in
+ * docs/recovery/s07-evidence/journey/ is only rewritten with S07_WRITE_EVIDENCE=1; ordinary runs write to a
+ * temporary folder so the test suite never dirties tracked files.
  */
 import crypto from "node:crypto";
 import fs from "node:fs";
 import http from "node:http";
+import os from "node:os";
 import path from "node:path";
 import type { AddressInfo } from "node:net";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
@@ -67,7 +69,9 @@ vi.mock("../server/lib/audit", () => ({
 if (!PG_BINARIES_AVAILABLE) console.warn(S05_PG_SKIP_MESSAGE);
 const ready = PG_BINARIES_AVAILABLE && s05MigrationExists();
 const XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-const OUT = path.resolve(import.meta.dirname, "..", "docs/recovery/s07-evidence/journey");
+const OUT = process.env.S07_WRITE_EVIDENCE === "1"
+  ? path.resolve(import.meta.dirname, "..", "docs/recovery/s07-evidence/journey")
+  : path.join(os.tmpdir(), "s07-evidence-journey");
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type Ex = { key: string; code: string; severity: string };
