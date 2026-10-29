@@ -76,7 +76,7 @@ const studentFileItems = studentMenuItems.filter((i) => !JOURNEY_URLS.includes(i
 // Staff navigation. "Students" opens the existing admin Students list (admin only: the
 // list route is admin-gated). Staff and coaches work from the support desk.
 const adminMenuItems = [
-  { title: "Command Center", url: "/admin/support-center", icon: Gauge },
+  { title: "Control Center", url: "/admin/support-center", icon: Gauge },
   { title: "Students", url: ADMIN_STUDENTS_PATH, icon: GraduationCap },
   { title: "Support desk", url: "/support", icon: HelpCircle },
   { title: "Elective requests", url: "/admin/elective-requests", icon: Shuffle },
@@ -90,6 +90,8 @@ export const STAFF_BILLING_PATH = "/staff/billing";
 const staffMenuItems = [
   { title: "Support desk", url: "/support", icon: HelpCircle },
 ];
+// S27: staff also get the Control Center (their allowed scope); coaches keep the support desk only.
+const staffControlItem = { title: "Control Center", url: "/staff/control-center", icon: Gauge };
 // Billing routes allow staff + admin only (not coach), so the entry is role-specific.
 const staffBillingItem = { title: "Student billing", url: STAFF_BILLING_PATH, icon: CreditCard };
 
@@ -116,7 +118,7 @@ export function AppSidebar() {
       : isStudent
         ? studentMenuItems
         : user?.role === "staff"
-          ? [...staffMenuItems, staffBillingItem]
+          ? [staffControlItem, ...staffMenuItems, staffBillingItem]
           : staffMenuItems;
 
   const displayName = isStudent && profile

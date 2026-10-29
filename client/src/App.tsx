@@ -97,6 +97,14 @@ function Router() {
           </ProtectedRoute>
         )}
       </Route>
+      {/* S27: staff get the same Control Center (server scopes the data); the student file stays admin-only. */}
+      <Route path="/staff/control-center">
+        {() => (
+          <ProtectedRoute requireRole={["admin", "staff"]}>
+            <AdminSupportCenter />
+          </ProtectedRoute>
+        )}
+      </Route>
       <Route path="/admin/assistant">
         {() => (
           <ProtectedRoute requireRole="admin">

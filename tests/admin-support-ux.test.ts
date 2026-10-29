@@ -4,7 +4,6 @@ import { describe, expect, it } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Router } from "wouter";
 import { renderToStaticMarkup } from "react-dom/server";
-import AdminSupportCenter from "../client/src/pages/admin-support-center";
 import AdminAssistant from "../client/src/pages/admin-assistant";
 import { supportSearchWithStudent, supportSearchWithTicket, supportStudentFromSearch, supportTicketFromSearch } from "../client/src/components/support/support-navigation";
 
@@ -19,13 +18,12 @@ function render(node: React.ReactElement, path = "/admin/support-center") {
 }
 
 describe("admin student support navigation", () => {
-  it("routes the control center to existing student and support workspaces", () => {
-    const html = render(React.createElement(AdminSupportCenter));
-    expect(html).toContain('href="/admin?tab=students"');
-    expect(html).toContain('href="/support"');
-    expect(html).toContain("Documents and evidence");
-    expect(html).toContain("Read-only student preview");
-    expect(html).toContain("Billing");
+  it("serves the S27 Control Center from the single control-center endpoint", () => {
+    const page = readFileSync(new URL("../client/src/pages/admin-support-center.tsx", import.meta.url), "utf8");
+    expect(page).toContain("<ControlCenter />");
+    const cc = readFileSync(new URL("../client/src/components/admin/control/control-center.tsx", import.meta.url), "utf8");
+    expect(cc).toContain("useControlCenter");
+    expect(cc).toContain('href="/admin/assistant"');
   });
 
   it("asks the owner to choose a student before any AI question (no raw IDs, no unscoped chat)", () => {

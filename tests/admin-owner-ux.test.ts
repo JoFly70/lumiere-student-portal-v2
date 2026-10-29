@@ -68,6 +68,6 @@ describe("admin navigation and routes", () => {
     const app = read("client/src/App.tsx");
     const route = app.slice(app.indexOf('path="/admin/elective-requests"'), app.indexOf("</Route>", app.indexOf('path="/admin/elective-requests"')));
     expect(route).toContain('requireRole="admin"');
-    expect(read("client/src/components/admin/control-center-live.tsx")).toContain('href="/admin/elective-requests"');
+    expect(read("client/src/components/admin/control/control-center.tsx")).toContain('href="/admin/elective-requests"');
   });
 });
