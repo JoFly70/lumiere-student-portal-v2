@@ -104,3 +104,18 @@ touched. The owner approves any release.
 
 - Two staff views of a student remain: the new student file and the older "Academic workspace". Both are kept until the
   owner decides.
+
+## Release (2026-10-29)
+
+- Owner approved publication. Release marker `c7a8eae` (S27 head plus the security-review follow-ups), runner steps
+  sync / build / schema (already applied) / schema_s27 (already applied) / provision all PASS at 15:01–15:03 UTC;
+  published 15:05 UTC. The workspace's local commit `53856ae` was preserved by the runner as tag
+  `s26-pre-sync-backup-53856ae`.
+- Pre-release gates: type checks clean; full suite 221 files / 3,704 tests on `cebb1f4`, targeted suites after the
+  final fixes; independent security review release-ready (three should-fixes applied in `c7a8eae`); visual inspection
+  of all route groups (39 findings verified) and of the new Web research page.
+- **Live AI acceptance on the S27 release (15:08–15:09 UTC, `--ai-only`): PASS 16/16 required.** Status live;
+  English answer live (32 valid citations); French draft live (15 valid citations, including two program-guide
+  records); requested model and provider-served model both `muse-spark-1.3-contributor` (PASS).
+- Not changed: the repository history still contains the awarding school's name in older commits (owner decision:
+  leave as is).
