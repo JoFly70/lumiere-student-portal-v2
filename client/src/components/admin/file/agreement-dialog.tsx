@@ -50,8 +50,8 @@ export function AgreementDialog({ open, onOpenChange, studentId, agreement }: { 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[92vh] max-w-3xl overflow-y-auto" data-testid="dialog-agreement">
-        <DialogHeader>
+      <DialogContent className="max-h-[92dvh] max-w-3xl overflow-y-auto" data-testid="dialog-agreement">
+        <DialogHeader sticky>
           <DialogTitle className="font-serif text-2xl">{t("owner.agr.title")}</DialogTitle>
           <DialogDescription>{t("owner.agr.desc")}</DialogDescription>
         </DialogHeader>
@@ -132,7 +132,7 @@ export function AgreementDialog({ open, onOpenChange, studentId, agreement }: { 
         ) : null}
         {update.isError ? <StaffNotice tone="urgent" role="alert">{errorText(update.error, t("owner.agr.saveFailed"))}</StaffNotice> : null}
 
-        <DialogFooter>
+        <DialogFooter sticky>
           <button type="button" className={cn(ownerBtn.outline, "border")} onClick={() => onOpenChange(false)} disabled={update.isPending}>{t("owner.cancel")}</button>
           <button type="button" className={ownerBtn.seal} onClick={submit} disabled={!result.changed || result.errors.length > 0 || update.isPending} data-testid="agreement-save">{update.isPending ? t("owner.saving") : t("owner.save")}</button>
         </DialogFooter>

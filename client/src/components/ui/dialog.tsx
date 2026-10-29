@@ -53,13 +53,16 @@ const DialogContent = React.forwardRef<
 ))
 DialogContent.displayName = DialogPrimitive.Content.displayName
 
+/** `sticky`: for long, scrolling dialogs (set max-h + overflow-y-auto on DialogContent): header stays put. */
 const DialogHeader = ({
   className,
+  sticky,
   ...props
-}: React.HTMLAttributes<HTMLDivElement>) => (
+}: React.HTMLAttributes<HTMLDivElement> & { sticky?: boolean }) => (
   <div
     className={cn(
       "flex flex-col space-y-1.5 text-center sm:text-left",
+      sticky && "sticky top-[-1.5rem] z-10 -mx-6 -mt-6 border-b border-border bg-background px-6 pb-4 pt-6 pr-12",
       className
     )}
     {...props}
@@ -67,13 +70,16 @@ const DialogHeader = ({
 )
 DialogHeader.displayName = "DialogHeader"
 
+/** `sticky`: Save/Cancel stay visible at the bottom of a long scrolling dialog. */
 const DialogFooter = ({
   className,
+  sticky,
   ...props
-}: React.HTMLAttributes<HTMLDivElement>) => (
+}: React.HTMLAttributes<HTMLDivElement> & { sticky?: boolean }) => (
   <div
     className={cn(
       "flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2",
+      sticky && "sticky bottom-[-1.5rem] z-10 -mx-6 -mb-6 border-t border-border bg-background px-6 py-4",
       className
     )}
     {...props}
