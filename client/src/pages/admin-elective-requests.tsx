@@ -90,22 +90,21 @@ export default function AdminElectiveRequests() {
               </StaffEmpty>
             ) : (
               <>
-                <div className={`${staffTable.frame} hidden md:block`}>
+                <div className={`${staffTable.frame} hidden overflow-x-auto md:block`}>
                   <table className={staffTable.table} data-testid="elective-queue">
-                    <thead><tr><th className={staffTable.th}>Student</th><th className={staffTable.th}>Change</th><th className={staffTable.th}>Stage</th><th className={staffTable.th}>Age</th><th className={staffTable.th}>Assigned</th></tr></thead>
+                    <thead><tr><th className={staffTable.th}>Student</th><th className={staffTable.th}>Change</th><th className={staffTable.th}>Stage</th><th className={staffTable.th}>Age</th></tr></thead>
                     <tbody>
                       {shown.map((r) => (
                         <tr key={r.ticket.id} className={`${staffTable.tr} ${selectedId === r.ticket.id ? "bg-student-gold-soft/60" : ""}`}>
                           <td className={staffTable.td}>
-                            <button type="button" onClick={() => select(r.ticket.id)} aria-current={selectedId === r.ticket.id} className="flex min-w-0 items-center gap-2 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-student-gold-ink" data-testid="elective-row">
+                            <button type="button" onClick={() => select(r.ticket.id)} aria-current={selectedId === r.ticket.id} className="flex min-w-0 items-start gap-2.5 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-student-gold-ink" data-testid="elective-row">
                               <StaffAvatar name={r.ticket.reporter_name} size="sm" />
-                              <span className="min-w-0 break-words font-medium text-student-ink">{r.ticket.reporter_name}</span>
+                              <span className="min-w-0"><span className="block break-words font-medium text-student-ink">{r.ticket.reporter_name}</span><span className="block text-xs text-student-muted">{r.ticket.assignee?.name ?? "Unassigned"}</span></span>
                             </button>
                           </td>
-                          <td className={`${staffTable.td} min-w-[12rem]`}><span className="block break-words">{r.from || "Course"}</span><span className="block break-words text-student-muted">→ {r.to || "Requested course"}</span></td>
+                          <td className={`${staffTable.td} min-w-[11rem]`}><span className="block break-words">{r.from || "Course"}</span><span className="block break-words text-student-muted">→ {r.to || "Requested course"}</span></td>
                           <td className={staffTable.td}>{r.stage ? <StagePill stage={r.stage} /> : <span className="text-xs text-student-muted">Loading…</span>}</td>
                           <td className={`${staffTable.td} whitespace-nowrap tabular-nums`}>{ageLabel(r.ticket.created_at)}</td>
-                          <td className={`${staffTable.td} text-student-muted`}>{r.ticket.assignee?.name ?? "Unassigned"}</td>
                         </tr>
                       ))}
                     </tbody>

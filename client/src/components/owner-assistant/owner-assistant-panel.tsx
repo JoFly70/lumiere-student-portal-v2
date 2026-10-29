@@ -7,7 +7,7 @@
 import React, { useState } from "react";
 import { Link } from "wouter";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { BrainCircuit, Copy, FileSearch, Loader2, Send, ShieldCheck } from "lucide-react";
+import { BrainCircuit, Copy, FileSearch, Info, Loader2, Send, ShieldCheck } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
 import { StaffNotice, StaffPill, staffBtn, staffField } from "@/components/staff/staff-ui";
 
@@ -59,7 +59,7 @@ export function OwnerAssistantPanel({ studentId, studentLabel }: { studentId: st
   return (
     <section className="space-y-4" aria-labelledby="owner-ai-heading" data-testid="owner-assistant-panel">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex items-start gap-3">
+        <div className="flex min-w-0 flex-1 items-start gap-3">
           <span className="grid h-10 w-10 place-items-center rounded-full bg-student-gold/15 text-student-gold-ink"><BrainCircuit className="h-5 w-5" aria-hidden="true" /></span>
           <div>
             <h2 id="owner-ai-heading" className="font-serif text-xl tracking-tight text-student-ink">Lumière Owner AI</h2>
@@ -68,10 +68,10 @@ export function OwnerAssistantPanel({ studentId, studentLabel }: { studentId: st
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           {status.data?.mode === "live"
-            ? <StaffPill tone="gold" testId="owner-ai-mode">Live AI</StaffPill>
-            : <StaffPill tone="attention" testId="owner-ai-mode">{status.isLoading ? "Checking…" : "AI unavailable"}</StaffPill>}
+            ? <StaffPill tone="gold" className="whitespace-nowrap" testId="owner-ai-mode">Live AI</StaffPill>
+            : <StaffPill tone="attention" className="whitespace-nowrap" testId="owner-ai-mode">{status.isLoading ? "Checking…" : "AI unavailable"}</StaffPill>}
           <label className="sr-only" htmlFor="owner-ai-lang">Answer language</label>
           <select id="owner-ai-lang" className={`${staffField} h-9 w-auto`} value={language} onChange={(e) => setLanguage(e.target.value as Lang)} data-testid="owner-ai-language">
             <option value="en">English</option>
@@ -81,7 +81,7 @@ export function OwnerAssistantPanel({ studentId, studentLabel }: { studentId: st
       </div>
 
       {status.data?.mode === "unavailable" && (
-        <StaffNotice tone="attention" role="status" testId="owner-ai-unavailable">
+        <StaffNotice tone="attention" icon={<Info className="h-4 w-4" />} role="status" testId="owner-ai-unavailable">
           {REASON_TEXT[status.data.reason ?? ""] ?? "Live AI is unavailable."} You will still get a record summary that is clearly marked as not written by AI.
         </StaffNotice>
       )}
@@ -89,7 +89,7 @@ export function OwnerAssistantPanel({ studentId, studentLabel }: { studentId: st
       <ol className="space-y-4" aria-live="polite" data-testid="owner-ai-history">
         {history.map((h, i) => (
           <li key={i} className="space-y-2">
-            <p className="ml-auto max-w-[85%] rounded-lg bg-student-ink px-3 py-2 text-sm text-white">
+            <p className="ml-auto max-w-[85%] rounded-lg bg-student-seal px-3 py-2 text-sm text-student-seal-ink">
               {h.task === "draft_reply" ? <span className="mr-1 font-semibold">[Draft reply]</span> : null}{h.q}
             </p>
             <OwnerAnswerView answer={h.a} />
