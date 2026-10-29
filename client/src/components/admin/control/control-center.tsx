@@ -6,7 +6,7 @@
  * the next 14 days, payments, Ask Lumière (admin), the All students roster (mini flight arcs; cards on narrow
  * screens) and the support windows. Demo students are always labelled "Demo" and never counted in the real numbers.
  */
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { ArrowRight, Eye, Loader2, RefreshCw, Sparkles } from "lucide-react";
 import { useAuth } from "@/lib/auth";
@@ -363,7 +363,21 @@ function StudentsTable({ rows, role, today, locale }: { rows: readonly ControlSt
   const { t } = useT();
   const daysText = useDaysText();
   const [filter, setFilter] = useState<StudentFilter>("all");
-  const shown = useMemo(() => filterStudentRows(rows, filter), [rows, filter]);
+  const matching = useMemo(() => filterStudentRows(rows, filter), [rows, filter]);
+  // Phones: the roster renders as cards, so show a handful and let the person expand the rest.
+  const [phone, setPhone] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return undefined;
+    const mql = window.matchMedia("(max-width: 640px)");
+    const sync = () => setPhone(mql.matches);
+    sync();
+    mql.addEventListener("change", sync);
+    return () => mql.removeEventListener("change", sync);
+  }, []);
+  const PHONE_LIMIT = 3;
+  const collapsed = phone && !expanded && matching.length > PHONE_LIMIT;
+  const shown = collapsed ? matching.slice(0, PHONE_LIMIT) : matching;
   const col = (k: TranslationKey) => t(k);
   return (
     <section className="card occ-roster" aria-labelledby="cc-students-h" data-testid="cc-students" id="cc-students">
@@ -376,7 +390,7 @@ function StudentsTable({ rows, role, today, locale }: { rows: readonly ControlSt
           {FILTERS.map((f) => (
             <button key={f.key} type="button" aria-pressed={filter === f.key} onClick={() => setFilter(f.key)} data-testid={`filter-${f.key}`} className="occ-filter">{t(f.label)}</button>
           ))}
-          <span className="small occ-count">{t("owner.students.count", { n: shown.length })}</span>
+          <span className="small occ-count">{t("owner.students.count", { n: matching.length })}</span>
         </div>
       </div>
       {shown.length === 0 ? (
@@ -453,6 +467,13 @@ function StudentsTable({ rows, role, today, locale }: { rows: readonly ControlSt
           </table>
         </div>
       )}
+      {phone && matching.length > PHONE_LIMIT ? (
+        <div className="occ-more">
+          <button type="button" className="link" aria-expanded={expanded} onClick={() => setExpanded((v) => !v)} data-testid="cc-students-toggle">
+            {expanded ? t("owner.students.showFewer") : t("owner.students.showAll", { n: matching.length })}
+          </button>
+        </div>
+      ) : null}
     </section>
   );
 }

@@ -197,9 +197,8 @@
 .s27.occ .notice{margin:0}
 
 /* admin: the assistant card fills the right column so both columns end together */
-.s27.occ .occ-grid.has-ai{align-items:stretch}
-.s27.occ .occ-grid.has-ai>.colst:last-child{grid-template-rows:auto auto 1fr}
-@container occ (max-width:940px){.s27.occ .occ-grid.has-ai>.colst:last-child{grid-template-rows:auto}}
+/* The Ask card sizes to its content (no stretched dead space under the button). */
+.s27.occ .occ-more{padding:12px 4px 6px;text-align:center}
 .s27.occ .occ-support-side .occ-tiles{grid-template-columns:minmax(0,1fr)}
 .s27.occ .occ-support-side .occ-tiles{gap:0}
 .s27.occ .occ-support-side .occ-tile{background:none;border:0;border-top:1px solid var(--t-line);border-radius:0;padding:10px 0}
