@@ -39,6 +39,12 @@ export interface AssistantConfig {
   rateLimitPerMinute: number;
   /** Roles allowed live inference. "student" can never be listed (no adult attestation exists). */
   liveRoles: ReadonlySet<string>;
+  /**
+   * S26: owner-approved policy that lets STUDENT sessions (minors included) use live inference
+   * under the stricter minor-safe prompt. Only the exact value "minor_safe_v1" enables it; it is
+   * separate from liveRoles so students can never be enabled by a role list.
+   */
+  studentPolicy?: 'minor_safe_v1' | null;
   apiBase: string;
   model: string;
 }
@@ -79,6 +85,7 @@ export function loadAssistantConfig(): AssistantConfig {
     timeoutMs: intEnv('SPARK_ASSISTANT_TIMEOUT_MS', 15000, 1000, 60000),
     rateLimitPerMinute: intEnv('SPARK_ASSISTANT_RATE_LIMIT_PER_MINUTE', 6, 1, 120),
     liveRoles: parseLiveRoles(process.env.SPARK_ASSISTANT_LIVE_ROLES),
+    studentPolicy: process.env.SPARK_ASSISTANT_STUDENT_POLICY === 'minor_safe_v1' ? 'minor_safe_v1' : null,
     // Model and API base are code constants. No environment variable or request field can change them.
     apiBase: ASSISTANT_API_BASE,
     model: ASSISTANT_MODEL,

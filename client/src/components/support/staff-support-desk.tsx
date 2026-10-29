@@ -10,6 +10,7 @@
  * one student status vocabulary (SUPPORT_STATUS_LABEL + StatusPill).
  */
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "wouter";
 import { formatDistanceToNowStrict } from "date-fns";
 import { AlertTriangle, ArrowLeft, Clock, Download, EyeOff, Inbox, Loader2, Lock, MessageSquare, Paperclip, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -63,6 +64,7 @@ import {
   staffLabel,
 } from "@/components/staff/staff-ui";
 import { cn } from "@/lib/utils";
+import { supportSearchWithStudent, supportSearchWithTicket, supportStudentFromSearch, supportTicketFromSearch } from "./support-navigation";
 
 // ---------------------------------------------------------------------------
 // Local presentation
@@ -274,6 +276,7 @@ function WaitingBanner({ ticket }: { ticket: SupportTicketDetail }) {
 function TicketDetailPane({ ticketId, staff, onBack }: { ticketId: string; staff: readonly SupportPerson[]; onBack: () => void }) {
   const { data, isLoading, error } = useTicket(ticketId);
   const ticket = (data as { ticket?: SupportTicketDetail } | undefined)?.ticket;
+  const { user } = useAuth();
   const update = useUpdateTicket(ticketId);
   const createComment = useCreateComment(ticketId);
   const download = useAttachmentDownload(ticketId);
@@ -383,6 +386,15 @@ function TicketDetailPane({ ticketId, staff, onBack }: { ticketId: string; staff
         <p className="text-sm text-student-muted">
           <span className="font-medium text-student-ink">{ticket.reporter_name}</span>{ticket.reporter_email ? ` · ${ticket.reporter_email}` : ""} · {topic.label} · opened {age(ticket.created_at)} ago
         </p>
+        {user?.role === "admin" && ticket.student_id ? (
+          <Link
+            href={`/admin/students/${encodeURIComponent(ticket.student_id)}`}
+            className="inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-student-gold-ink underline-offset-4 hover:underline"
+            data-testid="link-ticket-student-workspace"
+          >
+            Open student record <ArrowLeft className="h-4 w-4 rotate-180" aria-hidden="true" />
+          </Link>
+        ) : null}
         {ticket.context && (
           <p className="inline-flex flex-wrap items-center gap-1.5 rounded-lg border border-student-line-strong bg-student-card px-2.5 py-1.5 text-xs" data-testid="academic-context">
             <span className="font-semibold text-student-ink">Academic context</span>
@@ -539,7 +551,13 @@ export function StaffSupportDesk() {
   const [queue, setQueue] = useState<QueueKey>("needs");
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(() =>
+    typeof window === "undefined" ? null : supportTicketFromSearch(window.location.search),
+  );
+  const [studentFilter, setStudentFilter] = useState<string | null>(() =>
+    typeof window === "undefined" ? null : supportStudentFromSearch(window.location.search),
+  );
+  const activeStudentFilter = user?.role === "admin" ? studentFilter : null;
   const detailRef = useRef<HTMLElement>(null);
   const lastSelected = useRef<string | null>(null);
 
@@ -555,7 +573,12 @@ export function StaffSupportDesk() {
     return () => clearTimeout(t);
   }, [selectedId]);
 
-  const filters = useMemo(() => ({ ...queueFilters(queue), ...(search ? { search } : {}), limit: 50 }), [queue, search]);
+  const filters = useMemo(() => ({
+    ...queueFilters(queue),
+    ...(search ? { search } : {}),
+    ...(activeStudentFilter ? { studentId: activeStudentFilter } : {}),
+    limit: 50,
+  }), [queue, search, activeStudentFilter]);
   const list = useTickets(filters);
   const stats = useTicketStats(true);
   const directory = useSupportStaffDirectory(isManager);
@@ -564,11 +587,30 @@ export function StaffSupportDesk() {
   const total = (list.data as { pagination?: { total: number } } | undefined)?.pagination?.total ?? tickets.length;
   const staff = ((directory.data as { staff?: SupportPerson[] } | undefined)?.staff ?? []) as SupportPerson[];
 
-  const pick = (q: QueueKey) => { setQueue(q); setSelectedId(null); };
-  const select = (id: string) => { lastSelected.current = id; setSelectedId(id); };
+  const updateTicketSearch = (id: string | null) => {
+    if (typeof window === "undefined") return;
+    window.history.replaceState(
+      window.history.state,
+      "",
+      `${window.location.pathname}${supportSearchWithTicket(window.location.search, id)}${window.location.hash}`,
+    );
+  };
+  const clearStudentFilter = () => {
+    setStudentFilter(null);
+    if (typeof window !== "undefined") {
+      window.history.replaceState(
+        window.history.state,
+        "",
+        `${window.location.pathname}${supportSearchWithStudent(window.location.search, null)}${window.location.hash}`,
+      );
+    }
+  };
+  const pick = (q: QueueKey) => { setQueue(q); setSelectedId(null); updateTicketSearch(null); };
+  const select = (id: string) => { lastSelected.current = id; setSelectedId(id); updateTicketSearch(id); };
   const back = () => {
     const id = selectedId ?? lastSelected.current;
     setSelectedId(null);
+    updateTicketSearch(null);
     if (id) setTimeout(() => document.querySelector<HTMLElement>(`[data-ticket-id="${CSS.escape(id)}"]`)?.focus(), 80);
   };
   const empty = EMPTY_COPY[queue];
@@ -583,9 +625,18 @@ export function StaffSupportDesk() {
           : "Requests assigned to you, and how long each has waited."}
       />
 
-      <div className={cn(selectedId && "hidden lg:block")}>
-        <StatsStrip stats={(stats.data as SupportStatsResponse | undefined)?.stats} active={queue} onPick={pick} />
-      </div>
+      {activeStudentFilter ? (
+        <StaffNotice
+          tone="info"
+          action={<Button type="button" size="sm" variant="outline" className={staffBtn.outline} onClick={clearStudentFilter}>Show all students</Button>}
+        >
+          This queue is filtered to one student's support requests.
+        </StaffNotice>
+      ) : (
+        <div className={cn(selectedId && "hidden lg:block")}>
+          <StatsStrip stats={(stats.data as SupportStatsResponse | undefined)?.stats} active={queue} onPick={pick} />
+        </div>
+      )}
 
       <div className="grid gap-5 lg:grid-cols-[minmax(320px,400px)_minmax(0,1fr)]">
         <section className={cn(selectedId && "hidden lg:block", "min-w-0 space-y-3")} aria-label="Queue">

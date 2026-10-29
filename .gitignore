@@ -23,3 +23,6 @@ dist-ssr
 .env
 /generated-artifacts/
 .s26-private-backup/
+/release.json
+/s26-evidence/
+/.s26-tools/

@@ -26,6 +26,8 @@ import NotFound from "@/pages/not-found";
 import { StudentBottomNav, StudentHeader } from "@/components/student-shell";
 import { cn } from "@/lib/utils";
 import Admin from "@/pages/admin";
+import AdminSupportCenter from "@/pages/admin-support-center";
+import AdminAssistant from "@/pages/admin-assistant";
 import AdminStudentWorkspace from "@/pages/admin-student-workspace";
 import AdminStudentRoadmap from "@/pages/admin-student-roadmap";
 import HighSchool from "@/pages/high-school";
@@ -82,6 +84,20 @@ function Router() {
       <Route path="/">{() => <RoleLanding />}</Route>
       <Route path="/dashboard">{() => <RoleLanding />}</Route>
 
+      <Route path="/admin/support-center">
+        {() => (
+          <ProtectedRoute requireRole="admin">
+            <AdminSupportCenter />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/admin/assistant">
+        {() => (
+          <ProtectedRoute requireRole="admin">
+            <AdminAssistant />
+          </ProtectedRoute>
+        )}
+      </Route>
       <Route path="/admin">
         {() => (
           <ProtectedRoute requireRole="admin">

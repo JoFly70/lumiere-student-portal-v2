@@ -1,1 +1,2 @@
 - [Hosted staging QA](staging-hosted-qa.md) — budget sessions across preview and runner; shared request quotas can resemble auth failures.
+- [Admin AI safety boundary](admin-assistant-boundary.md) — keep staff AI admin-only and unavailable until a real provider and audited, read-only record tools exist.

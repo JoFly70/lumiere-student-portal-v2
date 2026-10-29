@@ -314,6 +314,19 @@ describe("2/3. visibility and isolation", () => {
     expect((await as(h, "staff").get("/api/tickets")).body.tickets).toHaveLength(2);
     expect((await as(h, "admin").get("/api/tickets")).body.tickets).toHaveLength(2);
   });
+
+  it("adds the student's workspace link only to admin ticket detail", async () => {
+    const h = build();
+    const ticket = seedTicket(h, { reporter: "studentA", assignedTo: "coachAssigned" });
+    const admin = await as(h, "admin").get(`/api/tickets/${ticket.id}`);
+    const staff = await as(h, "staff").get(`/api/tickets/${ticket.id}`);
+    const coach = await as(h, "coachAssigned").get(`/api/tickets/${ticket.id}`);
+
+    expect(admin.status).toBe(200);
+    expect(admin.body.ticket.student_id).toBe("stu-a");
+    expect(staff.body.ticket.student_id).toBeUndefined();
+    expect(coach.body.ticket.student_id).toBeUndefined();
+  });
 });
 
 // ---------------------------------------------------------------------------

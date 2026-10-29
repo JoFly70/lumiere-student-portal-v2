@@ -23,6 +23,10 @@ PUBLIC_APP_URL = "https://lumiere-student-portal-v-2.replit.app"
 AUTH_EMAIL_MODE = "custom_smtp"
 ENABLE_EMAIL_VERIFICATION = "true"
 ALLOW_DEMO_MODE = "false"
+# S26: live AI only takes effect when the META_MODEL_API_KEY secret is set; otherwise the UI says "unavailable".
+SPARK_ASSISTANT_ENABLED = "true"
+SPARK_ASSISTANT_LIVE_ROLES = "admin"
+SPARK_ASSISTANT_STUDENT_POLICY = "minor_safe_v1"
 
 [workflows]
 runButton = "Project"

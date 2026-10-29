@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { type Express } from 'express';
 import { supabaseAdmin, isSupabaseConfigured } from '../lib/supabase';
 import { logger } from '../lib/logger';
@@ -18,6 +20,17 @@ function withProbeTimeout<T>(probe: PromiseLike<T>, ms: number = HEALTH_PROBE_TI
   });
 }
 
+/** S26: release marker written by scripts/s26/release-loop.sh before publishing (commit SHA only). */
+function readReleaseMarker(): string | null {
+  try {
+    const raw = JSON.parse(readFileSync(join(process.cwd(), 'release.json'), 'utf8'));
+    return typeof raw?.sha === 'string' && /^[0-9a-f]{7,40}$/.test(raw.sha) ? raw.sha : null;
+  } catch {
+    return null;
+  }
+}
+const RELEASE_SHA = readReleaseMarker();
+
 export function registerHealthRoutes(app: Express) {
   // Health check endpoint for monitoring/load balancers
   app.get('/health', async (req, res) => {
@@ -27,6 +40,7 @@ export function registerHealthRoutes(app: Express) {
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
       environment: process.env.NODE_ENV,
+      release: RELEASE_SHA,
       checks: {
         database: 'unknown',
         memory: 'ok',

@@ -1,4 +1,4 @@
-import { BookOpen, FileText, CreditCard, GraduationCap, HelpCircle, LogOut, User, Gauge, ShieldCheck, School } from "lucide-react";
+import { BookOpen, FileText, CreditCard, GraduationCap, HelpCircle, LogOut, User, Gauge, ShieldCheck, School, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Link, useLocation, useSearch } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -76,8 +76,10 @@ const studentFileItems = studentMenuItems.filter((i) => !JOURNEY_URLS.includes(i
 // list route is admin-gated). Staff and coaches work from the support desk.
 const adminMenuItems = [
   { title: "Admin Dashboard", url: "/admin", icon: ShieldCheck },
+  { title: "Student Support Center", url: "/admin/support-center", icon: GraduationCap },
   { title: "Students", url: ADMIN_STUDENTS_PATH, icon: GraduationCap },
   { title: "Support", url: "/support", icon: HelpCircle },
+  { title: "Lumière AI", url: "/admin/assistant", icon: Sparkles },
 ];
 
 // Staff (not admin) cannot open the admin student workspace; this is their way into student billing.

@@ -377,6 +377,8 @@ export interface SupportStatusEvent {
 }
 
 export interface SupportTicketDetail extends SupportTicketSummary {
+  /** Admin-only link to the student's canonical workspace; omitted for every other role. */
+  readonly student_id?: string;
   readonly ticket_comments: readonly SupportComment[];
   readonly ticket_attachments: readonly SupportAttachment[];
   readonly ticket_status_history: readonly SupportStatusEvent[];

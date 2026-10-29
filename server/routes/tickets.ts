@@ -295,7 +295,15 @@ export function createTicketsRouter(deps: TicketsRouterDeps): Router {
       loadOptional("ticket_status_history", [ticket.id]),
       loadPeople(ticket.assigned_to ? [String(ticket.assigned_to)] : []),
     ]);
-    return presentDetail({ ticket, comments: comments.rows, attachments, history, people, viewer, now: deps.now() });
+    const detail = presentDetail({ ticket, comments: comments.rows, attachments, history, people, viewer, now: deps.now() });
+    if (viewer.role !== "admin") return detail;
+    try {
+      const student = await deps.getStudentByUserId(String(ticket.reporter_id));
+      return student ? { ...detail, student_id: student.id } : detail;
+    } catch (error: any) {
+      logger.warn("Support: student workspace link lookup failed", { error: error?.message });
+      return detail;
+    }
   }
 
   async function summaryFor(ticket: Row, viewer: SupportViewer) {

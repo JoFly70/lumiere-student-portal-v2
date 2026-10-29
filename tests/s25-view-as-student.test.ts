@@ -21,7 +21,7 @@ import { createStudentPreferencesRouter, type LanguagePreferenceStore } from "..
 import { HsError } from "../server/services/high-school-service";
 import { summarizeForPreview } from "../shared/view-as-student-contract";
 import { initialSync } from "../client/src/lib/language-preference";
-import { ViewAsStudentScreen, StaffProgressSummary } from "../client/src/pages/admin-view-as-student";
+import { ViewAsStudentScreen, StaffProgressSummary, studentVisibleTicketThread } from "../client/src/pages/admin-view-as-student";
 import { HS_AWAITING_REVIEW, HS_NEW_STUDENT } from "./helpers/s11-hs-ui-fixtures";
 import { META } from "./helpers/s18-academic-fixtures";
 
@@ -110,13 +110,35 @@ describe("S25 view as student screen", () => {
     renderToStaticMarkup(React.createElement(QueryClientProvider, { client: new QueryClient() }, React.createElement(Router, { ssrPath: "/admin/students/stu-1/view-as-student" }, node)));
   const data = { mode: "read_only_preview" as const, student: { id: "stu-1", displayName: "Yanis Synthetic", status: "active", hasPortalAccount: true, preferredLanguage: "fr" as const }, highSchool: HS_AWAITING_REVIEW, academicProjection: null, summary: summarizeForPreview(HS_AWAITING_REVIEW, [], null), generatedAt: "2026-10-27T10:00:00.000Z" };
 
-  it("shows the read-only banner, a return link, the saved language and the summary", () => {
+  it("shows the localized read-only preview, return link, saved language, summary, and all supported screens", () => {
     const html = render(React.createElement(ViewAsStudentScreen, { data, studentId: "stu-1", docs: [] }));
-    expect(html).toContain("Read-only preview");
+    expect(html).toContain("Aperçu en lecture seule");
     expect(html).toContain('href="/admin/students/stu-1"');
-    expect(html).toContain("Student&#x27;s chosen language: Français");
+    expect(html).toContain("Langue choisie par l&#x27;étudiant: Français");
     expect(html).toContain('data-testid="preview-summary"');
+    expect(html).toContain("Secondaire");
+    expect(html).toContain("Profil");
+    expect(html).toContain("Documents");
+    expect(html).toContain("Assistance");
+    expect(html).toContain("Facturation");
+    expect(html).toContain("écran du parcours de cours");
     expect(html).toContain('aria-checked="true" class="min-h-10 px-3 text-xs font-semibold bg-foreground text-background" data-testid="preview-language-fr"');
+  });
+
+  it("never shows internal support notes or their attachments in the student preview", () => {
+    const visible = studentVisibleTicketThread({
+      ticket_comments: [
+        { id: "public", is_internal: false },
+        { id: "internal", is_internal: true },
+      ],
+      ticket_attachments: [
+        { id: "public-file", comment_id: "public" },
+        { id: "internal-file", comment_id: "internal" },
+        { id: "unlinked-file", comment_id: null },
+      ],
+    } as any);
+    expect(visible.comments.map((comment) => comment.id)).toEqual(["public"]);
+    expect(visible.attachments.map((attachment) => attachment.id)).toEqual(["public-file", "unlinked-file"]);
   });
 
   it("explains when there is nothing to summarize", () => {
