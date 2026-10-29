@@ -1,4 +1,4 @@
-import { BookOpen, FileText, CreditCard, GraduationCap, HelpCircle, LogOut, User, Gauge, ShieldCheck, School, Sparkles, Shuffle, Library } from "lucide-react";
+import { BookOpen, FileText, CreditCard, GraduationCap, HelpCircle, LogOut, User, Gauge, ShieldCheck, School, Sparkles, Shuffle, Library, Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -81,6 +81,7 @@ const adminMenuItems = [
   { title: "Support desk", url: "/support", icon: HelpCircle },
   { title: "Elective requests", url: "/admin/elective-requests", icon: Shuffle },
   { title: "Lumière AI", url: "/admin/assistant", icon: Sparkles },
+  { title: "Web research", url: "/admin/web-research", icon: Globe },
   { title: "Administration", url: "/admin", icon: ShieldCheck },
 ];
 
@@ -94,6 +95,8 @@ const staffMenuItems = [
 const staffControlItem = { title: "Control Center", url: "/staff/control-center", icon: Gauge };
 // Billing routes allow staff + admin only (not coach), so the entry is role-specific.
 const staffBillingItem = { title: "Student billing", url: STAFF_BILLING_PATH, icon: CreditCard };
+// S27: web research is for staff and admins (never coaches or students).
+const staffWebItem = { title: "Web research", url: "/admin/web-research", icon: Globe };
 
 export function AppSidebar() {
   const [location] = useLocation();
@@ -118,7 +121,7 @@ export function AppSidebar() {
       : isStudent
         ? studentMenuItems
         : user?.role === "staff"
-          ? [staffControlItem, ...staffMenuItems, staffBillingItem]
+          ? [staffControlItem, ...staffMenuItems, staffBillingItem, staffWebItem]
           : staffMenuItems;
 
   const displayName = isStudent && profile

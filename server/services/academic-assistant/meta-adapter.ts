@@ -115,3 +115,99 @@ export async function callMuseSpark(
     clearTimeout(timer);
   }
 }
+
+// ── S27: web research (staff only) — Responses API with the built-in web_search tool ─────────────
+
+export interface WebCitation { url: string; title: string }
+export interface WebSearchResult extends ProviderUsage {
+  text: string;
+  citations: WebCitation[];
+  /** True when the provider reports at least one web_search_call in the output. */
+  searched: boolean;
+  servedModel: string | null;
+}
+
+/** Only http(s) URLs are kept as citations (anything else is dropped, never rendered as a link). */
+function safeCitationUrl(raw: unknown): string | null {
+  if (typeof raw !== 'string' || raw.length > 2000) return null;
+  try {
+    const u = new URL(raw);
+    return u.protocol === 'https:' || u.protocol === 'http:' ? u.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * One search-grounded answer. Search grounding exists only on the Responses API
+ * (POST /v1/responses, tools: [{ type: "web_search" }]); the model decides whether to search and
+ * cites sources as `url_citation` annotations. Same pinned model and host as every other call.
+ */
+export async function callMuseSparkWebSearch(
+  input: { instructions: string; question: string },
+  opts: { maxOutputTokens: number; timeoutMs: number; maxSearches: number; fetchImpl?: FetchLike; model?: string; apiBase?: string },
+): Promise<WebSearchResult> {
+  const key = getProviderApiKey();
+  if (!key) throw new ProviderError('not_configured');
+  const model = opts.model ?? ASSISTANT_MODEL;
+  assertContributorModel(model);
+  if ((opts.apiBase ?? ASSISTANT_API_BASE) !== ASSISTANT_API_BASE) throw new ProviderError('model_rejected');
+  const serialized = JSON.stringify({
+    model,
+    instructions: input.instructions,
+    input: input.question,
+    tools: [{ type: 'web_search' }],
+    max_tool_calls: opts.maxSearches,
+    max_output_tokens: opts.maxOutputTokens,
+    reasoning: { effort: 'low' },
+    stream: false,
+  });
+  assertContributorModel(JSON.parse(serialized).model);
+  const fetchImpl: FetchLike = opts.fetchImpl ?? ((globalThis.fetch as unknown) as FetchLike);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), opts.timeoutMs);
+  try {
+    const res = await fetchImpl(`${ASSISTANT_API_BASE}/responses`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
+      body: serialized,
+      signal: controller.signal,
+    });
+    if (!res.ok) throw new ProviderError('http', res.status);
+    const body = await res.json();
+    const output: any[] = Array.isArray(body?.output) ? body.output : [];
+    const searched = output.some((o) => o?.type === 'web_search_call');
+    const texts: string[] = [];
+    const seen = new Set<string>();
+    const citations: WebCitation[] = [];
+    for (const item of output) {
+      if (item?.type !== 'message' || !Array.isArray(item.content)) continue;
+      for (const block of item.content) {
+        if (block?.type !== 'output_text' || typeof block.text !== 'string') continue;
+        texts.push(block.text);
+        for (const ann of Array.isArray(block.annotations) ? block.annotations : []) {
+          const url = ann?.type === 'url_citation' ? safeCitationUrl(ann.url) : null;
+          if (!url || seen.has(url)) continue;
+          seen.add(url);
+          citations.push({ url, title: typeof ann.title === 'string' && ann.title.trim() ? ann.title.trim().slice(0, 200) : new URL(url).hostname });
+        }
+      }
+    }
+    const text = texts.join('\n\n').trim();
+    const u = body?.usage;
+    const promptTokens = Number(u?.input_tokens ?? u?.prompt_tokens);
+    const completionTokens = Number(u?.output_tokens ?? u?.completion_tokens);
+    const usageOk = Number.isFinite(promptTokens) && Number.isFinite(completionTokens) && promptTokens >= 0 && completionTokens >= 0;
+    const usage: ProviderUsage | undefined = usageOk ? { promptTokens, completionTokens, reasoningTokens: Number.isFinite(Number(u?.output_tokens_details?.reasoning_tokens)) ? Number(u.output_tokens_details.reasoning_tokens) : null } : undefined;
+    if (!text && body?.status === 'incomplete') throw new ProviderError('truncated', undefined, usage);
+    if (!text || !usage) throw new ProviderError('bad_response', undefined, usage);
+    const servedModel = typeof body?.model === 'string' && body.model.trim() ? body.model.trim().slice(0, 120) : null;
+    return { text, citations: citations.slice(0, 12), searched, servedModel, ...usage };
+  } catch (err) {
+    if (err instanceof ProviderError) throw err;
+    if ((err as any)?.name === 'AbortError' || controller.signal.aborted) throw new ProviderError('timeout');
+    throw new ProviderError('network');
+  } finally {
+    clearTimeout(timer);
+  }
+}

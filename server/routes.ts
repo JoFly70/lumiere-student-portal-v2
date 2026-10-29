@@ -1429,6 +1429,8 @@ window.ENV = {
   app.use('/api/admin', (await import('./routes/admin-students-directory')).default);
   // S26 Lumière Owner AI: admin-only, one student's records, read-only, cited, audited.
   app.use('/api/admin', (await import('./routes/admin-owner-assistant')).default);
+  // S27: staff/admin web research (Spark + built-in web_search); only the typed question leaves the server.
+  app.use('/api/admin', (await import('./routes/admin-web-research')).default);
   // S26 "Experience as student": admin-only, synthetic demo accounts / demo mirrors only, audited.
   app.use('/api/admin', (await import('./routes/admin-student-experience')).default);
   // S27 program journey: agreement, checkpoints, orientation sessions, staff notes and the owner Control Center

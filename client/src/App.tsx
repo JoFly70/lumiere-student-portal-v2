@@ -29,6 +29,7 @@ import { cn } from "@/lib/utils";
 import Admin from "@/pages/admin";
 import AdminSupportCenter from "@/pages/admin-support-center";
 import AdminAssistant from "@/pages/admin-assistant";
+import AdminWebResearch from "@/pages/admin-web-research";
 import AdminElectiveRequests from "@/pages/admin-elective-requests";
 import AdminStudentWorkspace from "@/pages/admin-student-workspace";
 import AdminStudentFile from "@/pages/admin-student-file";
@@ -104,6 +105,13 @@ function Router() {
         {() => (
           <ProtectedRoute requireRole={["admin", "staff"]}>
             <AdminSupportCenter />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/admin/web-research">
+        {() => (
+          <ProtectedRoute requireRole={["admin", "staff"]}>
+            <AdminWebResearch />
           </ProtectedRoute>
         )}
       </Route>
