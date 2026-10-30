@@ -258,6 +258,9 @@ Ends with `AI: functional …; requested model …; provider-served model …`.
   degree credit/arrival source (shows "—"); a COMPOSED degree result carrying diagnostics is rejected (engine issue).
 - Older "Academic workspace" duplicates the new student file — owner decision pending.
 - Repository history still contains the school's name in old commits (owner decided to leave it).
+- Hosted acceptance on `5f1b8c8`: PASS 53/53 required; optional `browser.student.subjects-tab` fails because the
+  student high-school page is now the log-first Roadmap (the old tabbed view lives at `/high-school?view=details`).
+  Update that browser check in `scripts/s26/production-acceptance.ts` to the new Roadmap (or the details view).
 - Some older staff dialogs (`billing-dialogs.tsx` ReasonDialog, ObligationPanel/EvidencePanel) still have English-only
   strings.
 
