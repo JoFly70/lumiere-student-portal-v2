@@ -58,6 +58,8 @@ export interface ControlCenterFacts {
   receiptsThisMonth: Array<{ studentId: string; amountCents: number }>;
   tickets: CcTicket[];
   sessionRequests: Array<{ id: string; studentId: string; slotAt: string }>;
+  /** Students with an active degree program assignment (read-only; absent in older fixtures). */
+  degrees?: Array<{ studentId: string }>;
   /** True when any row cap was hit while loading (the view is then incomplete). */
   truncated: boolean;
 }
@@ -89,6 +91,7 @@ export function buildControlCenter(facts: ControlCenterFacts, now: Date): Contro
   const evidenceBy = new Map(facts.evidenceAwaiting.map((d) => [d.studentId, d.count] as const));
   const ticketsBy = groupBy(facts.tickets, (t) => t.studentId);
   const sessionsBy = groupBy(facts.sessionRequests, (s) => s.studentId);
+  const degreeIds = new Set((facts.degrees ?? []).map((d) => d.studentId));
   const demoIds = new Set(facts.students.filter(isDemo).map((s) => s.id));
 
   let signedNotPaid = 0;
@@ -209,13 +212,14 @@ export function buildControlCenter(facts: ControlCenterFacts, now: Date): Contro
     // ── row
     const preEnrolled = open?.status === "planned" || (!!agreement && !agreement.activatedOn);
     const worst = items.some((i) => i.severity === "critical") ? "critical" : items.some((i) => i.severity === "warning") ? "warning" : null;
-    const status: ControlStudentRow["status"] = !open && !agreement ? { tone: "neutral", label: "No program yet" }
+    const hasDegree = !open && degreeIds.has(s.id);
+    const status: ControlStudentRow["status"] = !open && !agreement && !hasDegree ? { tone: "neutral", label: "No program yet" }
       : worst === "critical" ? { tone: "critical", label: "Needs you" }
       : worst === "warning" ? { tone: "warning", label: "Attention" }
       : preEnrolled ? { tone: "gold", label: "Pre-enrollment" }
       : { tone: "ok", label: "On track" };
     rowsOut.push({
-      studentId: s.id, name: s.name, code: s.code, program: open ? "high_school" : "none", isDemo: demo,
+      studentId: s.id, name: s.name, code: s.code, program: open ? "high_school" : hasDegree ? "degree" : "none", isDemo: demo,
       creditsConfirmed, creditsRequired: open ? open.requiredHalfUnits / 2 : null, paceLabel, estimatedFinishOn, status, nextDeadline, lastActivityOn, supportMonthsLeft,
     });
     if (!demo) {
@@ -267,7 +271,7 @@ export async function loadControlCenterFacts(db: SqlExecutor, now: Date, limits:
   const ids = studentRows.map((r) => String(r.id));
   // Every other query is restricted to the students actually loaded, with a deterministic order.
   const IN = ids.length ? sql`(${sql.join(ids.map((i) => sql`${i}`), sql`, `)})` : sql`(NULL)`;
-  const [enrollments, progress, awards, results, agreements, docs, evidence, obligations, discounts, receipts, installments, monthReceipts, tickets, sessions] = await Promise.all([
+  const [enrollments, progress, awards, results, agreements, docs, evidence, obligations, discounts, receipts, installments, monthReceipts, tickets, sessions, degrees] = await Promise.all([
     db.execute(sql`SELECT e.id, e.student_id, e.status, e.total_required_half_units, e.started_on::text AS started_on, e.created_at, v.content
                      FROM hs_enrollments e LEFT JOIN hs_roadmap_versions v ON v.enrollment_id = e.id AND v.status = 'published'
                     WHERE e.status IN ${OPEN} AND e.student_id IN ${IN} ORDER BY e.created_at DESC, e.id`),
@@ -294,6 +298,7 @@ export async function loadControlCenterFacts(db: SqlExecutor, now: Date, limits:
     db.execute(sql`SELECT t.id, t.subject, t.status, t.created_at, s.id AS student_id FROM support_tickets t JOIN students s ON s.user_id = t.reporter_id
                     WHERE t.status IN ('open','in_progress','waiting_on_student') AND s.id IN ${IN} ORDER BY t.created_at, t.id LIMIT ${limits.tickets + 1}`),
     db.execute(sql`SELECT id, student_id, slot_at FROM orientation_sessions WHERE status = 'requested' AND student_id IN ${IN} ORDER BY slot_at, id LIMIT ${limits.sessions + 1}`),
+    db.execute(sql`SELECT student_id FROM student_program_assignments WHERE status = 'active' AND student_id IN ${IN} ORDER BY student_id`),
   ]);
   const cap = (r: unknown, n: number) => capped(rows(r), n);
   const progressRows = cap(progress, limits.progress);
@@ -328,6 +333,7 @@ export async function loadControlCenterFacts(db: SqlExecutor, now: Date, limits:
     receiptsThisMonth: rows(monthReceipts).map((r) => ({ studentId: String(r.student_id), amountCents: Number(r.total) })),
     tickets: ticketRows.map((r) => ({ id: String(r.id), studentId: String(r.student_id), subject: String(r.subject), status: String(r.status), createdAt: iso(r.created_at) })),
     sessionRequests: sessionRows.map((r) => ({ id: String(r.id), studentId: String(r.student_id), slotAt: iso(r.slot_at) })),
+    degrees: rows(degrees).map((r) => ({ studentId: String(r.student_id) })),
     truncated,
   };
 }

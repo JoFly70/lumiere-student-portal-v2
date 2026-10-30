@@ -27,7 +27,7 @@ export interface DirectoryStudent {
 
 export interface DirectoryFacts {
   studentId: string;
-  program: { title: string; status: string } | null;
+  program: { title: string; status: string; kind?: "high_school" | "degree" } | null;
   billing: { currency: string; agreedCents: number; netCents: number; paidCents: number; balanceCents: number; overdue: boolean } | null;
   lastActivityAt: string | null;
 }

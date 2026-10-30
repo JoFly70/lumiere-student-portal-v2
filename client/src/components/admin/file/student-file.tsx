@@ -19,7 +19,7 @@ import { useStaffBilling } from "@/lib/billing-queries";
 import { useStaffProfileData } from "@/components/admin/student-profile-review";
 import { StudentDocumentsReview } from "@/components/admin/student-documents-review";
 import { useExperienceAction, ExperienceError } from "@/components/admin/dossier/dossier-parts";
-import { DemoPill, isDemoStudent, shortProgram, studentFullName, studentStatusLabel } from "@/components/admin/directory/directory-data";
+import { DemoPill, factsById, isDemoStudent, useDirectoryFacts, shortProgram, studentFullName, studentStatusLabel } from "@/components/admin/directory/directory-data";
 import { canActivateLeadForRole } from "@/components/admin/student-documents-upload-logic";
 import { ADMIN_STUDENT_WORKSPACE_QUERY_KEY, ADMIN_STUDENTS_PATH, documentNeedsReview, selectWorkspaceState, type WorkspaceViewModel } from "@/pages/admin-student-workspace-presentation";
 import { useAgreement, useStaffJourney } from "@/lib/s27-queries";
@@ -73,7 +73,9 @@ export function StudentFile({ studentId }: { studentId: string }) {
   const hs = hsQuery.data ?? null;
   const ws = selectWorkspaceState(workspaceQuery);
   const vm: WorkspaceViewModel | null = ws.kind === "ready" ? ws.viewModel : null;
-  const kind: ProgramKind = hs?.current ? "diploma" : vm ? "degree" : "none";
+  // Staff cannot open the workspace: the directory facts (one cached list) still know the degree program.
+  const dirProgram = factsById(useDirectoryFacts().data?.facts).get(studentId)?.program ?? null;
+  const kind: ProgramKind = hs?.current ? "diploma" : vm || dirProgram?.kind === "degree" ? "degree" : "none";
   const settled = !hsQuery.isLoading && !workspaceQuery.isLoading;
   const tab = fileTabFromSearch(search, kind);
   const params = new URLSearchParams(search);
@@ -102,7 +104,7 @@ export function StudentFile({ studentId }: { studentId: string }) {
   const name = studentFullName({ first_name: s.first_name ?? "", last_name: s.last_name ?? "", preferred_name: s.preferred_name });
   const demo = isDemoStudent({ first_name: s.first_name ?? "", last_name: s.last_name ?? "", preferred_name: s.preferred_name, email: s.email });
   const firstName = (s.preferred_name && !/^DEMO/i.test(s.preferred_name) ? s.preferred_name : s.first_name) ?? name;
-  const programName = hs?.current ? shortProgram(hs.current.enrollment.programTitle) : vm ? (typeof (vm.program as { name?: unknown } | undefined)?.name === "string" ? shortProgram(String((vm.program as { name: string }).name)) : t("owner.program.bachelor")) : null;
+  const programName = hs?.current ? shortProgram(hs.current.enrollment.programTitle) : vm ? (typeof (vm.program as { name?: unknown } | undefined)?.name === "string" ? shortProgram(String((vm.program as { name: string }).name)) : dirProgram ? shortProgram(dirProgram.title) : t("owner.program.bachelor")) : dirProgram ? shortProgram(dirProgram.title) : null;
   const supportLeft = agreement.data?.supportMonthsLeft ?? journey.data?.agreement?.supportMonthsLeft ?? null;
   const guardians = profileQuery.data?.contacts.some((c) => c.type === "guardian" || c.type === "parent") || (hs?.guardians.length ?? 0) > 0;
   const credits = hs?.current && !/credits/i.test(programName ?? "") ? `${hs.current.credits.requiredHalfUnits / 2} ${t("owner.file.credits")}` : null;
