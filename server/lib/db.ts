@@ -18,7 +18,11 @@ function getDb() {
     // the driver's default ten sessions. Production behavior is unchanged.
     const guardedStaging = process.env.NODE_ENV === "development"
       && process.env.S22_STAGING_PROJECT_REF === "tqgwoyzlnkqwkcjsiocd";
-    client = postgres(connectionString, guardedStaging ? { max: 2, idle_timeout: 10 } : {});
+    // DB_POOL_MAX (1–20) caps this process's connections: the production session pooler allows 15 clients
+    // in total, shared with the running app, so one-off scripts (demo provisioning) must stay small.
+    const poolMax = Number(process.env.DB_POOL_MAX);
+    const capped = Number.isInteger(poolMax) && poolMax >= 1 && poolMax <= 20 ? { max: poolMax, idle_timeout: 10 } : null;
+    client = postgres(connectionString, guardedStaging ? { max: 2, idle_timeout: 10 } : capped ?? {});
     dbInstance = drizzle(client, { schema });
   }
 

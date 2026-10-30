@@ -18,6 +18,9 @@
 import fs from "node:fs";
 import crypto from "node:crypto";
 import { DEMO_TAG, DEMO_START, DEMO_TARGET, makeDemoPlan, makeContractPlan } from "./demo-plan.mjs";
+// The production session pooler allows 15 clients in total and the live app holds some of them; this
+// script's queries are sequential, so two connections are plenty (EMAXCONNSESSION otherwise).
+process.env.DB_POOL_MAX ??= "2";
 
 export const DEMO_STUDENT_EMAIL = "s26.demo.student@lumiere-demo.invalid";
 export const DEMO_SECOND_EMAIL = "s26.demo.second@lumiere-demo.invalid";
