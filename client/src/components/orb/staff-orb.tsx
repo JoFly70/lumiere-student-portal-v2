@@ -23,7 +23,7 @@ export function StaffOrb() {
   const role = user?.role;
   if (role !== "admin" && role !== "staff") return null;
   const base = role === "admin" ? "/admin/assistant" : "/admin/web-research";
-  if (location === base || location.startsWith(`${base}/`)) return null;
+  const onDestination = location === base || location.startsWith(`${base}/`);
   const sid = role === "admin" ? studentIdFromPath(location) : null;
   const target = sid ? `${base}?studentId=${encodeURIComponent(sid)}` : base;
   return (
@@ -32,7 +32,14 @@ export function StaffOrb() {
       className="aa-fab aa-fab--staff"
       aria-label={t("orb.ask")}
       title={t("orb.ask")}
-      onClick={() => navigate(target)}
+      onClick={() => {
+        if (onDestination) {
+          // Already on the AI page: bring the question box (or, before a student is chosen, the student search) into focus.
+          const box = document.querySelector<HTMLElement>("#owner-ai-question, #web-question, #assistant-student-search");
+          if (box) { box.scrollIntoView({ block: "center", behavior: window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }); box.focus({ preventScroll: true }); return; }
+        }
+        navigate(target);
+      }}
       data-testid="staff-orb"
       data-target={target}
     >
