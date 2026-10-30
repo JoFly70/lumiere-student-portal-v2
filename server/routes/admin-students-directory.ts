@@ -60,7 +60,11 @@ async function listFacts(): Promise<DirectoryFacts[]> {
                      FROM student_program_assignments a
                      JOIN knowledge_program_versions pv ON pv.id = a.program_version_id
                      JOIN knowledge_programs_v2 p ON p.id = pv.program_id
-                    WHERE a.status = 'active'`),
+                    WHERE a.status = 'active'`).catch((error: unknown) => {
+      // The degree label is additive: if this lookup fails, the list still loads without it.
+      logger.warn("Directory degree-program lookup failed", { name: error instanceof Error ? error.name : typeof error });
+      return [];
+    }),
     db.execute(sql`SELECT student_id::text AS student_id, agreed_cents::bigint AS agreed_cents, currency FROM student_billing_obligations`),
     db.execute(sql`SELECT student_id::text AS student_id, COALESCE(SUM(amount_cents),0)::bigint AS total FROM student_billing_discounts GROUP BY student_id`),
     db.execute(sql`SELECT student_id::text AS student_id, COALESCE(SUM(amount_cents),0)::bigint AS total FROM student_billing_receipts WHERE voided_at IS NULL GROUP BY student_id`),
