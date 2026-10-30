@@ -14,6 +14,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { StaffAvatar } from "@/components/staff/staff-ui";
 import { GlobalSearch } from "@/components/os/global-search";
+import { HeaderViewAs } from "@/components/staff/header-view-as";
 
 export const STAFF_SIDEBAR_OPEN_MIN_WIDTH = 1280;
 
@@ -57,6 +58,7 @@ export function StaffHeader({ name, role }: { name?: string; role?: string }) {
         <GlobalSearch audience="staff" />
       </div>
       <div className="flex min-w-0 shrink-0 items-center gap-3">
+        <HeaderViewAs />
         {name && (
           <div className="hidden min-w-0 items-center gap-2.5 sm:flex" data-testid="staff-header-user">
             <StaffAvatar name={name} size="sm" />

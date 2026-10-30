@@ -375,7 +375,6 @@ export default function StudentFileHs({ studentId, student }: { studentId: strin
         <StaffPill tone="neutral" icon={<GraduationCap className="h-3.5 w-3.5" aria-hidden="true" />}>{programTitle ? shortProgram(programTitle) : hs.data ? "No program yet" : "Loading program…"}</StaffPill>
       </div>}
       actions={<>
-        <ExperienceButton action={experience} />
         <ViewAsStudentLink studentId={studentId} />
         {canActivateLeadForRole(user?.role, current.status) ? <Button type="button" size="sm" className={staffBtn.seal} disabled={activate.isPending} onClick={() => activate.mutate()} data-testid="button-activate-lead">{activate.isPending ? "Activating…" : <><UserCheck className="h-4 w-4" aria-hidden="true" />Activate lead</>}</Button> : null}
         <Button type="button" variant="outline" size="sm" className={staffBtn.outline} onClick={() => setPhotoOpen(true)} data-testid="button-student-photo">{t("staff.photo.button")}</Button>

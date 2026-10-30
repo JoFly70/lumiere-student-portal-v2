@@ -61,6 +61,7 @@ import {
 } from "./attachments";
 import { MemoryView, sanitiseMemory, type MemoryViewProps } from "./memory";
 import "@/styles/academic-assistant.css";
+import { useSidebarOffset } from "@/components/orb/use-sidebar-offset";
 
 void React; // classic JSX runtime when rendered under vitest/esbuild
 
@@ -480,6 +481,7 @@ const LIST_KEY = "/api/assistant/conversations";
 
 export function AcademicAssistant({ defaultOpen = false }: { defaultOpen?: boolean } = {}) {
   const { language } = useT();
+  useSidebarOffset();
   const tr = useMemo(() => makeTr(language), [language]);
   const qc = useQueryClient();
   const [location, navigate] = useLocation();
@@ -952,7 +954,6 @@ export function AcademicAssistant({ defaultOpen = false }: { defaultOpen?: boole
       ref={fabRef}
       type="button"
       className="aa-fab"
-      data-inline-card={/^\/(flight-deck|support)(\/|$)/.test(location) ? "true" : "false"}
       data-open={open ? "true" : "false"}
       aria-haspopup="dialog"
       aria-expanded={open}

@@ -3,6 +3,8 @@
  * Keys are namespaced "staff.*". English is the source of truth; French must define every key.
  */
 export const staffEn = {
+  "orb.ask": "Ask Lumière",
+  "staff.viewAs": "View as student",
   "staff.access.restricted": "That page is for administrators. Here is your support desk.",
   "staff.access.dismiss": "Dismiss",
   "staff.docs.upload.title": "Upload on the student's behalf",
@@ -21,6 +23,8 @@ export const staffEn = {
 } as const satisfies Record<string, string>;
 
 export const staffFr: Record<keyof typeof staffEn, string> = {
+  "orb.ask": "Demander à Lumière",
+  "staff.viewAs": "Voir comme l’élève",
   "staff.access.restricted": "Cette page est réservée aux administrateurs. Voici votre bureau d’assistance.",
   "staff.access.dismiss": "Fermer",
   "staff.docs.upload.title": "Téléverser au nom de l'étudiant",

@@ -135,11 +135,6 @@ export function StudentFile({ studentId }: { studentId: string }) {
             </div>
           </div>
           <div role="toolbar" aria-label={t("owner.file.actions")} className="flex flex-wrap items-center gap-2" data-testid="file-actions">
-            {isAdmin ? (
-              <button type="button" className={cn(ownerBtn.seal, "min-h-10")} onClick={() => void experience.run()} disabled={experience.pending} data-testid="button-view-as-student">
-                {experience.pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}{t("owner.file.viewAs")}
-              </button>
-            ) : null}
             <Link href={`/support?search=${encodeURIComponent(s.student_code ?? name)}`} className={cn(ownerBtn.outline, "inline-flex items-center border")} data-testid="button-message"><MessageSquare className="h-4 w-4" aria-hidden="true" />{t("owner.file.message")}</Link>
             {canActivate ? <button type="button" className={ownerBtn.outline} disabled={activate.isPending} onClick={() => activate.mutate()} data-testid="button-activate-lead"><UserCheck className="h-4 w-4" aria-hidden="true" />{activate.isPending ? t("owner.saving") : t("owner.file.activate")}</button> : null}
             {isAdmin ? <Link href={`${base}/workspace`} className={cn(ownerBtn.ghost, "inline-flex items-center")} data-testid="link-workspace"><Wrench className="h-4 w-4" aria-hidden="true" />{t("owner.file.workspace")}</Link> : null}

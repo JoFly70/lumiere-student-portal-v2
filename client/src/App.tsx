@@ -8,6 +8,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { ThemeProvider } from "@/hooks/use-theme";
 import { I18nProvider } from "@/i18n";
+import { StaffOrb } from "@/components/orb/staff-orb";
 import { AccessNotice } from "@/components/staff/access-notice";
 import { StaffHeader, StaffSkipLink, useStaffSidebarDefaultOpen } from "@/components/staff/staff-shell";
 import { AuthProvider, useAuth } from "@/lib/auth";
@@ -353,6 +354,7 @@ function AuthenticatedLayout() {
           {isStudent && <StudentBottomNav />}
           {/* S20: Lumière Academic Assistant (authenticated students only; never on auth screens). */}
           {isStudent && <AcademicAssistant />}
+          {isStaffShell && <StaffOrb />}
           {/* S25: server copy of the student's EN/FR choice (cross-device; visible to staff in View as Student). */}
           {isStudent && <LanguagePreferenceSync />}
         </div>

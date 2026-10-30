@@ -308,7 +308,6 @@ export default function AdminStudentWorkspace() {
         <StaffPill tone="neutral" icon={<GraduationCap className="h-3.5 w-3.5" aria-hidden="true" />}>{programName === "Not provided" ? "No program assigned" : shortProgram(programName)}</StaffPill>
       </div>}
       actions={<>
-        <ExperienceButton action={experience} />
         <ViewAsStudentLink studentId={studentId} />
         {canActivateLead ? <Button type="button" size="sm" className={staffBtn.seal} disabled={activateLead.isPending || !canonicalStudentId} onClick={() => canonicalStudentId && activateLead.mutate(canonicalStudentId)} data-testid="button-activate-lead">{activateLead.isPending ? "Activating…" : <><UserCheck className="h-4 w-4" aria-hidden="true" />Activate lead</>}</Button> : null}
         <Button type="button" variant="outline" size="sm" className={staffBtn.outline} onClick={() => setPhotoOpen(true)} data-testid="button-student-photo">{t("staff.photo.button")}</Button>
