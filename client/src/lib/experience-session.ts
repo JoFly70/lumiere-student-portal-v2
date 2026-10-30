@@ -19,7 +19,8 @@ export function sanitizeReturnPath(raw: unknown): string {
   if (!/^\/(admin|staff)(\/|$|\?)/.test(p) || p.startsWith("//") || p.includes("\\") || p.length > 300) return EXPERIENCE_DEFAULT_RETURN;
   return p;
 }
-export const EXPERIENCE_LANDING_PATH = "/high-school/flight-deck";
+/** The Flight Deck route picks the right deck for the student's program (a bachelor's student must never land on a high-school page). */
+export const EXPERIENCE_LANDING_PATH = "/flight-deck";
 
 export interface ExperienceMirror {
   readonly studentId: string;

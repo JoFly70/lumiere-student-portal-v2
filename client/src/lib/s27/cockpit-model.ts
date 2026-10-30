@@ -180,18 +180,21 @@ export function buildRadarChips(input: {
   journey: StudentJourneyView | null;
   tickets: readonly TicketLike[] | null;
   today: string;
+  /** Where the roadmap-related chips link to (the program's own roadmap page). Defaults to the high-school one. */
+  roadmapHref?: string;
 }): RadarChip[] {
+  const roadmapHref = input.roadmapHref ?? "/high-school";
   const chips: RadarChip[] = [];
-  if (input.electivesAwaiting > 0) chips.push({ key: "electives", tone: "warn", n: input.electivesAwaiting, on: null, href: "/high-school" });
+  if (input.electivesAwaiting > 0) chips.push({ key: "electives", tone: "warn", n: input.electivesAwaiting, on: null, href: roadmapHref });
   const next = input.journey?.checkpoints.find((c) => c.status === "next");
   if (next) chips.push({ key: "checkpoint", tone: "info", n: 0, on: next.plannedOn, href: "/flight-deck" });
-  if (input.coursesAwaitingSchool > 0) chips.push({ key: "waiting", tone: "info", n: input.coursesAwaitingSchool, on: null, href: "/high-school" });
+  if (input.coursesAwaitingSchool > 0) chips.push({ key: "waiting", tone: "info", n: input.coursesAwaitingSchool, on: null, href: roadmapHref });
   const replies = (input.tickets ?? []).filter((t) => t.status !== "resolved" && t.status !== "closed" && t.last_public_reply_by === "staff").length;
   if (replies > 0) chips.push({ key: "support", tone: "info", n: replies, on: null, href: "/support" });
   const pace = input.journey?.pace;
   if (pace) {
     const ago = pace.lastLoggedOn ? daysBetween(pace.lastLoggedOn, input.today) : null;
-    chips.push({ key: "logged", tone: ago !== null && ago <= 7 ? "ok" : "warn", n: ago ?? -1, on: pace.lastLoggedOn, href: "/high-school" });
+    chips.push({ key: "logged", tone: ago !== null && ago <= 7 ? "ok" : "warn", n: ago ?? -1, on: pace.lastLoggedOn, href: roadmapHref });
   }
   return chips;
 }

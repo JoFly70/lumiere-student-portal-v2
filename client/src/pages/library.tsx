@@ -16,6 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useDocuments, useMyProfile } from "@/hooks/use-documents";
 import { useToast } from "@/hooks/use-toast";
 import { useHighSchoolView } from "@/lib/high-school-queries";
+import { useStudentPrograms } from "@/lib/student-programs";
 import { courseDescription } from "@/lib/hs-course-descriptions";
 import {
   LIB_CATEGORIES, attentionOfDoc, courseMatches, docMatches, groupVersions, provenanceOf, visibleNotes,
@@ -144,7 +145,8 @@ export default function Library() {
   const shelf = params.get("course") ?? "";
   const { data: profile, isLoading: profileLoading } = useMyProfile();
   const docs = useDocuments(profile?.id ?? null);
-  const hs = useHighSchoolView();
+  const programs = useStudentPrograms();
+  const hs = useHighSchoolView(programs.hasHighSchool);
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<LibCategory | "all">("all");
   const [view, setView] = useState<StudentDocument | null>(null);
@@ -165,7 +167,7 @@ export default function Library() {
   const matchedCourses = q ? courses.filter((c) => courseMatches({ key: c.key, title: c.title, tasks: c.tasks }, q)) : [];
   const countFor = (key: string) => groups.filter((g) => g.courseKey === key).length;
   const needAction = groups.filter((g) => attentionOfDoc(g.versions[0]!) === "action").length;
-  const loading = profileLoading || (!!profile && docs.isLoading) || hs.isLoading;
+  const loading = profileLoading || (!!profile && docs.isLoading) || hs.isLoading || programs.isLoading;
 
   return (
     <StudentSurface testId="library-page">
