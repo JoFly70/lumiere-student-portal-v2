@@ -277,6 +277,7 @@ function FlightCard(props: FlightDeckProps & { figures: ReturnType<typeof credit
     <section className="card flight" aria-labelledby="fl-h" data-testid="fd-flight">
       <div className="ch">
         <div style={{ display: "grid", gap: 4 }}><Eyebrow>{t("s27.fi.eyebrow")}</Eyebrow><h2 id="fl-h">{t("s27.fi.title")}</h2></div>
+        <Link className="link" href="/beyond">{t("s27.fi.beyond")} →</Link>
       </div>
       <FlightInstrument
         required={figures.required} confirmed={figures.confirmed} stops={instrumentStops} beadPace={shownPace} today={today}

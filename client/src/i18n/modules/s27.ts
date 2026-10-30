@@ -964,7 +964,7 @@ export const s27Fr: Record<keyof typeof s27En, string> = {
   "s27.bd.tl.flying": "Vous êtes en vol",
   "s27.bd.tl.credits": "{c} crédits confirmés sur {r}",
   "s27.bd.tl.studying": "Vous étudiez",
-  "s27.bd.tl.finishEst": "Est. {date}",
+  "s27.bd.tl.finishEst": "Prévu le {date}",
   "s27.bd.tl.finish.diploma": "Votre diplôme",
   "s27.bd.tl.finishSub.diploma": "{n} crédits, relevé de notes et diplôme",
   "s27.bd.tl.finish.bachelor": "Votre baccalauréat",

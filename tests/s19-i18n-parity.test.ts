@@ -8,6 +8,8 @@ import { SUPPORT_TEXT_EN, SUPPORT_TEXT_FR } from "../client/src/components/suppo
 const SAME_ALLOWED = new Set<string>([
   "language.en", "language.fr", "nav.documents", "documents.col.type", "documents.col.actions",
   "support.conversation", "auth.hero.footerRight", // identical cognate / brand line
+  // S27 Beyond page: placeholder-only strings and proper nouns / loanwords used in both languages
+  "s27.bd.h1.where", "s27.bd.tl.degreeSubField", "s27.bd.ck.chip.on", "s27.bd.pw.quebec.cegep", "s27.bd.svc.eyebrow",
 ]);
 const SAME_VALUE_ALLOWED = new Set<string>(["Documents", "Type", "Actions", "Description", "Documents", "Support", "Total", "Date", "Format", "Portail", "Contact", "Message", "Notes", "Section", "Original", "Image", "Photo", "Maintenance", "Standard", "Information", "Parent", "Passeport", "Transfer", "Admin", "Email", "Lumière", "English", "Français", "Dr", "Mme", "M."]);
 
