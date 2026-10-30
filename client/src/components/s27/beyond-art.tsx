@@ -102,7 +102,6 @@ export function BeyondSky() {
       <path d="M0 360 C150 300 260 290 360 320 C430 340 470 300 560 300 C640 300 700 340 760 330 L760 420 L0 420Z" fill="#1b2238" />
       {city}
       <path d="M0 420 L0 392 C300 372 600 380 1200 398 L1200 420Z" fill="#0a0f1b" />
-      <path d="M180 312 l0 -26 m-8 8 h16" stroke="#e9c77f" strokeWidth="2" opacity=".8" />
     </svg>
   );
 }

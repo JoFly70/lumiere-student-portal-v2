@@ -75,3 +75,27 @@
 .s27 .pm .chip.late{background:var(--t-red-dim);color:var(--t-red);font-weight:600}
 .s27 .paid .meter{background:rgba(255,255,255,.14);height:10px}
 .s27 .paid .meter i{background:#e9c77f}
+
+/* ── S27 Beyond repairs (BEY-002..007) ─────────────────────────────────────────────────────────────── */
+/* BEY-002: stat triplet wraps instead of colliding; postcards 2-up between 640 and 1279; art capped on phones. */
+.s27 .gl-stats{grid-template-columns:repeat(auto-fit,minmax(5.5rem,1fr))}
+.s27 .gl-stats span{overflow-wrap:anywhere;hyphens:auto}
+@media (max-width:1279px) and (min-width:640px){.s27 .postcards{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:639px){.s27 .postcards{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:900px){.s27 .bd-hero{padding-bottom:190px}.s27 .bd-sky{height:180px;top:auto}}
+/* BEY-003: a scrim behind the caption; the rank chip moves to the top-left, away from the moon. */
+.s27 .pc-art::after{content:"";position:absolute;inset:auto 0 0 0;height:58%;background:linear-gradient(to top,rgba(10,15,27,.78),rgba(10,15,27,0));pointer-events:none}
+.s27 .pc-city,.s27 .pc-rank{z-index:2}
+.s27 .pc-rank{right:auto;left:14px}
+/* BEY-004: disabled primary buttons read as "not yet", not broken. */
+.s27 .b1[disabled]{opacity:1;background:var(--t-panel-2);color:var(--t-muted);border:1px dashed var(--t-line-3)}
+.s27 .hint{color:var(--t-muted);margin:6px 0 0}
+/* BEY-005: path card and checklist keep their own height; timeline nodes share a baseline. */
+.s27 .bd-two{align-items:start}
+.s27 .tl{align-items:start}
+.s27 .tl-n .when{min-height:1.1em}
+/* BEY-006: without a goal the hero is compact. */
+.s27 .bd-hero--compact{min-height:0;padding:28px 28px 32px}
+@media (max-width:900px){.s27 .bd-hero--compact{padding:24px 20px 28px}}
+/* BEY-007: toasts sit left of the open assistant panel (never over its composer). */
+@media (min-width:768px){body:has(.aa-panel) [data-toast-viewport]{right:444px}}

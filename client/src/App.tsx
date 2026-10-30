@@ -8,6 +8,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { ThemeProvider } from "@/hooks/use-theme";
 import { I18nProvider } from "@/i18n";
+import { StudentSkipLink } from "@/components/student-skip-link";
 import { StaffOrb } from "@/components/orb/staff-orb";
 import { AccessNotice } from "@/components/staff/access-notice";
 import { StaffHeader, StaffSkipLink, useStaffSidebarDefaultOpen } from "@/components/staff/staff-shell";
@@ -333,6 +334,7 @@ function AuthenticatedLayout() {
     >
       <div className={cn("flex w-full", experience ? "h-[calc(100dvh-var(--exp-h))] mt-[var(--exp-h)]" : "h-dvh", isStudent && "student-surface", isStaffShell && "staff-surface")}>
         {isStaffShell && <StaffSkipLink />}
+        {isStudent && <StudentSkipLink />}
         <AppSidebar />
         <div className="flex min-w-0 flex-1 flex-col">
           {isStudent ? (
@@ -342,7 +344,8 @@ function AuthenticatedLayout() {
             <StaffHeader name={user?.name} role={user?.role} />
           )}
           <main
-            {...(isStudent ? {} : { id: "main-content", tabIndex: -1 })}
+            id="main-content"
+            tabIndex={-1}
             className={cn(
               "flex-1 overflow-auto",
               isStudent ? "relative min-h-0 p-6 pb-24 md:p-8" : "p-4 focus-visible:outline-none sm:p-6 lg:p-8",

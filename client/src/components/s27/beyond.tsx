@@ -55,7 +55,7 @@ export function BeyondPage(p: BeyondProps) {
       {goal && <Careers goal={goal} />}
       <div className="bd-two">
         <Pathway kind={p.kind} goal={goal} required={figures?.required ?? null} />
-        <Checklist journey={p.journey} transcript={p.hs?.graduation.transcript.status ?? null} />
+        <Checklist journey={p.journey} transcript={p.hs?.graduation.transcript.status ?? null} bachelor={bachelor} />
       </div>
       <Sessions {...p} agreement={agreement} goal={goal} />
       <Services goal={goal} onService={p.onService} notify={p.notify} bachelor={bachelor} />
@@ -68,8 +68,8 @@ export function BeyondPage(p: BeyondProps) {
 function Hero({ kind, goal, year, reviewed, left, hasSessions }: { kind: BeyondKind; goal: PostSecondaryGoal | null; year: number; reviewed: number; left: number; hasSessions: boolean }) {
   const { t } = useS27T();
   return (
-    <section className="bd-hero" aria-labelledby="bd-h" data-testid="beyond-hero">
-      <BeyondSky />
+    <section className={`bd-hero${goal || hasSessions ? "" : " bd-hero--compact"}`} aria-labelledby="bd-h" data-testid="beyond-hero">
+      {goal || hasSessions ? <BeyondSky /> : null}
       <div className="bd-hero-in">
         <span className="eyebrow bd-eye">{t(`s27.bd.eyebrow.${kind}` as TranslationKey)}</span>
         <h1 id="bd-h">
@@ -100,6 +100,7 @@ function EmptyStudy({ journeyState }: { journeyState: BeyondProps["journeyState"
     <section className="state" data-testid="beyond-empty">
       <h2>{t("s27.bd.empty.title")}</h2>
       <p>{journeyState === "unavailable" || journeyState === "failed" ? t("s27.bd.empty.journey") : t("s27.bd.empty.text")}</p>
+      <button type="button" className="b2" onClick={() => askAssistant(t("s27.bd.ask.q1"))} data-testid="beyond-empty-ask">{t("s27.bd.empty.ask")}</button>
     </section>
   );
 }
@@ -229,16 +230,16 @@ function Pathway({ kind, goal, required }: { kind: BeyondKind; goal: PostSeconda
   );
 }
 
-function Checklist({ journey, transcript }: { journey: StudentJourneyView | null; transcript: string | null }) {
+function Checklist({ journey, transcript, bachelor }: { journey: StudentJourneyView | null; transcript: string | null; bachelor: boolean }) {
   const { t, lang } = useS27T();
   const items = buildChecklist({ agreement: journey?.agreement ?? null, sessions: journey?.sessions ?? [], checkpoints: journey?.checkpoints ?? [], transcriptStatus: transcript });
   const chip = (i: (typeof items)[number]): { text: string; cls: string } => {
     switch (i.id) {
       case "program": return i.state === "part" ? { text: t("s27.bd.ck.chip.inProgress"), cls: "wait" } : { text: t("s27.bd.ck.chip.notStarted"), cls: "plan" };
       case "language": return i.state === "done" ? { text: t("s27.bd.ck.chip.done"), cls: "ok" } : i.detail.on ? { text: t("s27.bd.ck.chip.due", { date: formatDay(i.detail.on, lang) }), cls: "wait" } : { text: t("s27.bd.ck.chip.notStarted"), cls: "plan" };
-      case "transcript": return i.state === "done" ? { text: t("s27.bd.ck.chip.ready"), cls: "ok" } : { text: t("s27.bd.ck.chip.afterDiploma"), cls: "plan" };
-      case "profile": return { text: t("s27.bd.ck.chip.afterDiploma"), cls: "plan" };
-      default: return i.detail.on ? { text: t("s27.bd.ck.chip.on", { date: formatDay(i.detail.on, lang) }), cls: "wait" } : { text: t("s27.bd.ck.chip.soon"), cls: "plan" };
+      case "transcript": return i.state === "done" ? { text: t("s27.bd.ck.chip.ready"), cls: "ok" } : { text: t(bachelor ? "s27.bd.ck.chip.afterBachelor" : "s27.bd.ck.chip.afterDiploma"), cls: "plan" };
+      case "profile": return { text: t(bachelor ? "s27.bd.ck.chip.afterBachelor" : "s27.bd.ck.chip.afterDiploma"), cls: "plan" };
+      default: return i.detail.on ? { text: t("s27.bd.ck.chip.on", { date: formatDay(i.detail.on, lang) }), cls: "wait" } : { text: t(bachelor ? "s27.bd.ck.chip.soonBachelor" : "s27.bd.ck.chip.soon"), cls: "plan" };
     }
   };
   return (
@@ -251,7 +252,7 @@ function Checklist({ journey, transcript }: { journey: StudentJourneyView | null
           return (
             <div key={i.id} className={`ck ${i.state}`}>
               <span className="ic" aria-hidden="true">{i.state === "done" ? <svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10" /></svg> : i.state === "lock" ? <svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg> : <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" fill="currentColor" /></svg>}</span>
-              <span><b>{t(`s27.bd.ck.${i.id}` as TranslationKey)}</b><span>{t(`s27.bd.ck.${i.id}Text` as TranslationKey)}</span></span>
+              <span><b>{t(`s27.bd.ck.${i.id}` as TranslationKey)}</b><span>{bachelor && i.id === "dates" ? t("s27.bd.ck.datesTextBachelor") : t(`s27.bd.ck.${i.id}Text` as TranslationKey)}</span></span>
               <span className={`pill ${c.cls}`}>{c.text}</span>
             </div>
           );
@@ -312,6 +313,7 @@ function Sessions(p: BeyondProps & { agreement: StudentJourneyView["agreement"];
                 return <button type="button" key={s.toISOString()} className="slot" aria-pressed={pick === i} disabled={left === 0} onClick={() => setPick(i)} data-testid={`slot-${i}`}><b>{f.day}</b>{f.time}</button>;
               })}
             </div>
+            {pick === null && left > 0 && <p className="small hint" data-testid="bd-book-hint">{t("s27.bd.ses.pickHint")}</p>}
             <div className="btns">
               <button type="button" className="b1" disabled={pick === null || left === 0 || busy} onClick={() => void book()} data-testid="bd-book">
                 {left === 0 ? t("s27.bd.ses.allBooked") : busy ? t("s27.bd.ses.booking") : t("s27.bd.ses.book", { n: a.orientationSessionsUsed + 1 })}
@@ -364,7 +366,6 @@ function Services({ goal, onService, notify, bachelor }: { goal: PostSecondaryGo
     if (res.ok) notify(t("s27.bd.svc.sent"), t("s27.bd.svc.sentText", { n: res.ticketNumber }));
     else notify(t("s27.bd.svc.failed"), res.message, true);
   };
-  void bachelor;
   return (
     <section className="alacarte" aria-labelledby="ac-h2" data-testid="beyond-services">
       <div className="ac-head">
@@ -377,12 +378,12 @@ function Services({ goal, onService, notify, bachelor }: { goal: PostSecondaryGo
             <span className="si">{SVG_ICON(s.icon)}</span>
             <h3>{title(s.id)}</h3>
             <ul>{[1, 2, 3].map((n) => <li key={n}>{t(`s27.bd.svc.${s.id}.${n}` as TranslationKey)}</li>)}</ul>
-            <span className="lockl"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg>{t("s27.bd.svc.lock")}</span>
+            <span className="lockl"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg>{t(bachelor ? "s27.bd.svc.lockBachelor" : "s27.bd.svc.lock")}</span>
             <button type="button" className="b2l" disabled={busy !== null} onClick={() => void ask(s.id)} data-testid={`svc-${s.id}`}>{t("s27.bd.svc.ask")}</button>
           </article>
         ))}
       </div>
-      <p className="ac-foot">{t("s27.bd.svc.foot")}</p>
+      <p className="ac-foot">{t(bachelor ? "s27.bd.svc.footBachelor" : "s27.bd.svc.foot")}</p>
     </section>
   );
 }
