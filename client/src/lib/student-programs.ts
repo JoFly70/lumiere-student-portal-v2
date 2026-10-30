@@ -13,6 +13,17 @@ export interface ProgramAccess {
   readonly highSchoolOnly: boolean;
 }
 
+/** Which program kinds the student holds. Kept apart from `ProgramAccess` (whose shape is relied on by the nav). */
+export interface ProgramKinds {
+  readonly hasHighSchool: boolean;
+  readonly hasUniversity: boolean;
+}
+
+export function programKinds(view: StudentProgramsView | null | undefined): ProgramKinds {
+  const programs = view?.programs ?? [];
+  return { hasHighSchool: programs.some((p) => p.kind === "high_school"), hasUniversity: programs.some((p) => p.kind === "university_degree") };
+}
+
 export const NO_PROGRAM_ACCESS: ProgramAccess = { hasHighSchool: false, highSchoolOnly: false };
 
 export function programAccess(view: StudentProgramsView | null | undefined): ProgramAccess {
@@ -43,8 +54,13 @@ export function useStudentPrograms(enabled = true) {
     staleTime: 60_000,
   });
   const access = programAccess(query.data);
+  const kinds = programKinds(query.data);
   return {
     ...access,
+    /** Any university degree program. */
+    hasUniversity: kinds.hasUniversity,
+    /** A degree program and no high school program: high-school pages do not apply to this student. */
+    degreeOnly: kinds.hasUniversity && !kinds.hasHighSchool,
     /** True until the first answer (or failure) arrives. On failure the access is "no high school", i.e. the university default. */
     isLoading: enabled && query.isLoading,
     isError: query.isError,
@@ -60,6 +76,21 @@ export const HIGH_SCHOOL_FLIGHT_DECK_PATH = "/high-school/flight-deck";
 export const UNIVERSITY_ONLY_PATHS: readonly string[] = ["/roadmap"];
 /** Nav entries hidden for high-school-only students. Billing is now shown to everyone (it has an honest not-connected state). */
 export const HIGH_SCHOOL_ONLY_HIDDEN_PATHS: readonly string[] = [];
+
+/**
+ * High-school-only student pages and where a degree-only student goes instead. A student with no program at all is not
+ * redirected: they see the neutral "no program yet" state. Students with both programs keep every page.
+ */
+export const HIGH_SCHOOL_ONLY_REDIRECTS: Readonly<Record<string, string>> = {
+  [HIGH_SCHOOL_PATH]: "/roadmap",
+  [HIGH_SCHOOL_FLIGHT_DECK_PATH]: FLIGHT_DECK_PATH,
+};
+
+export function highSchoolRouteRedirect(path: string, kinds: ProgramKinds): string | null {
+  if (kinds.hasHighSchool || !kinds.hasUniversity) return null;
+  const clean = path.split(/[?#]/)[0]!.replace(/\/+$/, "") || "/";
+  return HIGH_SCHOOL_ONLY_REDIRECTS[clean] ?? null;
+}
 
 export type FlightDeckVariant = "high_school" | "university";
 

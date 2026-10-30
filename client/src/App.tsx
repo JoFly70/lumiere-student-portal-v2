@@ -41,6 +41,7 @@ import AdminStudentRoadmap from "@/pages/admin-student-roadmap";
 import HighSchool from "@/pages/high-school";
 import Library from "@/pages/library";
 import { UniversityOnly } from "@/components/university-only";
+import { HighSchoolOnly } from "@/components/high-school-only";
 import { studentLandingPath, useStudentPrograms } from "@/lib/student-programs";
 import AdminStudentHighSchool from "@/pages/admin-student-high-school";
 import AdminStudentBilling from "@/pages/admin-student-billing";
@@ -218,7 +219,7 @@ function Router() {
       <Route path="/high-school/flight-deck">
         {() => (
           <ProtectedRoute requireRole="student">
-            <HighSchoolFlightDeck />
+            <HighSchoolOnly path="/high-school/flight-deck"><HighSchoolFlightDeck /></HighSchoolOnly>
           </ProtectedRoute>
         )}
       </Route>
@@ -242,7 +243,7 @@ function Router() {
       <Route path="/high-school">
         {() => (
           <ProtectedRoute requireRole="student">
-            <HighSchool />
+            <HighSchoolOnly path="/high-school"><HighSchool /></HighSchoolOnly>
           </ProtectedRoute>
         )}
       </Route>

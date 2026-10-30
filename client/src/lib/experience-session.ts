@@ -9,7 +9,8 @@ export const TAB_AUTH_STORAGE_KEY = "lumiere_auth_tab";
 export const EXPERIENCE_READY_TYPE = "lumiere-experience-ready";
 export const EXPERIENCE_SESSION_TYPE = "lumiere-experience-session";
 export const EXPERIENCE_PATH = "/experience";
-export const EXPERIENCE_LANDING_PATH = "/high-school/flight-deck";
+/** The Flight Deck route picks the right deck for the student's program (a bachelor's student must never land on a high-school page). */
+export const EXPERIENCE_LANDING_PATH = "/flight-deck";
 
 export interface ExperienceMirror {
   readonly studentId: string;
