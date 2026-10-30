@@ -32,8 +32,10 @@ describe("S10 UX pass: one authoritative roadmap view", () => {
     for (const page of ["client/src/pages/flight-deck.tsx", "client/src/pages/roadmap.tsx"]) {
       const src = read(page);
       expect(src).toMatch(/queryKey: \[\.\.\.STUDENT_ROADMAP_QUERY_KEY\]/);
-      expect(src).toContain("RoadmapActionsProvider");
     }
+    // The degree Flight Deck is the shared S27 cockpit: read-only. Progress is logged on the Roadmap, which owns the write path.
+    expect(read("client/src/pages/roadmap.tsx")).toContain("RoadmapActionsProvider");
+    expect(read("client/src/pages/flight-deck.tsx")).not.toContain("RoadmapActionsProvider");
     expect(read("client/src/components/student-progress/roadmap-actions.tsx")).toContain("applyAuthoritativeView(queryClient, view)");
   });
 
