@@ -47,7 +47,7 @@ export function ProfileSectionNav() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return (
-    <nav aria-label={pt("Profile sections")} className="sticky top-0 z-20 -mx-4 min-w-0 border-b border-student-line bg-student-bg/95 px-4 py-2 backdrop-blur sm:-mx-6 sm:px-6 md:-mx-8 md:px-8" data-testid="section-nav">
+    <nav aria-label={pt("Profile sections")} className="sticky top-[-1.5rem] z-20 min-w-0 border-b border-student-line bg-student-bg py-2 md:top-[-2rem]" data-testid="section-nav">
       <ul className="flex gap-2 overflow-x-auto pb-0.5 sm:flex-wrap sm:overflow-visible">
         {sections.map((s) => (
           <li key={s.id} className="shrink-0">
