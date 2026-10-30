@@ -203,7 +203,7 @@ function StudentRow({ s, f, docs, waiting }: { s: DirectoryStudent; f?: Director
         <span className="col-span-3 col-start-1 min-w-0 text-sm text-student-muted lg:col-span-1 lg:col-start-3">
           {(() => {
             const [main, ...rest] = f?.program ? shortProgram(f.program.title).split(" · ") : ["No program yet"];
-            return <><span className="block whitespace-nowrap text-student-ink" title={f?.program?.title}>{main}</span>{rest.length ? <span className="block whitespace-nowrap text-xs text-student-muted">{rest.join(" · ")}</span> : null}</>;
+            return <><span className="block truncate text-student-ink" title={f?.program?.title}>{main}</span>{rest.length ? <span className="block whitespace-nowrap text-xs text-student-muted">{rest.join(" · ")}</span> : null}</>;
           })()}
         </span>
         <span className={`col-span-3 col-start-1 min-w-0 flex-wrap gap-1.5 lg:col-span-1 lg:col-start-4 ${(docs || waiting || bal?.overdue) ? "flex" : "hidden lg:block"}`} data-testid="student-attention">
