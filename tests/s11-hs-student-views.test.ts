@@ -463,7 +463,7 @@ describe("S11 states", () => {
     expect(err).toContain('role="alert"');
     expect(err).toContain("Try again");
     const none = html(React.createElement(HsNoEnrollment));
-    expect(none).toContain("Your high school plan isn&#x27;t set up yet");
+    expect(none).toContain("No program yet"); // neutral wording: a degree student must not read "high school"
     expect(none).toContain('href="/support"');
   });
   it("maps API errors", () => {
