@@ -205,6 +205,33 @@ export function deriveDegreeEvaluationConflictFacts(
   return { requirementProvenance, conflictProvenance, conflicts };
 }
 
+/**
+ * knowledge_requirements_v2 has no kind/unit columns: a requirement's quantitative shape lives in the
+ * normalized value of its single confirmed, current requirement claim. The integration adapter validates
+ * requirement occurrences by kind/unit, so each row carries the shape of that projection. A requirement
+ * without exactly one confirmed current claim with a valid projection is left unchanged (the snapshot
+ * assembler sends it to manual review). Nothing is defaulted.
+ */
+export function withProjectedRequirementShape<T extends { readonly id: string }>(
+  rows: readonly T[],
+  claims: readonly DegreeEvaluationClaimRow[],
+  versions: readonly DegreeEvaluationClaimVersionRow[],
+): T[] {
+  const byId = new Map(versions.map((row) => [row.id, row]));
+  return rows.map((row) => {
+    const current = claims.filter((claim) => claim.claimType === "requirement"
+      && claim.subjectType === "requirement"
+      && claim.subjectId === row.id
+      && claim.status === "confirmed");
+    if (current.length !== 1 || !current[0].currentVersionId) return row;
+    const version = byId.get(current[0].currentVersionId);
+    const projection = version?.status === "confirmed"
+      ? canonicalRequirementProjection(version.normalizedValue)
+      : null;
+    return projection ? { ...row, kind: projection.kind, unit: projection.unit } : row;
+  });
+}
+
 export async function readDegreeEvaluationSnapshotFacts(
   context: DegreeEvaluationSnapshotContext,
   tx: DegreeEvaluationSnapshotTx,
@@ -466,7 +493,7 @@ export async function readDegreeEvaluationSnapshotFacts(
   return Object.freeze({
     assignments: Object.freeze(assignments),
     programVersions: Object.freeze(programVersionRows),
-    requirements: Object.freeze(requirements),
+    requirements: Object.freeze(withProjectedRequirementShape(requirements, claims, claimVersionRows)),
     ...(inactiveReferencedRequirements.length > 0
       ? { inactiveReferencedRequirements: Object.freeze(inactiveReferencedRequirements) }
       : {}),

@@ -10,6 +10,7 @@ import {
   degreeEvaluationSnapshotRepository,
   deriveDegreeEvaluationConflictFacts,
   readDegreeEvaluationSnapshotFacts,
+  withProjectedRequirementShape,
 } from "../server/repositories/degree-evaluation-snapshot-repo";
 import {
   readDegreeEvaluationSnapshot,
@@ -1242,5 +1243,30 @@ describe("bounded degree-evaluation snapshot reader", () => {
       conflictProvenance: derived.conflictProvenance,
     });
     expect(output.status).toBe("ACCEPTED");
+  });
+});
+
+describe("requirement rows carry the shape of their confirmed claim projection (S27)", () => {
+  const claim = (id: string, subjectId: string, currentVersionId: string | null, status = "confirmed") => ({
+    id, claimKey: id, claimType: "requirement", subjectType: "requirement", subjectId, currentVersionId, status, createdAt: null, createdBy: null,
+  });
+  const version = (id: string, claimId: string, normalizedValue: unknown, status = "confirmed") => ({
+    id, claimId, versionNumber: 1, statement: "s", status, normalizedValue, confidence: 90, effectiveFrom: null, effectiveTo: null,
+    catalogApplicability: null, cohortApplicability: null, supersedesVersionId: null, createdAt: null, createdBy: null,
+  });
+  const projection = { projectionKind: "QUANTITATIVE_REQUIREMENT", kind: "minimum", unit: "credits", requiredAmount: "36", academicRuleId: null };
+
+  it("adds kind/unit only from one confirmed current claim with a valid projection; never defaults", () => {
+    const rows = [{ id: "r-ok" }, { id: "r-none" }, { id: "r-working" }, { id: "r-bad" }, { id: "r-two" }];
+    const claims = [
+      claim("c-ok", "r-ok", "v-ok"), claim("c-working", "r-working", "v-working"), claim("c-bad", "r-bad", "v-bad"),
+      claim("c-two-a", "r-two", "v-two-a"), claim("c-two-b", "r-two", "v-two-b"),
+    ];
+    const versions = [
+      version("v-ok", "c-ok", projection), version("v-working", "c-working", projection, "working"),
+      version("v-bad", "c-bad", { projectionKind: "WRONG" }), version("v-two-a", "c-two-a", projection), version("v-two-b", "c-two-b", projection),
+    ];
+    const out = withProjectedRequirementShape(rows, claims as never, versions as never);
+    expect(out).toEqual([{ id: "r-ok", kind: "minimum", unit: "credits" }, { id: "r-none" }, { id: "r-working" }, { id: "r-bad" }, { id: "r-two" }]);
   });
 });
