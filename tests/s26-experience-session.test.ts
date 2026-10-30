@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   TAB_AUTH_STORAGE_KEY, EXPERIENCE_READY_TYPE, EXPERIENCE_SESSION_TYPE,
-  banner, buildTabAuthState, chooseAuthStorage, isExperienceReadyMessage, parseExperienceMessage, readTabAuth,
+  banner, buildTabAuthState, chooseAuthStorage, sanitizeReturnPath, isExperienceReadyMessage, parseExperienceMessage, readTabAuth,
   type ExperiencePayload, type StorageLike,
 } from '../client/src/lib/experience-session';
 
@@ -74,6 +74,17 @@ describe('experience storage selection', () => {
   it('banner copy is bilingual and names the mirrored label', () => {
     expect(banner('en', 'X').text).toBe('Demo session — X. Changes affect demo data only.');
     expect(banner('fr', 'X').text).toContain('Session démo');
-    expect(banner('fr', 'X').exit).toBe('Quitter');
+    expect(banner('fr', 'X').exit).toBe('Retour au portail du personnel');
+  });
+});
+
+describe('S27 demo session return path', () => {
+  it('only returns to staff pages, otherwise the Students list', () => {
+    expect(sanitizeReturnPath('/admin/students/abc')).toBe('/admin/students/abc');
+    expect(sanitizeReturnPath('/admin/students?x=1')).toBe('/admin/students?x=1');
+    expect(sanitizeReturnPath('https://evil.test/')).toBe('/admin/students');
+    expect(sanitizeReturnPath('//evil.test')).toBe('/admin/students');
+    expect(sanitizeReturnPath('/flight-deck')).toBe('/admin/students');
+    expect(sanitizeReturnPath(null)).toBe('/admin/students');
   });
 });

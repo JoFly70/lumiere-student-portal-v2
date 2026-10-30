@@ -5,7 +5,7 @@
  */
 import { apiRequest } from "@/lib/api";
 import {
-  EXPERIENCE_PATH, EXPERIENCE_SESSION_TYPE, isExperienceReadyMessage, isExperiencePayload,
+  EXPERIENCE_PATH, EXPERIENCE_SESSION_TYPE, sanitizeReturnPath, isExperienceReadyMessage, isExperiencePayload,
   type ExperiencePayload,
 } from "@/lib/experience-session";
 
@@ -14,7 +14,9 @@ const READY_TIMEOUT_MS = 20_000;
 export async function openStudentExperience(studentId: string): Promise<{ ok: true } | { ok: false; message: string }> {
   const origin = window.location.origin;
   // Synchronous, before any await, so the browser treats it as user-initiated.
-  const tab = window.open(EXPERIENCE_PATH, "_blank");
+  // The demo tab remembers where "Back to staff portal" should land: this very page (file or list).
+  const back = sanitizeReturnPath(window.location.pathname + window.location.search);
+  const tab = window.open(`${EXPERIENCE_PATH}?return=${encodeURIComponent(back)}`, "_blank");
   if (!tab) return { ok: false, message: "The browser blocked the new tab. Allow pop-ups for this site and try again." };
 
   let onMessage: ((e: MessageEvent) => void) | null = null;

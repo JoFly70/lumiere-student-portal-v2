@@ -5,7 +5,7 @@
  */
 import { useEffect, useState } from "react";
 import {
-  EXPERIENCE_LANDING_PATH, EXPERIENCE_READY_TYPE, TAB_AUTH_STORAGE_KEY, buildTabAuthState, parseExperienceMessage,
+  EXPERIENCE_LANDING_PATH, EXPERIENCE_READY_TYPE, EXPERIENCE_RETURN_KEY, TAB_AUTH_STORAGE_KEY, buildTabAuthState, parseExperienceMessage, sanitizeReturnPath,
 } from "@/lib/experience-session";
 
 const TIMEOUT_MS = 25_000;
@@ -35,6 +35,7 @@ export default function ExperiencePage() {
       } catch { /* the app fetches CSRF lazily is not guaranteed; continue */ }
       try {
         sessionStorage.setItem(TAB_AUTH_STORAGE_KEY, JSON.stringify(tabState));
+        sessionStorage.setItem(EXPERIENCE_RETURN_KEY, sanitizeReturnPath(new URLSearchParams(window.location.search).get("return")));
       } catch {
         setState("failed");
         return;

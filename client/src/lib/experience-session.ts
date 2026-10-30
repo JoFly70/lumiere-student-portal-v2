@@ -9,6 +9,16 @@ export const TAB_AUTH_STORAGE_KEY = "lumiere_auth_tab";
 export const EXPERIENCE_READY_TYPE = "lumiere-experience-ready";
 export const EXPERIENCE_SESSION_TYPE = "lumiere-experience-session";
 export const EXPERIENCE_PATH = "/experience";
+export const EXPERIENCE_RETURN_KEY = "lumiere_experience_return";
+export const EXPERIENCE_DEFAULT_RETURN = "/admin/students";
+
+/** Where "Back to staff portal" lands: only same-origin staff paths are accepted; anything else is the Students list. */
+export function sanitizeReturnPath(raw: unknown): string {
+  if (typeof raw !== "string") return EXPERIENCE_DEFAULT_RETURN;
+  const p = raw.trim();
+  if (!/^\/(admin|staff)(\/|$|\?)/.test(p) || p.startsWith("//") || p.includes("\\") || p.length > 300) return EXPERIENCE_DEFAULT_RETURN;
+  return p;
+}
 export const EXPERIENCE_LANDING_PATH = "/high-school/flight-deck";
 
 export interface ExperienceMirror {
@@ -137,6 +147,6 @@ export function chooseAuthStorage(tab: StorageLike | null, persistent: StorageLi
 
 export function banner(language: string, label: string): { text: string; exit: string } {
   return language === "fr"
-    ? { text: `Session démo — ${label}. Les modifications n’affectent que des données de démonstration.`, exit: "Quitter" }
-    : { text: `Demo session — ${label}. Changes affect demo data only.`, exit: "Exit" };
+    ? { text: `Session démo — ${label}. Les modifications n’affectent que des données de démonstration.`, exit: "Retour au portail du personnel" }
+    : { text: `Demo session — ${label}. Changes affect demo data only.`, exit: "Back to staff portal" };
 }

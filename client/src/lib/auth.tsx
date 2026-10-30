@@ -3,7 +3,7 @@ import { useLocation } from 'wouter';
 import { isRestorableAuthState, publishAuthLifecycle } from './auth-lifecycle';
 import { AuthRequestError, authErrorFromResponse } from './auth-errors';
 import { SESSION_EXPIRED_EVENT } from './session-expiry';
-import { TAB_AUTH_STORAGE_KEY, chooseAuthStorage, readTabAuth, type StorageLike } from './experience-session';
+import { EXPERIENCE_RETURN_KEY, TAB_AUTH_STORAGE_KEY, chooseAuthStorage, readTabAuth, sanitizeReturnPath, type StorageLike } from './experience-session';
 
 interface User {
   id: string;
@@ -44,9 +44,13 @@ function persistentStorage(): StorageLike | null {
 
 /** Leave a demo-experience tab: close it, or (if the browser refuses) reload into the person's own session. */
 export function leaveExperienceTab() {
-  try { sessionStorage.removeItem(TAB_AUTH_STORAGE_KEY); } catch { /* ignore */ }
+  let back = sanitizeReturnPath(null);
+  try { back = sanitizeReturnPath(sessionStorage.getItem(EXPERIENCE_RETURN_KEY)); } catch { /* ignore */ }
+  try { sessionStorage.removeItem(TAB_AUTH_STORAGE_KEY); sessionStorage.removeItem(EXPERIENCE_RETURN_KEY); } catch { /* ignore */ }
+  // Bring the staff tab that opened this one back to the front, then close; if the browser refuses to close, go back in this tab.
+  try { (window.opener as Window | null)?.focus(); } catch { /* ignore */ }
   try { window.close(); } catch { /* ignore */ }
-  window.setTimeout(() => { window.location.assign('/'); }, 250);
+  window.setTimeout(() => { window.location.assign(back); }, 250);
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
