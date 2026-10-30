@@ -31,6 +31,7 @@ export function StaffOrb() {
       type="button"
       className="aa-fab aa-fab--staff"
       aria-label={t("orb.ask")}
+      title={t("orb.ask")}
       onClick={() => navigate(target)}
       data-testid="staff-orb"
       data-target={target}

@@ -96,6 +96,10 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("S27 program journey on real Postgres", 
     await expect(svc.requestSession(st.studentId, st.userId, { slotAt: slot(0), prep: {}, channel: "portal" })).rejects.toMatchObject({ code: "S27_NOT_FOUND" });
     await svc.updateAgreement(st.studentId, admin.userId, { signedOn: "2026-11-02" });
     const a = await svc.requestSession(st.studentId, st.userId, { slotAt: slot(0), prep: { Goals: ["Plan"] }, channel: "portal" });
+    // A repeat request for the same slot (two tabs, a retried POST) returns the same session and uses nothing.
+    const again = await svc.requestSession(st.studentId, st.userId, { slotAt: slot(0), prep: { Goals: ["Plan"] }, channel: "portal" });
+    expect(again.result.id).toBe(a.result.id);
+    expect(again.audits).toHaveLength(0);
     await svc.requestSession(st.studentId, st.userId, { slotAt: slot(1), prep: {}, channel: "whatsapp" });
     await expect(svc.requestSession(st.studentId, st.userId, { slotAt: slot(2), prep: {}, channel: "portal" })).rejects.toMatchObject({ code: "S27_NO_SESSIONS_LEFT", status: 409 });
     await expect(svc.requestSession(st.studentId, st.userId, { slotAt: "2026-11-01T10:00:00Z", prep: {}, channel: "portal" })).rejects.toMatchObject({ code: "S27_VALIDATION_FAILED" });
@@ -256,7 +260,11 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("S27 program journey on real Postgres", 
       const ok = await asAdmin(request(app).post("/api/student/orientation-sessions").send(body), st.userId, st.token);
       expect(ok.status).toBe(201);
       expect(ok.body.status).toBe("requested");
-      const again = await asAdmin(request(app).post("/api/student/orientation-sessions").send(body), st.userId, st.token);
+      // The same slot again (retry / second tab) returns the same session instead of using another one.
+      const repeat = await asAdmin(request(app).post("/api/student/orientation-sessions").send(body), st.userId, st.token);
+      expect(repeat.status).toBe(201);
+      expect(repeat.body.id).toBe(ok.body.id);
+      const again = await asAdmin(request(app).post("/api/student/orientation-sessions").send({ ...body, slotAt: "2026-11-21T17:00:00+01:00" }), st.userId, st.token);
       expect(again.status).toBe(409);
       expect(again.body.error.code).toBe("S27_NO_SESSIONS_LEFT");
       expect((await asAdmin(request(app).post("/api/student/orientation-sessions").send({ ...body, studentId: "x" }), st.userId, st.token)).status).toBe(400);

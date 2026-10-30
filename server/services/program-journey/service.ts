@@ -299,6 +299,11 @@ export function createProgramJourneyService(deps: JourneyDeps) {
     return db.transaction(async (tx) => {
       const agreement = await loadAgreement(tx, studentId, true); // row lock serializes concurrent requests
       if (!agreement) throw new JourneyError(E.NOT_FOUND, 404, "No program agreement is on file yet");
+      // Idempotent: a second request for the same slot (two tabs, a retry after a lost response) returns the
+      // session already requested instead of using up another included session.
+      const [same] = rows(await tx.execute(sql`SELECT id, slot_at, status, prep, notes, created_at FROM orientation_sessions
+        WHERE student_id = ${studentId} AND slot_at = ${input.slotAt}::timestamptz AND status <> 'cancelled' ORDER BY created_at LIMIT 1`));
+      if (same) return { result: toSessionView(same), audits: [] };
       const used = await countUsed(tx, studentId);
       if (used >= agreement.orientationSessionsIncluded) {
         throw new JourneyError(E.NO_SESSIONS_LEFT, 409, "All orientation sessions included in your program have been used");

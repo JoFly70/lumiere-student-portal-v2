@@ -958,6 +958,7 @@ export function AcademicAssistant({ defaultOpen = false }: { defaultOpen?: boole
       aria-haspopup="dialog"
       aria-expanded={open}
       aria-label={tr("assistant.openAria")}
+      title={tr("assistant.openAria")}
       onClick={() => setOpen(true)}
       data-testid="assistant-fab"
     >

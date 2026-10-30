@@ -45,10 +45,12 @@ body:has([role="dialog"][data-state="open"]) .aa-fab { display: none; }
 @media (prefers-reduced-motion: reduce) { .aa-fab { transition: none; } }
 .aa-fab-label { display: none; padding: 0 16px 0 2px; white-space: nowrap; letter-spacing: 0.01em; }
 
+/* Owner request: a round face icon (no text pill) so it never covers form fields; the name stays in
+   aria-label and the tooltip. */
 @media (min-width: 768px) {
   .aa-fab { bottom: 20px; left: calc(var(--aa-side, 0px) + 20px); }
-  .aa-fab-label { display: inline; }
 }
+.aa-fab { width: 52px; height: 52px; justify-content: center; }
 
 /* ---- scrim + panel -------------------------------------------------------------------------------- */
 .aa-root { position: fixed; inset: 0; z-index: 70; font-family: var(--font-sans); color: var(--t-text); }
