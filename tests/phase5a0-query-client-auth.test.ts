@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { getAuthToken, setAuthToken } from '../client/src/lib/api';
+import { getAuthToken, setAuthToken, setCsrfToken } from '../client/src/lib/api';
 import { apiRequest, getQueryFn, queryClient } from '../client/src/lib/queryClient';
 
 type SessionStorageShim = {
@@ -137,9 +137,10 @@ describe('Phase 5A.0 query client authentication', () => {
     expect(requestInit.credentials).toBe('include');
   });
 
-  it('uses the current auth token for generic apiRequest and preserves request semantics', async () => {
+  it('uses the current auth token and the CSRF token for generic apiRequest and preserves request semantics', async () => {
     sessionStorage.setItem('sb_access_token', 'stale-session-token');
     setAuthToken('current-token');
+    setCsrfToken(`${Date.now() + 60 * 60_000}.nonce.sig`);
 
     await apiRequest('POST', '/api/example', { name: 'Ada' });
 
@@ -149,6 +150,7 @@ describe('Phase 5A.0 query client authentication', () => {
       headers: {
         Authorization: 'Bearer current-token',
         'Content-Type': 'application/json',
+        'X-CSRF-Token': expect.stringMatching(/\.nonce\.sig$/),
       },
       body: JSON.stringify({ name: 'Ada' }),
       credentials: 'include',

@@ -20,7 +20,7 @@ import {
   type StaffBillingView,
   type StudentBillingView,
 } from "@shared/billing-contract";
-import { computeStaffBilling, computeStudentBilling } from "@shared/billing-ledger";
+import { computeStaffBilling, computeStudentBilling, formatMoneyPlain, isInstallmentPaid, validateReplacementSchedule } from "@shared/billing-ledger";
 
 export class BillingError extends Error {
   constructor(
@@ -165,7 +165,15 @@ export function createBillingService<Tx>(deps: BillingServiceDeps<Tx>) {
 
     setInstallments(studentId: string, actorId: string, input: SetInstallmentsInput) {
       return mutate(studentId, async (tx, at) => {
-        await requireConfigured(tx, studentId);
+        const ledger = await requireConfigured(tx, studentId);
+        const problem = validateReplacementSchedule(ledger, input.installments, todayOf(at));
+        if (problem?.code === "sum_mismatch") {
+          const cur = ledger.obligation!.currency;
+          throw new BillingError(E.SCHEDULE_SUM_MISMATCH, 400, `The installments total ${formatMoneyPlain(problem.scheduledCents, cur)} but the net amount owed is ${formatMoneyPlain(problem.netCents, cur)}. Adjust the installments so they add up exactly.`);
+        }
+        if (problem?.code === "paid_row_changed") {
+          throw new BillingError(E.PAID_INSTALLMENT_LOCKED, 409, "An installment that is already paid would change or move. Keep paid installments first, with the same date and amount.");
+        }
         await repo.replaceInstallments(tx, studentId, actorId, input, at);
         return [{ event: "billing.ledger_updated", description: "Installment schedule replaced", studentId, metadata: { change: "installments", count: input.installments.length } }];
       });
@@ -206,8 +214,13 @@ export function createBillingService<Tx>(deps: BillingServiceDeps<Tx>) {
     },
 
     updateInstallment(studentId: string, _actorId: string, installmentId: string, patch: UpdateInstallmentInput) {
-      return mutate(studentId, async (tx) => {
-        await requireConfigured(tx, studentId);
+      return mutate(studentId, async (tx, at) => {
+        const ledger = await requireConfigured(tx, studentId);
+        const target = ledger.installments.find((i) => i.id === installmentId);
+        const changesMoneyOrDate = (patch.amountCents !== undefined && patch.amountCents !== target?.amountCents) || (patch.dueDate !== undefined && patch.dueDate !== target?.dueDate);
+        if (target && changesMoneyOrDate && isInstallmentPaid(ledger, installmentId, todayOf(at))) {
+          throw new BillingError(E.PAID_INSTALLMENT_LOCKED, 409, "This installment is already paid; its date and amount cannot change. Void the receipt first if it was recorded in error.");
+        }
         if (!(await repo.updateInstallment(tx, studentId, installmentId, patch))) {
           throw new BillingError(E.INSTALLMENT_NOT_FOUND, 404, "Installment not found");
         }

@@ -7,7 +7,7 @@ import React from "react";
 import { StudentSurface } from "@/components/student-progress/student-ui";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BeyondPage, type BookResult, type ServiceResult } from "@/components/s27/beyond";
-import { configuredWhatsapp } from "@/components/s27/support-lead";
+import { LUMIERE_WHATSAPP_URL } from "@/components/support/whatsapp-contact";
 import { useToast } from "@/hooks/use-toast";
 import { useHighSchoolView } from "@/lib/high-school-queries";
 import { SERVICES, type ServiceId } from "@/lib/s27/beyond-model";
@@ -56,7 +56,7 @@ export default function Beyond() {
       journeyState={state}
       today={todayIso()}
       now={new Date()}
-      whatsapp={configuredWhatsapp()}
+      whatsapp={LUMIERE_WHATSAPP_URL}
       onBook={onBook}
       onService={onService}
       notify={(title, description, destructive) => toast({ title, description, variant: destructive ? "destructive" : undefined })}

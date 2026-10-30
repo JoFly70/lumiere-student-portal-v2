@@ -192,6 +192,12 @@ export const en = {
   // Support
   "support.title": "Support",
   "support.subtitle": "Ask us anything. We reply as soon as we can.",
+  "support.whatsapp.title": "Talk to your advisor on WhatsApp",
+  "support.whatsapp.text": "Have a question? Contact your Lumière advisor directly on WhatsApp.",
+  "support.whatsapp.note": "WhatsApp messages stay in WhatsApp and are separate from your support requests.",
+  "support.whatsapp.cta": "Contact Lumière on WhatsApp",
+  "support.whatsapp.nav": "WhatsApp Lumière",
+  "support.whatsapp.newTab": "opens WhatsApp in a new tab",
   "support.status.open": "Open",
   "support.status.inProgress": "In progress",
   "support.status.waitingOnYou": "Waiting on you",

@@ -131,11 +131,13 @@ export async function runRehearsal(ctx: RehearsalContext): Promise<StepRecord[]>
 
   const sleep = ctx.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
   const call = async (method: string, path: string, opts: { token?: string; body?: unknown } = {}, retried = false): Promise<{ status: number; json: Json; text: string }> => {
+    const csrf = opts.token && opts.token === state.adminToken && method !== 'GET' ? state.adminCsrf : undefined;
     const res = await ctx.fetch(`${ctx.appUrl}${path}`, {
       method,
       headers: {
         ...(opts.body !== undefined ? { 'Content-Type': 'application/json' } : {}),
         ...(opts.token ? { Authorization: `Bearer ${opts.token}` } : {}),
+        ...(csrf ? { 'x-csrf-token': csrf } : {}),
       },
       body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
     });
@@ -178,6 +180,8 @@ export async function runRehearsal(ctx: RehearsalContext): Promise<StepRecord[]>
   await step('admin_login', ['preflight'], async () => {
     const r = await call('POST', '/api/auth/login', { body: { email: ctx.adminEmail, password: ctx.adminPassword } });
     state.adminToken = r.json.session?.access_token;
+    state.adminCsrf = r.json.session?.csrf_token ?? r.json.csrfToken;
+    if (state.adminToken && !state.adminCsrf) state.adminCsrf = (await call('GET', '/api/csrf-token', { token: state.adminToken })).json.csrfToken;
     const isAdmin = r.json.user?.role === 'admin';
     return { ok: r.status === 200 && !!state.adminToken && isAdmin, detail: `login -> ${r.status}, role=${r.json.user?.role ?? 'n/a'}` };
   });

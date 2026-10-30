@@ -13,7 +13,7 @@
  *   POST .../receipts/:receiptId/void, .../discounts/:discountId/void   (S19; reason required, never deletes)
  *   POST .../installments/:installmentId                                (S19; edit one installment)
  *
- * Per-route middleware, so mounting at /api/admin never intercepts other admin paths.
+ * Per-route middleware, so mounting at /api/admin never intercepts other admin paths. Every POST requires the CSRF token.
  */
 import { Router, type Request, type RequestHandler, type Response } from "express";
 import { z } from "zod";
@@ -29,6 +29,7 @@ import {
   voidEntrySchema,
 } from "@shared/billing-contract";
 import { requireAuth } from "../middleware/auth";
+import { requireCsrf } from "../middleware/csrf";
 import { toBillingUnavailable, type BillingAuditRecord, type BillingService } from "../services/billing-service";
 import { emitBillingAccessDenied, emitBillingAudit, type BillingAuditSink } from "./billing-audit";
 import { parseBillingBody, sendBillingError } from "./billing-http";
@@ -41,6 +42,7 @@ export interface AdminBillingRouterDeps {
   >;
   readonly audit?: BillingAuditSink;
   readonly onAccessDenied?: (req: Request) => void;
+  readonly csrf?: RequestHandler;
 }
 
 const idSchema = z.string().trim().min(1).max(128);
@@ -49,6 +51,7 @@ export function createAdminBillingRouter(deps: AdminBillingRouterDeps) {
   const router = Router();
   const audit = deps.audit ?? emitBillingAudit;
   const staffOrAdmin = [requireAuth, guardRoles(["staff", "admin"], deps.onAccessDenied ?? emitBillingAccessDenied)];
+  const csrf = deps.csrf ?? requireCsrf;
   const base = "/students/:studentId/billing";
 
   router.get(base, ...staffOrAdmin, (async (req: Request, res: Response) => {
@@ -65,7 +68,7 @@ export function createAdminBillingRouter(deps: AdminBillingRouterDeps) {
   }) as RequestHandler);
 
   const post = (path: string, context: string, schema: z.ZodTypeAny, call: (studentId: string, actorId: string, body: any, req: Request) => Promise<unknown>) =>
-    router.post(`${base}${path}`, ...staffOrAdmin, (async (req: Request, res: Response) => {
+    router.post(`${base}${path}`, ...staffOrAdmin, csrf, (async (req: Request, res: Response) => {
       const sid = idSchema.safeParse(req.params.studentId);
       if (!sid.success) return res.status(400).json({ error: { code: E.VALIDATION, message: "studentId must be a non-empty string of at most 128 characters" } });
       if (Object.prototype.hasOwnProperty.call(req.query, "studentId")) {

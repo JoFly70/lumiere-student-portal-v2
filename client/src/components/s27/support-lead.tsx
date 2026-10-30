@@ -1,8 +1,7 @@
 /**
  * S27 Support: the top of the student Support page. Heading, then "Ask Lumière first" (the assistant answers from the
- * student's record; chips open it on a new conversation). A WhatsApp hand-off link appears only when a public contact
- * number is configured (VITE_SUPPORT_WHATSAPP, digits with country code); otherwise it is omitted. The conversations
- * list and the new-request dialog below it are the existing Support Center.
+ * student's record; chips open it on a new conversation). The official WhatsApp contact is rendered right below by
+ * WhatsAppContactCard. The conversations list and the new-request dialog below it are the existing Support Center.
  */
 import React from "react";
 import { askAssistant } from "@/components/academic-assistant/logic";
@@ -17,15 +16,7 @@ export function whatsappHref(raw: string | undefined | null): string | null {
   return digits.length >= 8 && digits.length <= 15 ? `https://wa.me/${digits}` : null;
 }
 
-export function configuredWhatsapp(): string | null {
-  try {
-    return whatsappHref((import.meta as unknown as { env?: Record<string, string | undefined> }).env?.VITE_SUPPORT_WHATSAPP);
-  } catch {
-    return null;
-  }
-}
-
-export function SupportLead({ action, whatsapp = configuredWhatsapp() }: { action: React.ReactNode; whatsapp?: string | null }) {
+export function SupportLead({ action }: { action: React.ReactNode }) {
   const { t } = useS27T();
   const chips = [t("s27.sup.q.credits"), t("s27.sup.q.documents"), t("s27.sup.q.urgent")];
   return (
@@ -39,7 +30,6 @@ export function SupportLead({ action, whatsapp = configuredWhatsapp() }: { actio
           </div>
           <div className="btns">
             {action}
-            {whatsapp && <a className="b2" href={whatsapp} target="_blank" rel="noopener noreferrer" data-testid="support-whatsapp">{t("s27.sup.whatsapp")}</a>}
           </div>
         </section>
         <section className="sup-ai" aria-labelledby="sup-ai-h" data-testid="support-ask">

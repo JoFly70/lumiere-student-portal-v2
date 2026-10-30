@@ -15,10 +15,12 @@ import {
   ArrowRight,
   BarChart3,
   LifeBuoy,
+  MailPlus,
 } from "lucide-react";
 import { apiRequest } from "@/lib/api";
 import { ProgramsManagement } from "@/components/programs-management";
 import { KnowledgeSources } from "@/components/knowledge-sources";
+import { InvitationsPanel } from "@/components/admin/invitations-panel";
 import { Link, Redirect, useLocation, useSearch } from "wouter";
 import { isSyntheticAccount } from "@shared/synthetic-accounts";
 import {
@@ -417,6 +419,10 @@ export default function Admin() {
               <Users className="h-4 w-4" aria-hidden="true" />
               Users
             </TabsTrigger>
+            <TabsTrigger value="invitations" className={TAB_TRIGGER} data-testid="tab-invitations">
+              <MailPlus className="h-4 w-4" aria-hidden="true" />
+              Invitations
+            </TabsTrigger>
             <TabsTrigger value="programs" className={TAB_TRIGGER}>
               <BookOpen className="h-4 w-4" aria-hidden="true" />
               Programs
@@ -438,6 +444,10 @@ export default function Admin() {
 
         <TabsContent value="users" className="mt-0">
           <UserManagement />
+        </TabsContent>
+
+        <TabsContent value="invitations" className="mt-0">
+          <InvitationsPanel />
         </TabsContent>
 
         <TabsContent value="programs" className="mt-0">

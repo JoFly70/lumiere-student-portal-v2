@@ -22,6 +22,8 @@ import { StaffAvatar } from "@/components/staff/staff-ui";
 import { staffRoleLabel } from "@/components/staff/staff-shell";
 import { ADMIN_STUDENTS_PATH } from "@/pages/admin-student-workspace-presentation";
 import { LumiereCrest, BRAND } from "@/components/brand/lumiere-brand";
+import { SiWhatsapp } from "react-icons/si";
+import { whatsappLinkProps } from "@/components/support/whatsapp-contact";
 import type { Student } from "@shared/schema";
 
 async function fetchMyProfile(accessToken: string | null): Promise<Student | null> {
@@ -186,7 +188,27 @@ export function AppSidebar() {
             </SidebarGroup>
             <SidebarGroup className="px-0 py-2">
               <SidebarGroupLabel className="px-3 text-[10.5px] font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/70">{t("nav.file")}</SidebarGroupLabel>
-              <SidebarGroupContent>{renderItems(filterStudentNav(studentFileItems, programs))}</SidebarGroupContent>
+              <SidebarGroupContent>
+                {renderItems(filterStudentNav(studentFileItems, programs))}
+                <SidebarMenu className="mt-0.5">
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      tooltip={t("support.whatsapp.cta")}
+                      className={cn(
+                        "os-nav-item h-10 gap-3 rounded-lg px-3 text-[14px] font-medium text-sidebar-foreground",
+                        "group-data-[collapsible=icon]:!h-10 group-data-[collapsible=icon]:!w-10 group-data-[collapsible=icon]:!justify-center group-data-[collapsible=icon]:!p-0",
+                      )}
+                      data-testid="link-whatsapp-sidebar"
+                    >
+                      <a {...whatsappLinkProps} aria-label={`${t("support.whatsapp.cta")} (${t("support.whatsapp.newTab")})`}>
+                        <SiWhatsapp className="h-[18px] w-[18px] shrink-0 text-[#25D366]" aria-hidden="true" />
+                        <span className="group-data-[collapsible=icon]:hidden">{t("support.whatsapp.nav")}</span>
+                      </a>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroupContent>
             </SidebarGroup>
           </nav>
         </SidebarContent>

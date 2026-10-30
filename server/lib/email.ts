@@ -37,31 +37,48 @@ const EMAIL_CONFIG = {
   adminEmail: process.env.ADMIN_EMAIL || 'support@lumiere.edu',
 };
 
-export async function sendEmail(options: EmailOptions): Promise<boolean> {
-  if (!EMAIL_CONFIG.enabled) {
-    logger.info('Email sending disabled - would send:', {
-      to: options.to,
-      subject: options.subject,
-    });
-    return true;
-  }
+export type EmailDelivery = 'sent' | 'not_configured' | 'failed';
 
+export type EmailTransportEnv = Partial<Record<'EMAIL_ENABLED' | 'EMAIL_FROM' | 'RESEND_API_KEY', string>> & Record<string, string | undefined>;
+
+/** App-level mail is sent through Resend's HTTP API only when EMAIL_ENABLED=true, RESEND_API_KEY and EMAIL_FROM are set. */
+export function emailTransportConfigured(env: EmailTransportEnv = process.env): boolean {
+  return env.EMAIL_ENABLED === 'true' && !!env.RESEND_API_KEY && !!env.EMAIL_FROM;
+}
+
+/**
+ * Sends one message and reports what actually happened. Never logs the body, the API key or query strings.
+ * `fetchImpl` is injectable for tests.
+ */
+export async function deliverEmail(
+  options: EmailOptions & { text?: string },
+  env: EmailTransportEnv = process.env,
+  fetchImpl: typeof fetch = fetch,
+): Promise<EmailDelivery> {
+  if (!emailTransportConfigured(env)) {
+    logger.info('Email not sent: app email transport is not configured', { subject: options.subject });
+    return 'not_configured';
+  }
   try {
-    logger.info('Email would be sent (SMTP not configured):', {
-      to: options.to,
-      subject: options.subject,
-      from: options.from || EMAIL_CONFIG.from,
+    const res = await fetchImpl('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from: options.from || env.EMAIL_FROM, to: [options.to], subject: options.subject, html: options.html, ...(options.text ? { text: options.text } : {}) }),
+      signal: AbortSignal.timeout(15_000),
     });
-
-    return true;
+    if (!res.ok) {
+      logger.error('Email provider rejected the message', { status: res.status, subject: options.subject });
+      return 'failed';
+    }
+    return 'sent';
   } catch (error) {
-    logger.error('Email sending failed:', {
-      error: error instanceof Error ? error.message : String(error),
-      to: options.to,
-      subject: options.subject,
-    });
-    return false;
+    logger.error('Email sending failed', { error: error instanceof Error ? error.name : 'unknown', subject: options.subject });
+    return 'failed';
   }
+}
+
+export async function sendEmail(options: EmailOptions): Promise<boolean> {
+  return (await deliverEmail(options)) === 'sent';
 }
 
 function getEmailTemplate(body: string): string {

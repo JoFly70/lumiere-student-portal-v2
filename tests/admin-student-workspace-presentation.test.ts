@@ -37,6 +37,9 @@ vi.mock("@tanstack/react-query", () => ({
 vi.mock("@/components/admin/add-student-dialog", () => ({
   AddStudentDialog: () => null,
 }));
+vi.mock("@/components/admin/invitations-panel", () => ({
+  InvitationsPanel: () => null,
+}));
 vi.mock("@/components/admin/student-portal-account-card", () => ({
   StudentPortalAccountCard: () => null,
 }));

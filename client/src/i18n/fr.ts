@@ -185,6 +185,12 @@ export const fr: Record<TranslationKey, string> = {
 
   "support.title": "Assistance",
   "support.subtitle": "Posez-nous toutes vos questions. Nous vous répondons dès que possible.",
+  "support.whatsapp.title": "Parlez à votre conseiller sur WhatsApp",
+  "support.whatsapp.text": "Une question ? Contactez votre conseiller Lumière directement sur WhatsApp.",
+  "support.whatsapp.note": "Les messages WhatsApp restent dans WhatsApp et sont distincts de vos demandes d’assistance.",
+  "support.whatsapp.cta": "Contacter Lumière sur WhatsApp",
+  "support.whatsapp.nav": "Lumière sur WhatsApp",
+  "support.whatsapp.newTab": "ouvre WhatsApp dans un nouvel onglet",
   "support.status.open": "Ouverte",
   "support.status.inProgress": "En cours",
   "support.status.waitingOnYou": "En attente de votre réponse",

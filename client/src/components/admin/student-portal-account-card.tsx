@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { StaffCard, StaffNotice, StaffPill, staffBtn, staffField, staffLabel } from "@/components/staff/staff-ui";
 import { apiRequest } from "@/lib/queryClient";
+import { deliveryMessage, issueInvitation, type IssuedInvitation } from "./invitations-api";
 
 interface AccountView {
   studentId: string;
@@ -16,7 +17,8 @@ interface AccountView {
   account: { userId: string; email: string; role: string } | null;
   candidates: Array<{ userId: string; email: string; name: string; createdAt: string }>;
 }
-interface Invitation { email: string; expiresAt: string; token: string }
+
+type Invitation = IssuedInvitation;
 
 const KNOWN_CODES: Record<string, string> = {
   nf: "This record was not found.",
@@ -83,7 +85,7 @@ export function StudentPortalAccountCard({ studentId }: { studentId: string }) {
     onError: (e) => { setError(errorMessage(e)); setUnlinkOpen(false); },
   });
   const invite = useMutation({
-    mutationFn: async (email: string): Promise<Invitation> => (await apiRequest("POST", "/api/admin/invitations", { email })).json(),
+    mutationFn: (email: string): Promise<Invitation> => issueInvitation({ email, language: "fr", sendEmail: true }),
     onSuccess: (next) => { setInvitation(next); setError(null); },
     onError: (e) => setError(errorMessage(e)),
   });
@@ -140,7 +142,7 @@ export function StudentPortalAccountCard({ studentId }: { studentId: string }) {
       {invitation ? (
         <StaffNotice tone="gold" role="status" testId="portal-account-invitation">
           <div className="min-w-0 space-y-2">
-            <p className="font-medium">Invitation issued for {invitation.email}. It is shown only once and no email is sent by the system. Give it to the student yourself.</p>
+            <p className="font-medium" data-delivery={invitation.emailDelivery}>Invitation issued for {invitation.email}. {deliveryMessage(invitation.emailDelivery, invitation.email)} The code is shown only once.</p>
             <label className={staffLabel} htmlFor="invitation-link">Sign-up link</label>
             <div className="flex gap-2">
               <Input id="invitation-link" readOnly className={staffField} value={invitationSignupUrl(invitation.token)} onFocus={(e) => e.currentTarget.select()} />
@@ -148,7 +150,7 @@ export function StudentPortalAccountCard({ studentId }: { studentId: string }) {
             </div>
             <p className="text-xs text-student-muted">Invitation code: <span className="break-all font-mono">{invitation.token}</span></p>
             <ol className="list-decimal space-y-1 pl-5 text-xs text-student-muted">
-              <li>The student opens the link and chooses the <strong>Sign Up</strong> tab (the code is prefilled).</li>
+              <li>The student opens the link; the invitation form opens with the code prefilled.</li>
               <li>They sign up with exactly <strong>{invitation.email}</strong> and set a password.</li>
               <li>Expires {new Date(invitation.expiresAt).toLocaleString()}. Then come back here and press Link account.</li>
             </ol>

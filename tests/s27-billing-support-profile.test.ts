@@ -46,11 +46,10 @@ describe("S27 Billing", () => {
 });
 
 describe("S27 Support lead", () => {
-  it("offers Ask Lumière first and omits WhatsApp unless a public number is configured", () => {
-    const html = wrap("en", createElement(SupportLead, { action: null, whatsapp: null }));
+  it("offers Ask Lumière first; the official WhatsApp contact is a separate card (S28)", () => {
+    const html = wrap("en", createElement(SupportLead, { action: null }));
     expect(html).toContain("Ask Lumière");
     expect(html).not.toContain("wa.me");
-    expect(wrap("en", createElement(SupportLead, { action: null, whatsapp: "https://wa.me/15551234567" }))).toContain("https://wa.me/15551234567");
   });
   it("whatsappHref accepts plausible international numbers only", () => {
     expect(whatsappHref("+1 (555) 123-4567")).toBe("https://wa.me/15551234567");

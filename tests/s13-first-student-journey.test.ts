@@ -44,6 +44,7 @@ vi.mock("../server/lib/audit", async (importOriginal) => {
 });
 vi.mock("../server/lib/email", () => ({
   sendEmail: vi.fn().mockResolvedValue(false),
+  deliverEmail: vi.fn().mockResolvedValue("not_configured"), emailTransportConfigured: vi.fn(() => false),
   sendTicketCreatedEmailToStaff: vi.fn(),
   sendTicketStatusUpdateEmail: vi.fn(),
   sendNewCommentEmail: vi.fn(),

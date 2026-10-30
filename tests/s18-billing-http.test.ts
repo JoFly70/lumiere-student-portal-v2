@@ -8,7 +8,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vites
 import express from "express";
 import request from "supertest";
 import { PG_BINARIES_AVAILABLE, S05_PG_SKIP_MESSAGE, type LocalPg } from "./helpers/s05-local-pg";
-import { authHeader, seedStaff, seedStudent, seedVerifiedDocument, startHighSchoolPg } from "./helpers/s11-hs-stack";
+import { authCsrfHeader, seedStaff, seedStudent, seedVerifiedDocument, startHighSchoolPg } from "./helpers/s11-hs-stack";
 import type { StaffBillingView, StudentBillingView } from "../shared/billing-contract";
 
 const mocks = vi.hoisted(() => ({ audit: vi.fn(async (..._a: unknown[]) => undefined) }));
@@ -43,7 +43,7 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("S18 billing — real HTTP", () => {
   let fresh: Awaited<ReturnType<typeof seedStudent>>;
 
   const api = () => request(app);
-  const as = (t: { token: string }) => authHeader(t.token);
+  const as = (t: { token: string }) => authCsrfHeader(t.token);
   const studentView = async (s = noa): Promise<StudentBillingView> => (await api().get("/api/student/billing").set(as(s))).body;
 
   beforeAll(async () => {

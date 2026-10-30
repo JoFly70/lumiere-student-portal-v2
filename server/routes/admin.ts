@@ -14,6 +14,10 @@ import { requireRole } from '../middleware/rbac';
 import { auditAdmin } from '../lib/audit';
 import { changeStudentStatus } from '../services/admin-student-status';
 import { createInvitation, DEFAULT_INVITATION_TTL_HOURS, MAX_INVITATION_TTL_HOURS } from '../lib/invitations';
+import { requireCsrf } from '../middleware/csrf';
+import { deliverEmail, emailTransportConfigured, type EmailDelivery } from '../lib/email';
+import { buildInvitationEmail } from '../lib/invitation-email';
+import { resolvePasswordResetAppUrl } from '../lib/auth-policy';
 
 // Supabase Auth ban applied when an account is archived, so refresh tokens
 // stop working in addition to the application-level status check.
@@ -24,6 +28,8 @@ const router = Router();
 // All admin routes require authentication then admin role
 router.use(requireAuth);
 router.use(requireRole(['admin']));
+// Every state-changing admin request carries the CSRF token (requireCsrf passes GET/HEAD through).
+router.use(requireCsrf);
 
 // ==================== USER MANAGEMENT ====================
 
@@ -183,18 +189,48 @@ router.delete('/users/:id', asyncHandler(async (req: any, res) => {
 }));
 
 // ==================== INVITATIONS ====================
-// Account creation is invitation-only. Invitations are issued here by an
-// admin; the token is returned once and is not emailed by the server
-// (outbound communications are not enabled).
+// Account creation is invitation-only. Invitations are issued here by an admin. The token is returned once (to copy)
+// and, when the app email transport is configured, emailed to the invitee in their language. Resend issues a fresh
+// token and revokes the previous one, because only token hashes are stored. Every write requires the CSRF token.
 
+const invitationLanguage = z.enum(['en', 'fr']);
 const createInvitationSchema = z.object({
   email: z.string().trim().email().max(320),
   expiresInHours: z.number().int().min(1).max(MAX_INVITATION_TTL_HOURS).optional(),
+  language: invitationLanguage.optional(),
+  sendEmail: z.boolean().optional(),
 }).strict();
+const resendInvitationSchema = z.object({
+  language: invitationLanguage.optional(),
+  sendEmail: z.boolean().optional(),
+}).strict();
+
+type InvitationListRow = { id: string; email: string; role: string; created_by: string | null; created_at: string; expires_at: string; consumed_at: string | null; consumed_by: string | null; revoked_at: string | null };
+
+export function invitationStatus(row: Pick<InvitationListRow, 'expires_at' | 'consumed_at' | 'revoked_at'>, now = new Date()): 'pending' | 'accepted' | 'revoked' | 'expired' {
+  if (row.consumed_at) return 'accepted';
+  if (row.revoked_at) return 'revoked';
+  return new Date(row.expires_at).getTime() <= now.getTime() ? 'expired' : 'pending';
+}
+
+async function issueAndDeliver(params: { email: string; adminId: string; ttlHours: number; language: 'en' | 'fr'; sendEmail: boolean }) {
+  const invitation = await createInvitation({ email: params.email, createdBy: params.adminId, ttlHours: params.ttlHours });
+  let delivery: EmailDelivery | 'skipped' = 'skipped';
+  if (params.sendEmail) {
+    const appUrl = resolvePasswordResetAppUrl(process.env.APP_URL, process.env.NODE_ENV === 'production');
+    if (!appUrl) {
+      delivery = 'not_configured';
+    } else {
+      const mail = buildInvitationEmail({ email: invitation.email, token: invitation.token, expiresAt: invitation.expiresAt, appUrl, language: params.language });
+      delivery = await deliverEmail({ to: invitation.email, subject: mail.subject, html: mail.html, text: mail.text });
+    }
+  }
+  return { invitation, delivery };
+}
 
 /**
  * POST /api/admin/invitations
- * Issue a single-use student invitation bound to one email address.
+ * Issue a single-use student invitation bound to one email address; email it unless sendEmail is false.
  */
 router.post('/invitations', asyncHandler(async (req: any, res) => {
   const parsed = createInvitationSchema.safeParse(req.body);
@@ -202,18 +238,21 @@ router.post('/invitations', asyncHandler(async (req: any, res) => {
     return res.status(400).json({ error: 'Validation failed', details: parsed.error.issues });
   }
   const admin = req.user;
+  const language = parsed.data.language ?? 'en';
   try {
-    const invitation = await createInvitation({
+    const { invitation, delivery } = await issueAndDeliver({
       email: parsed.data.email,
-      createdBy: admin.id,
+      adminId: admin.id,
       ttlHours: parsed.data.expiresInHours ?? DEFAULT_INVITATION_TTL_HOURS,
+      language,
+      sendEmail: parsed.data.sendEmail ?? true,
     });
     await auditAdmin(
       'admin.permission_granted',
       admin.id,
       undefined,
       'Issued student account invitation',
-      { invitationId: invitation.id, email: invitation.email, expiresAt: invitation.expiresAt },
+      { invitationId: invitation.id, email: invitation.email, expiresAt: invitation.expiresAt, language, emailDelivery: delivery },
     );
     res.status(201).json({
       id: invitation.id,
@@ -221,6 +260,7 @@ router.post('/invitations', asyncHandler(async (req: any, res) => {
       expiresAt: invitation.expiresAt,
       // Shown once; only its hash is stored.
       token: invitation.token,
+      emailDelivery: delivery,
     });
   } catch (error: any) {
     logger.error('Failed to create invitation', { error: error.message });
@@ -230,7 +270,7 @@ router.post('/invitations', asyncHandler(async (req: any, res) => {
 
 /**
  * GET /api/admin/invitations
- * List invitations (never returns token hashes).
+ * List invitations with a derived status (never returns token hashes).
  */
 router.get('/invitations', asyncHandler(async (_req: any, res) => {
   const { data, error } = await supabaseAdmin
@@ -242,7 +282,72 @@ router.get('/invitations', asyncHandler(async (_req: any, res) => {
     logger.error('Failed to list invitations', { error: error.message });
     return res.status(500).json({ error: 'Failed to list invitations' });
   }
-  res.json({ invitations: data ?? [] });
+  const now = new Date();
+  const rows = ((data ?? []) as InvitationListRow[])
+    .map((r) => ({
+      id: r.id, email: r.email, role: r.role, created_by: r.created_by, created_at: r.created_at, expires_at: r.expires_at,
+      consumed_at: r.consumed_at, consumed_by: r.consumed_by, revoked_at: r.revoked_at, status: invitationStatus(r, now),
+    }))
+    .sort((a, b) => b.created_at.localeCompare(a.created_at));
+  res.json({ invitations: rows, emailConfigured: emailTransportConfigured() });
+}));
+
+/**
+ * POST /api/admin/invitations/:id/resend
+ * Issue a fresh code for the same address (the old one is revoked first) and email it. Accepted invitations cannot be resent.
+ */
+router.post('/invitations/:id/resend', asyncHandler(async (req: any, res) => {
+  const { id } = req.params;
+  if (!z.string().uuid().safeParse(id).success) {
+    return res.status(400).json({ error: 'Invalid invitation id' });
+  }
+  const parsed = resendInvitationSchema.safeParse(req.body ?? {});
+  if (!parsed.success) {
+    return res.status(400).json({ error: 'Validation failed', details: parsed.error.issues });
+  }
+  const { data: previous, error: findError } = await supabaseAdmin
+    .from('account_invitations')
+    .select('id, email, consumed_at, revoked_at')
+    .eq('id', id)
+    .maybeSingle();
+  if (findError) {
+    logger.error('Failed to load invitation', { error: findError.message });
+    return res.status(500).json({ error: 'Failed to resend invitation' });
+  }
+  if (!previous) return res.status(404).json({ error: 'Invitation not found' });
+  if (previous.consumed_at) return res.status(409).json({ error: 'This invitation was already used to create an account' });
+
+  if (!previous.revoked_at) {
+    const { error: revokeError } = await supabaseAdmin
+      .from('account_invitations')
+      .update({ revoked_at: new Date().toISOString() })
+      .eq('id', id)
+      .is('consumed_at', null)
+      .is('revoked_at', null)
+      .select('id')
+      .maybeSingle();
+    if (revokeError) {
+      logger.error('Failed to revoke invitation before resend', { error: revokeError.message });
+      return res.status(500).json({ error: 'Failed to resend invitation' });
+    }
+  }
+  const language = parsed.data.language ?? 'en';
+  try {
+    const { invitation, delivery } = await issueAndDeliver({
+      email: previous.email,
+      adminId: req.user.id,
+      ttlHours: DEFAULT_INVITATION_TTL_HOURS,
+      language,
+      sendEmail: parsed.data.sendEmail ?? true,
+    });
+    await auditAdmin('admin.permission_granted', req.user.id, undefined, 'Reissued student account invitation', {
+      invitationId: invitation.id, replacesInvitationId: id, email: invitation.email, expiresAt: invitation.expiresAt, language, emailDelivery: delivery,
+    });
+    res.status(201).json({ id: invitation.id, email: invitation.email, expiresAt: invitation.expiresAt, token: invitation.token, emailDelivery: delivery, replaces: id });
+  } catch (error: any) {
+    logger.error('Failed to reissue invitation', { error: error.message });
+    res.status(500).json({ error: 'Failed to resend invitation' });
+  }
 }));
 
 /**

@@ -14,6 +14,7 @@
  */
 import {
   MAX_CENTS,
+  formatMoney,
   type BillingEvidenceRow,
   type BillingLedgerData,
   type InstallmentStatus,
@@ -59,6 +60,50 @@ export function allocateReceipts(
       status: installmentStatus(i.dueDate, i.amountCents, allocated, today),
     };
   });
+}
+
+/** Money for server messages (English locale). */
+export const formatMoneyPlain = (cents: number, currency: string): string => formatMoney(cents, currency, "en-US");
+
+/** Net obligation (agreed minus active discounts, never negative), or null when no price is set. */
+export function netObligationCents(data: Pick<BillingLedgerData, "obligation" | "discounts">): number | null {
+  if (!data.obligation) return null;
+  return Math.max(0, data.obligation.agreedCents - sum(data.discounts.map((d) => d.amountCents)));
+}
+
+export type ScheduleProblem =
+  | { readonly code: "sum_mismatch"; readonly scheduledCents: number; readonly netCents: number }
+  | { readonly code: "paid_row_changed"; readonly installmentId: string };
+
+/**
+ * Server-side rules for replacing a schedule. The schedule must allocate the net obligation exactly (an empty
+ * schedule is allowed), and rows already fully covered by receipts must stay the earliest rows with the same due
+ * date and amount, so replacing the schedule never moves money from a paid row to another one.
+ */
+export function validateReplacementSchedule(
+  data: BillingLedgerData,
+  next: readonly { dueDate: string; amountCents: number }[],
+  today: string,
+): ScheduleProblem | null {
+  const net = netObligationCents(data) ?? 0;
+  const scheduled = sum(next.map((i) => i.amountCents));
+  if (next.length > 0 && scheduled !== net) return { code: "sum_mismatch", scheduledCents: scheduled, netCents: net };
+  const paid = sum(data.receipts.map((r) => r.amountCents));
+  const paidRows = allocateReceipts(data.installments, paid, today).filter((i) => i.amountCents > 0 && i.allocatedCents >= i.amountCents);
+  const ordered = next.map((r, i) => ({ r, i })).sort((a, b) => a.r.dueDate.localeCompare(b.r.dueDate) || a.i - b.i).map(({ r }) => r);
+  for (let k = 0; k < paidRows.length; k++) {
+    const was = paidRows[k]!;
+    const now = ordered[k];
+    if (!now || now.dueDate !== was.dueDate || now.amountCents !== was.amountCents) return { code: "paid_row_changed", installmentId: was.id };
+  }
+  return null;
+}
+
+/** True when the installment is fully covered by receipts (oldest due date first). */
+export function isInstallmentPaid(data: BillingLedgerData, installmentId: string, today: string): boolean {
+  const paid = sum(data.receipts.map((r) => r.amountCents));
+  const row = allocateReceipts(data.installments, paid, today).find((i) => i.id === installmentId);
+  return !!row && row.amountCents > 0 && row.allocatedCents >= row.amountCents;
 }
 
 export function computeStudentBilling(data: BillingLedgerData, today: string): StudentBillingView {

@@ -6,7 +6,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vites
 import express from "express";
 import request from "supertest";
 import { PG_BINARIES_AVAILABLE, type LocalPg } from "./helpers/s05-local-pg";
-import { authHeader, seedStaff, seedStudent, seedVerifiedDocument, startHighSchoolPg } from "./helpers/s11-hs-stack";
+import { authCsrfHeader, seedStaff, seedStudent, seedVerifiedDocument, startHighSchoolPg } from "./helpers/s11-hs-stack";
 import type { StaffBillingView, StudentBillingView } from "../shared/billing-contract";
 import { parseMoneyToCents, centsToInput } from "../client/src/components/admin/billing/money";
 import { addMonthsIso, splitEvenly } from "../client/src/components/admin/billing/schedule-editor";
@@ -68,7 +68,7 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("S19 staff billing corrections", () => {
   let staff: Awaited<ReturnType<typeof seedStaff>>;
   let student: Awaited<ReturnType<typeof seedStudent>>;
   const api = () => request(app);
-  const as = (t: { token: string }) => authHeader(t.token);
+  const as = (t: { token: string }) => authCsrfHeader(t.token);
   const post = (path: string, body: unknown, who = staff) => api().post(`${A(student.studentId)}${path}`).set(as(who)).send(body as object);
   const staffView = async () => (await api().get(A(student.studentId)).set(as(staff))).body as StaffBillingView;
   const studentView = async (): Promise<StudentBillingView> => (await api().get("/api/student/billing").set(as(student))).body;

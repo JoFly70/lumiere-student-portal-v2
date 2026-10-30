@@ -28,6 +28,7 @@ import {
 } from "./s05-local-pg";
 import { applyS09Migration } from "./s09-apply-migration";
 import { fixtureProviderGetUser, makeLocalJWT, protectedTables, snapshotTables, type TableSnapshot } from "./s09-profile-stack";
+import { generateCsrfToken } from "../../server/middleware/csrf";
 import type { HsAuditRecord, HighSchoolService } from "../../server/services/high-school-service";
 
 export { makeLocalJWT, snapshotTables };
@@ -44,6 +45,12 @@ export async function startHighSchoolPg(): Promise<LocalPg> {
 }
 
 export const authHeader = (token: string) => ({ Authorization: `Bearer ${token}` });
+
+/** Bearer plus a CSRF token for the token's user (what the real client sends on writes; ignored by GET routes). */
+export const authCsrfHeader = (token: string) => {
+  const userId = JSON.parse(Buffer.from(token.split(".")[1] ?? "", "base64url").toString("utf8")).userId as string;
+  return { Authorization: `Bearer ${token}`, "X-CSRF-Token": generateCsrfToken(userId) };
+};
 
 export interface HsClock {
   /** Pin the clock; it then advances 1 second per read so ordering stays strict. */

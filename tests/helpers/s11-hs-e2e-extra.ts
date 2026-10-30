@@ -11,13 +11,18 @@ export type { TableSnapshot };
 
 export interface Actor extends SeededUser {
   readonly token: string;
-  readonly auth: { Authorization: string };
+  /** Bearer plus a valid CSRF token, as the real client sends on every write. */
+  readonly auth: { Authorization: string; "X-CSRF-Token": string };
+  /** Bearer only: for proving CSRF enforcement. */
+  readonly bearer: { Authorization: string };
 }
 
 export async function seedActor(pg: LocalPg, role: "student" | "staff" | "admin" | "coach"): Promise<Actor> {
   const u = await seedUser(pg, role);
   const token = makeLocalJWT(u.id, u.email);
-  return { ...u, token, auth: { Authorization: `Bearer ${token}` } };
+  const { generateCsrfToken } = await import("../../server/middleware/csrf");
+  const bearer = { Authorization: `Bearer ${token}` };
+  return { ...u, token, bearer, auth: { ...bearer, "X-CSRF-Token": generateCsrfToken(u.id) } };
 }
 
 export interface HsStudent {

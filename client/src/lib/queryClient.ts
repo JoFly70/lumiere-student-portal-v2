@@ -1,5 +1,5 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
-import { getAuthToken } from "./api";
+import { freshCsrfToken, getAuthToken } from "./api";
 import { isSessionExpiredResponse, notifySessionExpired } from "./session-expiry";
 
 async function throwIfResNotOk(res: Response) {
@@ -21,6 +21,10 @@ export async function apiRequest(
   const accessToken = getAuthToken();
   if (accessToken) {
     headers["Authorization"] = `Bearer ${accessToken}`;
+  }
+  if (method.toUpperCase() !== "GET" && method.toUpperCase() !== "HEAD") {
+    const csrf = await freshCsrfToken();
+    if (csrf) headers["X-CSRF-Token"] = csrf;
   }
   
   const res = await fetch(url, {

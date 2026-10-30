@@ -39,6 +39,7 @@ import { STATUS_ICON, StatusBadge, formatDate, formatFileSize } from "./original
 import { OriginalCreateDialog, type CreatedTicket } from "./original-create-dialog";
 import { OriginalTicketDetailModal } from "./original-ticket-detail";
 import { SupportLead } from "@/components/s27/support-lead";
+import { WhatsAppContactCard } from "./whatsapp-contact";
 import { staffBtn } from "@/components/staff/staff-ui";
 import { cn } from "@/lib/utils";
 
@@ -184,6 +185,8 @@ export function OriginalStudentSupport() {
           </Button>
         )}
       />
+
+      <WhatsAppContactCard />
 
       {created && <PostCreateUploads key={created.id} created={created} onDone={() => setCreated(null)} />}
 
