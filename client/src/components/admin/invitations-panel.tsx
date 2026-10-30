@@ -67,14 +67,14 @@ export function InvitationsPanel() {
             Email sending is not configured on this server. Invitations are still created; copy the sign-up link and send it to the student yourself.
           </StaffNotice>
         ) : null}
-        <form className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto_auto_auto] md:items-end" onSubmit={(e) => { e.preventDefault(); if (emailValid) issue.mutate(); }}>
+        <form className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_auto_auto_auto] sm:items-end" onSubmit={(e) => { e.preventDefault(); if (emailValid) issue.mutate(); }}>
           <div className="space-y-1">
-            <label className={staffLabel} htmlFor="invite-email">Student email</label>
+            <label className={cn(staffLabel, "block")} htmlFor="invite-email">Student email</label>
             <Input id="invite-email" type="email" autoComplete="off" className={staffField} value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com" data-testid="input-invite-email" />
           </div>
           <div className="space-y-1">
-            <label className={staffLabel} htmlFor="invite-language">Email language</label>
-            <select id="invite-language" className={cn(staffField, "md:w-36")} value={language} onChange={(e) => setLanguage(e.target.value as InvitationLanguage)} data-testid="select-invite-language">
+            <label className={cn(staffLabel, "block")} htmlFor="invite-language">Email language</label>
+            <select id="invite-language" className={cn(staffField, "lg:w-36")} value={language} onChange={(e) => setLanguage(e.target.value as InvitationLanguage)} data-testid="select-invite-language">
               <option value="fr">Français</option>
               <option value="en">English</option>
             </select>
@@ -102,17 +102,17 @@ export function InvitationsPanel() {
           {list.isSuccess && rows.length === 0 ? <StaffEmpty title="No invitations yet" testId="invitations-empty">Issue the first invitation above.</StaffEmpty> : null}
           {rows.length > 0 ? (
             <div className={cn(staffTable.frame, "overflow-x-auto")}>
-              <table className="w-full min-w-[640px] text-sm" data-testid="invitations-table">
+              <table className="w-full min-w-[760px] text-sm" data-testid="invitations-table">
                 <thead className="bg-student-bg text-left text-xs uppercase tracking-[0.1em] text-student-muted">
                   <tr><th className="px-4 py-3 font-semibold">Email</th><th className="px-4 py-3 font-semibold">Status</th><th className="px-4 py-3 font-semibold">Issued</th><th className="px-4 py-3 font-semibold">Expires</th><th className="px-4 py-3 text-right font-semibold">Actions</th></tr>
                 </thead>
                 <tbody className="divide-y divide-student-line">
                   {rows.map((r) => (
                     <tr key={r.id} data-testid={`invitation-row-${r.id}`} data-status={r.status}>
-                      <td className="px-4 py-3 font-medium text-student-ink [overflow-wrap:anywhere]">{r.email}</td>
+                      <td className="min-w-[220px] px-4 py-3 font-medium text-student-ink [overflow-wrap:anywhere]">{r.email}</td>
                       <td className="px-4 py-3"><StaffPill tone={STATUS_TONE[r.status]}>{STATUS_LABEL[r.status]}</StaffPill></td>
-                      <td className="px-4 py-3 text-student-muted">{fmt(r.created_at)}</td>
-                      <td className="px-4 py-3 text-student-muted">{r.status === "accepted" && r.consumed_at ? `Used ${fmt(r.consumed_at)}` : fmt(r.expires_at)}</td>
+                      <td className="whitespace-nowrap px-4 py-3 text-student-muted">{fmt(r.created_at)}</td>
+                      <td className="whitespace-nowrap px-4 py-3 text-student-muted">{r.status === "accepted" && r.consumed_at ? `Used ${fmt(r.consumed_at)}` : fmt(r.expires_at)}</td>
                       <td className="px-4 py-3">
                         <div className="flex justify-end gap-2">
                           {r.status !== "accepted" ? (

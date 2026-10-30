@@ -211,11 +211,17 @@ Ends with `AI: functional …; requested model …; provider-served model …`.
 ## 6. Open items and backlog (prioritised)
 
 ### A. Must do before onboarding the first real student
-1. **Invitations & onboarding:** an Administration "Invitations" page (list/copy/resend/revoke — server endpoints
-   `GET/POST /api/admin/invitations`, `POST /api/admin/invitations/:id/revoke` exist), invitations **emailed**
-   (branded EN/FR; email via `server/lib/email.ts`, custom SMTP configured), and one-step "Add student + invite".
-   Then a real end-to-end dry run with an owner-controlled test address: invite → sign up → verify email → forgot
-   password → first login.
+1. **Invitations & onboarding — code DONE in S28; hosted dry run still OPEN.** Administration → Invitations
+   (`client/src/components/admin/invitations-panel.tsx`): issue (EN/FR, send email or copy only), list with status
+   (pending / account created / revoked / expired), resend (revokes the old code, issues a new one), copy link/code,
+   revoke. Add student has an "Invite to the portal" option. Server: `GET /api/admin/invitations`,
+   `POST /api/admin/invitations` (`language`, `sendEmail`), `POST /api/admin/invitations/:id/resend`, `/:id/revoke`.
+   Email: `server/lib/invitation-email.ts` (branded EN/FR) via `deliverEmail` in `server/lib/email.ts` (Resend HTTP
+   API). **Production configuration needed (not a code defect):** `EMAIL_ENABLED=true`, `EMAIL_FROM` (verified sender
+   domain) and `RESEND_API_KEY` in production secrets. Until then the UI says "Email is not configured" and admins
+   copy the link; it never claims an email was sent. The invite link is `/login?invite=<code>&lang=fr|en`.
+   **Still to do:** the end-to-end dry run with an owner-controlled test address on the live site: invite → sign up
+   → verify email → forgot password → first login.
 2. **Real student readiness (owner-driven):** confirm the 5 estimated exam counts in the HS template
    (Health and Nutrition, Personal Finance, U.S. Government and Economics, Human Relations, Reading Skills) and catalog
    conflicts (21 vs 21.5 credits, 15 vs 16 transfer credits, 65% vs 70% pass mark — the agreement says 65%), publish
@@ -223,13 +229,18 @@ Ends with `AI: functional …; requested model …; provider-served model …`.
    of enrollment; Lumière support 9 months from activation; school access up to 36 months; 2 free 30-min orientation
    sessions; MC retake within 30 days, higher score counts; written work redone capped at 65%; ≤15 exams/week),
    verify ID and guardian consent, then activate.
-3. **Billing hardening:** add `requireCsrf` to the older admin billing POST routes (`server/routes/admin-billing.ts`;
-   check the acceptance script still passes), and a **server-side** check that an instalment plan sums to the net
-   obligation and does not silently re-order paid rows (`replaceInstallments` in `server/repositories/billing-repo.ts`).
-   Then configure the real obligation/instalments from the contract.
+3. **Billing hardening — DONE in S28.** `requireCsrf` on every admin billing POST and router-wide on the admin router;
+   the server refuses an instalment plan that does not sum to the net obligation (`BILLING_SCHEDULE_SUM_MISMATCH`) and
+   any change to the date or amount of a fully paid instalment (`BILLING_PAID_INSTALLMENT_LOCKED`);
+   tests `tests/s28-onboarding-http.test.ts` (real Postgres) and `tests/s28-onboarding-units.test.ts`.
+   **Owner step remaining:** configure the real obligation/instalments from the contract.
 4. **Production stability:** cap the app's DB pool (e.g. `DB_POOL_MAX=5` in production secrets, verify instance count)
    and add `REDIS_URL` for distributed rate limiting.
 5. **Workspace hygiene:** review/clean the preserved local commits and stashes; reinstall workspace dependencies.
+
+**S28 also added:** the official WhatsApp contact (`https://wa.me/19453917325`, Lumière's public business number) as
+a card on Support and an item in the student sidebar (EN/FR; `client/src/components/support/whatsapp-contact.tsx`).
+The S27 env-gated `VITE_SUPPORT_WHATSAPP` link is retired. Beyond the Diploma uses the same constant.
 
 ### B. Should do soon after
 6. Staff/coach invitations with role, and two-step sign-in for admin/staff.
