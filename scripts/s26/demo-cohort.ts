@@ -13,6 +13,8 @@
 import fs from "node:fs";
 import crypto from "node:crypto";
 import { DEMO_TAG, makeDemoPlan, makeContractPlan } from "./demo-plan.mjs";
+import { BACHELORS_KEY, DEMO_BACHELORS_GOAL, seedBachelorsDegree } from "./demo-bachelors";
+import type { DemoGoal } from "./demo-bachelors";
 
 type Ctx = { actorId: string; supabaseAdmin: any; warnings: Record<string, string> };
 const DOMAIN = "lumiere-demo.invalid";
@@ -28,7 +30,14 @@ export interface Persona {
   progressCourses?: string[];// course keys with student-reported progress
   billing?: { agreed: number; discount?: number; installments?: Array<[string, number]>; receipts?: Array<[string, number, string]>; voidFirstReceipt?: boolean };
   /** S27 (synthetic): agreement dates are offsets in days from today (negative = past). */
-  program?: { signedDaysAgo: number; activatedDaysAgo?: number; languageTestDone?: boolean; goal?: boolean };
+  program?: { signedDaysAgo: number; activatedDaysAgo?: number; languageTestDone?: boolean; goal?: boolean | DemoGoal };
+  /** S27: a DEGREE (bachelor's) student: fictional degree program, canonical prior credit and a published degree
+   *  roadmap (scripts/s26/demo-bachelors.ts) instead of a high-school enrollment. Never billing. */
+  degree?: boolean;
+  /** Student-row overrides (e.g. an adult's date of birth, completed high school). */
+  profile?: Record<string, unknown>;
+  /** False: no synthetic guardian (adult student). */
+  guardian?: boolean;
   checkpointsDone?: string[];
   sessionRequest?: boolean;
   notes?: string[];
@@ -118,6 +127,15 @@ export const PERSONAS: Persona[] = [
     evidencePending: true,
     billing: { agreed: 400000, installments: [["2026-10-05", 100000], ["2026-11-02", 100000], ["2026-12-01", 100000], ["2027-01-04", 100000]], receipts: [["2026-10-05", 100000, "DEMO-P8-1"], ["2026-11-02", 100000, "DEMO-P8-2"]] },
   },
+  {
+    // The only DEGREE student of the cohort: degree Roadmap + "Beyond the Bachelor's". No billing (owner: "minus the money part").
+    key: BACHELORS_KEY, first: "DEMO Avery", last: "Bachelor's plan (synthetic)", email: `s27.p9@${DOMAIN}`,
+    story: "Bachelor's degree: 60 credits already earned (prior college + workplace training), 51 planned with two course providers, 9 still open; target finish around March 2027.",
+    degree: true, guardian: false,
+    profile: { dob: "1994-03-12", hs_completion: true, prior_credits: true, prior_sources: ["community_college", "workplace_training"], target_degree: "Bachelor of Science in Business Administration (DEMO)", target_major: "Business Administration" },
+    program: { signedDaysAgo: 70, activatedDaysAgo: 60, goal: DEMO_BACHELORS_GOAL }, checkpointsDone: ["file_opened", "program_activated"],
+    notes: ["DEMO internal: degree student; SCI110 waiting for the university's pre-approval."],
+  },
 ];
 
 /** Extra tickets on the original demo accounts (onboarding, access, guardian consent). */
@@ -149,7 +167,7 @@ async function ensureAccount(ctx: Ctx, email: string, name: string): Promise<str
   return id;
 }
 
-async function ensureStudent(ctx: Ctx, p: { key: string; first: string; last: string; email: string }, userId: string) {
+async function ensureStudent(ctx: Ctx, p: { key: string; first: string; last: string; email: string; profile?: Record<string, unknown> }, userId: string) {
   const { createStudent, getStudentByUserId } = await import("../../server/services/student-service");
   const { changeStudentStatus } = await import("../../server/services/admin-student-status");
   let s = await getStudentByUserId(userId);
@@ -161,7 +179,7 @@ async function ensureStudent(ctx: Ctx, p: { key: string; first: string; last: st
     address_country: "MA", address_line1: "DEMO — fictional address", address_state: null, address_city: "DEMO city", address_postal: null, address_line2: null,
     hs_path: null, hs_country: "MA", hs_school: null, hs_year: null, hs_doc_url: null, hs_completion: false, prior_credits: false, prior_sources: [],
     transcripts_url: [], target_degree: null, target_major: null, start_term: null, prior_credits_est: null, target_pace: null, consent_signature: null,
-    marketing_opt_in: false, media_release: false,
+    marketing_opt_in: false, media_release: false, ...p.profile,
   } as never, ctx.actorId);
   if (s.status === "lead") s = await changeStudentStatus(s.id, "active", ctx.actorId, { provisioning: "s26-demo-cohort", note: DEMO_TAG }) as typeof s;
   return s;
@@ -259,10 +277,13 @@ async function seedProgram(ctx: Ctx, student: any, userId: string, p: Persona) {
       signedOn: dayOffset(g.signedDaysAgo),
       ...(g.activatedDaysAgo !== undefined ? { activatedOn: dayOffset(g.activatedDaysAgo) } : {}),
       ...(g.languageTestDone ? { languageTest: { status: "done" as const, doneOn: dayOffset(g.signedDaysAgo - 12), score: 112, target: "105–115" } } : {}),
-      ...(g.goal ? { goal: { field: "Communication", region: "Québec", interests: ["Media", "Languages"], targets: [{ name: "DEMO University (fictional)", city: "DEMO city", track: "French track", program: "Communication (demo)", why: "DEMO — synthetic example.", admission: "DEMO — synthetic example.", url: null }], alsoReviewed: ["DEMO College (fictional)"], studyOn: null } } : {}),
+      ...(g.goal && typeof g.goal === "object" ? { goal: g.goal } : {}),
+      ...(g.goal === true ? { goal: { field: "Communication", region: "Québec", interests: ["Media", "Languages"], targets: [{ name: "DEMO University (fictional)", city: "DEMO city", track: "French track", program: "Communication (demo)", why: "DEMO — synthetic example.", admission: "DEMO — synthetic example.", url: null }], alsoReviewed: ["DEMO College (fictional)"], studyOn: null } } : {}),
     });
   }
-  for (const key of p.checkpointsDone ?? []) await journey.completeCheckpoint(student.id, key as never, ctx.actorId, { doneOn: dayOffset(30) });
+  // Only checkpoints not yet done, so a re-run (on any day) leaves the existing rows unchanged.
+  const done = new Set((await journey.getJourney(student.id)).checkpoints.filter((c) => c.status === "done").map((c) => c.key as string));
+  for (const key of p.checkpointsDone ?? []) if (!done.has(key)) await journey.completeCheckpoint(student.id, key as never, ctx.actorId, { doneOn: dayOffset(30) });
   if (p.sessionRequest && (await journey.listStudentSessions(student.id)).length === 0) {
     await journey.requestSession(student.id, userId, { slotAt: new Date(Date.now() + 5 * 86400000).toISOString(), prep: { "DEMO question": ["Plan my weeks"] }, channel: "portal" });
   }
@@ -320,6 +341,27 @@ async function ensurePhoto(ctx: Ctx, student: any) {
   await updateStudent(student.id, { photo_url: `storage:student-documents/${path}` } as never, ctx.actorId);
 }
 
+/** One persona; failures are recorded per step in ctx.warnings, never thrown. Returns null when no student exists. */
+export async function provisionPersona(ctx: Ctx, p: Persona): Promise<{ studentId: string; code: string } | null> {
+  const step = async (name: string, fn: () => Promise<unknown>) => {
+    try { await fn(); } catch (e) { ctx.warnings[`${p.key}.${name}`] = String((e as Error)?.message ?? e).slice(0, 200); }
+  };
+  let userId = "", student: any = null;
+  await step("account", async () => { userId = await ensureAccount(ctx, p.email, `${p.first} ${p.last}`); });
+  if (!userId) return null;
+  await step("student", async () => { student = await ensureStudent(ctx, p, userId); });
+  if (!student) return null;
+  if (p.guardian !== false) await step("guardian", () => ensureGuardian(student.id, ctx.actorId));
+  await step("photo", () => ensurePhoto(ctx, student));
+  if (p.start || p.contract) await step("academics", () => seedAcademics(ctx, student, userId, p));
+  if (p.degree) await seedBachelorsDegree(step, student.id, userId, ctx.actorId);
+  if (p.documents) await step("documents", () => seedDocuments(ctx, student, p.documents!));
+  if (p.billing) await step("billing", () => seedBilling(ctx, student.id, p.billing!));
+  if (p.program || p.checkpointsDone || p.notes) await step("program", () => seedProgram(ctx, student, userId, p));
+  if (p.tickets) await step("tickets", () => seedTickets(ctx, student, userId, p.tickets!));
+  return { studentId: student.id, code: student.student_code };
+}
+
 /** Provision every persona; failures are recorded per persona and step, never thrown. */
 export async function provisionDemoCohort(ctx: Ctx, realCode: string | null): Promise<Record<string, unknown>> {
   const report: Record<string, unknown> = {};
@@ -336,19 +378,8 @@ export async function provisionDemoCohort(ctx: Ctx, realCode: string | null): Pr
       { by: "staff", text: "DEMO : Bienvenue ! Votre première semaine : orientation, Foundations of Personal Growth et English 1. Dites-nous si vous avez des questions.", daysAgo: 1 }] }],
   });
   for (const p of all) {
-    let userId = "", student: any = null;
-    await step(p.key, "account", async () => { userId = await ensureAccount(ctx, p.email, `${p.first} ${p.last}`); });
-    if (!userId) continue;
-    await step(p.key, "student", async () => { student = await ensureStudent(ctx, p, userId); });
-    if (!student) continue;
-    await step(p.key, "guardian", () => ensureGuardian(student.id, ctx.actorId));
-    await step(p.key, "photo", () => ensurePhoto(ctx, student));
-    if (p.start || p.contract) await step(p.key, "academics", () => seedAcademics(ctx, student, userId, p));
-    if (p.documents) await step(p.key, "documents", () => seedDocuments(ctx, student, p.documents!));
-    if (p.billing) await step(p.key, "billing", () => seedBilling(ctx, student.id, p.billing!));
-    if (p.program || p.checkpointsDone || p.notes) await step(p.key, "program", () => seedProgram(ctx, student, userId, p));
-    if (p.tickets) await step(p.key, "tickets", () => seedTickets(ctx, student, userId, p.tickets!));
-    report[p.key] = { studentId: student.id, code: student.student_code };
+    const out = await provisionPersona(ctx, p);
+    if (out) report[p.key] = out;
   }
   for (const [key, tickets] of Object.entries(EXTRA_TICKETS)) {
     await step(key, "tickets", async () => {
