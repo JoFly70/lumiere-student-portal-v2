@@ -169,7 +169,7 @@ export function buildCalendarItems(facts: CalendarFacts, viewer: CalendarViewer,
       out.push({
         id: `roadmap:${r.studentId}:${m.key}`, kind: "course_milestone", source: "roadmap", ...base(r.studentId),
         title: m.title, titleKey: null, start: m.targetDate, end: null, allDay: true, timeZone: "UTC",
-        status: m.targetDate < today ? "overdue" : "scheduled", location: null, href: hrefFor(viewer, r.studentId, "roadmap", "/roadmap"), editable: false, recordId: r.studentId,
+        status: m.targetDate < today ? "overdue" : "scheduled", location: null, href: hrefFor(viewer, r.studentId, "plan", "/roadmap"), editable: false, recordId: r.studentId, // S32-B: degree file tab
       });
     }
   }
