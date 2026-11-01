@@ -8,7 +8,7 @@
 # Uses DATABASE_URL (never printed). Refuses unless the connection identifies project rheronevecsffaejteoj and the
 # database looks like production (60+ public tables). --apply takes a pg_dump backup first, records row counts,
 # applies ONLY supabase/migrations/20261106100000_s29_student_intelligence.sql (additive, idempotent), checks that no
-# existing table lost rows, then post-verifies the 11 new tables (present, RLS on, no client privileges) + 12 audit types.
+# existing table lost rows, then post-verifies the 6 new tables (present, RLS on, no client privileges) + 9 audit types.
 set -euo pipefail
 cd "$(dirname "$0")/../../.."
 
@@ -35,15 +35,15 @@ echo "identity: project $REF; public base tables: $TABLES" | tee -a "$LOG"
 [ "$TABLES" -ge 60 ] || die "only $TABLES public tables; this does not look like the production database"
 "${PSQL[@]}" -At -c "SELECT to_regclass('public.students') IS NOT NULL AND to_regclass('public.orientation_sessions') IS NOT NULL AND to_regclass('public.student_checkpoints') IS NOT NULL" | grep -q t || die "prerequisite tables (students, S27 program journey) are missing; apply the S26/S27 releases first"
 
-ENUMS="SELECT 'audit_event_types (12) | ' || ((SELECT count(*) FROM pg_enum e JOIN pg_type t ON t.oid = e.enumtypid WHERE t.typname = 'audit_event_type' AND e.enumlabel IN ('s29.attention_updated','s29.settings_updated','s29.preferences_updated','s29.import_previewed','s29.import_committed','s29.calendar_updated','s29.calendar_token_changed','s29.fleet_query','s29.diagnostic_run','s29.incident_updated','s29.notification_retried','s29.access_denied')) = 12)::text"
+ENUMS="SELECT 'audit_event_types (9) | ' || ((SELECT count(*) FROM pg_enum e JOIN pg_type t ON t.oid = e.enumtypid WHERE t.typname = 'audit_event_type' AND e.enumlabel IN ('s29.attention_updated','s29.settings_updated','s29.preferences_updated','s29.calendar_updated','s29.fleet_query','s29.diagnostic_run','s29.incident_updated','s29.notification_retried','s29.access_denied')) = 9)::text"
 POSTVERIFY="SELECT t.name || ' | ' || (c.oid IS NOT NULL AND c.relrowsecurity AND NOT has_table_privilege('anon', c.oid, 'SELECT,INSERT,UPDATE,DELETE') AND NOT has_table_privilege('authenticated', c.oid, 'SELECT,INSERT,UPDATE,DELETE'))::text
-  FROM (VALUES ('s29_settings'),('s29_notification_preferences'),('s29_attention_items'),('s29_notifications'),('s29_jobs'),('s29_incidents'),('s29_calendar_events'),('s29_calendar_tokens'),('s29_import_templates'),('s29_import_batches'),('s29_academic_records')) AS t(name)
+  FROM (VALUES ('s29_settings'),('s29_notification_preferences'),('s29_attention_items'),('s29_notifications'),('s29_jobs'),('s29_incidents')) AS t(name)
   LEFT JOIN pg_class c ON c.relname = t.name AND c.relnamespace = 'public'::regnamespace"
 
 if [ "$MODE" = "--check" ]; then
   CHECK=$( { "${PSQL[@]}" -At -c "$POSTVERIFY"; "${PSQL[@]}" -At -c "$ENUMS"; } | tee -a "$LOG")
-  # Exit 0 only when everything is applied: 11 tables (RLS on, no client privileges) and all 12 enum values.
-  [ "$(echo "$CHECK" | grep -c '| true$')" = "12" ] && { echo "S29 check: APPLIED"; exit 0; }
+  # Exit 0 only when everything is applied: 6 tables (RLS on, no client privileges) and all 9 enum values.
+  [ "$(echo "$CHECK" | grep -c '| true$')" = "7" ] && { echo "S29 check: APPLIED"; exit 0; }
   echo "S29 check: NOT FULLY APPLIED"; exit 1
 fi
 [ "$MODE" = "--apply" ] && [ "$CONFIRM" = "--i-understand-this-writes-to-production" ] || die "usage: --check | --apply --i-understand-this-writes-to-production"
@@ -81,6 +81,6 @@ echo "row preservation: PASS" | tee -a "$LOG"
 
 { "${PSQL[@]}" -At -c "$POSTVERIFY"; "${PSQL[@]}" -At -c "$ENUMS"; } > "$OUT/postverify-s29-$STAMP.txt"
 cat "$OUT/postverify-s29-$STAMP.txt" | tee -a "$LOG"
-[ "$(grep -c '| true$' "$OUT/postverify-s29-$STAMP.txt")" = "12" ] || die "post-verify: the 11 S29 tables are not all present with RLS on and no client privileges, or the 12 audit event types are missing"
-echo "post-verify: PASS (11 tables present, RLS on, no client privileges, 12 audit event types)" | tee -a "$LOG"
+[ "$(grep -c '| true$' "$OUT/postverify-s29-$STAMP.txt")" = "7" ] || die "post-verify: the 6 S29 tables are not all present with RLS on and no client privileges, or the 9 audit event types are missing"
+echo "post-verify: PASS (6 tables present, RLS on, no client privileges, 9 audit event types)" | tee -a "$LOG"
 echo "S29 production schema release: DONE" | tee -a "$LOG"

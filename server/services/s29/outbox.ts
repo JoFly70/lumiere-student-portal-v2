@@ -115,6 +115,8 @@ export interface EnqueueInput {
   readonly defaultLanguage?: Lang;
   /** Email decision forced by the caller (e.g. frequency cap) */
   readonly forceSuppress?: string | null;
+  /** Inbox only: this notification has no email channel. */
+  readonly inAppOnly?: boolean;
   readonly now?: Date;
 }
 
@@ -132,7 +134,8 @@ export async function enqueue(db: SqlExecutor, input: EnqueueInput): Promise<Enq
   let state: EmailState = "queued";
   let suppressed: string | null = null;
   let nextAt: Date | null = now;
-  if (input.forceSuppress) { state = "suppressed"; suppressed = input.forceSuppress; }
+  if (input.inAppOnly) { state = "in_app_only"; }
+  else if (input.forceSuppress) { state = "suppressed"; suppressed = input.forceSuppress; }
   else if (synthetic) { state = "suppressed"; suppressed = "synthetic_account"; }
   else if (!email) { state = "suppressed"; suppressed = "no_address"; }
   else {

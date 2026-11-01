@@ -6,14 +6,14 @@
  */
 import { errorCode } from "./db";
 
-const FEED = /^\/api\/calendar\/feed\//i;
+const FEED = /^(\/api)?\/calendar\/feed\//i;
 /** Any path under the calendar feed carries a subscription token: it is never logged or reported. */
 export function safeLogPath(path: string): string {
-  return FEED.test(path) ? "/api/calendar/feed/[token].ics" : path;
+  return FEED.test(path) ? "/calendar/feed/[token].ics" : path;
 }
 /** Same redaction for a full URL (Sentry request.url / transaction names). */
 export function safeLogUrl(url: string): string {
-  return url.replace(/\/api\/calendar\/feed\/[^?#\s"']*/gi, "/api/calendar/feed/[token].ics");
+  return url.replace(/(\/api)?\/calendar\/feed\/[^?#\s"']*/gi, "/calendar/feed/[token].ics");
 }
 const lastIncidentAt = new Map<string, number>();
 

@@ -93,20 +93,26 @@ export const TEMPLATES: Record<string, TemplateDef> = {
     en: { title: () => "Orientation session cancelled", body: (p) => `Your orientation session planned for ${v(p, "whenEn")} was cancelled. You can request a new time from your Flight Deck.` },
     fr: { title: () => "Séance d’orientation annulée", body: (p) => `Votre séance d’orientation prévue le ${v(p, "whenFr")} a été annulée. Vous pouvez demander un nouveau créneau depuis votre tableau de bord.` },
   },
-  "calendar.scheduled": {
-    category: "appointments", reminder: false, href: () => "/calendar",
-    en: { title: (p) => `New in your calendar: ${v(p, "title")}`, body: (p) => `${v(p, "title")} — ${v(p, "whenEn")}.` },
-    fr: { title: (p) => `Nouveau dans votre calendrier : ${v(p, "title")}`, body: (p) => `${v(p, "title")} — ${v(p, "whenFr")}.` },
+  // ── S30 Academic Calendar (through calendar-bridge.ts; values only, no record free text) ──
+  "calendar.reminder.deadline": {
+    category: "appointments", reminder: true, href: (p) => v(p, "href", "/calendar"),
+    en: { title: (p) => `Coming up: ${v(p, "itemEn")}`, body: (p) => `Your ${v(p, "itemEn")} is due on ${v(p, "whenEn")}. Open your calendar for details.` },
+    fr: { title: (p) => `À venir : ${v(p, "itemFr")}`, body: (p) => `Votre ${v(p, "itemFr")} est prévue le ${v(p, "whenFr")}. Ouvrez votre calendrier pour les détails.` },
   },
-  "calendar.rescheduled": {
-    category: "appointments", reminder: false, href: () => "/calendar",
-    en: { title: (p) => `Rescheduled: ${v(p, "title")}`, body: (p) => `${v(p, "title")} is now on ${v(p, "whenEn")}.` },
-    fr: { title: (p) => `Reporté : ${v(p, "title")}`, body: (p) => `${v(p, "title")} a lieu maintenant le ${v(p, "whenFr")}.` },
+  "calendar.reminder.appointment": {
+    category: "appointments", reminder: true, href: (p) => v(p, "href", "/calendar"),
+    en: { title: (p) => `Reminder: ${v(p, "itemEn")}`, body: (p) => `Your ${v(p, "itemEn")} is on ${v(p, "whenEn")}.` },
+    fr: { title: (p) => `Rappel : ${v(p, "itemFr")}`, body: (p) => `Votre ${v(p, "itemFr")} a lieu le ${v(p, "whenFr")}.` },
   },
-  "calendar.cancelled": {
-    category: "appointments", reminder: false, href: () => "/calendar",
-    en: { title: (p) => `Cancelled: ${v(p, "title")}`, body: (p) => `${v(p, "title")} (${v(p, "whenEn")}) was cancelled.` },
-    fr: { title: (p) => `Annulé : ${v(p, "title")}`, body: (p) => `${v(p, "title")} (${v(p, "whenFr")}) a été annulé.` },
+  "calendar.reminder.milestone": {
+    category: "roadmap", reminder: true, href: (p) => v(p, "href", "/calendar"),
+    en: { title: (p) => `Coming up: ${v(p, "itemEn")}`, body: (p) => `A ${v(p, "itemEn")} is planned for ${v(p, "whenEn")}.` },
+    fr: { title: (p) => `À venir : ${v(p, "itemFr")}`, body: (p) => `Un ${v(p, "itemFr")} est prévu le ${v(p, "whenFr")}.` },
+  },
+  "calendar.event_changed": {
+    category: "appointments", reminder: false, href: (p) => v(p, "href", "/calendar"),
+    en: { title: (p) => `Calendar ${v(p, "changeEn")}: ${v(p, "itemEn")}`, body: (p) => `Your ${v(p, "itemEn")} (${v(p, "whenEn")}) was ${v(p, "changeEn")}. Open your calendar for details.` },
+    fr: { title: (p) => `Calendrier (${v(p, "changeFr")}) : ${v(p, "itemFr")}`, body: (p) => `Changement dans votre calendrier (${v(p, "changeFr")}) : ${v(p, "itemFr")}, le ${v(p, "whenFr")}. Ouvrez votre calendrier pour les détails.` },
   },
   // ── concierge reminders (rules engine) ──
   "concierge.inactive": {

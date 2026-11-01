@@ -190,15 +190,14 @@ export async function collectSubsystems(db: Tx, now: Date): Promise<SubsystemVie
       const r = rows(await db.execute(sql`SELECT max(created_at) AS last FROM audit_logs`))[0] ?? {};
       return { state: failures > 0 ? "degraded" : iso(r.last) ? "live" : "healthy", evidence: [`${failures} audit write failures in this process`, iso(r.last) ? `last audit event ${iso(r.last)}` : "no audit events yet"] };
     }),
-    probe("imports", async () => {
-      if (!s29) return { state: "not_configured", evidence: ["S29 schema not applied"] };
-      const r = rows(await db.execute(sql`SELECT count(*)::int AS batches, max(committed_at) AS last FROM s29_import_batches`))[0] ?? {};
-      return { state: iso(r.last) ? "live" : "healthy", evidence: [`${Number(r.batches ?? 0)} import batches`, iso(r.last) ? `last commit ${iso(r.last)}` : "nothing committed yet"] };
-    }),
     probe("calendar", async () => {
-      if (!s29) return { state: "not_configured", evidence: ["S29 schema not applied"] };
-      const r = rows(await db.execute(sql`SELECT (SELECT count(*)::int FROM s29_calendar_events) AS events, (SELECT count(*)::int FROM s29_calendar_tokens WHERE revoked_at IS NULL) AS tokens, (SELECT max(last_used_at) FROM s29_calendar_tokens) AS used`))[0] ?? {};
-      return { state: iso(r.used) ? "live" : "healthy", evidence: [`${Number(r.events ?? 0)} calendar events, ${Number(r.tokens ?? 0)} active subscriptions`, iso(r.used) ? `feed last used ${iso(r.used)}` : "no subscription used yet"] };
+      // The Academic Calendar is S30's; S29 only sees whether its port is wired and the reminder dispatch results.
+      const { calendarBridgeState } = await import("./calendar-bridge");
+      const st = calendarBridgeState();
+      const tables = rows(await db.execute(sql`SELECT count(*)::int AS n FROM pg_class WHERE relnamespace = 'public'::regnamespace AND relname LIKE 's30\_%'`))[0];
+      const job = jobs.find((j) => j.name === "calendar.reminders");
+      if (!st.wired) return { state: Number(tables?.n ?? 0) > 0 ? "degraded" : "not_configured", evidence: ["S30 calendar port not wired to the S29 outbox in this release", `${Number(tables?.n ?? 0)} S30 tables present`] };
+      return { state: job?.state === "failed" ? "failed" : st.lastDispatchAt ? "live" : "healthy", evidence: [`port wired; reminder job ${job?.state ?? "unknown"}`, st.lastDispatch ? `last dispatch ${st.lastDispatchAt}: ${JSON.stringify(st.lastDispatch)}` : "no dispatch yet"] };
     }),
   ];
   return Promise.all(list);
@@ -223,9 +222,9 @@ export function featureMatrix(subs: readonly SubsystemView[], jobs: Awaited<Retu
     { key: "student_assistant", state: "live", evidence: ["built-in program guide (not live AI, by policy)"] },
     { key: "concierge", state: !extra.conciergeEnabled ? "not_configured" : job("rules.sync")?.state ?? "unknown", evidence: [`concierge ${extra.conciergeEnabled ? "enabled" : "disabled in settings"}`, `rules job last success ${job("rules.sync")?.lastSuccessAt ?? "never"}`] },
     { key: "notification_center", state: worst(st("notifications"), job("outbox.deliver")?.state ?? "unknown"), evidence: [...ev("notifications"), `email: ${st("email")}`] },
-    { key: "academic_imports", state: st("imports"), evidence: ev("imports") },
+    { key: "academic_imports", state: "unknown", evidence: ["owned by the S30 release; not probed by S29"] },
     { key: "calendar", state: st("calendar"), evidence: ev("calendar") },
-    { key: "fleet_ai", state: st("notifications") === "not_configured" ? "not_configured" : job("rules.sync")?.lastSuccessAt ? (st("ai") === "live" ? "live" : "healthy") : "unknown", evidence: ["deterministic answers from the Needs Attention store", `optional AI narrative: ${st("ai")}`] },
+    { key: "fleet_ai", state: process.env.S29_FLEET_COPILOT !== "on" ? "not_configured" : st("notifications") === "not_configured" ? "not_configured" : job("rules.sync")?.lastSuccessAt ? (st("ai") === "live" ? "live" : "healthy") : "unknown", evidence: process.env.S29_FLEET_COPILOT !== "on" ? ["disabled by flag (S29_FLEET_COPILOT not 'on'); planned for Phase C"] : ["deterministic answers from the Needs Attention store", `optional AI narrative: ${st("ai")}`] },
   ];
 }
 

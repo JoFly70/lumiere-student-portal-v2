@@ -9,15 +9,9 @@
     s29_notifications               notification outbox AND in-portal inbox (one row per notification)
     s29_jobs                        durable scheduler state (lease, last success, failures)
     s29_incidents                   bounded operational incidents (fingerprint + counts; no payloads)
-    s29_calendar_events             appointments/deadlines not already held elsewhere (advisor, support, documents)
-    s29_calendar_tokens             revocable calendar subscription tokens (SHA-256 hash only)
-    s29_import_templates            reusable column mappings for academic imports
-    s29_import_batches              uploaded academic import files (preview, commit, provenance)
-    s29_academic_records            committed imported activity, with an explicit claim level
 
-  Integrity: s29_academic_records.claim_level can never be 'institution_verified'; school results imported from a
-  file are stored as claim_level 'school_result' with verification_status 'pending' and must go through the existing
-  authorized review workflow (hs_official_results / credit awards) before anything counts as official.
+  The Academic Calendar and Academic Imports are owned by S30 (its own migration); S29 is the operational layer the
+  calendar plugs into (notification outbox, Concierge, scheduler, diagnostics) through S30's calendar operations port.
 
   Audit: the new audit event types are added first. No BEGIN/COMMIT (a new enum value cannot be used in the
   transaction that adds it).
@@ -26,10 +20,7 @@
 ALTER TYPE public.audit_event_type ADD VALUE IF NOT EXISTS 's29.attention_updated';
 ALTER TYPE public.audit_event_type ADD VALUE IF NOT EXISTS 's29.settings_updated';
 ALTER TYPE public.audit_event_type ADD VALUE IF NOT EXISTS 's29.preferences_updated';
-ALTER TYPE public.audit_event_type ADD VALUE IF NOT EXISTS 's29.import_previewed';
-ALTER TYPE public.audit_event_type ADD VALUE IF NOT EXISTS 's29.import_committed';
 ALTER TYPE public.audit_event_type ADD VALUE IF NOT EXISTS 's29.calendar_updated';
-ALTER TYPE public.audit_event_type ADD VALUE IF NOT EXISTS 's29.calendar_token_changed';
 ALTER TYPE public.audit_event_type ADD VALUE IF NOT EXISTS 's29.fleet_query';
 ALTER TYPE public.audit_event_type ADD VALUE IF NOT EXISTS 's29.diagnostic_run';
 ALTER TYPE public.audit_event_type ADD VALUE IF NOT EXISTS 's29.incident_updated';
@@ -145,103 +136,13 @@ CREATE TABLE IF NOT EXISTS s29_incidents (
 );
 CREATE INDEX IF NOT EXISTS s29_incidents_last_seen_idx ON s29_incidents(last_seen_at DESC);
 
-CREATE TABLE IF NOT EXISTS s29_calendar_events (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  student_id text NOT NULL REFERENCES students(id) ON DELETE CASCADE,
-  kind text NOT NULL CHECK (kind IN ('advisor', 'document', 'support', 'submission', 'milestone')),
-  title text NOT NULL CHECK (char_length(title) BETWEEN 1 AND 140),
-  starts_at timestamptz NOT NULL,
-  ends_at timestamptz,
-  all_day boolean NOT NULL DEFAULT false,
-  status text NOT NULL DEFAULT 'scheduled' CHECK (status IN ('scheduled', 'cancelled', 'done')),
-  visible_to_student boolean NOT NULL DEFAULT true,
-  sequence integer NOT NULL DEFAULT 0,
-  created_by text,
-  updated_by text,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now(),
-  CONSTRAINT s29_calendar_events_range CHECK (ends_at IS NULL OR ends_at >= starts_at)
-);
-CREATE INDEX IF NOT EXISTS s29_calendar_events_student_idx ON s29_calendar_events(student_id, starts_at);
-CREATE INDEX IF NOT EXISTS s29_calendar_events_starts_idx ON s29_calendar_events(starts_at);
-
-CREATE TABLE IF NOT EXISTS s29_calendar_tokens (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id text NOT NULL,
-  token_sha256 text NOT NULL CHECK (char_length(token_sha256) = 64),
-  label text CHECK (label IS NULL OR char_length(label) <= 60),
-  created_at timestamptz NOT NULL DEFAULT now(),
-  last_used_at timestamptz,
-  revoked_at timestamptz,
-  CONSTRAINT s29_calendar_tokens_hash_unique UNIQUE (token_sha256)
-);
-CREATE INDEX IF NOT EXISTS s29_calendar_tokens_user_idx ON s29_calendar_tokens(user_id);
-
-CREATE TABLE IF NOT EXISTS s29_import_templates (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  name text NOT NULL CHECK (char_length(name) BETWEEN 1 AND 80),
-  kind text NOT NULL CHECK (kind IN ('provider_progress', 'school_results', 'course_worksheet', 'generic')),
-  columns jsonb NOT NULL,
-  default_claim_level text NOT NULL CHECK (default_claim_level IN ('reported', 'completed', 'submitted', 'school_result')),
-  created_by text,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  CONSTRAINT s29_import_templates_name_unique UNIQUE (name)
-);
-
-CREATE TABLE IF NOT EXISTS s29_import_batches (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  status text NOT NULL DEFAULT 'previewed' CHECK (status IN ('previewed', 'committed', 'discarded')),
-  kind text NOT NULL CHECK (kind IN ('provider_progress', 'school_results', 'course_worksheet', 'generic')),
-  file_name text NOT NULL CHECK (char_length(file_name) BETWEEN 1 AND 200),
-  file_sha256 text NOT NULL CHECK (char_length(file_sha256) = 64),
-  sheet text,
-  headers jsonb NOT NULL DEFAULT '[]'::jsonb,
-  mapping jsonb NOT NULL DEFAULT '{}'::jsonb,
-  default_claim_level text NOT NULL CHECK (default_claim_level IN ('reported', 'completed', 'submitted', 'school_result')),
-  scope_student_id text REFERENCES students(id) ON DELETE SET NULL,
-  template_id uuid REFERENCES s29_import_templates(id) ON DELETE SET NULL,
-  counts jsonb NOT NULL DEFAULT '{}'::jsonb,
-  rows jsonb NOT NULL DEFAULT '[]'::jsonb,
-  created_by text NOT NULL,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  committed_by text,
-  committed_at timestamptz
-);
-CREATE INDEX IF NOT EXISTS s29_import_batches_created_idx ON s29_import_batches(created_at DESC);
-CREATE INDEX IF NOT EXISTS s29_import_batches_sha_idx ON s29_import_batches(file_sha256, status);
-
-CREATE TABLE IF NOT EXISTS s29_academic_records (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  student_id text NOT NULL REFERENCES students(id) ON DELETE CASCADE,
-  course_code text NOT NULL CHECK (char_length(course_code) BETWEEN 1 AND 80),
-  activity text NOT NULL DEFAULT '' CHECK (char_length(activity) <= 160),
-  claim_level text NOT NULL CHECK (claim_level IN ('reported', 'completed', 'submitted', 'school_result')),
-  verification_status text NOT NULL DEFAULT 'not_applicable' CHECK (verification_status IN ('not_applicable', 'pending', 'verified_elsewhere', 'rejected')),
-  score_percent numeric(5, 2) CHECK (score_percent IS NULL OR score_percent BETWEEN 0 AND 100),
-  credits numeric(6, 2) CHECK (credits IS NULL OR credits BETWEEN 0 AND 200),
-  activity_date date,
-  provider text CHECK (provider IS NULL OR char_length(provider) <= 80),
-  reference text CHECK (reference IS NULL OR char_length(reference) <= 120),
-  batch_id uuid NOT NULL REFERENCES s29_import_batches(id) ON DELETE RESTRICT,
-  source_file_name text NOT NULL,
-  source_row integer NOT NULL,
-  row_fingerprint text NOT NULL CHECK (char_length(row_fingerprint) = 64),
-  imported_by text NOT NULL,
-  imported_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now(),
-  CONSTRAINT s29_academic_records_natural_unique UNIQUE (student_id, course_code, activity, claim_level)
-);
-CREATE INDEX IF NOT EXISTS s29_academic_records_student_idx ON s29_academic_records(student_id, activity_date DESC);
-CREATE INDEX IF NOT EXISTS s29_academic_records_pending_idx ON s29_academic_records(verification_status) WHERE verification_status = 'pending';
-
 DO $$
 DECLARE
   t text;
   r text;
 BEGIN
   FOREACH t IN ARRAY ARRAY['s29_settings', 's29_notification_preferences', 's29_attention_items', 's29_notifications', 's29_jobs',
-                           's29_incidents', 's29_calendar_events', 's29_calendar_tokens', 's29_import_templates',
-                           's29_import_batches', 's29_academic_records'] LOOP
+                           's29_incidents'] LOOP
     EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY', t);
     FOREACH r IN ARRAY ARRAY['anon', 'authenticated'] LOOP
       IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = r) THEN

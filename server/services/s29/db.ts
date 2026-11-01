@@ -19,7 +19,7 @@ export const num = (v: unknown): number | null => (v === null || v === undefined
 
 export const S29_TABLES = [
   "s29_settings", "s29_notification_preferences", "s29_attention_items", "s29_notifications", "s29_jobs",
-  "s29_incidents", "s29_calendar_events", "s29_calendar_tokens", "s29_import_templates", "s29_import_batches", "s29_academic_records",
+  "s29_incidents",
 ] as const;
 
 /** Postgres SQLSTATE / driver codes meaning "the store or its schema is not there" (migration not applied yet). */

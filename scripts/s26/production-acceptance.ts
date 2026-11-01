@@ -1404,9 +1404,10 @@ async function s29Checks() {
     return { ok, status: r.status, detail: ok ? `${rows.length} recent rows; no synthetic account emailed` : `demoEmailed=${demoEmailed} ${brief(r)}`,
       observed: { counts: r.json?.counts, emailConfigured: r.json?.emailConfigured, scheduler: r.json?.scheduler } };
   });
-  await run("s29.fleet-admin", "s29", true, async () => {
+  await run("s29.fleet-admin", "s29", false, async () => {
     if (!A) return skip("no admin session");
     const r = await post("/api/admin/s29/fleet/ask", { question: "Prépare des messages de relance en français pour les élèves dont l’échéance approche", language: "fr" }, A);
+    if (r.status === 404 && r.json?.error?.code === "S29_FEATURE_DISABLED") return skip("Fleet copilot disabled by flag (Phase C)");
     const refs: any[] = Array.isArray(r.json?.references) ? r.json.references : [];
     const ok = r.status === 200 && r.json?.requiresHumanApproval === true && r.json?.ai?.mode === "not_requested" && refs.every((x) => typeof x.href === "string" && x.href.startsWith("/admin/") && x.isDemo === false);
     return { ok, status: r.status, detail: ok ? `intent ${r.json.intent}; ${refs.length} references, ${r.json.drafts?.length ?? 0} drafts (not sent)` : brief(r), observed: { intent: r.json?.intent, references: refs.length, drafts: r.json?.drafts?.length } };

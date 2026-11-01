@@ -203,138 +203,6 @@ export interface OutboxView {
   readonly scheduler: { readonly lastTickAt: string | null; readonly lastDeliverySuccessAt: string | null };
 }
 
-// ── calendar ────────────────────────────────────────────────────────────────
-
-export const CALENDAR_KINDS = ["milestone", "submission", "orientation", "advisor", "document", "support", "checkpoint", "billing"] as const;
-export type CalendarKind = (typeof CALENDAR_KINDS)[number];
-
-export interface CalendarEventView {
-  /** Stable id: "<source>:<record id>[:<sub>]" (also the iCalendar UID prefix). */
-  readonly id: string;
-  readonly kind: CalendarKind;
-  readonly source: "orientation_sessions" | "student_checkpoints" | "student_agreements" | "billing" | "roadmap" | "calendar_events";
-  readonly studentId: string;
-  readonly studentName: string | null;
-  readonly isDemo: boolean;
-  readonly title: string;
-  /** ISO instant for timed events; for all-day events the date at 00:00Z and allDay = true. */
-  readonly startsAt: string;
-  readonly endsAt: string | null;
-  readonly allDay: boolean;
-  readonly status: "scheduled" | "requested" | "done" | "cancelled" | "overdue";
-  readonly href: string;
-  /** Staff may reschedule / cancel (only S29 calendar events and orientation sessions). */
-  readonly editable: boolean;
-  readonly updatedAt: string | null;
-}
-
-export interface CalendarView {
-  readonly from: string;
-  readonly to: string;
-  readonly timeZone: string;
-  readonly events: readonly CalendarEventView[];
-  readonly truncated: boolean;
-}
-
-export const createCalendarEventSchema = z.object({
-  studentId: z.string().trim().min(1).max(128),
-  kind: z.enum(["advisor", "document", "support", "submission", "milestone"]),
-  title: z.string().trim().min(1).max(140),
-  startsAt: z.string().datetime({ offset: true }),
-  endsAt: z.string().datetime({ offset: true }).nullable().optional(),
-  allDay: z.boolean().default(false),
-  /** Shown to the student when true (internal staff-only events otherwise). */
-  visibleToStudent: z.boolean().default(true),
-}).strict();
-export type CreateCalendarEventInput = z.infer<typeof createCalendarEventSchema>;
-
-export const updateCalendarEventSchema = z.object({
-  startsAt: z.string().datetime({ offset: true }).optional(),
-  endsAt: z.string().datetime({ offset: true }).nullable().optional(),
-  title: z.string().trim().min(1).max(140).optional(),
-  status: z.enum(["scheduled", "cancelled", "done"]).optional(),
-}).strict();
-export type UpdateCalendarEventInput = z.infer<typeof updateCalendarEventSchema>;
-
-export interface CalendarSubscriptionView {
-  readonly id: string;
-  readonly label: string | null;
-  readonly createdAt: string;
-  readonly lastUsedAt: string | null;
-  readonly revokedAt: string | null;
-}
-
-// ── academic imports ────────────────────────────────────────────────────────
-
-/** What a row claims. Only the review workflow can turn a claim into an institution-verified outcome. */
-export const CLAIM_LEVELS = ["reported", "completed", "submitted", "school_result"] as const;
-export type ClaimLevel = (typeof CLAIM_LEVELS)[number];
-
-export const IMPORT_FIELDS = ["student_code", "course_code", "activity", "status", "score_percent", "credits", "activity_date", "provider", "reference"] as const;
-export type ImportField = (typeof IMPORT_FIELDS)[number];
-
-export const IMPORT_KINDS = ["provider_progress", "school_results", "course_worksheet", "generic"] as const;
-export type ImportKind = (typeof IMPORT_KINDS)[number];
-
-export type ImportRowOutcome = "new" | "changed" | "unchanged" | "duplicate_in_file" | "invalid" | "conflict";
-
-export interface ImportRowView {
-  readonly rowNumber: number;
-  readonly outcome: ImportRowOutcome;
-  readonly studentCode: string | null;
-  readonly studentId: string | null;
-  readonly courseCode: string | null;
-  readonly activity: string | null;
-  readonly claimLevel: ClaimLevel | null;
-  readonly scorePercent: number | null;
-  readonly credits: number | null;
-  readonly activityDate: string | null;
-  readonly errors: readonly string[];
-  readonly warnings: readonly string[];
-  readonly changes: readonly { readonly field: string; readonly from: string | null; readonly to: string | null }[];
-}
-
-export interface ImportBatchView {
-  readonly id: string;
-  readonly status: "previewed" | "committed" | "discarded";
-  readonly kind: ImportKind;
-  readonly fileName: string;
-  readonly fileSha256: string;
-  readonly sheet: string | null;
-  readonly headers: readonly string[];
-  readonly mapping: Readonly<Partial<Record<ImportField, number>>>;
-  readonly defaultClaimLevel: ClaimLevel;
-  readonly scopeStudentId: string | null;
-  readonly counts: Readonly<Record<ImportRowOutcome, number>>;
-  readonly rows: readonly ImportRowView[];
-  readonly createdAt: string;
-  readonly createdBy: string;
-  readonly committedAt: string | null;
-  readonly committedBy: string | null;
-  /** True when this exact file was already committed (idempotent replay). */
-  readonly replayOf: string | null;
-}
-
-export const importPreviewOptionsSchema = z.object({
-  templateId: z.string().uuid().optional(),
-  mapping: z.record(z.enum(IMPORT_FIELDS), z.number().int().min(0).max(79)).optional(),
-  defaultClaimLevel: z.enum(CLAIM_LEVELS).default("reported"),
-  scopeStudentId: z.string().trim().min(1).max(128).optional(),
-  sheet: z.string().max(64).optional(),
-}).strict();
-export type ImportPreviewOptions = z.infer<typeof importPreviewOptionsSchema>;
-
-export const importTemplateSchema = z.object({
-  name: z.string().trim().min(1).max(80),
-  kind: z.enum(IMPORT_KINDS),
-  /** Header text (normalised) per field. */
-  columns: z.record(z.enum(IMPORT_FIELDS), z.string().trim().min(1).max(120)),
-  defaultClaimLevel: z.enum(CLAIM_LEVELS),
-}).strict();
-export type ImportTemplateInput = z.infer<typeof importTemplateSchema>;
-
-export interface ImportTemplateView extends ImportTemplateInput { readonly id: string; readonly createdAt: string }
-
 // ── diagnostics ─────────────────────────────────────────────────────────────
 
 export const HEALTH_STATES = ["live", "healthy", "degraded", "failed", "not_configured", "unknown"] as const;
@@ -474,7 +342,6 @@ export const S29_ERROR_CODES = {
   NOT_FOUND: "S29_NOT_FOUND",
   FORBIDDEN: "S29_FORBIDDEN",
   CONFLICT: "S29_CONFLICT",
-  IMPORT_INVALID_FILE: "S29_IMPORT_INVALID_FILE",
 } as const;
 
 // ── HTTP surface (mounted in server/routes.ts) ──────────────────────────────
@@ -484,10 +351,6 @@ export const S29_API = {
   inbox: "/api/student/s29/notifications",
   inboxRead: "/api/student/s29/notifications/read",
   preferences: "/api/student/s29/notifications/preferences",
-  studentCalendar: "/api/student/s29/calendar",
-  studentCalendarIcs: "/api/student/s29/calendar.ics",
-  subscriptions: "/api/student/s29/calendar/subscriptions",
-  subscription: (id: string) => `/api/student/s29/calendar/subscriptions/${encodeURIComponent(id)}`,
   // staff (admin + staff unless noted)
   attention: "/api/admin/s29/attention",
   attentionAction: (key: string) => `/api/admin/s29/attention/${encodeURIComponent(key)}/action`,
@@ -495,29 +358,10 @@ export const S29_API = {
   conciergeSettings: "/api/admin/s29/concierge/settings", // admin (GET/PUT)
   outbox: "/api/admin/s29/notifications",
   outboxRetry: (id: string) => `/api/admin/s29/notifications/${encodeURIComponent(id)}/retry`, // admin
-  staffCalendar: "/api/admin/s29/calendar",
-  staffCalendarIcs: "/api/admin/s29/calendar.ics",
-  calendarEvents: "/api/admin/s29/calendar/events", // admin POST
-  calendarEvent: (id: string) => `/api/admin/s29/calendar/events/${encodeURIComponent(id)}`, // admin PATCH
-  staffSubscriptions: "/api/admin/s29/calendar/subscriptions",
-  staffSubscription: (id: string) => `/api/admin/s29/calendar/subscriptions/${encodeURIComponent(id)}`,
-  imports: "/api/admin/s29/imports",
-  importPreview: "/api/admin/s29/imports/preview", // multipart: file + options (JSON string)
-  importBatch: (id: string) => `/api/admin/s29/imports/${encodeURIComponent(id)}`,
-  importRemap: (id: string) => `/api/admin/s29/imports/${encodeURIComponent(id)}/remap`,
-  importCommit: (id: string) => `/api/admin/s29/imports/${encodeURIComponent(id)}/commit`,
-  importDiscard: (id: string) => `/api/admin/s29/imports/${encodeURIComponent(id)}/discard`,
-  importTemplates: "/api/admin/s29/imports/templates",
-  importTemplate: (id: string) => `/api/admin/s29/imports/templates/${encodeURIComponent(id)}`,
   fleetAsk: "/api/admin/s29/fleet/ask", // admin
   diagnostics: "/api/admin/s29/diagnostics", // admin
   diagnosticCheck: (key: string) => `/api/admin/s29/diagnostics/checks/${encodeURIComponent(key)}`, // admin POST
   incidents: "/api/admin/s29/diagnostics/incidents", // admin
   incident: (id: string) => `/api/admin/s29/diagnostics/incidents/${encodeURIComponent(id)}`, // admin POST { action }
   schedulerRun: "/api/admin/s29/diagnostics/scheduler/run", // admin POST
-  // public, token-authenticated calendar feed (revocable)
-  feed: (token: string) => `/api/calendar/feed/${token}.ics`,
 } as const;
-
-/** Import batch list item (no rows). */
-export type ImportBatchSummary = Omit<ImportBatchView, "rows" | "headers" | "mapping">;

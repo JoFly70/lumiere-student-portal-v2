@@ -11,8 +11,6 @@ import { studentUxFr } from "./modules/student-ux";
 import { s27OwnerFr } from "./modules/s27-owner";
 import { s27Fr } from "./modules/s27";
 import { s29CoreFr } from "./modules/s29-core";
-import { s29CalendarFr } from "./modules/s29-calendar";
-import { s29ImportsFr } from "./modules/s29-imports";
 import { s29OpsFr } from "./modules/s29-ops";
 
 /**
@@ -33,8 +31,6 @@ export const fr: Record<TranslationKey, string> = {
   ...s27OwnerFr,
   ...s27Fr,
   ...s29CoreFr,
-  ...s29CalendarFr,
-  ...s29ImportsFr,
   ...s29OpsFr,
   "language.label": "Langue",
   "language.en": "English",

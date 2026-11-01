@@ -72,6 +72,14 @@ export function defaultJobs(deliver?: Deliver): JobDef[] {
   ];
 }
 
+/** Jobs contributed by other modules at startup (e.g. S30's calendar reminder dispatch via calendar-bridge). */
+const extraJobs: JobDef[] = [];
+export function registerJob(job: JobDef): void {
+  const i = extraJobs.findIndex((j) => j.name === job.name);
+  if (i >= 0) extraJobs[i] = job; else extraJobs.push(job);
+}
+export function registeredJobs(): readonly JobDef[] { return extraJobs; }
+
 let lastTickAt: string | null = null;
 let lastTickOutcome: string = "never";
 export function schedulerState(): { lastTickAt: string | null; lastTickOutcome: string; owner: string } {
@@ -80,7 +88,7 @@ export function schedulerState(): { lastTickAt: string | null; lastTickOutcome: 
 
 let running = false;
 /** Runs every due job once. Safe to call concurrently (in-process guard + DB leases). */
-export async function tick(db: Tx, now: Date = new Date(), jobs: JobDef[] = defaultJobs()): Promise<Record<string, unknown>> {
+export async function tick(db: Tx, now: Date = new Date(), jobs: JobDef[] = [...defaultJobs(), ...extraJobs]): Promise<Record<string, unknown>> {
   if (running) return { skipped: "already_running" };
   running = true;
   lastTickAt = now.toISOString();
@@ -120,7 +128,7 @@ export async function tick(db: Tx, now: Date = new Date(), jobs: JobDef[] = defa
 }
 
 export async function readJobs(db: Tx, now: Date = new Date()): Promise<JobView[]> {
-  const known = new Map(defaultJobs().map((j) => [j.name, j.intervalSeconds] as const));
+  const known = new Map([...defaultJobs(), ...extraJobs].map((j) => [j.name, j.intervalSeconds] as const));
   const stored = new Map(rows(await db.execute(sql`SELECT * FROM s29_jobs ORDER BY name`)).map((r) => [String(r.name), r] as const));
   return [...known.entries()].map(([name, interval]) => {
     const r = stored.get(name);

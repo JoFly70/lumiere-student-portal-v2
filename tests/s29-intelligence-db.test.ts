@@ -20,6 +20,7 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("S29 intelligence & operations on real P
   let hs: HighSchoolApp;
   let db: import("../server/services/s29/db").Tx;
   let app: import("express").Express;
+  let appFleetOff: import("express").Express;
   let csrf: (userId: string) => string;
   let real: Awaited<ReturnType<typeof seedStudent>>;
   let demo: Awaited<ReturnType<typeof seedStudent>>;
@@ -54,15 +55,19 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("S29 intelligence & operations on real P
     const { createS29AdminRouter, createS29StudentRouter, createS29OpsRouter } = await import("../server/routes/s29");
     app = express();
     app.use(express.json());
-    app.use("/api/admin/s29", createS29AdminRouter({ now: () => NOW, rateLimitStore: false }));
+    app.use("/api/admin/s29", createS29AdminRouter({ now: () => NOW, rateLimitStore: false, fleetEnabled: () => true }));
+    const off = express();
+    off.use(express.json());
+    off.use("/api/admin/s29", createS29AdminRouter({ now: () => NOW, rateLimitStore: false }));
+    appFleetOff = off;
     app.use("/api/student/s29", createS29StudentRouter({}));
     app.use("/api/ops", createS29OpsRouter({ now: () => NOW, secret: () => SECRET }));
   }, 300_000);
   afterAll(async () => { await hs?.close(); await pg?.stop(); }, 60_000);
 
-  it("migration: 11 tables with RLS and no client privileges, 12 audit types, constraints, idempotent re-apply", async () => {
+  it("migration: 6 tables with RLS and no client privileges, 9 audit types, constraints, idempotent re-apply; no calendar/import tables (S30 owns them)", async () => {
     const t = await pg.sql(`select c.relname, c.relrowsecurity as rls from pg_class c where c.relnamespace='public'::regnamespace and c.relname like 's29\\_%' and c.relkind='r' order by 1`);
-    expect(t.length).toBe(11);
+    expect(t.map((r) => r.relname)).toEqual(["s29_attention_items", "s29_incidents", "s29_jobs", "s29_notification_preferences", "s29_notifications", "s29_settings"]);
     expect(t.every((r) => r.rls === true)).toBe(true);
     const roles = await pg.sql(`select rolname from pg_roles where rolname in ('anon','authenticated')`);
     for (const r of roles) for (const row of t) {
@@ -70,8 +75,7 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("S29 intelligence & operations on real P
       expect(p[0]!.a).toBe(false);
     }
     const e = await pg.sql(`select count(*)::int as n from pg_enum e join pg_type t on t.oid=e.enumtypid where t.typname='audit_event_type' and e.enumlabel like 's29.%'`);
-    expect(e[0]!.n).toBe(12);
-    await expect(pg.sql(`insert into s29_academic_records (student_id, course_code, claim_level, batch_id, source_file_name, source_row, row_fingerprint, imported_by) values ('${real.studentId}','X','institution_verified',gen_random_uuid(),'f',1,repeat('a',64),'x')`)).rejects.toThrow();
+    expect(e[0]!.n).toBe(9);
     await expect(pg.sql(`insert into s29_notifications (dedupe_key, audience, category, template, source, title, body, email_state) values ('k','student','support','t','s','t','b','delivered')`)).rejects.toThrow();
     await pg.sql(fs.readFileSync(MIGRATION, "utf8"));
   });
@@ -193,9 +197,38 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("S29 intelligence & operations on real P
     const tok = "A".repeat(43);
     expect(safeLogPath(`/api/calendar/feed/${tok}.ics`)).not.toContain(tok);
     expect(safeLogPath(`/api/calendar/feed/${tok}.ics/`)).not.toContain(tok);
+    expect(safeLogPath(`/calendar/feed/${tok}.ics`)).not.toContain(tok); // S30's feed path
     expect(safeRequestContext({ path: `/api/calendar/feed/${tok}.ics`, method: "GET" }).path).not.toContain(tok);
     const ev = scrubSentryEvent({ request: { url: `https://x.test/api/calendar/feed/${tok}.ics?a=1` }, transaction: `GET /api/calendar/feed/${tok}.ics` })!;
     expect(JSON.stringify(ev)).not.toContain(tok);
+  });
+
+  it("S30 calendar bridge: port notifications reach the outbox idempotently (student email / staff in-app); reminder job runs on the scheduler", async () => {
+    const { createCalendarOpsAdapter, wireS30Calendar, calendarBridgeState } = await import("../server/services/s29/calendar-bridge");
+    const port = createCalendarOpsAdapter(async () => db, () => NOW);
+    const n = { recipientUserId: real.userId, audience: "student" as const, kind: "calendar.reminder.deadline", params: { date: "2026-11-13", itemKind: "document_deadline", titleKey: null }, href: "/calendar", allowEmail: true, dedupeKey: "calendar-reminder:x:2026-11-13:3d" };
+    expect(await port.enqueueNotification(n)).toBe("accepted");
+    expect(await port.enqueueNotification(n)).toBe("duplicate");
+    const [row] = await pg.sql(`select template, language, title, body, email_state, href from s29_notifications where dedupe_key = 's30:calendar-reminder:x:2026-11-13:3d'`);
+    expect(row).toMatchObject({ template: "calendar.reminder.deadline", language: "fr", title: "À venir : échéance de document", href: "/calendar" });
+    expect(String(row!.body)).toContain("13 novembre 2026");
+    expect(await port.enqueueNotification({ ...n, allowEmail: false, dedupeKey: "m1", kind: "calendar.reminder.milestone", params: { date: "2026-11-12", itemKind: "course_milestone" } })).toBe("accepted");
+    expect((await pg.sql(`select email_state from s29_notifications where dedupe_key='s30:m1'`))[0]!.email_state).toBe("in_app_only");
+    expect(await port.enqueueNotification({ ...n, audience: "staff", recipientUserId: admin.userId, allowEmail: false, dedupeKey: "st1", params: { ...n.params, studentId: real.studentId }, href: `/admin/students/${real.studentId}?tab=overview` })).toBe("accepted");
+    expect(await port.enqueueNotification({ ...n, audience: "staff", recipientUserId: real.userId, dedupeKey: "st2" })).toBe("failed"); // a student is never a staff recipient
+    expect(await port.enqueueNotification({ ...n, kind: "calendar.unknown", dedupeKey: "u1" })).toBe("failed");
+    expect(await port.recordEvent({ kind: "calendar.event_scheduled", studentId: real.studentId, calendarEventId: "e1", eventKind: "advisor_meeting", startsAt: "2026-11-14T10:00:00Z", actorId: admin.userId, dedupeKey: "k" })).toBe("accepted");
+    // Wiring with a stand-in for S30's modules: the port is installed and the reminder job runs on the scheduler.
+    let installed: unknown = null;
+    let dispatched = 0;
+    wireS30Calendar({ setCalendarOperationsPort: (p) => { installed = p; }, dispatchCalendarReminders: async () => { dispatched += 1; return { due: 1, results: { accepted: 1, duplicate: 0, not_wired: 0, failed: 0 } }; } }, { getDb: async () => db });
+    expect(installed).not.toBeNull();
+    const { tick, readJobs } = await import("../server/services/s29/scheduler");
+    const later = new Date(NOW.getTime() + 3_600_000);
+    await tick(db, later);
+    expect(dispatched).toBe(1);
+    expect(calendarBridgeState()).toMatchObject({ wired: true, accepted: 1 });
+    expect((await readJobs(db, later)).find((j) => j.name === "calendar.reminders")?.lastSuccessAt).toBeTruthy();
   });
 
   it("quiet hours defer a reminder email to the end of the window in the student's zone", async () => {
@@ -230,9 +263,10 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("S29 intelligence & operations on real P
     expect(inc[0]).toMatchObject({ category: "job.failed" });
     await pg.sql(`delete from s29_jobs where name like 'test.%'`);
     // The default jobs run end to end against the real schema.
-    const out = await tick(db, new Date(NOW.getTime() + 120_000));
+    const at = new Date(NOW.getTime() + 3 * 3_600_000); // after any earlier test's ticks
+    const out = await tick(db, at);
     expect(Object.keys(out)).toEqual(expect.arrayContaining(["rules.sync", "outbox.deliver", "ops.watch"]));
-    expect((await readJobs(db, new Date(NOW.getTime() + 121_000))).every((j) => j.lastSuccessAt)).toBe(true);
+    expect((await readJobs(db, new Date(at.getTime() + 1000))).every((j) => j.lastSuccessAt)).toBe(true);
   });
 
   it("fleet copilot: deterministic, grounded references, drafts never sent, AI context carries no identifiers", async () => {
@@ -271,6 +305,9 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("S29 intelligence & operations on real P
     const fleet = await request(app).post("/api/admin/s29/fleet/ask").set(authHeader(admin.token)).set("x-csrf-token", csrf(admin.userId)).send({ question: "Which students need my attention today?", language: "en" });
     expect(fleet.status).toBe(200);
     expect(fleet.body.ai.mode).toBe("not_requested");
+    const disabled = await request(appFleetOff).post("/api/admin/s29/fleet/ask").set(authHeader(admin.token)).set("x-csrf-token", csrf(admin.userId)).send({ question: "today?", language: "en" });
+    expect(disabled.status).toBe(404);
+    expect(disabled.body.error.code).toBe("S29_FEATURE_DISABLED");
 
     const inbox = await request(app).get("/api/student/s29/notifications").set(authHeader(real.token));
     expect(inbox.status).toBe(200);

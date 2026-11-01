@@ -112,13 +112,13 @@ while [ "$(date +%s)" -lt "$DEADLINE" ]; do
       if need_pg; then bash scripts/release/s29/apply-s29.sh --check > "$EVID/schema-s29-check.log" 2>&1 && S29_OK=1 || S29_OK=0
       else nix-shell -p postgresql_16 --run "bash scripts/release/s29/apply-s29.sh --check" > "$EVID/schema-s29-check.log" 2>&1 && S29_OK=1 || S29_OK=0; fi
       if [ "$S29_OK" = "1" ]; then
-        status schema_s29 SKIPPED "S29 schema fully applied (11 tables, RLS, privileges, audit enum values)"
+        status schema_s29 SKIPPED "S29 schema fully applied (6 tables, RLS, privileges, audit enum values)"
       elif ! grep -q "S29 check: NOT FULLY APPLIED" "$EVID/schema-s29-check.log"; then
         status schema_s29 FAIL "check did not complete: $(grep -E 'REFUSED|ERROR|FATAL|could not' "$EVID/schema-s29-check.log" | head -3 | tr '\n' ' ' | cut -c1-300)"; DONE_SHA=$SHA; continue
       else
         if need_pg; then bash scripts/release/s29/apply-s29.sh --apply --i-understand-this-writes-to-production > "$EVID/schema-s29.log" 2>&1
         else nix-shell -p postgresql_16 --run "bash scripts/release/s29/apply-s29.sh --apply --i-understand-this-writes-to-production" > "$EVID/schema-s29.log" 2>&1; fi
-        if grep -q "S29 production schema release: DONE" "$EVID/schema-s29.log"; then status schema_s29 PASS "backup + S29 migration + post-verify of 11 tables"
+        if grep -q "S29 production schema release: DONE" "$EVID/schema-s29.log"; then status schema_s29 PASS "backup + S29 migration + post-verify of 6 tables"
         else status schema_s29 FAIL "$( { grep -iE 'refused|error|fail|fatal' "$EVID/schema-s29.log" | head -5; tail -3 "$EVID/schema-s29.log"; } | tr '\n' ' ' | cut -c1-500)"; DONE_SHA=$SHA; continue; fi
       fi
     else

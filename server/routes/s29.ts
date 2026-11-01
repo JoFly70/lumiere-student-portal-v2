@@ -75,7 +75,10 @@ const requireSchema = async (db: Tx, res: Response): Promise<boolean> => {
   return false;
 };
 
-export interface S29RouterDeps { readonly db?: () => Promise<Tx>; readonly auth?: RequestHandler; readonly csrf?: RequestHandler; readonly now?: () => Date; readonly fetchImpl?: typeof fetch; readonly rateLimitStore?: boolean }
+/** Fleet copilot is a Phase C feature: off unless S29_FLEET_COPILOT=on. */
+export const fleetCopilotEnabled = (): boolean => process.env.S29_FLEET_COPILOT === "on";
+
+export interface S29RouterDeps { readonly fleetEnabled?: () => boolean; readonly db?: () => Promise<Tx>; readonly auth?: RequestHandler; readonly csrf?: RequestHandler; readonly now?: () => Date; readonly fetchImpl?: typeof fetch; readonly rateLimitStore?: boolean }
 
 const attentionKey = z.string().trim().min(1).max(300);
 const uuid = z.string().uuid();
@@ -216,6 +219,8 @@ export function createS29AdminRouter(deps: S29RouterDeps = {}): Router {
 
   // ── Fleet AI copilot ──
   router.post("/fleet/ask", ...admin, csrf, fleetLimit, (async (req: Request, res: Response) => {
+    // Phase C feature: disabled unless S29_FLEET_COPILOT=on (deps.fleetEnabled overrides in tests).
+    if (!(deps.fleetEnabled ?? fleetCopilotEnabled)()) return res.status(404).json({ error: { code: "S29_FEATURE_DISABLED", message: "The Fleet copilot is not enabled in this release" } });
     const body = fleetQuestionSchema.extend({ useAi: z.boolean().default(false) }).strict().safeParse(req.body ?? {});
     if (!body.success) return validation(res, body.error);
     res.setHeader("Cache-Control", "no-store");

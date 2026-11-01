@@ -179,15 +179,12 @@ export async function loadAttentionExtra(db: SqlExecutor, now: Date, s29Present:
     db.execute(sql`SELECT student_id, key, planned_on::text AS planned_on FROM student_checkpoints WHERE done_on IS NULL AND planned_on IS NOT NULL ORDER BY planned_on, student_id LIMIT 1000`),
     db.execute(sql`SELECT id, student_id, slot_at FROM orientation_sessions WHERE status = 'confirmed' AND slot_at >= ${now.toISOString()}::timestamptz AND slot_at <= ${horizon}::timestamptz ORDER BY slot_at LIMIT 200`),
   ]);
-  let pending: unknown = [];
-  let imported: unknown = [];
+  // Imported results / imported activity come from the S30 import store once it exists (extend here); none in S29.
+  const pending: unknown = [];
+  const imported: unknown = [];
   let failed: unknown = [];
   if (s29Present) {
-    [pending, imported, failed] = await Promise.all([
-      db.execute(sql`SELECT student_id, count(*)::int AS n, min(imported_at) AS oldest FROM s29_academic_records WHERE verification_status = 'pending' GROUP BY student_id ORDER BY student_id LIMIT 500`),
-      db.execute(sql`SELECT student_id, max(COALESCE(activity_date, imported_at::date))::text AS last_on FROM s29_academic_records WHERE claim_level IN ('reported', 'completed', 'submitted') GROUP BY student_id ORDER BY student_id LIMIT 500`),
-      db.execute(sql`SELECT id, student_id, template, updated_at FROM s29_notifications WHERE email_state = 'failed' AND updated_at >= ${new Date(now.getTime() - 14 * 86_400_000).toISOString()}::timestamptz ORDER BY updated_at DESC LIMIT 50`),
-    ]);
+    failed = await db.execute(sql`SELECT id, student_id, template, updated_at FROM s29_notifications WHERE email_state = 'failed' AND updated_at >= ${new Date(now.getTime() - 14 * 86_400_000).toISOString()}::timestamptz ORDER BY updated_at DESC LIMIT 50`);
   }
   return {
     checkpoints: rows(checkpoints).map((r) => ({ studentId: String(r.student_id), key: String(r.key), plannedOn: String(r.planned_on) })),

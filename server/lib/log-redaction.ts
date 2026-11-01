@@ -45,7 +45,7 @@ export function redactValue(value: unknown, depth = 0): unknown {
 /** Request facts that are safe to attach to an error report (no headers, no query string, no body). */
 /** S29: calendar subscription tokens live in the feed URL path; replace any of them. */
 export function redactFeedPath(text: string): string {
-  return text.replace(/\/api\/calendar\/feed\/[^?#\s"']*/gi, '/api/calendar/feed/[token].ics');
+  return text.replace(/(\/api)?\/calendar\/feed\/[^?#\s"']*/gi, '/calendar/feed/[token].ics');
 }
 
 export function safeRequestContext(req: { method?: string; path?: string; ip?: string }) {
