@@ -25,6 +25,7 @@ import { logger } from "../lib/logger";
 import { auditAdmin } from "../lib/audit";
 import { requireAuth } from "../middleware/auth";
 import { requireRole } from "../middleware/rbac";
+import { requireCsrf } from "../middleware/csrf";
 import { deriveEnrollmentStatus, invitationState, isPlausibleEmail, type EnrollmentStatus, type InvitationFacts } from "@shared/enrollment-status";
 
 export interface AccountView {
@@ -116,8 +117,24 @@ export async function correctStudentEmail(studentId: string, rawEmail: string): 
     if (taken) throw new AccountLinkError(409, "STUDENT_EMAIL_TAKEN", "Another student record already uses this email");
     const [staffUser] = rowsOf(await tx.execute(sql`select id from users where lower(email) = ${email} and role::text <> 'student' limit 1`));
     if (staffUser) throw new AccountLinkError(409, "EMAIL_BELONGS_TO_STAFF", "This email belongs to a staff account");
-    const updated = rowsOf(await tx.execute(sql`update students set email = ${email}, email_verified_at = null, updated_at = now() where id = ${studentId} and user_id is null returning id`));
+    let updated: any[];
+    try {
+      updated = rowsOf(await tx.execute(sql`update students set email = ${email}, email_verified_at = null, updated_at = now() where id = ${studentId} and user_id is null returning id`));
+    } catch (error) {
+      // A concurrent correction to the same address hits the unique index: same answer as the pre-check.
+      if ((error as { code?: string })?.code === "23505") throw new AccountLinkError(409, "STUDENT_EMAIL_TAKEN", "Another student record already uses this email");
+      throw error;
+    }
     if (updated.length !== 1) throw new AccountLinkError(409, "STUDENT_ALREADY_LINKED", "Unlink the portal account before correcting the record email");
+    // An invitation sent to the mistyped address must stop working (one live code per student, SA-33).
+    if (previousEmail.trim()) {
+      try {
+        await tx.execute(sql`update account_invitations set revoked_at = now()
+          where email = lower(${previousEmail.trim()}) and consumed_at is null and revoked_at is null and claimed_at is null`);
+      } catch (error) {
+        if ((error as { code?: string })?.code !== "42P01") throw error;
+      }
+    }
     return { view: await loadView(tx as unknown as Exec, studentId), previousEmail, email };
   });
 }
@@ -155,6 +172,8 @@ export async function unlinkStudentAccount(studentId: string): Promise<{ view: A
 export interface AdminStudentAccountDeps {
   readonly getView?: (studentId: string) => Promise<AccountView>;
   readonly correctEmail?: typeof correctStudentEmail;
+  /** CSRF middleware for the POST routes (tests may pass a pass-through). */
+  readonly csrf?: RequestHandler;
   readonly audit?: (actorId: string, description: string, metadata: Record<string, unknown>, targetUserId?: string, revoked?: boolean) => Promise<void>;
 }
 
@@ -173,6 +192,8 @@ function sendError(res: Response, error: unknown, context: string) {
 export function createAdminStudentAccountRouter(deps: AdminStudentAccountDeps = {}) {
   const router = Router();
   const guards: RequestHandler[] = [requireAuth, requireRole(["admin"])];
+  // S32-B review: state-changing account routes also require the CSRF token (as the admin and billing routers do).
+  const writeGuards: RequestHandler[] = [...guards, deps.csrf ?? requireCsrf];
   const getView = deps.getView ?? ((id: string) => db.transaction((tx) => loadView(tx as unknown as Exec, id)));
   const audit = deps.audit ?? defaultAudit;
 
@@ -202,7 +223,7 @@ export function createAdminStudentAccountRouter(deps: AdminStudentAccountDeps = 
     }
   });
 
-  router.post("/students/:studentId/account/link", ...guards, async (req, res) => {
+  router.post("/students/:studentId/account/link", ...writeGuards, async (req, res) => {
     const studentId = validId(req, res);
     if (!studentId) return;
     const parsed = linkSchema.safeParse(req.body ?? {});
@@ -216,7 +237,7 @@ export function createAdminStudentAccountRouter(deps: AdminStudentAccountDeps = 
     }
   });
 
-  router.post("/students/:studentId/account/unlink", ...guards, async (req, res) => {
+  router.post("/students/:studentId/account/unlink", ...writeGuards, async (req, res) => {
     const studentId = validId(req, res);
     if (!studentId) return;
     const parsed = unlinkSchema.safeParse(req.body ?? {});
@@ -236,7 +257,7 @@ export function createAdminStudentAccountRouter(deps: AdminStudentAccountDeps = 
     }
   });
 
-  router.post("/students/:studentId/email", ...guards, async (req, res) => {
+  router.post("/students/:studentId/email", ...writeGuards, async (req, res) => {
     const studentId = validId(req, res);
     if (!studentId) return;
     const parsed = emailSchema.safeParse(req.body ?? {});

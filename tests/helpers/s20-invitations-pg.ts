@@ -24,6 +24,8 @@ export class InvitationQuery implements PromiseLike<Result> {
   eq(c: string, v: unknown) { this.conds.push(`${this.col(c)} = ${this.p(v)}`); return this; }
   is(c: string, v: unknown) { this.conds.push(v === null ? `${this.col(c)} is null` : `${this.col(c)} is ${v ? "true" : "false"}`); return this; }
   gt(c: string, v: unknown) { this.conds.push(`${this.col(c)} > ${this.p(v)}::timestamptz`); return this; }
+  neq(c: string, v: unknown) { this.conds.push(`${this.col(c)} <> ${this.p(v)}`); return this; }
+  lt(c: string, v: unknown) { this.conds.push(`${this.col(c)} < ${this.p(v)}::timestamptz`); return this; }
   or(expr: string) {
     const parts = expr.split(/,(?=[a-z_]+\.)/).map((clause) => {
       const m = /^([a-z_]+)\.(is|lt)\.(.+)$/.exec(clause);

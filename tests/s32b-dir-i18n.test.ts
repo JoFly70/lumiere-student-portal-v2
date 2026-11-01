@@ -12,7 +12,7 @@ vi.stubGlobal("React", React);
 
 const NOW = Date.now();
 const STUDENTS = [
-  { id: "s-1", first_name: "Amélie", last_name: "Tremblay", status: "active", student_code: "LUM-001", email: "amelie.tremblay@gmail.com", user_id: null },
+  { id: "s-1", first_name: "Amélie", last_name: "Tremblay", status: "active", student_code: "LUM-001", email: "amelie@fixture.local", user_id: null },
 ];
 const FACTS = [
   { studentId: "s-1", program: null, billing: { currency: "USD", agreedCents: 100000, netCents: 100000, paidCents: 0, balanceCents: 100000, overdue: true }, lastActivityAt: new Date(NOW - 3 * 86_400_000).toISOString() },

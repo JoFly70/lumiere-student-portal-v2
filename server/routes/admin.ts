@@ -43,7 +43,7 @@ function clampOffset(value: unknown): number {
 }
 /** Free-text search goes into a PostgREST or() filter: drop the characters that structure that grammar. */
 function cleanSearch(value: unknown): string {
-  return typeof value === 'string' ? value.replace(/[,()*%\\]/g, ' ').trim().slice(0, 100) : '';
+  return typeof value === 'string' ? value.replace(/[,()*%"\\]/g, ' ').trim().slice(0, 100) : '';
 }
 
 /** True when at least one OTHER administrator has an active account (profile status 'active'). */
@@ -166,6 +166,13 @@ router.patch('/users/:id/role', asyncHandler(async (req: any, res) => {
       return res.status(500).json({ error: 'Failed to update user role' });
     }
 
+    // S32-B review: close the race where two administrators demote each other at the same moment. After the update
+    // at least one active administrator must remain; otherwise the change is reverted.
+    if (oldRole === 'admin' && role !== 'admin' && !(await hasOtherActiveAdmin(id))) {
+      await supabaseAdmin.from('users').update({ role: oldRole }).eq('id', id);
+      return res.status(409).json({ error: 'This is the last active administrator and cannot be demoted', code: 'LAST_ADMIN' });
+    }
+
     // Audit log
     await auditAdmin(
       'admin.role_changed',
@@ -226,6 +233,11 @@ router.delete('/users/:id', asyncHandler(async (req: any, res) => {
     if (error) {
       logger.error('Failed to archive user', { error: error.message });
       return res.status(500).json({ error: 'Failed to archive user' });
+    }
+    // S32-B review: same last-administrator re-check after the write (concurrent archives); revert if none remain.
+    if (target.role === 'admin' && !(await hasOtherActiveAdmin(id))) {
+      await supabaseAdmin.from('profiles').update({ status: 'active' }).eq('user_id', id);
+      return res.status(409).json({ error: 'This is the last active administrator and cannot be archived', code: 'LAST_ADMIN' });
     }
 
     // S30: the user's calendar feed links stop too (the feed also re-checks the account status on every fetch).

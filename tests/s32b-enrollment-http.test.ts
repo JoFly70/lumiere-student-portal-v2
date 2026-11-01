@@ -40,7 +40,7 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("S32-B enrollment status and account lin
     const { createAdminStudentAccountRouter } = await import("../server/routes/admin-student-account");
     app = express();
     app.use(express.json());
-    app.use("/api/admin", createAdminStudentAccountRouter({ audit: async (_a, desc, meta) => { audits.push({ desc, meta }); } }));
+    app.use("/api/admin", createAdminStudentAccountRouter({ csrf: (_q, _s, next) => next(), audit: async (_a, desc, meta) => { audits.push({ desc, meta }); } }));
     admin = await seedStaff(pg, "admin");
     staff = await seedStaff(pg, "staff");
     coach = await seedStaff(pg, "coach");

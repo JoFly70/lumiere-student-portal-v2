@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import { supabaseAdmin } from "./supabase";
+import { logger } from "./logger";
 
 /**
  * Invitation-only account creation. Tokens are random, returned to the
@@ -34,20 +35,6 @@ export async function createInvitation(params: {
   const email = normalizeInvitationEmail(params.email);
   const expiresAt = new Date(Date.now() + ttl * 3600 * 1000).toISOString();
 
-  // S32-B (SA-33): one live code per address. Older pending codes for this email stop working when a new one is
-  // issued (from Administration, the Student File or the Workspace). A code already claimed by an in-flight
-  // sign-up is left alone; consumed codes are history and untouched.
-  const { error: revokeError } = await supabaseAdmin
-    .from("account_invitations")
-    .update({ revoked_at: new Date().toISOString() })
-    .eq("email", email)
-    .is("consumed_at", null)
-    .is("revoked_at", null)
-    .is("claimed_at", null);
-  if (revokeError) {
-    throw new Error(`Failed to supersede older invitations: ${revokeError.message}`);
-  }
-
   const { data, error } = await supabaseAdmin
     .from("account_invitations")
     .insert({
@@ -57,11 +44,28 @@ export async function createInvitation(params: {
       created_by: params.createdBy,
       expires_at: expiresAt,
     })
-    .select("id, email, expires_at")
+    .select("id, email, expires_at, created_at")
     .single();
 
   if (error || !data) {
     throw new Error(`Failed to create invitation: ${error?.message ?? "no row returned"}`);
+  }
+
+  // S32-B (SA-33): one live code per address. AFTER the new code exists, older unclaimed codes for this email stop
+  // working: the student is never left without a live code, and of two concurrent issues the newer one wins (only
+  // codes created before the new one are revoked). A code already claimed by an in-flight sign-up is left alone;
+  // consumed codes are history and untouched.
+  const { error: revokeError } = await supabaseAdmin
+    .from("account_invitations")
+    .update({ revoked_at: new Date().toISOString() })
+    .eq("email", email)
+    .neq("id", data.id)
+    .lt("created_at", data.created_at ?? new Date().toISOString())
+    .is("consumed_at", null)
+    .is("revoked_at", null)
+    .is("claimed_at", null);
+  if (revokeError) {
+    logger.warn("Issued an invitation but could not revoke older codes for the same email", { error: revokeError.message });
   }
   return { id: data.id, email: data.email, expiresAt: data.expires_at, token };
 }

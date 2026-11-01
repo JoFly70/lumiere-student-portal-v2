@@ -55,10 +55,12 @@ describe('invitations', () => {
     expect(insert.role).toBe('student');
     expect(insert.token_hash).toBe(hashInvitationToken(inv.token));
     expect(JSON.stringify(insert)).not.toContain(inv.token);
-    // S32-B (SA-33): older pending codes for the same address are revoked before the new one is inserted.
+    // S32-B (SA-33): AFTER the new code is inserted, older unclaimed codes for the same address are revoked
+    // (never leaving the student without a live code; only codes created before the new one).
     const updateAt = calls.findIndex(([m]) => m === 'update');
-    expect(updateAt).toBeGreaterThan(-1);
-    expect(updateAt).toBeLessThan(calls.findIndex(([m]) => m === 'insert'));
+    expect(updateAt).toBeGreaterThan(calls.findIndex(([m]) => m === 'insert'));
+    expect(calls.slice(updateAt).some(([m, a]) => m === 'neq' && a[0] === 'id' && a[1] === 'i1')).toBe(true);
+    expect(calls.slice(updateAt).some(([m, a]) => m === 'lt' && a[0] === 'created_at')).toBe(true);
     expect(Object.keys(calls[updateAt]![1][0] as object)).toEqual(['revoked_at']);
     expect(calls.slice(updateAt).some(([m, a]) => m === 'eq' && a[0] === 'email' && a[1] === 'a@b.co')).toBe(true);
   });

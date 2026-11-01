@@ -45,6 +45,7 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("S13 student account linkage", () => {
     app.use(
       "/api/admin",
       createAdminStudentAccountRouter({
+        csrf: (_q, _s, next) => next(), // CSRF is covered by tests/s32b-staff-boundaries-http.test.ts
         audit: async (_actor, desc, meta, _t, revoked) => {
           audits.push({ desc, meta, revoked });
         },

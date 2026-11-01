@@ -154,7 +154,8 @@ const STUDENT_SUB = /^\/admin\/students\/([^/?#]+)(?:\/([^/?#]*))?/;
  */
 export function roleSafeHref(href: string, role: string | null | undefined): string {
   const r = (role ?? "") as PortalRole;
-  if (typeof href !== "string" || !href.startsWith("/") || href.startsWith("//")) return roleHomePath(r);
+  // eslint-disable-next-line no-control-regex
+  if (typeof href !== "string" || !href.startsWith("/") || href.startsWith("//") || href.includes("\\") || /[\u0000-\u001f\u007f]/.test(href)) return roleHomePath(r);
   if (r === "admin") return href;
   if (r === "staff") {
     if (canRoleOpen("staff", href)) return href;

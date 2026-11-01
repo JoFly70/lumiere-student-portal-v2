@@ -99,7 +99,7 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("SA-14 Concierge switch gates calendar r
     const { resetS29SchemaCache } = await import("../server/services/s29/db");
     resetS29SchemaCache();
     student = await seedStudent(pg, { name: "Pilot Gate" });
-    await pg.sql(`update users set email = 'pilot.gate@lumiere-qa-mail.net' where id = '${student.userId}'`);
+    await pg.sql(`update users set email = 'pilot.gate@example.test' where id = '${student.userId}'`);
   }, 300_000);
   afterAll(async () => { await hs?.close(); await pg?.stop(); }, 60_000);
 
