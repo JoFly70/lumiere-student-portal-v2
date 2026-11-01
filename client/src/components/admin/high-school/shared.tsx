@@ -6,8 +6,10 @@ import { useState, type ReactNode } from "react";
 import { AlertCircle, CheckCircle2, Info, Loader2, Lock, Plus, ShieldCheck, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { evidenceLabel, evidenceTypesText, verifiedEvidenceDocs, type EvidenceDoc, type Gate } from "@/lib/admin-high-school-logic";
+import { docTypeLabel, verifiedEvidenceDocs, type EvidenceDoc, type Gate } from "@/lib/admin-high-school-logic";
 import type { HsEvidencePurpose, StaffHighSchoolState } from "@shared/high-school-contract";
+import { HS_EVIDENCE_DOC_TYPES } from "@shared/high-school-contract";
+import { useHs } from "./hs-i18n";
 
 export interface SectionProps {
   readonly state: StaffHighSchoolState;
@@ -68,6 +70,7 @@ export function GatedButton({ gate, id, children, onClick, pending, variant, typ
   gate: Gate; id: string; children: ReactNode; onClick?: () => void; pending?: boolean;
   variant?: "default" | "outline" | "destructive" | "secondary"; type?: "button" | "submit"; size?: "sm" | "default";
 }) {
+  const { x } = useHs();
   const locked = !gate.enabled && !pending;
   return (
     <div className="inline-flex max-w-full flex-col items-start gap-1.5">
@@ -75,7 +78,7 @@ export function GatedButton({ gate, id, children, onClick, pending, variant, typ
         {pending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" /> : locked ? <Lock className="mr-2 h-4 w-4" aria-hidden="true" /> : null}
         {children}
       </Button>
-      {gate.reason ? <p id={`${id}-why`} className="max-w-sm text-xs text-muted-foreground">{gate.reason}</p> : null}
+      {gate.reason ? <p id={`${id}-why`} className="max-w-sm text-xs text-muted-foreground">{x(gate.reason)}</p> : null}
     </div>
   );
 }
@@ -94,11 +97,12 @@ export type OpenForm = ReturnType<typeof useOpenForm>;
 
 /** The primary "Record …" button that opens a collapsed form. */
 export function RecordButton({ form, id, children, variant = "default", size = "default" }: { form: OpenForm; id: string; children: ReactNode; variant?: "default" | "outline"; size?: "sm" | "default" }) {
+  const { t } = useHs();
   const open = form.isOpen(id);
   return (
     <Button type="button" variant={open ? "outline" : variant} size={size} className="min-h-10 shrink-0" aria-expanded={open} aria-controls={`${id}-panel`} onClick={() => form.toggle(id)}>
       {open ? <X className="mr-2 h-4 w-4" aria-hidden="true" /> : <Plus className="mr-2 h-4 w-4" aria-hidden="true" />}
-      {open ? "Close form" : children}
+      {open ? t("s32dir.hs.closeForm") : children}
     </Button>
   );
 }
@@ -127,23 +131,26 @@ export function SectionCard({ title, description, action, children, testId, body
   );
 }
 
-export function EvidenceSelect({ id, value, onChange, docs, purpose, label = "Evidence (verified document)" }: {
+export function EvidenceSelect({ id, value, onChange, docs, purpose, label }: {
   id: string; value: string; onChange: (v: string) => void; docs: readonly EvidenceDoc[]; purpose: HsEvidencePurpose; label?: string;
 }) {
+  const { t, x } = useHs();
   const verified = verifiedEvidenceDocs(docs, purpose);
+  const types = HS_EVIDENCE_DOC_TYPES[purpose].map((d) => x(docTypeLabel(d))).join(t("s32dir.hs.or"));
   return (
-    <Field id={id} label={label} hint={verified.length === 0 ? `No verified ${evidenceTypesText(purpose)} yet. Verify it in Documents first.` : `Verified documents of this student only: ${evidenceTypesText(purpose)}.`}>
+    <Field id={id} label={label ?? t("s32dir.hs.ev.label")} hint={verified.length === 0 ? t("s32dir.hs.ev.none", { types }) : t("s32dir.hs.ev.only", { types })}>
       <select id={id} className={FIELD_CLASS} value={value} onChange={(e) => onChange(e.target.value)} aria-describedby={`${id}-hint`}>
-        <option value="">Select a verified document…</option>
-        {verified.map((d) => <option key={d.id} value={d.id}>{evidenceLabel(d)}</option>)}
+        <option value="">{t("s32dir.hs.ev.select")}</option>
+        {verified.map((d) => <option key={d.id} value={d.id}>{`${d.file_name || x("Document")} · ${x(docTypeLabel(d.doc_type))}`}</option>)}
       </select>
     </Field>
   );
 }
 
 export function ActionMessage({ message }: { message: { tone: "success" | "error"; text: string } | null }) {
+  const { x } = useHs();
   if (!message) return null;
-  return <Notice tone={message.tone}>{message.text}</Notice>;
+  return <Notice tone={message.tone}>{x(message.text)}</Notice>;
 }
 
 export function Pill({ children, tone = "neutral" }: { children: ReactNode; tone?: "neutral" | "good" | "warn" | "bad" | "official" }) {

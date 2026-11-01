@@ -9,6 +9,7 @@ import { Link } from "wouter";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { BrainCircuit, Copy, FileSearch, Info, Loader2, Send, ShieldCheck } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
+import { useT, type TranslationKey } from "@/i18n";
 import { StaffNotice, StaffPill, staffBtn, staffField } from "@/components/staff/staff-ui";
 
 type Lang = "en" | "fr";
@@ -26,23 +27,13 @@ export interface OwnerAnswer {
   generatedAt: string;
 }
 
-const REASON_TEXT: Record<string, string> = {
-  disabled: "Live AI is switched off for this deployment.",
-  not_configured: "No AI provider key is configured on the server.",
-  not_eligible: "Live AI is not enabled for this role.",
-  budget_exhausted: "This month's AI budget is used up.",
-  provider_error: "The AI provider did not answer just now. Try again in a moment.",
-};
-
-const SUGGESTED = [
-  "For this student, which courses and documents still require action?",
-  "Summarize official credits versus student-reported progress.",
-  "Which guardian or enrollment checkpoints are still unverified?",
-];
+const REASON_KEYS = ["disabled", "not_configured", "not_eligible", "budget_exhausted", "provider_error"] as const;
+const SUGGESTED_KEYS = ["s32dir.aip.sug.1", "s32dir.aip.sug.2", "s32dir.aip.sug.3"] as const;
 
 export function OwnerAssistantPanel({ studentId, studentLabel }: { studentId: string; studentLabel?: string }) {
+  const { t, language: uiLanguage } = useT();
   const [question, setQuestion] = useState("");
-  const [language, setLanguage] = useState<Lang>("en");
+  const [language, setLanguage] = useState<Lang>(uiLanguage);
   const [history, setHistory] = useState<{ q: string; task: Task; a: OwnerAnswer }[]>([]);
   const base = `/api/admin/students/${encodeURIComponent(studentId)}/owner-assistant`;
   const status = useQuery<{ mode: "live" | "unavailable"; reason?: string }>({
@@ -62,17 +53,17 @@ export function OwnerAssistantPanel({ studentId, studentLabel }: { studentId: st
         <div className="flex min-w-0 flex-1 items-start gap-3">
           <span className="grid h-10 w-10 place-items-center rounded-full bg-student-gold/15 text-student-gold-ink"><BrainCircuit className="h-5 w-5" aria-hidden="true" /></span>
           <div>
-            <h2 id="owner-ai-heading" className="font-serif text-xl tracking-tight text-student-ink">Lumière Owner AI</h2>
+            <h2 id="owner-ai-heading" className="font-serif text-xl tracking-tight text-student-ink">{t("s32dir.ai.title")}</h2>
             <p className="text-sm text-student-muted">
-              Reads only {studentLabel ? <strong>{studentLabel}</strong> : "this student"}'s saved records, cites them, and never changes anything.
+              {t("s32dir.aip.reads.a")}{studentLabel ? <strong>{studentLabel}</strong> : t("s32dir.aip.reads.thisStudent")}{t("s32dir.aip.reads.b")}
             </p>
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-2">
           {status.data?.mode === "live"
-            ? <StaffPill tone="gold" className="whitespace-nowrap" testId="owner-ai-mode">Live AI</StaffPill>
-            : <StaffPill tone="attention" className="whitespace-nowrap" testId="owner-ai-mode">{status.isLoading ? "Checking…" : "AI unavailable"}</StaffPill>}
-          <label className="sr-only" htmlFor="owner-ai-lang">Answer language</label>
+            ? <StaffPill tone="gold" className="whitespace-nowrap" testId="owner-ai-mode">{t("s32dir.aip.live")}</StaffPill>
+            : <StaffPill tone="attention" className="whitespace-nowrap" testId="owner-ai-mode">{status.isLoading ? t("s32dir.aip.checking") : t("s32dir.aip.unavailable")}</StaffPill>}
+          <label className="sr-only" htmlFor="owner-ai-lang">{t("s32dir.aip.lang")}</label>
           <select id="owner-ai-lang" className={`${staffField} h-9 w-auto`} value={language} onChange={(e) => setLanguage(e.target.value as Lang)} data-testid="owner-ai-language">
             <option value="en">English</option>
             <option value="fr">Français</option>
@@ -82,7 +73,7 @@ export function OwnerAssistantPanel({ studentId, studentLabel }: { studentId: st
 
       {status.data?.mode === "unavailable" && (
         <StaffNotice tone="attention" icon={<Info className="h-4 w-4" />} role="status" testId="owner-ai-unavailable">
-          {REASON_TEXT[status.data.reason ?? ""] ?? "Live AI is unavailable."} You will still get a record summary that is clearly marked as not written by AI.
+          {(REASON_KEYS as readonly string[]).includes(status.data.reason ?? "") ? t(`s32dir.aip.reason.${status.data.reason}` as TranslationKey) : t("s32dir.aip.reason.default")} {t("s32dir.aip.stillSummary")}
         </StaffNotice>
       )}
 
@@ -90,7 +81,7 @@ export function OwnerAssistantPanel({ studentId, studentLabel }: { studentId: st
         {history.map((h, i) => (
           <li key={i} className="space-y-2">
             <p className="ml-auto max-w-[85%] rounded-lg bg-student-seal px-3 py-2 text-sm text-student-seal-ink">
-              {h.task === "draft_reply" ? <span className="mr-1 font-semibold">[Draft reply]</span> : null}{h.q}
+              {h.task === "draft_reply" ? <span className="mr-1 font-semibold">{t("s32dir.aip.draftTag")}</span> : null}{h.q}
             </p>
             <OwnerAnswerView answer={h.a} />
           </li>
@@ -100,62 +91,63 @@ export function OwnerAssistantPanel({ studentId, studentLabel }: { studentId: st
       {ask.isError && (
         <StaffNotice tone="urgent" role="alert" testId="owner-ai-error">
           {ask.error instanceof ApiError && ask.error.status === 403
-            ? (ask.error.code === "CSRF_TOKEN_INVALID" || ask.error.code === "CSRF_TOKEN_MISSING" ? "Your session's security check expired. Refresh the page and ask again." : "Only administrators can use Owner AI.")
-            : "The request failed. Nothing was changed."}
+            ? (ask.error.code === "CSRF_TOKEN_INVALID" || ask.error.code === "CSRF_TOKEN_MISSING" ? t("s32dir.aip.err.csrf") : t("s32dir.aip.err.adminOnly"))
+            : t("s32dir.aip.err.failed")}
         </StaffNotice>
       )}
 
       {history.length === 0 && (
-        <div className="flex flex-wrap gap-2" aria-label="Suggested questions">
-          {SUGGESTED.map((s) => (
-            <button key={s} type="button" className={`${staffBtn.outline} border text-left text-sm`} onClick={() => submit("answer", s)} disabled={ask.isPending}>{s}</button>
+        <div className="flex flex-wrap gap-2" aria-label={t("s32dir.aip.suggested")}>
+          {SUGGESTED_KEYS.map((k) => (
+            <button key={k} type="button" className={`${staffBtn.outline} border text-left text-sm`} onClick={() => submit("answer", t(k))} disabled={ask.isPending}>{t(k)}</button>
           ))}
         </div>
       )}
 
       <form className="space-y-2" onSubmit={(e) => { e.preventDefault(); submit("answer"); }}>
-        <label htmlFor="owner-ai-question" className="text-sm font-medium text-student-ink">Ask about this student</label>
+        <label htmlFor="owner-ai-question" className="text-sm font-medium text-student-ink">{t("s32dir.aip.ask.label")}</label>
         <textarea
           id="owner-ai-question"
           className={`${staffField} min-h-[84px]`}
           maxLength={800}
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
-          placeholder="e.g. What should we follow up on this week?"
+          placeholder={t("s32dir.aip.ask.ph")}
           data-testid="owner-ai-input"
         />
         <div className="flex flex-wrap gap-2">
           <button type="submit" className={`${staffBtn.primary} inline-flex items-center gap-2`} disabled={ask.isPending || !question.trim()} data-testid="owner-ai-ask">
-            {ask.isPending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Send className="h-4 w-4" aria-hidden="true" />} Ask
+            {ask.isPending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Send className="h-4 w-4" aria-hidden="true" />} {t("s32dir.aip.ask")}
           </button>
           <button type="button" className={`${staffBtn.outline} inline-flex items-center gap-2 border`} disabled={ask.isPending || !question.trim()} onClick={() => submit("draft_reply")} data-testid="owner-ai-draft">
-            Draft a reply to the student
+            {t("s32dir.aip.draft")}
           </button>
         </div>
-        <p className="flex items-center gap-1.5 text-xs text-student-muted"><ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" /> No contact details, names or message bodies are sent to the AI. Every use is audited. Drafts are never sent automatically.</p>
+        <p className="flex items-center gap-1.5 text-xs text-student-muted"><ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" /> {t("s32dir.aip.privacy")}</p>
       </form>
     </section>
   );
 }
 
 export function OwnerAnswerView({ answer }: { answer: OwnerAnswer }) {
+  const { t } = useT();
   const [copied, setCopied] = useState(false);
   const live = answer.mode === "live" && answer.reply;
   return (
     <div className="max-w-[95%] rounded-lg border border-student-line bg-student-card p-4 text-sm" data-testid="owner-ai-answer" data-mode={answer.mode}>
       <p className="mb-2 text-xs font-semibold uppercase tracking-[0.1em] text-student-muted">
-        {live ? (answer.task === "draft_reply" ? "AI draft — review before sending" : "AI answer") : "Record summary — not AI"}
+        {live ? (answer.task === "draft_reply" ? t("s32dir.aip.ans.draft") : t("s32dir.aip.ans.answer")) : t("s32dir.aip.ans.summary")}
       </p>
       <p className="whitespace-pre-wrap leading-relaxed text-student-ink">{live ? answer.reply : answer.recordSummary}</p>
       {live && answer.task === "draft_reply" && (
         <button type="button" className={`${staffBtn.outline} mt-3 inline-flex items-center gap-2 border text-xs`}
           onClick={() => { void navigator.clipboard?.writeText(answer.reply ?? "").then(() => setCopied(true)); }}>
-          <Copy className="h-3.5 w-3.5" aria-hidden="true" /> {copied ? "Copied — paste it into the ticket reply" : "Copy draft"}
+          <Copy className="h-3.5 w-3.5" aria-hidden="true" /> {copied ? t("s32dir.aip.ans.copied") : t("s32dir.aip.ans.copy")}
         </button>
       )}
       {answer.citations.length > 0 && (
         <div className="mt-3 border-t border-student-line pt-2">
-          <p className="mb-1 flex items-center gap-1 text-xs font-semibold text-student-muted"><FileSearch className="h-3.5 w-3.5" aria-hidden="true" /> Sources cited</p>
+          <p className="mb-1 flex items-center gap-1 text-xs font-semibold text-student-muted"><FileSearch className="h-3.5 w-3.5" aria-hidden="true" /> {t("s32dir.aip.ans.sources")}</p>
           <ul className="flex flex-wrap gap-2" data-testid="owner-ai-citations">
             {answer.citations.map((c) => (
               <li key={c.ref}>{c.path
@@ -165,7 +157,7 @@ export function OwnerAnswerView({ answer }: { answer: OwnerAnswer }) {
           </ul>
         </div>
       )}
-      {live && answer.citations.length === 0 && <p className="mt-2 text-xs text-student-muted">The AI cited no records for this answer: treat it with care.</p>}
+      {live && answer.citations.length === 0 && <p className="mt-2 text-xs text-student-muted">{t("s32dir.aip.ans.noCite")}</p>}
     </div>
   );
 }

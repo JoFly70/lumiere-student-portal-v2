@@ -33,23 +33,25 @@ export interface SearchResultsViewProps {
   t: Tr;
   onHover?: (index: number) => void;
   onPick?: (result: SearchResult) => void;
+  /** Staff see student-specific wording; omitted = student wording (unchanged). */
+  audience?: SearchAudience;
 }
 
 /** The dropdown body. Pure presentation: rendered by tests and by the harness without a server. */
-export function SearchResultsView({ groups, query, active, idPrefix, status, t, onHover, onPick }: SearchResultsViewProps) {
+export function SearchResultsView({ groups, query, active, idPrefix, status, t, onHover, onPick, audience }: SearchResultsViewProps) {
   const flat = flattenGroups(groups);
   let counter = -1;
   const short = !shouldSearch(query);
   return (
     <div data-testid="global-search-panel">
       {short && groups.length === 0 ? (
-        <p className="px-3 py-3 text-sm text-student-muted" data-testid="global-search-hint">{t("gs.hint")}</p>
+        <p className="px-3 py-3 text-sm text-student-muted" data-testid="global-search-hint">{t(audience === "staff" ? "s32dir.gs.hint.staff" : "gs.hint")}</p>
       ) : null}
       {!short && status === "loading" && flat.length === 0 ? (
         <p className="px-3 py-3 text-sm text-student-muted" data-testid="global-search-loading">{t("gs.searching")}</p>
       ) : null}
       {!short && status === "error" ? (
-        <p className="px-3 py-2 text-sm text-student-attn" role="alert" data-testid="global-search-error">{t("gs.error")}</p>
+        <p className="px-3 py-2 text-sm text-student-attn" role="alert" data-testid="global-search-error">{t(audience === "staff" ? "s32dir.gs.error.staff" : "gs.error")}</p>
       ) : null}
       {!short && status !== "loading" && flat.length === 0 && status !== "error" ? (
         <p className="px-3 py-3 text-sm text-student-muted" data-testid="global-search-empty">{t("gs.empty", { q: query.trim() })}</p>
@@ -271,7 +273,7 @@ export function GlobalSearch({ audience, className }: { audience: SearchAudience
     </div>
   );
   const body = showList ? (
-    <SearchResultsView groups={groups} query={query} active={active} idPrefix={uid} status={status} t={tr} onHover={setActive} onPick={pick} />
+    <SearchResultsView groups={groups} query={query} active={active} idPrefix={uid} status={status} t={tr} onHover={setActive} onPick={pick} audience={audience} />
   ) : null;
   const live = <p className="sr-only" role="status" aria-live="polite" data-testid="global-search-live">{announce}</p>;
 

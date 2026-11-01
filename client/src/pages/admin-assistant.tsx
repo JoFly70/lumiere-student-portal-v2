@@ -3,6 +3,8 @@ import { Link, useLocation, useSearch } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, Search } from "lucide-react";
 import { api } from "@/lib/api";
+import { useT } from "@/i18n";
+import { studentStatusText } from "@/components/admin/directory/directory-data";
 import { StaffEmpty, StaffPage, StaffPageHeader, staffBtn, staffField } from "@/components/staff/staff-ui";
 import { OwnerAssistantPanel } from "@/components/owner-assistant/owner-assistant-panel";
 import { FleetCopilot } from "@/components/s29/core/fleet-copilot";
@@ -13,6 +15,7 @@ interface StudentRow { id: string; first_name: string; last_name: string; prefer
 
 /** S26: Lumière Owner AI. Pick a student (search, no raw IDs), then ask about that student's records. */
 export default function AdminAssistant() {
+  const { t, language } = useT();
   const search = useSearch();
   const [, navigate] = useLocation();
   const studentId = new URLSearchParams(search).get("studentId");
@@ -27,16 +30,16 @@ export default function AdminAssistant() {
   return (
     <StaffPage width="wide" testId="admin-assistant">
       <StaffPageHeader
-        eyebrow="Admin tools"
-        title="Lumière Owner AI"
-        description="Ask questions about one student's authorized records. Answers cite the records they come from; nothing is changed."
+        eyebrow={t("s32dir.ai.eyebrow")}
+        title={t("s32dir.ai.title")}
+        description={t("s32dir.ai.desc")}
       />
       <div className="grid min-w-0 gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
-        <aside className="space-y-3 rounded-xl border border-student-line bg-student-card p-4" aria-label="Choose a student">
-          <label htmlFor="assistant-student-search" className="text-sm font-medium text-student-ink">Student</label>
+        <aside className="space-y-3 rounded-xl border border-student-line bg-student-card p-4" aria-label={t("s32dir.ai.pick.aria")}>
+          <label htmlFor="assistant-student-search" className="text-sm font-medium text-student-ink">{t("s32dir.ai.pick.label")}</label>
           <div className="relative">
             <Search className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-student-muted" aria-hidden="true" />
-            <input id="assistant-student-search" className={`${staffField} pl-8`} placeholder="Name or student code" value={term} onChange={(e) => setTerm(e.target.value)} data-testid="assistant-student-search" />
+            <input id="assistant-student-search" className={`${staffField} pl-8`} placeholder={t("s32dir.ai.pick.ph")} value={term} onChange={(e) => setTerm(e.target.value)} data-testid="assistant-student-search" />
           </div>
           <ul className="max-h-[420px] space-y-1 overflow-y-auto" data-testid="assistant-student-list">
             {(students.data?.students ?? []).map((s) => (
@@ -48,13 +51,13 @@ export default function AdminAssistant() {
                   aria-current={s.id === studentId ? "true" : undefined}
                 >
                   {s.preferred_name || s.first_name} {s.last_name}
-                  <span className="block text-xs text-student-muted">{s.student_code ?? ""} · {s.status}</span>
+                  <span className="block text-xs text-student-muted">{s.student_code ?? ""} · {language === "fr" ? studentStatusText(s.status, language) : s.status}</span>
                 </button>
               </li>
             ))}
-            {students.isLoading && <li role="status" className="px-3 py-2 text-sm text-student-muted">Loading students…</li>}
-            {students.isError && <li role="alert" className="px-3 py-2 text-sm text-st-urgent">Students could not be loaded. <button type="button" className="font-semibold underline underline-offset-4" onClick={() => void students.refetch()}>Retry</button></li>}
-            {students.data && students.data.students.length === 0 && <li className="px-3 py-2 text-sm text-student-muted">No students match{term.trim() ? ` “${term.trim()}”` : ""}.</li>}
+            {students.isLoading && <li role="status" className="px-3 py-2 text-sm text-student-muted">{t("s32dir.ai.loading")}</li>}
+            {students.isError && <li role="alert" className="px-3 py-2 text-sm text-st-urgent">{t("s32dir.ai.loadErr")} <button type="button" className="font-semibold underline underline-offset-4" onClick={() => void students.refetch()}>{t("owner.retry")}</button></li>}
+            {students.data && students.data.students.length === 0 && <li className="px-3 py-2 text-sm text-student-muted">{term.trim() ? t("s32dir.ai.noMatchQ", { q: term.trim() }) : t("s32dir.ai.noMatch")}</li>}
           </ul>
         </aside>
         <div className="rounded-xl border border-student-line bg-student-card p-5 sm:p-6">
@@ -62,14 +65,14 @@ export default function AdminAssistant() {
             <>
               <OwnerAssistantPanel key={studentId} studentId={studentId} studentLabel={label} />
               <Link href={`/admin/students/${encodeURIComponent(studentId)}`} className={`${staffBtn.outline} mt-6 inline-flex items-center gap-2 border`}>
-                Open the student's file <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                {t("s32dir.ai.openFile")} <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Link>
             </>
           ) : (
             // S29: the portfolio-wide Fleet copilot is a Phase C feature behind VITE_S29_FLEET_COPILOT=on.
             FLEET_COPILOT_ENABLED ? <FleetCopilot /> : (
-              <StaffEmpty title="Choose a student" testId="assistant-no-student">
-                Owner AI works on one student file at a time, so its answers can only use that student's records.
+              <StaffEmpty title={t("s32dir.ai.empty.title")} testId="assistant-no-student">
+                {t("s32dir.ai.empty.body")}
               </StaffEmpty>
             )
           )}
