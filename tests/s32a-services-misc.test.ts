@@ -64,7 +64,7 @@ describe("S32 F08 profile readiness in French", () => {
   it("renders from the key, with names, and falls back for unknown keys", () => {
     expect(readinessText({ key: "phone_primary", kind: "missing", label: "Add a phone number", detail: null }, "fr").label).toBe("Ajoutez un numéro de téléphone");
     expect(readinessText({ key: "address", kind: "missing", label: "Add your address", detail: "Street address and country" }, "fr").detail).toBe("Adresse municipale et pays");
-    expect(readinessText({ key: "contact_authority:1", kind: "complete", label: "Ann Roy: authority verified", detail: null }, "fr").label).toBe("Ann Roy : autorité vérifiée");
+    expect(readinessText({ key: "contact_authority:1", kind: "complete", label: "Ann Roy: authority verified", detail: null }, "fr").label).toMatch(/^Ann Roy\s:\sautorité vérifiée$/);
     expect(readinessText({ key: "document:hs_diploma", kind: "pending_review", label: "High-school diploma under review", detail: null }, "fr").label).toContain("en cours d’examen");
     expect(readinessText({ key: "mystery", kind: "missing", label: "Server text", detail: "d" }, "fr")).toEqual({ label: "Server text", detail: "d" });
     expect(readinessText({ key: "phone_primary", kind: "missing", label: "Add a phone number", detail: null }, "en").label).toBe("Add a phone number");

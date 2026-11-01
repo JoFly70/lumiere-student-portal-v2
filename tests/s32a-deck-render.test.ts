@@ -73,9 +73,9 @@ describe("S32-A F31 graduated student sees the banner on the deck", () => {
   it("diploma conferred shows the graduation banner; in progress does not", () => {
     const v = s27HsView();
     const graduated = { ...hsProps(), view: { ...v, graduation: { ...v.graduation, status: "diploma_conferred" as const, diploma: { ...v.graduation.diploma, conferredOn: "2026-12-20" } } } };
-    expect(wrap(createElement(FlightDeckS27, graduated), "en")).toContain("fd-graduated");
+    expect(wrap(createElement(FlightDeckS27, graduated), "en")).toContain("graduated-panel");
     expect(wrap(createElement(FlightDeckS27, graduated), "fr")).toContain("Félicitations");
-    expect(wrap(createElement(FlightDeckS27, hsProps()), "en")).not.toContain("fd-graduated");
+    expect(wrap(createElement(FlightDeckS27, hsProps()), "en")).not.toContain("graduated-panel");
   });
 });
 

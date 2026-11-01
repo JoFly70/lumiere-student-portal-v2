@@ -157,6 +157,7 @@ function ready(lang: Language, key: string, vars?: Record<string, string | numbe
  * The server builds English labels; unknown keys, or shapes this does not recognise, fall back to the server text.
  */
 export function readinessText(item: Pick<ProfileReadinessItem, "key" | "kind" | "label" | "detail">, lang: Language = currentLanguage()): { label: string; detail: string | null } {
+  if (lang !== "fr") return { label: item.label, detail: item.detail }; // English is the server text, unchanged
   const detail = item.detail == null ? null : READINESS_DETAIL_KEYS[item.detail] ? ready(lang, READINESS_DETAIL_KEYS[item.detail]!) : item.detail;
   const fixed = (key: string) => ({ label: ready(lang, key), detail });
   switch (item.key) {

@@ -6,9 +6,7 @@
  */
 import React, { createContext, useContext, useState } from "react";
 import { Link } from "wouter";
-import { GraduationCap } from "lucide-react";
 import type { CheckpointKey, StudentJourneyView } from "@shared/s27-contract";
-import type { StudentHighSchoolView } from "@shared/high-school-contract";
 import type { StudentBillingView } from "@shared/billing-contract";
 import { formatMoney } from "@shared/billing-contract";
 import { askAssistant } from "@/components/academic-assistant/logic";
@@ -47,23 +45,6 @@ export function checkpointLabel(program: DeckProgram, key: string, t: TFn): stri
 /** The first-login / returning welcome (GET /api/student/welcome): shown once per login, dismissible, above the deck cards. */
 export function DeckWelcome() {
   return <div data-testid="fd-welcome"><WelcomeBanner /></div>;
-}
-
-/** Shown on the deck once the school has conferred the diploma (same words as the high-school page banner). */
-export function GraduatedDeckBanner({ view }: { view: Pick<StudentHighSchoolView, "graduation" | "enrollment"> }) {
-  const { t, lang } = useS27T();
-  if (view.graduation.status !== "diploma_conferred") return null;
-  const on = formatDay(view.graduation.diploma.conferredOn, lang, "long");
-  const school = view.enrollment.schoolDisplayName;
-  return (
-    <section className="card" aria-label={t("s32.fd.graduated.aria")} data-testid="fd-graduated" style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
-      <GraduationCap size={28} aria-hidden="true" />
-      <div>
-        <h2>{t("hs.graduated.title")}</h2>
-        <p className="small">{on ? t("hs.graduated.on", { school, date: on }) : t("hs.graduated.noDate", { school })}</p>
-      </div>
-    </section>
-  );
 }
 
 /** Greeting row: eyebrow, "Good morning, Name." and the status pills (passed in, since each deck has its own). */

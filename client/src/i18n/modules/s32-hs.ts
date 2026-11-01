@@ -62,8 +62,6 @@ export const s32HsEn = {
   "s32.dg.shortfall.one": "{label}: 1 credit still needed",
   "s32.dg.shortfall.other": "{label}: {n} credits still needed",
 
-  // F31 — graduated student on the deck
-  "s32.fd.graduated.aria": "Graduation",
 } as const;
 
 export const s32HsFr: Record<keyof typeof s32HsEn, string> = {
@@ -119,5 +117,4 @@ export const s32HsFr: Record<keyof typeof s32HsEn, string> = {
   "s32.dg.shortfall.one": "{label} : encore 1 crédit requis",
   "s32.dg.shortfall.other": "{label} : encore {n} crédits requis",
 
-  "s32.fd.graduated.aria": "Diplomation",
 };

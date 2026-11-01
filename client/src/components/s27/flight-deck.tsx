@@ -23,9 +23,10 @@ import { useSupportRequest } from "@/lib/s27/use-support-request";
 import type { TranslationKey } from "@/i18n";
 import { S27Page, Eyebrow } from "./ui";
 import {
-  AlertCardView, AskCard, BillingCard, CheckpointsCard, CreditsGaugeCard, DeckHead, DeckWelcome, DocumentsCard, GraduatedDeckBanner, HS_DECK_LINKS, RadarChipView, UpNextCard, WeekCard,
+  AlertCardView, AskCard, BillingCard, CheckpointsCard, CreditsGaugeCard, DeckHead, DeckWelcome, DocumentsCard, HS_DECK_LINKS, RadarChipView, UpNextCard, WeekCard,
   type CreditRow, type DeckBilling, type DeckDoc, type JourneyState, type NextItem,
 } from "./deck-parts";
+import { GraduatedPanel } from "@/components/high-school/graduated-panel";
 import { FlightInstrument, type GhostRun, type InstrumentStop } from "./flight-instrument";
 
 export type { DeckBilling, DeckDoc, JourneyState };
@@ -95,7 +96,7 @@ export function FlightDeckS27(props: FlightDeckProps) {
       </DeckHead>
 
       <DeckWelcome />
-      <GraduatedDeckBanner view={view} />
+      <GraduatedPanel view={view} />
 
       {journeyState === "unavailable" && <p className="notice" data-testid="fd-journey-pending">{t("s27.fd.journeyPending")}</p>}
       {journeyState === "failed" && <p className="notice warn" role="status" data-testid="fd-journey-error">{t("s27.fd.journeyError")}</p>}

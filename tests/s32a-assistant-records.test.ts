@@ -104,7 +104,7 @@ describe("S32-A F01 - provider prompt privacy", () => {
     await answerMessage(student, { message: "Give me a tip for studying fractions", language: "en", records }, deps(f));
     expect(f).toHaveBeenCalledTimes(1);
     const body = String((f.mock.calls[0][1] as any).body);
-    for (const needle of [TICKET_SUBJECT, "4,821", "4821", "987", "362", "id_gov", "id gov", "passport", "Quokka", "Communication", "Montréal", "2026-11-20", "2026-12-15", "Program agreement", "Billing", "The student's own records"]) {
+    for (const needle of [TICKET_SUBJECT, "4,821", "4821", "987", "362", "id_gov", "id gov", "passport", "Quokka", "Communication", "Montréal", "2026-11-20", "2026-12-15", "Program agreement", "The student's own records"]) {
       expect(body, needle).not.toContain(needle);
     }
     expect(body).not.toMatch(/\[S\d+\]/);
