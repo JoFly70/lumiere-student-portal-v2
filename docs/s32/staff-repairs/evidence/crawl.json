@@ -1,0 +1,723 @@
+[
+  {
+    "role": "admin",
+    "family": "control-center:payment_missing",
+    "from": "/admin/students/11111111-1111-4111-8111-111111111111?tab=billing",
+    "landed": "/admin/students/11111111-1111-4111-8111-111111111111?tab=billing",
+    "ok": true
+  },
+  {
+    "role": "admin",
+    "family": "control-center:support_reply",
+    "from": "/support?ticket=t-2",
+    "landed": "/support?ticket=t-2",
+    "ok": true
+  },
+  {
+    "role": "admin",
+    "family": "control-center:document_review",
+    "from": "/admin/students/11111111-1111-4111-8111-111111111111?tab=documents",
+    "landed": "/admin/students/11111111-1111-4111-8111-111111111111?tab=documents",
+    "ok": true
+  },
+  {
+    "role": "admin",
+    "family": "control-center:document_review",
+    "from": "/admin/students/44444444-4444-4444-8444-444444444444?tab=documents",
+    "landed": "/admin/students/44444444-4444-4444-8444-444444444444?tab=documents",
+    "ok": true
+  },
+  {
+    "role": "admin",
+    "family": "control-center:payment_evidence",
+    "from": "/admin/students/11111111-1111-4111-8111-111111111111?tab=billing",
+    "landed": "/admin/students/11111111-1111-4111-8111-111111111111?tab=billing",
+    "ok": true
+  },
+  {
+    "role": "admin",
+    "family": "control-center:elective_approval",
+    "from": "/admin/elective-requests?ticket=t-elective",
+    "landed": "/admin/elective-requests?ticket=t-elective",
+    "ok": true
+  },
+  {
+    "role": "admin",
+    "family": "control-center:deadline_soon",
+    "from": "/admin/students/11111111-1111-4111-8111-111111111111?tab=overview",
+    "landed": "/admin/students/11111111-1111-4111-8111-111111111111?tab=overview",
+    "ok": true
+  },
+  {
+    "role": "admin",
+    "family": "control-center:session_request",
+    "from": "/admin/students/11111111-1111-4111-8111-111111111111?tab=sessions",
+    "landed": "/admin/students/11111111-1111-4111-8111-111111111111?tab=sessions",
+    "ok": true
+  },
+  {
+    "role": "admin",
+    "family": "needs-attention:payment_missing",
+    "from": "/admin/students/11111111-1111-4111-8111-111111111111?tab=billing",
+    "landed": "/admin/students/11111111-1111-4111-8111-111111111111?tab=billing",
+    "ok": true
+  },
+  {
+    "role": "admin",
+    "family": "needs-attention:support_reply",
+    "from": "/support?ticket=t-2",
+    "landed": "/support?ticket=t-2",
+    "ok": true
+  },
+  {
+    "role": "admin",
+    "family": "needs-attention:document_review",
+    "from": "/admin/students/11111111-1111-4111-8111-111111111111?tab=documents",
+    "landed": "/admin/students/11111111-1111-4111-8111-111111111111?tab=documents",
+    "ok": true
+  },
+  {
+    "role": "admin",
+    "family": "needs-attention:document_review",
+    "from": "/admin/students/44444444-4444-4444-8444-444444444444?tab=documents",
+    "landed": "/admin/students/44444444-4444-4444-8444-444444444444?tab=documents",
+    "ok": true
+  },
+  {
+    "role": "admin",
+    "family": "needs-attention:payment_evidence",
+    "from": "/admin/students/11111111-1111-4111-8111-111111111111?tab=billing",
+    "landed": "/admin/students/11111111-1111-4111-8111-111111111111?tab=billing",
+    "ok": true
+  },
+  {
+    "role": "admin",
+    "family": "needs-attention:import_awaiting_approval",
+    "from": "/admin/imports?batch=b1",
+    "landed": "/admin/imports?batch=b1",
+    "ok": true
+  },
+  {
+    "role": "admin",
+    "family": "needs-attention:account_ready_to_link",
+    "from": "/admin/students/55555555-5555-4555-8555-555555555555?tab=overview",
+    "landed": "/admin/students/55555555-5555-4555-8555-555555555555?tab=overview",
+    "ok": true
+  },
+  {
+    "role": "admin",
+    "family": "needs-attention:notification_failed",
+    "from": "/admin/notifications?state=failed",
+    "landed": "/admin/notifications?state=failed",
+    "ok": true
+  },
+  {
+    "role": "admin",
+    "family": "needs-attention:elective_approval",
+    "from": "/admin/elective-requests?ticket=t-elective",
+    "landed": "/admin/elective-requests?ticket=t-elective",
+    "ok": true
+  },
+  {
+    "role": "admin",
+    "family": "needs-attention:deadline_soon",
+    "from": "/admin/students/11111111-1111-4111-8111-111111111111?tab=overview",
+    "landed": "/admin/students/11111111-1111-4111-8111-111111111111?tab=overview",
+    "ok": true
+  },
+  {
+    "role": "admin",
+    "family": "needs-attention:session_request",
+    "from": "/admin/students/11111111-1111-4111-8111-111111111111?tab=sessions",
+    "landed": "/admin/students/11111111-1111-4111-8111-111111111111?tab=sessions",
+    "ok": true
+  },
+  {
+    "role": "admin",
+    "family": "search:student",
+    "from": "/admin/students/11111111-1111-4111-8111-111111111111",
+    "landed": "/admin/students/11111111-1111-4111-8111-111111111111",
+    "ok": true
+  },
+  {
+    "role": "admin",
+    "family": "calendar:open",
+    "from": "/admin/students/11111111-1111-4111-8111-111111111111?tab=overview",
+    "landed": "/admin/students/11111111-1111-4111-8111-111111111111?tab=overview",
+    "ok": true
+  },
+  {
+    "role": "admin",
+    "family": "owner-ai:guardian",
+    "from": "/admin/students/11111111-1111-4111-8111-111111111111/workspace#profile",
+    "landed": "/admin/students/11111111-1111-4111-8111-111111111111/workspace#profile",
+    "ok": true
+  },
+  {
+    "role": "admin",
+    "family": "owner-ai:tickets",
+    "from": "/support?studentId=11111111-1111-4111-8111-111111111111",
+    "landed": "/support?studentId=11111111-1111-4111-8111-111111111111",
+    "ok": true
+  },
+  {
+    "role": "admin",
+    "family": "owner-ai:ticket",
+    "from": "/support?ticket=t-2",
+    "landed": "/support?ticket=t-2",
+    "ok": true
+  },
+  {
+    "role": "admin",
+    "family": "hs:documents",
+    "from": "/admin/students/11111111-1111-4111-8111-111111111111?tab=documents",
+    "landed": "/admin/students/11111111-1111-4111-8111-111111111111?tab=documents",
+    "ok": true
+  },
+  {
+    "role": "admin",
+    "family": "hs:back-to-file",
+    "from": "/admin/students/11111111-1111-4111-8111-111111111111/high-school",
+    "landed": "/admin/students/11111111-1111-4111-8111-111111111111/high-school",
+    "ok": true
+  },
+  {
+    "role": "admin",
+    "family": "roadmap:back-to-file",
+    "from": "/admin/students/44444444-4444-4444-8444-444444444444/roadmap",
+    "landed": "/admin/students/44444444-4444-4444-8444-444444444444/roadmap",
+    "ok": true
+  },
+  {
+    "role": "admin",
+    "family": "directory",
+    "from": "/admin/students",
+    "landed": "/admin/students",
+    "ok": true
+  },
+  {
+    "role": "admin",
+    "family": "imports",
+    "from": "/admin/imports?batch=b1",
+    "landed": "/admin/imports?batch=b1",
+    "ok": true
+  },
+  {
+    "role": "admin",
+    "family": "email-delivery",
+    "from": "/admin/notifications?state=failed",
+    "landed": "/admin/notifications?state=failed",
+    "ok": true
+  },
+  {
+    "role": "admin",
+    "family": "click:needs-attention-open",
+    "from": "first item",
+    "landed": "/admin/students/11111111-1111-4111-8111-111111111111?tab=billing",
+    "ok": true
+  },
+  {
+    "role": "admin",
+    "family": "anchor:needs-ring",
+    "from": "#cc-attention",
+    "landed": "element found",
+    "ok": true
+  },
+  {
+    "role": "staff",
+    "family": "control-center:payment_missing",
+    "from": "/admin/students/11111111-1111-4111-8111-111111111111?tab=billing",
+    "landed": "/admin/students/11111111-1111-4111-8111-111111111111?tab=billing",
+    "ok": true
+  },
+  {
+    "role": "staff",
+    "family": "control-center:support_reply",
+    "from": "/support?ticket=t-2",
+    "landed": "/support?ticket=t-2",
+    "ok": true
+  },
+  {
+    "role": "staff",
+    "family": "control-center:document_review",
+    "from": "/admin/students/11111111-1111-4111-8111-111111111111?tab=documents",
+    "landed": "/admin/students/11111111-1111-4111-8111-111111111111?tab=documents",
+    "ok": true
+  },
+  {
+    "role": "staff",
+    "family": "control-center:document_review",
+    "from": "/admin/students/44444444-4444-4444-8444-444444444444?tab=documents",
+    "landed": "/admin/students/44444444-4444-4444-8444-444444444444?tab=documents",
+    "ok": true
+  },
+  {
+    "role": "staff",
+    "family": "control-center:payment_evidence",
+    "from": "/admin/students/11111111-1111-4111-8111-111111111111?tab=billing",
+    "landed": "/admin/students/11111111-1111-4111-8111-111111111111?tab=billing",
+    "ok": true
+  },
+  {
+    "role": "staff",
+    "family": "control-center:elective_approval",
+    "from": "/support?ticket=t-elective",
+    "landed": "/support?ticket=t-elective",
+    "ok": true
+  },
+  {
+    "role": "staff",
+    "family": "control-center:deadline_soon",
+    "from": "/admin/students/11111111-1111-4111-8111-111111111111?tab=overview",
+    "landed": "/admin/students/11111111-1111-4111-8111-111111111111?tab=overview",
+    "ok": true
+  },
+  {
+    "role": "staff",
+    "family": "control-center:session_request",
+    "from": "/admin/students/11111111-1111-4111-8111-111111111111?tab=sessions",
+    "landed": "/admin/students/11111111-1111-4111-8111-111111111111?tab=sessions",
+    "ok": true
+  },
+  {
+    "role": "staff",
+    "family": "needs-attention:payment_missing",
+    "from": "/admin/students/11111111-1111-4111-8111-111111111111?tab=billing",
+    "landed": "/admin/students/11111111-1111-4111-8111-111111111111?tab=billing",
+    "ok": true
+  },
+  {
+    "role": "staff",
+    "family": "needs-attention:support_reply",
+    "from": "/support?ticket=t-2",
+    "landed": "/support?ticket=t-2",
+    "ok": true
+  },
+  {
+    "role": "staff",
+    "family": "needs-attention:document_review",
+    "from": "/admin/students/11111111-1111-4111-8111-111111111111?tab=documents",
+    "landed": "/admin/students/11111111-1111-4111-8111-111111111111?tab=documents",
+    "ok": true
+  },
+  {
+    "role": "staff",
+    "family": "needs-attention:document_review",
+    "from": "/admin/students/44444444-4444-4444-8444-444444444444?tab=documents",
+    "landed": "/admin/students/44444444-4444-4444-8444-444444444444?tab=documents",
+    "ok": true
+  },
+  {
+    "role": "staff",
+    "family": "needs-attention:payment_evidence",
+    "from": "/admin/students/11111111-1111-4111-8111-111111111111?tab=billing",
+    "landed": "/admin/students/11111111-1111-4111-8111-111111111111?tab=billing",
+    "ok": true
+  },
+  {
+    "role": "staff",
+    "family": "needs-attention:import_awaiting_approval",
+    "from": "/admin/imports?batch=b1",
+    "landed": "/admin/imports?batch=b1",
+    "ok": true
+  },
+  {
+    "role": "staff",
+    "family": "needs-attention:account_ready_to_link",
+    "from": "/admin/students/55555555-5555-4555-8555-555555555555?tab=overview",
+    "landed": "/admin/students/55555555-5555-4555-8555-555555555555?tab=overview",
+    "ok": true
+  },
+  {
+    "role": "staff",
+    "family": "needs-attention:notification_failed",
+    "from": "/admin/notifications?state=failed",
+    "landed": "/admin/notifications?state=failed",
+    "ok": true
+  },
+  {
+    "role": "staff",
+    "family": "needs-attention:elective_approval",
+    "from": "/support?ticket=t-elective",
+    "landed": "/support?ticket=t-elective",
+    "ok": true
+  },
+  {
+    "role": "staff",
+    "family": "needs-attention:deadline_soon",
+    "from": "/admin/students/11111111-1111-4111-8111-111111111111?tab=overview",
+    "landed": "/admin/students/11111111-1111-4111-8111-111111111111?tab=overview",
+    "ok": true
+  },
+  {
+    "role": "staff",
+    "family": "needs-attention:session_request",
+    "from": "/admin/students/11111111-1111-4111-8111-111111111111?tab=sessions",
+    "landed": "/admin/students/11111111-1111-4111-8111-111111111111?tab=sessions",
+    "ok": true
+  },
+  {
+    "role": "staff",
+    "family": "search:student",
+    "from": "/admin/students/11111111-1111-4111-8111-111111111111",
+    "landed": "/admin/students/11111111-1111-4111-8111-111111111111",
+    "ok": true
+  },
+  {
+    "role": "staff",
+    "family": "calendar:open",
+    "from": "/admin/students/11111111-1111-4111-8111-111111111111?tab=overview",
+    "landed": "/admin/students/11111111-1111-4111-8111-111111111111?tab=overview",
+    "ok": true
+  },
+  {
+    "role": "staff",
+    "family": "owner-ai:guardian",
+    "from": "/admin/students/11111111-1111-4111-8111-111111111111",
+    "landed": "/admin/students/11111111-1111-4111-8111-111111111111",
+    "ok": true
+  },
+  {
+    "role": "staff",
+    "family": "owner-ai:tickets",
+    "from": "/support?studentId=11111111-1111-4111-8111-111111111111",
+    "landed": "/support?studentId=11111111-1111-4111-8111-111111111111",
+    "ok": true
+  },
+  {
+    "role": "staff",
+    "family": "owner-ai:ticket",
+    "from": "/support?ticket=t-2",
+    "landed": "/support?ticket=t-2",
+    "ok": true
+  },
+  {
+    "role": "staff",
+    "family": "hs:documents",
+    "from": "/admin/students/11111111-1111-4111-8111-111111111111?tab=documents",
+    "landed": "/admin/students/11111111-1111-4111-8111-111111111111?tab=documents",
+    "ok": true
+  },
+  {
+    "role": "staff",
+    "family": "hs:back-to-file",
+    "from": "/admin/students/11111111-1111-4111-8111-111111111111/high-school",
+    "landed": "/admin/students/11111111-1111-4111-8111-111111111111/high-school",
+    "ok": true
+  },
+  {
+    "role": "staff",
+    "family": "roadmap:back-to-file",
+    "from": "/admin/students/44444444-4444-4444-8444-444444444444/roadmap",
+    "landed": "/admin/students/44444444-4444-4444-8444-444444444444/roadmap",
+    "ok": true
+  },
+  {
+    "role": "staff",
+    "family": "directory",
+    "from": "/admin/students",
+    "landed": "/admin/students",
+    "ok": true
+  },
+  {
+    "role": "staff",
+    "family": "imports",
+    "from": "/admin/imports?batch=b1",
+    "landed": "/admin/imports?batch=b1",
+    "ok": true
+  },
+  {
+    "role": "staff",
+    "family": "email-delivery",
+    "from": "/admin/notifications?state=failed",
+    "landed": "/admin/notifications?state=failed",
+    "ok": true
+  },
+  {
+    "role": "staff",
+    "family": "admin-only-guard",
+    "from": "/admin/students/11111111-1111-4111-8111-111111111111/workspace",
+    "landed": "/staff/control-center",
+    "ok": true
+  },
+  {
+    "role": "staff",
+    "family": "admin-only-guard",
+    "from": "/admin/assistant",
+    "landed": "/staff/control-center",
+    "ok": true
+  },
+  {
+    "role": "staff",
+    "family": "admin-only-guard",
+    "from": "/admin",
+    "landed": "/staff/control-center",
+    "ok": true
+  },
+  {
+    "role": "staff",
+    "family": "admin-only-guard",
+    "from": "/admin/diagnostics",
+    "landed": "/staff/control-center",
+    "ok": true
+  },
+  {
+    "role": "staff",
+    "family": "click:needs-attention-open",
+    "from": "first item",
+    "landed": "/admin/students/11111111-1111-4111-8111-111111111111?tab=billing",
+    "ok": true
+  },
+  {
+    "role": "staff",
+    "family": "anchor:needs-ring",
+    "from": "#cc-attention",
+    "landed": "element found",
+    "ok": true
+  },
+  {
+    "role": "coach",
+    "family": "control-center:payment_missing",
+    "from": "/support",
+    "landed": "/support",
+    "ok": true
+  },
+  {
+    "role": "coach",
+    "family": "control-center:support_reply",
+    "from": "/support?ticket=t-2",
+    "landed": "/support?ticket=t-2",
+    "ok": true
+  },
+  {
+    "role": "coach",
+    "family": "control-center:document_review",
+    "from": "/support",
+    "landed": "/support",
+    "ok": true
+  },
+  {
+    "role": "coach",
+    "family": "control-center:document_review",
+    "from": "/support",
+    "landed": "/support",
+    "ok": true
+  },
+  {
+    "role": "coach",
+    "family": "control-center:payment_evidence",
+    "from": "/support",
+    "landed": "/support",
+    "ok": true
+  },
+  {
+    "role": "coach",
+    "family": "control-center:elective_approval",
+    "from": "/support",
+    "landed": "/support",
+    "ok": true
+  },
+  {
+    "role": "coach",
+    "family": "control-center:deadline_soon",
+    "from": "/support",
+    "landed": "/support",
+    "ok": true
+  },
+  {
+    "role": "coach",
+    "family": "control-center:session_request",
+    "from": "/support",
+    "landed": "/support",
+    "ok": true
+  },
+  {
+    "role": "coach",
+    "family": "needs-attention:payment_missing",
+    "from": "/support",
+    "landed": "/support",
+    "ok": true
+  },
+  {
+    "role": "coach",
+    "family": "needs-attention:support_reply",
+    "from": "/support?ticket=t-2",
+    "landed": "/support?ticket=t-2",
+    "ok": true
+  },
+  {
+    "role": "coach",
+    "family": "needs-attention:document_review",
+    "from": "/support",
+    "landed": "/support",
+    "ok": true
+  },
+  {
+    "role": "coach",
+    "family": "needs-attention:document_review",
+    "from": "/support",
+    "landed": "/support",
+    "ok": true
+  },
+  {
+    "role": "coach",
+    "family": "needs-attention:payment_evidence",
+    "from": "/support",
+    "landed": "/support",
+    "ok": true
+  },
+  {
+    "role": "coach",
+    "family": "needs-attention:import_awaiting_approval",
+    "from": "/support",
+    "landed": "/support",
+    "ok": true
+  },
+  {
+    "role": "coach",
+    "family": "needs-attention:account_ready_to_link",
+    "from": "/support",
+    "landed": "/support",
+    "ok": true
+  },
+  {
+    "role": "coach",
+    "family": "needs-attention:notification_failed",
+    "from": "/support",
+    "landed": "/support",
+    "ok": true
+  },
+  {
+    "role": "coach",
+    "family": "needs-attention:elective_approval",
+    "from": "/support",
+    "landed": "/support",
+    "ok": true
+  },
+  {
+    "role": "coach",
+    "family": "needs-attention:deadline_soon",
+    "from": "/support",
+    "landed": "/support",
+    "ok": true
+  },
+  {
+    "role": "coach",
+    "family": "needs-attention:session_request",
+    "from": "/support",
+    "landed": "/support",
+    "ok": true
+  },
+  {
+    "role": "coach",
+    "family": "search:student",
+    "from": "/support",
+    "landed": "/support",
+    "ok": true
+  },
+  {
+    "role": "coach",
+    "family": "calendar:open",
+    "from": "/support",
+    "landed": "/support",
+    "ok": true
+  },
+  {
+    "role": "coach",
+    "family": "owner-ai:guardian",
+    "from": "/support",
+    "landed": "/support",
+    "ok": true
+  },
+  {
+    "role": "coach",
+    "family": "owner-ai:tickets",
+    "from": "/support?studentId=11111111-1111-4111-8111-111111111111",
+    "landed": "/support?studentId=11111111-1111-4111-8111-111111111111",
+    "ok": true
+  },
+  {
+    "role": "coach",
+    "family": "owner-ai:ticket",
+    "from": "/support?ticket=t-2",
+    "landed": "/support?ticket=t-2",
+    "ok": true
+  },
+  {
+    "role": "coach",
+    "family": "hs:documents",
+    "from": "/support",
+    "landed": "/support",
+    "ok": true
+  },
+  {
+    "role": "coach",
+    "family": "hs:back-to-file",
+    "from": "/support",
+    "landed": "/support",
+    "ok": true
+  },
+  {
+    "role": "coach",
+    "family": "roadmap:back-to-file",
+    "from": "/support",
+    "landed": "/support",
+    "ok": true
+  },
+  {
+    "role": "coach",
+    "family": "directory",
+    "from": "/support",
+    "landed": "/support",
+    "ok": true
+  },
+  {
+    "role": "coach",
+    "family": "imports",
+    "from": "/support",
+    "landed": "/support",
+    "ok": true
+  },
+  {
+    "role": "coach",
+    "family": "email-delivery",
+    "from": "/support",
+    "landed": "/support",
+    "ok": true
+  },
+  {
+    "role": "coach",
+    "family": "admin-only-guard",
+    "from": "/admin/students/11111111-1111-4111-8111-111111111111/workspace",
+    "landed": "/support",
+    "ok": true
+  },
+  {
+    "role": "coach",
+    "family": "admin-only-guard",
+    "from": "/admin/assistant",
+    "landed": "/support",
+    "ok": true
+  },
+  {
+    "role": "coach",
+    "family": "admin-only-guard",
+    "from": "/admin",
+    "landed": "/support",
+    "ok": true
+  },
+  {
+    "role": "coach",
+    "family": "admin-only-guard",
+    "from": "/admin/diagnostics",
+    "landed": "/support",
+    "ok": true
+  },
+  {
+    "role": "staff",
+    "family": "return-to:remembered",
+    "from": "/admin/students/11111111-1111-4111-8111-111111111111?tab=documents",
+    "landed": "/login (stored /admin/students/11111111-1111-4111-8111-111111111111?tab=documents)",
+    "ok": true
+  }
+]
