@@ -1343,6 +1343,100 @@ async function browserSelfTest() {
   await browserPhase();
 }
 
+
+// ---------------------------------------------------------------------------------------------
+// S29: Needs Attention, Notification Center, Concierge preferences, Fleet copilot, Diagnostics, cron guard.
+// Read-only except the DEMO student's own notification preferences (written back unchanged) and read state.
+// ---------------------------------------------------------------------------------------------
+async function s29Checks() {
+  const A = ctx.admin;
+  const S = ctx.student;
+  await run("s29.attention-admin", "s29", true, async () => {
+    if (!A) return skip("no admin session");
+    const r = await get("/api/admin/s29/attention", A);
+    const items: any[] = Array.isArray(r.json?.items) ? r.json.items : [];
+    const demoUnlabelled = items.filter((i) => typeof i.studentName === "string" && /^DEMO/i.test(i.studentName) && i.isDemo !== true).length;
+    const complete = items.every((i) => i.key && i.kind && i.priority && i.reason && i.action && typeof i.href === "string" && i.detectedAt);
+    const ok = r.status === 200 && r.json?.source === "store" && complete && demoUnlabelled === 0;
+    return { ok, status: r.status, detail: ok ? `persisted queue: ${items.length} items, ${r.json?.counts?.open} real open` : `source=${short(r.json?.source, 10)} complete=${complete} demoUnlabelled=${demoUnlabelled} ${brief(r)}`,
+      observed: { source: r.json?.source, counts: r.json?.counts, kinds: [...new Set(items.map((i) => i.kind))], demoItems: items.filter((i) => i.isDemo).length, lastSyncAt: r.json?.lastSyncAt } };
+  });
+  await run("s29.attention-student-forbidden", "s29", true, async () => {
+    if (!S) return skip("no student session");
+    const r = await get("/api/admin/s29/attention", S);
+    return { ok: r.status === 403, status: r.status, detail: `student -> ${r.status}` };
+  });
+  let inboxItems: any[] = [];
+  await run("s29.inbox-student", "s29", true, async () => {
+    if (!S) return skip("no student session");
+    const r = await get("/api/student/s29/notifications", S);
+    inboxItems = Array.isArray(r.json?.items) ? r.json.items : [];
+    const leak = JSON.stringify(r.json ?? {}).toLowerCase().includes("staff-only note");
+    const ok = r.status === 200 && typeof r.json?.unread === "number" && !leak;
+    return { ok, status: r.status, detail: ok ? `${inboxItems.length} notifications, ${r.json.unread} unread; no internal note content` : `leak=${leak} ${brief(r)}`,
+      observed: { count: inboxItems.length, unread: r.json?.unread, templates: [...new Set(inboxItems.map((i) => i.template))], languages: [...new Set(inboxItems.map((i) => i.language))] } };
+  });
+  await run("s29.inbox-support-reply-event", "s29", false, async () => {
+    if (!S) return skip("no student session");
+    const found = inboxItems.some((i) => i.template === "support.reply");
+    return { ok: found, detail: found ? "the public staff reply reached the inbox as a notification" : "no support.reply notification yet (support phase skipped or event not processed)" };
+  });
+  await run("s29.inbox-mark-read", "s29", false, async () => {
+    if (!S) return skip("no student session");
+    const first = inboxItems.find((i) => !i.readAt);
+    if (!first) return skip("no unread notification");
+    const r = await post("/api/student/s29/notifications/read", { ids: [first.id] }, S);
+    return { ok: r.status === 200 && r.json?.updated === 1, status: r.status, detail: `updated ${short(r.json?.updated, 5)}` };
+  });
+  await run("s29.preferences-roundtrip", "s29", true, async () => {
+    if (!S) return skip("no student session");
+    const r = await get("/api/student/s29/notifications/preferences", S);
+    if (r.status !== 200) return { ok: false, status: r.status, detail: brief(r) };
+    const w = await http("PUT", "/api/student/s29/notifications/preferences", { session: S, json: r.json });
+    return { ok: w.status === 200, status: w.status, detail: w.status === 200 ? "read and written back unchanged (CSRF accepted)" : brief(w) };
+  });
+  await run("s29.outbox-admin", "s29", true, async () => {
+    if (!A) return skip("no admin session");
+    const r = await get("/api/admin/s29/notifications", A);
+    const rows: any[] = Array.isArray(r.json?.rows) ? r.json.rows : [];
+    const demoEmailed = rows.filter((x) => x.isDemo && (x.emailState === "accepted" || x.emailState === "attempted")).length;
+    const ok = r.status === 200 && demoEmailed === 0;
+    return { ok, status: r.status, detail: ok ? `${rows.length} recent rows; no synthetic account emailed` : `demoEmailed=${demoEmailed} ${brief(r)}`,
+      observed: { counts: r.json?.counts, emailConfigured: r.json?.emailConfigured, scheduler: r.json?.scheduler } };
+  });
+  await run("s29.fleet-admin", "s29", true, async () => {
+    if (!A) return skip("no admin session");
+    const r = await post("/api/admin/s29/fleet/ask", { question: "Prépare des messages de relance en français pour les élèves dont l’échéance approche", language: "fr" }, A);
+    const refs: any[] = Array.isArray(r.json?.references) ? r.json.references : [];
+    const ok = r.status === 200 && r.json?.requiresHumanApproval === true && r.json?.ai?.mode === "not_requested" && refs.every((x) => typeof x.href === "string" && x.href.startsWith("/admin/") && x.isDemo === false);
+    return { ok, status: r.status, detail: ok ? `intent ${r.json.intent}; ${refs.length} references, ${r.json.drafts?.length ?? 0} drafts (not sent)` : brief(r), observed: { intent: r.json?.intent, references: refs.length, drafts: r.json?.drafts?.length } };
+  });
+  await run("s29.diagnostics-admin", "s29", true, async () => {
+    if (!A) return skip("no admin session");
+    const r = await get("/api/admin/s29/diagnostics", A);
+    const subs: any[] = Array.isArray(r.json?.subsystems) ? r.json.subsystems : [];
+    const ok = r.status === 200 && subs.length >= 10 && typeof r.json?.release?.processStartedAt === "string";
+    return { ok, status: r.status, detail: ok ? `${r.json.summary?.state}: ${short(r.json.summary?.headline, 120)}` : brief(r),
+      observed: { release: r.json?.release, subsystems: Object.fromEntries(subs.map((x) => [x.key, x.state])), features: Object.fromEntries((r.json?.features ?? []).map((x: any) => [x.key, x.state])), jobs: (r.json?.jobs ?? []).map((j: any) => ({ name: j.name, state: j.state, lastSuccessAt: j.lastSuccessAt })) } };
+  });
+  await run("s29.check-schema", "s29", true, async () => {
+    if (!A) return skip("no admin session");
+    const r = await post("/api/admin/s29/diagnostics/checks/schema", {}, A);
+    return { ok: r.status === 200 && r.json?.state === "healthy", status: r.status, detail: short(r.json?.conclusion ?? brief(r), 200) };
+  });
+  for (const key of ["scheduler", "email", "document_storage", "release"]) {
+    await run(`s29.check-${key}`, "s29", false, async () => {
+      if (!A) return skip("no admin session");
+      const r = await post(`/api/admin/s29/diagnostics/checks/${key}`, {}, A);
+      return { ok: r.status === 200 && r.json?.state !== "failed", status: r.status, detail: `${short(r.json?.state, 20)}: ${short(r.json?.conclusion, 200)}`, observed: { steps: r.json?.steps } };
+    });
+  }
+  await run("s29.cron-tick-guarded", "s29", true, async () => {
+    const r = await http("POST", "/api/ops/scheduler/tick", { json: {} });
+    return { ok: r.status === 401 || r.status === 404, status: r.status, detail: r.status === 404 ? "disabled (S29_CRON_SECRET not set)" : r.status === 401 ? "refuses a request without the secret" : brief(r) };
+  });
+}
+
 async function main() {
   if (has("--browser-selftest")) { await browserSelfTest(); return; }
   let preflightOk = true;
@@ -1370,6 +1464,7 @@ async function main() {
   await billingChecks();
   await assistantChecks();
   await authorizationChecks();
+  await s29Checks();
   await browserPhase();
 }
 
