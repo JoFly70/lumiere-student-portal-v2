@@ -20,7 +20,9 @@ import { getRateLimitBackend } from "../../lib/rate-limit-store";
 import { getAuditFailureStats } from "../../lib/audit";
 import { loadAssistantConfig } from "../academic-assistant/config";
 import { currentMonth, usdToMicro } from "../academic-assistant/budget";
-import { errorCode, iso, rows, s29Schema, type Tx } from "./db";
+import { errorCode, iso, rows, s29Schema, S29_TABLES, type Tx } from "./db";
+
+const S29_AUDIT_TYPE_COUNT = 9;
 import { listIncidents } from "./incidents";
 import { readJobs, schedulerState } from "./scheduler";
 
@@ -321,9 +323,10 @@ export async function runCheck(db: Tx, key: DiagnosticCheckKey, actor: { id: str
       const missing = required.filter((t) => !found.has(t));
       steps.push({ label: "Core and S27 tables", ok: missing.length === 0, detail: missing.length ? `missing: ${missing.join(", ")}` : `${required.length} present` });
       const s29 = await s29Schema(db);
-      steps.push({ label: "S29 tables", ok: s29.present, detail: s29.present ? "11 present" : `missing: ${s29.missing.join(", ")}` });
+      steps.push({ label: "S29 tables", ok: s29.present, detail: s29.present ? `${S29_TABLES.length} present` : `missing: ${s29.missing.join(", ")}` });
       const enums = Number(rows(await db.execute(sql`SELECT count(*)::int AS n FROM pg_enum e JOIN pg_type t ON t.oid = e.enumtypid WHERE t.typname = 'audit_event_type' AND e.enumlabel LIKE 's29.%'`))[0]?.n ?? 0);
-      steps.push({ label: "S29 audit event types", ok: enums >= 12, detail: `${enums} of 12` });
+      // 9 s29.* audit types since the realignment (calendar and imports moved to S30).
+      steps.push({ label: "S29 audit event types", ok: enums >= S29_AUDIT_TYPE_COUNT, detail: `${enums} of ${S29_AUDIT_TYPE_COUNT}` });
       conclusion = steps.every((x) => x.ok) ? "Migrations and required schema objects are present." : "Some schema objects are missing (see steps).";
       nextAction = steps.every((x) => x.ok) ? null : "Start the release runner; its schema steps apply pending additive migrations with a backup.";
       break;
