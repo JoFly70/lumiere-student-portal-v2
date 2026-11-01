@@ -18,8 +18,8 @@ export interface ViewProps {
   readonly onPickDay: (date: string) => void;
 }
 
-/** A single calendar item as a button: kind icon, time, title. `compact` is the month-cell form. */
-export function ItemChip({ item, zone, compact, showStudent, onOpen }: { item: CalendarItem; zone: string; compact?: boolean; showStudent?: boolean; onOpen: (item: CalendarItem) => void }) {
+/** A single calendar item as a button: kind icon, time, title. `compact` is the month-cell form; `wrap` lets the title and details wrap (narrow week columns) instead of truncating. */
+export function ItemChip({ item, zone, compact, wrap, showStudent, onOpen }: { item: CalendarItem; zone: string; compact?: boolean; wrap?: boolean; showStudent?: boolean; onOpen: (item: CalendarItem) => void }) {
   const { tt, language } = useCalT();
   const Icon = KIND_ICON[item.kind];
   const StatusIcon = STATUS_ICON[item.status];
@@ -37,7 +37,7 @@ export function ItemChip({ item, zone, compact, showStudent, onOpen }: { item: C
       onClick={() => onOpen(item)}
       title={`${title}${item.studentName ? ` · ${item.studentName}` : ""}`}
       className={cn(
-        "flex w-full min-w-0 items-center gap-1.5 rounded-md border text-left transition-colors hover:brightness-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1",
+        "flex w-full min-w-0 gap-1.5 rounded-md", wrap ? "items-start" : "items-center", "border text-left transition-colors hover:brightness-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1",
         compact ? "px-1 py-0.5 text-[11px] leading-tight sm:px-1.5" : "px-2.5 py-2 text-sm",
         cancelled && "opacity-70",
       )}
@@ -48,7 +48,7 @@ export function ItemChip({ item, zone, compact, showStudent, onOpen }: { item: C
         outlineColor: "var(--t-accent)",
       }}
     >
-      <Icon className={cn("shrink-0", compact ? "h-3 w-3" : "h-4 w-4")} aria-hidden="true" />
+      <Icon className={cn("shrink-0", compact ? "h-3 w-3" : "h-4 w-4", wrap && "mt-0.5")} aria-hidden="true" />
       {compact ? (
         <span className="hidden min-w-0 flex-1 truncate sm:block">
           {time ? <span className="mr-1 font-medium" style={{ color: "var(--t-text-2)" }}>{time}</span> : null}
@@ -56,8 +56,8 @@ export function ItemChip({ item, zone, compact, showStudent, onOpen }: { item: C
         </span>
       ) : (
         <span className="min-w-0 flex-1">
-          <span className={cn("block truncate font-medium", cancelled && "line-through")}>{title}</span>
-          <span className="block truncate text-xs" style={{ color: "var(--t-muted)" }}>
+          <span className={cn("block font-medium", wrap ? "line-clamp-3 break-words" : "truncate", cancelled && "line-through")}>{title}</span>
+          <span className={cn("block text-xs", wrap ? "break-words" : "truncate")} style={{ color: "var(--t-muted)" }}>
             {time || tt("cal.allDay")}
             {showStudent && item.studentName ? ` · ${item.studentName}` : ""}
             {item.location ? ` · ${item.location}` : ""}
@@ -140,11 +140,11 @@ export function WeekView({ items, zone, anchor, today, weekStart, showStudent, o
             {list.length === 0 ? <p className="text-xs" style={{ color: "var(--t-muted)" }}>{tt("cal.week.empty")}</p> : null}
             {allDay.length > 0 ? (
               <div className="mb-2 space-y-1" aria-label={tt("cal.allDay")}>
-                {allDay.map((it) => <ItemChip key={`${it.id}:${d}`} item={it} zone={zone} showStudent={showStudent} onOpen={onOpen} />)}
+                {allDay.map((it) => <ItemChip key={`${it.id}:${d}`} item={it} zone={zone} wrap showStudent={showStudent} onOpen={onOpen} />)}
               </div>
             ) : null}
             <div className="space-y-1">
-              {timed.map((it) => <ItemChip key={`${it.id}:${d}`} item={it} zone={zone} showStudent={showStudent} onOpen={onOpen} />)}
+              {timed.map((it) => <ItemChip key={`${it.id}:${d}`} item={it} zone={zone} wrap showStudent={showStudent} onOpen={onOpen} />)}
             </div>
           </section>
         );
