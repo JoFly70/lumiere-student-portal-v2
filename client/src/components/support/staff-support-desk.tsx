@@ -53,6 +53,7 @@ import {
   useTicket,
   useTicketStats,
   STAFF_QUEUE_REFRESH_MS,
+  STAFF_STATS_REFRESH_MS,
   useTickets,
   useUpdateTicket,
   useUploadTicketAttachment,
@@ -339,7 +340,7 @@ export function StatusHistory({ history, staff }: { history: readonly SupportSta
 
 function TicketDetailPane({ ticketId, staff, onBack }: { ticketId: string; staff: readonly SupportPerson[]; onBack: () => void }) {
   const { t, language } = useT();
-  const { data, isLoading, error } = useTicket(ticketId, { refetchInterval: STAFF_QUEUE_REFRESH_MS });
+  const { data, isLoading, error } = useTicket(ticketId, { refreshOnFocus: true });
   const ticket = (data as { ticket?: SupportTicketDetail } | undefined)?.ticket;
   const { user } = useAuth();
   const update = useUpdateTicket(ticketId);
@@ -673,7 +674,7 @@ export function StaffSupportDesk() {
     limit: 50,
   }), [queue, search, activeStudentFilter]);
   const list = useTickets(filters, { refetchInterval: STAFF_QUEUE_REFRESH_MS });
-  const stats = useTicketStats(true, { refetchInterval: STAFF_QUEUE_REFRESH_MS });
+  const stats = useTicketStats(true, { refetchInterval: STAFF_STATS_REFRESH_MS });
   const directory = useSupportStaffDirectory(isManager);
 
   const tickets = orderStaffQueue(((list.data as { tickets?: SupportTicketSummary[] } | undefined)?.tickets ?? []) as SupportTicketSummary[]);

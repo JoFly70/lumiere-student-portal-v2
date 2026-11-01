@@ -128,7 +128,14 @@ export function ticketQueryParams(filters?: TicketFilters): URLSearchParams {
 }
 
 /** Staff desk freshness: poll every 60 s. TanStack Query pauses the interval while the tab is hidden. */
-export const STAFF_QUEUE_REFRESH_MS = 60_000;
+/**
+ * S32-B (SA-37): the staff queue refreshes on its own while the tab is visible. Kept light because every /api call
+ * counts against the server's per-IP limit (100 per 15 minutes, shared by everyone behind one office IP): the queue
+ * every 2 minutes and the counters every 5 minutes (~10 requests per 15 minutes); an open conversation refreshes
+ * when the window regains focus.
+ */
+export const STAFF_QUEUE_REFRESH_MS = 120_000;
+export const STAFF_STATS_REFRESH_MS = 300_000;
 
 export function useTickets(filters?: TicketFilters, options?: { enabled?: boolean; refetchInterval?: number }) {
   const queryParams = ticketQueryParams(filters);
@@ -189,13 +196,15 @@ export function useSupportContextOptions(enabled: boolean) {
   });
 }
 
-export function useTicket(ticketId: string | null, options?: { refetchInterval?: number }) {
+export function useTicket(ticketId: string | null, options?: { refetchInterval?: number; refreshOnFocus?: boolean }) {
   return useQuery<{ ticket: Ticket }>({
     queryKey: ['ticket', ticketId],
     queryFn: async () => apiRequest(`/api/tickets/${ticketId}`),
     enabled: !!ticketId,
     refetchInterval: options?.refetchInterval ?? false,
     refetchIntervalInBackground: false,
+    // S32-B: the staff desk re-reads an open conversation when the window regains focus (at most every 30 s).
+    ...(options?.refreshOnFocus ? { refetchOnWindowFocus: true, staleTime: 30_000 } : {}),
   });
 }
 

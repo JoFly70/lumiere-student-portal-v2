@@ -9,7 +9,7 @@ import { ApiError } from "../client/src/lib/api";
 import { I18nProvider, translate, type Language } from "../client/src/i18n";
 import { overdueByLabel, staffRowAge } from "../client/src/components/support/support-presentation";
 import { StatusHistory, TicketRow, recoveryText, tilesFor } from "../client/src/components/support/staff-support-desk";
-import { STAFF_QUEUE_REFRESH_MS } from "../client/src/hooks/use-tickets";
+import { STAFF_QUEUE_REFRESH_MS, STAFF_STATS_REFRESH_MS } from "../client/src/hooks/use-tickets";
 import { SUPPORT_NOW } from "./helpers/support-ui-fixtures";
 import { s32StaffSupportEn, s32StaffSupportFr } from "../client/src/i18n/modules/s32-staff-support";
 
@@ -86,11 +86,13 @@ describe("queue tiles and refresh", () => {
     expect(tilesFor(true).map((x) => x.queue)).toContain("unassigned");
     expect(tilesFor(false).map((x) => x.queue)).not.toContain("unassigned");
   });
-  it("polls the queue every 60 seconds, only while the tab is visible", () => {
-    expect(STAFF_QUEUE_REFRESH_MS).toBe(60_000);
+  it("refreshes lightly while the tab is visible (queue 2 min, counters 5 min, open ticket on focus)", () => {
+    expect(STAFF_QUEUE_REFRESH_MS).toBe(120_000);
+    expect(STAFF_STATS_REFRESH_MS).toBe(300_000);
     const desk = readFileSync("client/src/components/support/staff-support-desk.tsx", "utf8");
     expect(desk).toContain("useTickets(filters, { refetchInterval: STAFF_QUEUE_REFRESH_MS })");
-    expect(desk).toContain("useTicketStats(true, { refetchInterval: STAFF_QUEUE_REFRESH_MS })");
+    expect(desk).toContain("useTicketStats(true, { refetchInterval: STAFF_STATS_REFRESH_MS })");
+    expect(desk).toContain("useTicket(ticketId, { refreshOnFocus: true })");
     const hook = readFileSync("client/src/hooks/use-tickets.ts", "utf8");
     expect(hook).toContain("refetchIntervalInBackground: false");
   });

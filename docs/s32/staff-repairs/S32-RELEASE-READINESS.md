@@ -52,3 +52,23 @@ curl -fsSL https://raw.githubusercontent.com/JoFly70/lumiere-student-portal-v2/c
 ## 4. Genuine blockers
 
 None in code. The only step S32 cannot do itself is **running the S26 runner in the production Replit Shell**. Production secrets live there, and this session cannot reach the live workspace. Production is **not published** until the owner runs the command above and hosted acceptance passes.
+
+## 5. Live release log
+
+### `fbdc30b` (published 2026-11-01 22:19 UTC)
+
+- **Runner:** sync, build and provision passed; schema steps skipped (already applied); ready_to_publish at 22:16. Published through the Replit deployment.
+- **Live check:** `/health` reported `release: fbdc30b…`, database ok.
+- **Hosted acceptance: FAIL.** 57/59 required checks passed and 2 failed; 19/27 optional checks passed.
+  - **Required failures (2):**
+    - `admin.owner-ai-answer-en` and `admin.owner-ai-draft-reply-fr`: "provider_error: Spark did not answer".
+    - The student assistant also reported "the AI model was unavailable" in the same run.
+    - The AI provider adapter, model pin, config and Owner AI service are unchanged since `31c3a1f` (which passed); S32 changed only the citation paths. This points to the AI provider being unavailable at that time, not a code change.
+  - **Optional failures (8):**
+    - `browser.admin.*` from the support desk onwards showed the sign-in form.
+    - The run used 104 API requests against the server's 100 per 15 minutes per IP, with 778 s of budget waits.
+    - Previous releases passed these pages. The cause is most likely the session timing out under rate-limit pressure (the in-browser token refresh is blocked by the harness), but this was not proven.
+    - `browser.student.subjects-tab` is the known outdated check.
+- **Response:** fix-forward release `S32.1`:
+  - The support desk's automatic refresh (SA-37) is lighter: queue every 2 min, counters every 5 min, open ticket on window focus. That is about 10 requests per 15 min instead of about 45, since every `/api` request counts against the shared 100-per-15-minutes per-IP limit.
+  - The new marker gives a fresh acceptance run in a clean rate window.
