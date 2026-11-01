@@ -9,10 +9,11 @@
     <script>
       (function () {
         try {
-          var ids = { lumiere: 0, "lumiere-dark": 1, midnight: 1, monaco: 1, forest: 1, bordeaux: 1, graphite: 1, sandstone: 0, teal: 1 };
+          var ids = { lumiere: 0, "lumiere-dark": 1, monaco: 1, sandstone: 0, ivory: 0, nuit: 1, "monaco-midnight": 1, pearl: 0 };
+          var retired = { midnight: "monaco", forest: "lumiere-dark", bordeaux: "lumiere-dark", graphite: "lumiere-dark", teal: "lumiere-dark" };
           var v = null;
           try { v = localStorage.getItem("lumiere-portal:theme") || localStorage.getItem("theme"); } catch (e) {}
-          if (v === "dark") v = "lumiere-dark"; else if (v === "light") v = null;
+          if (v === "dark") v = "lumiere-dark"; else if (v === "light") v = null; else if (v && Object.prototype.hasOwnProperty.call(retired, v)) v = retired[v];
           if (!v || !Object.prototype.hasOwnProperty.call(ids, v)) v = "lumiere";
           var r = document.documentElement;
           r.setAttribute("data-theme", v);

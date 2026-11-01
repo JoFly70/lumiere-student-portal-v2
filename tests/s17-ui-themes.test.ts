@@ -30,9 +30,9 @@ const memStore = (init: Record<string, string> = {}): ThemeStore & { data: Recor
 const throwing: ThemeStore = { getItem: () => { throw new Error("blocked"); }, setItem: () => { throw new Error("blocked"); } };
 
 describe("theme registry", () => {
-  it("has the nine themes with unique ids and 4-colour swatches", () => {
-    expect(THEMES).toHaveLength(9);
-    expect(new Set(THEMES.map((t) => t.id)).size).toBe(9);
+  it("has the eight themes with unique ids and 4-colour swatches", () => {
+    expect(THEMES).toHaveLength(8);
+    expect(new Set(THEMES.map((t) => t.id)).size).toBe(8);
     for (const t of THEMES) expect(t.swatch).toHaveLength(4);
     expect(DEFAULT_THEME).toBe("lumiere");
   });
@@ -40,6 +40,8 @@ describe("theme registry", () => {
     expect(resolveTheme("monaco")).toBe("monaco");
     expect(resolveTheme("light")).toBe("lumiere");
     expect(resolveTheme("dark")).toBe("lumiere-dark");
+    expect(resolveTheme("midnight")).toBe("monaco");
+    for (const retired of ["forest", "bordeaux", "graphite", "teal"]) expect(resolveTheme(retired)).toBe("lumiere-dark");
     for (const junk of [null, undefined, "", "purple", 3, "__proto__", "constructor"]) expect(resolveTheme(junk)).toBe("lumiere");
   });
   it("applies data-theme and keeps the .dark class in sync", () => {
@@ -66,11 +68,11 @@ describe("theme registry", () => {
   it("stores and reads with the legacy key as fallback, and survives blocked storage", () => {
     const s = memStore({ theme: "dark" });
     expect(storedTheme(s)).toBe("lumiere-dark");
-    saveTheme("teal", s);
-    expect(s.data[THEME_STORAGE_KEY]).toBe("teal");
-    expect(storedTheme(s)).toBe("teal");
+    saveTheme("pearl", s);
+    expect(s.data[THEME_STORAGE_KEY]).toBe("pearl");
+    expect(storedTheme(s)).toBe("pearl");
     expect(storedTheme(throwing)).toBe("lumiere");
-    expect(() => saveTheme("teal", throwing)).not.toThrow();
+    expect(() => saveTheme("pearl", throwing)).not.toThrow();
     expect(storedTheme(null)).toBe("lumiere");
   });
   it("toggle flips between a light and a dark theme", () => {
