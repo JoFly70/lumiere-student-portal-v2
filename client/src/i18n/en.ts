@@ -21,6 +21,11 @@ import { s29CoreEn } from "./modules/s29-core";
 import { s29OpsEn } from "./modules/s29-ops";
 import { s30CalendarEn } from "./modules/s30-calendar";
 import { s30ImportsEn } from "./modules/s30-imports";
+import { s32StaffShellEn } from "./modules/s32-staff-shell";
+import { s32StaffSupportEn } from "./modules/s32-staff-support";
+import { s32StaffBillingEn } from "./modules/s32-staff-billing";
+import { s32StaffAdminEn } from "./modules/s32-staff-admin";
+import { s32StaffOpsEn } from "./modules/s32-staff-ops";
 
 export const en = {
   ...authEn,
@@ -38,6 +43,11 @@ export const en = {
   ...s29OpsEn,
   ...s30CalendarEn,
   ...s30ImportsEn,
+  ...s32StaffShellEn,
+  ...s32StaffSupportEn,
+  ...s32StaffBillingEn,
+  ...s32StaffAdminEn,
+  ...s32StaffOpsEn,
   // Language
   "language.label": "Language",
   "language.en": "English",
