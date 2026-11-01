@@ -51,8 +51,16 @@ describe("CSV row cap", () => {
 describe("XLSX budget and streaming", () => {
   it("measures real inflated sizes: a part that lies about its size is refused", () => {
     expect(() => verifyZipBudget(lyingZip(XLSX_LIMITS.perPartBytes + 1024, 100))).toThrow(XlsxBudgetError);
-    expect(verifyZipBudget(lyingZip(1000, 1000))).toEqual({ entries: 1, expandedBytes: 1000 });
+    expect(verifyZipBudget(lyingZip(1000, 1000))).toMatchObject({ entries: 1, expandedBytes: 1000 });
     expect(() => verifyZipBudget(lyingZip(2 * 1024 * 1024, 10), { maxEntries: 10, perPartBytes: 10 * 1024 * 1024, totalBytes: 1024 * 1024 })).toThrow(/too large/);
+  });
+  it("refuses a part whose local header disagrees with the directory, and only verified parts reach the reader", async () => {
+    const { rebuildStoredZip } = await import("../server/services/s30/imports/xlsx-stream");
+    const z = rebuildStoredZip([{ name: "xl/sharedStrings.xml", data: Buffer.from("<sst/>") }]);
+    expect(verifyZipBudget(z).parts.map((p) => p.name)).toEqual(["xl/sharedStrings.xml"]);
+    const forged = Buffer.from(z);
+    forged.writeUInt16LE(8, 8); // local header now claims "deflate" while the directory says "stored"
+    expect(() => verifyZipBudget(forged)).toThrow(/inconsistent/);
   });
   it("a zip bomb upload gets a fixed client message (no parser text)", async () => {
     await expect(readTable(lyingZip(XLSX_LIMITS.perPartBytes + 1024, 100))).rejects.toMatchObject({ reason: "unreadable", message: "The workbook is too large when expanded or is not a valid .xlsx file." });
