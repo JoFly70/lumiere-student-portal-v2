@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { avatarInitials, safePhotoUrl } from "@/lib/avatar";
 import { cn } from "@/lib/utils";
 import { StaffPill, StatusPill } from "@/components/staff/staff-ui";
+import { translate, useT, type Language } from "@/i18n";
 import type { StatusKey } from "@/pages/student-roadmap-presentation";
 
 export interface DirectoryStudent {
@@ -50,24 +51,24 @@ export const sentence = (raw: string): string => {
   return t.charAt(0).toUpperCase() + t.slice(1);
 };
 
-export function formatMoney(cents: number, currency: string): string {
+export function formatMoney(cents: number, currency: string, language: Language = "en"): string {
   try {
-    return new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: cents % 100 === 0 ? 0 : 2 }).format(cents / 100);
+    return new Intl.NumberFormat(language === "fr" ? "fr-CA" : "en-US", { style: "currency", currency, maximumFractionDigits: cents % 100 === 0 ? 0 : 2 }).format(cents / 100);
   } catch {
     return `${(cents / 100).toFixed(2)} ${currency}`;
   }
 }
 
-export function relativeTime(iso: string | null | undefined, now = Date.now()): string {
-  if (!iso) return "No activity yet";
+export function relativeTime(iso: string | null | undefined, now = Date.now(), language: Language = "en"): string {
+  if (!iso) return translate(language, "s32dir.rel.none");
   const ms = now - new Date(iso).getTime();
-  if (!Number.isFinite(ms)) return "No activity yet";
+  if (!Number.isFinite(ms)) return translate(language, "s32dir.rel.none");
   const day = 86_400_000;
-  if (ms < 3_600_000) return "Just now";
-  if (ms < day) return `${Math.floor(ms / 3_600_000)}h ago`;
-  if (ms < 2 * day) return "Yesterday";
-  if (ms < 30 * day) return `${Math.floor(ms / day)} days ago`;
-  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  if (ms < 3_600_000) return translate(language, "s32dir.rel.now");
+  if (ms < day) return translate(language, "s32dir.rel.hours", { n: Math.floor(ms / 3_600_000) });
+  if (ms < 2 * day) return translate(language, "s32dir.rel.yesterday");
+  if (ms < 30 * day) return translate(language, "s32dir.rel.days", { n: Math.floor(ms / day) });
+  return new Date(iso).toLocaleDateString(language === "fr" ? "fr-CA" : "en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
 export function useDirectoryStudents(search = "") {
@@ -109,6 +110,10 @@ const STATUS: Record<string, { status: StatusKey; label: string }> = {
   paused: { status: "attention", label: "Paused" },
   graduated: { status: "official", label: "Graduated" },
 };
+/** Translated staff-facing label of a student status (the English default is unchanged for tests and callers). */
+export function studentStatusText(status: string, language: Language = "en"): string {
+  return STATUS[status] ? translate(language, `s32dir.status.${status}`) : sentence(status);
+}
 export const STUDENT_STATUS_OPTIONS = [
   { value: "all", label: "All statuses" },
   { value: "lead", label: "Pre-enrollment" },
@@ -117,18 +122,20 @@ export const STUDENT_STATUS_OPTIONS = [
   { value: "graduated", label: "Graduated" },
 ] as const;
 
-export function studentStatusLabel(status: string): string {
-  return STATUS[status]?.label ?? sentence(status);
+export function studentStatusLabel(status: string, language: Language = "en"): string {
+  return studentStatusText(status, language);
 }
 
 export function StudentStatusPill({ status }: { status: string }) {
+  const { language } = useT();
   const m = STATUS[status] ?? { status: "notstarted" as StatusKey, label: sentence(status) };
-  return <StatusPill status={m.status} label={m.label} />;
+  return <StatusPill status={m.status} label={studentStatusText(status, language)} />;
 }
 
 /** The unmistakable synthetic marker shown on every row/header of a demo student. */
 export function DemoPill({ className }: { className?: string }) {
-  return <StaffPill tone="attention" className={cn("shrink-0 uppercase tracking-wide", className)} testId="demo-pill">Demo</StaffPill>;
+  const { t } = useT();
+  return <StaffPill tone="attention" className={cn("shrink-0 uppercase tracking-wide", className)} testId="demo-pill">{t("s32dir.demo")}</StaffPill>;
 }
 
 /** Ticket list rows carry the reporter's user id (not the student id): map it through the student's linked login. */

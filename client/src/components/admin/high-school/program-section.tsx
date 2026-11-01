@@ -8,68 +8,72 @@ import { Input } from "@/components/ui/input";
 import { BUILT_IN_TEMPLATES, GENERIC_SCHOOL_DESCRIPTION, HS_ENROLLMENT_STATUSES, formatHalfUnits, latestTemplateVersions, type HsCurriculumTemplate, type HsEnrollmentSummary } from "@shared/high-school-contract";
 import { adminHighSchoolApi, useHsTemplates } from "@/lib/admin-high-school-api";
 import {
-  CLOSED_RECORD_TEXT, createEnrollmentBody, disclosureGate, disclosurePreview, enrollmentTimeline, evidenceGate, formatDate, isOpenEnrollment, noteGate, statusLabel, templateOptionLabel,
+  CLOSED_RECORD_TEXT, createEnrollmentBody, disclosureGate, disclosurePreview, enrollmentTimeline, evidenceGate, isOpenEnrollment, noteGate, statusLabel,
   updateEnrollmentBody, validateEnrollmentForm, type EnrollmentForm,
 } from "@/lib/admin-high-school-logic";
 import { ActionMessage, EvidenceSelect, FIELD_CLASS, FormPanel, Field, GatedButton, Notice, Pill, RecordButton, SectionCard, SectionHeading, useOpenForm, type OpenForm, type SectionProps } from "./shared";
 import { useStaffAction } from "./use-staff-action";
+import { useHs } from "./hs-i18n";
 
 const EMPTY_FORM: EnrollmentForm = { templateKey: "", templateVersion: 1, status: "planned", startedOn: "", targetCompletionDate: "", overrideCredits: "", overrideReason: "" };
 
 export function CreateEnrollmentCard({ studentId, templates, hasOpen, form: openForm }: { studentId: string; templates: readonly HsCurriculumTemplate[]; hasOpen: boolean; form?: OpenForm }) {
+  const { t, fc } = useHs();
   const own = useOpenForm("all");
   const panel = openForm ?? own;
   const [form, setForm] = useState<EnrollmentForm>({ ...EMPTY_FORM, templateKey: templates[0]?.templateKey ?? "", templateVersion: templates[0]?.version ?? 1 });
-  const action = useStaffAction(studentId, (body: unknown) => adminHighSchoolApi.createEnrollment(studentId, body), "High school program created.");
-  const tpl = templates.find((t) => t.templateKey === form.templateKey && t.version === form.templateVersion) ?? templates[0];
+  const action = useStaffAction(studentId, (body: unknown) => adminHighSchoolApi.createEnrollment(studentId, body), t("s32dir.hs.p.created"));
+  const tpl = templates.find((x) => x.templateKey === form.templateKey && x.version === form.templateVersion) ?? templates[0];
+  const tplLabel = (x: Pick<HsCurriculumTemplate, "title" | "version" | "totalRequiredHalfUnits">) => t("s32dir.hs.p.tpl.opt", { title: x.title, v: x.version, n: fc(x.totalRequiredHalfUnits) });
   const problem = validateEnrollmentForm(form);
   const gate = hasOpen
-    ? { enabled: false, reason: "This student already has an open high school program. Close it (withdrawn, transferred out or completed) before starting another." }
+    ? { enabled: false, reason: t("s32dir.hs.p.hasOpen") }
     : problem ? { enabled: false, reason: problem } : { enabled: true, reason: null };
   const set = <K extends keyof EnrollmentForm>(k: K, v: EnrollmentForm[K]) => setForm((f) => ({ ...f, [k]: v }));
   return (
-    <SectionCard testId="create-enrollment" title="Create high school program" description="A student can hold several programs over time, but only one open high school program at once."
-      action={<RecordButton form={panel} id="create">Create high school program</RecordButton>}>
+    <SectionCard testId="create-enrollment" title={t("s32dir.hs.p.create")} description={t("s32dir.hs.p.create.desc")}
+      action={<RecordButton form={panel} id="create">{t("s32dir.hs.p.create")}</RecordButton>}>
       <FormPanel form={panel} id="create" className="grid gap-4 md:grid-cols-2">
-        <Field id="hs-template" label="Curriculum template and version" hint={tpl ? `${formatHalfUnits(tpl.totalRequiredHalfUnits)} credits required by default${tpl.jurisdiction ? ` (${tpl.jurisdiction})` : ""}.` : undefined}>
+        <Field id="hs-template" label={t("s32dir.hs.p.tpl.label")} hint={tpl ? t("s32dir.hs.p.tpl.hint", { n: fc(tpl.totalRequiredHalfUnits), j: tpl.jurisdiction ? ` (${tpl.jurisdiction})` : "" }) : undefined}>
           <select id="hs-template" className={FIELD_CLASS} aria-describedby="hs-template-hint" value={`${form.templateKey}@${form.templateVersion}`}
             onChange={(e) => { const [k, v] = e.target.value.split("@"); setForm((f) => ({ ...f, templateKey: k ?? "", templateVersion: Number(v) || 1 })); }}>
-            {templates.map((t) => <option key={`${t.templateKey}@${t.version}`} value={`${t.templateKey}@${t.version}`}>{templateOptionLabel(t)}</option>)}
+            {templates.map((tp) => <option key={`${tp.templateKey}@${tp.version}`} value={`${tp.templateKey}@${tp.version}`}>{tplLabel(tp)}</option>)}
           </select>
         </Field>
-        <Field id="hs-status" label="Starting status">
+        <Field id="hs-status" label={t("s32dir.hs.p.startStatus")}>
           <select id="hs-status" className={FIELD_CLASS} value={form.status} onChange={(e) => set("status", e.target.value as "planned" | "active")}>
-            <option value="planned">Planned (not yet confirmed by the school)</option>
-            <option value="active">Active (enrolled)</option>
+            <option value="planned">{t("s32dir.hs.p.opt.planned")}</option>
+            <option value="active">{t("s32dir.hs.p.opt.active")}</option>
           </select>
         </Field>
-        <Field id="hs-started" label="Start date (optional)"><Input id="hs-started" type="date" value={form.startedOn} onChange={(e) => set("startedOn", e.target.value)} /></Field>
-        <Field id="hs-target" label="Target completion date (optional)" hint="A target, not a guarantee."><Input id="hs-target" type="date" value={form.targetCompletionDate} onChange={(e) => set("targetCompletionDate", e.target.value)} aria-describedby="hs-target-hint" /></Field>
+        <Field id="hs-started" label={t("s32dir.hs.p.startDate")}><Input id="hs-started" type="date" value={form.startedOn} onChange={(e) => set("startedOn", e.target.value)} /></Field>
+        <Field id="hs-target" label={t("s32dir.hs.p.targetDate.opt")} hint={t("s32dir.hs.targetHint")}><Input id="hs-target" type="date" value={form.targetCompletionDate} onChange={(e) => set("targetCompletionDate", e.target.value)} aria-describedby="hs-target-hint" /></Field>
         <fieldset className="rounded-md border bg-background p-3 md:col-span-2">
-          <legend className="px-1 text-sm font-medium">Total-required exception (optional)</legend>
-          <p className="mb-3 text-xs text-muted-foreground">Leave blank to use the template total{tpl ? ` (${formatHalfUnits(tpl.totalRequiredHalfUnits)})` : ""}. Use for a state requirement such as 22 credits; a reason is required and kept in the record.</p>
+          <legend className="px-1 text-sm font-medium">{t("s32dir.hs.p.exc.legend")}</legend>
+          <p className="mb-3 text-xs text-muted-foreground">{t("s32dir.hs.p.exc.help", { tot: tpl ? ` (${fc(tpl.totalRequiredHalfUnits)})` : "" })}</p>
           <div className="grid gap-4 md:grid-cols-[10rem_1fr]">
-            <Field id="hs-override" label="Total credits"><Input id="hs-override" inputMode="decimal" placeholder="e.g. 22" value={form.overrideCredits} onChange={(e) => set("overrideCredits", e.target.value)} /></Field>
-            <Field id="hs-override-reason" label="Reason for the exception"><Input id="hs-override-reason" value={form.overrideReason} onChange={(e) => set("overrideReason", e.target.value)} placeholder="Why this student's total differs" /></Field>
+            <Field id="hs-override" label={t("s32dir.hs.p.exc.credits")}><Input id="hs-override" inputMode="decimal" placeholder={t("s32dir.hs.p.exc.creditsPh")} value={form.overrideCredits} onChange={(e) => set("overrideCredits", e.target.value)} /></Field>
+            <Field id="hs-override-reason" label={t("s32dir.hs.p.exc.reason")}><Input id="hs-override-reason" value={form.overrideReason} onChange={(e) => set("overrideReason", e.target.value)} placeholder={t("s32dir.hs.p.exc.reasonPh")} /></Field>
           </div>
         </fieldset>
         <div className="space-y-3 md:col-span-2">
           <ActionMessage message={action.message} />
-          <GatedButton id="hs-create" gate={gate} pending={action.pending} onClick={() => tpl && action.run(createEnrollmentBody(form, tpl.totalRequiredHalfUnits))}>Create program</GatedButton>
+          <GatedButton id="hs-create" gate={gate} pending={action.pending} onClick={() => tpl && action.run(createEnrollmentBody(form, tpl.totalRequiredHalfUnits))}>{t("s32dir.hs.p.createBtn")}</GatedButton>
         </div>
       </FormPanel>
-      {!panel.isOpen("create") && hasOpen ? <p className="text-sm text-muted-foreground">This student already has an open high school program. Close it (withdrawn, transferred out or completed) before starting another.</p> : null}
+      {!panel.isOpen("create") && hasOpen ? <p className="text-sm text-muted-foreground">{t("s32dir.hs.p.hasOpen")}</p> : null}
     </SectionCard>
   );
 }
 
 /** The target completion date is deliberately NOT here: it is shown once in the summary strip and edited in the form. */
 function EnrollmentFacts({ e, templateTitle }: { e: HsEnrollmentSummary; templateTitle: string }) {
+  const { t, x, fc, date } = useHs();
   const rows: [string, string][] = [
-    ["Curriculum", `${templateTitle} · version ${e.templateVersion}`],
-    ["Total required", `${formatHalfUnits(e.totalRequiredHalfUnits)} credits${e.jurisdiction ? ` · ${e.jurisdiction}` : ""}`],
-    ["Started", formatDate(e.startedOn)],
-    ["School reference", e.schoolStudentRef ?? "Not assigned"],
+    [t("s32dir.hs.p.fact.curr"), t("s32dir.hs.p.fact.currVal", { title: templateTitle, v: e.templateVersion })],
+    [t("s32dir.hs.p.fact.total"), t("s32dir.hs.p.fact.totalVal", { n: fc(e.totalRequiredHalfUnits), j: e.jurisdiction ? ` · ${e.jurisdiction}` : "" })],
+    [t("s32dir.hs.p.fact.started"), date(e.startedOn)],
+    [t("s32dir.hs.p.fact.ref"), e.schoolStudentRef ?? x("Not assigned")],
   ];
   return (
     <dl className="grid grid-cols-2 gap-x-6 gap-y-4 text-sm md:grid-cols-4">
@@ -79,41 +83,43 @@ function EnrollmentFacts({ e, templateTitle }: { e: HsEnrollmentSummary; templat
 }
 
 function EnrollmentEditor({ studentId, e }: { studentId: string; e: HsEnrollmentSummary }) {
+  const { t, x } = useHs();
   const [status, setStatus] = useState<string>(e.status);
   const [target, setTarget] = useState(e.targetCompletionDate ?? "");
   const [schoolRef, setSchoolRef] = useState(e.schoolStudentRef ?? "");
   const [note, setNote] = useState("");
-  const action = useStaffAction(studentId, (body: unknown) => adminHighSchoolApi.updateEnrollment(studentId, e.id, body), "Program updated.");
+  const action = useStaffAction(studentId, (body: unknown) => adminHighSchoolApi.updateEnrollment(studentId, e.id, body), t("s32dir.hs.p.updated"));
   const refChanged = schoolRef.trim() !== (e.schoolStudentRef ?? "");
   const changed = status !== e.status || target !== (e.targetCompletionDate ?? "") || refChanged;
   const gate = !changed ? { enabled: false, reason: "No changes to save." } : noteGate(note);
   const patch = { status, targetCompletionDate: target || null, ...(refChanged ? { schoolStudentRef: schoolRef.trim() || null } : {}) };
   return (
     <form className="grid gap-4 md:grid-cols-2" onSubmit={(ev) => { ev.preventDefault(); if (gate.enabled) action.run(updateEnrollmentBody(e.revision, patch, note), () => setNote("")); }}>
-      <Field id="hs-edit-status" label="Status">
+      <Field id="hs-edit-status" label={t("s32dir.hs.p.status")}>
         <select id="hs-edit-status" className={FIELD_CLASS} value={status} onChange={(ev) => setStatus(ev.target.value)}>
-          {HS_ENROLLMENT_STATUSES.map((s) => <option key={s} value={s}>{statusLabel(s)}</option>)}
+          {HS_ENROLLMENT_STATUSES.map((s) => <option key={s} value={s}>{x(statusLabel(s))}</option>)}
         </select>
       </Field>
-      <Field id="hs-edit-target" label="Target completion date" hint="A target, not a guarantee."><Input id="hs-edit-target" type="date" value={target} aria-describedby="hs-edit-target-hint" onChange={(ev) => setTarget(ev.target.value)} /></Field>
-      <Field id="hs-edit-school-ref" label="School student reference (optional)" hint="The number the school issued. Staff-only." className="md:col-span-2"><Input id="hs-edit-school-ref" value={schoolRef} maxLength={80} aria-describedby="hs-edit-school-ref-hint" onChange={(ev) => setSchoolRef(ev.target.value)} /></Field>
-      <Field id="hs-edit-note" label="Note for the record (required)" className="md:col-span-2"><Input id="hs-edit-note" value={note} onChange={(ev) => setNote(ev.target.value)} placeholder="Why this change" /></Field>
+      <Field id="hs-edit-target" label={t("s32dir.hs.p.targetDate")} hint={t("s32dir.hs.targetHint")}><Input id="hs-edit-target" type="date" value={target} aria-describedby="hs-edit-target-hint" onChange={(ev) => setTarget(ev.target.value)} /></Field>
+      <Field id="hs-edit-school-ref" label={t("s32dir.hs.p.schoolRef")} hint={t("s32dir.hs.p.schoolRef.hint")} className="md:col-span-2"><Input id="hs-edit-school-ref" value={schoolRef} maxLength={80} aria-describedby="hs-edit-school-ref-hint" onChange={(ev) => setSchoolRef(ev.target.value)} /></Field>
+      <Field id="hs-edit-note" label={t("s32dir.hs.note.required")} className="md:col-span-2"><Input id="hs-edit-note" value={note} onChange={(ev) => setNote(ev.target.value)} placeholder={t("s32dir.hs.p.whyChange")} /></Field>
       <div className="space-y-3 md:col-span-2">
         <ActionMessage message={action.message} />
-        <GatedButton id="hs-edit-save" type="submit" gate={gate} pending={action.pending}>Save changes</GatedButton>
+        <GatedButton id="hs-edit-save" type="submit" gate={gate} pending={action.pending}>{t("s32dir.hs.p.saveChanges")}</GatedButton>
       </div>
     </form>
   );
 }
 
 export function DisclosureCard({ studentId, e, form: openForm }: { studentId: string; e: HsEnrollmentSummary; form?: OpenForm }) {
+  const { t, x } = useHs();
   const own = useOpenForm("all");
   const panel = openForm ?? own;
   const closed = !isOpenEnrollment(e);
   const [disclosed, setDisclosed] = useState(e.institutionDisclosed);
   const [name, setName] = useState(e.awardingSchoolName ?? "");
   const [note, setNote] = useState("");
-  const action = useStaffAction(studentId, (body: unknown) => adminHighSchoolApi.updateEnrollment(studentId, e.id, body), "Disclosure setting saved.");
+  const action = useStaffAction(studentId, (body: unknown) => adminHighSchoolApi.updateEnrollment(studentId, e.id, body), t("s32dir.hs.p.disc.saved"));
   const dg = disclosureGate(e, disclosed, name, GENERIC_SCHOOL_DESCRIPTION);
   const now = disclosurePreview(e.status, e.institutionDisclosed, e.awardingSchoolName, GENERIC_SCHOOL_DESCRIPTION);
   const after = disclosurePreview(e.status, disclosed, name, GENERIC_SCHOOL_DESCRIPTION);
@@ -121,25 +127,25 @@ export function DisclosureCard({ studentId, e, form: openForm }: { studentId: st
   const ng = noteGate(note);
   const gate = !changed ? { enabled: false, reason: "No changes to save." } : !dg.enabled ? dg : ng;
   return (
-    <SectionCard testId="disclosure-card" title="Institution disclosure" description="The awarding school's name is confidential. Until you disclose it, the student sees a generic description instead."
-      action={closed ? null : <RecordButton form={panel} id="disclosure" variant="outline">Change disclosure</RecordButton>}>
+    <SectionCard testId="disclosure-card" title={t("s32dir.hs.p.disc.title")} description={t("s32dir.hs.p.disc.desc")}
+      action={closed ? null : <RecordButton form={panel} id="disclosure" variant="outline">{t("s32dir.hs.p.disc.change")}</RecordButton>}>
       <div className="rounded-md border bg-muted/40 p-3 text-sm" data-testid="disclosure-preview">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">The student currently sees</p>
-        <p className="mt-1 font-medium">{now.sees}</p>
-        <p className="text-xs text-muted-foreground">{now.why}</p>
-        {!closed && (disclosed !== e.institutionDisclosed || name !== (e.awardingSchoolName ?? "")) ? <p className="mt-2 text-xs text-muted-foreground">After saving: <span className="font-medium text-foreground">{after.sees}</span>. {after.why}</p> : null}
+        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t("s32dir.hs.p.disc.sees")}</p>
+        <p className="mt-1 font-medium">{x(now.sees)}</p>
+        <p className="text-xs text-muted-foreground">{x(now.why)}</p>
+        {!closed && (disclosed !== e.institutionDisclosed || name !== (e.awardingSchoolName ?? "")) ? <p className="mt-2 text-xs text-muted-foreground">{t("s32dir.hs.p.disc.after")} <span className="font-medium text-foreground">{x(after.sees)}</span>. {x(after.why)}</p> : null}
       </div>
-      {closed ? <p className="text-sm text-muted-foreground" data-testid="closed-record">{CLOSED_RECORD_TEXT} Disclosure can no longer be changed.</p> : (
+      {closed ? <p className="text-sm text-muted-foreground" data-testid="closed-record">{x(CLOSED_RECORD_TEXT)} {t("s32dir.hs.p.disc.closed")}</p> : (
         <FormPanel form={panel} id="disclosure" className="space-y-4">
           <div className="flex items-center gap-3">
             <Checkbox id="hs-disclosed" checked={disclosed} onCheckedChange={(v) => setDisclosed(v === true)} />
-            <label htmlFor="hs-disclosed" className="text-sm font-medium">Disclose the awarding school's name to the student</label>
+            <label htmlFor="hs-disclosed" className="text-sm font-medium">{t("s32dir.hs.p.disc.check")}</label>
           </div>
-          <Field id="hs-school-name" label="Awarding school name (staff-only until disclosed)"><Input id="hs-school-name" value={name} onChange={(ev) => setName(ev.target.value)} placeholder="Name as it appears on the diploma" /></Field>
-          <Field id="hs-disclosure-note" label="Note for the record (required)"><Input id="hs-disclosure-note" value={note} onChange={(ev) => setNote(ev.target.value)} placeholder="e.g. Enrollment confirmed by the school on Nov 2, 2026" /></Field>
+          <Field id="hs-school-name" label={t("s32dir.hs.p.disc.name")}><Input id="hs-school-name" value={name} onChange={(ev) => setName(ev.target.value)} placeholder={t("s32dir.hs.p.disc.namePh")} /></Field>
+          <Field id="hs-disclosure-note" label={t("s32dir.hs.note.required")}><Input id="hs-disclosure-note" value={note} onChange={(ev) => setNote(ev.target.value)} placeholder={t("s32dir.hs.p.disc.notePh")} /></Field>
           <ActionMessage message={action.message} />
           <GatedButton id="hs-disclosure-save" gate={gate} pending={action.pending}
-            onClick={() => action.run(updateEnrollmentBody(e.revision, { institutionDisclosed: disclosed, awardingSchoolName: name.trim() ? name.trim() : null }, note), () => setNote(""))}>Save disclosure</GatedButton>
+            onClick={() => action.run(updateEnrollmentBody(e.revision, { institutionDisclosed: disclosed, awardingSchoolName: name.trim() ? name.trim() : null }, note), () => setNote(""))}>{t("s32dir.hs.p.disc.save")}</GatedButton>
         </FormPanel>
       )}
     </SectionCard>
@@ -147,32 +153,33 @@ export function DisclosureCard({ studentId, e, form: openForm }: { studentId: st
 }
 
 function HistoricalGraduateCard({ studentId, templates, isAdmin, docs, form: panel }: { studentId: string; templates: readonly HsCurriculumTemplate[]; isAdmin: boolean; docs: SectionProps["docs"]; form: OpenForm }) {
+  const { t, fc } = useHs();
   const [tplIdx, setTplIdx] = useState(0);
   const [conferredOn, setConferredOn] = useState("");
   const [school, setSchool] = useState("");
   const [diploma, setDiploma] = useState("");
   const [transcript, setTranscript] = useState("");
   const [note, setNote] = useState("");
-  const action = useStaffAction(studentId, (body: unknown) => adminHighSchoolApi.historicalGraduate(studentId, body), "Historical graduate recorded.");
-  const t = templates[tplIdx] ?? templates[0];
+  const action = useStaffAction(studentId, (body: unknown) => adminHighSchoolApi.historicalGraduate(studentId, body), t("s32dir.hs.p.hg.saved"));
+  const tp = templates[tplIdx] ?? templates[0];
   const gate = !isAdmin ? { enabled: false, reason: "Only an administrator can import a historical graduate." }
     : !conferredOn || school.trim().length < 2 ? { enabled: false, reason: "Enter the conferral date and the awarding school." }
     : !evidenceGate(diploma, docs, "diploma").enabled || !evidenceGate(transcript, docs, "transcript").enabled ? { enabled: false, reason: "Select a verified diploma and a verified transcript as evidence." }
     : noteGate(note);
   return (
-    <SectionCard testId="historical-graduate" title="Import a historical graduate" description="For a student who already holds a diploma. Only confirmed records are imported: the diploma and the transcript must be verified Documents. No credit is calculated from this import."
-      action={<RecordButton form={panel} id="historical" variant="outline">Record historical graduate</RecordButton>}>
+    <SectionCard testId="historical-graduate" title={t("s32dir.hs.p.hg.title")} description={t("s32dir.hs.p.hg.desc")}
+      action={<RecordButton form={panel} id="historical" variant="outline">{t("s32dir.hs.p.hg.record")}</RecordButton>}>
       <FormPanel form={panel} id="historical" className="grid gap-4 md:grid-cols-2">
-        <Field id="hg-template" label="Template"><select id="hg-template" className={FIELD_CLASS} value={tplIdx} onChange={(e) => setTplIdx(Number(e.target.value))}>{templates.map((x, i) => <option key={`${x.templateKey}@${x.version}`} value={i}>{templateOptionLabel(x)}</option>)}</select></Field>
-        <Field id="hg-date" label="Diploma conferred on"><Input id="hg-date" type="date" value={conferredOn} onChange={(e) => setConferredOn(e.target.value)} /></Field>
-        <Field id="hg-school" label="Awarding school" className="md:col-span-2"><Input id="hg-school" value={school} onChange={(e) => setSchool(e.target.value)} /></Field>
-        <EvidenceSelect id="hg-diploma" label="Diploma (verified document)" value={diploma} onChange={setDiploma} docs={docs} purpose="diploma" />
-        <EvidenceSelect id="hg-transcript" label="Transcript (verified document)" value={transcript} onChange={setTranscript} docs={docs} purpose="transcript" />
-        <Field id="hg-note" label="Note for the record (required)" className="md:col-span-2"><Input id="hg-note" value={note} onChange={(e) => setNote(e.target.value)} /></Field>
+        <Field id="hg-template" label={t("s32dir.hs.p.hg.template")}><select id="hg-template" className={FIELD_CLASS} value={tplIdx} onChange={(e) => setTplIdx(Number(e.target.value))}>{templates.map((x, i) => <option key={`${x.templateKey}@${x.version}`} value={i}>{t("s32dir.hs.p.tpl.opt", { title: x.title, v: x.version, n: fc(x.totalRequiredHalfUnits) })}</option>)}</select></Field>
+        <Field id="hg-date" label={t("s32dir.hs.p.hg.conferred")}><Input id="hg-date" type="date" value={conferredOn} onChange={(e) => setConferredOn(e.target.value)} /></Field>
+        <Field id="hg-school" label={t("s32dir.hs.p.hg.school")} className="md:col-span-2"><Input id="hg-school" value={school} onChange={(e) => setSchool(e.target.value)} /></Field>
+        <EvidenceSelect id="hg-diploma" label={t("s32dir.hs.docDiploma")} value={diploma} onChange={setDiploma} docs={docs} purpose="diploma" />
+        <EvidenceSelect id="hg-transcript" label={t("s32dir.hs.docTranscript")} value={transcript} onChange={setTranscript} docs={docs} purpose="transcript" />
+        <Field id="hg-note" label={t("s32dir.hs.note.required")} className="md:col-span-2"><Input id="hg-note" value={note} onChange={(e) => setNote(e.target.value)} /></Field>
         <div className="space-y-3 md:col-span-2">
           <ActionMessage message={action.message} />
           <GatedButton id="hg-save" gate={gate} pending={action.pending}
-            onClick={() => t && action.run({ templateKey: t.templateKey, templateVersion: t.version, conferredOn, awardingSchoolName: school.trim(), diplomaEvidenceDocumentId: diploma, transcriptEvidenceDocumentId: transcript, note: note.trim() })}>Record historical graduate</GatedButton>
+            onClick={() => tp && action.run({ templateKey: tp.templateKey, templateVersion: tp.version, conferredOn, awardingSchoolName: school.trim(), diplomaEvidenceDocumentId: diploma, transcriptEvidenceDocumentId: transcript, note: note.trim() })}>{t("s32dir.hs.p.hg.record")}</GatedButton>
         </div>
       </FormPanel>
     </SectionCard>
@@ -180,6 +187,7 @@ function HistoricalGraduateCard({ studentId, templates, isAdmin, docs, form: pan
 }
 
 export function ProgramSection({ state, studentId, isAdmin, docs, templates, initialOpenForm }: SectionProps & { templates?: readonly HsCurriculumTemplate[] }) {
+  const { t, x, fc } = useHs();
   const query = useHsTemplates();
   const list = templates ?? query.data?.templates ?? BUILT_IN_TEMPLATES;
   const timeline = enrollmentTimeline(state);
@@ -190,43 +198,43 @@ export function ProgramSection({ state, studentId, isAdmin, docs, templates, ini
   const form = useOpenForm(initialOpenForm !== undefined ? initialOpenForm : state.enrollments.length === 0 && !cur ? "create" : null);
   return (
     <section aria-labelledby="hs-program-h" className="space-y-5">
-      <SectionHeading id="hs-program-h" title="High school program">
-        A high school program is separate from any university degree and has its own credits, roadmap and diploma.
+      <SectionHeading id="hs-program-h" title={t("s32dir.hs.p.heading")}>
+        {t("s32dir.hs.p.heading.desc")}
       </SectionHeading>
       {state.hasUniversityProgram ? (
         <Notice tone="info" testId="university-indicator">
-          <span className="inline-flex items-center gap-2 font-medium"><University className="h-4 w-4" aria-hidden="true" />This student also has a university degree program.</span>
-          <span className="block text-muted-foreground">High school credits never count toward the degree and are never mixed with university semester credits.</span>
+          <span className="inline-flex items-center gap-2 font-medium"><University className="h-4 w-4" aria-hidden="true" />{t("s32dir.hs.p.uni.a")}</span>
+          <span className="block text-muted-foreground">{t("s32dir.hs.p.uni.b")}</span>
         </Notice>
       ) : null}
 
       {cur ? (
         <SectionCard testId="current-enrollment"
           title={<span className="flex items-center gap-2"><GraduationCap className="h-4 w-4 shrink-0" aria-hidden="true" /><span className="min-w-0">{cur.programTitle}</span></span>}
-          description="Current high school program"
+          description={t("s32dir.hs.p.current")}
           action={
             <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="outline">{statusLabel(cur.status)}</Badge>
-              {cur.isHistorical ? <Pill>Historical graduate</Pill> : null}
-              {cur.requiredOverrideReason ? <Pill tone="warn">Credit exception</Pill> : null}
-              {curOpen && !cur.isHistorical ? <RecordButton form={form} id="edit-enrollment" variant="outline">Edit program</RecordButton> : null}
+              <Badge variant="outline">{x(statusLabel(cur.status))}</Badge>
+              {cur.isHistorical ? <Pill>{t("s32dir.hs.p.historical")}</Pill> : null}
+              {cur.requiredOverrideReason ? <Pill tone="warn">{t("s32dir.hs.p.exception")}</Pill> : null}
+              {curOpen && !cur.isHistorical ? <RecordButton form={form} id="edit-enrollment" variant="outline">{t("s32dir.hs.p.edit")}</RecordButton> : null}
             </div>
           }>
           <EnrollmentFacts e={cur} templateTitle={cur.programTitle} />
-          {cur.requiredOverrideReason ? <Notice tone="warn">Total required set to {formatHalfUnits(cur.totalRequiredHalfUnits)} credits instead of the template default. Reason: {cur.requiredOverrideReason}</Notice> : null}
-          {cur.isHistorical ? <p className="text-sm text-muted-foreground">Imported with confirmed records only; the program cannot be edited here.</p>
-            : !curOpen ? <p className="text-sm text-muted-foreground" data-testid="closed-record">{CLOSED_RECORD_TEXT} A {statusLabel(cur.status).toLowerCase()} enrollment can no longer be edited.</p>
+          {cur.requiredOverrideReason ? <Notice tone="warn">{t("s32dir.hs.p.overrideNote", { n: fc(cur.totalRequiredHalfUnits), reason: cur.requiredOverrideReason })}</Notice> : null}
+          {cur.isHistorical ? <p className="text-sm text-muted-foreground">{t("s32dir.hs.p.importedOnly")}</p>
+            : !curOpen ? <p className="text-sm text-muted-foreground" data-testid="closed-record">{x(CLOSED_RECORD_TEXT)} {t("s32dir.hs.p.closedEdit", { status: x(statusLabel(cur.status)).toLowerCase() })}</p>
             : <FormPanel form={form} id="edit-enrollment"><EnrollmentEditor studentId={studentId} e={cur} /></FormPanel>}
         </SectionCard>
       ) : null}
 
-      <SectionCard testId="enrollment-history" title="Enrollment history" description="Every high school enrollment this student has held, newest first.">
-        {timeline.length === 0 ? <p className="text-sm text-muted-foreground">No high school enrollments yet.</p> : (
+      <SectionCard testId="enrollment-history" title={t("s32dir.hs.p.hist.title")} description={t("s32dir.hs.p.hist.desc")}>
+        {timeline.length === 0 ? <p className="text-sm text-muted-foreground">{t("s32dir.hs.p.hist.empty")}</p> : (
           <ol className="divide-y rounded-md border">
-            {timeline.map((t) => (
-              <li key={t.id} className="flex flex-wrap items-center justify-between gap-2 px-3 py-3 text-sm" aria-current={t.selected ? "true" : undefined}>
-                <div className="min-w-0"><p className="font-medium">{t.label}</p><p className="text-xs text-muted-foreground">{t.period}</p>{t.note ? <p className="text-xs text-muted-foreground">{t.note}</p> : null}</div>
-                <div className="flex gap-2">{t.selected ? <Pill tone="official">Shown here</Pill> : null}<Pill tone={t.open ? "good" : "neutral"}>{t.status}</Pill></div>
+            {timeline.map((row) => (
+              <li key={row.id} className="flex flex-wrap items-center justify-between gap-2 px-3 py-3 text-sm" aria-current={row.selected ? "true" : undefined}>
+                <div className="min-w-0"><p className="font-medium">{x(row.label)}</p><p className="text-xs text-muted-foreground">{x(row.period)}</p>{row.note ? <p className="text-xs text-muted-foreground">{x(row.note)}</p> : null}</div>
+                <div className="flex gap-2">{row.selected ? <Pill tone="official">{t("s32dir.hs.p.hist.shown")}</Pill> : null}<Pill tone={row.open ? "good" : "neutral"}>{x(row.status)}</Pill></div>
               </li>
             ))}
           </ol>
@@ -236,7 +244,7 @@ export function ProgramSection({ state, studentId, isAdmin, docs, templates, ini
       {cur && !cur.isHistorical ? <DisclosureCard key={`${cur.id}-${cur.revision}`} studentId={studentId} e={cur} form={form} /> : null}
       {!hasOpen ? <CreateEnrollmentCard studentId={studentId} templates={latestTemplateVersions(list)} hasOpen={hasOpen} form={form} /> : null}
       <HistoricalGraduateCard studentId={studentId} templates={list} isAdmin={isAdmin} docs={docs} form={form} />
-      <p className="text-xs text-muted-foreground">Verify documents in <Link href={`/admin/students/${encodeURIComponent(studentId)}#workspace-documents`} className="underline">Documents</Link>; only verified documents can be used as evidence.</p>
+      <p className="text-xs text-muted-foreground">{t("s32dir.hs.p.verify.a")}<Link href={`/admin/students/${encodeURIComponent(studentId)}#workspace-documents`} className="underline">{t("s32dir.hs.p.verify.link")}</Link>{t("s32dir.hs.p.verify.b")}</p>
     </section>
   );
 }

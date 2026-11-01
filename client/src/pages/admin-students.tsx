@@ -16,6 +16,7 @@ import { StaffCard, StaffEmpty, StaffPage, StaffPageHeader, StaffPill, staffFiel
 import { useTickets } from "@/hooks/use-tickets";
 import { apiRequest } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { useT, type TranslationKey } from "@/i18n";
 import { awaitingFor } from "@shared/support-contract";
 import { adminStudentWorkspacePath } from "@/pages/admin-student-workspace-presentation";
 
@@ -26,6 +27,7 @@ const VIEWS = {
   tickets: "Waiting on Lumière",
   overdue: "Payment overdue",
 } as const;
+const viewKey = (v: keyof typeof VIEWS) => `s32dir.stu.view.${v}` as TranslationKey;
 type View = keyof typeof VIEWS;
 
 interface QueueDoc { studentId: string }
@@ -45,6 +47,7 @@ export function parseDirectoryFilters(search: string) {
 const selectCls = cn(staffField, "pr-8");
 
 export default function AdminStudents() {
+  const { t, language } = useT();
   const urlSearch = useSearch();
   const initial = useMemo(() => parseDirectoryFilters(urlSearch), [urlSearch]);
   const [q, setQ] = useState(initial.q);
@@ -110,68 +113,68 @@ export default function AdminStudents() {
   return (
     <StaffPage width="wide" testId="admin-students">
       <StaffPageHeader
-        eyebrow="Staff Portal · Students"
-        title="Students"
-        description={students.data ? `${real.length} student${real.length === 1 ? "" : "s"}${demoCount ? ` · ${demoCount} demo` : ""}. Open a file to see everything about one student in one place.` : "Loading the directory…"}
+        eyebrow={t("s32dir.stu.eyebrow")}
+        title={t("s32dir.stu.title")}
+        description={students.data ? t("s32dir.stu.desc", { count: t(real.length === 1 ? "s32dir.stu.count.one" : "s32dir.stu.count.other", { n: real.length }), demo: demoCount ? t("s32dir.stu.demoCount", { n: demoCount }) : "" }) : t("s32dir.stu.loadingDir")}
         actions={<AddStudentDialog />}
       />
 
-      <section aria-label="Find students" className="space-y-3">
+      <section aria-label={t("s32dir.stu.find")} className="space-y-3">
         <div className="grid gap-2 md:grid-cols-[minmax(0,1.6fr)_repeat(3,minmax(0,1fr))]">
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-student-muted" aria-hidden="true" />
-            <label htmlFor="students-search" className="sr-only">Search students</label>
-            <input id="students-search" className={cn(staffField, "pl-9")} placeholder="Search name, email or student code" value={q} onChange={(e) => setQ(e.target.value)} data-testid="students-search" />
+            <label htmlFor="students-search" className="sr-only">{t("s32dir.stu.search.label")}</label>
+            <input id="students-search" className={cn(staffField, "pl-9")} placeholder={t("s32dir.stu.search.ph")} value={q} onChange={(e) => setQ(e.target.value)} data-testid="students-search" />
           </div>
           <div>
-            <label htmlFor="students-status" className="sr-only">Status</label>
+            <label htmlFor="students-status" className="sr-only">{t("s32dir.stu.status.label")}</label>
             <select id="students-status" className={selectCls} value={status} onChange={(e) => setStatus(e.target.value)} data-testid="students-status">
-              {STUDENT_STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              {STUDENT_STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{t(`s32dir.status.${o.value}` as TranslationKey)}</option>)}
             </select>
           </div>
           <div>
-            <label htmlFor="students-program" className="sr-only">Program</label>
+            <label htmlFor="students-program" className="sr-only">{t("s32dir.stu.program.label")}</label>
             <select id="students-program" className={selectCls} value={program} onChange={(e) => setProgram(e.target.value)} data-testid="students-program">
-              <option value="all">All programs</option>
-              <option value="any">Any program</option>
+              <option value="all">{t("s32dir.stu.program.all")}</option>
+              <option value="any">{t("s32dir.stu.program.any")}</option>
               {programOptions.map((t) => <option key={t} value={t}>{t}</option>)}
-              <option value="none">No program yet</option>
+              <option value="none">{t("s32dir.stu.program.none")}</option>
             </select>
           </div>
           <div>
-            <label htmlFor="students-view" className="sr-only">Show</label>
+            <label htmlFor="students-view" className="sr-only">{t("s32dir.stu.view.label")}</label>
             <select id="students-view" className={selectCls} value={view} onChange={(e) => setView(e.target.value as View)} data-testid="students-view">
-              {(Object.keys(VIEWS) as View[]).map((k) => <option key={k} value={k}>{VIEWS[k]}</option>)}
+              {(Object.keys(VIEWS) as View[]).map((k) => <option key={k} value={k}>{t(viewKey(k))}</option>)}
             </select>
           </div>
         </div>
         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
           <label htmlFor="students-show-demo" className="inline-flex min-h-10 cursor-pointer items-center gap-2 text-sm text-student-ink">
             <input id="students-show-demo" type="checkbox" className="h-4 w-4 accent-[hsl(var(--s-ink))]" checked={showDemo} onChange={(e) => setShowDemo(e.target.checked)} data-testid="students-show-demo" />
-            Show demo students{demoCount ? ` (${demoCount})` : ""}
-            <span className="hidden text-xs text-student-muted sm:inline">· synthetic, never counted in real totals</span>
+            {t("s32dir.stu.showDemo")}{demoCount ? ` (${demoCount})` : ""}
+            <span className="hidden text-xs text-student-muted sm:inline">{t("s32dir.stu.synthetic")}</span>
           </label>
           <p className="flex items-center gap-3 text-sm text-student-muted" aria-live="polite">
-            <span>{rows.length} shown</span>
-            {filtered ? <button type="button" onClick={reset} className="inline-flex min-h-10 items-center gap-1 font-semibold text-student-gold-ink underline-offset-4 hover:underline"><X className="h-3.5 w-3.5" aria-hidden="true" />Clear filters</button> : null}
+            <span>{t(rows.length === 1 ? "s32dir.stu.shown.one" : "s32dir.stu.shown.other", { n: rows.length })}</span>
+            {filtered ? <button type="button" onClick={reset} className="inline-flex min-h-10 items-center gap-1 font-semibold text-student-gold-ink underline-offset-4 hover:underline"><X className="h-3.5 w-3.5" aria-hidden="true" />{t("s32dir.stu.clear")}</button> : null}
           </p>
         </div>
       </section>
 
-      {students.isError ? <p role="alert" className="text-sm text-st-urgent">The students could not be loaded. Reload the page to retry.</p> : null}
-      {students.isLoading ? <div className="space-y-2" role="status" aria-label="Loading students">{[0, 1, 2, 3].map((i) => <div key={i} className="h-[72px] animate-pulse rounded-2xl bg-student-line/60" />)}</div> : null}
+      {students.isError ? <p role="alert" className="text-sm text-st-urgent">{t("s32dir.stu.err")}</p> : null}
+      {students.isLoading ? <div className="space-y-2" role="status" aria-label={t("s32dir.stu.loading")}>{[0, 1, 2, 3].map((i) => <div key={i} className="h-[72px] animate-pulse rounded-2xl bg-student-line/60" />)}</div> : null}
 
       {students.data && rows.length === 0 ? (
-        <StaffEmpty icon={<UsersRound className="h-6 w-6" />} title={filtered ? "No student matches these filters" : "No students yet"}
-          action={filtered ? <button type="button" onClick={reset} className="inline-flex min-h-10 items-center font-semibold text-student-gold-ink underline-offset-4 hover:underline">Clear filters</button> : <AddStudentDialog />}>
-          {filtered ? "Try a different name, or clear the filters to see everyone." : "Add the first student to start their file."}
+        <StaffEmpty icon={<UsersRound className="h-6 w-6" />} title={filtered ? t("s32dir.stu.empty.filtered") : t("s32dir.stu.empty.none")}
+          action={filtered ? <button type="button" onClick={reset} className="inline-flex min-h-10 items-center font-semibold text-student-gold-ink underline-offset-4 hover:underline">{t("s32dir.stu.clear")}</button> : <AddStudentDialog />}>
+          {filtered ? t("s32dir.stu.empty.hint.filtered") : t("s32dir.stu.empty.hint.none")}
         </StaffEmpty>
       ) : null}
 
       {rows.length > 0 ? (
-        <StaffCard padded={false} className="overflow-hidden" aria-label="Student list">
+        <StaffCard padded={false} className="overflow-hidden" aria-label={t("s32dir.stu.list")}>
           <div className="hidden grid-cols-[minmax(0,2fr)_8.5rem_minmax(14rem,2.2fr)_minmax(0,1.3fr)_7rem_5.5rem_1.25rem] gap-4 border-b border-student-line bg-student-gold-soft/50 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-student-muted lg:grid" aria-hidden="true">
-            <span>Student</span><span>Status</span><span>Program</span><span>Needs attention</span><span>Latest activity</span><span className="text-right">Balance</span><span />
+            <span>{t("s32dir.stu.col.student")}</span><span>{t("s32dir.stu.col.status")}</span><span>{t("s32dir.stu.col.program")}</span><span>{t("s32dir.stu.col.attention")}</span><span>{t("s32dir.stu.col.activity")}</span><span className="text-right">{t("s32dir.stu.col.balance")}</span><span />
           </div>
           <ul className="divide-y divide-student-line" data-testid="students-list">
             {rows.map((s) => <StudentRow key={s.id} s={s} f={byId.get(s.id)} docs={docCounts.get(s.id) ?? 0} waiting={waiting.get(s.id) ?? 0} />)}
@@ -179,42 +182,43 @@ export default function AdminStudents() {
         </StaffCard>
       ) : null}
 
-      <p className="flex items-center gap-1.5 text-xs text-student-muted"><ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />Looking for billing across students? <Link href="/staff/billing" className="font-semibold text-student-gold-ink underline-offset-4 hover:underline">Open student billing</Link></p>
+      <p className="flex items-center gap-1.5 text-xs text-student-muted"><ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />{t("s32dir.stu.billing.q")} <Link href="/staff/billing" className="font-semibold text-student-gold-ink underline-offset-4 hover:underline">{t("s32dir.stu.billing.link")}</Link></p>
     </StaffPage>
   );
 }
 
 function StudentRow({ s, f, docs, waiting }: { s: DirectoryStudent; f?: DirectoryFacts; docs: number; waiting: number }) {
+  const { t, language } = useT();
   const name = studentFullName(s);
   const demo = isDemoStudent(s);
   const bal = f?.billing;
   return (
     <li>
-      <Link href={adminStudentWorkspacePath(s.id)} aria-label={`Open ${name}`} data-testid="student-row"
+      <Link href={adminStudentWorkspacePath(s.id)} aria-label={t("s32dir.stu.open", { name })} data-testid="student-row"
         className="group grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 px-4 py-3 transition-colors hover:bg-student-gold-soft/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-student-gold-ink lg:grid-cols-[minmax(0,2fr)_8.5rem_minmax(14rem,2.2fr)_minmax(0,1.3fr)_7rem_5.5rem_1.25rem] lg:gap-x-4">
         <span className="flex min-w-0 items-center gap-3 lg:col-start-1">
           <StudentPhoto student={s} size="md" />
           <span className="min-w-0">
             <span className="flex min-w-0 items-center gap-2"><span className="min-w-0 [overflow-wrap:anywhere] font-medium leading-snug text-student-ink line-clamp-3 lg:line-clamp-2" title={name}>{name}</span>{demo ? <DemoPill /> : null}</span>
-            <span className="block truncate font-mono text-xs text-student-muted">{s.student_code ?? "No code yet"}</span>
+            <span className="block truncate font-mono text-xs text-student-muted">{s.student_code ?? t("s32dir.stu.noCode")}</span>
           </span>
         </span>
         <span className="col-start-3 row-start-1 flex justify-end lg:col-start-2 lg:row-start-1 lg:justify-start"><StudentStatusPill status={s.status} /></span>
         <span className="col-span-3 col-start-1 min-w-0 text-sm text-student-muted lg:col-span-1 lg:col-start-3">
           {(() => {
-            const [main, ...rest] = f?.program ? shortProgram(f.program.title).split(" · ") : ["No program yet"];
+            const [main, ...rest] = f?.program ? shortProgram(f.program.title).split(" · ") : [t("s32dir.stu.program.none")];
             return <><span className="block truncate text-student-ink" title={f?.program?.title}>{main}</span>{rest.length ? <span className="block whitespace-nowrap text-xs text-student-muted">{rest.join(" · ")}</span> : null}</>;
           })()}
         </span>
         <span className={`col-span-3 col-start-1 min-w-0 flex-wrap gap-1.5 lg:col-span-1 lg:col-start-4 ${(docs || waiting || bal?.overdue) ? "flex" : "hidden lg:block"}`} data-testid="student-attention">
-          {waiting ? <StaffPill tone="attention">{waiting} awaiting reply</StaffPill> : null}
-          {docs ? <StaffPill tone="attention">{docs} to review</StaffPill> : null}
-          {bal?.overdue ? <StaffPill tone="urgent">Payment overdue</StaffPill> : null}
-          {!(docs || waiting || bal?.overdue) ? <span className="text-xs text-student-muted">Nothing waiting</span> : null}
+          {waiting ? <StaffPill tone="attention">{t("s32dir.stu.waiting", { n: waiting })}</StaffPill> : null}
+          {docs ? <StaffPill tone="attention">{t("s32dir.stu.toReview", { n: docs })}</StaffPill> : null}
+          {bal?.overdue ? <StaffPill tone="urgent">{t("s32dir.stu.view.overdue")}</StaffPill> : null}
+          {!(docs || waiting || bal?.overdue) ? <span className="text-xs text-student-muted">{t("s32dir.stu.nothing")}</span> : null}
         </span>
-        <span className="col-span-3 col-start-1 text-xs text-student-muted lg:col-span-1 lg:col-start-5 lg:text-sm"><span className="lg:hidden">Last activity: </span>{relativeTime(f?.lastActivityAt)}</span>
+        <span className="col-span-3 col-start-1 text-xs text-student-muted lg:col-span-1 lg:col-start-5 lg:text-sm"><span className="lg:hidden">{t("s32dir.stu.lastActivity")}</span>{relativeTime(f?.lastActivityAt, Date.now(), language)}</span>
         <span className="col-span-3 col-start-1 text-sm tabular-nums text-student-ink lg:col-span-1 lg:col-start-6 lg:text-right">
-          {bal ? <><span className="lg:hidden text-xs text-student-muted">Balance: </span><span className="font-medium">{formatMoney(bal.balanceCents, bal.currency)}</span>{bal.balanceCents === 0 ? <span className="ml-1 text-xs text-student-muted">paid</span> : null}</> : <span className="text-xs text-student-muted">No fee on file</span>}
+          {bal ? <><span className="lg:hidden text-xs text-student-muted">{t("s32dir.stu.balance")}</span><span className="font-medium">{formatMoney(bal.balanceCents, bal.currency, language)}</span>{bal.balanceCents === 0 ? <span className="ml-1 text-xs text-student-muted">{t("s32dir.stu.paid")}</span> : null}</> : <span className="text-xs text-student-muted">{t("s32dir.stu.noFee")}</span>}
         </span>
         <ChevronRight className="col-start-3 row-start-2 hidden h-4 w-4 justify-self-end text-student-muted transition-transform group-hover:translate-x-0.5 lg:col-start-7 lg:row-start-1 lg:block" aria-hidden="true" />
       </Link>
