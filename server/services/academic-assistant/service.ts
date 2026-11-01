@@ -5,7 +5,7 @@ import { callMuseSpark, ProviderError, type FetchLike, type ProviderMessage } fr
 import { detectPii } from './pii';
 import { searchKnowledge, type KbAudience } from './retrieval';
 import { currentMonth, usdToMicro, type BudgetStore } from './budget';
-import { answerFromRecord, hasDegreeRecords, hasHighSchoolRecords, type StudentRecord } from './student-record';
+import { answerFromRecord, hasDegreeRecords, hasHighSchoolRecords, isPersonalQuestion, isRecordAnswerText, type StudentRecord } from './student-record';
 
 export type Lang = 'en' | 'fr';
 export type Mode = 'live' | 'local';
@@ -161,6 +161,22 @@ export function providerSafeRecords(records: readonly StudentRecord[]): StudentR
   return records.filter((r) => PROVIDER_RECORD_LABELS.has(r.label));
 }
 
+/**
+ * S32-A (F01): conversation history can contain earlier deterministic record answers (credits, billing, tickets…).
+ * Those turns, and the user question that produced each, never go to the provider.
+ */
+export function providerSafeHistory(history: readonly HistoryTurn[]): HistoryTurn[] {
+  const out: HistoryTurn[] = [];
+  for (const turn of history) {
+    if (turn.role === 'assistant' && isRecordAnswerText(turn.content)) {
+      if (out.length && out[out.length - 1]!.role === 'user') out.pop();
+      continue;
+    }
+    out.push(turn);
+  }
+  return out;
+}
+
 /** Program of the signed-in student, derived from the record kinds ('all' when unknown). */
 export function audienceOf(records: readonly StudentRecord[]): KbAudience {
   if (hasDegreeRecords(records)) return 'degree';
@@ -178,7 +194,7 @@ export function buildProviderMessages(
   allRecords: readonly StudentRecord[] = [],
 ): ProviderMessage[] {
   const records = providerSafeRecords(allRecords);
-  let hist = [...history];
+  let hist = providerSafeHistory(history);
   let ctx = [...context];
   const build = (): ProviderMessage[] => {
     const notes = ctx.map((e) => `- ${e.title[lang]}: ${e.text[lang]}`).join('\n');
@@ -217,7 +233,9 @@ export async function answerMessage(
   };
 
   // 1. Privacy guard on everything that could leave the server.
-  const pii = detectPii([message, ...history.map((h) => h.content)].join('\n'));
+  // Only what could leave the server is checked: earlier record answers are never sent (providerSafeHistory), so a
+  // date inside one must not make every later question refuse.
+  const pii = detectPii([message, ...providerSafeHistory(history).map((h) => h.content)].join('\n'));
   if (pii.flagged) {
     // F02: "my credits" / "my balance" / « mes crédits » only trip the over-inclusive self-reference patterns. A
     // record answer is local (nothing leaves the server), so try it first. Real PII kinds keep refusing.
@@ -228,12 +246,12 @@ export async function answerMessage(
     return localAnswer(message, lang, T[lang].pii, audience);
   }
 
-  // 2. Personal record facts never need the model: answer deterministically, in live mode too.
-  const recordAnswer = facts();
-  if (recordAnswer) return recordAnswer;
-
-  // 3. Eligibility / config. Non-record questions get the curated knowledge base unless a live model is allowed.
+  // 2. Eligibility / config.
   const decision = decideLive(user, cfg);
+  // Personal record facts never need the model: answer deterministically. Without a live model the record answer wins
+  // (as before S32); with one, only questions about the student themself are preempted (general questions go live).
+  const recordAnswer = facts();
+  if (recordAnswer && (!decision.live || isPersonalQuestion(message))) return recordAnswer;
   if (!decision.live) return localAnswer(message, lang, undefined, audience);
 
   // 3. Budget reservation (fail closed).

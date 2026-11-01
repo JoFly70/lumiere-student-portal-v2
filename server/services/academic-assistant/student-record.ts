@@ -223,6 +223,23 @@ const LEAD = {
   fr: { head: "D’après votre dossier (faits du système, pas une IA) :", change: "Sur votre page Études secondaires, repérez l’option dans la liste de vos cours et choisissez « Demander un changement ». Lumière l’examine, l’école doit accepter le remplacement, puis une nouvelle version de votre feuille de route est publiée. Vous ne pouvez pas modifier la feuille de route vous-même, et rien ne change avant l’approbation.", approval: "Si l’école n’a pas approuvé une option, elle reste « proposée » et ne donne aucun crédit; Lumière vous en informe et vous aide à en choisir une autre pour atteindre 5 crédits d’options.", noBilling: "Aucune information de facturation n’est inscrite à votre compte du portail; il n’y a donc aucun montant à afficher ici. Pour toute question de paiement, contactez votre équipe Lumière par l’Assistance." },
 } as const;
 
+/** S32-A: every deterministic record answer starts with one of these heads (used to keep record facts out of provider history). */
+export const RECORD_ANSWER_HEADS: readonly string[] = [LEAD.en.head, LEAD.fr.head];
+export function isRecordAnswerText(content: string): boolean {
+  const c = content.trim();
+  return RECORD_ANSWER_HEADS.some((h) => c.startsWith(h));
+}
+
+/**
+ * S32-A: does the question refer to the student themself? In LIVE mode a record intent preempts the model only when it
+ * does (or for the dashboard's inherently personal prompts: "most urgent", "on track", "my roadmap"), so a general
+ * question such as "What is a credit hour?" still gets a general answer instead of a dump of the student's record.
+ */
+const PERSONAL = /\b(my|me|mine|i|i'm|im|i've|am i|do i|have i|should i)\b|\b(mes|mon|ma|moi|je|j'|me|m'|suis-je|ai-je|dois-je|il me reste)\b|\b(urgent|on track|dans les temps|en retard|feuille de route|roadmap)\b/;
+export function isPersonalQuestion(message: string): boolean {
+  return PERSONAL.test(fold(message));
+}
+
 const fold = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[’‘]/g, "'");
 
 /** Deterministic, labelled facts for common personal questions; null when no intent matches. */
