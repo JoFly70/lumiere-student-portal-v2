@@ -14,6 +14,10 @@ import { s29CoreFr } from "./modules/s29-core";
 import { s29OpsFr } from "./modules/s29-ops";
 import { s30CalendarFr } from "./modules/s30-calendar";
 import { s30ImportsFr } from "./modules/s30-imports";
+import { s32AssistantFr } from "./modules/s32-assistant";
+import { s32DegreeFr } from "./modules/s32-degree";
+import { s32HsFr } from "./modules/s32-hs";
+import { s32ServicesFr } from "./modules/s32-services";
 
 /**
  * Dictionnaire français (vouvoiement). Typé contre `en.ts` : toute clé anglaise doit exister ici.
@@ -36,6 +40,10 @@ export const fr: Record<TranslationKey, string> = {
   ...s29OpsFr,
   ...s30CalendarFr,
   ...s30ImportsFr,
+  ...s32AssistantFr,
+  ...s32DegreeFr,
+  ...s32HsFr,
+  ...s32ServicesFr,
   "language.label": "Langue",
   "language.en": "English",
   "language.fr": "Français",

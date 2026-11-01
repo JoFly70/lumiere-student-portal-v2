@@ -21,6 +21,10 @@ import { s29CoreEn } from "./modules/s29-core";
 import { s29OpsEn } from "./modules/s29-ops";
 import { s30CalendarEn } from "./modules/s30-calendar";
 import { s30ImportsEn } from "./modules/s30-imports";
+import { s32AssistantEn } from "./modules/s32-assistant";
+import { s32DegreeEn } from "./modules/s32-degree";
+import { s32HsEn } from "./modules/s32-hs";
+import { s32ServicesEn } from "./modules/s32-services";
 
 export const en = {
   ...authEn,
@@ -38,6 +42,10 @@ export const en = {
   ...s29OpsEn,
   ...s30CalendarEn,
   ...s30ImportsEn,
+  ...s32AssistantEn,
+  ...s32DegreeEn,
+  ...s32HsEn,
+  ...s32ServicesEn,
   // Language
   "language.label": "Language",
   "language.en": "English",
