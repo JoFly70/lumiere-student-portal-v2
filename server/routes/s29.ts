@@ -240,7 +240,13 @@ export function createS29AdminRouter(deps: S29RouterDeps = {}): Router {
         const out = await computeAttention(db, at, DEFAULT_CONCIERGE_SETTINGS, false);
         items = liveAttentionQueue(out.items, at, out.truncated).items;
       }
-      const answer = await answerFleet({ question: body.data.question, language: body.data.language, includeDemo: body.data.includeDemo }, items, { budget: new PgBudgetStore(), now: () => at, useAi: body.data.useAi, fetchImpl: deps.fetchImpl as never });
+      // S30 Phase C: deadline and pace questions read the S30 calendar + Control Center pace (server-side, no HTTP hop).
+      const { classifyIntent } = await import("../services/s29/fleet");
+      const intent = classifyIntent(body.data.question);
+      const calendar = intent === "deadlines_soon" || intent === "behind_pace"
+        ? await (await import("../services/s30/fleet-context")).loadFleetCalendarContext(db, at)
+        : undefined;
+      const answer = await answerFleet({ question: body.data.question, language: body.data.language, includeDemo: body.data.includeDemo }, items, { budget: new PgBudgetStore(), now: () => at, useAi: body.data.useAi, fetchImpl: deps.fetchImpl as never, calendar });
       emitS29Audit(req, "s29.fleet_query", "Fleet copilot question answered", { intent: answer.intent, references: answer.references.length, drafts: answer.drafts.length, ai: answer.ai.mode, language: body.data.language, includeDemo: body.data.includeDemo });
       return res.json(answer);
     } catch (error) {

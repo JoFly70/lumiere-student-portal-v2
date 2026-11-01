@@ -57,10 +57,6 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("S30 Phase A: academic calendar (real Po
     await applyS09Migration(pg);
     process.env.DATABASE_URL = pg.url;
     holder.supabase = makeS13Supabase(pg);
-    setCalendarOperationsPort({
-      recordEvent: async (e) => { port.events.push(e); return "accepted"; },
-      enqueueNotification: async (n) => { const k = `${n.recipientUserId}|${n.dedupeKey}`; if (port.keys.has(k)) return "duplicate"; port.keys.add(k); port.notes.push(n); return "accepted"; },
-    });
     admin = await seedActor(pg, "admin");
     staff = await seedActor(pg, "staff");
     coach = await seedActor(pg, "coach");
@@ -72,6 +68,11 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("S30 Phase A: academic calendar (real Po
     const app = express();
     app.use(express.json());
     server = await registerRoutes(app);
+    // Installed after registerRoutes, which wires the real S29 bridge at startup.
+    setCalendarOperationsPort({
+      recordEvent: async (e) => { port.events.push(e); return "accepted"; },
+      enqueueNotification: async (n) => { const k = `${n.recipientUserId}|${n.dedupeKey}`; if (port.keys.has(k)) return "duplicate"; port.keys.add(k); port.notes.push(n); return "accepted"; },
+    });
     await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
     base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
   }, 300_000);

@@ -299,7 +299,9 @@ export const fleetQuestionSchema = z.object({
 }).strict();
 export type FleetQuestionInput = z.infer<typeof fleetQuestionSchema>;
 
-export type FleetIntent = "attention_today" | "no_recent_progress" | "documents_blocking" | "week_priorities" | "support_waiting" | "draft_followups" | "overview";
+export type FleetIntent = "attention_today" | "no_recent_progress" | "documents_blocking" | "week_priorities" | "support_waiting" | "draft_followups" | "overview"
+  /** S30 Phase C: answered from the S30 academic calendar and the Control Center pace (server/services/s30/fleet-context.ts). */
+  | "deadlines_soon" | "behind_pace";
 
 export interface FleetReference {
   /** [A1], [A2]... cites an attention item; the UI links to `href`. */

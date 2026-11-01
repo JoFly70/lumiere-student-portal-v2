@@ -114,6 +114,22 @@ export const TEMPLATES: Record<string, TemplateDef> = {
     en: { title: (p) => `Calendar ${v(p, "changeEn")}: ${v(p, "itemEn")}`, body: (p) => `Your ${v(p, "itemEn")} (${v(p, "whenEn")}) was ${v(p, "changeEn")}. Open your calendar for details.` },
     fr: { title: (p) => `Calendrier (${v(p, "changeFr")}) : ${v(p, "itemFr")}`, body: (p) => `Changement dans votre calendrier (${v(p, "changeFr")}) : ${v(p, "itemFr")}, le ${v(p, "whenFr")}. Ouvrez votre calendrier pour les détails.` },
   },
+  // ── S30 Academic Data Import Center (through server/services/s30/imports-bridge.ts; staff only; counts only) ──
+  "import.committed": {
+    category: "operations", reminder: false, href: (p) => v(p, "href", "/admin/imports"),
+    en: { title: (p) => `Import committed: ${v(p, "records", "0")} reported records`, body: (p) => `An academic import was committed on ${v(p, "whenEn")}: ${v(p, "records", "0")} provider- or school-reported records for ${v(p, "students", "0")} students. Reported results are not verified credit.` },
+    fr: { title: (p) => `Importation enregistrée : ${v(p, "records", "0")} données déclarées`, body: (p) => `Une importation académique a été enregistrée le ${v(p, "whenFr")} : ${v(p, "records", "0")} données déclarées par un fournisseur ou une école pour ${v(p, "students", "0")} élèves. Les résultats déclarés ne sont pas des crédits vérifiés.` },
+  },
+  "import.review_required": {
+    category: "operations", reminder: false, href: (p) => v(p, "href", "/admin/imports"),
+    en: { title: (p) => `${v(p, "records", "0")} imported records to review`, body: (p) => `${v(p, "records", "0")} imported records report a completion or a school result (${v(p, "whenEn")}). Record the school's official result before any credit counts.` },
+    fr: { title: (p) => `${v(p, "records", "0")} données importées à vérifier`, body: (p) => `${v(p, "records", "0")} données importées indiquent un cours terminé ou un résultat d’école (${v(p, "whenFr")}). Consignez le résultat officiel de l’école avant que tout crédit ne compte.` },
+  },
+  "import.rolled_back": {
+    category: "operations", reminder: false, href: (p) => v(p, "href", "/admin/imports"),
+    en: { title: () => "Academic import rolled back", body: (p) => `An academic import was rolled back on ${v(p, "whenEn")}: ${v(p, "records", "0")} records withdrawn for ${v(p, "students", "0")} students.` },
+    fr: { title: () => "Importation académique annulée", body: (p) => `Une importation académique a été annulée le ${v(p, "whenFr")} : ${v(p, "records", "0")} données retirées pour ${v(p, "students", "0")} élèves.` },
+  },
   // ── concierge reminders (rules engine) ──
   "concierge.inactive": {
     category: "progress", reminder: true, href: () => "/high-school",
