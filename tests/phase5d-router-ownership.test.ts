@@ -114,7 +114,7 @@ describe("Phase 5D route ownership and student ticket filtering", () => {
     }
   });
 
-  it.each(["student", "staff", "coach"])("rejects studentId filtering for %s", async (role) => {
+  it.each(["student", "coach"])("rejects studentId filtering for %s (S32-B: staff may filter, like admin)", async (role) => {
     const app = await createApp();
     const response = await request(app).get("/api/tickets?studentId=student-1").set("x-role", role);
     expect(response.status).toBe(403);

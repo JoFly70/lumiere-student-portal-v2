@@ -78,6 +78,8 @@ export interface TicketsRouterDeps {
   getAccountStatus: (userId: string) => Promise<AccountStatus>;
   resolveStudentUserId: (studentId: string) => Promise<string | null>;
   getStudentByUserId: (userId: string) => Promise<{ id: string } | null>;
+  /** Portal user ids of students whose student code contains the (already sanitised) term. Admin/staff search only. */
+  findReporterIdsByStudentCode?: (term: string) => Promise<string[]>;
   loadPublishedRoadmap: (studentId: string) => Promise<StudentRoadmapView>;
   audit: (entry: AuditLogEntry) => Promise<void>;
   notify: SupportNotifier;
@@ -95,6 +97,20 @@ export function defaultTicketsRouterDeps(): TicketsRouterDeps {
       const repo = await import("../repositories/student-academic-repo");
       const row = await repo.getStudentByUserId(userId);
       return row ? { id: row.id } : null;
+    },
+    findReporterIdsByStudentCode: async (term) => {
+      const [{ db }, { studentsTable }, orm] = await Promise.all([
+        import("../lib/db"),
+        import("@shared/schema"),
+        import("drizzle-orm"),
+      ]);
+      const pattern = `%${term.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+      const rows = await db
+        .select({ user_id: studentsTable.user_id })
+        .from(studentsTable)
+        .where(orm.sql`${studentsTable.student_code} ilike ${pattern}`)
+        .limit(50);
+      return rows.map((r: any) => String(r.user_id ?? "")).filter(Boolean);
     },
     loadPublishedRoadmap: async (studentId) => {
       const mod = await import("../services/student-roadmap-service.default");
@@ -114,6 +130,7 @@ export function defaultTicketsRouterDeps(): TicketsRouterDeps {
 const BUCKET = "documents";
 const SIGNED_URL_SECONDS = 300;
 const ID_PATTERN = /^[A-Za-z0-9._:-]{1,64}$/;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const STAFF_ROLES = ["admin", "staff", "coach"];
 const ACTIVE_STATUSES: TicketStatus[] = ["open", "in_progress", "waiting_on_student"];
 const MAX_OVERDUE_SCAN = 1000;
@@ -124,7 +141,7 @@ const escapeRegExp = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, "\\
 
 function sanitizeSearch(raw: unknown): string {
   if (typeof raw !== "string") return "";
-  return raw.replace(/[%_,()\\]/g, " ").replace(/\s+/g, " ").trim().slice(0, 100);
+  return raw.replace(/[%_,()\\"*]/g, " ").replace(/\s+/g, " ").trim().slice(0, 100);
 }
 
 function isMissingTable(err: any): boolean {
@@ -298,7 +315,8 @@ export function createTicketsRouter(deps: TicketsRouterDeps): Router {
       loadPeople(ticket.assigned_to ? [String(ticket.assigned_to)] : []),
     ]);
     const detail = presentDetail({ ticket, comments: comments.rows, attachments, history, people, viewer, now: deps.now() });
-    if (viewer.role !== "admin") return detail;
+    // Admin and staff may open the student file; coaches never receive student ids.
+    if (viewer.role !== "admin" && viewer.role !== "staff") return detail;
     try {
       const student = await deps.getStudentByUserId(String(ticket.reporter_id));
       return student ? { ...detail, student_id: student.id } : detail;
@@ -416,8 +434,8 @@ export function createTicketsRouter(deps: TicketsRouterDeps): Router {
 
     let reporterFilter: string | null = null;
     if (q.studentId) {
-      // Phase 5D rule kept: only the admin student workspace filters by student.
-      if (viewer.role !== "admin") return fail(res, 403, "FORBIDDEN", "Student ticket filtering is admin-only");
+      // S32-B: admin and staff (who already read every ticket) may filter by student; coaches may not.
+      if (viewer.role !== "admin" && viewer.role !== "staff") return fail(res, 403, "FORBIDDEN", "Student ticket filtering is not available for your role");
       reporterFilter = await deps.resolveStudentUserId(String(q.studentId));
       if (!reporterFilter) return res.json({ tickets: [], pagination: { total: 0, limit, offset } });
     }
@@ -449,7 +467,20 @@ export function createTicketsRouter(deps: TicketsRouterDeps): Router {
     }
 
     const search = sanitizeSearch(q.search);
-    if (search) query = query.ilike("subject", `%${search}%`);
+    if (search) {
+      // S32-B: subject, reporter name/email and ticket number; admin/staff also match student code.
+      // sanitizeSearch strips PostgREST filter syntax characters and LIKE wildcards, so the term is inert.
+      const clauses = ["subject", "reporter_name", "reporter_email", "ticket_number"].map((c) => `${c}.ilike.%${search}%`);
+      if (viewer.role === "admin" || viewer.role === "staff") {
+        try {
+          const ids = (await (deps.findReporterIdsByStudentCode?.(search) ?? Promise.resolve([] as string[]))).filter((id) => UUID_PATTERN.test(id));
+          if (ids.length) clauses.push(`reporter_id.in.(${ids.join(",")})`);
+        } catch (error: any) {
+          logger.warn("Support: student code search skipped", { error: error?.message });
+        }
+      }
+      query = query.or(clauses.join(","));
+    }
 
     query = query.order("created_at", { ascending: false });
     query = wantsOverdue ? query.limit(MAX_OVERDUE_SCAN) : query.range(offset, offset + limit - 1);
@@ -487,6 +518,43 @@ export function createTicketsRouter(deps: TicketsRouterDeps): Router {
       }),
     );
     res.json({ tickets, pagination: { total, limit, offset } });
+  }));
+
+  // =========================================================================
+  // GET /elective-requests  (registered before /:id)  — S32-B: one request instead of one per ticket.
+  // Admin-only, like the Elective requests page. Returns each elective-change ticket summary plus its
+  // internal stage notes ("[ELECTIVE-STAGE] <stage>"), from which the client derives the current stage.
+  // =========================================================================
+
+  router.get("/elective-requests", wrap(async (req, res) => {
+    const viewer = viewerOf(req);
+    if (viewer.role !== "admin") return fail(res, 403, "FORBIDDEN", "Access denied");
+    const { data, error } = await db()
+      .from("support_tickets")
+      .select("*")
+      .ilike("subject", "Elective change request:%")
+      .order("created_at", { ascending: false })
+      .limit(200);
+    if (error) return dbFail(res, "elective requests failed", error);
+    const rows = (data as Row[]) ?? [];
+    const ids = rows.map((r) => String(r.id));
+    const comments = await loadComments(ids);
+    if (comments.error) return dbFail(res, "elective comments failed", comments.error);
+    const [attachments, people] = await Promise.all([
+      loadOptional("ticket_attachments", ids),
+      loadPeople(rows.map((r) => String(r.assigned_to ?? "")).filter(Boolean)),
+    ]);
+    const now = deps.now();
+    const requests = rows.map((ticket) => {
+      const own = comments.rows.filter((c) => c.ticket_id === ticket.id);
+      return {
+        ...presentSummary({ ticket, comments: own, attachments: attachments.filter((a) => a.ticket_id === ticket.id), people, viewer, now }),
+        stage_notes: own
+          .filter((c) => c.is_internal && String(c.content ?? "").startsWith("[ELECTIVE-STAGE]"))
+          .map((c) => presentComment(viewer, c)),
+      };
+    });
+    res.json({ requests });
   }));
 
   // =========================================================================
