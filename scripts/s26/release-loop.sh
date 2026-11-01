@@ -106,6 +106,21 @@ while [ "$(date +%s)" -lt "$DEADLINE" ]; do
       if grep -q "S27 production schema release: DONE" "$EVID/schema-s27.log"; then status schema_s27 PASS "backup + S27 migration + post-verify of 4 tables"
       else status schema_s27 FAIL "$( { grep -iE 'refused|error|fail|fatal' "$EVID/schema-s27.log" | head -5; tail -3 "$EVID/schema-s27.log"; } | tr '\n' ' ' | cut -c1-500)"; DONE_SHA=$SHA; continue; fi
     fi
+    # S30: operations, imports and calendar tables (additive). Runs when not fully applied, after the S27 step.
+    if [ -f scripts/release/s30/apply-s30.sh ]; then
+      if need_pg; then bash scripts/release/s30/apply-s30.sh --check > "$EVID/schema-s30-check.log" 2>&1 && S30_OK=1 || S30_OK=0
+      else nix-shell -p postgresql_16 --run "bash scripts/release/s30/apply-s30.sh --check" > "$EVID/schema-s30-check.log" 2>&1 && S30_OK=1 || S30_OK=0; fi
+      if [ "$S30_OK" = "1" ]; then
+        status schema_s30 SKIPPED "S30 schema fully applied (10 tables, RLS, privileges, 11 audit enum values)"
+      elif ! grep -q "S30 check: NOT FULLY APPLIED" "$EVID/schema-s30-check.log"; then
+        status schema_s30 FAIL "check did not complete: $(grep -E 'REFUSED|ERROR|FATAL|could not' "$EVID/schema-s30-check.log" | head -3 | tr '\n' ' ' | cut -c1-300)"; DONE_SHA=$SHA; continue
+      else
+        if need_pg; then bash scripts/release/s30/apply-s30.sh --apply --i-understand-this-writes-to-production > "$EVID/schema-s30.log" 2>&1
+        else nix-shell -p postgresql_16 --run "bash scripts/release/s30/apply-s30.sh --apply --i-understand-this-writes-to-production" > "$EVID/schema-s30.log" 2>&1; fi
+        if grep -q "S30 production schema release: DONE" "$EVID/schema-s30.log"; then status schema_s30 PASS "backup + S30 migration + post-verify of 10 tables"
+        else status schema_s30 FAIL "$( { grep -iE 'refused|error|fail|fatal' "$EVID/schema-s30.log" | head -5; tail -3 "$EVID/schema-s30.log"; } | tr '\n' ' ' | cut -c1-500)"; DONE_SHA=$SHA; continue; fi
+      fi
+    fi
     if npx tsx scripts/s26/provision-demo-student.ts --ref "$REF" --real-code LCA-2026-0001 > "$EVID/provision.json" 2> "$EVID/provision.err" \
        && grep -q '"verdict": "PASS"' "$EVID/provision.json"; then
       status provision PASS
@@ -117,7 +132,7 @@ while [ "$(date +%s)" -lt "$DEADLINE" ]; do
       DONE_SHA=$SHA; ACCEPTED=1; continue
     fi
     printf '{"sha":"%s"}\n' "$SHA" > release.json
-    for k in META_MODEL_API_KEY SPARK_ASSISTANT_ENABLED SPARK_ASSISTANT_LIVE_ROLES SPARK_ASSISTANT_STUDENT_POLICY REDIS_URL SESSION_SECRET SUPABASE_SERVICE_KEY; do
+    for k in META_MODEL_API_KEY SPARK_ASSISTANT_ENABLED SPARK_ASSISTANT_LIVE_ROLES SPARK_ASSISTANT_STUDENT_POLICY REDIS_URL SESSION_SECRET SUPABASE_SERVICE_KEY EMAIL_ENABLED EMAIL_FROM RESEND_API_KEY APP_URL S30_CONCIERGE; do
       [ -n "${!k:-}" ] && echo "$k=set" || echo "$k=unset"
     done > "$EVID/env-names.txt"
     status ready_to_publish PASS "release.json=${SHA:0:7}; publish the deployment now"

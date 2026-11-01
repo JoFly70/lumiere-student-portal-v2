@@ -32,6 +32,7 @@ const KIND_ICON: Record<QueueKind, QueueIconKey> = {
   elective_approval: "shuffle",
   session_request: "calendar",
   support_reply: "message",
+  import_review: "flag",
 };
 const KIND_ACTION: Record<QueueKind, QueueItemMeta["actionKey"]> = {
   document_review: "owner.q.act.reviewDoc",
@@ -45,6 +46,7 @@ const KIND_ACTION: Record<QueueKind, QueueItemMeta["actionKey"]> = {
   elective_approval: "owner.q.act.reviewElectives",
   session_request: "owner.q.act.reviewSession",
   support_reply: "owner.q.act.openReply",
+  import_review: "owner.q.act.recordResult",
 };
 const SEVERITY_TONE: Record<ControlQueueItem["severity"], Tone> = { critical: "urgent", warning: "attention", info: "neutral" };
 

@@ -210,6 +210,8 @@ export interface StudentJourneyView {
 export const QUEUE_KINDS = [
   "document_review", "payment_evidence", "payment_overdue", "payment_missing", "deadline_soon",
   "inactive", "low_grade", "school_result_needed", "elective_approval", "session_request", "support_reply",
+  /** S30: provider-/institution-reported import records (e.g. a course reported complete) awaiting staff review. */
+  "import_review",
 ] as const;
 export type QueueKind = (typeof QUEUE_KINDS)[number];
 export interface ControlQueueItem {

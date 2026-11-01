@@ -119,7 +119,19 @@ export type AuditEventType =
   | 'program.session_requested'
   | 'program.session_updated'
   | 'program.note_added'
-  | 'program.access_denied';
+  | 'program.access_denied'
+  // S30 operations, imports and calendar (supabase/migrations/20261106100000_s30_operations_academic.sql).
+  | 'ops.exception_updated'
+  | 'ops.access_denied'
+  | 'ops.fleet_ai_queried'
+  | 'import.batch_uploaded'
+  | 'import.batch_approved'
+  | 'import.batch_committed'
+  | 'import.batch_rolled_back'
+  | 'import.batch_discarded'
+  | 'import.mapping_saved'
+  | 'calendar.event_changed'
+  | 'calendar.subscription_changed';
 
 export type AuditSeverity = 'info' | 'warning' | 'error' | 'critical';
 

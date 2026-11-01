@@ -60,6 +60,8 @@ export interface ControlCenterFacts {
   sessionRequests: Array<{ id: string; studentId: string; slotAt: string }>;
   /** Students with an active degree program assignment (read-only; absent in older fixtures). */
   degrees?: Array<{ studentId: string }>;
+  /** S30: active imported (provider-/institution-reported) records awaiting review, per student. Absent before S30. */
+  reportedAwaitingReview?: Array<{ studentId: string; count: number; tier: string }>;
   /** True when any row cap was hit while loading (the view is then incomplete). */
   truncated: boolean;
 }
@@ -92,6 +94,7 @@ export function buildControlCenter(facts: ControlCenterFacts, now: Date): Contro
   const ticketsBy = groupBy(facts.tickets, (t) => t.studentId);
   const sessionsBy = groupBy(facts.sessionRequests, (s) => s.studentId);
   const degreeIds = new Set((facts.degrees ?? []).map((d) => d.studentId));
+  const reportedBy = groupBy(facts.reportedAwaitingReview ?? [], (r) => r.studentId);
   const demoIds = new Set(facts.students.filter(isDemo).map((s) => s.id));
 
   let signedNotPaid = 0;
@@ -209,6 +212,15 @@ export function buildControlCenter(facts: ControlCenterFacts, now: Date): Contro
       add("session_request", "info", "Orientation session requested", `Requested slot ${r.slotAt.slice(0, 16).replace("T", " ")} UTC.`, href("sessions"), r.slotAt, `:${r.id}`);
     }
 
+    // ── S30: imported records awaiting review (never credit until the school's result is recorded)
+    const reported = reportedBy.get(s.id) ?? [];
+    const reportedCount = reported.reduce((n, r) => n + r.count, 0);
+    if (reportedCount > 0) {
+      add("import_review", "warning", `${plural(reportedCount, "imported record")} to review`,
+        `${reported.some((r) => r.tier === "institution_reported") ? "School-reported" : "Provider-reported"} results imported; record the school's official result before any credit counts.`,
+        href("roadmap"));
+    }
+
     // ── row
     const preEnrolled = open?.status === "planned" || (!!agreement && !agreement.activatedOn);
     const worst = items.some((i) => i.severity === "critical") ? "critical" : items.some((i) => i.severity === "warning") ? "warning" : null;
@@ -300,6 +312,15 @@ export async function loadControlCenterFacts(db: SqlExecutor, now: Date, limits:
     db.execute(sql`SELECT id, student_id, slot_at FROM orientation_sessions WHERE status = 'requested' AND student_id IN ${IN} ORDER BY slot_at, id LIMIT ${limits.sessions + 1}`),
     db.execute(sql`SELECT student_id FROM student_program_assignments WHERE status = 'active' AND student_id IN ${IN} ORDER BY student_id`),
   ]);
+  // S30 (optional table): imported records awaiting review. A missing table (S30 not applied) means none.
+  let reportedRows: Row[] = [];
+  try {
+    reportedRows = rows(await db.execute(sql`SELECT student_id, tier, count(*)::int AS n FROM academic_reported_records
+      WHERE status = 'active' AND review_state = 'needs_review' AND student_id IN ${IN} GROUP BY student_id, tier ORDER BY student_id, tier`));
+  } catch (error) {
+    const code = (error as { code?: string; cause?: { code?: string } })?.code ?? (error as { cause?: { code?: string } })?.cause?.code;
+    if (code !== "42P01") throw error;
+  }
   const cap = (r: unknown, n: number) => capped(rows(r), n);
   const progressRows = cap(progress, limits.progress);
   const awardRows = cap(awards, limits.awards);
@@ -334,6 +355,7 @@ export async function loadControlCenterFacts(db: SqlExecutor, now: Date, limits:
     tickets: ticketRows.map((r) => ({ id: String(r.id), studentId: String(r.student_id), subject: String(r.subject), status: String(r.status), createdAt: iso(r.created_at) })),
     sessionRequests: sessionRows.map((r) => ({ id: String(r.id), studentId: String(r.student_id), slotAt: iso(r.slot_at) })),
     degrees: rows(degrees).map((r) => ({ studentId: String(r.student_id) })),
+    reportedAwaitingReview: reportedRows.map((r) => ({ studentId: String(r.student_id), tier: String(r.tier), count: Number(r.n) })),
     truncated,
   };
 }

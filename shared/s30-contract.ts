@@ -1,0 +1,525 @@
+/**
+ * S30 shared contract: operational layer (events, exceptions, notifications, diagnostics), Fleet AI Copilot,
+ * Academic Data Import Center and Academic Calendar.
+ *
+ * Tables: supabase/migrations/20261106100000_s30_operations_academic.sql. Server: server/services/s30/*, routes
+ * server/routes/s30-*.ts. All dates are ISO strings; instants are UTC ("…Z"); date-only values are "YYYY-MM-DD".
+ *
+ * Academic integrity (enforced server-side and by the database):
+ *   planned work (roadmap)  ->  student-reported progress (hs_task_progress)  ->  provider-reported progress (imports)
+ *   ->  submitted evidence (student_documents)  ->  institution-verified outcomes (hs_official_results / credit awards).
+ *   An import NEVER creates an official result, a credit award or a verified document. Its records carry an explicit
+ *   tier ("provider_reported" | "institution_reported") and, when they report completion, a review exception.
+ */
+import { z } from "zod";
+import type { ControlQueueItem } from "./s27-contract";
+
+const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "YYYY-MM-DD");
+const instant = z.string().datetime({ offset: true });
+
+// ── evidence tiers ──────────────────────────────────────────────────────────
+
+export const EVIDENCE_TIERS = ["planned", "student_reported", "provider_reported", "institution_reported", "submitted_evidence", "verified"] as const;
+export type EvidenceTier = (typeof EVIDENCE_TIERS)[number];
+
+// ── operational events ──────────────────────────────────────────────────────
+
+export const OPS_EVENT_KINDS = [
+  "academic.import_committed",
+  "academic.import_rolled_back",
+  "academic.progress_reported",
+  "academic.review_required",
+  "academic.milestone_changed",
+  "calendar.event_scheduled",
+  "calendar.event_rescheduled",
+  "calendar.event_cancelled",
+  "program.session_changed",
+  "program.checkpoint_changed",
+  "concierge.reminder_sent",
+  "ops.exception_acknowledged",
+  "ops.exception_snoozed",
+  "ops.exception_reopened",
+] as const;
+export type OpsEventKind = (typeof OPS_EVENT_KINDS)[number];
+export type OpsSeverity = "info" | "warning" | "critical";
+
+export interface OpsEventView {
+  readonly id: string;
+  readonly seq: number;
+  readonly kind: OpsEventKind;
+  readonly severity: OpsSeverity;
+  readonly studentId: string | null;
+  readonly studentName: string | null;
+  readonly isDemo: boolean;
+  readonly subjectType: string | null;
+  readonly subjectId: string | null;
+  /** Identifiers, keys and counts only (never free-text record bodies). */
+  readonly data: Readonly<Record<string, string | number | boolean | null>>;
+  readonly href: string | null;
+  readonly createdAt: string;
+}
+
+// ── exceptions (Control Center queue + owner state) ─────────────────────────
+
+export const EXCEPTION_STATES = ["open", "acknowledged", "snoozed"] as const;
+export type ExceptionState = (typeof EXCEPTION_STATES)[number];
+export interface OpsExceptionView extends ControlQueueItem {
+  readonly state: ExceptionState;
+  readonly snoozedUntil: string | null;
+}
+export interface OpsExceptionsView {
+  readonly generatedAt: string;
+  readonly truncated: boolean;
+  readonly exceptions: readonly OpsExceptionView[];
+  readonly counts: { readonly open: number; readonly acknowledged: number; readonly snoozed: number };
+}
+export const updateExceptionSchema = z
+  .object({
+    state: z.enum(EXCEPTION_STATES),
+    /** Required for "snoozed": 1–30 days. */
+    snoozeDays: z.number().int().min(1).max(30).optional(),
+  })
+  .strict()
+  .refine((v) => v.state !== "snoozed" || v.snoozeDays !== undefined, { message: "snoozeDays is required to snooze", path: ["snoozeDays"] });
+export type UpdateExceptionInput = z.infer<typeof updateExceptionSchema>;
+
+// ── notifications ───────────────────────────────────────────────────────────
+
+export const NOTIFICATION_KINDS = [
+  "reminder.deadline",
+  "reminder.appointment",
+  "reminder.milestone",
+  "import.committed",
+  "import.review_required",
+  "calendar.event_changed",
+] as const;
+export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
+export interface NotificationView {
+  readonly id: string;
+  readonly kind: NotificationKind;
+  /** Values the client interpolates into the EN/FR template for `kind` (no free text from records). */
+  readonly params: Readonly<Record<string, string | number | null>>;
+  readonly href: string | null;
+  readonly readAt: string | null;
+  readonly createdAt: string;
+}
+export interface NotificationsView {
+  readonly notifications: readonly NotificationView[];
+  readonly unread: number;
+}
+
+// ── diagnostics ─────────────────────────────────────────────────────────────
+
+export const DIAGNOSTIC_SUBSYSTEMS = ["database", "schema", "events", "exceptions", "notifications", "concierge", "imports", "calendar", "ai", "audit"] as const;
+export type DiagnosticSubsystem = (typeof DIAGNOSTIC_SUBSYSTEMS)[number];
+export type DiagnosticStatus = "ok" | "warning" | "error" | "off";
+export interface DiagnosticCheck {
+  readonly key: DiagnosticSubsystem;
+  readonly status: DiagnosticStatus;
+  /** Stable code the client translates, e.g. "email_not_configured", "sweep_stale", "ok". */
+  readonly code: string;
+  readonly facts: Readonly<Record<string, string | number | boolean | null>>;
+}
+export interface DiagnosticsView {
+  readonly generatedAt: string;
+  readonly release: string | null;
+  readonly overall: DiagnosticStatus;
+  readonly checks: readonly DiagnosticCheck[];
+}
+
+// ── Fleet AI Copilot ────────────────────────────────────────────────────────
+
+export const FLEET_INTENTS = [
+  "attention_today",
+  "no_recent_progress",
+  "deadlines_soon",
+  "enrollment_document_issues",
+  "priorities_week",
+  "behind_pace",
+  "support_waiting",
+  "french_followups",
+] as const;
+export type FleetIntent = (typeof FLEET_INTENTS)[number];
+export const FLEET_MAX_QUESTION_CHARS = 600;
+
+export const fleetAskSchema = z
+  .object({
+    /** A preset intent, or free text that the server maps to an intent deterministically. */
+    intent: z.enum(FLEET_INTENTS).optional(),
+    question: z.string().trim().max(FLEET_MAX_QUESTION_CHARS).optional(),
+    language: z.enum(["en", "fr"]),
+    /** Opt-in: let the configured model phrase an executive summary from NON-identifying aggregates only. */
+    aiSummary: z.boolean().default(false),
+    includeDemo: z.boolean().default(false),
+  })
+  .strict()
+  .refine((v) => v.intent !== undefined || (v.question !== undefined && v.question.length > 0), { message: "intent or question is required" });
+export type FleetAskInput = z.infer<typeof fleetAskSchema>;
+
+/** One traceable record reference [F#]: what record, where to open it. */
+export interface FleetRecordRef {
+  readonly ref: string;
+  readonly kind: "exception" | "student" | "calendar" | "import" | "ticket" | "event";
+  readonly label: string;
+  readonly href: string;
+}
+/** A recorded fact (from a stored record), never generated text. */
+export interface FleetFact {
+  readonly studentId: string;
+  readonly studentName: string;
+  readonly studentCode: string | null;
+  readonly isDemo: boolean;
+  /** Stable code the client translates (e.g. "inactive_days", "deadline_in_days"); params fill it. */
+  readonly code: string;
+  readonly params: Readonly<Record<string, string | number | null>>;
+  readonly severity: OpsSeverity;
+  /** Which evidence tier this fact comes from. */
+  readonly tier: EvidenceTier | "operational";
+  readonly refs: readonly string[];
+  readonly action: { readonly code: string; readonly href: string } | null;
+}
+/** A deterministic, rule-based suggestion (labelled as a suggestion, not a fact). */
+export interface FleetSuggestion {
+  readonly code: string;
+  readonly params: Readonly<Record<string, string | number | null>>;
+  readonly refs: readonly string[];
+}
+export interface FleetDraft {
+  readonly studentId: string;
+  readonly studentName: string;
+  readonly language: "en" | "fr";
+  readonly subject: string;
+  readonly body: string;
+  readonly basedOn: readonly string[];
+  /** Always true: drafts are never sent by the server. */
+  readonly requiresReview: true;
+  readonly sendHref: string;
+}
+export type FleetAiMode = "deterministic" | "ai_summary";
+export type FleetAiUnavailableReason = "not_requested" | "disabled" | "not_configured" | "not_eligible" | "budget_exhausted" | "provider_error";
+export interface FleetAnswer {
+  readonly intent: FleetIntent;
+  readonly matchedFrom: "preset" | "question" | "default";
+  readonly language: "en" | "fr";
+  readonly generatedAt: string;
+  readonly facts: readonly FleetFact[];
+  readonly suggestions: readonly FleetSuggestion[];
+  readonly drafts: readonly FleetDraft[];
+  readonly records: readonly FleetRecordRef[];
+  readonly totals: Readonly<Record<string, number>>;
+  /** AI-written summary from anonymised aggregates only, or null (with the reason). Never contains names or codes. */
+  readonly ai: { readonly mode: FleetAiMode; readonly summary: string | null; readonly reason: FleetAiUnavailableReason | null; readonly model: { readonly requested: string; readonly served: string | null } | null; readonly sentFields: readonly string[] };
+  readonly truncated: boolean;
+}
+
+// ── Academic Data Import Center ─────────────────────────────────────────────
+
+export const IMPORT_SOURCE_KINDS = ["provider_progress", "course_progress_report", "school_results"] as const;
+export type ImportSourceKind = (typeof IMPORT_SOURCE_KINDS)[number];
+/** Tier assigned to committed records by source kind. Never "verified". */
+export const IMPORT_TIER_BY_SOURCE: Record<ImportSourceKind, "provider_reported" | "institution_reported"> = {
+  provider_progress: "provider_reported",
+  course_progress_report: "provider_reported",
+  school_results: "institution_reported",
+};
+export const IMPORT_FIELDS = ["student_code", "course", "task", "progress_status", "percent_complete", "score_percent", "credits_reported", "reported_on"] as const;
+export type ImportField = (typeof IMPORT_FIELDS)[number];
+export const IMPORT_REQUIRED_FIELDS: readonly ImportField[] = ["student_code", "course"];
+export type ImportColumnMapping = Partial<Record<ImportField, string>>;
+
+export const IMPORT_STATUSES = ["uploaded", "validated", "approved", "committed", "rolled_back", "discarded"] as const;
+export type ImportStatus = (typeof IMPORT_STATUSES)[number];
+export const IMPORT_MAX_BYTES = 5 * 1024 * 1024;
+export const IMPORT_MAX_ROWS = 2000;
+
+export const IMPORT_ISSUE_CODES = [
+  "student_missing", "student_not_found", "course_missing", "course_not_on_plan", "bad_status", "bad_percent", "bad_score",
+  "bad_credits", "bad_date", "future_date", "formula_text", "duplicate_in_file", "no_measure", "completion_needs_review",
+  "credits_informational", "demo_student", "conflicting_value",
+] as const;
+export type ImportIssueCode = (typeof IMPORT_ISSUE_CODES)[number];
+export interface ImportIssue { readonly code: ImportIssueCode; readonly field: ImportField | null; readonly severity: "error" | "warning" | "info" }
+
+export interface ImportNormalizedRow {
+  readonly studentCode: string | null;
+  readonly course: string | null;
+  readonly courseKey: string | null;
+  readonly task: string | null;
+  readonly progressStatus: "not_started" | "in_progress" | "completed" | null;
+  readonly percentComplete: number | null;
+  readonly scorePercent: number | null;
+  readonly creditsReported: number | null;
+  readonly reportedOn: string | null;
+}
+export interface ImportRowView {
+  readonly rowNumber: number;
+  readonly raw: Readonly<Record<string, string>>;
+  readonly normalized: ImportNormalizedRow | null;
+  readonly studentId: string | null;
+  readonly studentName: string | null;
+  readonly outcome: "pending" | "valid" | "warning" | "invalid";
+  readonly diff: "new" | "changed" | "unchanged" | "duplicate_in_file" | null;
+  readonly issues: readonly ImportIssue[];
+  /** For "changed": the active record's values being replaced. */
+  readonly previous: Partial<ImportNormalizedRow> | null;
+}
+export interface ImportCounts {
+  readonly total: number;
+  readonly valid: number;
+  readonly warning: number;
+  readonly invalid: number;
+  readonly new: number;
+  readonly changed: number;
+  readonly unchanged: number;
+  readonly duplicateInFile: number;
+  readonly students: number;
+  readonly needsReview: number;
+  readonly committed?: number;
+  readonly rolledBack?: number;
+}
+export interface ImportBatchView {
+  readonly id: string;
+  readonly status: ImportStatus;
+  readonly sourceKind: ImportSourceKind;
+  readonly tier: "provider_reported" | "institution_reported";
+  readonly providerLabel: string | null;
+  readonly fileName: string | null;
+  readonly fileFormat: "csv" | "xlsx";
+  readonly fileSha256: string;
+  readonly fileBytes: number;
+  readonly sheetName: string | null;
+  readonly headers: readonly string[];
+  readonly mapping: ImportColumnMapping | null;
+  readonly suggestedMapping: ImportColumnMapping;
+  readonly mappingId: string | null;
+  readonly counts: Partial<ImportCounts>;
+  readonly uploadedBy: string | null;
+  readonly uploadedAt: string;
+  readonly validatedAt: string | null;
+  readonly approvedBy: string | null;
+  readonly approvedAt: string | null;
+  readonly committedBy: string | null;
+  readonly committedAt: string | null;
+  readonly rolledBackBy: string | null;
+  readonly rolledBackAt: string | null;
+  readonly rollbackReason: string | null;
+  /** Same file (hash) already committed in another batch. */
+  readonly duplicateOfBatchId: string | null;
+}
+export interface ImportBatchDetail extends ImportBatchView {
+  readonly rows: readonly ImportRowView[];
+  readonly rowsTruncated: boolean;
+}
+export interface ImportMappingView {
+  readonly id: string;
+  readonly name: string;
+  readonly sourceKind: ImportSourceKind;
+  readonly columns: ImportColumnMapping;
+  readonly updatedAt: string;
+}
+const header = z.string().trim().min(1).max(120);
+export const importMappingColumnsSchema = z
+  .object(Object.fromEntries(IMPORT_FIELDS.map((f) => [f, header.optional()])) as Record<ImportField, z.ZodOptional<typeof header>>)
+  .strict();
+export const importUploadMetaSchema = z
+  .object({
+    sourceKind: z.enum(IMPORT_SOURCE_KINDS),
+    providerLabel: z.string().trim().min(1).max(80).optional(),
+    mappingId: z.string().uuid().optional(),
+  })
+  .strict();
+export const importMapSchema = z
+  .object({
+    columns: importMappingColumnsSchema,
+    saveAs: z.string().trim().min(1).max(80).optional(),
+  })
+  .strict();
+export const importRollbackSchema = z.object({ reason: z.string().trim().min(3).max(500) }).strict();
+export const reviewReportedRecordSchema = z.object({ reviewState: z.enum(["reviewed", "needs_review"]) }).strict();
+
+export interface ReportedRecordView {
+  readonly id: string;
+  readonly studentId: string;
+  readonly tier: "provider_reported" | "institution_reported";
+  readonly providerLabel: string | null;
+  readonly courseKey: string | null;
+  readonly courseLabel: string;
+  readonly taskLabel: string | null;
+  readonly progressStatus: "not_started" | "in_progress" | "completed" | null;
+  readonly percentComplete: number | null;
+  readonly scorePercent: number | null;
+  readonly creditsReported: number | null;
+  readonly reportedOn: string | null;
+  readonly reviewState: "none" | "needs_review" | "reviewed";
+  readonly batchId: string;
+  readonly createdAt: string;
+}
+
+// ── Academic Calendar ───────────────────────────────────────────────────────
+
+export const CALENDAR_ITEM_KINDS = [
+  "academic_deadline", "document_deadline", "course_milestone", "orientation", "advisor_meeting", "support_session", "program_checkpoint",
+] as const;
+export type CalendarItemKind = (typeof CALENDAR_ITEM_KINDS)[number];
+export const CALENDAR_EVENT_KINDS = ["advisor_meeting", "support_session", "program_checkpoint", "academic_deadline"] as const;
+export type CalendarEventKind = (typeof CALENDAR_EVENT_KINDS)[number];
+export type CalendarItemSource = "agreement" | "checkpoint" | "orientation" | "calendar_event" | "roadmap" | "high_school_plan";
+export type CalendarItemStatus = "scheduled" | "requested" | "done" | "cancelled" | "overdue";
+
+export interface CalendarItem {
+  /** Stable across reads: `${source}:${recordId}[:${subKey}]`. */
+  readonly id: string;
+  readonly kind: CalendarItemKind;
+  readonly source: CalendarItemSource;
+  readonly studentId: string;
+  readonly studentName: string | null;
+  readonly studentCode: string | null;
+  readonly isDemo: boolean;
+  /** Record data (course titles are data, never translated); `titleKey` when the title is a product label. */
+  readonly title: string;
+  readonly titleKey: string | null;
+  /** All-day items: "YYYY-MM-DD". Timed items: UTC instant. */
+  readonly start: string;
+  readonly end: string | null;
+  readonly allDay: boolean;
+  /** IANA zone the item was scheduled in (display hint; timed instants are absolute). */
+  readonly timeZone: string;
+  readonly status: CalendarItemStatus;
+  readonly location: string | null;
+  /** Where the viewer acts on it (role-appropriate route). */
+  readonly href: string;
+  /** Viewer may reschedule/cancel through the calendar API. */
+  readonly editable: boolean;
+  /** For calendar_event items: the row id; for orientation: the session id. */
+  readonly recordId: string;
+}
+export interface CalendarView {
+  readonly from: string;
+  readonly to: string;
+  readonly generatedAt: string;
+  readonly items: readonly CalendarItem[];
+  readonly truncated: boolean;
+}
+const tz = z.string().trim().min(1).max(64).refine((v) => { try { new Intl.DateTimeFormat("en", { timeZone: v }); return true; } catch { return false; } }, "Unknown time zone");
+export const calendarRangeSchema = z
+  .object({ from: isoDate, to: isoDate, studentId: z.string().trim().min(1).max(128).optional(), includeDemo: z.enum(["0", "1"]).optional() })
+  .strict()
+  .refine((v) => v.from <= v.to, { message: "from must be on or before to" })
+  .refine((v) => (Date.parse(`${v.to}T00:00:00Z`) - Date.parse(`${v.from}T00:00:00Z`)) / 86_400_000 <= 120, { message: "range is limited to 120 days" });
+export const createCalendarEventSchema = z
+  .object({
+    studentId: z.string().trim().min(1).max(128),
+    kind: z.enum(CALENDAR_EVENT_KINDS),
+    title: z.string().trim().min(1).max(120),
+    startsAt: instant,
+    endsAt: instant.nullable().optional(),
+    allDay: z.boolean().default(false),
+    timeZone: tz.default("UTC"),
+    location: z.string().trim().max(200).nullable().optional(),
+    visibleToStudent: z.boolean().default(true),
+    notify: z.boolean().default(true),
+  })
+  .strict()
+  .refine((v) => !v.endsAt || Date.parse(v.endsAt) > Date.parse(v.startsAt), { message: "endsAt must be after startsAt", path: ["endsAt"] });
+export type CreateCalendarEventInput = z.infer<typeof createCalendarEventSchema>;
+export const updateCalendarEventSchema = z
+  .object({
+    title: z.string().trim().min(1).max(120).optional(),
+    startsAt: instant.optional(),
+    endsAt: instant.nullable().optional(),
+    allDay: z.boolean().optional(),
+    timeZone: tz.optional(),
+    location: z.string().trim().max(200).nullable().optional(),
+    visibleToStudent: z.boolean().optional(),
+    status: z.enum(["scheduled", "cancelled"]).optional(),
+    notify: z.boolean().default(true),
+  })
+  .strict();
+export type UpdateCalendarEventInput = z.infer<typeof updateCalendarEventSchema>;
+
+export interface CalendarSubscriptionView {
+  readonly id: string;
+  readonly scope: "student" | "staff";
+  readonly privacy: "minimal" | "detailed";
+  readonly label: string | null;
+  readonly createdAt: string;
+  readonly lastUsedAt: string | null;
+  /** Feed URL path; the token is shown ONCE, at creation (only its hash is stored). */
+  readonly feedPath: string | null;
+}
+export const createSubscriptionSchema = z
+  .object({ privacy: z.enum(["minimal", "detailed"]).default("minimal"), label: z.string().trim().max(60).optional() })
+  .strict();
+
+// ── API paths ───────────────────────────────────────────────────────────────
+
+const enc = encodeURIComponent;
+export const S30_API = {
+  exceptions: "/api/admin/operations/exceptions",
+  exception: (id: string) => `/api/admin/operations/exceptions/${enc(id)}`,
+  events: "/api/admin/operations/events",
+  diagnostics: "/api/admin/operations/diagnostics",
+  conciergeRun: "/api/admin/operations/concierge/run",
+  notifications: "/api/notifications",
+  notificationRead: (id: string) => `/api/notifications/${enc(id)}/read`,
+  notificationsReadAll: "/api/notifications/read-all",
+  fleetAsk: "/api/admin/fleet-ai/ask",
+  fleetStatus: "/api/admin/fleet-ai/status",
+  imports: "/api/admin/imports",
+  importBatch: (id: string) => `/api/admin/imports/${enc(id)}`,
+  importMap: (id: string) => `/api/admin/imports/${enc(id)}/map`,
+  importApprove: (id: string) => `/api/admin/imports/${enc(id)}/approve`,
+  importCommit: (id: string) => `/api/admin/imports/${enc(id)}/commit`,
+  importRollback: (id: string) => `/api/admin/imports/${enc(id)}/rollback`,
+  importDiscard: (id: string) => `/api/admin/imports/${enc(id)}/discard`,
+  importMappings: "/api/admin/imports/mappings",
+  importTemplate: "/api/admin/imports/template.csv",
+  reportedRecords: (studentId: string) => `/api/admin/students/${enc(studentId)}/reported-records`,
+  reportedRecord: (studentId: string, id: string) => `/api/admin/students/${enc(studentId)}/reported-records/${enc(id)}`,
+  staffCalendar: "/api/admin/calendar",
+  staffCalendarEvents: "/api/admin/calendar/events",
+  staffCalendarEvent: (id: string) => `/api/admin/calendar/events/${enc(id)}`,
+  staffCalendarIcs: "/api/admin/calendar/export.ics",
+  staffSubscriptions: "/api/admin/calendar/subscriptions",
+  staffSubscription: (id: string) => `/api/admin/calendar/subscriptions/${enc(id)}`,
+  studentCalendar: "/api/student/calendar",
+  studentCalendarIcs: "/api/student/calendar/export.ics",
+  studentSubscriptions: "/api/student/calendar/subscriptions",
+  studentSubscription: (id: string) => `/api/student/calendar/subscriptions/${enc(id)}`,
+  feed: (token: string) => `/calendar/feed/${enc(token)}.ics`,
+} as const;
+
+export const S30_ERROR_CODES = {
+  VALIDATION: "S30_VALIDATION_FAILED",
+  NOT_FOUND: "S30_NOT_FOUND",
+  FORBIDDEN: "S30_FORBIDDEN",
+  INVALID_TRANSITION: "S30_INVALID_TRANSITION",
+  UNAVAILABLE: "S30_UNAVAILABLE",
+  FILE_REJECTED: "S30_FILE_REJECTED",
+  DUPLICATE_SCHEDULE: "S30_DUPLICATE_SCHEDULE",
+  THROTTLED: "THROTTLED",
+} as const;
+
+export const S30_AUDIT_EVENTS = {
+  exceptionUpdated: "ops.exception_updated",
+  accessDenied: "ops.access_denied",
+  fleetAiQueried: "ops.fleet_ai_queried",
+  importUploaded: "import.batch_uploaded",
+  importApproved: "import.batch_approved",
+  importCommitted: "import.batch_committed",
+  importRolledBack: "import.batch_rolled_back",
+  importDiscarded: "import.batch_discarded",
+  mappingSaved: "import.mapping_saved",
+  calendarEventChanged: "calendar.event_changed",
+  calendarSubscriptionChanged: "calendar.subscription_changed",
+} as const;
+
+/**
+ * Role matrix (server-enforced):
+ *  - Operations (exceptions, events, diagnostics): admin; staff read exceptions and events (no diagnostics, no state change).
+ *  - Fleet AI: admin only (matches the Owner AI). AI summaries receive anonymised aggregate counts only.
+ *  - Imports: admin + staff upload, map and validate; admin only approves, commits, rolls back.
+ *  - Calendar: admin + staff read all students and schedule/reschedule/cancel; students read only their own items
+ *    and manage their own subscriptions. Coaches have no access to any S30 surface except their notifications.
+ *  - Notifications: every signed-in user reads only their own.
+ */

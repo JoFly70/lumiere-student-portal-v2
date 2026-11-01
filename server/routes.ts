@@ -1436,6 +1436,16 @@ window.ENV = {
   // S27 program journey: agreement, checkpoints, orientation sessions, staff notes and the owner Control Center
   // (per-route auth/role/CSRF: admin writes; staff reads and adds notes; coach none; every write audited).
   app.use('/api/admin', (await import('./routes/program-journey')).default);
+  // S30 Phase A: operational layer (exceptions, events, diagnostics, Proactive Concierge) + academic calendar
+  // (per-route role checks: admin/staff read; admin-only diagnostics and exception state; CSRF on every write).
+  const s30 = await import('./routes/s30-ops');
+  const s30Deps = await s30.createDefaultS30Deps((await import('./routes/health')).getReleaseSha());
+  app.use('/api/admin', s30.createS30AdminRouter(s30Deps));
+  app.use('/api/student', s30.createS30StudentRouter(s30Deps));
+  app.use('/api/notifications', s30.createNotificationsRouter(s30Deps));
+  // Public, token-addressed iCalendar feeds (revocable; only the token hash is stored; owner role re-checked).
+  app.use('/calendar/feed', s30.createCalendarFeedRouter(s30Deps));
+  (await import('./services/s30/concierge')).startConciergeScheduler(s30Deps.db);
   // S18 billing ledger: staff/admin entry and review (per-route role checks)
   app.use('/api/admin', (await import('./routes/admin-billing')).default);
   // S13 staff-only student <-> portal account linkage (per-route auth, admin only).
