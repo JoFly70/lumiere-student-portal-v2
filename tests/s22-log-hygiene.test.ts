@@ -59,6 +59,7 @@ describe("S22 log hygiene", () => {
     const src = readFileSync("server/index.ts", "utf8");
     expect(src).not.toMatch(/headers:\s*req\.headers/);
     expect(src).not.toMatch(/url:\s*req\.url/);
-    expect(src).toMatch(/const path = req\.path;/); // request logger uses path without query
+    // request logger uses the path without the query string (S29: calendar feed tokens redacted from the path too)
+    expect(src).toMatch(/const path = safeLogPath\(req\.path\);/);
   });
 });

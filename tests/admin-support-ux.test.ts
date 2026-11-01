@@ -26,11 +26,15 @@ describe("admin student support navigation", () => {
     expect(cc).toContain('href="/admin/assistant"');
   });
 
-  it("asks the owner to choose a student before any AI question (no raw IDs, no unscoped chat)", () => {
+  it("without a chosen student, offers only the S29 Fleet copilot (deterministic, portfolio-scoped), never per-student AI chat", () => {
     const html = render(React.createElement(AdminAssistant), "/admin/assistant");
     expect(html).toContain("Lumière Owner AI");
     expect(html).toContain("Choose a student");
-    expect(html).not.toMatch(/<textarea\b/i);
+    expect(html).toContain('data-testid="fleet-copilot"');
+    expect(html).not.toContain('data-testid="owner-assistant-panel"');
+    // The only text box is the Fleet copilot's question.
+    expect((html.match(/<textarea\b/gi) ?? []).length).toBe(1);
+    expect(html).toContain('data-testid="fleet-question"');
   });
 
   it("scopes the owner AI panel to the selected student", () => {
