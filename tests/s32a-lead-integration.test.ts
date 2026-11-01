@@ -34,3 +34,17 @@ describe("S32-A F26 / F05: evidence links land on the right Documents tab", () =
     expect(documentsTabFromSearch("?tab=bogus")).toBe("all");
   });
 });
+
+import { answerFromRecord } from "../server/services/academic-assistant/student-record";
+describe("S32-A F13 follow-up: billing questions without a Billing record get a truthful answer", () => {
+  const recs = [{ ref: "S1", label: "Degree credits", path: "/roadmap", text: "x" }];
+  it("answers 'How much do I owe?' truthfully (EN/FR) instead of an unrelated knowledge-base entry", () => {
+    expect(answerFromRecord("How much do I owe?", "en", recs)!.text).toContain("No billing information is on your portal account");
+    expect(answerFromRecord("Combien je dois payer ?", "fr", recs)!.text).toContain("Aucune information de facturation");
+  });
+  it("does not add the line when a Billing record exists, or when no record was loaded at all", () => {
+    const withBilling = [...recs, { ref: "S2", label: "Billing", path: "/billing", text: "Remaining 10.00 USD." }];
+    expect(answerFromRecord("How much do I owe?", "en", withBilling)!.text).not.toContain("No billing information");
+    expect(answerFromRecord("How much do I owe?", "en", [])).toBeNull();
+  });
+});

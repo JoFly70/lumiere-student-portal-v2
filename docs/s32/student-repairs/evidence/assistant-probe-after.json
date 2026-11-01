@@ -1,0 +1,500 @@
+[
+ {
+  "persona": "hs",
+  "lang": "en",
+  "q": "How many credits do I still need?",
+  "mode": "local",
+  "grounded": "record",
+  "refs": [
+   "/high-school"
+  ],
+  "providerCalls": 0,
+  "recordDataInProviderBody": false,
+  "piiNotice": false,
+  "firstLine": "From your record (system facts, not AI): • Program requires 21 credits (core 16, electives 5). Officially earned (confirmed by the school): 8. Remaining: 13. Re"
+ },
+ {
+  "persona": "hs",
+  "lang": "en",
+  "q": "What's most urgent?",
+  "mode": "local",
+  "grounded": "record",
+  "refs": [
+   "/high-school",
+   "/journey"
+  ],
+  "providerCalls": 0,
+  "recordDataInProviderBody": false,
+  "piiNotice": false,
+  "firstLine": "From your record (system facts, not AI): • Your next open tasks: Units 1 to 3 lessons — English 4: Detailed Reading and Research Writing, planned by 2026-12-04;"
+ },
+ {
+  "persona": "hs",
+  "lang": "en",
+  "q": "Am I on track?",
+  "mode": "local",
+  "grounded": "record",
+  "refs": [
+   "/high-school",
+   "/journey"
+  ],
+  "providerCalls": 0,
+  "recordDataInProviderBody": false,
+  "piiNotice": false,
+  "firstLine": "From your record (system facts, not AI): • Your plan started 2026-09-07 with a target of 2026-12-28 (a target, not a guarantee). Pace: ahead.  4 monthly milesto"
+ },
+ {
+  "persona": "hs",
+  "lang": "en",
+  "q": "Which documents do I owe?",
+  "mode": "local",
+  "grounded": "record",
+  "refs": [
+   "/documents"
+  ],
+  "providerCalls": 0,
+  "recordDataInProviderBody": false,
+  "piiNotice": false,
+  "firstLine": "From your record (system facts, not AI): • Documents: 4 on file; 0 waiting for Lumière's review; 1 need a new upload (hs transcript). [S7]"
+ },
+ {
+  "persona": "hs",
+  "lang": "fr",
+  "q": "Combien de crédits me faut-il encore ?",
+  "mode": "local",
+  "grounded": "record",
+  "refs": [
+   "/high-school"
+  ],
+  "providerCalls": 0,
+  "recordDataInProviderBody": false,
+  "piiNotice": false,
+  "firstLine": "D’après votre dossier (faits du système, pas une IA) : • Le programme exige 21 crédits (matières obligatoires 16, options 5). Crédits officiellement obtenus (co"
+ },
+ {
+  "persona": "hs",
+  "lang": "fr",
+  "q": "Qu’est-ce qui est le plus urgent ?",
+  "mode": "local",
+  "grounded": "record",
+  "refs": [
+   "/high-school",
+   "/journey"
+  ],
+  "providerCalls": 0,
+  "recordDataInProviderBody": false,
+  "piiNotice": false,
+  "firstLine": "D’après votre dossier (faits du système, pas une IA) : • Vos prochaines tâches ouvertes : Units 1 to 3 lessons — English 4: Detailed Reading and Research Writin"
+ },
+ {
+  "persona": "hs",
+  "lang": "fr",
+  "q": "Suis-je dans les temps ?",
+  "mode": "local",
+  "grounded": "record",
+  "refs": [
+   "/high-school",
+   "/journey"
+  ],
+  "providerCalls": 0,
+  "recordDataInProviderBody": false,
+  "piiNotice": false,
+  "firstLine": "D’après votre dossier (faits du système, pas une IA) : • Votre plan a commencé le 2026-09-07 avec une cible au 2026-12-28 (une cible, pas une garantie). Rythme "
+ },
+ {
+  "persona": "hs",
+  "lang": "fr",
+  "q": "Quels documents dois-je fournir ?",
+  "mode": "local",
+  "grounded": "record",
+  "refs": [
+   "/documents"
+  ],
+  "providerCalls": 0,
+  "recordDataInProviderBody": false,
+  "piiNotice": false,
+  "firstLine": "D’après votre dossier (faits du système, pas une IA) : • Documents : 4 au dossier; 0 en attente de vérification par Lumière; 1 à téléverser de nouveau (relevé d"
+ },
+ {
+  "persona": "hs",
+  "lang": "en",
+  "q": "Where are my credits?",
+  "mode": "local",
+  "grounded": "record",
+  "refs": [
+   "/high-school"
+  ],
+  "providerCalls": 0,
+  "recordDataInProviderBody": false,
+  "piiNotice": false,
+  "firstLine": "From your record (system facts, not AI): • Program requires 21 credits (core 16, electives 5). Officially earned (confirmed by the school): 8. Remaining: 13. Re"
+ },
+ {
+  "persona": "hs",
+  "lang": "en",
+  "q": "What is my balance?",
+  "mode": "local",
+  "grounded": "record",
+  "refs": [
+   "/billing"
+  ],
+  "providerCalls": 0,
+  "recordDataInProviderBody": false,
+  "piiNotice": false,
+  "firstLine": "From your record (system facts, not AI): • Agreed amount 12,000.00 USD, adjustment −1,200.00 USD. Paid (confirmed by Lumière): 4,050.00 USD. Remaining: 6,750.00"
+ },
+ {
+  "persona": "hs",
+  "lang": "en",
+  "q": "How much do I owe?",
+  "mode": "local",
+  "grounded": "record",
+  "refs": [
+   "/billing"
+  ],
+  "providerCalls": 0,
+  "recordDataInProviderBody": false,
+  "piiNotice": false,
+  "firstLine": "From your record (system facts, not AI): • Agreed amount 12,000.00 USD, adjustment −1,200.00 USD. Paid (confirmed by Lumière): 4,050.00 USD. Remaining: 6,750.00"
+ },
+ {
+  "persona": "hs",
+  "lang": "en",
+  "q": "When is my next exam?",
+  "mode": "local",
+  "grounded": "record",
+  "refs": [
+   "/high-school"
+  ],
+  "providerCalls": 0,
+  "recordDataInProviderBody": false,
+  "piiNotice": false,
+  "firstLine": "From your record (system facts, not AI): • Your next open tasks: Units 1 to 3 lessons — English 4: Detailed Reading and Research Writing, planned by 2026-12-04;"
+ },
+ {
+  "persona": "hs",
+  "lang": "fr",
+  "q": "Où en sont mes crédits ?",
+  "mode": "local",
+  "grounded": "record",
+  "refs": [
+   "/high-school"
+  ],
+  "providerCalls": 0,
+  "recordDataInProviderBody": false,
+  "piiNotice": false,
+  "firstLine": "D’après votre dossier (faits du système, pas une IA) : • Le programme exige 21 crédits (matières obligatoires 16, options 5). Crédits officiellement obtenus (co"
+ },
+ {
+  "persona": "hs",
+  "lang": "fr",
+  "q": "Quand est mon prochain examen ?",
+  "mode": "local",
+  "grounded": "record",
+  "refs": [
+   "/high-school"
+  ],
+  "providerCalls": 0,
+  "recordDataInProviderBody": false,
+  "piiNotice": false,
+  "firstLine": "D’après votre dossier (faits du système, pas une IA) : • Vos prochaines tâches ouvertes : Units 1 to 3 lessons — English 4: Detailed Reading and Research Writin"
+ },
+ {
+  "persona": "hs",
+  "lang": "fr",
+  "q": "Combien je dois payer ?",
+  "mode": "local",
+  "grounded": "record",
+  "refs": [
+   "/billing"
+  ],
+  "providerCalls": 0,
+  "recordDataInProviderBody": false,
+  "piiNotice": false,
+  "firstLine": "D’après votre dossier (faits du système, pas une IA) : • Montant convenu : 12 000,00 USD, ajustement −1 200,00 USD. Payé (confirmé par Lumière) : 4 050,00 USD. "
+ },
+ {
+  "persona": "hs",
+  "lang": "fr",
+  "q": "Explique-moi ma feuille de route",
+  "mode": "local",
+  "grounded": "record",
+  "refs": [
+   "/high-school"
+  ],
+  "providerCalls": 0,
+  "recordDataInProviderBody": false,
+  "piiNotice": false,
+  "firstLine": "D’après votre dossier (faits du système, pas une IA) : • Le programme exige 21 crédits (matières obligatoires 16, options 5). Crédits officiellement obtenus (co"
+ },
+ {
+  "persona": "hs",
+  "lang": "en",
+  "q": "Can you explain photosynthesis?",
+  "mode": "live",
+  "grounded": null,
+  "refs": [],
+  "providerCalls": 1,
+  "recordDataInProviderBody": false,
+  "piiNotice": false,
+  "firstLine": "general answer"
+ },
+ {
+  "persona": "hs",
+  "lang": "en",
+  "q": "My email is someone@example.com, what are my credits?",
+  "mode": "local",
+  "grounded": null,
+  "refs": [],
+  "providerCalls": 0,
+  "recordDataInProviderBody": false,
+  "piiNotice": true,
+  "firstLine": "Study.com TESU’s credit-for-training page mentions ACE-recommended courses completed with Study.com and says an official Study.com transcript is needed to be aw"
+ },
+ {
+  "persona": "degree",
+  "lang": "en",
+  "q": "How many credits do I still need?",
+  "mode": "local",
+  "grounded": "record",
+  "refs": [
+   "/roadmap"
+  ],
+  "providerCalls": 0,
+  "recordDataInProviderBody": false,
+  "piiNotice": false,
+  "firstLine": "From your record (system facts, not AI): • Your degree requires 120 credits. Earned (accepted by the university): 36.5. Planned (on your roadmap, not yet accept"
+ },
+ {
+  "persona": "degree",
+  "lang": "en",
+  "q": "What's most urgent?",
+  "mode": "local",
+  "grounded": "record",
+  "refs": [
+   "/journey",
+   "/roadmap"
+  ],
+  "providerCalls": 0,
+  "recordDataInProviderBody": false,
+  "piiNotice": false,
+  "firstLine": "From your record (system facts, not AI): • Your program agreement was signed on 2026-08-31 and activated on 2026-09-07. Lumière support runs until 2027-06-07 (7"
+ },
+ {
+  "persona": "degree",
+  "lang": "en",
+  "q": "Am I on track?",
+  "mode": "local",
+  "grounded": "record",
+  "refs": [
+   "/journey",
+   "/roadmap"
+  ],
+  "providerCalls": 0,
+  "recordDataInProviderBody": false,
+  "piiNotice": false,
+  "firstLine": "From your record (system facts, not AI): • From the work you logged in the last 28 days (27 item(s), last on 2026-10-28): about 1.6 credit(s) per week, which wo"
+ },
+ {
+  "persona": "degree",
+  "lang": "en",
+  "q": "Which documents do I owe?",
+  "mode": "local",
+  "grounded": "record",
+  "refs": [
+   "/documents"
+  ],
+  "providerCalls": 0,
+  "recordDataInProviderBody": false,
+  "piiNotice": false,
+  "firstLine": "From your record (system facts, not AI): • Documents: 4 on file; 0 waiting for Lumière's review; 1 need a new upload (hs transcript). [S1]"
+ },
+ {
+  "persona": "degree",
+  "lang": "fr",
+  "q": "Combien de crédits me faut-il encore ?",
+  "mode": "local",
+  "grounded": "record",
+  "refs": [
+   "/roadmap"
+  ],
+  "providerCalls": 0,
+  "recordDataInProviderBody": false,
+  "piiNotice": false,
+  "firstLine": "D’après votre dossier (faits du système, pas une IA) : • Votre diplôme exige 120 crédits. Acquis (acceptés par l’université) : 36,5. Prévus (à votre feuille de "
+ },
+ {
+  "persona": "degree",
+  "lang": "fr",
+  "q": "Qu’est-ce qui est le plus urgent ?",
+  "mode": "local",
+  "grounded": "record",
+  "refs": [
+   "/journey",
+   "/roadmap"
+  ],
+  "providerCalls": 0,
+  "recordDataInProviderBody": false,
+  "piiNotice": false,
+  "firstLine": "D’après votre dossier (faits du système, pas une IA) : • Votre entente de programme a été signée le 2026-08-31 et activée le 2026-09-07. L’accompagnement Lumièr"
+ },
+ {
+  "persona": "degree",
+  "lang": "fr",
+  "q": "Suis-je dans les temps ?",
+  "mode": "local",
+  "grounded": "record",
+  "refs": [
+   "/journey",
+   "/roadmap"
+  ],
+  "providerCalls": 0,
+  "recordDataInProviderBody": false,
+  "piiNotice": false,
+  "firstLine": "D’après votre dossier (faits du système, pas une IA) : • D’après le travail consigné au cours des 28 derniers jours (27 élément(s), dernier le 2026-10-28) : env"
+ },
+ {
+  "persona": "degree",
+  "lang": "fr",
+  "q": "Quels documents dois-je fournir ?",
+  "mode": "local",
+  "grounded": "record",
+  "refs": [
+   "/documents"
+  ],
+  "providerCalls": 0,
+  "recordDataInProviderBody": false,
+  "piiNotice": false,
+  "firstLine": "D’après votre dossier (faits du système, pas une IA) : • Documents : 4 au dossier; 0 en attente de vérification par Lumière; 1 à téléverser de nouveau (relevé d"
+ },
+ {
+  "persona": "degree",
+  "lang": "en",
+  "q": "Where are my credits?",
+  "mode": "local",
+  "grounded": "record",
+  "refs": [
+   "/roadmap"
+  ],
+  "providerCalls": 0,
+  "recordDataInProviderBody": false,
+  "piiNotice": false,
+  "firstLine": "From your record (system facts, not AI): • Your degree requires 120 credits. Earned (accepted by the university): 36.5. Planned (on your roadmap, not yet accept"
+ },
+ {
+  "persona": "degree",
+  "lang": "en",
+  "q": "What is my balance?",
+  "mode": "local",
+  "grounded": "record",
+  "refs": [],
+  "providerCalls": 0,
+  "recordDataInProviderBody": false,
+  "piiNotice": false,
+  "firstLine": "From your record (system facts, not AI): No billing information is on your portal account, so there is no amount to show here. For any payment question, contact"
+ },
+ {
+  "persona": "degree",
+  "lang": "en",
+  "q": "How much do I owe?",
+  "mode": "local",
+  "grounded": "record",
+  "refs": [],
+  "providerCalls": 0,
+  "recordDataInProviderBody": false,
+  "piiNotice": false,
+  "firstLine": "From your record (system facts, not AI): No billing information is on your portal account, so there is no amount to show here. For any payment question, contact"
+ },
+ {
+  "persona": "degree",
+  "lang": "en",
+  "q": "When is my next exam?",
+  "mode": "local",
+  "grounded": "record",
+  "refs": [
+   "/roadmap"
+  ],
+  "providerCalls": 0,
+  "recordDataInProviderBody": false,
+  "piiNotice": false,
+  "firstLine": "From your record (system facts, not AI): • Your next open tasks: Challenge 3 — Financial Accounting, planned by 2026-10-22 (overdue); Challenge 6 — Principles o"
+ },
+ {
+  "persona": "degree",
+  "lang": "fr",
+  "q": "Où en sont mes crédits ?",
+  "mode": "local",
+  "grounded": "record",
+  "refs": [
+   "/roadmap"
+  ],
+  "providerCalls": 0,
+  "recordDataInProviderBody": false,
+  "piiNotice": false,
+  "firstLine": "D’après votre dossier (faits du système, pas une IA) : • Votre diplôme exige 120 crédits. Acquis (acceptés par l’université) : 36,5. Prévus (à votre feuille de "
+ },
+ {
+  "persona": "degree",
+  "lang": "fr",
+  "q": "Quand est mon prochain examen ?",
+  "mode": "local",
+  "grounded": "record",
+  "refs": [
+   "/roadmap"
+  ],
+  "providerCalls": 0,
+  "recordDataInProviderBody": false,
+  "piiNotice": false,
+  "firstLine": "D’après votre dossier (faits du système, pas une IA) : • Vos prochaines tâches ouvertes : Challenge 3 — Financial Accounting, prévue d’ici le 2026-10-22 (en ret"
+ },
+ {
+  "persona": "degree",
+  "lang": "fr",
+  "q": "Combien je dois payer ?",
+  "mode": "local",
+  "grounded": "record",
+  "refs": [],
+  "providerCalls": 0,
+  "recordDataInProviderBody": false,
+  "piiNotice": false,
+  "firstLine": "D’après votre dossier (faits du système, pas une IA) : Aucune information de facturation n’est inscrite à votre compte du portail; il n’y a donc aucun montant à"
+ },
+ {
+  "persona": "degree",
+  "lang": "fr",
+  "q": "Explique-moi ma feuille de route",
+  "mode": "local",
+  "grounded": "record",
+  "refs": [
+   "/roadmap"
+  ],
+  "providerCalls": 0,
+  "recordDataInProviderBody": false,
+  "piiNotice": false,
+  "firstLine": "D’après votre dossier (faits du système, pas une IA) : • Votre diplôme exige 120 crédits. Acquis (acceptés par l’université) : 36,5. Prévus (à votre feuille de "
+ },
+ {
+  "persona": "degree",
+  "lang": "en",
+  "q": "Can you explain photosynthesis?",
+  "mode": "live",
+  "grounded": null,
+  "refs": [],
+  "providerCalls": 1,
+  "recordDataInProviderBody": false,
+  "piiNotice": false,
+  "firstLine": "general answer"
+ },
+ {
+  "persona": "degree",
+  "lang": "en",
+  "q": "My email is someone@example.com, what are my credits?",
+  "mode": "local",
+  "grounded": null,
+  "refs": [],
+  "providerCalls": 0,
+  "recordDataInProviderBody": false,
+  "piiNotice": true,
+  "firstLine": "Study.com TESU’s credit-for-training page mentions ACE-recommended courses completed with Study.com and says an official Study.com transcript is needed to be aw"
+ }
+]

@@ -219,8 +219,8 @@ const MAP: Record<Intent, string[]> = {
   roadmap: ["Timeline", "Credits", "Degree credits", "Current courses", "Next tasks"],
 };
 const LEAD = {
-  en: { head: "From your record (system facts, not AI):", change: "On your High School page, find the elective in your course list and choose \"Request a change\". Lumière reviews it, the school must accept the substitute, and only then is a new version of your roadmap published. You cannot change the roadmap yourself, and nothing changes until it is approved.", approval: "If the school has not approved an elective, it stays marked as proposed and earns no credit; Lumière will tell you and help choose another option so you still reach 5 elective credits." },
-  fr: { head: "D’après votre dossier (faits du système, pas une IA) :", change: "Sur votre page Études secondaires, repérez l’option dans la liste de vos cours et choisissez « Demander un changement ». Lumière l’examine, l’école doit accepter le remplacement, puis une nouvelle version de votre feuille de route est publiée. Vous ne pouvez pas modifier la feuille de route vous-même, et rien ne change avant l’approbation.", approval: "Si l’école n’a pas approuvé une option, elle reste « proposée » et ne donne aucun crédit; Lumière vous en informe et vous aide à en choisir une autre pour atteindre 5 crédits d’options." },
+  en: { head: "From your record (system facts, not AI):", change: "On your High School page, find the elective in your course list and choose \"Request a change\". Lumière reviews it, the school must accept the substitute, and only then is a new version of your roadmap published. You cannot change the roadmap yourself, and nothing changes until it is approved.", approval: "If the school has not approved an elective, it stays marked as proposed and earns no credit; Lumière will tell you and help choose another option so you still reach 5 elective credits.", noBilling: "No billing information is on your portal account, so there is no amount to show here. For any payment question, contact your Lumière team through Assistance." },
+  fr: { head: "D’après votre dossier (faits du système, pas une IA) :", change: "Sur votre page Études secondaires, repérez l’option dans la liste de vos cours et choisissez « Demander un changement ». Lumière l’examine, l’école doit accepter le remplacement, puis une nouvelle version de votre feuille de route est publiée. Vous ne pouvez pas modifier la feuille de route vous-même, et rien ne change avant l’approbation.", approval: "Si l’école n’a pas approuvé une option, elle reste « proposée » et ne donne aucun crédit; Lumière vous en informe et vous aide à en choisir une autre pour atteindre 5 crédits d’options.", noBilling: "Aucune information de facturation n’est inscrite à votre compte du portail; il n’y a donc aucun montant à afficher ici. Pour toute question de paiement, contactez votre équipe Lumière par l’Assistance." },
 } as const;
 
 const fold = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[’‘]/g, "'");
@@ -235,6 +235,9 @@ export function answerFromRecord(message: string, lang: Lang, records: readonly 
   const extra: string[] = [];
   if (hits.includes("elective_change")) extra.push(LEAD[lang].change);
   if (hits.includes("school_approval")) extra.push(LEAD[lang].approval);
+  // S32-A: a billing question with no Billing record (e.g. a degree student without billing) gets a truthful line
+  // instead of an unrelated knowledge-base entry. Only when the student's record was loaded at all.
+  if (hits.includes("billing") && records.length > 0 && !records.some((r) => r.label === "Billing")) extra.push(LEAD[lang].noBilling);
   if (!cited.length && !extra.length) return null;
   return { text: [LEAD[lang].head, ...cited.map((r) => `• ${r.text} [${r.ref}]`), ...extra].join("\n"), cited };
 }

@@ -259,5 +259,5 @@ export const s32HsFr: Record<keyof typeof s32HsEn, string> = {
   "s32.fnd.req.manual.hint": "Le personnel de Lumière examine cette exigence.",
   "s32.fnd.req.line.one": "{a} crédit acquis sur {r}",
   "s32.fnd.req.line.other": "{a} crédits acquis sur {r}",
-  "s32.fnd.req.surplusNote": "{n} crédits vérifiés de plus que ce que cette exigence demande ; l’excédent est du surplus.",
+  "s32.fnd.req.surplusNote": "Surplus vérifié : {n} au-delà de ce que cette exigence demande.",
 };
