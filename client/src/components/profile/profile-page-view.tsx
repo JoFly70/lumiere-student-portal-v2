@@ -11,7 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { Eyebrow, StudentSurface, buttonClass, cardClass } from "@/components/student-progress/student-ui";
 import { ProfileAvatarUpload } from "@/components/profile-avatar-upload";
-import { PROFILE_SECTIONS, displayName, readinessAction, readinessChip, sectionDomId, splitReadiness, verificationChip } from "./profile-presentation";
+import { PROFILE_SECTIONS, displayName, readinessAction, readinessChip, readinessText, sectionDomId, splitReadiness, verificationChip } from "./profile-presentation";
 import { StatusChip } from "./profile-ui";
 import { useProfileActions } from "./profile-actions";
 import { IdentitySection } from "./identity-section";
@@ -66,12 +66,14 @@ export function ProfileSectionNav() {
 }
 
 function ReadinessRow({ item }: { item: ProfileReadinessItem }) {
+  const { language } = useT();
+  const text = readinessText(item, language);
   const chip = readinessChip(item.kind);
   const action = readinessAction(item);
   const body = (
     <span className="min-w-0">
-      <span className="block text-sm font-medium text-student-ink">{item.label}</span>
-      {item.detail && <span className="block text-xs text-student-muted">{item.detail}</span>}
+      <span className="block text-sm font-medium text-student-ink">{text.label}</span>
+      {text.detail && <span className="block text-xs text-student-muted">{text.detail}</span>}
     </span>
   );
   if (!action) {

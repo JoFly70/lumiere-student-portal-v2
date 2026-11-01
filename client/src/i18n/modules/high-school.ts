@@ -382,7 +382,7 @@ export const highSchoolFr: Record<keyof typeof highSchoolEn, string> = {
   "hs.tab.subjects.rest": "matières",
   "hs.tab.graduation.prefix": "Mon ",
   "hs.tab.graduation.rest": "diplôme",
-  "hs.tabs.label": "Sections du parcours lycée",
+  "hs.tabs.label": "Sections des études secondaires",
 
   "hs.subject.english": "Anglais",
   "hs.subject.mathematics": "Mathématiques",
@@ -542,18 +542,18 @@ export const highSchoolFr: Record<keyof typeof highSchoolEn, string> = {
 
   "hs.gov.headline": "Seule votre école confirme les notes, les crédits et votre diplôme.",
   "hs.gov.detail": "Lumière vous accompagne et planifie votre parcours. Tout ce que vous indiquez ici nous aide à mieux vous aider, mais cela ne devient officiel qu'une fois confirmé par votre école.",
-  "hs.supportDraft.subject": "Aide pour le lycée : {title}",
-  "hs.supportDraft.description": "Bonjour Lumière, j'aimerais de l'aide pour « {title} » dans mon plan de lycée ({school}). ",
+  "hs.supportDraft.subject": "Aide pour le secondaire : {title}",
+  "hs.supportDraft.description": "Bonjour Lumière, j'aimerais de l'aide pour « {title} » dans mon plan d’études secondaires ({school}). ",
 
-  "hs.title": "Mon parcours au lycée",
+  "hs.title": "Études secondaires",
   "hs.started": "Début : {date}",
   "hs.whatsOfficial": "Qu'est-ce qui est officiel ?",
   "hs.graduated.title": "Félicitations, vous êtes diplômé(e)",
   "hs.graduated.on": "{school} a décerné votre diplôme le {date}. Bravo.",
   "hs.graduated.noDate": "{school} a décerné votre diplôme. Bravo.",
 
-  "hs.loading": "Chargement de votre parcours au lycée",
-  "hs.error.title": "Impossible de charger votre parcours au lycée",
+  "hs.loading": "Chargement de vos études secondaires",
+  "hs.error.title": "Impossible de charger vos études secondaires",
   "hs.error.body": "Il s'agit généralement d'un bref problème de connexion. Rien n'a changé dans votre dossier.",
   "hs.error.retry": "Réessayer",
   "hs.noEnrollment.eyebrow": "Votre programme",
@@ -562,7 +562,7 @@ export const highSchoolFr: Record<keyof typeof highSchoolEn, string> = {
   "hs.noEnrollment.cta": "Interroger Lumière sur votre plan",
   "hs.noRoadmap.title": "Votre feuille de route est en préparation",
   "hs.noRoadmap.body": "Votre inscription est configurée, mais Lumière n'a pas encore publié votre plan. Dès qu'il sera prêt, vos cours, vos objectifs et vos prochaines étapes s'afficheront ici. Vous n'avez rien à faire.",
-  "hs.noRoadmap.cta": "Des questions ? Contactez le support",
+  "hs.noRoadmap.cta": "Des questions ? Écrivez à l’Assistance",
 
   "hs.ring.of": "sur {total} {unit}",
   "hs.ring.earned": "obtenus",
@@ -620,7 +620,7 @@ export const highSchoolFr: Record<keyof typeof highSchoolEn, string> = {
   "hs.subjects.lockedOfficial": "Confirmé par l'école, donc verrouillé ici.",
   "hs.subjects.lockedPlan": "Ce cours ne fait pas partie de votre plan actuel, la progression est donc verrouillée.",
   "hs.subjects.requestSent": "Demande {number} envoyée à Lumière.",
-  "hs.subjects.followSupport": "La suivre dans Support",
+  "hs.subjects.followSupport": "La suivre dans Assistance",
   "hs.subjects.askAria": "Demander de l'aide à Lumière pour {title}",
   "hs.subjects.askHelp": "Demander de l'aide pour ce cours",
   "hs.subjects.helpQuestion": "De quelle aide avez-vous besoin ?",
@@ -712,6 +712,6 @@ export const highSchoolFr: Record<keyof typeof highSchoolEn, string> = {
   "hs.elective.approvalNote": "Lumière et l'école doivent toutes deux approuver un changement. Votre feuille de route ne changera pas avant l'approbation.",
   "hs.elective.submit": "Envoyer la demande",
   "hs.elective.sent": "Demande {number} envoyée. Lumière l'examinera, puis l'école devra l'approuver.",
-  "hs.elective.follow": "La suivre dans Support",
+  "hs.elective.follow": "La suivre dans Assistance",
   "hs.elective.unavailable": "Non disponible dans cet aperçu.",
 };

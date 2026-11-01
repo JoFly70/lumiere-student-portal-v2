@@ -4,9 +4,9 @@ import { useT, type Language, type TranslationKey } from "@/i18n";
 
 export type TFn = (key: TranslationKey, vars?: Record<string, string | number>) => string;
 
-/** French uses the singular for 0 and 1; English only for 1. */
+/** French uses the singular below 2 (0, 1 and 1,5 credits); English only for exactly 1. */
 export function isOne(n: number, lang: Language): boolean {
-  return n === 1 || (lang === "fr" && n === 0);
+  return n === 1 || (lang === "fr" && n >= 0 && n < 2);
 }
 
 export function plural(t: TFn, lang: Language, base: string, n: number, vars: Record<string, string | number> = {}): string {

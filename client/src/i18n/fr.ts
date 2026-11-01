@@ -50,7 +50,7 @@ export const fr: Record<TranslationKey, string> = {
   "language.switchTo": "Changer de langue (actuelle : {current})",
 
   "nav.flightDeck": "Tableau de bord",
-  "nav.highSchoolFlightDeck": "Tableau de bord du lycée",
+  "nav.highSchoolFlightDeck": "Tableau de bord des études secondaires",
   "nav.highSchool": "Études secondaires",
   "nav.roadmap": "Votre feuille de route",
   "nav.documents": "Documents",

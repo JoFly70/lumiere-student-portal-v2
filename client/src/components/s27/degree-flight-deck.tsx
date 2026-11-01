@@ -17,8 +17,8 @@ import type { StudentDegreeProgressView } from "@shared/student-degree-progress-
 import type { StudentJourneyView } from "@shared/s27-contract";
 import { buildAlertCards, buildRadarChips, deadlinesToWatch, weekOfProgram, type TicketLike } from "@/lib/s27/cockpit-model";
 import {
-  buildDegreeStops, degreeFigures, degreeNextTask, degreeNotes, degreeOpenTasks, degreePlanDates, degreeRequirementRows,
-  type DegreeFigures, type DegreeStop,
+  buildDegreeStops, degreeFigures, degreeNextTask, degreeNotes, degreeOpenTasks, degreePlanDates, degreeRequirementRows, requirementShortfalls,
+  type DegreeFigures, type DegreeStop, type RequirementShortfall,
 } from "@/lib/s27/degree-cockpit-model";
 import { formatCents, type CreditSegment } from "@/components/degree-journey/model";
 import { djTranslate, useDj, type DjKey } from "@/components/degree-journey/i18n";
@@ -26,7 +26,7 @@ import { formatDay } from "@/lib/s27/dates";
 import { useS27T } from "@/lib/s27/i18n-util";
 import { S27Page, Eyebrow } from "./ui";
 import {
-  AlertCardView, AskCard, BillingCard, CheckpointsCard, CreditsGaugeCard, DeckHead, DocumentsCard, RadarChipView, UpNextCard, WeekCard,
+  AlertCardView, AskCard, BillingCard, CheckpointsCard, CreditsGaugeCard, DeckHead, DeckProgramProvider, DeckWelcome, DocumentsCard, RadarChipView, UpNextCard, WeekCard,
   type CreditRow, type DeckBilling, type DeckDoc, type DeckLinks, type JourneyState, type NextItem,
 } from "./deck-parts";
 import { FlightInstrument, type InstrumentStop } from "./flight-instrument";
@@ -85,12 +85,20 @@ export function DegreeFlightDeck(props: DegreeFlightDeckProps) {
   const nextItem: NextItem | null = next ? { title: taskTitle(next), courseName: next.courseTitle, credits: next.credits, dueDate: next.dueDate, courseKey: next.courseKey } : null;
   const agenda = useMemo(() => open.map((o) => ({ courseKey: o.courseKey, courseTitle: o.courseTitle, key: o.key, title: o.courseLevel ? t("s27.dg.finishCourse") : o.title, dueDate: o.dueDate, overdue: o.overdue })), [open, t]);
 
+  const shortfalls = useMemo(
+    () => requirementShortfalls(degreeRequirementRows(progress), figures.source.openCents === null ? null : figures.source.openCents / 100),
+    [progress, figures.source.openCents],
+  );
+
   return (
+    <DeckProgramProvider value="degree">
     <S27Page testId="degree-flight-deck">
       <DeckHead firstName={firstName} hour={hour}>
-        {watch > 0 && <span className="pill warn"><i />{pl("s27.fd.pill.deadline", watch)}</span>}
+        {watch > 0 && <span className="pill warn"><i />{pl("s32.dg.pill.deadline", watch)}</span>}
         {week && <span className="pill">{t("s27.fd.pill.week", { week: week.week, total: week.total })}</span>}
       </DeckHead>
+
+      <DeckWelcome />
 
       {journeyState === "failed" && <p className="notice warn" role="status" data-testid="fd-journey-error">{t("s27.fd.journeyError")}</p>}
 
@@ -109,7 +117,7 @@ export function DegreeFlightDeck(props: DegreeFlightDeckProps) {
 
       <div className="deck-grid">
         <div className="colst">
-          <DegreeFlightCard roadmap={roadmap} figures={figures} startsOn={dates.startsOn} graduationOn={dates.graduationOn} today={today} />
+          <DegreeFlightCard roadmap={roadmap} figures={figures} shortfalls={shortfalls} startsOn={dates.startsOn} graduationOn={dates.graduationOn} today={today} />
           <div className="pair">
             <UpNextCard item={nextItem} links={DEGREE_DECK_LINKS} />
             <WeekCard open={agenda} today={today} />
@@ -124,15 +132,16 @@ export function DegreeFlightDeck(props: DegreeFlightDeckProps) {
           <BillingCard billing={billing} />
         </div>
       </div>
-      <p className="small">{t("s27.fd.footer")}</p>
+      <p className="small">{t("s32.dg.footer")}</p>
     </S27Page>
+    </DeckProgramProvider>
   );
 }
 
 // ── flight path ─────────────────────────────────────────────────────────────
 
-function DegreeFlightCard({ roadmap, figures, startsOn, graduationOn, today }: { roadmap: StudentRoadmapView; figures: DegreeFigures; startsOn: string | null; graduationOn: string | null; today: string }) {
-  const { t, lang, num } = useS27T();
+function DegreeFlightCard({ roadmap, figures, shortfalls, startsOn, graduationOn, today }: { roadmap: StudentRoadmapView; figures: DegreeFigures; shortfalls: readonly RequirementShortfall[]; startsOn: string | null; graduationOn: string | null; today: string }) {
+  const { t, lang, pl, num } = useS27T();
   const stops: DegreeStop[] = useMemo(() => buildDegreeStops(roadmap, figures), [roadmap, figures]);
   const instrumentStops: InstrumentStop[] = stops.map((s) => ({
     id: s.id,
@@ -151,7 +160,7 @@ function DegreeFlightCard({ roadmap, figures, startsOn, graduationOn, today }: {
       {figures.known ? (
         <FlightInstrument
           required={figures.required} confirmed={figures.confirmed} stops={instrumentStops} beadPace={null} today={today}
-          ariaLabel={instrumentStops.length ? t("s27.dg.aria", { n: instrumentStops.length }) : t("s27.dg.ariaNoStops")}
+          ariaLabel={instrumentStops.length ? pl("s32.dg.aria", instrumentStops.length) : t("s27.dg.ariaNoStops")}
           enrolledLabel={t("s27.dg.start")} enrolledDate={startsOn ? formatDay(startsOn, lang) : ""}
           diplomaTitle={t("s27.dg.degree")}
           diplomaSub={graduationOn ? t("s27.fi.diplomaSubPlan", { n: num(figures.required), date: formatDay(graduationOn, lang) }) : t("s27.fi.diplomaSubNone", { n: num(figures.required) })}
@@ -169,6 +178,7 @@ function DegreeFlightCard({ roadmap, figures, startsOn, graduationOn, today }: {
         <div>
           <span className="k">{t("s27.dg.info.open")}</span>
           {figures.source.openCents === null ? <span className="v">–</span> : <span className="v">{num(figures.source.openCents / 100)}<small>{t("s27.dg.info.openVal")}</small></span>}
+          {shortfalls.map((r) => <span key={r.id} className="small" data-testid="fd-shortfall">{pl("s32.dg.shortfall", r.remaining, { label: r.label, n: num(r.remaining) })}</span>)}
         </div>
         <div>
           <span className="k">{t("s27.dg.info.target")}</span>

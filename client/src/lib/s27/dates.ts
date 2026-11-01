@@ -45,7 +45,20 @@ export function formatDay(iso: string | null | undefined, lang: Lang, style: Dat
   if (!iso) return "";
   const d = parseIso(iso);
   if (!d) return "";
-  return new Intl.DateTimeFormat(lang === "fr" ? "fr-FR" : "en-GB", { ...OPTIONS[style], timeZone: "UTC" }).format(d);
+  const fmt = new Intl.DateTimeFormat(lang === "fr" ? "fr-FR" : "en-GB", { ...OPTIONS[style], timeZone: "UTC" });
+  // French writes the first of the month as « 1er » (Intl gives « 1 »).
+  if (lang === "fr" && d.getUTCDate() === 1 && OPTIONS[style].day) {
+    return fmt.formatToParts(d).map((p) => (p.type === "day" ? `${p.value}er` : p.value)).join("");
+  }
+  return fmt.format(d);
+}
+
+/**
+ * formatDay for a sentence that already ends with a full stop after the date ("Échéance : {date}."): an abbreviated
+ * month ends with its own dot ("16 déc."), so the trailing dot is dropped to avoid "déc..".
+ */
+export function formatDayInSentence(iso: string | null | undefined, lang: Lang, style: DateStyle = "short"): string {
+  return formatDay(iso, lang, style).replace(/\.$/, "");
 }
 
 /** Orientation-session slots carry an offset; show them in the viewer's own time zone. */

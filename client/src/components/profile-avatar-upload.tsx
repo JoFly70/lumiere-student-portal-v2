@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { pt } from '@/components/profile/pt';
+import { useT } from '@/i18n';
 import { Camera, Loader2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
@@ -47,6 +48,7 @@ export function ProfileAvatarUpload({
   const inputId = useId();
   const statusId = useId();
   const { toast } = useToast();
+  const { t: tr } = useT();
 
   // The server photo takes over once the profile refetches with the new URL.
   useEffect(() => {
@@ -135,8 +137,8 @@ export function ProfileAvatarUpload({
   return (
     <div className="flex flex-col items-center gap-2">
       <Avatar className={`${sizeClasses[size]} ${uploading ? 'opacity-70' : ''}`} data-testid="avatar-profile">
-        <AvatarImage src={preview || photoUrl || undefined} alt={hasPhoto ? 'Your profile photo' : ''} />
-        <AvatarFallback className="bg-gold-soft text-gold-strong ring-1 ring-gold/40 font-semibold" aria-label="No profile photo yet">
+        <AvatarImage src={preview || photoUrl || undefined} alt={hasPhoto ? tr('s32.a11y.yourPhoto') : ''} />
+        <AvatarFallback className="bg-gold-soft text-gold-strong ring-1 ring-gold/40 font-semibold" aria-label={tr('s32.a11y.noPhoto')}>
           {getInitials()}
         </AvatarFallback>
       </Avatar>
@@ -151,7 +153,7 @@ export function ProfileAvatarUpload({
             disabled={uploading}
             className="sr-only"
             tabIndex={-1}
-            aria-label="Upload profile photo"
+            aria-label={tr('s32.a11y.uploadPhoto')}
             aria-describedby={statusId}
             data-testid="input-photo-upload"
           />

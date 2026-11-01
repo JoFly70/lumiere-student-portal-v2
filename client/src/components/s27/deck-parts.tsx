@@ -4,16 +4,19 @@
  * the Ask Lumière card, checkpoints, documents and billing. Everything here is prop-driven and renders only what it is
  * given; the two decks decide which data to pass and which routes the links point to.
  */
-import React, { useState } from "react";
+import React, { createContext, useContext, useState } from "react";
 import { Link } from "wouter";
+import { GraduationCap } from "lucide-react";
 import type { CheckpointKey, StudentJourneyView } from "@shared/s27-contract";
+import type { StudentHighSchoolView } from "@shared/high-school-contract";
 import type { StudentBillingView } from "@shared/billing-contract";
 import { formatMoney } from "@shared/billing-contract";
 import { askAssistant } from "@/components/academic-assistant/logic";
 import { docTypeLabel } from "@/lib/document-type-labels";
-import { checkpointProgress, weekAgenda, type AgendaTask, type AlertCard, type RadarChip } from "@/lib/s27/cockpit-model";
-import { dayPart, daysBetween, formatDay } from "@/lib/s27/dates";
-import { useS27T } from "@/lib/s27/i18n-util";
+import { checkpointProgress, deadlineDetail, deadlineRule, deadlineTitle, weekAgenda, type AgendaTask, type AlertCard, type RadarChip } from "@/lib/s27/cockpit-model";
+import { dayPart, daysBetween, formatDay, formatDayInSentence } from "@/lib/s27/dates";
+import { useS27T, type TFn } from "@/lib/s27/i18n-util";
+import { WelcomeBanner } from "@/components/cockpit/welcome-banner";
 import type { TranslationKey } from "@/i18n";
 import { Eyebrow, Ring, SEVERITY_COLOR } from "./ui";
 import { LumiereOrb } from "./lumiere-orb";
@@ -28,6 +31,40 @@ export interface DeckLinks {
   readonly log: (courseKey: string) => string;
 }
 export const HS_DECK_LINKS: DeckLinks = { roadmap: "/high-school", log: (k) => `/high-school?log=${encodeURIComponent(k)}` };
+
+/** Which program's deck is on screen: decides "school" (high school) vs "university" (degree) wording. */
+export type DeckProgram = "hs" | "degree";
+const DeckProgramContext = createContext<DeckProgram>("hs");
+export const DeckProgramProvider = DeckProgramContext.Provider;
+export const useDeckProgram = (): DeckProgram => useContext(DeckProgramContext);
+
+/** Lumière checkpoint label; the degree deck words the readiness review and the closing step for a university. */
+export function checkpointLabel(program: DeckProgram, key: string, t: TFn): string {
+  if (program === "degree" && (key === "readiness_check" || key === "closing")) return t(`s32.dg.cp.${key}` as TranslationKey);
+  return t(`s27.cp.${key as CheckpointKey}` as TranslationKey);
+}
+
+/** The first-login / returning welcome (GET /api/student/welcome): shown once per login, dismissible, above the deck cards. */
+export function DeckWelcome() {
+  return <div data-testid="fd-welcome"><WelcomeBanner /></div>;
+}
+
+/** Shown on the deck once the school has conferred the diploma (same words as the high-school page banner). */
+export function GraduatedDeckBanner({ view }: { view: Pick<StudentHighSchoolView, "graduation" | "enrollment"> }) {
+  const { t, lang } = useS27T();
+  if (view.graduation.status !== "diploma_conferred") return null;
+  const on = formatDay(view.graduation.diploma.conferredOn, lang, "long");
+  const school = view.enrollment.schoolDisplayName;
+  return (
+    <section className="card" aria-label={t("s32.fd.graduated.aria")} data-testid="fd-graduated" style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
+      <GraduationCap size={28} aria-hidden="true" />
+      <div>
+        <h2>{t("hs.graduated.title")}</h2>
+        <p className="small">{on ? t("hs.graduated.on", { school, date: on }) : t("hs.graduated.noDate", { school })}</p>
+      </div>
+    </section>
+  );
+}
 
 /** Greeting row: eyebrow, "Good morning, Name." and the status pills (passed in, since each deck has its own). */
 export function DeckHead({ firstName, hour, children }: { firstName: string | null; hour: number; children?: React.ReactNode }) {
@@ -48,8 +85,10 @@ export function DeckHead({ firstName, hour, children }: { firstName: string | nu
 
 export function AlertCardView({ card, credits, accessMonths, links }: { card: AlertCard; credits: number | null; accessMonths: number | null; links: DeckLinks }) {
   const { t, lang, pl, num } = useS27T();
+  const program = useDeckProgram();
   const color = SEVERITY_COLOR[card.severity];
-  const due = card.dueOn ? t("s27.alert.due", { date: formatDay(card.dueOn, lang, "weekday") }) : "";
+  // "{date}." sentences: an abbreviated month already ends with a dot (« 16 déc. »), so the key's own full stop is not doubled.
+  const due = card.dueOn ? t("s27.alert.due", { date: formatDayInSentence(card.dueOn, lang, "weekday") }) : "";
   let title = "";
   let text = "";
   let action: { href: string; label: string } = { href: links.roadmap, label: t("s27.act.roadmap") };
@@ -59,13 +98,13 @@ export function AlertCardView({ card, credits, accessMonths, links }: { card: Al
     text = [t("s27.alert.task.d", { credit }).trim(), card.dueOn ? due : t("s27.alert.noDate")].join(" ");
     action = { href: links.log(card.courseKey ?? ""), label: t("s27.act.roadmap") };
   } else if (card.kind === "deadline") {
-    title = card.title ?? "";
-    const base = card.detail ?? card.subtitle ?? "";
-    text = card.done ? base : [base, due].filter(Boolean).join(" ");
+    title = deadlineTitle(card.deadlineKey, card.title, t);
+    const base = deadlineDetail(card.detail, t) ?? deadlineRule(card.deadlineKey, card.subtitle, pl) ?? "";
+    text = card.done ? base : [base && !/[.!?]$/.test(base) ? `${base}.` : base, due].filter(Boolean).join(" ");
     action = card.done ? { href: "/documents", label: t("s27.act.result") } : { href: "/documents", label: t("s27.act.upload") };
   } else {
     title = pl("s27.alert.support.t", card.big ?? 0);
-    text = [card.dueOn ? t("s27.alert.support.d", { date: formatDay(card.dueOn, lang, "short") }) : "", accessMonths ? t("s27.alert.support.access", { n: accessMonths }) : ""].filter(Boolean).join(" ");
+    text = [card.dueOn ? t("s27.alert.support.d", { date: formatDayInSentence(card.dueOn, lang, "short") }) : "", accessMonths ? pl(program === "degree" ? "s32.dg.alert.access" : "s32.alert.support.access", accessMonths) : ""].filter(Boolean).join(" ");
     action = { href: "/profile", label: t("s27.act.included") };
   }
   const unit = card.unit === "months" ? ((card.big ?? 0) === 1 ? t("s27.unit.month") : t("s27.unit.months")) : card.unit === "overdue" ? t("s27.unit.late") : card.unit === "days" ? ((card.big ?? 0) === 1 ? t("s27.unit.day") : t("s27.unit.days")) : "";
@@ -84,17 +123,18 @@ export function AlertCardView({ card, credits, accessMonths, links }: { card: Al
 
 export function RadarChipView({ chip, journey }: { chip: RadarChip; journey: StudentJourneyView | null }) {
   const { t, lang, pl } = useS27T();
+  const program = useDeckProgram();
   const color = chip.tone === "warn" ? "var(--t-amber)" : chip.tone === "ok" ? "var(--t-green)" : "var(--t-accent)";
   let text = "";
   switch (chip.key) {
     case "electives": text = pl("s27.radar.electives", chip.n); break;
     case "checkpoint": {
       const next = journey?.checkpoints.find((c) => c.status === "next");
-      const label = next ? t(`s27.cp.${next.key}` as TranslationKey) : "";
+      const label = next ? checkpointLabel(program, next.key, t) : "";
       text = chip.on ? t("s27.radar.checkpoint", { label, date: formatDay(chip.on, lang, "weekday") }) : t("s27.radar.checkpointNoDate", { label });
       break;
     }
-    case "waiting": text = pl("s27.radar.waiting", chip.n); break;
+    case "waiting": text = pl(program === "degree" ? "s32.dg.radar.waiting" : "s27.radar.waiting", chip.n); break;
     case "support": text = pl("s27.radar.support", chip.n); break;
     case "logged": text = chip.n < 0 ? t("s27.radar.logged.never") : chip.n === 0 ? t("s27.radar.logged.today") : chip.n === 1 ? t("s27.radar.logged.yesterday") : t("s27.radar.logged.ago", { n: chip.n }); break;
   }
@@ -120,6 +160,7 @@ export interface NextItem {
 
 export function UpNextCard({ item, links }: { item: NextItem | null; links: DeckLinks }) {
   const { t, lang, pl, num } = useS27T();
+  const degree = useDeckProgram() === "degree";
   if (!item) {
     return (
       <section className="card next" aria-labelledby="nx-h" data-testid="fd-next">
@@ -135,7 +176,7 @@ export function UpNextCard({ item, links }: { item: NextItem | null; links: Deck
     <section className="card next" aria-labelledby="nx-h" data-testid="fd-next">
       <Eyebrow>{t("s27.next.eyebrowCourse", { course: name })}</Eyebrow>
       <h3 id="nx-h">{item.title}</h3>
-      <p>{item.dueDate ? t("s27.next.text", { date: formatDay(item.dueDate, lang, "long"), course: name, credit }) : t("s27.next.textNoDate", { course: name, credit })}</p>
+      <p>{item.dueDate ? t(degree ? "s32.dg.next.text" : "s27.next.text", { date: formatDay(item.dueDate, lang, "long"), course: name, credit }) : t(degree ? "s32.dg.next.textNoDate" : "s27.next.textNoDate", { course: name, credit })}</p>
       <div className="btns">
         <Link className="b1" href={links.log(item.courseKey)} data-testid="fd-next-log">{t("s27.next.open")}</Link>
         <Link className="b2" href={links.roadmap}>{t("s27.next.roadmap")}</Link>
@@ -146,7 +187,7 @@ export function UpNextCard({ item, links }: { item: NextItem | null; links: Deck
 
 /** `open` carries display-ready course names in `courseTitle`. */
 export function WeekCard({ open, today }: { open: readonly AgendaTask[]; today: string }) {
-  const { t, lang } = useS27T();
+  const { t, lang, pl } = useS27T();
   const all = open;
   const week = weekAgenda(all, today);
   // Nothing due this week: show the nearest dated item after it so the card still answers "what next".
@@ -161,7 +202,7 @@ export function WeekCard({ open, today }: { open: readonly AgendaTask[]; today: 
         {week.length === 0 && <p className="small">{t("s27.week.empty")}</p>}
         {items.map((it, i) => {
           const d = it.dueDate ? daysBetween(today, it.dueDate) : null;
-          const pill = it.overdue ? { cls: "crit", text: t("s27.week.late") } : i === 0 ? { cls: "wait", text: t("s27.week.next") } : d === 0 ? { cls: "wait", text: t("s27.week.today") } : { cls: "plan", text: t("s27.week.in", { n: d ?? 0 }) };
+          const pill = it.overdue ? { cls: "crit", text: t("s27.week.late") } : i === 0 ? { cls: "wait", text: t("s27.week.next") } : d === 0 ? { cls: "wait", text: t("s27.week.today") } : { cls: "plan", text: pl("s32.week.in", d ?? 0) };
           return (
             <div key={`${it.courseKey}:${it.key}`} className={`ag${d === 0 ? " today" : ""}`}>
               <span className="dt">{it.dueDate ? formatDay(it.dueDate, lang, "weekday").split(" ")[0] : ""}<b>{it.dueDate ? it.dueDate.slice(8, 10).replace(/^0/, "") : "–"}</b></span>
@@ -198,6 +239,7 @@ export function AskCard() {
 
 export function CheckpointsCard({ journey, journeyState }: { journey: StudentJourneyView | null; journeyState: JourneyState }) {
   const { t, lang } = useS27T();
+  const program = useDeckProgram();
   const cps = journey?.checkpoints ?? [];
   const prog = checkpointProgress(cps);
   return (
@@ -209,7 +251,7 @@ export function CheckpointsCard({ journey, journeyState }: { journey: StudentJou
         <div className="lines cps">
           {cps.map((c) => (
             <div key={c.key} className={c.status === "next" ? "nx" : ""}>
-              <span>{c.status === "done" ? "✓ " : ""}{t(`s27.cp.${c.key as CheckpointKey}` as TranslationKey)}</span>
+              <span>{c.status === "done" ? "✓ " : ""}{checkpointLabel(program, c.key, t)}</span>
               <span>{c.status === "done" ? formatDay(c.doneOn, lang) : c.plannedOn ? formatDay(c.plannedOn, lang, c.status === "next" ? "weekday" : "short") : t("s27.cp.later")}</span>
             </div>
           ))}
@@ -237,7 +279,7 @@ export function DocumentsCard({ documents: docsIn, agreement, today }: { documen
           <div className="meter" aria-hidden="true"><i style={{ width: `${total ? (approved / total) * 100 : 0}%` }} /></div>
           <div className="lines">
             {needs.slice(0, 2).map((d) => <div key={d.id}><span>{docTypeLabel(d.doc_type)}</span><span style={{ color: "var(--t-amber)" }}>{t("s27.dc.needs")}</span></div>)}
-            {open.slice(0, 2).map((d) => <div key={d.key}><span>{d.label}</span><span style={{ color: "var(--t-amber)" }}>{t("s27.dc.due", { date: formatDay(d.dueOn, lang) })}</span></div>)}
+            {open.slice(0, 2).map((d) => <div key={d.key}><span>{deadlineTitle(d.key, d.label, t)}</span><span style={{ color: "var(--t-amber)" }}>{t("s27.dc.due", { date: formatDay(d.dueOn, lang) })}</span></div>)}
             {review > 0 && <div><span>{t("s27.dc.review")}</span><span>{review}</span></div>}
             {approved > 0 && <div><span>{t("s27.dc.approved")}</span><span style={{ color: "var(--t-green)" }}>{approved}</span></div>}
           </div>

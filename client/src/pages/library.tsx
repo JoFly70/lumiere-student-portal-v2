@@ -26,6 +26,7 @@ import { isPlanningTarget, displayTitle } from "@/lib/degree-map";
 import { courseStatusView, courseTitleView, creditsLabel, orderedSubjects, subjectLabel, taskKindLabel, taskStatusView, sortedTasks } from "@/pages/high-school-presentation";
 import { formatShortDate } from "@/pages/student-roadmap-presentation";
 import { useT, type TranslationKey } from "@/i18n";
+import { reviewMessageOf } from "@/lib/s32-services-docs";
 import { plannedWindowText } from "@/components/high-school/course-drawer";
 
 const field = "min-h-[44px] w-full rounded-lg border border-student-line-strong bg-student-card px-3 text-sm text-student-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-student-gold-ink";
@@ -58,7 +59,13 @@ function DocCard({ group, courseTitle, onView }: { group: DocGroup; courseTitle:
             {t(prov === "you" ? "ux.lib.prov.you" : "ux.lib.prov.lumiere")} · {day(d.created_at)} ·{" "}
             <span className={cn(att === "action" && "font-semibold text-st-attention")}>{t(`documents.statusLabel.${d.status}` as TranslationKey)}</span>
           </span>
-          {att === "action" && d.student_message && <span className="mt-1 block text-xs text-st-attention">{d.student_message}</span>}
+          {att === "action" && (
+            <span className="mt-1 block text-xs text-st-attention" data-testid="doc-review-reason">
+              <span className="font-semibold">{t("documents.reviewReason")} </span>
+              {reviewMessageOf(d as StudentDocument & { review_message?: string | null }) ?? t("documents.reviewNoReason")}
+              {isLatest && <> <Link href="/documents" className="font-medium underline underline-offset-4" data-testid="doc-replace-link">{t("s32.lib.replaceInDocuments")}</Link></>}
+            </span>
+          )}
         </span>
         <span className="flex shrink-0 gap-2">
           <button type="button" className={cn(buttonClass.outline, "min-h-[40px] px-3")} onClick={() => onView(d)} aria-label={t("ux.lib.previewAria", { name: d.file_name })} data-testid="doc-preview"><Eye className="h-4 w-4" aria-hidden="true" />{t("ux.lib.preview")}</button>

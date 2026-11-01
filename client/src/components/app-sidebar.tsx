@@ -232,7 +232,7 @@ export function AppSidebar() {
             aria-label={t("nav.account")}
             className="space-y-2 rounded-xl border border-sidebar-border bg-sidebar-accent/40 p-3 group-data-[collapsible=icon]:border-0 group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:p-0"
           >
-            <div className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center" role="group" aria-label="User profile" data-testid="profile-user">
+            <div className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center" role="group" aria-label={t("s32.a11y.userProfile")} data-testid="profile-user">
               <ProfileAvatarUpload
                 photoUrl={profile?.photo_url}
                 firstName={profile?.first_name}

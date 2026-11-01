@@ -8,6 +8,8 @@
 import type { StudentHighSchoolView } from "@shared/high-school-contract";
 import type { AgreementDeadlineKey, AgreementDeadlineView, CheckpointView, ProgramAgreementView, StudentJourneyView } from "@shared/s27-contract";
 import { addDaysIso, daysBetween } from "./dates";
+import type { TFn } from "./i18n-util";
+import type { TranslationKey } from "@/i18n";
 
 // ── credits ─────────────────────────────────────────────────────────────────
 
@@ -419,4 +421,54 @@ export function weekAgenda(tasks: readonly AgendaTask[], today: string): AgendaT
       return d !== null && d >= 0 && d <= 7;
     })
     .sort((a, b) => Number(b.overdue) - Number(a.overdue) || (a.dueDate ?? "9999").localeCompare(b.dueDate ?? "9999"));
+}
+
+// ── agreement deadlines rendered from their key (the server only builds English text) ────────────────
+
+type PluralFn = (base: string, n: number, vars?: Record<string, string | number>) => string;
+const KNOWN_DEADLINES: readonly string[] = ["language_test", "prior_schooling_proof"];
+
+/** Translated title of a deadline; the server label only for a key this client does not know. */
+export function deadlineTitle(key: string | null, serverLabel: string | null, t: TFn): string {
+  return key && KNOWN_DEADLINES.includes(key) ? t(`s32.dl.label.${key}` as TranslationKey) : serverLabel ?? "";
+}
+
+/** "30 days after signing" / "90 days after activation" in the portal language; the server rule for an unknown rule. */
+export function deadlineRule(key: string | null, serverRule: string | null, pl: PluralFn): string {
+  const m = /^(\d+) days? after (signing|activation)$/.exec(serverRule ?? "");
+  const expected = key === "language_test" ? "signing" : key === "prior_schooling_proof" ? "activation" : null;
+  if (!key || !m || m[2] !== expected) return serverRule ?? "";
+  return pl(`s32.dl.rule.${key}`, Number(m[1]));
+}
+
+/** "Score 112 (target 105–115)" / "Target 105" in the portal language; anything else is shown as sent. */
+export function deadlineDetail(serverDetail: string | null, t: TFn): string | null {
+  if (!serverDetail) return serverDetail;
+  const both = /^Score (.+?) \(target (.+)\)$/.exec(serverDetail);
+  if (both) return t("s32.dl.scoreTarget", { score: both[1]!, target: both[2]! });
+  const score = /^Score (.+)$/.exec(serverDetail);
+  if (score) return t("s32.dl.score", { score: score[1]! });
+  const target = /^Target (.+)$/.exec(serverDetail);
+  if (target) return t("s32.dl.target", { target: target[1]! });
+  return serverDetail;
+}
+
+// ── pace pill ───────────────────────────────────────────────────────────────
+
+export type PacePillKey = "ahead" | "on_track" | "behind" | "pending";
+
+/**
+ * Status of the pace pill. The calculation stays honest (confirmed credit only, shared/high-school-projection.ts);
+ * only the wording changes: behind the milestone with confirmed + awaiting-result credit that WOULD meet it reads
+ * "on pace once pending results arrive" instead of "behind plan". Returns null when no pace is configured.
+ */
+export function pacePillStatus(view: Pick<StudentHighSchoolView, "pace" | "credits">): PacePillKey | null {
+  const { pace, credits } = view;
+  if (pace.status === "not_configured") return null;
+  if (pace.status === "behind") {
+    const expected = pace.expectedByNowHalfUnits;
+    if (expected !== null && credits.earnedHalfUnits + credits.awaitingConfirmationHalfUnits >= expected) return "pending";
+    return "behind";
+  }
+  return pace.status;
 }

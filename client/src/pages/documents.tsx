@@ -47,6 +47,7 @@ import { DocumentsLead, type LeadDoc } from "@/components/s27/documents-lead";
 import { useStudentJourney } from "@/lib/s27/journey-queries";
 import { useStudentPrograms } from "@/lib/student-programs";
 import { useHighSchoolView } from "@/lib/high-school-queries";
+import { documentsTabFromSearch, resolveUploadDocType, uploadTypeOptions } from "@/lib/s32-services-docs";
 import { DOCUMENT_ACCEPT_ATTR, checkDocumentFile, resolveDocumentMime } from "@/lib/document-upload-policy";
 
 type DocumentCategory =
@@ -121,16 +122,7 @@ const statusConfig: Record<DocumentStatus, { label: string; variant: "default" |
   },
 };
 
-// Map frontend categories to backend doc_type enums
-const categoryToDocType: Record<DocumentCategory, string> = {
-  academic: "hs_transcript",
-  financial: "other",
-  identity: "id_gov",
-  foreign_credentials: "foreign_eval",
-  transfer_credits: "college_transcript",
-  // Uploads from the Documents page never create chat attachments (those go through the chat flow).
-  chat: "other",
-};
+// Upload doc types per tab live in lib/s32-services-docs.ts (resolveUploadDocType).
 
 // Map backend doc_type to frontend categories
 function mapDocTypeToCategory(docType: string): DocumentCategory {
@@ -261,7 +253,9 @@ export default function Documents() {
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<DocumentStatus | "all">("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState<DocumentCategory | "all">("all");
+  // `?tab=financial` (e.g. from Billing) opens that tab.
+  const [activeTab, setActiveTab] = useState<DocumentCategory | "all">(() => documentsTabFromSearch(typeof window === "undefined" ? "" : window.location.search));
+  const [pickedDocType, setPickedDocType] = useState<string>("");
   const [previewDocument, setPreviewDocument] = useState<StudentDocument | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -272,6 +266,7 @@ export default function Documents() {
   const journey = useStudentJourney();
   const programs = useStudentPrograms();
   const hsView = useHighSchoolView(programs.hasHighSchool);
+  const typeOptions = uploadTypeOptions(activeTab);
   const graduation = hsView.data?.graduation ?? null;
   const isLoading = profileLoading || documentsLoading;
 
@@ -330,8 +325,8 @@ export default function Documents() {
       setUploadProgress(Math.round(((i + 0.5) / validFiles.length) * 100));
 
       try {
-        const category = activeTab === "all" ? "academic" : activeTab;
-        const docType = docTypeOverride ?? categoryToDocType[category];
+        // F10: the All tab no longer files everything as a high-school transcript; the student picks a type (default "other").
+        const docType = resolveUploadDocType({ tab: activeTab, selected: pickedDocType, override: docTypeOverride, hasHighSchool: programs.hasHighSchool });
 
         const uploadUrlData = await generateUploadUrl.mutateAsync({
           doc_type: docType,
@@ -375,7 +370,7 @@ export default function Documents() {
       title: t("documents.toast.uploadDone"),
       description: t(validFiles.length === 1 ? "documents.toast.uploadDoneOne" : "documents.toast.uploadDoneMany", { count: validFiles.length }),
     });
-  }, [activeTab, profile, generateUploadUrl, createDocument, toast, t]);
+  }, [activeTab, pickedDocType, programs.hasHighSchool, profile, generateUploadUrl, createDocument, toast, t]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -510,7 +505,11 @@ export default function Documents() {
         busy={uploadProgress !== null}
       />
 
-      <Card>
+      <a href="#documents-upload" className={cn(buttonClass.solid, "w-full justify-center sm:hidden")} data-testid="link-jump-upload">
+        <Upload className="h-4 w-4" aria-hidden="true" />{t("s32.docs.jumpToUpload")}
+      </a>
+
+      <Card id="documents-upload" className="scroll-mt-4">
         <CardHeader>
           <CardTitle className="font-serif text-2xl font-normal">{t("documents.uploadTitle")}</CardTitle>
           <CardDescription>
@@ -518,6 +517,21 @@ export default function Documents() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {typeOptions && (
+            <div className="mb-3 text-left" data-testid="upload-type-picker">
+              <label htmlFor="upload-doc-type" className="mb-1 block text-sm font-medium text-student-ink">{t("s32.docs.uploadType")}</label>
+              <select
+                id="upload-doc-type"
+                className="min-h-[44px] w-full rounded-lg border border-student-line-strong bg-student-card px-3 text-sm text-student-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-student-gold-ink"
+                value={typeOptions.includes(pickedDocType) ? pickedDocType : resolveUploadDocType({ tab: activeTab, hasHighSchool: programs.hasHighSchool })}
+                onChange={(e) => setPickedDocType(e.target.value)}
+                data-testid="select-upload-doc-type"
+              >
+                {typeOptions.map((k) => <option key={k} value={k}>{t(`ux.lib.type.${k}` as TranslationKey)}</option>)}
+              </select>
+              <p className="mt-1 text-xs text-student-muted">{t("s32.docs.uploadTypeHint")}</p>
+            </div>
+          )}
           <div
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}

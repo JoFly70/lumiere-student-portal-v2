@@ -4,6 +4,10 @@
  * Data: StudentJourneyView (GET /api/student/journey; 404/503 = designed empty state) and the student's high school view.
  */
 import React from "react";
+import { useQuery } from "@tanstack/react-query";
+import { STUDENT_ROADMAP_QUERY_KEY, STUDENT_ROADMAP_QUERY_OPTIONS, fetchStudentRoadmap } from "@/lib/student-roadmap-queries";
+import { degreePlanDates } from "@/lib/s27/degree-cockpit-model";
+import type { StudentRoadmapView } from "@shared/student-roadmap-contract";
 import { StudentSurface } from "@/components/student-progress/student-ui";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BeyondPage, type BookResult, type ServiceResult } from "@/components/s27/beyond";
@@ -23,6 +27,16 @@ export default function Beyond() {
   const programs = useStudentPrograms();
   const hs = useHighSchoolView(programs.hasHighSchool);
   const journey = useStudentJourney();
+  // Degree-only students have no high-school finish date: read the degree roadmap's graduation milestone (same endpoint
+  // and cache as /roadmap). Optional: any failure just leaves the intake year based on today.
+  const degreeRoadmap = useQuery<StudentRoadmapView>({
+    queryKey: [...STUDENT_ROADMAP_QUERY_KEY],
+    queryFn: fetchStudentRoadmap,
+    ...STUDENT_ROADMAP_QUERY_OPTIONS,
+    retry: false,
+    enabled: !programs.isLoading && !programs.hasHighSchool,
+  });
+  const graduationOn = degreeRoadmap.data ? degreePlanDates(degreeRoadmap.data).graduationOn : null;
   const booking = useRequestOrientationSession();
   const support = useSupportRequest();
 
@@ -54,6 +68,7 @@ export default function Beyond() {
       hs={hs.data ?? null}
       journey={journey.journey}
       journeyState={state}
+      graduationOn={graduationOn}
       today={todayIso()}
       now={new Date()}
       whatsapp={LUMIERE_WHATSAPP_URL}

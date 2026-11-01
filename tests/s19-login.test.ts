@@ -54,7 +54,7 @@ describe("S19 login", () => {
     const html = render({}, "fr");
     expect(html).toContain("Bienvenue chez Lumière");
     expect(html).toContain("Votre parcours commence ici.");
-    expect(html).toContain("Adresse e-mail");
+    expect(html).toContain("Adresse courriel");
     expect(html).toContain("Mot de passe oublié ?");
     expect(html).not.toContain("Forgot your password");
   });

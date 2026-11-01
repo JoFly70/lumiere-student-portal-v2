@@ -3,13 +3,13 @@
  * journey.agreement.goal.targets; careers, pathway, services and prep questions are configuration (lib/s27/beyond-model).
  * With no goal the page shows a designed "your orientation study will appear here" state instead of invented content.
  */
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { askAssistant } from "@/components/academic-assistant/logic";
 import type { StudentHighSchoolView } from "@shared/high-school-contract";
 import type { StudentJourneyView, PostSecondaryGoal } from "@shared/s27-contract";
 import { creditFigures, estimatedArrival, weekOfProgram } from "@/lib/s27/cockpit-model";
 import {
-  buildChecklist, buildTimeline, candidateSlots, careersFor, artForIndex, intakeYear, normaliseRegion, prepPayload, prepQuestions, REGION_PATHS, SERVICES, sessionsLeft,
+  beyondFinishOn, buildChecklist, buildTimeline, candidateSlots, careersFor, artForIndex, intakeYear, normaliseRegion, prepPayload, prepQuestions, REGION_PATHS, SERVICES, sessionsLeft,
   type BeyondKind, type ServiceId,
 } from "@/lib/s27/beyond-model";
 import { formatDay, formatSlot, formatSlotLong } from "@/lib/s27/dates";
@@ -27,6 +27,8 @@ export interface BeyondProps {
   readonly hs: StudentHighSchoolView | null;
   readonly journey: StudentJourneyView | null;
   readonly journeyState: "ready" | "loading" | "unavailable" | "failed";
+  /** Degree roadmap graduation milestone (YYYY-MM-DD), for students without a high-school view. */
+  readonly graduationOn?: string | null;
   readonly today: string;
   readonly now: Date;
   readonly whatsapp: string | null;
@@ -43,7 +45,7 @@ export function BeyondPage(p: BeyondProps) {
   const goal = agreement?.goal ?? null;
   const left = sessionsLeft(agreement);
   const figures = p.hs ? creditFigures(p.hs) : null;
-  const finish = p.hs ? estimatedArrival(p.journey, p.hs).on : null;
+  const finish = beyondFinishOn(p.hs ? estimatedArrival(p.journey, p.hs).on : null, p.graduationOn ?? null);
   const week = p.hs ? weekOfProgram(p.hs.enrollment.startedOn, p.hs.enrollment.targetCompletionDate, p.today)?.week ?? null : null;
   const year = intakeYear(finish, p.today);
   const bachelor = p.kind === "bachelor";
@@ -272,6 +274,10 @@ function Sessions(p: BeyondProps & { agreement: StudentJourneyView["agreement"];
   const [answers, setAnswers] = useState<Record<string, string[]>>({});
   const [busy, setBusy] = useState(false);
   const left = sessionsLeft(a);
+  // Deep link from the Calendar ("Request an appointment"): bring the sessions card into view once.
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.location.hash === "#bd-sessions") document.getElementById("bd-sessions")?.scrollIntoView?.({ block: "start" });
+  }, []);
   const questions = prepQuestions(p.goal);
   const toggle = (q: string, option: string, multi: boolean) =>
     setAnswers((cur) => {

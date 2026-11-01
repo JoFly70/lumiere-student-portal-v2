@@ -30,6 +30,15 @@ export function intakeYear(finishIso: string | null, today: string): number {
   return d.getUTCMonth() >= 6 ? d.getUTCFullYear() + 1 : d.getUTCFullYear();
 }
 
+/**
+ * The date the student finishes the programme that precedes the next step: the high-school estimate when there is one,
+ * else the degree roadmap's graduation milestone (degree-only students have no high-school view). Null when neither exists,
+ * in which case the intake year falls back to today.
+ */
+export function beyondFinishOn(hsFinishOn: string | null, graduationOn: string | null): string | null {
+  return hsFinishOn ?? (graduationOn && parseIso(graduationOn) ? graduationOn : null);
+}
+
 export function buildTimeline(input: { kind: BeyondKind; finishOn: string | null; week: number | null }): TimelineNode[] {
   return [
     { id: "today", tone: "now", week: input.week, on: null },

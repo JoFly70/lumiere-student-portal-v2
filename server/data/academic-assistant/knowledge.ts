@@ -21,6 +21,11 @@ export interface KbEntry {
   /** Optional scoping metadata for retrieval (exact institution/program matching). */
   institution?: string;
   program?: string;
+  /**
+   * S32-A (F25): which students the entry is for. 'hs' = high-school students only, 'degree' = degree (bachelor's)
+   * students only, 'all' (default) = everyone. Retrieval filters on it when the student's program is known.
+   */
+  audience?: 'hs' | 'degree' | 'all';
   applicability?: string;
   limitations?: string;
 }
@@ -32,7 +37,7 @@ const L = {
   highSchool: { label: { en: 'High school', fr: 'Études secondaires' }, path: '/high-school' },
   documents: { label: { en: 'Documents', fr: 'Documents' }, path: '/documents' },
   billing: { label: { en: 'Billing', fr: 'Facturation' }, path: '/billing' },
-  support: { label: { en: 'Support', fr: 'Soutien' }, path: '/support' },
+  support: { label: { en: 'Support', fr: 'Assistance' }, path: '/support' },
   profile: { label: { en: 'Profile', fr: 'Profil' }, path: '/profile' },
 } as const;
 
@@ -55,7 +60,7 @@ export const KNOWLEDGE: KbEntry[] = [
     title: { en: 'What the Lumière portal is for', fr: 'À quoi sert le portail Lumière' },
     text: {
       en: 'The Lumière student portal is where you follow your academic plan in one place: your roadmap, your documents, your billing information and your support requests. Your Lumière team can see and update the official parts of your file; this assistant cannot see your personal file.',
-      fr: 'Le portail étudiant Lumière regroupe votre plan académique au même endroit : votre feuille de route, vos documents, votre facturation et vos demandes de soutien. L’équipe Lumière peut voir et mettre à jour les éléments officiels de votre dossier; cet assistant ne voit pas votre dossier personnel.',
+      fr: 'Le portail étudiant Lumière regroupe votre plan académique au même endroit : votre feuille de route, vos documents, votre facturation et vos demandes d’assistance. L’équipe Lumière peut voir et mettre à jour les éléments officiels de votre dossier; cet assistant ne voit pas votre dossier personnel.',
     },
     keywords: ['portal', 'lumiere', 'lumière', 'orientation', 'start', 'getting started', 'commencer', 'portail', 'what is', 'services', 'welcome', 'bienvenue', 'dashboard', 'tableau de bord'],
     links: [L.dashboard, L.roadmap, L.support],
@@ -66,7 +71,7 @@ export const KNOWLEDGE: KbEntry[] = [
     title: { en: 'Where to find things in the portal', fr: 'Où trouver les choses dans le portail' },
     text: {
       en: 'Roadmap: your plan and its steps. High school: your secondary-school pathway. Documents: upload and view the files requested from you. Billing: your payment information. Support: ask your team a question. Profile: your contact details and preferences.',
-      fr: 'Feuille de route : votre plan et ses étapes. Études secondaires : votre parcours secondaire. Documents : téléverser et consulter les fichiers demandés. Facturation : vos informations de paiement. Soutien : poser une question à votre équipe. Profil : vos coordonnées et préférences.',
+      fr: 'Feuille de route : votre plan et ses étapes. Études secondaires : votre parcours secondaire. Documents : téléverser et consulter les fichiers demandés. Facturation : vos informations de paiement. Assistance : poser une question à votre équipe. Profil : vos coordonnées et préférences.',
     },
     keywords: ['where', 'find', 'navigate', 'navigation', 'menu', 'page', 'upload', 'document', 'billing', 'invoice', 'pay', 'support', 'profile', 'où', 'trouver', 'facture', 'paiement', 'téléverser', 'aide', 'help', 'contact'],
     links: [L.roadmap, L.highSchool, L.documents, L.billing, L.support, L.profile],
@@ -77,7 +82,7 @@ export const KNOWLEDGE: KbEntry[] = [
     title: { en: 'Questions about your own file', fr: 'Questions sur votre propre dossier' },
     text: {
       en: 'For anything about your own situation (grades, documents, payments, decisions), use Support so your Lumière team can answer from your official file. Please do not type personal details in this assistant.',
-      fr: 'Pour tout ce qui concerne votre situation personnelle (notes, documents, paiements, décisions), utilisez Soutien afin que votre équipe Lumière réponde à partir de votre dossier officiel. Merci de ne pas saisir de renseignements personnels dans cet assistant.',
+      fr: 'Pour tout ce qui concerne votre situation personnelle (notes, documents, paiements, décisions), utilisez Assistance afin que votre équipe Lumière réponde à partir de votre dossier officiel. Merci de ne pas saisir de renseignements personnels dans cet assistant.',
     },
     keywords: ['my file', 'my grades', 'my documents', 'personal', 'ticket', 'question', 'dossier', 'mes notes', 'privacy', 'confidentialité', 'ask', 'team', 'équipe', 'human', 'advisor', 'conseiller', 'coach'],
     links: [L.support],
@@ -96,12 +101,12 @@ export const KNOWLEDGE: KbEntry[] = [
   {
     id: 'statuses',
     topic: 'status',
-    title: { en: 'Standard statuses in the portal', fr: 'Statuts standards du portail' },
+    title: { en: 'Credit words and statuses in the portal', fr: 'Mots des crédits et statuts du portail' },
     text: {
-      en: 'Official: confirmed by Lumière or the issuing institution. Reported: information you or someone else provided, not yet confirmed. Awaiting verification: submitted and waiting to be checked against a source. In progress: work on this step has started. Planned: scheduled for later, nothing started yet. Only "official" should be treated as settled.',
-      fr: 'Officiel : confirmé par Lumière ou l’établissement émetteur. Déclaré : information fournie par vous ou une autre personne, pas encore confirmée. En attente de vérification : soumis et en attente d’être validé auprès d’une source. En cours : le travail sur cette étape a commencé. Planifié : prévu plus tard, rien n’est commencé. Seul le statut « officiel » doit être considéré comme réglé.',
+      en: 'Credit totals use three words. Earned: credits the university or school has accepted and confirmed. Planned: credits on your roadmap that are scheduled or under way but not yet accepted. Still open: credits that are neither earned nor planned yet. Work that you or a course provider reported as finished, or that is awaiting verification, is not earned until it is confirmed. Other statuses: Official means confirmed by Lumière or the issuing institution; Reported means information you or someone else provided, not yet confirmed; Awaiting verification means submitted and waiting to be checked against a source; In progress means work has started. Only Earned / Official counts as settled.',
+      fr: 'Les totaux de crédits utilisent trois mots. Acquis : crédits que l’université ou l’école a acceptés et confirmés. Prévus : crédits de votre feuille de route qui sont planifiés ou en cours, mais pas encore acceptés. Encore ouverts : crédits ni acquis ni prévus pour l’instant. Un travail que vous ou un fournisseur de cours avez déclaré terminé, ou qui est en attente de vérification, n’est pas acquis tant qu’il n’est pas confirmé. Autres statuts : Officiel signifie confirmé par Lumière ou l’établissement émetteur; Déclaré, information fournie par vous ou une autre personne, pas encore confirmée; En attente de vérification, soumis et en attente d’être validé auprès d’une source; En cours, le travail a commencé. Seul ce qui est Acquis / Officiel est considéré comme réglé.',
     },
-    keywords: ['status', 'statuses', 'official', 'reported', 'awaiting verification', 'in progress', 'planned', 'statut', 'statuts', 'officiel', 'déclaré', 'en attente', 'en cours', 'planifié', 'verified', 'vérifié', 'verification', 'vérification', 'meaning', 'signifie'],
+    keywords: ['status', 'statuses', 'earned', 'planned', 'still open', 'open credits', 'official', 'reported', 'awaiting verification', 'in progress', 'statut', 'statuts', 'acquis', 'prévus', 'encore ouverts', 'officiel', 'déclaré', 'en attente', 'en cours', 'planifié', 'verified', 'vérifié', 'verification', 'vérification', 'meaning', 'signifie'],
     links: [L.roadmap],
   },
   {
@@ -137,6 +142,7 @@ export const KNOWLEDGE: KbEntry[] = [
   },
   {
     id: 'hs-pathways-us',
+    audience: 'hs',
     topic: 'pathways',
     title: { en: 'General US high-school pathways', fr: 'Parcours secondaires américains (général)' },
     text: {
@@ -256,10 +262,10 @@ export const KNOWLEDGE: KbEntry[] = [
   {
     id: 'portal-support-tickets',
     topic: 'portal',
-    title: { en: 'Support: asking your team a question', fr: 'Soutien : poser une question à votre équipe' },
+    title: { en: 'Support: asking your team a question', fr: 'Assistance : poser une question à votre équipe' },
     text: {
       en: 'Use Support to open a request with a clear subject and a description of what you need. Your request gets a reference number, and replies from your team appear in the same thread so you can follow it. Use Support for anything about your own file: documents, roadmap changes, billing questions or decisions.',
-      fr: 'Utilisez Soutien pour ouvrir une demande avec un objet clair et une description de ce dont vous avez besoin. Votre demande reçoit un numéro de référence et les réponses de votre équipe apparaissent dans la même conversation. Utilisez Soutien pour tout ce qui touche à votre dossier : documents, changements à la feuille de route, questions de facturation ou décisions.',
+      fr: 'Utilisez Assistance pour ouvrir une demande avec un objet clair et une description de ce dont vous avez besoin. Votre demande reçoit un numéro de référence et les réponses de votre équipe apparaissent dans la même conversation. Utilisez Assistance pour tout ce qui touche à votre dossier : documents, changements à la feuille de route, questions de facturation ou décisions.',
     },
     keywords: ['support', 'ticket', 'request', 'help', 'contact', 'reply', 'soutien', 'demande', 'aide', 'réponse', 'reference number', 'numéro de référence', 'question'],
     links: [L.support],
@@ -267,7 +273,7 @@ export const KNOWLEDGE: KbEntry[] = [
   {
     id: 'portal-support-procedures',
     topic: 'portal',
-    title: { en: 'Support procedures: what to include in a request', fr: 'Procédure de soutien : quoi inclure dans une demande' },
+    title: { en: 'Support procedures: what to include in a request', fr: 'Procédure d’assistance : quoi inclure dans une demande' },
     text: {
       en: 'Say which page or step your question is about, what you expected and what you see. Attach a document only if the team asked for it or it helps explain the question. Never write a password or full card number in a request. Urgent deadlines should be stated in the first lines so your team can prioritise.',
       fr: 'Indiquez la page ou l’étape concernée, ce que vous attendiez et ce que vous voyez. Joignez un document seulement si l’équipe l’a demandé ou s’il aide à expliquer la question. N’écrivez jamais de mot de passe ni de numéro de carte complet dans une demande. Indiquez les échéances urgentes dès les premières lignes afin que l’équipe puisse prioriser.',
@@ -281,7 +287,7 @@ export const KNOWLEDGE: KbEntry[] = [
     title: { en: 'Billing: what the page shows', fr: 'Facturation : ce que la page affiche' },
     text: {
       en: 'The Billing page shows the payment information your Lumière team has recorded for you, such as installments and confirmed receipts. If you submit proof of a payment, it is reviewed by the team first; submitting proof is not the same as a confirmed payment. This assistant does not know amounts or balances: see the Billing page, or ask through Support.',
-      fr: 'La page Facturation montre les renseignements de paiement que votre équipe Lumière a enregistrés pour vous, comme les versements et les reçus confirmés. Si vous soumettez une preuve de paiement, l’équipe l’examine d’abord; soumettre une preuve n’équivaut pas à un paiement confirmé. Cet assistant ne connaît ni les montants ni les soldes : consultez la page Facturation ou posez la question via Soutien.',
+      fr: 'La page Facturation montre les renseignements de paiement que votre équipe Lumière a enregistrés pour vous, comme les versements et les reçus confirmés. Si vous soumettez une preuve de paiement, l’équipe l’examine d’abord; soumettre une preuve n’équivaut pas à un paiement confirmé. Cet assistant ne connaît ni les montants ni les soldes : consultez la page Facturation ou posez la question via Assistance.',
     },
     keywords: ['billing', 'payment', 'tuition', 'invoice', 'receipt', 'installment', 'proof of payment', 'facturation', 'paiement', 'frais', 'facture', 'reçu', 'versement', 'preuve de paiement', 'balance', 'solde'],
     links: [L.billing, L.support],
@@ -292,7 +298,7 @@ export const KNOWLEDGE: KbEntry[] = [
     title: { en: 'Common financial-administration questions', fr: 'Questions administratives financières fréquentes' },
     text: {
       en: 'I paid but do not see it: payments appear after your team confirms them, so submit your proof on the Billing page if you have not, then ask through Support if it is still missing. I need a receipt: confirmed receipts are listed on Billing. I think there is a mistake: open a Support request and name the item. This assistant cannot give amounts, change a payment or approve exceptions.',
-      fr: 'J’ai payé mais je ne le vois pas : les paiements apparaissent après confirmation par votre équipe; soumettez votre preuve sur la page Facturation si ce n’est pas fait, puis écrivez à Soutien s’il manque toujours. J’ai besoin d’un reçu : les reçus confirmés sont listés dans Facturation. Je pense qu’il y a une erreur : ouvrez une demande Soutien en nommant l’élément. Cet assistant ne peut donner de montants, modifier un paiement ni approuver d’exceptions.',
+      fr: 'J’ai payé mais je ne le vois pas : les paiements apparaissent après confirmation par votre équipe; soumettez votre preuve sur la page Facturation si ce n’est pas fait, puis écrivez à l’Assistance s’il manque toujours. J’ai besoin d’un reçu : les reçus confirmés sont listés dans Facturation. Je pense qu’il y a une erreur : ouvrez une demande d’Assistance en nommant l’élément. Cet assistant ne peut donner de montants, modifier un paiement ni approuver d’exceptions.',
     },
     keywords: ['paid', 'payment missing', 'receipt', 'mistake', 'error', 'refund', 'payé', 'paiement manquant', 'reçu', 'erreur', 'remboursement', 'proof', 'preuve', 'where is my payment', 'billing question'],
     links: [L.billing, L.support],
@@ -310,6 +316,7 @@ export const KNOWLEDGE: KbEntry[] = [
   },
   {
     id: 'portal-high-school-page',
+    audience: 'hs',
     topic: 'portal',
     title: { en: 'The High school page', fr: 'La page Études secondaires' },
     text: {
@@ -325,7 +332,7 @@ export const KNOWLEDGE: KbEntry[] = [
     title: { en: 'Scheduling and keeping a steady pace', fr: 'Planification et rythme de travail régulier' },
     text: {
       en: 'Your plan shows suggested dates and a pace (on track, behind or ahead). A steady weekly routine usually works better than long gaps, and the pace indicator is guidance, not a penalty. If your schedule changes or you fall behind, tell your team through Support so the plan can be adjusted by them.',
-      fr: 'Votre plan affiche des dates suggérées et un rythme (dans les temps, en retard ou en avance). Une routine hebdomadaire régulière fonctionne généralement mieux que de longues interruptions, et l’indicateur de rythme est un repère, pas une pénalité. Si votre horaire change ou si vous prenez du retard, informez votre équipe via Soutien afin qu’elle ajuste le plan.',
+      fr: 'Votre plan affiche des dates suggérées et un rythme (dans les temps, en retard ou en avance). Une routine hebdomadaire régulière fonctionne généralement mieux que de longues interruptions, et l’indicateur de rythme est un repère, pas une pénalité. Si votre horaire change ou si vous prenez du retard, informez votre équipe via Assistance afin qu’elle ajuste le plan.',
     },
     keywords: ['schedule', 'pace', 'behind', 'ahead', 'on track', 'deadline', 'routine', 'horaire', 'rythme', 'en retard', 'dans les temps', 'échéance', 'planning', 'weekly', 'hebdomadaire'],
     links: [L.roadmap, L.highSchool, L.support],
@@ -356,7 +363,7 @@ export const KNOWLEDGE: KbEntry[] = [
     title: { en: 'Searching the portal', fr: 'Rechercher dans le portail' },
     text: {
       en: 'Use the search box to find your courses, roadmap steps, documents (by file name, type and indexed text), support requests, assistant conversations and memory items, and the Billing page. Search only looks at your own information. Team members searching see students, not your private conversations.',
-      fr: 'Utilisez la recherche pour trouver vos cours, étapes de feuille de route, documents (par nom de fichier, type et texte indexé), demandes de soutien, conversations avec l’assistant et éléments de mémoire, ainsi que la page Facturation. La recherche ne porte que sur vos propres renseignements. Les membres de l’équipe qui cherchent voient des étudiants, pas vos conversations privées.',
+      fr: 'Utilisez la recherche pour trouver vos cours, étapes de feuille de route, documents (par nom de fichier, type et texte indexé), demandes d’assistance, conversations avec l’assistant et éléments de mémoire, ainsi que la page Facturation. La recherche ne porte que sur vos propres renseignements. Les membres de l’équipe qui cherchent voient des étudiants, pas vos conversations privées.',
     },
     keywords: ['search', 'find', 'look for', 'global search', 'rechercher', 'chercher', 'trouver', 'recherche', 'search box', 'barre de recherche'],
   },
@@ -366,13 +373,14 @@ export const KNOWLEDGE: KbEntry[] = [
     title: { en: 'What your Lumière team does in the portal', fr: 'Ce que fait votre équipe Lumière dans le portail' },
     text: {
       en: 'Your Lumière team keeps the official version of your roadmap, reviews and verifies the documents you upload, confirms payments on your billing record, and answers Support requests. Decisions about credit, acceptance and graduation are recorded by the team or the issuing institution, not by this assistant.',
-      fr: 'Votre équipe Lumière tient la version officielle de votre feuille de route, examine et vérifie les documents que vous téléversez, confirme les paiements dans votre dossier de facturation et répond aux demandes de soutien. Les décisions sur les crédits, l’acceptation et la diplomation sont consignées par l’équipe ou l’établissement émetteur, pas par cet assistant.',
+      fr: 'Votre équipe Lumière tient la version officielle de votre feuille de route, examine et vérifie les documents que vous téléversez, confirme les paiements dans votre dossier de facturation et répond aux demandes d’assistance. Les décisions sur les crédits, l’acceptation et la diplomation sont consignées par l’équipe ou l’établissement émetteur, pas par cet assistant.',
     },
     keywords: ['team', 'lumière team', 'who', 'staff', 'advisor', 'services', 'what does lumière do', 'équipe', 'qui', 'conseiller', 'services', 'que fait lumière'],
     links: [L.support, L.roadmap],
   },
   {
     id: 'hs-diploma-routes-compared',
+    audience: 'hs',
     topic: 'pathways',
     title: { en: 'High-school diploma routes compared', fr: 'Comparaison des voies vers le diplôme d’études secondaires' },
     text: {
@@ -384,6 +392,7 @@ export const KNOWLEDGE: KbEntry[] = [
   },
   {
     id: 'hs-required-vs-elective',
+    audience: 'hs',
     topic: 'terms',
     title: { en: 'Required courses versus electives', fr: 'Cours obligatoires et cours à option' },
     text: {
@@ -406,6 +415,7 @@ export const KNOWLEDGE: KbEntry[] = [
   },
   {
     id: 'awarding-school-hs-transfer-credits',
+    audience: 'hs',
     institution: 'Awarding school',
     topic: 'providers',
     title: { en: 'Awarding school: transferring prior high-school credits in', fr: 'École décernant le diplôme : transfert de crédits secondaires antérieurs' },
@@ -418,6 +428,7 @@ export const KNOWLEDGE: KbEntry[] = [
   },
   {
     id: 'awarding-school-college-transfer',
+    audience: 'degree',
     institution: 'Awarding school',
     topic: 'providers',
     title: { en: 'Awarding school, college programs: transfer-in rules', fr: 'École décernant le diplôme, programmes collégiaux : règles de transfert entrant' },
@@ -429,6 +440,7 @@ export const KNOWLEDGE: KbEntry[] = [
   },
   {
     id: 'awarding-school-diploma-structure',
+    audience: 'hs',
     institution: 'Awarding school',
     topic: 'providers',
     title: { en: 'Awarding school: diploma credit structure and workload', fr: 'École décernant le diplôme : structure des crédits et charge de travail' },
@@ -441,6 +453,7 @@ export const KNOWLEDGE: KbEntry[] = [
   },
   {
     id: 'awarding-school-transfer-minimum',
+    audience: 'hs',
     institution: 'Awarding school',
     topic: 'providers',
     title: { en: 'Awarding school: credits that must be earned at the school', fr: 'École décernant le diplôme : crédits à obtenir auprès de l’école' },
@@ -453,6 +466,7 @@ export const KNOWLEDGE: KbEntry[] = [
   },
   {
     id: 'awarding-school-course-names',
+    audience: 'hs',
     institution: 'Awarding school',
     topic: 'providers',
     title: { en: 'Awarding school: older and newer course names', fr: 'École décernant le diplôme : anciens et nouveaux noms de cours' },
@@ -465,6 +479,7 @@ export const KNOWLEDGE: KbEntry[] = [
   },
   {
     id: 'awarding-school-electives-prerequisites',
+    audience: 'hs',
     institution: 'Awarding school',
     topic: 'providers',
     title: { en: 'Awarding school: elective prerequisites and English 3', fr: 'École décernant le diplôme : préalables des cours optionnels et English 3' },
@@ -477,6 +492,7 @@ export const KNOWLEDGE: KbEntry[] = [
   },
   {
     id: 'awarding-school-graded-work',
+    audience: 'hs',
     institution: 'Awarding school',
     topic: 'providers',
     title: { en: 'Awarding school: graded work per course and pass mark', fr: 'École décernant le diplôme : travaux notés par cours et note de passage' },
@@ -671,6 +687,54 @@ export const KNOWLEDGE: KbEntry[] = [
     keywords: ['checklist', 'before paying', 'before enrolling', 'verify', 'ask the school', 'in writing', 'liste de vérification', 'avant de payer', 'avant de vous inscrire', 'par écrit', 'questions to ask', 'questions à poser'],
     sources: [TESU_TRANSFER, TESU_TRAINING],
     links: [L.support],
+  },
+  {
+    id: 'degree-residency',
+    audience: 'degree',
+    topic: 'pathways',
+    title: { en: 'Degree residency requirement', fr: 'Exigence de résidence du diplôme' },
+    text: {
+      en: 'Most universities require a minimum number of credits to be completed with the university itself (residency), even when transfer credit is accepted. The figure that applies to your degree is not listed here: it comes from your own roadmap and degree progress, and the university decides how it is counted. Ask the assistant "What are my degree requirements?" to see what your record shows, or contact your Lumière team through Support.',
+      fr: 'La plupart des universités exigent un nombre minimal de crédits réalisés auprès de l’université elle-même (résidence), même lorsque des crédits transférés sont acceptés. Le chiffre qui s’applique à votre diplôme n’est pas indiqué ici : il provient de votre propre feuille de route et de votre progression, et l’université décide comment il est compté. Demandez à l’assistant « Quelles sont mes exigences de diplôme ? » pour voir ce que montre votre dossier, ou contactez votre équipe Lumière via Assistance.',
+    },
+    keywords: ['residency', 'residency requirement', 'in-house credits', 'credits with the university', 'résidence', 'exigence de résidence', 'crédits à l’université', 'crédits auprès de l’université', 'degree requirements', 'exigences du diplôme'],
+    links: [L.roadmap, L.support],
+  },
+  {
+    id: 'degree-upper-level',
+    audience: 'degree',
+    topic: 'terms',
+    title: { en: 'Upper-level credits in a bachelor’s degree', fr: 'Crédits de niveau supérieur dans un baccalauréat' },
+    text: {
+      en: 'Many bachelor’s degrees require a number of upper-level credits (courses numbered at the 300 or 400 level, or equivalent). Whether a course counts as upper-level, and how many are required, is set by the university and by your degree program. Your roadmap and degree progress show the requirements that apply to you; the university decides what counts.',
+      fr: 'Beaucoup de baccalauréats exigent un certain nombre de crédits de niveau supérieur (cours numérotés 300 ou 400, ou équivalent). Que ce niveau soit reconnu pour un cours, et combien de crédits sont exigés, est fixé par l’université et par votre programme. Votre feuille de route et votre progression montrent les exigences qui s’appliquent à vous; l’université décide de ce qui compte.',
+    },
+    keywords: ['upper-level', 'upper level', '300 level', '400 level', 'niveau supérieur', 'cours avancés', 'upper division', 'bachelor requirements', 'exigences du baccalauréat'],
+    links: [L.roadmap],
+  },
+  {
+    id: 'degree-transfer-evaluation',
+    audience: 'degree',
+    topic: 'terms',
+    title: { en: 'Transfer credit and ACE / NCCRS evaluation for your degree', fr: 'Crédits transférés et évaluation ACE / NCCRS pour votre diplôme' },
+    text: {
+      en: 'The university decides whether prior college credit, exam credit or a course with an ACE or NCCRS recommendation is accepted, and which degree requirement it satisfies. A recommendation is advice, not an acceptance, and a course provider cannot promise transfer. Credits you or a provider report are not earned until the university accepts them; your Degree credits record shows what is Earned, Planned and Still open.',
+      fr: 'L’université décide si des crédits collégiaux antérieurs, des crédits d’examen ou un cours recommandé par l’ACE ou le NCCRS sont acceptés, et quelle exigence du diplôme ils satisfont. Une recommandation est un avis, pas une acceptation, et un fournisseur de cours ne peut pas promettre le transfert. Les crédits que vous ou un fournisseur déclarez ne sont pas acquis tant que l’université ne les a pas acceptés; votre dossier Crédits du diplôme indique ce qui est Acquis, Prévu et Encore ouvert.',
+    },
+    keywords: ['transfer credit', 'ace', 'nccrs', 'evaluation', 'évaluation', 'prior credit', 'crédits antérieurs', 'crédits transférés', 'accepted by the university', 'accepté par l’université', 'degree transfer', 'transfert diplôme'],
+    links: [L.roadmap, L.support],
+  },
+  {
+    id: 'degree-planned-to-earned',
+    audience: 'degree',
+    topic: 'status',
+    title: { en: 'How planned credit becomes earned', fr: 'Comment un crédit prévu devient acquis' },
+    text: {
+      en: 'A course on your roadmap is Planned until the university accepts the credit. Finishing the course at the provider, or reporting it complete in the portal, does not make it Earned: the credit becomes Earned only after the official result reaches the university, it is verified, and the university accepts it toward your degree. Until then it stays Planned or Awaiting verification, and the figure for Still open does not change.',
+      fr: 'Un cours de votre feuille de route est Prévu tant que l’université n’a pas accepté le crédit. Terminer le cours chez le fournisseur, ou le déclarer terminé dans le portail, ne le rend pas Acquis : le crédit devient Acquis seulement lorsque le résultat officiel parvient à l’université, qu’il est vérifié et que l’université l’accepte pour votre diplôme. D’ici là il reste Prévu ou En attente de vérification, et le chiffre des crédits Encore ouverts ne change pas.',
+    },
+    keywords: ['planned', 'earned', 'planned to earned', 'become earned', 'when do credits count', 'prévu', 'acquis', 'quand mes crédits comptent', 'crédit acquis', 'provider complete', 'fournisseur', 'accepted credit', 'crédit accepté'],
+    links: [L.roadmap],
   },
 ];
 

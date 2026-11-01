@@ -23,10 +23,10 @@ describe("S25 High School page in French", () => {
   it("renders French chrome from the React context while data stays as delivered", () => {
     const markup = render("fr");
     const t = text(markup);
-    expect(t).toContain("Mon parcours au lycée");
+    expect(t).toContain("Études secondaires");
     expect(t).toContain("Votre prochaine étape");
     expect(t).toContain("Seule votre école confirme les notes, les crédits et votre diplôme.");
-    expect(markup).toContain('aria-label="Sections du parcours lycée"');
+    expect(markup).toContain('aria-label="Sections des études secondaires"');
     expect(markup).toContain('data-testid="tab-journey"');
     expect(t).not.toContain("My High School Journey");
     expect(t).not.toContain("Your next step");

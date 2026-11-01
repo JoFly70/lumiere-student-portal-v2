@@ -1,0 +1,48 @@
+--- a/server/services/s29/templates.ts	2026-11-01 21:10:39.363979480 +0000
++++ b/server/services/s29/templates.ts	2026-11-01 21:10:45.124640602 +0000
+@@ -44,6 +44,11 @@
+   transcript: { en: "transcript", fr: "relevé de notes" },
+   english_cert: { en: "language certificate", fr: "certificat de langue" },
+ };
++/** French grammatical gender of the document label (« pièce d’identité » is feminine): participles must agree (S32-A F30). */
++const DOC_FEMININE_FR = new Set(["id_document"]);
++const docFem = (p: Params) => DOC_FEMININE_FR.has(v(p, "docType"));
++const frE = (p: Params) => (docFem(p) ? "e" : "");
++const frPron = (p: Params) => (docFem(p) ? "Elle" : "Il");
+ const docLabel = (p: Params, lang: Lang) => DOC_LABEL[v(p, "docType")]?.[lang] ?? (lang === "fr" ? "document" : "document");
+ 
+ export const TEMPLATES: Record<string, TemplateDef> = {
+@@ -61,17 +66,17 @@
+   "document.received": {
+     category: "documents", reminder: false, href: () => "/documents",
+     en: { title: () => "Document received", body: (p) => `We received your ${docLabel(p, "en")}. It is waiting for review; you will be told when it has been reviewed.` },
+-    fr: { title: () => "Document reçu", body: (p) => `Nous avons bien reçu votre ${docLabel(p, "fr")}. Il est en attente de vérification ; vous serez informé(e) une fois l’examen terminé.` },
++    fr: { title: () => "Document reçu", body: (p) => `Nous avons bien reçu votre ${docLabel(p, "fr")}. ${frPron(p)} est en attente de vérification ; vous serez informé(e) une fois l’examen terminé.` },
+   },
+   "document.verified": {
+     category: "documents", reminder: false, href: () => "/documents",
+     en: { title: () => "Document accepted", body: (p) => `Your ${docLabel(p, "en")} was reviewed and accepted by the Lumière team.` },
+-    fr: { title: () => "Document accepté", body: (p) => `Votre ${docLabel(p, "fr")} a été examiné et accepté par l’équipe Lumière.` },
++    fr: { title: () => "Document accepté", body: (p) => `Votre ${docLabel(p, "fr")} a été examiné${frE(p)} et accepté${frE(p)} par l’équipe Lumière.` },
+   },
+   "document.rejected": {
+     category: "documents", reminder: false, href: () => "/documents",
+     en: { title: () => "Document needs attention", body: (p) => `Your ${docLabel(p, "en")} could not be accepted. Open Documents to see what is needed.` },
+-    fr: { title: () => "Document à revoir", body: (p) => `Votre ${docLabel(p, "fr")} n’a pas pu être accepté. Ouvrez Documents pour voir ce qui est nécessaire.` },
++    fr: { title: () => "Document à revoir", body: (p) => `Votre ${docLabel(p, "fr")} n’a pas pu être accepté${frE(p)}. Ouvrez Documents pour voir ce qui est nécessaire.` },
+   },
+   "document.resubmit": {
+     category: "documents", reminder: false, href: () => "/documents",
+@@ -89,9 +94,9 @@
+     fr: { title: () => "Séance d’orientation confirmée", body: (p) => `Votre séance d’orientation est confirmée pour le ${v(p, "whenFr")}.` },
+   },
+   "orientation.cancelled": {
+-    category: "appointments", reminder: false, href: () => "/flight-deck",
+-    en: { title: () => "Orientation session cancelled", body: (p) => `Your orientation session planned for ${v(p, "whenEn")} was cancelled. You can request a new time from your Flight Deck.` },
+-    fr: { title: () => "Séance d’orientation annulée", body: (p) => `Votre séance d’orientation prévue le ${v(p, "whenFr")} a été annulée. Vous pouvez demander un nouveau créneau depuis votre tableau de bord.` },
++    category: "appointments", reminder: false, href: () => "/beyond",
++    en: { title: () => "Orientation session cancelled", body: (p) => `Your orientation session planned for ${v(p, "whenEn")} was cancelled. You can request a new session from Beyond the Diploma (or Beyond the Bachelor’s).` },
++    fr: { title: () => "Séance d’orientation annulée", body: (p) => `Votre séance d’orientation prévue le ${v(p, "whenFr")} a été annulée. Vous pouvez demander une nouvelle séance depuis Au-delà du diplôme (ou Au-delà du baccalauréat).` },
+   },
+   // ── S30 Academic Calendar (through calendar-bridge.ts; values only, no record free text) ──
+   "calendar.reminder.deadline": {

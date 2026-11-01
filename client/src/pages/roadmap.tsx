@@ -42,7 +42,7 @@ export default function Roadmap() {
   if (error || !data) {
     return (
       <StudentSurface>
-        <ProgressError message={error instanceof Error ? error.message : undefined} onRetry={() => refetch()} />
+        <ProgressError onRetry={() => refetch()} />
       </StudentSurface>
     );
   }

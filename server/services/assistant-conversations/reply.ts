@@ -32,14 +32,16 @@ export async function generateReply(args: GenerateReplyArgs, deps?: AssistantDep
   // S26: the student's OWN record (resolved from the session user id) grounds personal answers.
   let records: import('../academic-assistant/student-record').StudentRecord[] = [];
   if (args.user.role === 'student' && !deps) {
-    try { records = await (await import('../academic-assistant/student-record')).loadOwnStudentRecord(args.user.id); } catch { records = []; }
+    try { records = await (await import('../academic-assistant/student-record')).loadOwnStudentRecord(args.user.id, args.language); } catch { records = []; }
   }
   const out = await answerMessage(
     args.user,
     { message: args.message, language: args.language, history: args.recentTurns.slice(-MAX_RECENT_TURNS), records },
     d,
   );
-  return { content: out.reply, mode: out.mode, sources: out.sources, links: out.links, notice: out.notice ?? null, privateRefs: [] };
+  // F34: a deterministic record answer is grounded in the student's own portal pages; those pages travel as
+  // privateRefs (kind 'record', in-app path) so the client shows "From your records" and not "no Lumière source".
+  return { content: out.reply, mode: out.mode, sources: out.sources, links: out.recordRefs?.length ? [] : out.links, notice: out.notice ?? null, privateRefs: out.recordRefs ?? [] };
 }
 
 // ---- S21 integration: private (local-only) context ------------------------------------------------------------
@@ -56,7 +58,7 @@ export const MAX_PRIVATE_ITEMS = 3;
 
 const PRIVATE_T = {
   en: { head: 'From your records (private, not sent to any AI model):', support: 'If this does not answer your question, your Lumière team can help: open a Support request.', supportLabel: 'Contact Support' },
-  fr: { head: 'Dans votre dossier (privé, jamais envoyé à un modèle d’IA) :', support: 'Si cela ne répond pas à votre question, votre équipe Lumière peut vous aider : ouvrez une demande de soutien.', supportLabel: 'Contacter le soutien' },
+  fr: { head: 'Dans votre dossier (privé, jamais envoyé à un modèle d’IA) :', support: 'Si cela ne répond pas à votre question, votre équipe Lumière peut vous aider : ouvrez une demande d’assistance.', supportLabel: 'Contacter l’assistance' },
 } as const;
 
 export function composeWithPrivateContext(base: GeneratedReply, items: PrivateItemLike[], language: 'en' | 'fr', conversationId: string): GeneratedReply {
@@ -68,12 +70,12 @@ export function composeWithPrivateContext(base: GeneratedReply, items: PrivateIt
   if (own.length > 0) {
     const lines = own.map((i) => `- ${i.label ? `${i.label}: ` : ''}${i.title}${i.snippet ? ` — ${i.snippet.replace(/\s+/g, ' ').slice(0, 220)}` : ''}`);
     content += `\n\n${t.head}\n${lines.join('\n')}`;
-  } else if (base.sources.length === 0) {
+  } else if (base.sources.length === 0 && base.privateRefs.length === 0) {
     // No grounded public or private source: offer the Support pathway instead of guessing.
     content += `\n\n${t.support}`;
     if (!links.some((l) => l.path === '/support')) links.push({ label: t.supportLabel, path: '/support' });
   }
-  return { ...base, content, links, privateRefs: own.map((i) => ({ kind: i.kind, title: i.title, path: i.path })) };
+  return { ...base, content, links, privateRefs: [...base.privateRefs, ...own.map((i) => ({ kind: i.kind, title: i.title, path: i.path }))] };
 }
 
 export function createIntegratedGenerateReply(deps: { retrievePrivate: RetrievePrivateFn; base?: GenerateReplyFn; logger?: { warn: (m: string, meta?: unknown) => void } }): GenerateReplyFn {
