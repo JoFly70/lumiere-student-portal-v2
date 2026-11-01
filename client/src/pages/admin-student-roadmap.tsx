@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "wouter";
+import { ReportedRecordsPanel } from "@/components/s30/imports/reported-records-panel";
 import { AlertCircle, ArrowLeft, CheckCircle2, ChevronRight, FileSpreadsheet, Loader2, RefreshCw, Upload } from "lucide-react";
 import type { AdminRoadmapDraftView, AdminRoadmapState, RoadmapException, RoadmapItem } from "@shared/student-roadmap-contract";
 import { Badge } from "@/components/ui/badge";
@@ -392,6 +393,8 @@ export default function AdminStudentRoadmap() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {/* S30: provider/school-reported records for staff (admins see them in the student file). */}
+      {!isAdmin ? <div className="s27 occ"><ReportedRecordsPanel studentId={studentId} /></div> : null}
     </div>
   );
 }

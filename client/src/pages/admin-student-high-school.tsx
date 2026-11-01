@@ -4,6 +4,7 @@
  * Every mutation returns the refreshed StaffHighSchoolState, which replaces the query cache.
  */
 import { useEffect, useRef, useState } from "react";
+import { ReportedRecordsPanel } from "@/components/s30/imports/reported-records-panel";
 import { Link, useParams } from "wouter";
 import { AlertCircle, ArrowLeft, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -143,5 +144,11 @@ export default function AdminStudentHighSchool() {
       </div>
     );
   }
-  return <HighSchoolWorkspace state={query.data} studentId={studentId} isAdmin={isAdmin} docs={documents.data ?? []} defaultTab={initialTab()} />;
+  return (
+    <>
+      <HighSchoolWorkspace state={query.data} studentId={studentId} isAdmin={isAdmin} docs={documents.data ?? []} defaultTab={initialTab()} />
+      {/* S30: provider/school-reported records are visible to staff here (the full student file is admin-only). */}
+      {!isAdmin ? <div className="s27 occ mx-auto mt-6 max-w-6xl px-4"><ReportedRecordsPanel studentId={studentId} /></div> : null}
+    </>
+  );
 }
