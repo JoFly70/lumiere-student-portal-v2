@@ -110,6 +110,17 @@ function sendProfileError(res: Response, error: unknown): boolean {
   return false;
 }
 
+/** Postgres unique_violation (23505) on the students email column, from supabase-js, postgres.js or drizzle. */
+export function isUniqueEmailViolation(error: unknown): boolean {
+  const e = error as { code?: string; message?: string; details?: string; constraint_name?: string; constraint?: string; cause?: unknown } | null;
+  if (!e || typeof e !== 'object') return false;
+  if (e.code === '23505') {
+    const text = `${e.message ?? ''} ${e.details ?? ''} ${e.constraint_name ?? ''} ${e.constraint ?? ''}`.toLowerCase();
+    return text.includes('email');
+  }
+  return e.cause ? isUniqueEmailViolation(e.cause) : false;
+}
+
 function actorIdOf(req: Request): string | null {
   return req.audit?.actorId || req.user?.id || null;
 }
@@ -443,6 +454,26 @@ router.post('/', requireStaff, async (req, res) => {
       return res.status(400).json({ 
         error: 'Validation failed', 
         details: error.issues
+      });
+    }
+
+    if (isUniqueEmailViolation(error)) {
+      // Clear, actionable 409 instead of "Failed to create student": the caller is staff/admin (requireStaff),
+      // so pointing at the existing record is allowed. No personal data other than the id is returned.
+      let existingStudentId: string | null = null;
+      try {
+        const email = String((req.body as { email?: unknown } | undefined)?.email ?? '').trim().toLowerCase();
+        if (email) {
+          const { data } = await supabaseAdmin.from('students').select('id').eq('email', email).maybeSingle();
+          existingStudentId = (data as { id?: string } | null)?.id ?? null;
+        }
+      } catch (lookupError) {
+        logger.warn('Duplicate-email student lookup failed', { error: lookupError instanceof Error ? lookupError.message : String(lookupError) });
+      }
+      return res.status(409).json({
+        error: 'A student with this email already exists',
+        code: 'STUDENT_EMAIL_EXISTS',
+        existingStudentId,
       });
     }
 

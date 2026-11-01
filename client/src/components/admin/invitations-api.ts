@@ -1,5 +1,6 @@
 /** Admin invitation endpoints (server/routes/admin.ts). The token is returned once per issue/resend and never listed. */
 import { apiRequest } from "@/lib/queryClient";
+import { translate, type Language } from "@/i18n";
 
 export type InvitationLanguage = "en" | "fr";
 export type EmailDelivery = "sent" | "not_configured" | "failed" | "skipped";
@@ -42,12 +43,13 @@ export async function revokeInvitation(id: string): Promise<void> {
   await apiRequest("POST", `/api/admin/invitations/${encodeURIComponent(id)}/revoke`);
 }
 
-/** One sentence the admin can trust about what happened to the email. */
-export function deliveryMessage(d: EmailDelivery, email: string): string {
-  switch (d) {
-    case "sent": return `Invitation emailed to ${email}.`;
-    case "not_configured": return "Email sending is not configured on this server, so nothing was emailed. Copy the link below and send it to the student yourself.";
-    case "failed": return "The email could not be sent. Copy the link below and send it to the student yourself, or try Resend later.";
-    case "skipped": return "No email was sent (you chose copy only). Copy the link below and send it to the student yourself.";
-  }
+/** One sentence the admin can trust about what happened to the email (English by default; pass the UI language). */
+export function deliveryMessage(d: EmailDelivery, email: string, language: Language = "en"): string {
+  const key = {
+    sent: "sa.inv.deliverySent",
+    not_configured: "sa.inv.deliveryNotConfigured",
+    failed: "sa.inv.deliveryFailed",
+    skipped: "sa.inv.deliverySkipped",
+  }[d];
+  return translate(language, key, { email });
 }
