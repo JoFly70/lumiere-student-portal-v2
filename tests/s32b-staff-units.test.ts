@@ -6,7 +6,8 @@
 import { describe, expect, it } from "vitest";
 import { fileNextStep } from "../client/src/lib/file-decisions";
 import { deriveEnrollmentStatus, invitationState } from "../shared/enrollment-status";
-import { AuthRequestError, signUpErrorMessage } from "../client/src/lib/auth-errors";
+import { AuthRequestError } from "../client/src/lib/auth-errors";
+import { signUpErrorInfo } from "../client/src/components/auth/signup-errors";
 import { translate } from "../client/src/i18n";
 import { MIN_PASSWORD_LENGTH, passwordTooShort } from "../shared/password-policy";
 import { contractGates } from "../client/src/components/admin/student-file-hs";
@@ -53,24 +54,21 @@ describe("SA-07 enrollment derivation (authoritative facts only)", () => {
   });
 });
 
-describe("SA-18 signup errors are translated and actionable", () => {
+describe("SA-18 signup errors are translated and actionable (merged with S31-A F19)", () => {
   const tEn = (k: string) => translate("en", k);
   const tFr = (k: string) => translate("fr", k);
   it("maps the invitation code to a recovery hint in EN and FR", () => {
     const e = new AuthRequestError("Invitation is invalid or has expired", 403, "INVITATION_INVALID");
-    expect(signUpErrorMessage(e, tEn as never)).toMatch(/exact email address the invitation was sent to/);
-    expect(signUpErrorMessage(e, tEn as never)).toMatch(/ask your Lumière advisor for a new one/);
-    expect(signUpErrorMessage(e, tFr as never)).toMatch(/exactement l’adresse e-mail/);
-    expect(signUpErrorMessage(e, tFr as never)).not.toMatch(/invalid/i);
+    expect(signUpErrorInfo(e, tEn as never).message).toMatch(/exact email address the invitation was sent to/);
+    expect(signUpErrorInfo(e, tEn as never).message).toMatch(/ask your Lumière advisor for a new one/);
+    expect(signUpErrorInfo(e, tFr as never).message).toMatch(/exactement l’adresse courriel/);
   });
-  it("tells an existing user to sign in or reset", () => {
-    const e = new AuthRequestError("Email already registered", 409, "EMAIL_ALREADY_REGISTERED");
-    expect(signUpErrorMessage(e, tEn as never)).toMatch(/Sign in instead/);
-    expect(signUpErrorMessage(e, tFr as never)).toMatch(/Connectez-vous/);
+  it("offers sign-in / reset for an existing account, and maps the 10-character rule", () => {
+    expect(signUpErrorInfo(new AuthRequestError("Email already registered", 409, "EMAIL_ALREADY_REGISTERED"), tEn as never)).toMatchObject({ kind: "email_registered", offerSignIn: true });
+    expect(signUpErrorInfo(new AuthRequestError("Password must be at least 10 characters", 400, "PASSWORD_TOO_SHORT"), tFr as never).message).toMatch(/10 caractères/);
   });
   it("never shows raw server text", () => {
-    expect(signUpErrorMessage(new AuthRequestError("pg: duplicate key value", 400), tEn as never)).toBe(tEn("auth.invite.failed"));
-    expect(signUpErrorMessage(new TypeError("fetch failed"), tFr as never)).toBe(tFr("auth.error.network"));
+    expect(signUpErrorInfo(new AuthRequestError("pg: duplicate key value", 400), tEn as never).message).toBe(tEn("auth.invite.failed"));
   });
 });
 

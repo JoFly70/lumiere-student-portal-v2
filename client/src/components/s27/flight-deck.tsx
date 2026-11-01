@@ -13,7 +13,7 @@ import { buildDegreeMap, buildPhaseBands, isAcceleratedPlan, openTasks, findCour
 import { subjectLabel } from "@/pages/high-school-presentation";
 import { courseName } from "@/lib/s27/roadmap-model";
 import {
-  PACE_MAX, PACE_MIN, PACE_PRESETS, PACE_STEP, actualPace, buildAlertCards, buildFlightStops, buildRadarChips, clampPace,
+  PACE_MAX, PACE_MIN, PACE_PRESETS, PACE_STEP, actualPace, buildAlertCards, buildFlightStops, buildRadarChips, clampPace, pacePillStatus,
   creditFigures, deadlinesToWatch, estimatedArrival, plannerOutputs, presetValue, roundPace, scheduleDelta, stopEstimate, toCredits, weekOfProgram,
   type TicketLike,
 } from "@/lib/s27/cockpit-model";
@@ -23,9 +23,10 @@ import { useSupportRequest } from "@/lib/s27/use-support-request";
 import type { TranslationKey } from "@/i18n";
 import { S27Page, Eyebrow } from "./ui";
 import {
-  AlertCardView, AskCard, BillingCard, CheckpointsCard, CreditsGaugeCard, DeckHead, DocumentsCard, HS_DECK_LINKS, RadarChipView, UpNextCard, WeekCard,
+  AlertCardView, AskCard, BillingCard, CheckpointsCard, CreditsGaugeCard, DeckHead, DeckWelcome, DocumentsCard, HS_DECK_LINKS, RadarChipView, UpNextCard, WeekCard,
   type CreditRow, type DeckBilling, type DeckDoc, type JourneyState, type NextItem,
 } from "./deck-parts";
+import { GraduatedPanel } from "@/components/high-school/graduated-panel";
 import { FlightInstrument, type GhostRun, type InstrumentStop } from "./flight-instrument";
 
 export type { DeckBilling, DeckDoc, JourneyState };
@@ -77,7 +78,9 @@ export function FlightDeckS27(props: FlightDeckProps) {
 
   const week = weekOfProgram(view.enrollment.startedOn, view.enrollment.targetCompletionDate, today);
   const watch = deadlinesToWatch(agreement);
-  const paceKey = view.pace.status === "not_configured" ? null : (`s27.fd.pill.${view.pace.status}` as TranslationKey);
+  // Behind the milestone but on pace once the awaiting results arrive reads calmly (no warning tone).
+  const paceStatus = pacePillStatus(view);
+  const paceKey = paceStatus === null ? null : paceStatus === "pending" ? ("s32.fd.pill.pending" as TranslationKey) : (`s27.fd.pill.${paceStatus}` as TranslationKey);
 
   const nextItem: NextItem | null = nextTask
     ? { title: nextTask.title, courseName: courseName(nextTask.courseTitle), credits: nextCourse ? toCredits(nextCourse.halfUnits) : null, dueDate: nextTask.dueDate, courseKey: nextTask.courseKey }
@@ -88,9 +91,12 @@ export function FlightDeckS27(props: FlightDeckProps) {
     <S27Page testId="hs-flight-deck">
       <DeckHead firstName={firstName} hour={hour}>
         {watch > 0 && <span className="pill warn"><i />{pl("s27.fd.pill.deadline", watch)}</span>}
-        {paceKey && <span className={`pill ${view.pace.status === "behind" ? "warn" : "ok"}`}><i />{t(paceKey)}</span>}
+        {paceKey && <span className={`pill ${paceStatus === "behind" ? "warn" : paceStatus === "pending" ? "" : "ok"}`} data-testid="fd-pace-pill" data-pace={paceStatus}><i />{t(paceKey)}</span>}
         {week && <span className="pill">{t("s27.fd.pill.week", { week: week.week, total: week.total })}</span>}
       </DeckHead>
+
+      <DeckWelcome />
+      <GraduatedPanel view={view} />
 
       {journeyState === "unavailable" && <p className="notice" data-testid="fd-journey-pending">{t("s27.fd.journeyPending")}</p>}
       {journeyState === "failed" && <p className="notice warn" role="status" data-testid="fd-journey-error">{t("s27.fd.journeyError")}</p>}
@@ -214,7 +220,7 @@ function FlightCard(props: FlightDeckProps & { figures: ReturnType<typeof credit
       </div>
       <FlightInstrument
         required={figures.required} confirmed={figures.confirmed} stops={instrumentStops} beadPace={shownPace} today={today}
-        ariaLabel={instrumentStops.length ? t("s27.fi.aria", { n: instrumentStops.length }) : t("s27.fi.ariaNoStops")}
+        ariaLabel={instrumentStops.length ? pl("s32.fi.aria", instrumentStops.length) : t("s27.fi.ariaNoStops")}
         enrolledLabel={t("s27.fi.enrolled")} enrolledDate={formatDay(view.enrollment.startedOn, lang)}
         diplomaTitle={t("s27.fi.diploma")} diplomaSub={diplomaSub}
         youLabel={t("s27.fi.you", { c: num(figures.confirmed), r: num(figures.required) })}
@@ -243,7 +249,7 @@ function FlightCard(props: FlightDeckProps & { figures: ReturnType<typeof credit
         <span className={`actual-line ${stale || !actual ? "stale" : ""}`} data-testid="fd-actual-line">
           {actual && !stale
             ? t("s27.fi.actual", { pace: num(actual), n: journey?.pace?.itemsLogged28d ?? 0 })
-            : stale && staleDays !== null ? t("s27.fi.stale", { n: staleDays }) : t("s27.fi.staleNever")}
+            : stale && staleDays !== null ? pl("s32.fi.stale", staleDays) : t("s27.fi.staleNever")}
         </span>
         <button className="b2" type="button" aria-expanded={planner} aria-controls="fd-studio" onClick={() => setPlanner((v) => !v)} data-testid="fd-planner-toggle">
           {planner ? t("s27.pl.close") : t("s27.pl.open")}

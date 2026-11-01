@@ -64,7 +64,7 @@ export function createAcademicAssistantRouter(opts: RouterOptions = {}): Router 
     try {
       let records: import('../services/academic-assistant/student-record').StudentRecord[] = [];
       if (req.user!.role === 'student' && !opts.deps) {
-        try { records = await (await import('../services/academic-assistant/student-record')).loadOwnStudentRecord(req.user!.id); } catch { records = []; }
+        try { records = await (await import('../services/academic-assistant/student-record')).loadOwnStudentRecord(req.user!.id, parsed.data.language); } catch { records = []; }
       }
       const reply = await answerMessage({ id: req.user!.id, role: req.user!.role }, { ...parsed.data, records }, deps);
       res.json(reply);

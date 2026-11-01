@@ -1,0 +1,4304 @@
+[
+ {
+  "name": "hs-flight-deck-fr-1440-light.png",
+  "persona": "hs",
+  "screen": "flight-deck",
+  "width": 1440,
+  "lang": "fr",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [
+   "Votre question"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Bonsoir, Amy."
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Au-delà du diplôme",
+   "Calendrier",
+   "Bibliothèque",
+   "Profil de l’élève",
+   "Notifications",
+   "Documents",
+   "Facturation",
+   "Assistance",
+   "Lumière sur WhatsApp"
+  ],
+  "scrollScreens": 2,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-flight-deck-fr-1440-dark.png",
+  "persona": "hs",
+  "screen": "flight-deck",
+  "width": 1440,
+  "lang": "fr",
+  "theme": "lumiere-dark",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [
+   "Votre question"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Bonsoir, Amy."
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Au-delà du diplôme",
+   "Calendrier",
+   "Bibliothèque",
+   "Profil de l’élève",
+   "Notifications",
+   "Documents",
+   "Facturation",
+   "Assistance",
+   "Lumière sur WhatsApp"
+  ],
+  "scrollScreens": 2,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-flight-deck-en-1440-light.png",
+  "persona": "hs",
+  "screen": "flight-deck",
+  "width": 1440,
+  "lang": "en",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Skip to content 1x1"
+  ],
+  "clipped": [
+   "Your question"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Good evening, Amy."
+  ],
+  "nav": [
+   "Flight Deck",
+   "High School",
+   "Beyond the Diploma",
+   "Calendar",
+   "Library",
+   "Student Profile",
+   "Notifications",
+   "Documents",
+   "Billing",
+   "Support",
+   "WhatsApp Lumière"
+  ],
+  "scrollScreens": 1.9,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-flight-deck-fr-768-light.png",
+  "persona": "hs",
+  "screen": "flight-deck",
+  "width": 768,
+  "lang": "fr",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [
+   "Votre question"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Bonsoir, Amy."
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 3,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-flight-deck-fr-768-dark.png",
+  "persona": "hs",
+  "screen": "flight-deck",
+  "width": 768,
+  "lang": "fr",
+  "theme": "lumiere-dark",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [
+   "Votre question"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Bonsoir, Amy."
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 3,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-flight-deck-en-768-light.png",
+  "persona": "hs",
+  "screen": "flight-deck",
+  "width": 768,
+  "lang": "en",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Skip to content 1x1"
+  ],
+  "clipped": [
+   "Your question"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Good evening, Amy."
+  ],
+  "nav": [
+   "Flight Deck",
+   "High School",
+   "Documents",
+   "Support"
+  ],
+  "scrollScreens": 3,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-flight-deck-fr-390-light.png",
+  "persona": "hs",
+  "screen": "flight-deck",
+  "width": 390,
+  "lang": "fr",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [
+   "Votre question"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Bonsoir, Amy."
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 5.7,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-flight-deck-fr-390-dark.png",
+  "persona": "hs",
+  "screen": "flight-deck",
+  "width": 390,
+  "lang": "fr",
+  "theme": "lumiere-dark",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [
+   "Votre question"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Bonsoir, Amy."
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 5.7,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-flight-deck-en-390-light.png",
+  "persona": "hs",
+  "screen": "flight-deck",
+  "width": 390,
+  "lang": "en",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Skip to content 1x1"
+  ],
+  "clipped": [
+   "Your question"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Good evening, Amy."
+  ],
+  "nav": [
+   "Flight Deck",
+   "High School",
+   "Documents",
+   "Support"
+  ],
+  "scrollScreens": 5.4,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "ba-flight-deck-fr-1440-light.png",
+  "persona": "ba",
+  "screen": "flight-deck",
+  "width": 1440,
+  "lang": "fr",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [
+   "Votre question"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Bonsoir, Amy."
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Au-delà du baccalauréat",
+   "Calendrier",
+   "Bibliothèque",
+   "Votre feuille de route",
+   "Profil de l’élève",
+   "Notifications",
+   "Documents",
+   "Facturation",
+   "Assistance",
+   "Lumière sur WhatsApp"
+  ],
+  "scrollScreens": 2.2,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "ba-flight-deck-fr-1440-dark.png",
+  "persona": "ba",
+  "screen": "flight-deck",
+  "width": 1440,
+  "lang": "fr",
+  "theme": "lumiere-dark",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [
+   "Votre question"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Bonsoir, Amy."
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Au-delà du baccalauréat",
+   "Calendrier",
+   "Bibliothèque",
+   "Votre feuille de route",
+   "Profil de l’élève",
+   "Notifications",
+   "Documents",
+   "Facturation",
+   "Assistance",
+   "Lumière sur WhatsApp"
+  ],
+  "scrollScreens": 2.2,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "ba-flight-deck-en-1440-light.png",
+  "persona": "ba",
+  "screen": "flight-deck",
+  "width": 1440,
+  "lang": "en",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Skip to content 1x1"
+  ],
+  "clipped": [
+   "Your question"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Good evening, Amy."
+  ],
+  "nav": [
+   "Flight Deck",
+   "Beyond the Bachelor's",
+   "Calendar",
+   "Library",
+   "Your Roadmap",
+   "Student Profile",
+   "Notifications",
+   "Documents",
+   "Billing",
+   "Support",
+   "WhatsApp Lumière"
+  ],
+  "scrollScreens": 2,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "ba-flight-deck-fr-768-light.png",
+  "persona": "ba",
+  "screen": "flight-deck",
+  "width": 768,
+  "lang": "fr",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [
+   "Votre question"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Bonsoir, Amy."
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Votre feuille de route",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 3.4,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "ba-flight-deck-fr-768-dark.png",
+  "persona": "ba",
+  "screen": "flight-deck",
+  "width": 768,
+  "lang": "fr",
+  "theme": "lumiere-dark",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [
+   "Votre question"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Bonsoir, Amy."
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Votre feuille de route",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 3.4,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "ba-flight-deck-en-768-light.png",
+  "persona": "ba",
+  "screen": "flight-deck",
+  "width": 768,
+  "lang": "en",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Skip to content 1x1"
+  ],
+  "clipped": [
+   "Your question"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Good evening, Amy."
+  ],
+  "nav": [
+   "Flight Deck",
+   "Your Roadmap",
+   "Documents",
+   "Support"
+  ],
+  "scrollScreens": 3.3,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "ba-flight-deck-fr-390-light.png",
+  "persona": "ba",
+  "screen": "flight-deck",
+  "width": 390,
+  "lang": "fr",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [
+   "Votre question"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Bonsoir, Amy."
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Votre feuille de route",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 6.1,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "ba-flight-deck-fr-390-dark.png",
+  "persona": "ba",
+  "screen": "flight-deck",
+  "width": 390,
+  "lang": "fr",
+  "theme": "lumiere-dark",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [
+   "Votre question"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Bonsoir, Amy."
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Votre feuille de route",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 6.1,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "ba-flight-deck-en-390-light.png",
+  "persona": "ba",
+  "screen": "flight-deck",
+  "width": 390,
+  "lang": "en",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Skip to content 1x1"
+  ],
+  "clipped": [
+   "Your question"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Good evening, Amy."
+  ],
+  "nav": [
+   "Flight Deck",
+   "Your Roadmap",
+   "Documents",
+   "Support"
+  ],
+  "scrollScreens": 6,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-hs-roadmap-fr-1440-light.png",
+  "persona": "hs",
+  "screen": "hs-roadmap",
+  "width": 1440,
+  "lang": "fr",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Vos cours"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Au-delà du diplôme",
+   "Calendrier",
+   "Bibliothèque",
+   "Profil de l’élève",
+   "Notifications",
+   "Documents",
+   "Facturation",
+   "Assistance",
+   "Lumière sur WhatsApp"
+  ],
+  "scrollScreens": 2.2,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-hs-roadmap-fr-1440-dark.png",
+  "persona": "hs",
+  "screen": "hs-roadmap",
+  "width": 1440,
+  "lang": "fr",
+  "theme": "lumiere-dark",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Vos cours"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Au-delà du diplôme",
+   "Calendrier",
+   "Bibliothèque",
+   "Profil de l’élève",
+   "Notifications",
+   "Documents",
+   "Facturation",
+   "Assistance",
+   "Lumière sur WhatsApp"
+  ],
+  "scrollScreens": 2.2,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-hs-roadmap-en-1440-light.png",
+  "persona": "hs",
+  "screen": "hs-roadmap",
+  "width": 1440,
+  "lang": "en",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Skip to content 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Your courses"
+  ],
+  "nav": [
+   "Flight Deck",
+   "High School",
+   "Beyond the Diploma",
+   "Calendar",
+   "Library",
+   "Student Profile",
+   "Notifications",
+   "Documents",
+   "Billing",
+   "Support",
+   "WhatsApp Lumière"
+  ],
+  "scrollScreens": 2.2,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-hs-roadmap-fr-768-light.png",
+  "persona": "hs",
+  "screen": "hs-roadmap",
+  "width": 768,
+  "lang": "fr",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Vos cours"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 2.1,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-hs-roadmap-fr-768-dark.png",
+  "persona": "hs",
+  "screen": "hs-roadmap",
+  "width": 768,
+  "lang": "fr",
+  "theme": "lumiere-dark",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Vos cours"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 2.1,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-hs-roadmap-en-768-light.png",
+  "persona": "hs",
+  "screen": "hs-roadmap",
+  "width": 768,
+  "lang": "en",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Skip to content 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Your courses"
+  ],
+  "nav": [
+   "Flight Deck",
+   "High School",
+   "Documents",
+   "Support"
+  ],
+  "scrollScreens": 2,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-hs-roadmap-fr-390-light.png",
+  "persona": "hs",
+  "screen": "hs-roadmap",
+  "width": 390,
+  "lang": "fr",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Vos cours"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 4.5,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-hs-roadmap-fr-390-dark.png",
+  "persona": "hs",
+  "screen": "hs-roadmap",
+  "width": 390,
+  "lang": "fr",
+  "theme": "lumiere-dark",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Vos cours"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 4.5,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-hs-roadmap-en-390-light.png",
+  "persona": "hs",
+  "screen": "hs-roadmap",
+  "width": 390,
+  "lang": "en",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Skip to content 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Your courses"
+  ],
+  "nav": [
+   "Flight Deck",
+   "High School",
+   "Documents",
+   "Support"
+  ],
+  "scrollScreens": 4.1,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "ba-roadmap-fr-1440-light.png",
+  "persona": "ba",
+  "screen": "roadmap",
+  "width": 1440,
+  "lang": "fr",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 2,
+  "small": [
+   "Aller au contenu 1x1",
+   "Ouvrir le Tableau de bord 169x17"
+  ],
+  "clipped": [
+   "1: terminée",
+   "2: terminée",
+   "3: terminée",
+   "4: terminée",
+   "5: terminée",
+   "6: commencée",
+   "7: pas commencée",
+   "8: pas commencée"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Votre feuille de route"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Au-delà du baccalauréat",
+   "Calendrier",
+   "Bibliothèque",
+   "Votre feuille de route",
+   "Profil de l’élève",
+   "Notifications",
+   "Documents",
+   "Facturation",
+   "Assistance",
+   "Lumière sur WhatsApp"
+  ],
+  "scrollScreens": 2.1,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "ba-roadmap-fr-1440-dark.png",
+  "persona": "ba",
+  "screen": "roadmap",
+  "width": 1440,
+  "lang": "fr",
+  "theme": "lumiere-dark",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 2,
+  "small": [
+   "Aller au contenu 1x1",
+   "Ouvrir le Tableau de bord 169x17"
+  ],
+  "clipped": [
+   "1: terminée",
+   "2: terminée",
+   "3: terminée",
+   "4: terminée",
+   "5: terminée",
+   "6: commencée",
+   "7: pas commencée",
+   "8: pas commencée"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Votre feuille de route"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Au-delà du baccalauréat",
+   "Calendrier",
+   "Bibliothèque",
+   "Votre feuille de route",
+   "Profil de l’élève",
+   "Notifications",
+   "Documents",
+   "Facturation",
+   "Assistance",
+   "Lumière sur WhatsApp"
+  ],
+  "scrollScreens": 2.1,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "ba-roadmap-en-1440-light.png",
+  "persona": "ba",
+  "screen": "roadmap",
+  "width": 1440,
+  "lang": "en",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 2,
+  "small": [
+   "Skip to content 1x1",
+   "Open Flight Deck 115x17"
+  ],
+  "clipped": [
+   "1: done",
+   "2: done",
+   "3: done",
+   "4: done",
+   "5: done",
+   "6: started",
+   "7: not started",
+   "8: not started"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Your roadmap"
+  ],
+  "nav": [
+   "Flight Deck",
+   "Beyond the Bachelor's",
+   "Calendar",
+   "Library",
+   "Your Roadmap",
+   "Student Profile",
+   "Notifications",
+   "Documents",
+   "Billing",
+   "Support",
+   "WhatsApp Lumière"
+  ],
+  "scrollScreens": 2.1,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "ba-roadmap-fr-768-light.png",
+  "persona": "ba",
+  "screen": "roadmap",
+  "width": 768,
+  "lang": "fr",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 2,
+  "small": [
+   "Aller au contenu 1x1",
+   "Ouvrir le Tableau de bord 169x17"
+  ],
+  "clipped": [
+   "1: terminée",
+   "2: terminée",
+   "3: terminée",
+   "4: terminée",
+   "5: terminée",
+   "6: commencée",
+   "7: pas commencée",
+   "8: pas commencée"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Votre feuille de route"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Votre feuille de route",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 2.3,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "ba-roadmap-fr-768-dark.png",
+  "persona": "ba",
+  "screen": "roadmap",
+  "width": 768,
+  "lang": "fr",
+  "theme": "lumiere-dark",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 2,
+  "small": [
+   "Aller au contenu 1x1",
+   "Ouvrir le Tableau de bord 169x17"
+  ],
+  "clipped": [
+   "1: terminée",
+   "2: terminée",
+   "3: terminée",
+   "4: terminée",
+   "5: terminée",
+   "6: commencée",
+   "7: pas commencée",
+   "8: pas commencée"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Votre feuille de route"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Votre feuille de route",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 2.3,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "ba-roadmap-en-768-light.png",
+  "persona": "ba",
+  "screen": "roadmap",
+  "width": 768,
+  "lang": "en",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 2,
+  "small": [
+   "Skip to content 1x1",
+   "Open Flight Deck 115x17"
+  ],
+  "clipped": [
+   "1: done",
+   "2: done",
+   "3: done",
+   "4: done",
+   "5: done",
+   "6: started",
+   "7: not started",
+   "8: not started"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Your roadmap"
+  ],
+  "nav": [
+   "Flight Deck",
+   "Your Roadmap",
+   "Documents",
+   "Support"
+  ],
+  "scrollScreens": 2.3,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "ba-roadmap-fr-390-light.png",
+  "persona": "ba",
+  "screen": "roadmap",
+  "width": 390,
+  "lang": "fr",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 2,
+  "small": [
+   "Aller au contenu 1x1",
+   "Ouvrir le Tableau de bord 169x17"
+  ],
+  "clipped": [
+   "1: terminée",
+   "2: terminée",
+   "3: terminée",
+   "4: terminée",
+   "5: terminée",
+   "6: commencée",
+   "7: pas commencée",
+   "8: pas commencée"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Votre feuille de route"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Votre feuille de route",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 4.1,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "ba-roadmap-fr-390-dark.png",
+  "persona": "ba",
+  "screen": "roadmap",
+  "width": 390,
+  "lang": "fr",
+  "theme": "lumiere-dark",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 2,
+  "small": [
+   "Aller au contenu 1x1",
+   "Ouvrir le Tableau de bord 169x17"
+  ],
+  "clipped": [
+   "1: terminée",
+   "2: terminée",
+   "3: terminée",
+   "4: terminée",
+   "5: terminée",
+   "6: commencée",
+   "7: pas commencée",
+   "8: pas commencée"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Votre feuille de route"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Votre feuille de route",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 4.1,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "ba-roadmap-en-390-light.png",
+  "persona": "ba",
+  "screen": "roadmap",
+  "width": 390,
+  "lang": "en",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Skip to content 1x1"
+  ],
+  "clipped": [
+   "1: done",
+   "2: done",
+   "3: done",
+   "4: done",
+   "5: done",
+   "6: started",
+   "7: not started",
+   "8: not started"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Your roadmap"
+  ],
+  "nav": [
+   "Flight Deck",
+   "Your Roadmap",
+   "Documents",
+   "Support"
+  ],
+  "scrollScreens": 4,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-beyond-fr-1440-light.png",
+  "persona": "hs",
+  "screen": "beyond",
+  "width": 1440,
+  "lang": "fr",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [
+   "rect.[object SVGAnimatedString]",
+   "circle.[object SVGAnimatedString]",
+   "circle.[object SVGAnimatedString]",
+   "circle.[object SVGAnimatedString]"
+  ],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Québec, 2027.\nVotre histoire en Communication comm"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Au-delà du diplôme",
+   "Calendrier",
+   "Bibliothèque",
+   "Profil de l’élève",
+   "Notifications",
+   "Documents",
+   "Facturation",
+   "Assistance",
+   "Lumière sur WhatsApp"
+  ],
+  "scrollScreens": 4.5,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-beyond-fr-1440-dark.png",
+  "persona": "hs",
+  "screen": "beyond",
+  "width": 1440,
+  "lang": "fr",
+  "theme": "lumiere-dark",
+  "overflowX": 0,
+  "offenders": [
+   "rect.[object SVGAnimatedString]",
+   "circle.[object SVGAnimatedString]",
+   "circle.[object SVGAnimatedString]",
+   "circle.[object SVGAnimatedString]"
+  ],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Québec, 2027.\nVotre histoire en Communication comm"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Au-delà du diplôme",
+   "Calendrier",
+   "Bibliothèque",
+   "Profil de l’élève",
+   "Notifications",
+   "Documents",
+   "Facturation",
+   "Assistance",
+   "Lumière sur WhatsApp"
+  ],
+  "scrollScreens": 4.5,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-beyond-en-1440-light.png",
+  "persona": "hs",
+  "screen": "beyond",
+  "width": 1440,
+  "lang": "en",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [
+   "rect.[object SVGAnimatedString]",
+   "circle.[object SVGAnimatedString]",
+   "circle.[object SVGAnimatedString]",
+   "circle.[object SVGAnimatedString]"
+  ],
+  "smallCount": 1,
+  "small": [
+   "Skip to content 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Québec, 2027.\nYour story in Communication starts h"
+  ],
+  "nav": [
+   "Flight Deck",
+   "High School",
+   "Beyond the Diploma",
+   "Calendar",
+   "Library",
+   "Student Profile",
+   "Notifications",
+   "Documents",
+   "Billing",
+   "Support",
+   "WhatsApp Lumière"
+  ],
+  "scrollScreens": 4.3,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-beyond-fr-768-light.png",
+  "persona": "hs",
+  "screen": "beyond",
+  "width": 768,
+  "lang": "fr",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Québec, 2027.\nVotre histoire en Communication comm"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 6.7,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-beyond-fr-768-dark.png",
+  "persona": "hs",
+  "screen": "beyond",
+  "width": 768,
+  "lang": "fr",
+  "theme": "lumiere-dark",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Québec, 2027.\nVotre histoire en Communication comm"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 6.7,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-beyond-en-768-light.png",
+  "persona": "hs",
+  "screen": "beyond",
+  "width": 768,
+  "lang": "en",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Skip to content 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Québec, 2027.\nYour story in Communication starts h"
+  ],
+  "nav": [
+   "Flight Deck",
+   "High School",
+   "Documents",
+   "Support"
+  ],
+  "scrollScreens": 6.4,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-beyond-fr-390-light.png",
+  "persona": "hs",
+  "screen": "beyond",
+  "width": 390,
+  "lang": "fr",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [
+   "rect.[object SVGAnimatedString]",
+   "circle.[object SVGAnimatedString]",
+   "circle.[object SVGAnimatedString]",
+   "circle.[object SVGAnimatedString]"
+  ],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Québec, 2027.\nVotre histoire en Communication comm"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 12.1,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-beyond-fr-390-dark.png",
+  "persona": "hs",
+  "screen": "beyond",
+  "width": 390,
+  "lang": "fr",
+  "theme": "lumiere-dark",
+  "overflowX": 0,
+  "offenders": [
+   "rect.[object SVGAnimatedString]",
+   "circle.[object SVGAnimatedString]",
+   "circle.[object SVGAnimatedString]",
+   "circle.[object SVGAnimatedString]"
+  ],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Québec, 2027.\nVotre histoire en Communication comm"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 12.1,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-beyond-en-390-light.png",
+  "persona": "hs",
+  "screen": "beyond",
+  "width": 390,
+  "lang": "en",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [
+   "rect.[object SVGAnimatedString]",
+   "circle.[object SVGAnimatedString]",
+   "circle.[object SVGAnimatedString]",
+   "circle.[object SVGAnimatedString]"
+  ],
+  "smallCount": 1,
+  "small": [
+   "Skip to content 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Québec, 2027.\nYour story in Communication starts h"
+  ],
+  "nav": [
+   "Flight Deck",
+   "High School",
+   "Documents",
+   "Support"
+  ],
+  "scrollScreens": 11.5,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "ba-beyond-fr-1440-light.png",
+  "persona": "ba",
+  "screen": "beyond",
+  "width": 1440,
+  "lang": "fr",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [
+   "rect.[object SVGAnimatedString]",
+   "circle.[object SVGAnimatedString]",
+   "circle.[object SVGAnimatedString]",
+   "circle.[object SVGAnimatedString]"
+  ],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Québec, 2027.\nVotre histoire en Communication comm"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Au-delà du baccalauréat",
+   "Calendrier",
+   "Bibliothèque",
+   "Votre feuille de route",
+   "Profil de l’élève",
+   "Notifications",
+   "Documents",
+   "Facturation",
+   "Assistance",
+   "Lumière sur WhatsApp"
+  ],
+  "scrollScreens": 4.5,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "ba-beyond-fr-1440-dark.png",
+  "persona": "ba",
+  "screen": "beyond",
+  "width": 1440,
+  "lang": "fr",
+  "theme": "lumiere-dark",
+  "overflowX": 0,
+  "offenders": [
+   "rect.[object SVGAnimatedString]",
+   "circle.[object SVGAnimatedString]",
+   "circle.[object SVGAnimatedString]",
+   "circle.[object SVGAnimatedString]"
+  ],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Québec, 2027.\nVotre histoire en Communication comm"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Au-delà du baccalauréat",
+   "Calendrier",
+   "Bibliothèque",
+   "Votre feuille de route",
+   "Profil de l’élève",
+   "Notifications",
+   "Documents",
+   "Facturation",
+   "Assistance",
+   "Lumière sur WhatsApp"
+  ],
+  "scrollScreens": 4.5,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "ba-beyond-en-1440-light.png",
+  "persona": "ba",
+  "screen": "beyond",
+  "width": 1440,
+  "lang": "en",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [
+   "rect.[object SVGAnimatedString]",
+   "circle.[object SVGAnimatedString]",
+   "circle.[object SVGAnimatedString]",
+   "circle.[object SVGAnimatedString]"
+  ],
+  "smallCount": 1,
+  "small": [
+   "Skip to content 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Québec, 2027.\nYour story in Communication starts h"
+  ],
+  "nav": [
+   "Flight Deck",
+   "Beyond the Bachelor's",
+   "Calendar",
+   "Library",
+   "Your Roadmap",
+   "Student Profile",
+   "Notifications",
+   "Documents",
+   "Billing",
+   "Support",
+   "WhatsApp Lumière"
+  ],
+  "scrollScreens": 4.4,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "ba-beyond-fr-768-light.png",
+  "persona": "ba",
+  "screen": "beyond",
+  "width": 768,
+  "lang": "fr",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Québec, 2027.\nVotre histoire en Communication comm"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Votre feuille de route",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 6.6,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "ba-beyond-fr-768-dark.png",
+  "persona": "ba",
+  "screen": "beyond",
+  "width": 768,
+  "lang": "fr",
+  "theme": "lumiere-dark",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Québec, 2027.\nVotre histoire en Communication comm"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Votre feuille de route",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 6.6,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "ba-beyond-en-768-light.png",
+  "persona": "ba",
+  "screen": "beyond",
+  "width": 768,
+  "lang": "en",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Skip to content 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Québec, 2027.\nYour story in Communication starts h"
+  ],
+  "nav": [
+   "Flight Deck",
+   "Your Roadmap",
+   "Documents",
+   "Support"
+  ],
+  "scrollScreens": 6.3,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "ba-beyond-fr-390-light.png",
+  "persona": "ba",
+  "screen": "beyond",
+  "width": 390,
+  "lang": "fr",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [
+   "rect.[object SVGAnimatedString]",
+   "circle.[object SVGAnimatedString]",
+   "circle.[object SVGAnimatedString]",
+   "circle.[object SVGAnimatedString]"
+  ],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Québec, 2027.\nVotre histoire en Communication comm"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Votre feuille de route",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 11.9,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "ba-beyond-fr-390-dark.png",
+  "persona": "ba",
+  "screen": "beyond",
+  "width": 390,
+  "lang": "fr",
+  "theme": "lumiere-dark",
+  "overflowX": 0,
+  "offenders": [
+   "rect.[object SVGAnimatedString]",
+   "circle.[object SVGAnimatedString]",
+   "circle.[object SVGAnimatedString]",
+   "circle.[object SVGAnimatedString]"
+  ],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Québec, 2027.\nVotre histoire en Communication comm"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Votre feuille de route",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 11.9,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "ba-beyond-en-390-light.png",
+  "persona": "ba",
+  "screen": "beyond",
+  "width": 390,
+  "lang": "en",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [
+   "rect.[object SVGAnimatedString]",
+   "circle.[object SVGAnimatedString]",
+   "circle.[object SVGAnimatedString]",
+   "circle.[object SVGAnimatedString]"
+  ],
+  "smallCount": 1,
+  "small": [
+   "Skip to content 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Québec, 2027.\nYour story in Communication starts h"
+  ],
+  "nav": [
+   "Flight Deck",
+   "Your Roadmap",
+   "Documents",
+   "Support"
+  ],
+  "scrollScreens": 11.1,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-calendar-fr-1440-light.png",
+  "persona": "hs",
+  "screen": "calendar",
+  "width": 1440,
+  "lang": "fr",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Mon calendrier"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Au-delà du diplôme",
+   "Calendrier",
+   "Bibliothèque",
+   "Profil de l’élève",
+   "Notifications",
+   "Documents",
+   "Facturation",
+   "Assistance",
+   "Lumière sur WhatsApp"
+  ],
+  "scrollScreens": 1.2,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-calendar-fr-1440-dark.png",
+  "persona": "hs",
+  "screen": "calendar",
+  "width": 1440,
+  "lang": "fr",
+  "theme": "lumiere-dark",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Mon calendrier"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Au-delà du diplôme",
+   "Calendrier",
+   "Bibliothèque",
+   "Profil de l’élève",
+   "Notifications",
+   "Documents",
+   "Facturation",
+   "Assistance",
+   "Lumière sur WhatsApp"
+  ],
+  "scrollScreens": 1.2,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-calendar-en-1440-light.png",
+  "persona": "hs",
+  "screen": "calendar",
+  "width": 1440,
+  "lang": "en",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Skip to content 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "My calendar"
+  ],
+  "nav": [
+   "Flight Deck",
+   "High School",
+   "Beyond the Diploma",
+   "Calendar",
+   "Library",
+   "Student Profile",
+   "Notifications",
+   "Documents",
+   "Billing",
+   "Support",
+   "WhatsApp Lumière"
+  ],
+  "scrollScreens": 1.2,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-calendar-fr-768-light.png",
+  "persona": "hs",
+  "screen": "calendar",
+  "width": 768,
+  "lang": "fr",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Mon calendrier"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 1.1,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-calendar-fr-768-dark.png",
+  "persona": "hs",
+  "screen": "calendar",
+  "width": 768,
+  "lang": "fr",
+  "theme": "lumiere-dark",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Mon calendrier"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 1.1,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-calendar-en-768-light.png",
+  "persona": "hs",
+  "screen": "calendar",
+  "width": 768,
+  "lang": "en",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Skip to content 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "My calendar"
+  ],
+  "nav": [
+   "Flight Deck",
+   "High School",
+   "Documents",
+   "Support"
+  ],
+  "scrollScreens": 1,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-calendar-fr-390-light.png",
+  "persona": "hs",
+  "screen": "calendar",
+  "width": 390,
+  "lang": "fr",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Mon calendrier"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 1.2,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-calendar-fr-390-dark.png",
+  "persona": "hs",
+  "screen": "calendar",
+  "width": 390,
+  "lang": "fr",
+  "theme": "lumiere-dark",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Mon calendrier"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 1.2,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-calendar-en-390-light.png",
+  "persona": "hs",
+  "screen": "calendar",
+  "width": 390,
+  "lang": "en",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Skip to content 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "My calendar"
+  ],
+  "nav": [
+   "Flight Deck",
+   "High School",
+   "Documents",
+   "Support"
+  ],
+  "scrollScreens": 1.1,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "ba-calendar-fr-1440-light.png",
+  "persona": "ba",
+  "screen": "calendar",
+  "width": 1440,
+  "lang": "fr",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Mon calendrier"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Au-delà du baccalauréat",
+   "Calendrier",
+   "Bibliothèque",
+   "Votre feuille de route",
+   "Profil de l’élève",
+   "Notifications",
+   "Documents",
+   "Facturation",
+   "Assistance",
+   "Lumière sur WhatsApp"
+  ],
+  "scrollScreens": 1.2,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "ba-calendar-fr-1440-dark.png",
+  "persona": "ba",
+  "screen": "calendar",
+  "width": 1440,
+  "lang": "fr",
+  "theme": "lumiere-dark",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Mon calendrier"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Au-delà du baccalauréat",
+   "Calendrier",
+   "Bibliothèque",
+   "Votre feuille de route",
+   "Profil de l’élève",
+   "Notifications",
+   "Documents",
+   "Facturation",
+   "Assistance",
+   "Lumière sur WhatsApp"
+  ],
+  "scrollScreens": 1.2,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "ba-calendar-en-1440-light.png",
+  "persona": "ba",
+  "screen": "calendar",
+  "width": 1440,
+  "lang": "en",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Skip to content 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "My calendar"
+  ],
+  "nav": [
+   "Flight Deck",
+   "Beyond the Bachelor's",
+   "Calendar",
+   "Library",
+   "Your Roadmap",
+   "Student Profile",
+   "Notifications",
+   "Documents",
+   "Billing",
+   "Support",
+   "WhatsApp Lumière"
+  ],
+  "scrollScreens": 1.2,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "ba-calendar-fr-768-light.png",
+  "persona": "ba",
+  "screen": "calendar",
+  "width": 768,
+  "lang": "fr",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Mon calendrier"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Votre feuille de route",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 1.1,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "ba-calendar-fr-768-dark.png",
+  "persona": "ba",
+  "screen": "calendar",
+  "width": 768,
+  "lang": "fr",
+  "theme": "lumiere-dark",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Mon calendrier"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Votre feuille de route",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 1.1,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "ba-calendar-en-768-light.png",
+  "persona": "ba",
+  "screen": "calendar",
+  "width": 768,
+  "lang": "en",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Skip to content 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "My calendar"
+  ],
+  "nav": [
+   "Flight Deck",
+   "Your Roadmap",
+   "Documents",
+   "Support"
+  ],
+  "scrollScreens": 1,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "ba-calendar-fr-390-light.png",
+  "persona": "ba",
+  "screen": "calendar",
+  "width": 390,
+  "lang": "fr",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Mon calendrier"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Votre feuille de route",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 1.2,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "ba-calendar-fr-390-dark.png",
+  "persona": "ba",
+  "screen": "calendar",
+  "width": 390,
+  "lang": "fr",
+  "theme": "lumiere-dark",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Mon calendrier"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Votre feuille de route",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 1.2,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "ba-calendar-en-390-light.png",
+  "persona": "ba",
+  "screen": "calendar",
+  "width": 390,
+  "lang": "en",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Skip to content 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "My calendar"
+  ],
+  "nav": [
+   "Flight Deck",
+   "Your Roadmap",
+   "Documents",
+   "Support"
+  ],
+  "scrollScreens": 1.1,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-notifications-fr-1440-light.png",
+  "persona": "hs",
+  "screen": "notifications",
+  "width": 1440,
+  "lang": "fr",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 8,
+  "small": [
+   "Aller au contenu 1x1",
+   "INPUT 13x13",
+   "INPUT 13x13",
+   "INPUT 13x13",
+   "INPUT 13x13",
+   "INPUT 13x13",
+   "INPUT 13x13",
+   "INPUT 13x13"
+  ],
+  "clipped": [
+   "Préférences de notification"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Notifications"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Au-delà du diplôme",
+   "Calendrier",
+   "Bibliothèque",
+   "Profil de l’élève",
+   "Notifications",
+   "Documents",
+   "Facturation",
+   "Assistance",
+   "Lumière sur WhatsApp"
+  ],
+  "scrollScreens": 1.2,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-notifications-fr-1440-dark.png",
+  "persona": "hs",
+  "screen": "notifications",
+  "width": 1440,
+  "lang": "fr",
+  "theme": "lumiere-dark",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 8,
+  "small": [
+   "Aller au contenu 1x1",
+   "INPUT 13x13",
+   "INPUT 13x13",
+   "INPUT 13x13",
+   "INPUT 13x13",
+   "INPUT 13x13",
+   "INPUT 13x13",
+   "INPUT 13x13"
+  ],
+  "clipped": [
+   "Préférences de notification"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Notifications"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Au-delà du diplôme",
+   "Calendrier",
+   "Bibliothèque",
+   "Profil de l’élève",
+   "Notifications",
+   "Documents",
+   "Facturation",
+   "Assistance",
+   "Lumière sur WhatsApp"
+  ],
+  "scrollScreens": 1.2,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-notifications-en-1440-light.png",
+  "persona": "hs",
+  "screen": "notifications",
+  "width": 1440,
+  "lang": "en",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 8,
+  "small": [
+   "Skip to content 1x1",
+   "INPUT 13x13",
+   "INPUT 13x13",
+   "INPUT 13x13",
+   "INPUT 13x13",
+   "INPUT 13x13",
+   "INPUT 13x13",
+   "INPUT 13x13"
+  ],
+  "clipped": [
+   "Notification preferences"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Notifications"
+  ],
+  "nav": [
+   "Flight Deck",
+   "High School",
+   "Beyond the Diploma",
+   "Calendar",
+   "Library",
+   "Student Profile",
+   "Notifications",
+   "Documents",
+   "Billing",
+   "Support",
+   "WhatsApp Lumière"
+  ],
+  "scrollScreens": 1.1,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-notifications-fr-768-light.png",
+  "persona": "hs",
+  "screen": "notifications",
+  "width": 768,
+  "lang": "fr",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 8,
+  "small": [
+   "Aller au contenu 1x1",
+   "INPUT 13x13",
+   "INPUT 13x13",
+   "INPUT 13x13",
+   "INPUT 13x13",
+   "INPUT 13x13",
+   "INPUT 13x13",
+   "INPUT 13x13"
+  ],
+  "clipped": [
+   "Préférences de notification"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Notifications"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 1.5,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-notifications-fr-768-dark.png",
+  "persona": "hs",
+  "screen": "notifications",
+  "width": 768,
+  "lang": "fr",
+  "theme": "lumiere-dark",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 8,
+  "small": [
+   "Aller au contenu 1x1",
+   "INPUT 13x13",
+   "INPUT 13x13",
+   "INPUT 13x13",
+   "INPUT 13x13",
+   "INPUT 13x13",
+   "INPUT 13x13",
+   "INPUT 13x13"
+  ],
+  "clipped": [
+   "Préférences de notification"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Notifications"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 1.5,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-notifications-en-768-light.png",
+  "persona": "hs",
+  "screen": "notifications",
+  "width": 768,
+  "lang": "en",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 8,
+  "small": [
+   "Skip to content 1x1",
+   "INPUT 13x13",
+   "INPUT 13x13",
+   "INPUT 13x13",
+   "INPUT 13x13",
+   "INPUT 13x13",
+   "INPUT 13x13",
+   "INPUT 13x13"
+  ],
+  "clipped": [
+   "Notification preferences"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Notifications"
+  ],
+  "nav": [
+   "Flight Deck",
+   "High School",
+   "Documents",
+   "Support"
+  ],
+  "scrollScreens": 1.4,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-notifications-fr-390-light.png",
+  "persona": "hs",
+  "screen": "notifications",
+  "width": 390,
+  "lang": "fr",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 8,
+  "small": [
+   "Aller au contenu 1x1",
+   "INPUT 13x13",
+   "INPUT 13x13",
+   "INPUT 13x13",
+   "INPUT 13x13",
+   "INPUT 13x13",
+   "INPUT 13x13",
+   "INPUT 13x13"
+  ],
+  "clipped": [
+   "Préférences de notification"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Notifications"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 2.6,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-notifications-fr-390-dark.png",
+  "persona": "hs",
+  "screen": "notifications",
+  "width": 390,
+  "lang": "fr",
+  "theme": "lumiere-dark",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 8,
+  "small": [
+   "Aller au contenu 1x1",
+   "INPUT 13x13",
+   "INPUT 13x13",
+   "INPUT 13x13",
+   "INPUT 13x13",
+   "INPUT 13x13",
+   "INPUT 13x13",
+   "INPUT 13x13"
+  ],
+  "clipped": [
+   "Préférences de notification"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Notifications"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 2.6,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-notifications-en-390-light.png",
+  "persona": "hs",
+  "screen": "notifications",
+  "width": 390,
+  "lang": "en",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 8,
+  "small": [
+   "Skip to content 1x1",
+   "INPUT 13x13",
+   "INPUT 13x13",
+   "INPUT 13x13",
+   "INPUT 13x13",
+   "INPUT 13x13",
+   "INPUT 13x13",
+   "INPUT 13x13"
+  ],
+  "clipped": [
+   "Notification preferences"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Notifications"
+  ],
+  "nav": [
+   "Flight Deck",
+   "High School",
+   "Documents",
+   "Support"
+  ],
+  "scrollScreens": 2.5,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-library-fr-1440-light.png",
+  "persona": "hs",
+  "screen": "library",
+  "width": 1440,
+  "lang": "fr",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 2,
+  "small": [
+   "Aller au contenu 1x1",
+   "Documents 65x15"
+  ],
+  "clipped": [
+   "Étagères de la bibliothèque"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Bibliothèque académique"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Au-delà du diplôme",
+   "Calendrier",
+   "Bibliothèque",
+   "Profil de l’élève",
+   "Notifications",
+   "Documents",
+   "Facturation",
+   "Assistance",
+   "Lumière sur WhatsApp"
+  ],
+  "scrollScreens": 1.3,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-library-fr-1440-dark.png",
+  "persona": "hs",
+  "screen": "library",
+  "width": 1440,
+  "lang": "fr",
+  "theme": "lumiere-dark",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 2,
+  "small": [
+   "Aller au contenu 1x1",
+   "Documents 65x15"
+  ],
+  "clipped": [
+   "Étagères de la bibliothèque"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Bibliothèque académique"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Au-delà du diplôme",
+   "Calendrier",
+   "Bibliothèque",
+   "Profil de l’élève",
+   "Notifications",
+   "Documents",
+   "Facturation",
+   "Assistance",
+   "Lumière sur WhatsApp"
+  ],
+  "scrollScreens": 1.3,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-library-en-1440-light.png",
+  "persona": "hs",
+  "screen": "library",
+  "width": 1440,
+  "lang": "en",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 2,
+  "small": [
+   "Skip to content 1x1",
+   "Documents 65x15"
+  ],
+  "clipped": [
+   "Library shelves"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Academic library"
+  ],
+  "nav": [
+   "Flight Deck",
+   "High School",
+   "Beyond the Diploma",
+   "Calendar",
+   "Library",
+   "Student Profile",
+   "Notifications",
+   "Documents",
+   "Billing",
+   "Support",
+   "WhatsApp Lumière"
+  ],
+  "scrollScreens": 1.3,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-library-fr-768-light.png",
+  "persona": "hs",
+  "screen": "library",
+  "width": 768,
+  "lang": "fr",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 2,
+  "small": [
+   "Aller au contenu 1x1",
+   "Documents 65x15"
+  ],
+  "clipped": [
+   "Étagères de la bibliothèque"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Bibliothèque académique"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 1.1,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-library-fr-768-dark.png",
+  "persona": "hs",
+  "screen": "library",
+  "width": 768,
+  "lang": "fr",
+  "theme": "lumiere-dark",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 2,
+  "small": [
+   "Aller au contenu 1x1",
+   "Documents 65x15"
+  ],
+  "clipped": [
+   "Étagères de la bibliothèque"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Bibliothèque académique"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 1.1,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-library-en-768-light.png",
+  "persona": "hs",
+  "screen": "library",
+  "width": 768,
+  "lang": "en",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 2,
+  "small": [
+   "Skip to content 1x1",
+   "Documents 65x15"
+  ],
+  "clipped": [
+   "Library shelves"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Academic library"
+  ],
+  "nav": [
+   "Flight Deck",
+   "High School",
+   "Documents",
+   "Support"
+  ],
+  "scrollScreens": 1.1,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-library-fr-390-light.png",
+  "persona": "hs",
+  "screen": "library",
+  "width": 390,
+  "lang": "fr",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 2,
+  "small": [
+   "Aller au contenu 1x1",
+   "Documents 65x15"
+  ],
+  "clipped": [
+   "Étagères de la bibliothèque",
+   "Télécharger",
+   "Télécharger",
+   "Télécharger",
+   "Télécharger"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Bibliothèque académique"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 2.1,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-library-fr-390-dark.png",
+  "persona": "hs",
+  "screen": "library",
+  "width": 390,
+  "lang": "fr",
+  "theme": "lumiere-dark",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 2,
+  "small": [
+   "Aller au contenu 1x1",
+   "Documents 65x15"
+  ],
+  "clipped": [
+   "Étagères de la bibliothèque",
+   "Télécharger",
+   "Télécharger",
+   "Télécharger",
+   "Télécharger"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Bibliothèque académique"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 2.1,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-library-en-390-light.png",
+  "persona": "hs",
+  "screen": "library",
+  "width": 390,
+  "lang": "en",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 2,
+  "small": [
+   "Skip to content 1x1",
+   "Documents 65x15"
+  ],
+  "clipped": [
+   "Library shelves",
+   "Download",
+   "Download",
+   "Download",
+   "Download"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Academic library"
+  ],
+  "nav": [
+   "Flight Deck",
+   "High School",
+   "Documents",
+   "Support"
+  ],
+  "scrollScreens": 2,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-documents-fr-1440-light.png",
+  "persona": "hs",
+  "screen": "documents",
+  "width": 1440,
+  "lang": "fr",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [
+   "BUTTON.inline-flex items-center justify-center ",
+   "DIV.whitespace-nowrap inline-flex items-cent",
+   "BUTTON.inline-flex items-center justify-center ",
+   "SPAN.hidden sm:inline"
+  ],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Vos documents"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Au-delà du diplôme",
+   "Calendrier",
+   "Bibliothèque",
+   "Profil de l’élève",
+   "Notifications",
+   "Documents",
+   "Facturation",
+   "Assistance",
+   "Lumière sur WhatsApp"
+  ],
+  "scrollScreens": 2,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-documents-fr-1440-dark.png",
+  "persona": "hs",
+  "screen": "documents",
+  "width": 1440,
+  "lang": "fr",
+  "theme": "lumiere-dark",
+  "overflowX": 0,
+  "offenders": [
+   "BUTTON.inline-flex items-center justify-center ",
+   "DIV.whitespace-nowrap inline-flex items-cent",
+   "BUTTON.inline-flex items-center justify-center ",
+   "SPAN.hidden sm:inline"
+  ],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Vos documents"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Au-delà du diplôme",
+   "Calendrier",
+   "Bibliothèque",
+   "Profil de l’élève",
+   "Notifications",
+   "Documents",
+   "Facturation",
+   "Assistance",
+   "Lumière sur WhatsApp"
+  ],
+  "scrollScreens": 2,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-documents-en-1440-light.png",
+  "persona": "hs",
+  "screen": "documents",
+  "width": 1440,
+  "lang": "en",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [
+   "BUTTON.inline-flex items-center justify-center ",
+   "SPAN.hidden sm:inline",
+   "DIV.whitespace-nowrap inline-flex items-cent"
+  ],
+  "smallCount": 1,
+  "small": [
+   "Skip to content 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Your documents"
+  ],
+  "nav": [
+   "Flight Deck",
+   "High School",
+   "Beyond the Diploma",
+   "Calendar",
+   "Library",
+   "Student Profile",
+   "Notifications",
+   "Documents",
+   "Billing",
+   "Support",
+   "WhatsApp Lumière"
+  ],
+  "scrollScreens": 2,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-documents-fr-768-light.png",
+  "persona": "hs",
+  "screen": "documents",
+  "width": 768,
+  "lang": "fr",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [
+   "BUTTON.inline-flex items-center justify-center ",
+   "BUTTON.inline-flex items-center justify-center ",
+   "SPAN.hidden sm:inline",
+   "DIV.whitespace-nowrap inline-flex items-cent"
+  ],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Vos documents"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 2.2,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-documents-fr-768-dark.png",
+  "persona": "hs",
+  "screen": "documents",
+  "width": 768,
+  "lang": "fr",
+  "theme": "lumiere-dark",
+  "overflowX": 0,
+  "offenders": [
+   "BUTTON.inline-flex items-center justify-center ",
+   "BUTTON.inline-flex items-center justify-center ",
+   "SPAN.hidden sm:inline",
+   "DIV.whitespace-nowrap inline-flex items-cent"
+  ],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Vos documents"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 2.2,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-documents-en-768-light.png",
+  "persona": "hs",
+  "screen": "documents",
+  "width": 768,
+  "lang": "en",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [
+   "BUTTON.inline-flex items-center justify-center ",
+   "SPAN.hidden sm:inline",
+   "DIV.whitespace-nowrap inline-flex items-cent",
+   "BUTTON.inline-flex items-center justify-center "
+  ],
+  "smallCount": 1,
+  "small": [
+   "Skip to content 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Your documents"
+  ],
+  "nav": [
+   "Flight Deck",
+   "High School",
+   "Documents",
+   "Support"
+  ],
+  "scrollScreens": 2.2,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-documents-fr-390-light.png",
+  "persona": "hs",
+  "screen": "documents",
+  "width": 390,
+  "lang": "fr",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [
+   "BUTTON.inline-flex items-center justify-center ",
+   "SPAN.sm:hidden",
+   "DIV.whitespace-nowrap inline-flex items-cent",
+   "BUTTON.inline-flex items-center justify-center "
+  ],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Vos documents"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 4,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-documents-fr-390-dark.png",
+  "persona": "hs",
+  "screen": "documents",
+  "width": 390,
+  "lang": "fr",
+  "theme": "lumiere-dark",
+  "overflowX": 0,
+  "offenders": [
+   "BUTTON.inline-flex items-center justify-center ",
+   "SPAN.sm:hidden",
+   "DIV.whitespace-nowrap inline-flex items-cent",
+   "BUTTON.inline-flex items-center justify-center "
+  ],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Vos documents"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 4,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-documents-en-390-light.png",
+  "persona": "hs",
+  "screen": "documents",
+  "width": 390,
+  "lang": "en",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [
+   "BUTTON.inline-flex items-center justify-center ",
+   "SPAN.sm:hidden",
+   "DIV.whitespace-nowrap inline-flex items-cent",
+   "BUTTON.inline-flex items-center justify-center "
+  ],
+  "smallCount": 1,
+  "small": [
+   "Skip to content 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Your documents"
+  ],
+  "nav": [
+   "Flight Deck",
+   "High School",
+   "Documents",
+   "Support"
+  ],
+  "scrollScreens": 3.7,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-billing-fr-1440-light.png",
+  "persona": "hs",
+  "screen": "billing",
+  "width": 1440,
+  "lang": "fr",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 3,
+  "small": [
+   "Aller au contenu 1x1",
+   "Téléverser une preuve de paiem 341x15",
+   "Demander dans Soutien → 163x15"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Facturation"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Au-delà du diplôme",
+   "Calendrier",
+   "Bibliothèque",
+   "Profil de l’élève",
+   "Notifications",
+   "Documents",
+   "Facturation",
+   "Assistance",
+   "Lumière sur WhatsApp"
+  ],
+  "scrollScreens": 1.3,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-billing-fr-1440-dark.png",
+  "persona": "hs",
+  "screen": "billing",
+  "width": 1440,
+  "lang": "fr",
+  "theme": "lumiere-dark",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 3,
+  "small": [
+   "Aller au contenu 1x1",
+   "Téléverser une preuve de paiem 341x15",
+   "Demander dans Soutien → 163x15"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Facturation"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Au-delà du diplôme",
+   "Calendrier",
+   "Bibliothèque",
+   "Profil de l’élève",
+   "Notifications",
+   "Documents",
+   "Facturation",
+   "Assistance",
+   "Lumière sur WhatsApp"
+  ],
+  "scrollScreens": 1.3,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-billing-en-1440-light.png",
+  "persona": "hs",
+  "screen": "billing",
+  "width": 1440,
+  "lang": "en",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 3,
+  "small": [
+   "Skip to content 1x1",
+   "Upload proof of payment in Doc 258x15",
+   "Ask in Support → 106x15"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Billing"
+  ],
+  "nav": [
+   "Flight Deck",
+   "High School",
+   "Beyond the Diploma",
+   "Calendar",
+   "Library",
+   "Student Profile",
+   "Notifications",
+   "Documents",
+   "Billing",
+   "Support",
+   "WhatsApp Lumière"
+  ],
+  "scrollScreens": 1.2,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-billing-fr-768-light.png",
+  "persona": "hs",
+  "screen": "billing",
+  "width": 768,
+  "lang": "fr",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 3,
+  "small": [
+   "Aller au contenu 1x1",
+   "Téléverser une preuve de paiem 341x15",
+   "Demander dans Soutien → 163x15"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Facturation"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 1.3,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-billing-fr-768-dark.png",
+  "persona": "hs",
+  "screen": "billing",
+  "width": 768,
+  "lang": "fr",
+  "theme": "lumiere-dark",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 3,
+  "small": [
+   "Aller au contenu 1x1",
+   "Téléverser une preuve de paiem 341x15",
+   "Demander dans Soutien → 163x15"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Facturation"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 1.3,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-billing-en-768-light.png",
+  "persona": "hs",
+  "screen": "billing",
+  "width": 768,
+  "lang": "en",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 3,
+  "small": [
+   "Skip to content 1x1",
+   "Upload proof of payment in Doc 258x15",
+   "Ask in Support → 106x15"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Billing"
+  ],
+  "nav": [
+   "Flight Deck",
+   "High School",
+   "Documents",
+   "Support"
+  ],
+  "scrollScreens": 1.3,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-billing-fr-390-light.png",
+  "persona": "hs",
+  "screen": "billing",
+  "width": 390,
+  "lang": "fr",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 2,
+  "small": [
+   "Aller au contenu 1x1",
+   "Demander dans Soutien → 163x15"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Facturation"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 2.5,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-billing-fr-390-dark.png",
+  "persona": "hs",
+  "screen": "billing",
+  "width": 390,
+  "lang": "fr",
+  "theme": "lumiere-dark",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 2,
+  "small": [
+   "Aller au contenu 1x1",
+   "Demander dans Soutien → 163x15"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Facturation"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 2.5,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-billing-en-390-light.png",
+  "persona": "hs",
+  "screen": "billing",
+  "width": 390,
+  "lang": "en",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 3,
+  "small": [
+   "Skip to content 1x1",
+   "Upload proof of payment in Doc 258x15",
+   "Ask in Support → 106x15"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Billing"
+  ],
+  "nav": [
+   "Flight Deck",
+   "High School",
+   "Documents",
+   "Support"
+  ],
+  "scrollScreens": 2.3,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-support-fr-1440-light.png",
+  "persona": "hs",
+  "screen": "support",
+  "width": 1440,
+  "lang": "fr",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Soutien"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Au-delà du diplôme",
+   "Calendrier",
+   "Bibliothèque",
+   "Profil de l’élève",
+   "Notifications",
+   "Documents",
+   "Facturation",
+   "Assistance",
+   "Lumière sur WhatsApp"
+  ],
+  "scrollScreens": 1,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-support-fr-1440-dark.png",
+  "persona": "hs",
+  "screen": "support",
+  "width": 1440,
+  "lang": "fr",
+  "theme": "lumiere-dark",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Soutien"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Au-delà du diplôme",
+   "Calendrier",
+   "Bibliothèque",
+   "Profil de l’élève",
+   "Notifications",
+   "Documents",
+   "Facturation",
+   "Assistance",
+   "Lumière sur WhatsApp"
+  ],
+  "scrollScreens": 1,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-support-en-1440-light.png",
+  "persona": "hs",
+  "screen": "support",
+  "width": 1440,
+  "lang": "en",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Skip to content 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Support"
+  ],
+  "nav": [
+   "Flight Deck",
+   "High School",
+   "Beyond the Diploma",
+   "Calendar",
+   "Library",
+   "Student Profile",
+   "Notifications",
+   "Documents",
+   "Billing",
+   "Support",
+   "WhatsApp Lumière"
+  ],
+  "scrollScreens": 1,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-support-fr-768-light.png",
+  "persona": "hs",
+  "screen": "support",
+  "width": 768,
+  "lang": "fr",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Soutien"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 1.2,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-support-fr-768-dark.png",
+  "persona": "hs",
+  "screen": "support",
+  "width": 768,
+  "lang": "fr",
+  "theme": "lumiere-dark",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Soutien"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 1.2,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-support-en-768-light.png",
+  "persona": "hs",
+  "screen": "support",
+  "width": 768,
+  "lang": "en",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Skip to content 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Support"
+  ],
+  "nav": [
+   "Flight Deck",
+   "High School",
+   "Documents",
+   "Support"
+  ],
+  "scrollScreens": 1,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-support-fr-390-light.png",
+  "persona": "hs",
+  "screen": "support",
+  "width": 390,
+  "lang": "fr",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Soutien"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 2.1,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-support-fr-390-dark.png",
+  "persona": "hs",
+  "screen": "support",
+  "width": 390,
+  "lang": "fr",
+  "theme": "lumiere-dark",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Soutien"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 2.1,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-support-en-390-light.png",
+  "persona": "hs",
+  "screen": "support",
+  "width": 390,
+  "lang": "en",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Skip to content 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Support"
+  ],
+  "nav": [
+   "Flight Deck",
+   "High School",
+   "Documents",
+   "Support"
+  ],
+  "scrollScreens": 2,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-profile-fr-1440-light.png",
+  "persona": "hs",
+  "screen": "profile",
+  "width": 1440,
+  "lang": "fr",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 5,
+  "small": [
+   "Aller au contenu 1x1",
+   "Upload profile photo 1x1",
+   "Documents 76x17",
+   "Contactez Lumière pour modifie 220x20",
+   "Téléversez un consentement sig 349x17"
+  ],
+  "clipped": [],
+  "iconNoName": 2,
+  "h1": [
+   "Amy"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Au-delà du diplôme",
+   "Calendrier",
+   "Bibliothèque",
+   "Profil de l’élève",
+   "Notifications",
+   "Documents",
+   "Facturation",
+   "Assistance",
+   "Lumière sur WhatsApp",
+   "Identité",
+   "Coordonnées",
+   "Parcours",
+   "Contacts autorisés",
+   "Admissibilité",
+   "Compte"
+  ],
+  "scrollScreens": 5.4,
+  "enLeaks": [
+   "Votre motif : My passport was reissued after I married and the surname changed."
+  ],
+  "errors": []
+ },
+ {
+  "name": "hs-profile-fr-1440-dark.png",
+  "persona": "hs",
+  "screen": "profile",
+  "width": 1440,
+  "lang": "fr",
+  "theme": "lumiere-dark",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 5,
+  "small": [
+   "Aller au contenu 1x1",
+   "Upload profile photo 1x1",
+   "Documents 76x17",
+   "Contactez Lumière pour modifie 220x20",
+   "Téléversez un consentement sig 349x17"
+  ],
+  "clipped": [],
+  "iconNoName": 2,
+  "h1": [
+   "Amy"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Au-delà du diplôme",
+   "Calendrier",
+   "Bibliothèque",
+   "Profil de l’élève",
+   "Notifications",
+   "Documents",
+   "Facturation",
+   "Assistance",
+   "Lumière sur WhatsApp",
+   "Identité",
+   "Coordonnées",
+   "Parcours",
+   "Contacts autorisés",
+   "Admissibilité",
+   "Compte"
+  ],
+  "scrollScreens": 5.4,
+  "enLeaks": [
+   "Votre motif : My passport was reissued after I married and the surname changed."
+  ],
+  "errors": []
+ },
+ {
+  "name": "hs-profile-en-1440-light.png",
+  "persona": "hs",
+  "screen": "profile",
+  "width": 1440,
+  "lang": "en",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 5,
+  "small": [
+   "Skip to content 1x1",
+   "Upload profile photo 1x1",
+   "Documents 76x17",
+   "Contact Lumière to change 181x20",
+   "Upload a signed consent in Doc 262x17"
+  ],
+  "clipped": [],
+  "iconNoName": 2,
+  "h1": [
+   "Amy"
+  ],
+  "nav": [
+   "Flight Deck",
+   "High School",
+   "Beyond the Diploma",
+   "Calendar",
+   "Library",
+   "Student Profile",
+   "Notifications",
+   "Documents",
+   "Billing",
+   "Support",
+   "WhatsApp Lumière",
+   "Identity",
+   "Contact",
+   "Background",
+   "Authorized contacts",
+   "Eligibility",
+   "Account"
+  ],
+  "scrollScreens": 5.3,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-profile-fr-768-light.png",
+  "persona": "hs",
+  "screen": "profile",
+  "width": 768,
+  "lang": "fr",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 5,
+  "small": [
+   "Aller au contenu 1x1",
+   "Upload profile photo 1x1",
+   "Documents 76x17",
+   "Contactez Lumière pour modifie 220x20",
+   "Téléversez un consentement sig 349x17"
+  ],
+  "clipped": [],
+  "iconNoName": 2,
+  "h1": [
+   "Amy"
+  ],
+  "nav": [
+   "Identité",
+   "Coordonnées",
+   "Parcours",
+   "Contacts autorisés",
+   "Admissibilité",
+   "Compte",
+   "Tableau de bord",
+   "Études secondaires",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 6.1,
+  "enLeaks": [
+   "Votre motif : My passport was reissued after I married and the surname changed."
+  ],
+  "errors": []
+ },
+ {
+  "name": "hs-profile-fr-768-dark.png",
+  "persona": "hs",
+  "screen": "profile",
+  "width": 768,
+  "lang": "fr",
+  "theme": "lumiere-dark",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 5,
+  "small": [
+   "Aller au contenu 1x1",
+   "Upload profile photo 1x1",
+   "Documents 76x17",
+   "Contactez Lumière pour modifie 220x20",
+   "Téléversez un consentement sig 349x17"
+  ],
+  "clipped": [],
+  "iconNoName": 2,
+  "h1": [
+   "Amy"
+  ],
+  "nav": [
+   "Identité",
+   "Coordonnées",
+   "Parcours",
+   "Contacts autorisés",
+   "Admissibilité",
+   "Compte",
+   "Tableau de bord",
+   "Études secondaires",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 6.1,
+  "enLeaks": [
+   "Votre motif : My passport was reissued after I married and the surname changed."
+  ],
+  "errors": []
+ },
+ {
+  "name": "hs-profile-en-768-light.png",
+  "persona": "hs",
+  "screen": "profile",
+  "width": 768,
+  "lang": "en",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 6,
+  "small": [
+   "Skip to content 1x1",
+   "Upload profile photo 1x1",
+   "Documents 76x17",
+   "Contact Lumière to change 181x20",
+   "Upload it in Documents 156x17",
+   "Upload a signed consent in Doc 262x17"
+  ],
+  "clipped": [],
+  "iconNoName": 2,
+  "h1": [
+   "Amy"
+  ],
+  "nav": [
+   "Identity",
+   "Contact",
+   "Background",
+   "Authorized contacts",
+   "Eligibility",
+   "Account",
+   "Flight Deck",
+   "High School",
+   "Documents",
+   "Support"
+  ],
+  "scrollScreens": 5.7,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-profile-fr-390-light.png",
+  "persona": "hs",
+  "screen": "profile",
+  "width": 390,
+  "lang": "fr",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [
+   "LI.shrink-0",
+   "A.inline-flex min-h-[44px] items-center ro",
+   "LI.shrink-0",
+   "A.inline-flex min-h-[44px] items-center ro"
+  ],
+  "smallCount": 4,
+  "small": [
+   "Aller au contenu 1x1",
+   "Upload profile photo 1x1",
+   "Documents 76x17",
+   "Téléversez-le dans Documents 207x17"
+  ],
+  "clipped": [],
+  "iconNoName": 2,
+  "h1": [
+   "Amy"
+  ],
+  "nav": [
+   "Identité",
+   "Coordonnées",
+   "Parcours",
+   "Contacts autorisés",
+   "Admissibilité",
+   "Compte",
+   "Tableau de bord",
+   "Études secondaires",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 11.3,
+  "enLeaks": [
+   "Votre motif : My passport was reissued after I married and the surname changed."
+  ],
+  "errors": []
+ },
+ {
+  "name": "hs-profile-fr-390-dark.png",
+  "persona": "hs",
+  "screen": "profile",
+  "width": 390,
+  "lang": "fr",
+  "theme": "lumiere-dark",
+  "overflowX": 0,
+  "offenders": [
+   "LI.shrink-0",
+   "A.inline-flex min-h-[44px] items-center ro",
+   "LI.shrink-0",
+   "A.inline-flex min-h-[44px] items-center ro"
+  ],
+  "smallCount": 4,
+  "small": [
+   "Aller au contenu 1x1",
+   "Upload profile photo 1x1",
+   "Documents 76x17",
+   "Téléversez-le dans Documents 207x17"
+  ],
+  "clipped": [],
+  "iconNoName": 2,
+  "h1": [
+   "Amy"
+  ],
+  "nav": [
+   "Identité",
+   "Coordonnées",
+   "Parcours",
+   "Contacts autorisés",
+   "Admissibilité",
+   "Compte",
+   "Tableau de bord",
+   "Études secondaires",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 11.3,
+  "enLeaks": [
+   "Votre motif : My passport was reissued after I married and the surname changed."
+  ],
+  "errors": []
+ },
+ {
+  "name": "hs-profile-en-390-light.png",
+  "persona": "hs",
+  "screen": "profile",
+  "width": 390,
+  "lang": "en",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [
+   "LI.shrink-0",
+   "A.inline-flex min-h-[44px] items-center ro",
+   "LI.shrink-0",
+   "A.inline-flex min-h-[44px] items-center ro"
+  ],
+  "smallCount": 4,
+  "small": [
+   "Skip to content 1x1",
+   "Upload profile photo 1x1",
+   "Documents 76x17",
+   "Upload it in Documents 156x17"
+  ],
+  "clipped": [],
+  "iconNoName": 2,
+  "h1": [
+   "Amy"
+  ],
+  "nav": [
+   "Identity",
+   "Contact",
+   "Background",
+   "Authorized contacts",
+   "Eligibility",
+   "Account",
+   "Flight Deck",
+   "High School",
+   "Documents",
+   "Support"
+  ],
+  "scrollScreens": 10.8,
+  "enLeaks": [],
+  "errors": []
+ }
+]

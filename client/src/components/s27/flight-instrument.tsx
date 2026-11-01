@@ -134,6 +134,7 @@ export function FlightInstrument(p: InstrumentProps) {
   const beads = g ? beadFractions(p.confirmed, p.required, p.beadPace) : [];
   const narrow = g?.narrow ?? false;
   const layout = g ? placeLabels(g, p.stops, p.required, now, p.youLabel, width, height) : null;
+  const anyHidden = !!layout && Object.values(layout.stops).some((x) => x.hidden);
 
   return (
     <>
@@ -176,8 +177,8 @@ export function FlightInstrument(p: InstrumentProps) {
                 <circle cx={pt.x} cy={pt.y} r="18" fill="transparent" />
                 <circle className="stopdot" cx={pt.x} cy={pt.y} r="7" fill={s.reached ? "var(--t-accent)" : "var(--t-panel)"} stroke={s.reached ? "var(--t-panel)" : "var(--t-line-3)"} strokeWidth={s.reached ? 3 : 2} />
                 {s.reached && <path d={`M${pt.x - 3},${pt.y} l2,2.2 l4,-4.2`} fill="none" stroke="var(--t-accent-ink)" strokeWidth="1.6" strokeLinecap="round" />}
-                {!narrow && <text x={nx} y={ny} textAnchor={anchor} fill="var(--t-heading)" style={{ font: "500 20px var(--font-display)" }}>{s.name}</text>}
-                {!narrow && <text x={nx} y={ny - 20} textAnchor={anchor} fill={s.reached ? "var(--t-accent-text)" : "var(--t-muted)"} style={{ font: "500 10px var(--font-sans)", letterSpacing: ".08em", textTransform: "uppercase" }}>{s.sub}</text>}
+                {!narrow && !slot?.hidden && <text x={nx} y={ny} textAnchor={anchor} fill="var(--t-heading)" style={{ font: "500 20px var(--font-display)" }}>{s.name}</text>}
+                {!narrow && !slot?.hidden && <text x={nx} y={ny - 20} textAnchor={anchor} fill={s.reached ? "var(--t-accent-text)" : "var(--t-muted)"} style={{ font: "500 10px var(--font-sans)", letterSpacing: ".08em", textTransform: "uppercase" }}>{s.sub}</text>}
               </g>
             );
           })}
@@ -210,7 +211,7 @@ export function FlightInstrument(p: InstrumentProps) {
         {tip && (<><b>{tip.title}</b>{tip.body ? <><br />{tip.body}</> : null}</>)}
       </div>
     </div>
-    {narrow && (
+    {(narrow || anyHidden) && (
       <ul className="fi-legend" data-testid="flight-instrument-legend" aria-label={p.ariaLabel}>
         {p.stops.map((s) => (
           <li key={s.id} data-reached={s.reached ? "true" : "false"}>
@@ -244,14 +245,14 @@ const tagWidth = (label: string) => Math.max(70, label.length * 6.6 + 18);
  * below the dot, taking the first slot that clears the plane, the "You" tag, the enrolled label and earlier names.
  * The tag then tries below the plane (centre, right, left, lower) against every stop label and dot.
  */
-function placeLabels(g: ReturnType<typeof arcGeometry>, stops: readonly { id: string; name: string; sub: string; credits: number }[], required: number, now: number, youLabel: string, width: number, height: number) {
+export function placeLabels(g: ReturnType<typeof arcGeometry>, stops: readonly { id: string; name: string; sub: string; credits: number }[], required: number, now: number, youLabel: string, width: number, height: number) {
   const narrow = g.narrow;
   const size = narrow ? 16 : 20;
   const plane = pointOnArc(g, now);
   const planeBox: Box = { x: plane.x - 24, y: plane.y - 24, w: 48, h: 48 };
   const enrolled: Box = { x: narrow ? g.A.x : g.A.x - 40, y: g.A.y + 14, w: 80, h: 34 };
   const placed: Box[] = [];
-  const out: Record<string, { x: number; y: number; anchor: "start" | "middle" | "end" }> = {};
+  const out: Record<string, { x: number; y: number; anchor: "start" | "middle" | "end"; hidden: boolean }> = {};
   const dots: Box[] = [];
   const tagH = 24;
   const tagW = tagWidth(youLabel);
@@ -271,8 +272,11 @@ function placeLabels(g: ReturnType<typeof arcGeometry>, stops: readonly { id: st
     ];
     const boxOf = (c: (typeof cands)[number]): Box => ({ x: c.anchor === "middle" ? c.x - w / 2 : c.anchor === "end" ? c.x - w : c.x, y: c.y - h + 4, w, h });
     const ok = (b: Box) => b.x >= 2 && b.x + b.w <= width - 2 && b.y >= 0 && !hit(b, planeBox) && !hit(b, enrolled) && !placed.some((q) => hit(b, q)) && !hit(b, tagBelow);
-    const pick = cands.find((c) => ok(boxOf(c))) ?? cands.find((c) => { const b = boxOf(c); return !hit(b, planeBox) && b.x >= 2 && b.x + b.w <= width - 2; }) ?? cands[0]!;
-    out[s.id] = pick;
+    // No slot clears: draw no text for this stop (the dot stays; the legend, tooltip and aria label keep the name)
+    // rather than printing it on top of its neighbours.
+    const pick = cands.find((c) => ok(boxOf(c)));
+    if (!pick) { out[s.id] = { ...cands[0]!, hidden: true }; continue; }
+    out[s.id] = { ...pick, hidden: false };
     placed.push(boxOf(pick));
   }
   const tagCands: Box[] = [

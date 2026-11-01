@@ -5,8 +5,14 @@
 export const ELECTIVE_SUBJECT_PREFIX = "Elective change request:";
 export const ELECTIVE_ALTERNATE_MAX = 120;
 export const ELECTIVE_REASON_MAX = 600;
+/**
+ * Status line closing the ticket description. Bilingual (EN then FR) so the student's own language is present in the
+ * ticket they read back. The subject prefix and the "Current course:" / "Preferred alternate:" / "Reason:" labels are
+ * machine-parsed by staff code (server control-center, elective-stage.ts) and stay in English.
+ */
 export const ELECTIVE_STATUS_LINE =
-  "Status: REQUESTED — awaiting Lumière review, then school approval. The roadmap changes only after approval (new roadmap version).";
+  "Status: REQUESTED — awaiting Lumière review, then school approval. The roadmap changes only after approval (new roadmap version)." +
+  "\nStatut : DEMANDÉ — en attente de l’examen de Lumière, puis de l’approbation de l’école. La feuille de route ne change qu’après approbation (nouvelle version de la feuille de route).";
 
 const PENDING_MARKERS = /TEST ONLY|APPROVAL PENDING|PROPOSED/i;
 const SUFFIX = /\s*\((?:confirmed per enrollment|to be confirmed)\)\s*$/i;

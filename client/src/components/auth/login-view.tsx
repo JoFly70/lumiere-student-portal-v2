@@ -1,8 +1,10 @@
 import { useId, useState } from "react";
 import { useT } from "@/i18n";
 import { AuthLayout } from "./auth-layout";
-import { AuthRequestError, signInErrorMessage, signUpErrorMessage } from "@/lib/auth-errors";
+import { AuthRequestError, signInErrorMessage } from "@/lib/auth-errors";
 import { MIN_PASSWORD_LENGTH } from "@shared/password-policy";
+import { signUpErrorInfo } from "./signup-errors";
+import { whatsappLinkProps } from "@/components/support/whatsapp-contact";
 import { AuthAlert, AuthField, AuthHeading, AuthNote, AuthSubmit } from "./auth-parts";
 
 export type LoginMode = "signin" | "invite";
@@ -43,6 +45,7 @@ export function LoginView({ login, signup, onNavigate, initialInvite = "", initi
   const [signupInvitation, setSignupInvitation] = useState(initialInvite);
   const [signupError, setSignupError] = useState("");
   const [signupNotice, setSignupNotice] = useState("");
+  const [signupOfferSignIn, setSignupOfferSignIn] = useState(false);
   const [signupLoading, setSignupLoading] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -62,6 +65,7 @@ export function LoginView({ login, signup, onNavigate, initialInvite = "", initi
     e.preventDefault();
     setSignupError("");
     setSignupNotice("");
+    setSignupOfferSignIn(false);
     setSignupLoading(true);
     try {
       await signup(signupEmail, signupPassword, signupName, signupInvitation.trim());
@@ -73,7 +77,10 @@ export function LoginView({ login, signup, onNavigate, initialInvite = "", initi
         setLoginEmail(signupEmail);
         setMode("signin");
       } else {
-        setSignupError(signUpErrorMessage(error, t));
+        // F19: known server codes / messages are shown translated, never as raw English server text.
+        const info = signUpErrorInfo(error, t);
+        setSignupError(info.message);
+        setSignupOfferSignIn(info.offerSignIn);
       }
     } finally {
       setSignupLoading(false);
@@ -169,6 +176,13 @@ export function LoginView({ login, signup, onNavigate, initialInvite = "", initi
               value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} required minLength={MIN_PASSWORD_LENGTH} autoComplete="new-password" testId="input-signup-password"
             />
             {signupError && <AuthError message={signupError} />}
+            {signupError && signupOfferSignIn && (
+              <p style={{ fontSize: 14 }} data-testid="signup-existing-account">
+                <button type="button" className="auth-link" data-testid="link-signup-signin" onClick={() => { setLoginEmail(signupEmail); setMode("signin"); }}>{t("s32.auth.err.signIn")}</button>
+                {" · "}
+                <a href="/reset-password" className="auth-link" data-testid="link-signup-reset" onClick={(e) => { e.preventDefault(); onNavigate("/reset-password"); }}>{t("s32.auth.err.reset")}</a>
+              </p>
+            )}
             <AuthSubmit loading={signupLoading} label={t("auth.invite.submit")} loadingLabel={t("auth.invite.loading")} testId="button-signup" />
           </form>
         )}
@@ -185,7 +199,7 @@ export function LoginView({ login, signup, onNavigate, initialInvite = "", initi
           >
             {t("auth.forgot")}
           </a>
-          <span>{t("auth.help")}</span>
+          <a href={whatsappLinkProps.href} target={whatsappLinkProps.target} rel={whatsappLinkProps.rel} className="auth-link" data-testid="link-login-help">{t("auth.help")}</a>
         </div>
       </div>
     </AuthLayout>

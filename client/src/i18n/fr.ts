@@ -21,6 +21,10 @@ import { s32StaffAdminFr } from "./modules/s32-staff-admin";
 import { s32StaffOpsFr } from "./modules/s32-staff-ops";
 import { s32StaffWsFr } from "./modules/s32-staff-ws";
 import { s32StaffDirFr } from "./modules/s32-staff-dir";
+import { s32AssistantFr } from "./modules/s32-assistant";
+import { s32DegreeFr } from "./modules/s32-degree";
+import { s32HsFr } from "./modules/s32-hs";
+import { s32ServicesFr } from "./modules/s32-services";
 
 /**
  * Dictionnaire français (vouvoiement). Typé contre `en.ts` : toute clé anglaise doit exister ici.
@@ -50,13 +54,17 @@ export const fr: Record<TranslationKey, string> = {
   ...s32StaffOpsFr,
   ...s32StaffWsFr,
   ...s32StaffDirFr,
+  ...s32AssistantFr,
+  ...s32DegreeFr,
+  ...s32HsFr,
+  ...s32ServicesFr,
   "language.label": "Langue",
   "language.en": "English",
   "language.fr": "Français",
   "language.switchTo": "Changer de langue (actuelle : {current})",
 
   "nav.flightDeck": "Tableau de bord",
-  "nav.highSchoolFlightDeck": "Tableau de bord du lycée",
+  "nav.highSchoolFlightDeck": "Tableau de bord des études secondaires",
   "nav.highSchool": "Études secondaires",
   "nav.roadmap": "Votre feuille de route",
   "nav.documents": "Documents",

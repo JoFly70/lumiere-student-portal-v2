@@ -16,7 +16,7 @@ export function NotificationBell() {
       <Bell className="h-5 w-5" aria-hidden="true" />
       {unread > 0 ? (
         <span data-testid="notification-bell-count" aria-hidden="true"
-          className="absolute right-1.5 top-1.5 min-w-[1.125rem] rounded-full bg-student-gold-fill px-1 text-center text-[0.6875rem] font-semibold leading-[1.125rem] text-student-gold-ink">
+          className="absolute right-1.5 top-1.5 min-w-[1.125rem] rounded-full bg-student-gold-bright px-1 text-center text-[0.6875rem] font-semibold leading-[1.125rem] text-student-gold-bright-ink">
           {unread > 99 ? "99+" : unread}
         </span>
       ) : null}

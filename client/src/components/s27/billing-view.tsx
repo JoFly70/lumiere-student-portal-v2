@@ -10,7 +10,13 @@ import { paidPercent } from "@/lib/billing-queries";
 import { formatDay } from "@/lib/s27/dates";
 import { useS27T } from "@/lib/s27/i18n-util";
 import type { TranslationKey } from "@/i18n";
+import { whatsappLinkProps, LUMIERE_WHATSAPP_DISPLAY } from "@/components/support/whatsapp-contact";
 import { S27Page, Eyebrow } from "./ui";
+
+/** Documents opens on its Financial tab (where proof of payment is filed). */
+export const BILLING_PROOF_HREF = "/documents?tab=financial";
+/** Support opens its request form on the billing topic. */
+export const BILLING_SUPPORT_HREF = "/support?topic=billing";
 
 const monthYear = (iso: string, lang: "en" | "fr") => formatDay(iso, lang, "monthYear");
 
@@ -37,7 +43,7 @@ function Awaiting({ n }: { n: number }) {
     <div className="notice" role="status" data-testid="billing-awaiting">
       <b>{pl("s27.bill.awaitingTitle", n)}</b>
       <p>{t("s27.bill.awaitingText")}</p>
-      <Link className="link" href="/documents" data-testid="link-upload-proof">{t("s27.bill.uploadProof")} →</Link>
+      <Link className="link" href={BILLING_PROOF_HREF} data-testid="link-upload-proof">{t("s27.bill.uploadProof")} →</Link>
     </div>
   );
 }
@@ -49,10 +55,41 @@ function NotConfigured({ awaiting }: { awaiting: number }) {
       <section className="state" data-testid="billing-not-configured">
         <h2>{t("s27.bill.notSetTitle")}</h2>
         <p>{t("s27.bill.notSetText")}</p>
-        <Link className="link" href="/support">{t("s27.bill.question")} {t("s27.bill.contact")} →</Link>
+        <Link className="link tap" href={BILLING_SUPPORT_HREF}>{t("s27.bill.question")} {t("s27.bill.contact")} →</Link>
       </section>
       <Awaiting n={awaiting} />
+      <PayHelp showHow={false} />
     </>
+  );
+}
+
+/** Pure: the hero line for the next unpaid instalment (overdue is called out first). */
+export function nextDueKey(status: InstallmentStatus): TranslationKey {
+  return (status === "overdue" ? "s27.bill.nextOverdue" : status === "due" ? "s27.bill.nextDueNow" : "s27.bill.nextUpcoming") as TranslationKey;
+}
+
+/**
+ * Always-visible proof-of-payment link, plus (while something is owed) a truthful "How to pay" block. The portal holds no
+ * owner-approved payment instructions, so it points to the Lumière team (Support, official WhatsApp) instead of inventing any.
+ */
+function PayHelp({ showHow }: { showHow: boolean }) {
+  const { t } = useS27T();
+  return (
+    <section className="card" aria-labelledby="bill-pay-help" data-testid="billing-pay-help">
+      <h2 id="bill-pay-help" className="h2s">{showHow ? t("s27.bill.howTitle") : t("s27.bill.proofTitle")}</h2>
+      {showHow && (
+        <div data-testid="billing-how-to-pay">
+          <p className="small">{t("s27.bill.howText")}</p>
+          <p className="small">
+            <Link className="link tap" href={BILLING_SUPPORT_HREF} data-testid="link-billing-support">{t("s27.bill.howSupport")} →</Link>
+            {" · "}
+            <a className="link tap" {...whatsappLinkProps} data-testid="link-billing-whatsapp">{t("s27.bill.howWhatsApp")} ({LUMIERE_WHATSAPP_DISPLAY})</a>
+          </p>
+        </div>
+      )}
+      <p className="small">{t("s27.bill.proofHint")}</p>
+      <p className="small"><Link className="link tap" href={BILLING_PROOF_HREF} data-testid="link-send-proof">{t("s27.bill.proofLink")} →</Link></p>
+    </section>
   );
 }
 
@@ -70,6 +107,11 @@ function Configured({ v, lang }: { v: StudentBillingConfigured; lang: "en" | "fr
       <section className="paid" data-testid="billing-hero" data-settled={settled ? "true" : "false"}>
         <div>
           <span className="eyebrow bd-eye">{t("s27.bill.title")}</span>
+          {v.nextDue && !settled && (
+            <p className="bill-next" data-testid="billing-next-due" data-status={v.nextDue.status}>
+              <b>{t(nextDueKey(v.nextDue.status), { amount: money(v.nextDue.amountCents), date: formatDay(v.nextDue.dueDate, lang) })}</b>
+            </p>
+          )}
           <h2>{nothingPaid ? t("s27.bill.nothingTitle") : settled ? t("s27.bill.paidTitle") : t("s27.bill.balanceTitle", { amount: money(v.remainingCents) })}</h2>
           <p>
             {nothingPaid
@@ -88,6 +130,7 @@ function Configured({ v, lang }: { v: StudentBillingConfigured; lang: "en" | "fr
       </section>
 
       <Awaiting n={v.evidenceAwaitingReview.length} />
+      <PayHelp showHow={!settled} />
 
       <section className="card" aria-labelledby="bill-sched" data-testid="billing-schedule">
         <div><h2 id="bill-sched" className="h2s">{t("s27.bill.schedule")}</h2><p className="small">{t("s27.bill.scheduleNote")}</p></div>
@@ -119,7 +162,7 @@ function Configured({ v, lang }: { v: StudentBillingConfigured; lang: "en" | "fr
           </div>
         )}
       </section>
-      <p className="small">{t("s27.bill.question")} <Link className="link" href="/support">{t("s27.bill.contact")} →</Link></p>
+      <p className="small">{t("s27.bill.question")} <Link className="link" href={BILLING_SUPPORT_HREF}>{t("s27.bill.contact")} →</Link></p>
     </>
   );
 }

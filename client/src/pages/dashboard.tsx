@@ -1,3 +1,8 @@
+/**
+ * @deprecated S32-A (F33): NOT ROUTED — no page or component imports this file; only legacy regression tests do.
+ * Live student views are client/src/pages/flight-deck.tsx (components/s27/*) and pages/roadmap.tsx
+ * (components/degree-journey/*). Do not fix student UI here.
+ */
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";

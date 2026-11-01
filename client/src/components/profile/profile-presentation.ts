@@ -2,7 +2,7 @@
  * Pure presentation helpers for the student profile (S09). No React, no
  * network: safe to unit test and to reuse from fixtures.
  */
-import { currentLanguage, type Language } from "@/i18n";
+import { currentLanguage, translate, type Language, type TranslationKey } from "@/i18n";
 import { pt } from "./pt";
 import type {
   ContactAuthorityStatus,
@@ -27,7 +27,8 @@ export const PROFILE_SECTIONS = [
 export function readinessAction(item: { key: string; kind: string; section: string }): { label: string; href: string; external: boolean } | null {
   if (item.kind !== "missing" && item.kind !== "action_required") return null;
   switch (item.key) {
-    case "phone": return { label: pt("Add phone"), href: `#${sectionDomId("contact")}`, external: false };
+    case "phone":
+    case "phone_primary": return { label: pt("Add phone"), href: `#${sectionDomId("contact")}`, external: false };
     case "address": return { label: pt("Add address"), href: `#${sectionDomId("contact")}`, external: false };
     case "id_gov": return { label: pt("Upload government ID"), href: "/documents", external: true };
     default:
@@ -124,6 +125,75 @@ export function needsUpload(status: EvidenceStatus): boolean {
 // ---------------------------------------------------------------------------
 // Readiness
 // ---------------------------------------------------------------------------
+
+/** Fixed server detail strings (readiness `detail`) that have a translation; other details are data (review notes) and pass through. */
+const READINESS_DETAIL_KEYS: Record<string, string> = {
+  "Street address and country": "s32.profile.ready.d.address",
+  "Upload a government-issued ID": "s32.profile.ready.d.uploadId",
+  "Lumière verifies authority from a signed consent or legal document.": "s32.profile.ready.d.consent",
+  "Upload a signed consent to ask Lumière to review again.": "s32.profile.ready.d.consentAgain",
+};
+
+const AUTHORITY_PATTERNS: readonly { re: RegExp; key: string }[] = [
+  { re: /^(.*): authority awaiting verification$/s, key: "s32.profile.ready.authPending" },
+  { re: /^Upload a signed consent for (.*)$/s, key: "s32.profile.ready.consentUpload" },
+  { re: /^(.*): authority was not approved$/s, key: "s32.profile.ready.authRevoked" },
+  { re: /^(.*): authority verified$/s, key: "s32.profile.ready.authVerified" },
+];
+
+const DOCUMENT_SUFFIXES: Record<string, string> = {
+  "complete": "s32.profile.ready.docVerified",
+  "waiting_external": "s32.profile.ready.docExternal",
+  "pending_review": "s32.profile.ready.docPending",
+  "action_required": "s32.profile.ready.docResubmit",
+};
+
+function ready(lang: Language, key: string, vars?: Record<string, string | number>): string {
+  return translate(lang, key, vars);
+}
+
+/**
+ * S32 (F08): the readiness label and detail rendered from the item KEY (and kind) through i18n, like the action buttons.
+ * The server builds English labels; unknown keys, or shapes this does not recognise, fall back to the server text.
+ */
+export function readinessText(item: Pick<ProfileReadinessItem, "key" | "kind" | "label" | "detail">, lang: Language = currentLanguage()): { label: string; detail: string | null } {
+  if (lang !== "fr") return { label: item.label, detail: item.detail }; // English is the server text, unchanged
+  const detail = item.detail == null ? null : READINESS_DETAIL_KEYS[item.detail] ? ready(lang, READINESS_DETAIL_KEYS[item.detail]!) : item.detail;
+  const fixed = (key: string) => ({ label: ready(lang, key), detail });
+  switch (item.key) {
+    case "phone_primary": return fixed("s32.profile.ready.phone");
+    case "address": return fixed("s32.profile.ready.address");
+    case "emergency_contact": return fixed("s32.profile.ready.emergency");
+    case "identity_document":
+      if (item.kind === "unverified") return fixed("s32.profile.ready.idNot");
+      if (item.kind === "pending_review") return fixed("s32.profile.ready.idPending");
+      if (item.kind === "action_required") return fixed("s32.profile.ready.idResubmit");
+      if (item.kind === "complete") return fixed("s32.profile.ready.idVerified");
+      break;
+    case "identity_correction":
+      if (item.kind === "pending_review") return fixed("s32.profile.ready.corrPending");
+      if (item.kind === "action_required") return fixed("s32.profile.ready.corrDeclined");
+      break;
+    default:
+      if (item.key.startsWith("contact_authority:")) {
+        for (const p of AUTHORITY_PATTERNS) {
+          const m = p.re.exec(item.label);
+          if (m) return { label: ready(lang, p.key, { name: m[1]! }), detail };
+        }
+      } else if (item.key.startsWith("document:")) {
+        const suffixKey = DOCUMENT_SUFFIXES[item.kind];
+        const suffixEn = { complete: " verified", waiting_external: " is with the evaluation service", pending_review: " under review", action_required: " needs to be resubmitted" }[item.kind as "complete"];
+        if (suffixKey && suffixEn && item.label.endsWith(suffixEn)) {
+          const docType = item.key.slice("document:".length);
+          const typeKey = `ux.lib.type.${docType}`;
+          const translated = translate(lang, typeKey);
+          const name = translated !== typeKey ? translated : item.label.slice(0, item.label.length - suffixEn.length);
+          return { label: ready(lang, suffixKey, { name }), detail };
+        }
+      }
+  }
+  return { label: item.label, detail: item.detail };
+}
 
 export function splitReadiness(items: readonly ProfileReadinessItem[]) {
   const attention = items.filter((i) => i.kind === "missing" || i.kind === "action_required");

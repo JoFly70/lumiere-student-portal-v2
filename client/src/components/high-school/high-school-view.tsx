@@ -75,7 +75,7 @@ function Header({ view, welcome }: { view: StudentHighSchoolView; welcome?: HsWe
   );
 }
 
-function GraduatedBanner({ view }: { view: StudentHighSchoolView }) {
+export function GraduatedBanner({ view }: { view: StudentHighSchoolView }) {
   const { t, language } = useT();
   const on = formatShortDate(view.graduation.diploma.conferredOn, language);
   return (

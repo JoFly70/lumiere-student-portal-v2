@@ -258,7 +258,7 @@ export const studentUxFr = {
   "ux.home.milestone.weeks": "Semaines {from}–{to}",
   "ux.home.milestone.cumulative": "{n} crédits planifiés d’ici là",
   "ux.home.milestone.done": "atteint",
-  "ux.home.support": "Dernières nouvelles du soutien",
+  "ux.home.support": "Dernières nouvelles de l’assistance",
   "ux.home.support.replied": "Lumière a répondu {when}",
   "ux.home.support.read": "Lire la réponse",
   "ux.home.support.none": "Aucune nouvelle réponse de Lumière.",

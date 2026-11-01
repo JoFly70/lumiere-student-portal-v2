@@ -206,7 +206,13 @@ export function CourseSupport({ course, schoolLine }: { course: HsCourseView; sc
   );
 }
 
-export function ElectiveChange({ course }: { course: HsCourseView }) {
+/** Same eligibility as the details view: an elective that has not been replaced. */
+export function canRequestElectiveChange(course: Pick<HsCourseView, "kind" | "status">): boolean {
+  return course.kind === "elective" && course.status !== "replaced";
+}
+
+/** `compact` drops the credit/awaiting header (list rows already show them) and keeps the same button, dialog and ticket. */
+export function ElectiveChange({ course, compact = false }: { course: HsCourseView; compact?: boolean }) {
   const actions = useHsActions();
   const { t, language } = useT();
   const uid = useId();
@@ -217,11 +223,13 @@ export function ElectiveChange({ course }: { course: HsCourseView }) {
   const title = courseTitleView(course.title).title;
   const valid = electiveChangeValid({ alternate, reason });
   return (
-    <div className="space-y-2 rounded-xl border border-student-line p-3" data-testid="elective-change">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-        <span className="text-student-ink" data-testid="elective-credit">{t("hs.elective.credit", { credits: creditsLabel(course.halfUnits, language) })}</span>
-        {electiveAwaitsApproval(course.title) && <StatusPill status="attention" label={t("hs.elective.awaiting")} />}
-      </div>
+    <div className={compact ? "mt-2 space-y-2" : "space-y-2 rounded-xl border border-student-line p-3"} data-testid="elective-change">
+      {!compact && (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+          <span className="text-student-ink" data-testid="elective-credit">{t("hs.elective.credit", { credits: creditsLabel(course.halfUnits, language) })}</span>
+          {electiveAwaitsApproval(course.title) && <StatusPill status="attention" label={t("hs.elective.awaiting")} />}
+        </div>
+      )}
       {state.kind === "sent" ? (
         <p className="flex flex-wrap items-center gap-x-2 rounded-lg bg-st-applied-soft px-3 py-2 text-sm text-st-applied" role="status" data-testid="elective-sent">
           {t("hs.elective.sent", { number: state.ticketNumber })}
@@ -327,7 +335,7 @@ function CourseRow({ course, today, schoolLine, open, onToggle }: { course: HsCo
             ))}
           </ul>
         )}
-        {course.kind === "elective" && course.status !== "replaced" && <ElectiveChange course={course} />}
+        {canRequestElectiveChange(course) && <ElectiveChange course={course} />}
         {course.status !== "transfer_credit" && course.status !== "replaced" && <CourseSupport course={course} schoolLine={schoolLine} />}
       </div>
     </li>

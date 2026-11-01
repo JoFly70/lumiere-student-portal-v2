@@ -87,6 +87,27 @@ export function degreeRequirementRows(progress: StudentDegreeProgressView | null
   });
 }
 
+export interface RequirementShortfall {
+  readonly id: string;
+  readonly label: string;
+  /** Credits this requirement still needs (from the canonical degree progress; never estimated). */
+  readonly remaining: number;
+}
+
+/**
+ * Requirements that need MORE credits than the "Still open" total suggests (e.g. residency needs 15 while 9 credits are
+ * open). Only requirements with a known remaining amount count; unknown open total or no such requirement gives [].
+ * Largest gap first, at most `max`.
+ */
+export function requirementShortfalls(rows: readonly DegreeRequirementRow[], openCredits: number | null, max = 2): RequirementShortfall[] {
+  if (openCredits === null) return [];
+  return rows
+    .filter((r) => !r.done && r.remaining !== null && r.remaining > openCredits)
+    .map((r) => ({ id: r.id, label: r.label, remaining: r.remaining as number }))
+    .sort((a, b) => b.remaining - a.remaining)
+    .slice(0, max);
+}
+
 /** The plain-language checks worth showing on the deck: residency first, then holds / approvals / reviews (max 4). */
 export function degreeNotes(roadmap: StudentRoadmapView, progress: StudentDegreeProgressView | null, max = 4): DegreeWarning[] {
   const all = buildWarnings(roadmap, progress);

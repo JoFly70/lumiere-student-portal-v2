@@ -28,6 +28,10 @@ import { s32StaffAdminEn } from "./modules/s32-staff-admin";
 import { s32StaffOpsEn } from "./modules/s32-staff-ops";
 import { s32StaffWsEn } from "./modules/s32-staff-ws";
 import { s32StaffDirEn } from "./modules/s32-staff-dir";
+import { s32AssistantEn } from "./modules/s32-assistant";
+import { s32DegreeEn } from "./modules/s32-degree";
+import { s32HsEn } from "./modules/s32-hs";
+import { s32ServicesEn } from "./modules/s32-services";
 
 export const en = {
   ...authEn,
@@ -52,6 +56,10 @@ export const en = {
   ...s32StaffOpsEn,
   ...s32StaffWsEn,
   ...s32StaffDirEn,
+  ...s32AssistantEn,
+  ...s32DegreeEn,
+  ...s32HsEn,
+  ...s32ServicesEn,
   // Language
   "language.label": "Language",
   "language.en": "English",

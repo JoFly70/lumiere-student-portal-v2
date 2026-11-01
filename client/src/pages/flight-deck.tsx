@@ -99,10 +99,7 @@ export default function FlightDeck() {
   if (studentRecordError) {
     return wrap(
       <div data-testid="flight-deck-profile-error">
-        <ProgressError
-          message={studentRecordError instanceof Error ? studentRecordError.message : undefined}
-          onRetry={() => refetchStudentRecord()}
-        />
+        <ProgressError onRetry={() => refetchStudentRecord()} />
       </div>,
     );
   }
@@ -110,9 +107,7 @@ export default function FlightDeck() {
   if (studentRecordStatus === "missing" || isRoadmapMissingRecord(error)) return wrap(<PlanNotReady />);
   if (isLoading) return wrap(<ProgressSkeleton />);
   if (error) {
-    return wrap(
-      <ProgressError message={error instanceof Error ? error.message : undefined} onRetry={() => refetch()} />,
-    );
+    return wrap(<ProgressError onRetry={() => refetch()} />);
   }
   if (!data) return null;
 

@@ -12,6 +12,7 @@ import React, { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useT } from "@/i18n";
 import type { StudentRoadmapView } from "@shared/student-roadmap-contract";
 import {
   BRAND_NAME,
@@ -118,13 +119,14 @@ export function RoadmapPageView({
     const hash = typeof window !== "undefined" ? window.location.hash : "";
     if (hash.startsWith("#item-")) setTargetItemKey(decodeURIComponent(hash.slice("#item-".length)));
   }, []);
+  const { t } = useT();
 
   if (!isPublished(view)) {
     return (
       <StudentSurface testId="roadmap-page">
         <div data-state="NOT_PUBLISHED">
           <div className="mx-auto w-full max-w-6xl pb-6">
-            <PageHeader eyebrow={BRAND_NAME} title="Your roadmap" />
+            <PageHeader eyebrow={BRAND_NAME} title={t("s32.state.page.roadmap")} />
           </div>
           <div className="mx-auto mt-6 w-full max-w-6xl">
             <RoadmapNotPublished view={view} showFoundation={false} foundationLink />
@@ -169,12 +171,13 @@ export function FlightDeckRoadmapView({
   /** Optional slot at the very top (S21 welcome banner). Absent in static renders and tests. */
   banner?: React.ReactNode;
 }) {
+  const { t } = useT();
   if (!isPublished(view)) {
     return (
       <StudentSurface testId="flight-deck">
         {banner}
         <div className="mx-auto w-full max-w-6xl space-y-8" data-state="NOT_PUBLISHED">
-          <PageHeader eyebrow={BRAND_NAME} title="Your Flight Deck" />
+          <PageHeader eyebrow={BRAND_NAME} title={t("s32.state.page.flightDeck")} />
           <RoadmapNotPublished view={view} requirementDetails={requirementDetails} />
         </div>
       </StudentSurface>

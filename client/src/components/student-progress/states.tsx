@@ -4,13 +4,15 @@ import { Link } from "wouter";
 import { AlertCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useT } from "@/i18n";
 
 export function ProgressSkeleton() {
+  const { t } = useT();
   return (
     <div
       className="mx-auto w-full max-w-6xl space-y-8 px-4 py-6 sm:px-6 sm:py-10"
       role="status"
-      aria-label="Loading your academic progress"
+      aria-label={t("s32.state.loadingAria")}
       data-testid="progress-skeleton"
     >
       <div className="space-y-3">
@@ -27,13 +29,9 @@ export function ProgressSkeleton() {
   );
 }
 
-export function ProgressError({
-  message,
-  onRetry,
-}: {
-  message?: string;
-  onRetry?: () => void;
-}) {
+/** The raw error text is never shown to the student (it is English and can be technical). */
+export function ProgressError({ onRetry }: { onRetry?: () => void }) {
+  const { t } = useT();
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-10 sm:px-6" data-testid="error-state">
       <div
@@ -41,10 +39,9 @@ export function ProgressError({
         role="alert"
       >
         <AlertCircle className="h-6 w-6 text-destructive" aria-hidden="true" />
-        <h2 className="font-serif text-2xl tracking-tight">We could not load your progress</h2>
+        <h2 className="font-serif text-2xl tracking-tight">{t("s32.state.error.title")}</h2>
         <p className="text-sm leading-relaxed text-muted-foreground">
-          This is usually a brief connection problem. Your academic record has not been changed.
-          {message ? ` (${message})` : ""}
+          {t("s32.state.error.body")}
         </p>
         {onRetry && (
           <Button
@@ -54,7 +51,7 @@ export function ProgressError({
             data-testid="button-retry"
           >
             <RefreshCw className="mr-2 h-4 w-4" aria-hidden="true" />
-            Try again
+            {t("s32.state.retry")}
           </Button>
         )}
       </div>
@@ -63,21 +60,21 @@ export function ProgressError({
 }
 
 export function PlanNotReady() {
+  const { t } = useT();
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-10 sm:px-6" data-testid="flight-deck-incomplete-state">
       <div className="space-y-4 rounded-2xl border border-card-border bg-card p-6 shadow-sm sm:p-8">
         <p className="text-xs font-medium uppercase tracking-[0.14em] text-gold-strong">
-          Almost there
+          {t("s32.state.notReady.eyebrow")}
         </p>
         <h2 className="font-serif text-2xl tracking-tight sm:text-3xl">
-          Your Lumi&egrave;re plan is not ready yet
+          {t("s32.state.notReady.title")}
         </h2>
         <p className="text-sm leading-relaxed text-muted-foreground">
-          Your account is ready. An advisor still needs to finish linking your student profile and
-          academic plan before your progress can appear here. Contact support if you need help.
+          {t("s32.state.notReady.body")}
         </p>
         <Button asChild variant="outline" className="min-h-[44px]">
-          <Link href="/support">Contact Support</Link>
+          <Link href="/support">{t("s32.state.notReady.cta")}</Link>
         </Button>
       </div>
     </div>

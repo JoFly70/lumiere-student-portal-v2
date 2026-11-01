@@ -1,5 +1,6 @@
 /** Academic Calendar for students (S30): their own dates only, export and subscription links; no scheduling. */
 import React from "react";
+import { Link } from "wouter";
 import { CalendarWorkspace } from "@/components/s30/calendar/calendar-workspace";
 import { useCalT } from "@/components/s30/calendar/calendar-parts";
 import "@/styles/student-s27.css";
@@ -18,6 +19,10 @@ export default function StudentCalendar() {
             <p className="small mt-1 max-w-2xl">{tt("cal.student.subtitle")}</p>
           </div>
         </header>
+        <p className="small mb-3 max-w-2xl" data-testid="cal-request-appointment">
+          <Link className="link" href="/beyond#bd-sessions" data-testid="link-request-appointment">{tt("s32.cal.requestAppt")} →</Link>
+          {" "}<span>{tt("s32.cal.requestApptHelp")}</span>
+        </p>
         <CalendarWorkspace scope="student" />
       </div>
     </div>

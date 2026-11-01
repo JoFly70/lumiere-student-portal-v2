@@ -18,6 +18,8 @@
 .s27 .ch h2{font-size:1.45rem;line-height:1.1}
 .s27 .link{background:none;border:0;padding:0;color:var(--t-accent-text);font-weight:600;font-size:.8rem;cursor:pointer;text-decoration:none}
 .s27 .link:hover{text-decoration:underline}
+/* S32-A: standalone action links (proof of payment, ask Assistance, WhatsApp) get a 44px tap target. */
+.s27 .link.tap{display:inline-flex;align-items:center;min-height:44px}
 .s27 .b1{background:var(--t-heading);color:var(--t-bg);border:0;border-radius:9px;padding:10px 16px;font-weight:600;cursor:pointer}
 .s27 .b2{background:var(--t-panel);border:1px solid var(--t-line-2);border-radius:9px;padding:9px 14px;font-weight:600;cursor:pointer;text-decoration:none;color:var(--t-heading)}
 .s27 .btns{display:flex;gap:8px;flex-wrap:wrap}
@@ -434,3 +436,16 @@
 .s27 .fi-legend li[data-reached="true"] i{background:var(--t-accent);border-color:var(--t-accent)}
 .s27 .fi-legend b{font:500 1rem var(--font-display);color:var(--t-heading)}
 .s27 .fi-legend span{text-align:right;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase}
+
+/* ---------- S32-A: Billing hero next/overdue line (F05) ---------- */
+.s27 .paid .bill-next{margin:12px 0 0;color:#f0dba8;font-size:1rem}
+.s27 .paid .bill-next b{font-weight:600}
+.s27 .paid .bill-next[data-status="overdue"]{padding:8px 12px;border-radius:10px;border:1px solid #e2cb98;background:rgba(240,219,168,.12);color:#fff7e0}
+
+/* ---------- S32-A: phones, keep the last element and focus targets clear of the bottom-left orb (F27) ----------
+   The orb is 52px tall, 14px above the 60px bottom bar. <main> and the page surface already pad the end of the page;
+   this adds explicit clearance at the end of every s27 page and for focus/anchor scrolling. Desktop is unchanged. */
+@media (max-width:767px){
+  .s27 .inner{padding-bottom:calc(52px + 14px + 24px)}
+  #main-content{scroll-padding-bottom:calc(60px + 14px + 52px + 24px + env(safe-area-inset-bottom,0px))}
+}

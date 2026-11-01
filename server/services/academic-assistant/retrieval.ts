@@ -70,7 +70,11 @@ function jaccard(a: Set<string>, b: Set<string>): number {
   return inter / Math.max(1, a.size + b.size - inter);
 }
 
-export function searchKnowledge(query: string, limit = 2, now: Date = new Date()): Hit[] {
+/** S32-A (F25): 'hs' / 'degree' hide entries written for the other program; 'all' (default) filters nothing. */
+export type KbAudience = 'hs' | 'degree' | 'all';
+const visibleTo = (entry: KbEntry, audience: KbAudience) => audience === 'all' || (entry.audience ?? 'all') === 'all' || entry.audience === audience;
+
+export function searchKnowledge(query: string, limit = 2, now: Date = new Date(), audience: KbAudience = 'all'): Hit[] {
   cache ??= build();
   const { docs, df, avgLen } = cache;
   const q = Array.from(new Set(tokenize(query)));
@@ -81,6 +85,7 @@ export function searchKnowledge(query: string, limit = 2, now: Date = new Date()
   const b = 0.75;
   const scored: Hit[] = [];
   for (const d of docs) {
+    if (!visibleTo(d.entry, audience)) continue;
     let score = 0;
     for (const t of q) {
       const f = d.tf.get(t);

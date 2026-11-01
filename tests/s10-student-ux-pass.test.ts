@@ -64,8 +64,9 @@ describe("S10 UX pass: credit display", () => {
   const fd = html(React.createElement(FlightDeckRoadmapView, { view: V }));
   const rm = html(React.createElement(RoadmapPageView, { view: V }));
 
-  it("Flight Deck states the applied-of-required summary once, from foundation.ladder", () => {
-    expect(count(text(fd), "63 of 120 credits applied")).toBe(1);
+  // S32-A F07: the shared vocabulary is Earned / Planned / Still open (was "applied").
+  it("Flight Deck states the earned-of-required summary once, from foundation.ladder", () => {
+    expect(count(text(fd), "63 of 120 credits earned toward your degree")).toBe(1);
     expect(V.foundation.ladder.applied).toBe("63.00");
     expect(V.foundation.ladder.required).toBe("120.00");
   });

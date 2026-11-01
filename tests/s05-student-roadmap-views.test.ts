@@ -69,7 +69,7 @@ describe("S05 Roadmap page", () => {
   });
   it("states applied credit ONCE on the Flight Deck (S10 UX pass); the counts section points to it instead of repeating it", () => {
     expect(fd).not.toContain('data-testid="credit-baseline"');
-    expect(count(fdt, "63 of 120 credits applied")).toBe(1);
+    expect(count(fdt, "63 of 120 credits earned toward your degree")).toBe(1);
     expect(fdt).toContain("These counts cover roadmap courses only");
     expect(fd).toContain('data-testid="link-your-credits"');
     // The count legend carries no credit figure, so 0 accepted can never be read as 0 credit.
@@ -99,7 +99,7 @@ describe("S05 Roadmap page", () => {
     expect(fd).toContain('data-testid="other-credit-note"');
     expect(fdt).toContain("Plus 6 more verified credits from other courses on your record.");
     expect(fd).toContain('data-rung="still"');
-    expect(fdt).toContain("63 credits applied (solid) + 3 credits surplus (hatched)");
+    expect(fdt).toContain("63 credits earned (solid) + 3 credits surplus (hatched)");
   });
   it("keeps the Verified bar one colour whether or not there is surplus", () => {
     const withSurplus = html(React.createElement(CreditLadder, { ladder: V.foundation.ladder }));
@@ -151,7 +151,7 @@ describe("S05 Roadmap page", () => {
     expect(fd).toContain('data-testid="credit-ladder"');
     expect(fdt).toContain("Verified credits beyond what any requirement needs; they're on your record but don't move you closer to graduation.");
     expect(fdt).toContain("Part of the reported total that Lumière has checked and accepted");
-    expect(fdt).toContain("Applied means that credit is counted toward a degree requirement");
+    expect(fdt).toContain("Earned means that credit is counted toward a degree requirement");
     for (const r of ["reported", "provisional", "verified", "applied", "planned"]) expect(fd).toContain(`data-rung="${r}"`);
   });
 
@@ -228,7 +228,7 @@ describe("S05 Flight Deck", () => {
   it("takes credit numbers from the ladder only", () => {
     expect(markup).toContain('data-testid="rung-verified"');
     expect(t).toMatch(/Verified 66/);
-    expect(t).toMatch(/Applied 63/);
+    expect(t).toMatch(/Earned 63/);
     expect(t).toContain("Surplus: 3 credits");
   });
   it("does not repeat the headline", () => {
