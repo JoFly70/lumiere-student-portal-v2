@@ -20,7 +20,8 @@ import {
   type TicketStatus,
 } from "@shared/support-contract";
 import type { StatusKey } from "@/pages/student-roadmap-presentation";
-import { currentLanguage, type Language } from "@/i18n";
+import { fr as frLocale } from "date-fns/locale";
+import { currentLanguage, translate, type Language } from "@/i18n";
 import { supportText } from "./original-support-text";
 
 export const SUBJECT_MIN = 5;
@@ -52,11 +53,18 @@ export function studentStatusLabel(status: TicketStatus): string {
 export function staffRowAge(
   t: { readonly awaiting: "staff" | "student" | "none"; readonly awaiting_since: string; readonly created_at: string; readonly resolved_at?: string | null; readonly updated_at?: string },
   now: Date,
+  /** S32-B: pass the staff language to get translated text. Omitted: the original English. */
+  lang?: Language,
 ): string {
   const span = (iso: string | null | undefined) => {
     const d = iso ? new Date(iso) : null;
-    return d && !Number.isNaN(d.getTime()) ? formatDistanceStrict(d, now) : "";
+    return d && !Number.isNaN(d.getTime()) ? formatDistanceStrict(d, now, lang === "fr" ? { locale: frLocale } : undefined) : "";
   };
+  if (lang) {
+    if (t.awaiting === "staff") return translate(lang, "s32sup.age.waiting", { span: span(t.awaiting_since) }).trim();
+    if (t.awaiting === "student") return translate(lang, "s32sup.age.asked", { span: span(t.awaiting_since) });
+    return translate(lang, "s32sup.age.resolved", { span: span(t.resolved_at ?? t.updated_at ?? t.created_at) });
+  }
   if (t.awaiting === "staff") return `Waiting ${span(t.awaiting_since)}`.trim();
   if (t.awaiting === "student") return `Asked ${span(t.awaiting_since)} ago`;
   const done = t.resolved_at ?? t.updated_at ?? t.created_at;
@@ -358,12 +366,20 @@ export function targetLabel(priority: TicketPriority): string {
 export function overdueByLabel(
   t: { readonly awaiting: "staff" | "student" | "none"; readonly awaiting_since: string; readonly priority: TicketPriority; readonly is_overdue?: boolean },
   now: Date,
+  lang?: Language,
 ): string | null {
   if (!t.is_overdue || t.awaiting !== "staff") return null;
   const since = new Date(t.awaiting_since).getTime();
   if (Number.isNaN(since)) return null;
   const over = now.getTime() - since - SUPPORT_TARGET_HOURS[t.priority] * 3_600_000;
   if (over <= 0) return null;
+  if (lang) {
+    const hours = SUPPORT_TARGET_HOURS[t.priority];
+    const span = formatDistanceStrict(0, over, lang === "fr" ? { locale: frLocale } : undefined);
+    return hours % 24 === 0
+      ? translate(lang, "s32sup.age.overdueDays", { span, n: hours / 24 })
+      : translate(lang, "s32sup.age.overdueHours", { span, n: hours });
+  }
   return `${formatDistanceStrict(0, over)} past the ${targetLabel(t.priority)}`;
 }
 

@@ -287,11 +287,11 @@ describe("2/3. visibility and isolation", () => {
     expect(h.fake.rows("support_tickets")[0].subject).toBe("Seeded support request");
   });
 
-  it("studentId filter is ADMIN-ONLY: student, staff and coach get 403 FORBIDDEN; admin gets the server-resolved student's tickets", async () => {
+  it("studentId filter is ADMIN/STAFF-only: student and coach get 403 FORBIDDEN; admin and staff get the server-resolved student's tickets", async () => {
     const h = build();
     seedTicket(h, { reporter: "studentA", assignedTo: "coachAssigned" });
     seedTicket(h, { reporter: "studentB" });
-    for (const who of ["studentA", "staff", "coachAssigned"] as const) {
+    for (const who of ["studentA", "coachAssigned"] as const) {
       const res = await as(h, who).get("/api/tickets?studentId=stu-b");
       expect(res.status, who).toBe(403);
       expect(res.body.code).toBe("FORBIDDEN");
@@ -316,7 +316,7 @@ describe("2/3. visibility and isolation", () => {
     expect((await as(h, "admin").get("/api/tickets")).body.tickets).toHaveLength(2);
   });
 
-  it("adds the student's workspace link only to admin ticket detail", async () => {
+  it("adds the student's file link only to admin and staff ticket detail, never coach", async () => {
     const h = build();
     const ticket = seedTicket(h, { reporter: "studentA", assignedTo: "coachAssigned" });
     const admin = await as(h, "admin").get(`/api/tickets/${ticket.id}`);
@@ -325,7 +325,7 @@ describe("2/3. visibility and isolation", () => {
 
     expect(admin.status).toBe(200);
     expect(admin.body.ticket.student_id).toBe("stu-a");
-    expect(staff.body.ticket.student_id).toBeUndefined();
+    expect(staff.body.ticket.student_id).toBe("stu-a");
     expect(coach.body.ticket.student_id).toBeUndefined();
   });
 });

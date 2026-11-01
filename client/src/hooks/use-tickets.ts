@@ -127,7 +127,10 @@ export function ticketQueryParams(filters?: TicketFilters): URLSearchParams {
   return queryParams;
 }
 
-export function useTickets(filters?: TicketFilters, options?: { enabled?: boolean }) {
+/** Staff desk freshness: poll every 60 s. TanStack Query pauses the interval while the tab is hidden. */
+export const STAFF_QUEUE_REFRESH_MS = 60_000;
+
+export function useTickets(filters?: TicketFilters, options?: { enabled?: boolean; refetchInterval?: number }) {
   const queryParams = ticketQueryParams(filters);
 
   return useQuery<TicketsResponse>({
@@ -139,14 +142,18 @@ export function useTickets(filters?: TicketFilters, options?: { enabled?: boolea
     // A caller that scopes by student but has no resolved student id yet must
     // not fall through to the unscoped ticket list.
     enabled: !(filters && 'studentId' in filters && !filters.studentId) && options?.enabled !== false,
+    refetchInterval: options?.refetchInterval ?? false,
+    refetchIntervalInBackground: false,
   });
 }
 
-export function useTicketStats(enabled: boolean) {
+export function useTicketStats(enabled: boolean, options?: { refetchInterval?: number }) {
   return useQuery<SupportStatsResponse>({
     queryKey: ['ticket-stats'],
     queryFn: async () => apiRequest('/api/tickets/stats/summary'),
     enabled,
+    refetchInterval: options?.refetchInterval ?? false,
+    refetchIntervalInBackground: false,
   });
 }
 
@@ -182,11 +189,13 @@ export function useSupportContextOptions(enabled: boolean) {
   });
 }
 
-export function useTicket(ticketId: string | null) {
+export function useTicket(ticketId: string | null, options?: { refetchInterval?: number }) {
   return useQuery<{ ticket: Ticket }>({
     queryKey: ['ticket', ticketId],
     queryFn: async () => apiRequest(`/api/tickets/${ticketId}`),
     enabled: !!ticketId,
+    refetchInterval: options?.refetchInterval ?? false,
+    refetchIntervalInBackground: false,
   });
 }
 

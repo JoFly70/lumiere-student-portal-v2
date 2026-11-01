@@ -155,8 +155,20 @@ export function createFakeSupportSupabase(options: FakeSupabaseOptions = {}) {
     return a < b ? -1 : 1;
   }
 
-  type Filter = { kind: "eq" | "neq" | "in" | "is" | "gte" | "lte" | "ilike"; column: string; value: any };
+  type Filter = { kind: "eq" | "neq" | "in" | "is" | "gte" | "lte" | "ilike" | "or"; column: string; value: any };
+  /** PostgREST or() subset: comma list of `col.ilike.pattern` and `col.in.(a,b)`. */
+  function matchesOr(row: Row, expr: string): boolean {
+    const parts = expr.split(/,(?=[a-z_]+\.(?:ilike|in)\.)/);
+    return parts.some((part) => {
+      const m = /^([a-z_]+)\.(ilike|in)\.(.*)$/.exec(part);
+      if (!m) return false;
+      const v = columnValue(row, m[1]);
+      if (m[2] === "ilike") return typeof v === "string" && ilikeToRegex(m[3]).test(v);
+      return m[3].replace(/^\(|\)$/g, "").split(",").includes(String(v));
+    });
+  }
   function matches(row: Row, f: Filter): boolean {
+    if (f.kind === "or") return matchesOr(row, String(f.value));
     const v = columnValue(row, f.column);
     switch (f.kind) {
       case "eq": return v === f.value;
@@ -270,6 +282,7 @@ export function createFakeSupportSupabase(options: FakeSupabaseOptions = {}) {
     gte(column: string, value: unknown) { this.filters.push({ kind: "gte", column, value }); return this; }
     lte(column: string, value: unknown) { this.filters.push({ kind: "lte", column, value }); return this; }
     ilike(column: string, value: string) { this.filters.push({ kind: "ilike", column, value }); return this; }
+    or(expr: string) { this.filters.push({ kind: "or", column: "", value: expr }); return this; }
     order(column: string, opts?: { ascending?: boolean }) { this.orders.push({ column, ascending: opts?.ascending !== false }); return this; }
     range(from: number, to: number) { this.from_ = from; this.to_ = to; return this; }
     limit(n: number) { this.limit_ = n; return this; }

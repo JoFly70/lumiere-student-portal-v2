@@ -267,7 +267,7 @@ export function StaffAvatar({ name, size = "md", muted }: { name: string; size?:
 // KPI tile (also the queue filter on the support desk)
 // ---------------------------------------------------------------------------
 
-export function KpiTile({ label, value, hint, tone = "default", pressed, onClick, testId, icon }: {
+export function KpiTile({ label, value, hint, tone = "default", pressed, onClick, testId, icon, showingLabel = "Showing" }: {
   label: string;
   value: React.ReactNode;
   hint?: string;
@@ -277,6 +277,8 @@ export function KpiTile({ label, value, hint, tone = "default", pressed, onClick
   onClick?: () => void;
   testId?: string;
   icon?: React.ReactNode;
+  /** Translated text of the "pressed" badge (S32-B). */
+  showingLabel?: string;
 }) {
   const numeric = typeof value === "number" ? value : Number.NaN;
   const hot = Number.isFinite(numeric) && numeric > 0;
@@ -287,7 +289,7 @@ export function KpiTile({ label, value, hint, tone = "default", pressed, onClick
         <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-student-muted">{label}</span>
         {pressed ? (
           <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-student-gold bg-student-card px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-student-gold-ink">
-            <Check className="h-3 w-3" aria-hidden="true" />Showing
+            <Check className="h-3 w-3" aria-hidden="true" />{showingLabel}
           </span>
         ) : icon ? <span className="text-student-muted" aria-hidden="true">{icon}</span> : null}
       </span>
