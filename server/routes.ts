@@ -1444,6 +1444,9 @@ window.ENV = {
   app.use('/api/student', s30Calendar.createStudentCalendarRouter(s30CalendarDeps));
   // Public, token-addressed iCalendar feeds (revocable; only the token hash is stored; owner role re-checked).
   app.use('/calendar/feed', s30Calendar.createCalendarFeedRouter(s30CalendarDeps));
+  // S30 Phase B: Academic Data Import Center (admin/staff upload, map, validate; admin approves, commits, rolls back;
+  // writes only provider-/institution-REPORTED records, never official results or credit).
+  app.use('/api/admin', await (await import('./routes/s30-imports')).createDefaultImportsRouter());
   // S18 billing ledger: staff/admin entry and review (per-route role checks)
   app.use('/api/admin', (await import('./routes/admin-billing')).default);
   // S13 staff-only student <-> portal account linkage (per-route auth, admin only).

@@ -1,8 +1,15 @@
 /**
- * S30 Phase A shared contract: Academic Calendar (month / week / agenda views for students and staff, reminders,
- * iCalendar export and revocable subscription feeds).
+ * S30 shared contract. Phase A: Academic Calendar (month / week / agenda views for students and staff, reminders,
+ * iCalendar export and revocable subscription feeds). Phase B: Academic Data Import Center.
  *
- * Tables: supabase/migrations/20261107100000_s30_academic_calendar.sql. Server: server/services/s30/calendar*.ts,
+ * Academic integrity (enforced server-side and by the database):
+ *   planned work (roadmap)  ->  student-reported progress (hs_task_progress)  ->  provider-reported progress (imports)
+ *   ->  submitted evidence (student_documents)  ->  institution-verified outcomes (hs_official_results / credit awards).
+ *   An import NEVER creates an official result, a credit award or a verified document. Its records carry an explicit
+ *   tier ("provider_reported" | "institution_reported") and, when they report completion, a review flag.
+ *
+ * Tables: supabase/migrations/20261107100000_s30_academic_calendar.sql (Phase A) and
+ * 20261107110000_s30_academic_imports.sql (Phase B). Server: server/services/s30/calendar*.ts,
  * routes server/routes/s30-calendar.ts. Dates are ISO strings; instants are UTC ("…Z"); date-only values are
  * "YYYY-MM-DD" and are never shifted by a time zone.
  *
@@ -13,6 +20,154 @@ import { z } from "zod";
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "YYYY-MM-DD");
 const instant = z.string().datetime({ offset: true });
+
+// ── evidence tiers ──────────────────────────────────────────────────────────
+
+export const EVIDENCE_TIERS = ["planned", "student_reported", "provider_reported", "institution_reported", "submitted_evidence", "verified"] as const;
+export type EvidenceTier = (typeof EVIDENCE_TIERS)[number];
+
+// ── Academic Data Import Center ─────────────────────────────────────────────
+
+export const IMPORT_SOURCE_KINDS = ["provider_progress", "course_progress_report", "school_results"] as const;
+export type ImportSourceKind = (typeof IMPORT_SOURCE_KINDS)[number];
+/** Tier assigned to committed records by source kind. Never "verified". */
+export const IMPORT_TIER_BY_SOURCE: Record<ImportSourceKind, "provider_reported" | "institution_reported"> = {
+  provider_progress: "provider_reported",
+  course_progress_report: "provider_reported",
+  school_results: "institution_reported",
+};
+export const IMPORT_FIELDS = ["student_code", "course", "task", "progress_status", "percent_complete", "score_percent", "credits_reported", "reported_on"] as const;
+export type ImportField = (typeof IMPORT_FIELDS)[number];
+export const IMPORT_REQUIRED_FIELDS: readonly ImportField[] = ["student_code", "course"];
+export type ImportColumnMapping = Partial<Record<ImportField, string>>;
+
+export const IMPORT_STATUSES = ["uploaded", "validated", "approved", "committed", "rolled_back", "discarded"] as const;
+export type ImportStatus = (typeof IMPORT_STATUSES)[number];
+export const IMPORT_MAX_BYTES = 5 * 1024 * 1024;
+export const IMPORT_MAX_ROWS = 2000;
+
+export const IMPORT_ISSUE_CODES = [
+  "student_missing", "student_not_found", "course_missing", "course_not_on_plan", "bad_status", "bad_percent", "bad_score",
+  "bad_credits", "bad_date", "future_date", "formula_text", "duplicate_in_file", "no_measure", "completion_needs_review",
+  "credits_informational", "demo_student", "conflicting_value",
+] as const;
+export type ImportIssueCode = (typeof IMPORT_ISSUE_CODES)[number];
+export interface ImportIssue { readonly code: ImportIssueCode; readonly field: ImportField | null; readonly severity: "error" | "warning" | "info" }
+
+export interface ImportNormalizedRow {
+  readonly studentCode: string | null;
+  readonly course: string | null;
+  readonly courseKey: string | null;
+  readonly task: string | null;
+  readonly progressStatus: "not_started" | "in_progress" | "completed" | null;
+  readonly percentComplete: number | null;
+  readonly scorePercent: number | null;
+  readonly creditsReported: number | null;
+  readonly reportedOn: string | null;
+}
+export interface ImportRowView {
+  readonly rowNumber: number;
+  readonly raw: Readonly<Record<string, string>>;
+  readonly normalized: ImportNormalizedRow | null;
+  readonly studentId: string | null;
+  readonly studentName: string | null;
+  readonly outcome: "pending" | "valid" | "warning" | "invalid";
+  readonly diff: "new" | "changed" | "unchanged" | "duplicate_in_file" | null;
+  readonly issues: readonly ImportIssue[];
+  /** For "changed": the active record's values being replaced. */
+  readonly previous: Partial<ImportNormalizedRow> | null;
+}
+export interface ImportCounts {
+  readonly total: number;
+  readonly valid: number;
+  readonly warning: number;
+  readonly invalid: number;
+  readonly new: number;
+  readonly changed: number;
+  readonly unchanged: number;
+  readonly duplicateInFile: number;
+  readonly students: number;
+  readonly needsReview: number;
+  readonly committed?: number;
+  readonly rolledBack?: number;
+}
+export interface ImportBatchView {
+  readonly id: string;
+  readonly status: ImportStatus;
+  readonly sourceKind: ImportSourceKind;
+  readonly tier: "provider_reported" | "institution_reported";
+  readonly providerLabel: string | null;
+  readonly fileName: string | null;
+  readonly fileFormat: "csv" | "xlsx";
+  readonly fileSha256: string;
+  readonly fileBytes: number;
+  readonly sheetName: string | null;
+  readonly headers: readonly string[];
+  readonly mapping: ImportColumnMapping | null;
+  readonly suggestedMapping: ImportColumnMapping;
+  readonly mappingId: string | null;
+  readonly counts: Partial<ImportCounts>;
+  readonly uploadedBy: string | null;
+  readonly uploadedAt: string;
+  readonly validatedAt: string | null;
+  readonly approvedBy: string | null;
+  readonly approvedAt: string | null;
+  readonly committedBy: string | null;
+  readonly committedAt: string | null;
+  readonly rolledBackBy: string | null;
+  readonly rolledBackAt: string | null;
+  readonly rollbackReason: string | null;
+  /** Same file (hash) already committed in another batch. */
+  readonly duplicateOfBatchId: string | null;
+}
+export interface ImportBatchDetail extends ImportBatchView {
+  readonly rows: readonly ImportRowView[];
+  readonly rowsTruncated: boolean;
+}
+export interface ImportMappingView {
+  readonly id: string;
+  readonly name: string;
+  readonly sourceKind: ImportSourceKind;
+  readonly columns: ImportColumnMapping;
+  readonly updatedAt: string;
+}
+const header = z.string().trim().min(1).max(120);
+export const importMappingColumnsSchema = z
+  .object(Object.fromEntries(IMPORT_FIELDS.map((f) => [f, header.optional()])) as Record<ImportField, z.ZodOptional<typeof header>>)
+  .strict();
+export const importUploadMetaSchema = z
+  .object({
+    sourceKind: z.enum(IMPORT_SOURCE_KINDS),
+    providerLabel: z.string().trim().min(1).max(80).optional(),
+    mappingId: z.string().uuid().optional(),
+  })
+  .strict();
+export const importMapSchema = z
+  .object({
+    columns: importMappingColumnsSchema,
+    saveAs: z.string().trim().min(1).max(80).optional(),
+  })
+  .strict();
+export const importRollbackSchema = z.object({ reason: z.string().trim().min(3).max(500) }).strict();
+export const reviewReportedRecordSchema = z.object({ reviewState: z.enum(["reviewed", "needs_review"]) }).strict();
+
+export interface ReportedRecordView {
+  readonly id: string;
+  readonly studentId: string;
+  readonly tier: "provider_reported" | "institution_reported";
+  readonly providerLabel: string | null;
+  readonly courseKey: string | null;
+  readonly courseLabel: string;
+  readonly taskLabel: string | null;
+  readonly progressStatus: "not_started" | "in_progress" | "completed" | null;
+  readonly percentComplete: number | null;
+  readonly scorePercent: number | null;
+  readonly creditsReported: number | null;
+  readonly reportedOn: string | null;
+  readonly reviewState: "none" | "needs_review" | "reviewed";
+  readonly batchId: string;
+  readonly createdAt: string;
+}
 
 // ── Academic Calendar ───────────────────────────────────────────────────────
 
@@ -125,6 +280,17 @@ export const S30_API = {
   studentSubscriptions: "/api/student/calendar/subscriptions",
   studentSubscription: (id: string) => `/api/student/calendar/subscriptions/${enc(id)}`,
   feed: (token: string) => `/calendar/feed/${enc(token)}.ics`,
+  imports: "/api/admin/imports",
+  importBatch: (id: string) => `/api/admin/imports/${enc(id)}`,
+  importMap: (id: string) => `/api/admin/imports/${enc(id)}/map`,
+  importApprove: (id: string) => `/api/admin/imports/${enc(id)}/approve`,
+  importCommit: (id: string) => `/api/admin/imports/${enc(id)}/commit`,
+  importRollback: (id: string) => `/api/admin/imports/${enc(id)}/rollback`,
+  importDiscard: (id: string) => `/api/admin/imports/${enc(id)}/discard`,
+  importMappings: "/api/admin/imports/mappings",
+  importTemplate: "/api/admin/imports/template.csv",
+  reportedRecords: (studentId: string) => `/api/admin/students/${enc(studentId)}/reported-records`,
+  reportedRecord: (studentId: string, id: string) => `/api/admin/students/${enc(studentId)}/reported-records/${enc(id)}`,
 } as const;
 
 export const S30_ERROR_CODES = {
@@ -134,6 +300,8 @@ export const S30_ERROR_CODES = {
   INVALID_TRANSITION: "S30_INVALID_TRANSITION",
   UNAVAILABLE: "S30_UNAVAILABLE",
   DUPLICATE_SCHEDULE: "S30_DUPLICATE_SCHEDULE",
+  FILE_REJECTED: "S30_FILE_REJECTED",
+  THROTTLED: "THROTTLED",
 } as const;
 
 /** Audit event types written by the calendar routes (identifiers, kinds and counts only). In the enum via the S30 migration. */
@@ -141,6 +309,15 @@ export const S30_AUDIT_EVENTS = {
   calendarEventChanged: "calendar.event_changed",
   calendarSubscriptionChanged: "calendar.subscription_changed",
   calendarAccessDenied: "calendar.access_denied",
+  importUploaded: "import.batch_uploaded",
+  importValidated: "import.batch_validated",
+  importApproved: "import.batch_approved",
+  importCommitted: "import.batch_committed",
+  importRolledBack: "import.batch_rolled_back",
+  importDiscarded: "import.batch_discarded",
+  mappingSaved: "import.mapping_saved",
+  reportedRecordReviewed: "import.record_reviewed",
+  importAccessDenied: "import.access_denied",
 } as const;
 
 /**
@@ -151,6 +328,9 @@ export const S30_AUDIT_EVENTS = {
  *  - student: reads only their own items (staff-only events excluded; a studentId parameter is refused), exports, and
  *    manages their own feed links.
  *  - coach: no calendar access.
+ *  - Imports (Phase B): admin + staff upload, map, validate, preview and discard drafts; ONLY admin approves, commits,
+ *    rolls back and marks imported records reviewed. Coaches and students have no access. Students are matched by
+ *    student code only; a row can never attach data to a student by name.
  *  - feed URLs: a revocable 256-bit token (only its SHA-256 is stored); the owner's CURRENT role is re-checked on
  *    every fetch; "minimal" privacy shows only kinds (+ student code for staff), "detailed" shows titles and names.
  */
