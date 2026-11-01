@@ -125,7 +125,7 @@ export function WeekView({ items, zone, anchor, today, weekStart, showStudent, o
   const days = useMemo(() => weekDays(anchor, weekStart), [anchor, weekStart]);
   const byDay = useMemo(() => groupItemsByDay(items, zone), [items, zone]);
   return (
-    <div data-testid="cal-view-week" className="grid min-w-0 grid-cols-1 gap-2 md:grid-cols-7">
+    <div data-testid="cal-view-week" className="grid min-w-0 grid-cols-1 gap-2 xl:grid-cols-7">
       {days.map((d) => {
         const list = byDay.get(d) ?? [];
         const allDay = list.filter((i) => i.allDay);

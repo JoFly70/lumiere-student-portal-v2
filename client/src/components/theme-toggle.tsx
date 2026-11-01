@@ -8,7 +8,7 @@ import { useTheme } from "@/hooks/use-theme";
 
 /**
  * Theme control for the shell headers. The trigger keeps the existing `button-theme-toggle` test id;
- * it opens the picker with all nine themes (selection is saved in this browser).
+ * it opens the picker with all eight themes (selection is saved in this browser).
  */
 export function ThemeToggle({ className }: { className?: string } = {}) {
   const { theme } = useTheme();
@@ -31,7 +31,7 @@ export function ThemeToggle({ className }: { className?: string } = {}) {
       <PopoverContent
         align="end"
         sideOffset={8}
-        className="w-[min(20rem,calc(100vw-1.5rem))] max-h-[min(34rem,calc(100dvh-5rem))] overflow-y-auto border-[var(--t-line-2)] bg-[var(--t-panel)] p-2 text-[var(--t-text)] shadow-lg"
+        className="w-[min(20rem,calc(100vw-1.5rem))] max-h-[min(34rem,var(--radix-popover-content-available-height,calc(100dvh-5rem)))] overflow-y-auto border-[var(--t-line-2)] bg-[var(--t-panel)] p-2 text-[var(--t-text)] shadow-lg"
         data-testid="theme-popover"
       >
         <p className="px-2 pb-1.5 pt-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--t-muted)]">Appearance</p>

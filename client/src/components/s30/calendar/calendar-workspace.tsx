@@ -96,7 +96,7 @@ export function CalendarWorkspace({ scope, students = [] }: Props) {
         <div className="flex flex-wrap items-center gap-2">
           {staff ? (
             <>
-              <select aria-label={tt("cal.filter.student")} className={FIELD_CLASS + " !w-auto min-w-[10rem] max-w-full sm:max-w-[16rem]"} style={FIELD_STYLE} value={studentId} onChange={(e) => setStudentId(e.target.value)} data-testid="cal-student-filter">
+              <select aria-label={tt("cal.filter.student")} className={FIELD_CLASS + " w-full min-w-0 max-w-full sm:!w-auto sm:min-w-[10rem] sm:max-w-[16rem]"} style={FIELD_STYLE} value={studentId} onChange={(e) => setStudentId(e.target.value)} data-testid="cal-student-filter">
                 <option value="">{tt("cal.filter.allStudents")}</option>
                 {[...students].filter((s) => includeDemo || !s.isDemo || s.studentId === studentId).sort((a, b) => a.name.localeCompare(b.name)).map((s) => <option key={s.studentId} value={s.studentId}>{s.name}{s.code ? ` (${s.code})` : ""}</option>)}
               </select>
