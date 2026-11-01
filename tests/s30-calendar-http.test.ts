@@ -91,8 +91,8 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("S30 Phase A: academic calendar (real Po
     await pg.sql(fs.readFileSync("supabase/migrations/20261107100000_s30_academic_calendar.sql", "utf8"));
     const enumCount = await pg.sql(`select count(*)::int as n from pg_enum e join pg_type t on t.oid = e.enumtypid where t.typname = 'audit_event_type' and e.enumlabel like 'calendar.%'`);
     expect(enumCount[0]!.n).toBe(3);
-    const ops = await pg.sql(`select count(*)::int as n from pg_class where relnamespace = 'public'::regnamespace and relname in ('ops_events','ops_notifications','academic_import_batches')`);
-    expect(ops[0]!.n).toBe(0); // no operational or import tables in Phase A
+    const ops = await pg.sql(`select count(*)::int as n from pg_class where relnamespace = 'public'::regnamespace and relname in ('ops_events','ops_notifications','ops_exception_states','ops_runs')`);
+    expect(ops[0]!.n).toBe(0); // S30 creates no operational-layer tables (S29 owns events, notifications, exceptions)
   });
 
   it("role scoping: coaches and students are refused the staff calendar; students and staff are refused the other side", async () => {
