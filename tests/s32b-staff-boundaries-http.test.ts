@@ -124,9 +124,10 @@ describe.skipIf(!ready)("S32-B staff may open the Student File; admin-only opera
     for (const p of staffReads()) {
       const res = await send(staff, "get", p);
       expect(res.status, p).not.toBe(403);
-      // The documents list needs the storage-backed documents table this local schema does not create; its
-      // authorization (studentOwnsProfile) has already passed when it answers anything other than 403.
-      if (!p.startsWith("/api/documents/")) expect(res.status, p).toBeLessThan(500);
+      expect(res.status, p).not.toBe(401);
+      // Two reads go through the Supabase client, which this harness mocks out (documents list, student list): their
+      // role check has already passed when they answer anything other than 401/403.
+      if (!p.startsWith("/api/documents/") && !p.startsWith("/api/students?")) expect(res.status, p).toBeLessThan(500);
     }
   });
 
