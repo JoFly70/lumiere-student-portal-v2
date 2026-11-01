@@ -72,3 +72,16 @@ None in code. The only step S32 cannot do itself is **running the S26 runner in 
 - **Response:** fix-forward release `S32.1`:
   - The support desk's automatic refresh (SA-37) is lighter: queue every 2 min, counters every 5 min, open ticket on window focus. That is about 10 requests per 15 min instead of about 45, since every `/api` request counts against the shared 100-per-15-minutes per-IP limit.
   - The new marker gives a fresh acceptance run in a clean rate window.
+
+### `4ccd8ae` (S32.1, published 2026-11-01 22:50 UTC): current live release
+
+- **Runner:** all steps passed; schema steps skipped (already applied). Published; `/health` reports `release: 4ccd8ae…`, database ok.
+- **Hosted acceptance: FAIL on the same 2 required checks only.** 57/59 required checks passed; 33/34 optional passed, the 1 failure being the known outdated `subjects-tab` check.
+  - All the admin browser pages that failed at `fbdc30b` now pass.
+  - Every other functional area passed: sign-in for each role, documents, support, billing, photos, role restrictions, S29 operations, approved-release match, and the student screens.
+- **Remaining failures:** `admin.owner-ai-answer-en` and `admin.owner-ai-draft-reply-fr`, "provider_error: Spark did not answer".
+  - The student assistant again fell back to its built-in guide, with the notice shown to the student.
+  - The failure repeated 45 minutes apart.
+  - The provider adapter, pinned model, configuration and Owner AI request assembly are unchanged since `31c3a1f`, which passed both checks at 05:21 the same day.
+  - This points to the provider account or connection (API key, credits/quota, or a provider outage), not S32 code. It is not yet confirmed: the provider's actual error is only in the production deployment log.
+- **Status:** live and functionally verified except live AI answers; the AI features degrade gracefully (no data loss, no wrong answers). The release is **not yet fully accepted** until the AI checks pass.
