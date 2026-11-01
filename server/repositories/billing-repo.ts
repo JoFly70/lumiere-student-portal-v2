@@ -70,6 +70,23 @@ export const billingRepository: BillingRepository<Tx> = {
     );
   },
 
+  async listAwaitingEvidence(tx) {
+    return rows(await tx.execute(sql`SELECT student_id::text AS student_id, COUNT(*)::int AS n FROM student_billing_evidence WHERE status = 'awaiting_review' GROUP BY student_id`))
+      .map((r) => ({ studentId: String(r.student_id), count: int(r.n) }));
+  },
+
+  async loadActorNames(tx, userIds) {
+    const ids = userIds.filter((i) => typeof i === "string" && i.length > 0 && i.length <= 128);
+    if (ids.length === 0) return {};
+    const list = sql.join(ids.map((i) => sql`${i}`), sql`, `);
+    const out: Record<string, string> = {};
+    for (const r of rows(await tx.execute(sql`SELECT id::text AS id, name FROM users WHERE id::text IN (${list})`))) {
+      const name = typeof r.name === "string" ? r.name.trim() : "";
+      if (name) out[String(r.id)] = name;
+    }
+    return out;
+  },
+
   async loadLedger(tx, studentId, opts): Promise<BillingLedgerData> {
     if (opts?.lock) await tx.execute(sql`SELECT id FROM students WHERE id = ${studentId} FOR UPDATE`);
     const [ob] = rows(await tx.execute(sql`SELECT agreed_cents, currency, note FROM student_billing_obligations WHERE student_id = ${studentId}`));

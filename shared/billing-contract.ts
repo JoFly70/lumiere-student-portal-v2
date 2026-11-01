@@ -237,6 +237,8 @@ export interface StaffBillingView {
   readonly scheduledCents: number;
   /** scheduled - net obligation. 0 when the schedule allocates the obligation exactly; staff-visible flag otherwise. */
   readonly scheduleMismatchCents: number;
+  /** S32-B: display names of the staff who confirmed, voided, approved or reviewed entries, keyed by user id. Additive; absent when unresolved. */
+  readonly actorNames?: Readonly<Record<string, string>>;
 }
 
 // ── errors ──────────────────────────────────────────────────────────────────

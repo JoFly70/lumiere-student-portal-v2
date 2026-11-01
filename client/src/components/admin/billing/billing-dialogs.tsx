@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { staffBtn, staffField, StaffNotice } from "@/components/staff/staff-ui";
+import { useT } from "@/i18n";
 import { parseMoneyToCents } from "./money";
 
 /** Today's date in the staff member's own time zone (a UTC date would be tomorrow on an Americas evening). */
@@ -26,6 +27,7 @@ export function ReasonDialog({ open, onOpenChange, title, description, confirmLa
   onConfirm: (reason: string) => void;
   testId: string;
 }) {
+  const { t } = useT();
   const [reason, setReason] = useState("");
   useEffect(() => { if (open) setReason(""); }, [open]);
   const clean = reason.trim();
@@ -37,14 +39,14 @@ export function ReasonDialog({ open, onOpenChange, title, description, confirmLa
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
         <div className="space-y-1.5">
-          <Label htmlFor={`${testId}-reason`}>Reason (kept in the audit trail)</Label>
+          <Label htmlFor={`${testId}-reason`}>{t("s32.bill.dlg.reason")}</Label>
           <textarea id={`${testId}-reason`} className={`${staffField} py-2`} rows={3} maxLength={300} value={reason} onChange={(e) => setReason(e.target.value)} />
         </div>
         <ErrorLine error={error} />
         <DialogFooter>
-          <Button type="button" className={staffBtn.outline} variant="outline" onClick={() => onOpenChange(false)} disabled={pending}>Cancel</Button>
+          <Button type="button" className={staffBtn.outline} variant="outline" onClick={() => onOpenChange(false)} disabled={pending}>{t("s32.bill.cancel")}</Button>
           <Button type="button" className={staffBtn.danger} disabled={!clean || pending} onClick={() => onConfirm(clean)} data-testid={`${testId}-confirm`}>
-            {pending ? "Working…" : confirmLabel}
+            {pending ? t("s32.bill.working") : confirmLabel}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -72,6 +74,7 @@ export function ReceiptDialog({ open, onOpenChange, title, description, currency
   onSubmit: (value: ReceiptFormValue) => void;
   submitLabel: string;
 }) {
+  const { t } = useT();
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState(todayIso());
   const [method, setMethod] = useState("Bank transfer");
@@ -89,33 +92,33 @@ export function ReceiptDialog({ open, onOpenChange, title, description, currency
         </DialogHeader>
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-1.5">
-            <Label htmlFor="rc-amount">Amount received ({currency})</Label>
+            <Label htmlFor="rc-amount">{t("s32.bill.rc.amount", { currency })}</Label>
             <input id="rc-amount" inputMode="decimal" className={staffField} value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" aria-invalid={amount !== "" && cents === null} data-testid="input-receipt-amount" />
-            {amount !== "" && cents === null && <p className="text-xs text-st-urgent">Enter a positive amount, e.g. 1250.50</p>}
+            {amount !== "" && cents === null && <p className="text-xs text-st-urgent">{t("s32.bill.rc.amountHelp")}</p>}
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="rc-date">Date received</Label>
+            <Label htmlFor="rc-date">{t("s32.bill.rc.date")}</Label>
             <input id="rc-date" type="date" className={staffField} value={date} onChange={(e) => setDate(e.target.value)} />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="rc-method">Method</Label>
+            <Label htmlFor="rc-method">{t("s32.bill.rc.method")}</Label>
             <input id="rc-method" className={staffField} value={method} maxLength={80} onChange={(e) => setMethod(e.target.value)} />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="rc-ref">Reference (optional)</Label>
+            <Label htmlFor="rc-ref">{t("s32.bill.rc.ref")}</Label>
             <input id="rc-ref" className={staffField} value={reference} maxLength={120} onChange={(e) => setReference(e.target.value)} />
           </div>
           <div className="space-y-1.5 sm:col-span-2">
-            <Label htmlFor="rc-note">Internal note (optional)</Label>
+            <Label htmlFor="rc-note">{t("s32.bill.rc.note")}</Label>
             <input id="rc-note" className={staffField} value={note} maxLength={500} onChange={(e) => setNote(e.target.value)} />
           </div>
         </div>
         <ErrorLine error={error} />
         <DialogFooter>
-          <Button type="button" className={staffBtn.outline} variant="outline" onClick={() => onOpenChange(false)} disabled={pending}>Cancel</Button>
+          <Button type="button" className={staffBtn.outline} variant="outline" onClick={() => onOpenChange(false)} disabled={pending}>{t("s32.bill.cancel")}</Button>
           <Button type="button" className={staffBtn.seal} disabled={!valid || pending} data-testid="button-submit-receipt"
             onClick={() => cents !== null && onSubmit({ amountCents: cents, receivedDate: date, methodLabel: method.trim(), reference: reference.trim() || undefined, note: note.trim() || undefined })}>
-            {pending ? "Saving…" : submitLabel}
+            {pending ? t("s32.bill.saving") : submitLabel}
           </Button>
         </DialogFooter>
       </DialogContent>
