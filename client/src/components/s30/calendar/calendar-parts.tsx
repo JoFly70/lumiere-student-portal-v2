@@ -3,7 +3,7 @@
  * Kinds are told apart by icon and a quiet tint (never saturated colour); "past due" is umber with a clock icon, never red.
  */
 import React from "react";
-import { BookOpen, CalendarCheck, CalendarX2, Compass, FileText, Flag, History, Hourglass, LifeBuoy, MapPinned, Check, Users } from "lucide-react";
+import { type LucideIcon, BookOpen, CalendarCheck, CalendarX2, Compass, FileText, Flag, History, Hourglass, LifeBuoy, MapPinned, Check, Users } from "lucide-react";
 import type { CalendarItem, CalendarItemKind, CalendarItemStatus } from "@shared/s30-contract";
 import { useT, type TranslationKey } from "@/i18n";
 import { formatTimeRange, formatZoneName, itemDateLabel } from "@/lib/calendar-dates";
@@ -15,7 +15,7 @@ export function useCalT() {
   return { tt, language };
 }
 
-export const KIND_ICON: Record<CalendarItemKind, React.ComponentType<{ className?: string; "aria-hidden"?: boolean | "true" }>> = {
+export const KIND_ICON: Record<CalendarItemKind, LucideIcon> = {
   academic_deadline: Flag,
   document_deadline: FileText,
   course_milestone: BookOpen,
@@ -35,7 +35,7 @@ export const KIND_TINT: Record<CalendarItemKind, string> = {
   program_checkpoint: "var(--t-panel-3)",
 };
 
-export const STATUS_ICON: Record<CalendarItemStatus, React.ComponentType<{ className?: string; "aria-hidden"?: boolean | "true" }>> = {
+export const STATUS_ICON: Record<CalendarItemStatus, LucideIcon> = {
   scheduled: CalendarCheck,
   requested: Hourglass,
   done: Check,
