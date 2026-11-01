@@ -83,7 +83,8 @@ const KIND_LABEL: Record<string, { en: string; fr: string }> = {
 const PRIORITY_LABEL = { urgent: { en: "urgent", fr: "urgente" }, high: { en: "high", fr: "élevée" }, normal: { en: "normal", fr: "normale" }, low: { en: "low", fr: "faible" } } as const;
 
 function provenanceOf(i: AttentionItemView): FleetReference["provenance"] {
-  if (i.kind === "low_grade" || i.kind === "school_result_needed" || i.kind === "import_verification") return "student_reported";
+  if (i.kind === "import_verification") return "reported";
+  if (i.kind === "low_grade" || i.kind === "school_result_needed") return "student_reported";
   return "fact";
 }
 
@@ -220,7 +221,9 @@ export async function answerFleet(input: { question: string; language: Lang; inc
     href: i.href, provenance: provenanceOf(i),
   }));
   const lines = cal ? cal.lines : chosen.map((i, n) => {
-    const prov = provenanceOf(i) === "student_reported" ? (lang === "fr" ? " · déclaré, non officiel" : " · student-reported, not official") : "";
+    const pv = provenanceOf(i);
+    const prov = pv === "student_reported" ? (lang === "fr" ? " · déclaré par l’élève, non officiel" : " · student-reported, not official")
+      : pv === "reported" ? (lang === "fr" ? " · déclaré par un fournisseur ou une école, non officiel" : " · provider- or school-reported, not official") : "";
     return { text: `${i.studentName ?? "—"}${i.isDemo ? " (demo)" : ""}: ${KIND_LABEL[i.kind]?.[lang] ?? i.kind} · ${lang === "fr" ? "priorité" : "priority"} ${PRIORITY_LABEL[i.priority][lang]} · ${ageText(i, now, lang)}${prov}`, refs: [`A${n + 1}`] };
   });
   const drafts = intent === "draft_followups" ? chosen.map((i) => draftFor(i, lang)).filter((d): d is FleetDraft => !!d).slice(0, 10) : [];

@@ -312,8 +312,8 @@ export interface FleetReference {
   readonly isDemo: boolean;
   readonly label: string;
   readonly href: string;
-  /** "fact" (recorded), "student_reported" (claim) or "verified" (institution-confirmed). */
-  readonly provenance: "fact" | "student_reported" | "verified";
+  /** "fact" (recorded), "student_reported" (claim), "reported" (provider/school import, not official) or "verified" (institution-confirmed). */
+  readonly provenance: "fact" | "student_reported" | "reported" | "verified";
 }
 
 export interface FleetDraft {

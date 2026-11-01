@@ -38,7 +38,7 @@ export function StatusPill({ status }: { status: ImportStatus }) {
 }
 export function TierPill({ tier }: { tier: "provider_reported" | "institution_reported" }) {
   const { tt } = useImpT();
-  return <span className={`pill ${tier === "provider_reported" ? "wait" : "warn"}`} data-tier={tier}><i aria-hidden="true" />{tt(`imp.tier.${tier}`)}</span>;
+  return <span style={{ whiteSpace: "nowrap" }} className={`pill ${tier === "provider_reported" ? "wait" : "warn"}`} data-tier={tier}><i aria-hidden="true" />{tt(`imp.tier.${tier}`)}</span>;
 }
 
 const SEV_ICON = { error: CircleAlert, warning: TriangleAlert, info: Info } as const;

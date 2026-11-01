@@ -148,7 +148,7 @@ export default function AdminStudentHighSchool() {
     <>
       <HighSchoolWorkspace state={query.data} studentId={studentId} isAdmin={isAdmin} docs={documents.data ?? []} defaultTab={initialTab()} />
       {/* S30: provider/school-reported records are visible to staff here (the full student file is admin-only). */}
-      {!isAdmin ? <div className="s27 occ mx-auto mt-6 max-w-6xl px-4"><ReportedRecordsPanel studentId={studentId} /></div> : null}
+      {!isAdmin ? <div className="s27 occ mt-6"><ReportedRecordsPanel studentId={studentId} /></div> : null}
     </>
   );
 }

@@ -47,7 +47,8 @@ export function useWhy() {
     if (typeof f.since === "string") parts.push(t("s29.core.fact.since", { date: fmtDate(f.since, language) }));
     if (typeof f.hoursWaiting === "number") parts.push(t("s29.core.fact.hoursWaiting", { n: f.hoursWaiting }));
     if (typeof f.slotAt === "string") parts.push(t("s29.core.fact.slotAt", { date: fmtDate(f.slotAt, language) }));
-    if (f.studentReported === true || i.kind === "low_grade" || i.kind === "import_verification") parts.push(t("s29.core.fact.studentReported"));
+    if (i.kind === "import_verification") parts.push(t("s29.core.fact.providerReported"));
+    else if (f.studentReported === true || i.kind === "low_grade") parts.push(t("s29.core.fact.studentReported"));
     return parts.length ? parts.join(" · ") : i.detail;
   };
 }

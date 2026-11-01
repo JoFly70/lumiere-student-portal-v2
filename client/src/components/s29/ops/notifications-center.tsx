@@ -150,7 +150,7 @@ export function NotificationsCenter() {
                       </div></td>
                       <td data-label={t("s29.ops.n.col.email")}><div className="ops-stack">
                         <StateChip tone={p.tone} icon={p.icon} label={t(p.labelKey)} title={t(p.defKey)} testId="outbox-email-state" />
-                        {r.emailState === "suppressed" && r.suppressedReason ? <span className="ops-note" data-testid="outbox-suppressed">{reason ? t(reason) : t("s29.ops.suppressed.other", { reason: r.suppressedReason })}</span> : null}
+                        {r.emailState === "suppressed" && r.suppressedReason ? <span className="ops-note" data-testid="outbox-suppressed">{reason ? t(r.audience === "staff" && reason === "s29.ops.suppressed.preference_off" ? "s29.ops.suppressed.preference_off_staff" : reason) : t("s29.ops.suppressed.other", { reason: r.suppressedReason })}</span> : null}
                         {r.emailState === "accepted" && r.sentAt ? <span className="ops-note">{t("s29.ops.n.sentAt", { when: age(r.sentAt) ?? "" })}</span> : null}
                       </div></td>
                       <td data-label={t("s29.ops.n.col.attempts")}><div className="ops-stack">
@@ -159,7 +159,7 @@ export function NotificationsCenter() {
                       </div></td>
                       <td className="full" data-label={t("s29.ops.n.col.error")}>{err ? <span title={r.lastError ?? undefined}>{err}</span> : <span className="ops-note">—</span>}</td>
                       <td data-label={t("s29.ops.n.col.read")}>
-                        <span className="ops-note" style={{ display: "inline-flex", gap: 5, alignItems: "center" }}>
+                        <span className="ops-note" style={{ display: "inline-flex", gap: 5, alignItems: "center", whiteSpace: "nowrap" }}>
                           <OpsGlyph icon={r.readAt ? "check" : "clock"} />{r.readAt ? t("s29.ops.n.read") : t("s29.ops.n.unread")}
                         </span>
                       </td>

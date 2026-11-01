@@ -71,7 +71,7 @@ function Answer({ a }: { a: FleetAnswer }) {
       ) : null}
       {a.ai.mode === "live" && a.ai.text ? (
         <div className="s29-draft" data-testid="fleet-ai"><b><Sparkles className="mr-1 inline h-4 w-4" aria-hidden="true" />{t("s29.core.fleet.ai")}</b><pre>{a.ai.text}</pre></div>
-      ) : a.ai.mode === "unavailable" ? <p className="s29-help" data-testid="fleet-ai-unavailable">{t("s29.core.fleet.aiUnavailable", { reason: a.ai.reason ?? "—" })}</p> : null}
+      ) : a.ai.mode === "unavailable" ? <p className="s29-help" data-testid="fleet-ai-unavailable">{t("s29.core.fleet.aiUnavailable", { reason: ["not_configured", "disabled", "budget_exhausted", "provider_error"].includes(a.ai.reason ?? "") ? t(`s29.core.fleet.aiReason.${a.ai.reason}` as TranslationKey) : t("s29.core.fleet.aiReason.provider_error") })}</p> : null}
       <p className="s29-help">{a.privacy}</p>
     </div>
   );
@@ -107,8 +107,8 @@ export function FleetCopilot() {
             {CHIPS.map((k) => <button key={k} type="button" onClick={() => submit(t(k))} data-testid="fleet-chip">{t(k)}</button>)}
           </div>
           <div className="s29-filters">
-            <label><input type="checkbox" checked={useAi} onChange={(e) => setUseAi(e.target.checked)} data-testid="fleet-use-ai" />{t("s29.core.fleet.useAi")}</label>
-            <label><input type="checkbox" checked={includeDemo} onChange={(e) => setIncludeDemo(e.target.checked)} data-testid="fleet-include-demo" />{t("s29.core.fleet.includeDemo")}</label>
+            <label><input type="checkbox" style={{ accentColor: "var(--t-accent)" }} checked={useAi} onChange={(e) => setUseAi(e.target.checked)} data-testid="fleet-use-ai" />{t("s29.core.fleet.useAi")}</label>
+            <label><input type="checkbox" style={{ accentColor: "var(--t-accent)" }} checked={includeDemo} onChange={(e) => setIncludeDemo(e.target.checked)} data-testid="fleet-include-demo" />{t("s29.core.fleet.includeDemo")}</label>
             <button type="submit" className="b1 ml-auto" disabled={ask.isPending || !q.trim()} data-testid="fleet-ask">
               {ask.isPending ? <><Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />{t("s29.core.fleet.asking")}</> : t("s29.core.fleet.ask")}
             </button>
