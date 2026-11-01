@@ -38,11 +38,13 @@ import {
   creditRecordStanding,
   creditRecordStandingCounts,
   documentNeedsReview,
+  tokenLabel,
   resolveWorkspaceStudentIdentity,
   workspaceStudentIdFromData,
   formatWorkspaceDateTime,
   workspaceProgressStatusLabel,
   workspaceToken,
+  type WsTr,
   type WorkspaceAttentionItem,
   type WorkspaceRecord,
 } from "./admin-student-workspace-presentation";
@@ -56,7 +58,7 @@ import {
   validSnapshotFingerprint,
 } from "./controlled-placement-workflow";
 import { StudentDocumentsReview } from "@/components/admin/student-documents-review";
-import StudentFileHs, { type StudentFileRecord } from "@/components/admin/student-file-hs";
+import StudentFileHs, { fileDate, studentStatusText, ticketStatusText, ticketTopicText, type StudentFileRecord } from "@/components/admin/student-file-hs";
 import { OwnerAssistantPanel } from "@/components/owner-assistant/owner-assistant-panel";
 import { StudentPortalAccountCard, errorMessage } from "@/components/admin/student-portal-account-card";
 import StudentProfileReview, { useStaffProfileData } from "@/components/admin/student-profile-review";
@@ -94,35 +96,40 @@ const WORKSPACE_TAB_ALIASES: Readonly<Record<string, WorkspaceTab>> = {
 function value(row: unknown, ...keys: string[]) {
   const record = row && typeof row === "object" && !Array.isArray(row) ? row as WorkspaceRecord : {};
   for (const key of keys) if (record[key] !== undefined && record[key] !== null && record[key] !== "") return String(record[key]);
-  return "Not provided";
+  return NP;
 }
+/** The "Not provided" sentinel is only a marker for comparisons; it is translated where it is shown. */
+const NP = "Not provided";
+const show = (tr: WsTr, v: string): string => (v === NP ? tr("s32ws.ws.notProvided") : v);
 function Evidence({ item }: { item: WorkspaceAttentionItem }) {
+  const { t } = useT();
   return <details className="group border-t border-border/70 py-3">
     <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-medium">
-      <span className="flex items-center gap-2"><ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />Evidence, reason & provenance</span>
+      <span className="flex items-center gap-2"><ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />{t("s32ws.ws.evidence")}</span>
       <span className="font-mono text-[11px] text-muted-foreground">{item.requirementId ?? item.academicRuleId}</span>
     </summary>
     <pre className="mt-3 overflow-auto rounded-md bg-muted/60 p-3 text-xs text-muted-foreground">{JSON.stringify({ reason: item.reason, evidence: item.evidence, provenance: item.provenance, requiredAmount: item.requiredAmount, appliedAmount: item.appliedAmount, remainingAmount: item.remainingAmount }, null, 2)}</pre>
   </details>;
 }
-function displayDate(value: unknown): string {
-  return formatWorkspaceDateTime(value) ?? "Date not recorded";
+function displayDate(value: unknown, language: "en" | "fr", tr: WsTr): string {
+  return formatWorkspaceDateTime(value, undefined, language) ?? tr("s32ws.ws.dateNone");
 }
 /** Enum-ish record value as readable text; "Not provided" only when truly absent. */
 /** Join only the parts that are actually recorded. */
 function provided(...parts: string[]): string {
-  return parts.filter((part) => part !== "Not provided").join(" · ");
+  return parts.filter((part) => part !== NP).join(" · ");
 }
-function humanValue(row: unknown, ...keys: string[]) {
+function humanValue(tr: WsTr, row: unknown, ...keys: string[]) {
   const raw = value(row, ...keys);
-  return raw === "Not provided" ? raw : workspaceToken(raw) ?? raw;
+  return raw === NP ? raw : tokenLabel(raw, tr) ?? workspaceToken(raw) ?? raw;
 }
 function DetailField({ label, children }: { label: string; children: ReactNode }) {
   return <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</dt><dd className="mt-1 text-sm">{children}</dd></div>;
 }
 function Reference({ value: reference }: { value: unknown }) {
+  const { t } = useT();
   if (typeof reference !== "string" || !reference) return null;
-  return <p className="mt-2 font-mono text-[11px] text-muted-foreground">Reference: {reference}</p>;
+  return <p className="mt-2 font-mono text-[11px] text-muted-foreground">{t("s32ws.ws.reference", { ref: reference })}</p>;
 }
 function InlinePlacementFeedback({ feedback }: { feedback?: PlacementActionFeedback }) {
   if (!feedback) return null;
@@ -150,9 +157,10 @@ function WorkspaceResourceState({
   onRetry: () => void;
   children: ReactNode;
 }) {
-  if (loading) return <div role="status" aria-live="polite" className="rounded-md border p-6 text-center text-sm text-muted-foreground">Loading…</div>;
-  if (error) return <div role="alert" className="rounded-md border border-destructive/40 bg-destructive/5 p-6 text-center text-sm"><p>Could not load this section.</p><Button className="mt-3" type="button" size="sm" variant="outline" onClick={onRetry}><RefreshCw className="mr-2 h-4 w-4" />Retry</Button></div>;
-  if (empty) return <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">No records are available for this student.</div>;
+  const { t } = useT();
+  if (loading) return <div role="status" aria-live="polite" className="rounded-md border p-6 text-center text-sm text-muted-foreground">{t("s32ws.sh.loading")}</div>;
+  if (error) return <div role="alert" className="rounded-md border border-destructive/40 bg-destructive/5 p-6 text-center text-sm"><p>{t("s32ws.ws.section.loadError")}</p><Button className="mt-3" type="button" size="sm" variant="outline" onClick={onRetry}><RefreshCw className="mr-2 h-4 w-4" />{t("s32ws.sh.retry")}</Button></div>;
+  if (empty) return <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">{t("s32ws.ws.section.empty")}</div>;
   return <>{children}</>;
 }
 export default function AdminStudentWorkspace() {
@@ -179,18 +187,18 @@ export default function AdminStudentWorkspace() {
   const billingQuery = useStaffBilling(canonicalStudentId ?? null);
   const { profileQuery } = useStaffProfileData(canonicalStudentId ?? "");
   const queryClient = useQueryClient();
-  const { t } = useT();
+  const { t, language } = useT();
   const { user } = useAuth();
   const [photoOpen, setPhotoOpen] = useState(false);
   const experience = useExperienceAction(canonicalStudentId ?? studentId);
   const [tab, setTab] = useHashTab(WORKSPACE_TABS, "overview", WORKSPACE_TAB_ALIASES);
-  if (state.kind === "loading") return <div role={state.role} aria-live={state.ariaLive} className="space-y-4"><span className="sr-only">Loading student workspace</span><div className="h-8 w-64 animate-pulse rounded bg-muted" /><div className="h-32 animate-pulse rounded-lg bg-muted" /><div className="h-64 animate-pulse rounded-lg bg-muted" /></div>;
-  if (state.kind === "error") return <Card><CardContent className="flex flex-col items-center gap-3 py-16 text-center"><AlertCircle className="h-8 w-8 text-destructive" /><h2 className="text-lg font-semibold">Workspace unavailable</h2><p className="text-sm text-muted-foreground">The canonical student workspace could not be loaded.</p><Button onClick={() => query.refetch()}><RefreshCw className="mr-2 h-4 w-4" />Retry</Button></CardContent></Card>;
+  if (state.kind === "loading") return <div role={state.role} aria-live={state.ariaLive} className="space-y-4"><span className="sr-only">{t("s32ws.ws.loadingWs")}</span><div className="h-8 w-64 animate-pulse rounded bg-muted" /><div className="h-32 animate-pulse rounded-lg bg-muted" /><div className="h-64 animate-pulse rounded-lg bg-muted" /></div>;
+  if (state.kind === "error") return <Card><CardContent className="flex flex-col items-center gap-3 py-16 text-center"><AlertCircle className="h-8 w-8 text-destructive" /><h2 className="text-lg font-semibold">{t("s32ws.ws.unavailable")}</h2><p className="text-sm text-muted-foreground">{t("s32ws.ws.unavailableBody")}</p><Button onClick={() => query.refetch()}><RefreshCw className="mr-2 h-4 w-4" />{t("s32ws.sh.retry")}</Button></CardContent></Card>;
   if (state.kind === "empty") {
     const student = unassignedStudent.data?.id === studentId ? unassignedStudent.data : undefined;
     // No university workspace (e.g. a high-school-only student): show the full student file.
     if (student) return <StudentFileHs studentId={studentId} student={student} />;
-    return <Card><CardContent className="flex flex-col items-center gap-3 py-16 text-center"><h2 className="text-lg font-semibold">{state.reason === "not-found" ? "Student workspace not found" : "Workspace unavailable"}</h2><p className="text-sm text-muted-foreground">{unassignedStudent.isLoading ? "Loading student status…" : state.reason === "not-found" ? "There is no canonical workspace for this student." : "No workspace record is available for this student."}</p></CardContent></Card>;
+    return <Card><CardContent className="flex flex-col items-center gap-3 py-16 text-center"><h2 className="text-lg font-semibold">{state.reason === "not-found" ? t("s32ws.ws.notFound") : t("s32ws.ws.unavailable")}</h2><p className="text-sm text-muted-foreground">{unassignedStudent.isLoading ? t("s32ws.ws.loadingStatus") : state.reason === "not-found" ? t("s32ws.ws.noCanonical") : t("s32ws.ws.noRecord")}</p></CardContent></Card>;
   }
   const vm = state.viewModel;
   const snapshot = vm.snapshot && typeof vm.snapshot === "object" && !Array.isArray(vm.snapshot) ? vm.snapshot as WorkspaceRecord : {};
@@ -208,25 +216,25 @@ export default function AdminStudentWorkspace() {
   const attentionTotal = profileCount + docsPending + supportAwaiting + vm.attention.total;
   const standingCounts = creditRecordStandingCounts(vm.academicDetail.creditRecords);
   const standingTotal = standingCounts.verified + standingCounts.waiting + standingCounts.not_accepted;
-  const reviewButton = (label: string, onClick: () => void) => <Button type="button" size="sm" variant="outline" className={staffBtn.outline} aria-label={`Review ${label}`} onClick={onClick}>Review<ArrowRight className="h-4 w-4" aria-hidden="true" /></Button>;
+  const reviewButton = (label: string, onClick: () => void) => <Button type="button" size="sm" variant="outline" className={staffBtn.outline} aria-label={t("s32ws.sh.reviewAria", { what: label })} onClick={onClick}>{t("s32ws.sh.review")}<ArrowRight className="h-4 w-4" aria-hidden="true" /></Button>;
   const attentionRows = [
-    { key: "profile", label: "Identity and guardian decisions", count: profileCount, detail: `${profileCount} waiting for a decision`, none: "No decisions waiting", action: reviewButton("identity and guardian decisions", () => setTab("profile")) },
-    { key: "documents", label: "Documents to review", count: docsPending, detail: `${docsPending} waiting for review`, none: "No documents waiting", action: reviewButton("documents", () => setTab("documents")) },
-    { key: "support", label: "Requests waiting on Lumière", count: supportAwaiting, detail: `${supportAwaiting} waiting for a response`, none: "No requests waiting", action: reviewButton("support requests", () => setTab("support")) },
-    { key: "report", label: "Academic report items", count: vm.attention.total, detail: `${vm.attention.total} manual-review, conflict, missing or partial`, none: "None reported", action: reviewButton("academic report items", () => document.getElementById("workspace-report-review")?.scrollIntoView({ block: "start" })) },
+    { key: "profile", label: t("s32ws.sh.att.profile"), count: profileCount, detail: t("s32ws.sh.att.profileDetail", { n: profileCount }), none: t("s32ws.sh.att.profileNone"), action: reviewButton(t("s32ws.ws.rev.profile"), () => setTab("profile")) },
+    { key: "documents", label: t("s32ws.sh.att.docs"), count: docsPending, detail: t("s32ws.sh.att.docsDetail", { n: docsPending }), none: t("s32ws.sh.att.docsNone"), action: reviewButton(t("s32ws.ws.rev.documents"), () => setTab("documents")) },
+    { key: "support", label: t("s32ws.sh.att.support"), count: supportAwaiting, detail: t("s32ws.sh.att.supportDetail", { n: supportAwaiting }), none: t("s32ws.sh.att.supportNone"), action: reviewButton(t("s32ws.ws.rev.support"), () => setTab("support")) },
+    { key: "report", label: t("s32ws.ws.att.report"), count: vm.attention.total, detail: t("s32ws.ws.att.reportDetail", { n: vm.attention.total }), none: t("s32ws.ws.att.reportNone"), action: reviewButton(t("s32ws.ws.rev.report"), () => document.getElementById("workspace-report-review")?.scrollIntoView({ block: "start" })) },
   ];
   const tabs: StaffTab[] = [
-    { key: "overview", label: "Overview", icon: <LayoutDashboard className="h-4 w-4" /> },
-    { key: "academics", label: "Academics", icon: <GraduationCap className="h-4 w-4" />, count: vm.attention.total, countLabel: "academic report items" },
-    { key: "documents", label: "Documents", icon: <FileText className="h-4 w-4" />, count: docsPending, countLabel: "waiting for review" },
-    { key: "billing", label: "Billing", icon: <CreditCard className="h-4 w-4" /> },
-    { key: "support", label: "Support", icon: <LifeBuoy className="h-4 w-4" />, count: supportAwaiting, countLabel: "waiting for a response" },
-    { key: "profile", label: "Guardian & identity", icon: <Fingerprint className="h-4 w-4" />, count: profileCount, countLabel: "decisions waiting" },
-    ...(user?.role === "admin" ? [{ key: "activity", label: "Activity", icon: <Activity className="h-4 w-4" /> }, { key: "ai", label: "Lumière AI", icon: <BrainCircuit className="h-4 w-4" /> }] : []),
+    { key: "overview", label: t("s32ws.sh.tab.overview"), icon: <LayoutDashboard className="h-4 w-4" /> },
+    { key: "academics", label: t("s32ws.sh.tab.academics"), icon: <GraduationCap className="h-4 w-4" />, count: vm.attention.total, countLabel: t("s32ws.ws.cnt.report") },
+    { key: "documents", label: t("s32ws.sh.tab.documents"), icon: <FileText className="h-4 w-4" />, count: docsPending, countLabel: t("s32ws.sh.cnt.review") },
+    { key: "billing", label: t("s32ws.sh.tab.billing"), icon: <CreditCard className="h-4 w-4" /> },
+    { key: "support", label: t("s32ws.sh.tab.support"), icon: <LifeBuoy className="h-4 w-4" />, count: supportAwaiting, countLabel: t("s32ws.sh.cnt.response") },
+    { key: "profile", label: t("s32ws.sh.tab.profile"), icon: <Fingerprint className="h-4 w-4" />, count: profileCount, countLabel: t("s32ws.sh.cnt.decisions") },
+    ...(user?.role === "admin" ? [{ key: "activity", label: t("s32ws.sh.tab.activity"), icon: <Activity className="h-4 w-4" /> }, { key: "ai", label: t("s32ws.sh.tab.ai"), icon: <BrainCircuit className="h-4 w-4" /> }] : []),
   ];
   const activeTab = tab === "ai" && user?.role !== "admin" ? "overview" : tab;
-  const identity = resolveWorkspaceStudentIdentity(vm.student);
-  const demo = isDemoStudent({ first_name: value(vm.student, "firstName", "first_name") === "Not provided" ? identity.name : value(vm.student, "firstName", "first_name"), last_name: value(vm.student, "lastName", "last_name") === "Not provided" ? "" : value(vm.student, "lastName", "last_name"), preferred_name: value(vm.student, "preferredName", "preferred_name") === "Not provided" ? null : value(vm.student, "preferredName", "preferred_name"), email: identity.email });
+  const identity = resolveWorkspaceStudentIdentity(vm.student, t);
+  const demo = isDemoStudent({ first_name: value(vm.student, "firstName", "first_name") === NP ? identity.name : value(vm.student, "firstName", "first_name"), last_name: value(vm.student, "lastName", "last_name") === NP ? "" : value(vm.student, "lastName", "last_name"), preferred_name: value(vm.student, "preferredName", "preferred_name") === NP ? null : value(vm.student, "preferredName", "preferred_name"), email: identity.email });
   const name = identity.name;
   const placementStudentId = identity.id;
   const academicRows = academicCreditRows(vm.academicDetail);
@@ -243,21 +251,21 @@ export default function AdminStudentWorkspace() {
   const canActivateLead = canActivateLeadForRole(user?.role, studentStatus);
   const step = nextStep({
     status: studentStatus, profileDecisions: profileCount, docsPending, supportAwaiting: supportAwaiting,
-    hasProgram: programName !== "Not provided" ? true : undefined,
+    hasProgram: programName !== NP ? true : undefined,
     billingConfigured: billingQuery.data ? billingQuery.data.student.state === "configured" : undefined,
     canActivate: canActivateLead,
-  }, studentId);
+  }, studentId, t);
   const writesDisabled = !placementStudentId || !placementWritesEnabled(
     snapshotFingerprint,
     snapshotUnavailable,
     query.isFetching,
   );
   const writesDisabledReason = !snapshotFingerprint
-    ? "Placement changes are unavailable until this student has a valid current snapshot."
+    ? t("s32ws.ws.pl.noSnapshot")
     : snapshotUnavailable
-      ? "Placement changes are unavailable because the latest student record could not be loaded."
+      ? t("s32ws.ws.pl.unavailable")
       : query.isFetching
-        ? "Placement changes are temporarily unavailable while the student workspace refreshes."
+        ? t("s32ws.ws.pl.refreshing")
         : undefined;
   const refreshCanonical = async (): Promise<boolean> => {
     const refreshed = await query.refetch();
@@ -289,11 +297,11 @@ export default function AdminStudentWorkspace() {
       eyebrow={t("s32.ws.eyebrow")}
       portrait={<AccountAvatar identity={{ studentId: identity.id, firstName: profileQuery.data?.identity.firstName, lastName: profileQuery.data?.identity.lastName, name, email: identity.email, photoUrl: profileQuery.data?.identity.photoUrl }} className="h-16 w-16 shrink-0 text-xl ring-2 ring-student-gold/50 sm:h-20 sm:w-20 sm:text-2xl" />}
       title={name}
-      description={<>{identity.email ?? "Email not provided"} · <span className="font-mono">{identity.studentCode ?? "No student code"}</span></>}
+      description={<>{identity.email ?? t("s32ws.sh.emailNone")} · <span className="font-mono">{identity.studentCode ?? t("s32ws.sh.codeNone")}</span></>}
       meta={<div className="flex flex-wrap items-center gap-2">
-        <StaffPill tone="seal">{studentStatusLabel(studentStatus)}</StaffPill>
+        <StaffPill tone="seal">{studentStatusText(studentStatus, t)}</StaffPill>
         {demo ? <DemoPill /> : null}
-        <StaffPill tone="neutral" icon={<GraduationCap className="h-3.5 w-3.5" aria-hidden="true" />}>{programName === "Not provided" ? "No program assigned" : shortProgram(programName)}</StaffPill>
+        <StaffPill tone="neutral" icon={<GraduationCap className="h-3.5 w-3.5" aria-hidden="true" />}>{programName === NP ? t("s32ws.sh.noProgram") : shortProgram(programName)}</StaffPill>
       </div>}
       actions={<>
         <ViewAsStudentLink studentId={studentId} />
@@ -302,12 +310,12 @@ export default function AdminStudentWorkspace() {
           setActivationFeedback(refreshed.isError ? { kind: "error", message: t("s32.ws.refreshFailed") } : null);
         }} /> : null}
         <Button type="button" variant="outline" size="sm" className={staffBtn.outline} onClick={() => setPhotoOpen(true)} data-testid="button-student-photo">{t("staff.photo.button")}</Button>
-        <Link href={`/admin/students/${encodeURIComponent(studentId)}/roadmap`} className={`${staffBtn.outline} inline-flex items-center justify-center border`} data-testid="link-student-roadmap"><Route className="h-4 w-4" aria-hidden="true" />View roadmap</Link>
-        {user?.role === "admin" && canonicalStudentId ? <Link href={`/admin/assistant?studentId=${encodeURIComponent(canonicalStudentId)}`} className={`${staffBtn.outline} inline-flex items-center justify-center border`} data-testid="link-student-ai"><BrainCircuit className="h-4 w-4" aria-hidden="true" />Ask Lumière AI</Link> : null}
+        <Link href={`/admin/students/${encodeURIComponent(studentId)}/roadmap`} className={`${staffBtn.outline} inline-flex items-center justify-center border`} data-testid="link-student-roadmap"><Route className="h-4 w-4" aria-hidden="true" />{t("s32ws.ws.roadmap")}</Link>
+        {user?.role === "admin" && canonicalStudentId ? <Link href={`/admin/assistant?studentId=${encodeURIComponent(canonicalStudentId)}`} className={`${staffBtn.outline} inline-flex items-center justify-center border`} data-testid="link-student-ai"><BrainCircuit className="h-4 w-4" aria-hidden="true" />{t("s32ws.sh.askAi")}</Link> : null}
       </>}
     />
     <ExperienceError action={experience} />
-    {demo ? <StaffNotice tone="attention" role="status">This is a synthetic demo student. Nothing here is a real person, payment or school record, and it is never counted in real totals.</StaffNotice> : null}
+    {demo ? <StaffNotice tone="attention" role="status">{t("s32ws.sh.demo")}</StaffNotice> : null}
     {activationFeedback ? <StaffNotice tone={activationFeedback.kind === "error" ? "urgent" : "gold"} role={activationFeedback.kind === "error" ? "alert" : "status"}>{activationFeedback.message}</StaffNotice> : null}
     {identity.id ? <PhotoDialog
       open={photoOpen}
@@ -321,42 +329,42 @@ export default function AdminStudentWorkspace() {
       }}
     /> : null}
     <NextStepBanner step={step} onTab={(k) => setTab(k as WorkspaceTab)} experience={experience} />
-    <StaffTabList tabs={tabs} active={activeTab} onChange={(key) => setTab(key as WorkspaceTab)} label="Student workspace sections" idPrefix="ws" />
+    <StaffTabList tabs={tabs} active={activeTab} onChange={(key) => setTab(key as WorkspaceTab)} label={t("s32ws.ws.sections")} idPrefix="ws" />
 
     <StaffTabPanel idPrefix="ws" tabKey="overview" active={activeTab === "overview"}>
-    <div id="workspace-overview" aria-label="Overview" className="space-y-6">
-    <section className="grid gap-4 md:grid-cols-3" aria-label="Summary">
-      <StaffCard as="div"><p className={staffLabel}>Current program</p>{programName === "Not provided" ? <p className="mt-2 font-serif text-xl text-student-ink">No program assigned</p> : <><p className="mt-2 font-serif text-xl leading-snug text-student-ink">{programName}</p>{programVersionName !== "Not provided" ? <p className="mt-1 text-sm text-student-muted">Version {programVersionName}</p> : null}</>}</StaffCard>
+    <div id="workspace-overview" aria-label={t("s32ws.ws.overview")} className="space-y-6">
+    <section className="grid gap-4 md:grid-cols-3" aria-label={t("s32ws.ws.summary")}>
+      <StaffCard as="div"><p className={staffLabel}>{t("s32ws.ws.currentProgram")}</p>{programName === NP ? <p className="mt-2 font-serif text-xl text-student-ink">{t("s32ws.sh.noProgram")}</p> : <><p className="mt-2 font-serif text-xl leading-snug text-student-ink">{programName}</p>{programVersionName !== NP ? <p className="mt-1 text-sm text-student-muted">{t("s32ws.ws.version", { v: programVersionName })}</p> : null}</>}</StaffCard>
       <StaffCard as="div">
-        <p className={staffLabel}>Progress status</p>
-        <p className="mt-2 break-words font-serif text-xl text-student-ink">{workspaceProgressStatusLabel(vm.report?.status)}</p>
-        <p className="mt-1 text-sm text-student-muted">Canonical degree-progress result</p>
+        <p className={staffLabel}>{t("s32ws.ws.progressStatus")}</p>
+        <p className="mt-2 break-words font-serif text-xl text-student-ink">{workspaceProgressStatusLabel(vm.report?.status, t)}</p>
+        <p className="mt-1 text-sm text-student-muted">{t("s32ws.ws.progressNote")}</p>
         {standingTotal > 0 ? <div className="mt-3 space-y-2" data-testid="credit-record-bar">
-          <div role="img" aria-label={`${standingTotal} credit records: ${standingCounts.verified} verified, ${standingCounts.waiting} waiting for verification, ${standingCounts.not_accepted} not accepted`} className="flex h-2.5 overflow-hidden rounded-full bg-student-line">
+          <div role="img" aria-label={t("s32ws.ws.bar.aria", { total: standingTotal, v: standingCounts.verified, w: standingCounts.waiting, n: standingCounts.not_accepted })} className="flex h-2.5 overflow-hidden rounded-full bg-student-line">
             {standingCounts.verified > 0 ? <span className="bg-st-official" style={{ width: `${(standingCounts.verified / standingTotal) * 100}%` }} /> : null}
             {standingCounts.waiting > 0 ? <span className="bg-st-submitted" style={{ width: `${(standingCounts.waiting / standingTotal) * 100}%` }} /> : null}
             {standingCounts.not_accepted > 0 ? <span className="bg-st-attention" style={{ width: `${(standingCounts.not_accepted / standingTotal) * 100}%` }} /> : null}
           </div>
           <ul className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-student-muted">
-            {standingCounts.verified > 0 ? <li><span className="font-semibold text-student-ink">{standingCounts.verified}</span> verified</li> : null}
-            {standingCounts.waiting > 0 ? <li><span className="font-semibold text-student-ink">{standingCounts.waiting}</span> waiting for verification</li> : null}
-            {standingCounts.not_accepted > 0 ? <li><span className="font-semibold text-student-ink">{standingCounts.not_accepted}</span> not accepted</li> : null}
+            {standingCounts.verified > 0 ? <li><span className="font-semibold text-student-ink">{standingCounts.verified}</span> {t("s32ws.ws.bar.verified")}</li> : null}
+            {standingCounts.waiting > 0 ? <li><span className="font-semibold text-student-ink">{standingCounts.waiting}</span> {t("s32ws.ws.bar.waiting")}</li> : null}
+            {standingCounts.not_accepted > 0 ? <li><span className="font-semibold text-student-ink">{standingCounts.not_accepted}</span> {t("s32ws.ws.bar.notAccepted")}</li> : null}
           </ul>
         </div> : null}
       </StaffCard>
-      <StaffCard as="div"><p className={staffLabel}>Snapshot</p><p className="mt-2 font-serif text-xl text-student-ink">{formatWorkspaceDateTime(snapshot.asOf ?? vm.asOf) ?? "No snapshot yet"}</p>{snapshotFingerprint ? <p className="mt-1 flex items-center gap-1 font-mono text-xs text-student-muted"><Fingerprint className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /><span className="min-w-0 truncate" title={snapshotFingerprint}>{snapshotFingerprint}</span></p> : null}</StaffCard>
+      <StaffCard as="div"><p className={staffLabel}>{t("s32ws.ws.snapshot")}</p><p className="mt-2 font-serif text-xl text-student-ink">{formatWorkspaceDateTime(snapshot.asOf ?? vm.asOf, undefined, language) ?? t("s32ws.ws.snapshotNone")}</p>{snapshotFingerprint ? <p className="mt-1 flex items-center gap-1 font-mono text-xs text-student-muted"><Fingerprint className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /><span className="min-w-0 truncate" title={snapshotFingerprint}>{snapshotFingerprint}</span></p> : null}</StaffCard>
     </section>
     {!snapshotFingerprint || snapshotUnavailable
       ? <StaffNotice tone="attention" role="status" icon={<AlertCircle className="h-4 w-4" />} action={<Button type="button" size="sm" variant="outline" className={staffBtn.outline} disabled={query.isFetching} onClick={() => void refreshCanonical()}>
             <RefreshCw className={`h-4 w-4 ${query.isFetching ? "animate-spin" : ""}`} />
-            Refresh workspace
+            {t("s32ws.ws.refresh")}
           </Button>}>
-          Placement changes are paused: this student has no current academic snapshot yet. Refresh the workspace once the degree report has been generated.
+          {t("s32ws.ws.paused")}
         </StaffNotice>
       : null}
     <StudentPortalAccountCard studentId={canonicalStudentId ?? studentId} />
     <StaffCard tone={attentionTotal > 0 ? "attention" : "default"} aria-labelledby="needs-attention-heading" data-testid="needs-attention">
-      <StaffSectionHeader id="needs-attention-heading" title="Needs attention" description={attentionTotal > 0 ? "Everything waiting on a staff member for this student, in one list." : "Nothing is waiting on a staff member for this student."} actions={attentionTotal > 0 ? <StaffPill tone="attention">{attentionTotal} {attentionTotal === 1 ? "item" : "items"}</StaffPill> : null} />
+      <StaffSectionHeader id="needs-attention-heading" title={t("s32ws.ws.needs.title")} description={attentionTotal > 0 ? t("s32ws.ws.needs.some") : t("s32ws.ws.needs.none")} actions={attentionTotal > 0 ? <StaffPill tone="attention">{attentionTotal} {attentionTotal === 1 ? t("s32ws.ws.item") : t("s32ws.ws.items")}</StaffPill> : null} />
       <ul className="divide-y divide-student-line">
         {attentionRows.map((row) => <li key={row.key} className="flex flex-wrap items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
           <div className="min-w-0"><p className="text-sm font-semibold text-student-ink">{row.label}</p><p className="text-sm text-student-muted">{row.count > 0 ? row.detail : row.none}</p></div>
@@ -371,43 +379,45 @@ export default function AdminStudentWorkspace() {
     </StaffTabPanel>
 
     <StaffTabPanel idPrefix="ws" tabKey="academics" active={activeTab === "academics"}>
-     <div id="workspace-academics" aria-label="Academics" className="space-y-6">
-    <StaffNotice tone="info" action={<Link href={`/admin/students/${encodeURIComponent(studentId)}/high-school`} className={`${staffBtn.outline} inline-flex items-center justify-center border`} data-testid="link-student-high-school">High school pathway<ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>}>The course roadmap, credits and school results live in the pathway and roadmap views. Below is the canonical degree report.</StaffNotice>
+     <div id="workspace-academics" aria-label={t("s32ws.ws.academics")} className="space-y-6">
+    <StaffNotice tone="info" action={<Link href={`/admin/students/${encodeURIComponent(studentId)}/high-school`} className={`${staffBtn.outline} inline-flex items-center justify-center border`} data-testid="link-student-high-school">{t("s32ws.ws.hsPathway")}<ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>}>{t("s32ws.ws.pathwayNote")}</StaffNotice>
     {vm.attention.total > 0 ? <StaffCard id="workspace-report-review" aria-labelledby="report-review-heading" tone="attention">
-      <StaffSectionHeader id="report-review-heading" title="Academic report review" description="Manual-review, conflict, missing or partial items from the canonical degree report." actions={<StaffPill tone="attention">{vm.attention.total} {vm.attention.total === 1 ? "item" : "items"}</StaffPill>} />
-      <div className="divide-y">{vm.attention.items.map((item, i) => <div key={i} className="py-3">{isDiagnosticAttentionItem(item) ? <div className="flex items-center gap-2">{diagnosticItemStatus(item) && <Badge variant="outline">{diagnosticItemStatus(item)}</Badge>}<span className="font-medium">{item.kind === "integration-diagnostic" ? "Integration diagnostic" : "Diagnostic"}</span><span className="text-sm text-muted-foreground">{typeof item.diagnostic === "object" ? JSON.stringify(item.diagnostic) : String(item.diagnostic)}</span></div> : <><div className="flex flex-wrap items-center gap-2">{attentionItemStatus(vm, item) && <Badge variant="outline">{attentionItemStatus(vm, item)}</Badge>}<span className="font-medium">{attentionItemLabel(vm.labels, item)}</span>{item.reason && <span className="text-sm text-muted-foreground">· {item.reason}</span>}</div><Evidence item={item} /></>}</div>)}</div>
+      <StaffSectionHeader id="report-review-heading" title={t("s32ws.ws.report.title")} description={t("s32ws.ws.report.desc")} actions={<StaffPill tone="attention">{vm.attention.total} {vm.attention.total === 1 ? t("s32ws.ws.item") : t("s32ws.ws.items")}</StaffPill>} />
+      <div className="divide-y">{vm.attention.items.map((item, i) => <div key={i} className="py-3">{isDiagnosticAttentionItem(item) ? <div className="flex items-center gap-2">{diagnosticItemStatus(item) && <Badge variant="outline">{tokenLabel(diagnosticItemStatus(item), t)}</Badge>}<span className="font-medium">{item.kind === "integration-diagnostic" ? t("s32ws.ws.diag.integration") : t("s32ws.ws.diag.plain")}</span><span className="text-sm text-muted-foreground">{typeof item.diagnostic === "object" ? JSON.stringify(item.diagnostic) : String(item.diagnostic)}</span></div> : <><div className="flex flex-wrap items-center gap-2">{attentionItemStatus(vm, item) && <Badge variant="outline">{tokenLabel(attentionItemStatus(vm, item), t)}</Badge>}<span className="font-medium">{attentionItemLabel(vm.labels, item, t)}</span>{item.reason && <span className="text-sm text-muted-foreground">· {item.reason}</span>}</div><Evidence item={item} /></>}</div>)}</div>
     </StaffCard> : null}
     <section aria-labelledby="operator-academic-detail" className="space-y-4">
       <div>
-        <h2 id="operator-academic-detail" className="font-serif text-2xl tracking-tight text-student-ink">Operator academic detail</h2>
-        <p className="mt-1 text-sm text-muted-foreground">Canonical source, credit, latest verification, latest decision, and placement records. No academic values are recomputed here.</p>
+        <h2 id="operator-academic-detail" className="font-serif text-2xl tracking-tight text-student-ink">{t("s32ws.ws.detail.title")}</h2>
+        <p className="mt-1 text-sm text-muted-foreground">{t("s32ws.ws.detail.desc")}</p>
       </div>
       {academicRows.length === 0
-        ? <Card><CardContent className="py-10 text-center text-sm text-muted-foreground">No canonical credit records are available.</CardContent></Card>
+        ? <Card><CardContent className="py-10 text-center text-sm text-muted-foreground">{t("s32ws.ws.detail.empty")}</CardContent></Card>
         : academicRows.map((row) => {
           const credit = row.creditRecord;
           const source = row.source;
           const verification = row.latestVerification;
           const decision = row.latestDecision;
           const creditFeedbackKey = `credit:${String(credit.id)}`;
-          const standing = creditRecordStanding(credit.status);
+          const standing = creditRecordStanding(credit.status, t);
+          const gradeText = value(credit, "rawGrade") !== NP ? t("s32ws.ws.grade", { g: value(credit, "rawGrade") }) : NP;
+          const levelText = value(credit, "normalizedLevel", "rawLevel") !== NP ? t("s32ws.ws.level", { l: value(credit, "normalizedLevel", "rawLevel") }) : NP;
           return <Card key={String(credit.id)}>
             <CardHeader className="space-y-2">
               <div className="flex flex-wrap items-start justify-between gap-3">
-                <div><CardTitle className="font-serif text-xl font-normal tracking-tight">{value(credit, "rawCourseCode") !== "Not provided" ? `${value(credit, "rawCourseCode")} · ${value(credit, "rawTitle")}` : value(credit, "rawTitle")}</CardTitle>{provided(value(credit, "term"), humanValue(credit, "recordType")) ? <p className="mt-1 text-sm text-muted-foreground">{provided(value(credit, "term"), humanValue(credit, "recordType"))}</p> : null}</div>
+                <div><CardTitle className="font-serif text-xl font-normal tracking-tight">{value(credit, "rawCourseCode") !== NP ? `${value(credit, "rawCourseCode")} · ${show(t, value(credit, "rawTitle"))}` : show(t, value(credit, "rawTitle"))}</CardTitle>{provided(value(credit, "term"), humanValue(t, credit, "recordType")) ? <p className="mt-1 text-sm text-muted-foreground">{provided(value(credit, "term"), humanValue(t, credit, "recordType"))}</p> : null}</div>
                 <StatusPill status={standing.status} label={standing.label} />
               </div>
             </CardHeader>
             <CardContent className="space-y-5">
               <dl className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <DetailField label="Source"><span className="font-medium">{source ? value(source, "title") : "Source unavailable"}</span><span className="block text-muted-foreground">{source ? `${humanValue(source, "sourceType")} · ${humanValue(source, "status")}` : "Canonical source record not supplied"}</span></DetailField>
-                <DetailField label={standing.key === "verified" ? "Verified credit" : "Reported credit"}><span className="font-medium">{value(credit, "normalizedCredits", "rawCredits")} credits</span>{provided(value(credit, "rawGrade") !== "Not provided" ? `Grade ${value(credit, "rawGrade")}` : "Not provided", value(credit, "normalizedLevel", "rawLevel") !== "Not provided" ? `Level ${value(credit, "normalizedLevel", "rawLevel")}` : "Not provided") ? <span className="block text-muted-foreground">{provided(value(credit, "rawGrade") !== "Not provided" ? `Grade ${value(credit, "rawGrade")}` : "Not provided", value(credit, "normalizedLevel", "rawLevel") !== "Not provided" ? `Level ${value(credit, "normalizedLevel", "rawLevel")}` : "Not provided")}</span> : null}</DetailField>
-                <DetailField label="Latest verification">{verification ? <><Badge variant="secondary">{humanValue(verification, "action")}</Badge><span className="mt-1 block text-muted-foreground">{displayDate(verification.createdAt)}</span></> : "No verification recorded"}</DetailField>
-                <DetailField label="Latest decision">{decision ? <><Badge variant="secondary">{humanValue(decision, "action")}</Badge><span className="mt-1 block text-muted-foreground">{value(decision, "creditsAwarded")} credits awarded · {displayDate(decision.createdAt)}</span></> : "No decision for the active assignment"}</DetailField>
+                <DetailField label={t("s32ws.ws.source")}><span className="font-medium">{source ? show(t, value(source, "title")) : t("s32ws.ws.sourceNone")}</span><span className="block text-muted-foreground">{source ? `${show(t, humanValue(t, source, "sourceType"))} · ${show(t, humanValue(t, source, "status"))}` : t("s32ws.ws.sourceNote")}</span></DetailField>
+                <DetailField label={standing.key === "verified" ? t("s32ws.ws.creditVerified") : t("s32ws.ws.creditReported")}><span className="font-medium">{t("s32ws.ws.credits", { n: show(t, value(credit, "normalizedCredits", "rawCredits")) })}</span>{provided(gradeText, levelText) ? <span className="block text-muted-foreground">{provided(gradeText, levelText)}</span> : null}</DetailField>
+                <DetailField label={t("s32ws.ws.latestVerification")}>{verification ? <><Badge variant="secondary">{show(t, humanValue(t, verification, "action"))}</Badge><span className="mt-1 block text-muted-foreground">{displayDate(verification.createdAt, language, t)}</span></> : t("s32ws.ws.noVerification")}</DetailField>
+                <DetailField label={t("s32ws.ws.latestDecision")}>{decision ? <><Badge variant="secondary">{show(t, humanValue(t, decision, "action"))}</Badge><span className="mt-1 block text-muted-foreground">{t("s32ws.ws.awarded", { n: show(t, value(decision, "creditsAwarded")), date: displayDate(decision.createdAt, language, t) })}</span></> : t("s32ws.ws.noDecision")}</DetailField>
               </dl>
               <div className="border-t pt-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <h3 className="flex items-center gap-2 text-sm font-semibold"><FileCheck2 className="h-4 w-4" />Placement</h3>
+                  <h3 className="flex items-center gap-2 text-sm font-semibold"><FileCheck2 className="h-4 w-4" />{t("s32ws.ws.placement")}</h3>
                   {canCreatePlacement(decision)
                     ? <PlacementActionDialog
                         operation="create"
@@ -430,12 +440,12 @@ export default function AdminStudentWorkspace() {
                 </div>
                 <InlinePlacementFeedback feedback={placementFeedback[creditFeedbackKey]} />
                 {row.placements.length === 0
-                  ? <p className="mt-2 text-sm text-muted-foreground">No placement tied to the latest decision.</p>
+                  ? <p className="mt-2 text-sm text-muted-foreground">{t("s32ws.ws.noPlacement")}</p>
                   : <div className="mt-3 grid gap-3 md:grid-cols-2">
                       {row.placements.map((placement) => {
                         const placementKey = `placement:${String(placement.id)}`;
                         const currentLabel = placementLabel(placement);
-                        const currentStatus = humanValue(placement, "status");
+                        const currentStatus = show(t, humanValue(t, placement, "status"));
                         const currentRationale = value(placement, "rationale");
                         const reportFeedback = (feedback: PlacementActionFeedback) =>
                           setPlacementFeedback((current) => ({ ...current, [placementKey]: feedback }));
@@ -444,7 +454,7 @@ export default function AdminStudentWorkspace() {
                             <span className="font-medium">{currentLabel}</span>
                             <Badge variant="outline">{currentStatus}</Badge>
                           </div>
-                          <p className="mt-2 text-sm text-muted-foreground">{currentRationale}</p>
+                          <p className="mt-2 text-sm text-muted-foreground">{show(t, currentRationale)}</p>
                           {canSupersedePlacement(placement, decision) || canRevokePlacement(placement)
                             ? <div className="mt-3 flex flex-wrap gap-2">
                                 {canSupersedePlacement(placement, decision)
@@ -489,12 +499,12 @@ export default function AdminStudentWorkspace() {
                             : null}
                           <InlinePlacementFeedback feedback={placementFeedback[placementKey]} />
                           <details className="mt-3">
-                            <summary className="cursor-pointer text-xs font-medium">Lifecycle & provenance</summary>
+                            <summary className="cursor-pointer text-xs font-medium">{t("s32ws.ws.lifecycle")}</summary>
                             <dl className="mt-3 grid gap-3 sm:grid-cols-2">
-                              <DetailField label="Recorded">{displayDate(placement.createdAt)}</DetailField>
-                              <DetailField label="Updated">{displayDate(placement.updatedAt)}</DetailField>
-                              {value(placement, "revocationRationale") !== "Not provided" ? <DetailField label="Revocation">{value(placement, "revocationRationale")}</DetailField> : null}
-                              {value(placement, "supersedeRationale") !== "Not provided" ? <DetailField label="Supersession">{value(placement, "supersedeRationale")}</DetailField> : null}
+                              <DetailField label={t("s32ws.ws.recorded")}>{displayDate(placement.createdAt, language, t)}</DetailField>
+                              <DetailField label={t("s32ws.ws.updated")}>{displayDate(placement.updatedAt, language, t)}</DetailField>
+                              {value(placement, "revocationRationale") !== NP ? <DetailField label={t("s32ws.ws.revocation")}>{value(placement, "revocationRationale")}</DetailField> : null}
+                              {value(placement, "supersedeRationale") !== NP ? <DetailField label={t("s32ws.ws.supersession")}>{value(placement, "supersedeRationale")}</DetailField> : null}
                             </dl>
                             <pre className="mt-3 overflow-auto rounded bg-muted p-3 text-xs text-muted-foreground">{JSON.stringify({ provenance: placement.provenance, metadata: placement.metadata }, null, 2)}</pre>
                             <Reference value={placement.id} />
@@ -504,7 +514,7 @@ export default function AdminStudentWorkspace() {
                     </div>}
               </div>
               <details className="border-t pt-4">
-                <summary className="flex cursor-pointer items-center gap-2 text-sm font-semibold"><Database className="h-4 w-4" />Provenance references</summary>
+                <summary className="flex cursor-pointer items-center gap-2 text-sm font-semibold"><Database className="h-4 w-4" />{t("s32ws.ws.provRefs")}</summary>
                 <div className="mt-3 grid gap-3 md:grid-cols-3"><Reference value={source?.id} /><Reference value={credit.id} /><Reference value={decision?.basisClaimVersionId} /></div>
               </details>
             </CardContent>
@@ -513,21 +523,21 @@ export default function AdminStudentWorkspace() {
     </section>
     {vm.academicDetail.placements.filter((placement) => !academicRows.some((row) => row.placements.includes(placement))).length > 0 && <Card>
       <CardHeader>
-        <CardTitle className="font-serif text-xl font-normal tracking-tight">Historical placement records</CardTitle>
-        <p className="text-sm text-muted-foreground">Placements retained for earlier decisions in this active assignment. An active record can still be revoked here.</p>
+        <CardTitle className="font-serif text-xl font-normal tracking-tight">{t("s32ws.ws.historical")}</CardTitle>
+        <p className="text-sm text-muted-foreground">{t("s32ws.ws.historicalDesc")}</p>
       </CardHeader>
       <CardContent className="divide-y">
         {vm.academicDetail.placements.filter((placement) => !academicRows.some((row) => row.placements.includes(placement))).map((placement) => {
           const placementKey = `placement:${String(placement.id)}`;
           const currentLabel = placementLabel(placement);
-          const currentStatus = humanValue(placement, "status");
+          const currentStatus = show(t, humanValue(t, placement, "status"));
           const currentRationale = value(placement, "rationale");
           return <div key={String(placement.id)} className="py-3">
             <div className="flex items-center justify-between gap-2">
               <span className="font-medium">{currentLabel}</span>
               <Badge variant="outline">{currentStatus}</Badge>
             </div>
-            <p className="mt-1 text-sm text-muted-foreground">{currentRationale}</p>
+            <p className="mt-1 text-sm text-muted-foreground">{show(t, currentRationale)}</p>
             {canRevokePlacement(placement)
               ? <div className="mt-3">
                   <PlacementActionDialog
@@ -554,7 +564,7 @@ export default function AdminStudentWorkspace() {
               : null}
             <InlinePlacementFeedback feedback={placementFeedback[placementKey]} />
             <details className="mt-2">
-              <summary className="cursor-pointer text-xs font-medium">Lifecycle & provenance</summary>
+              <summary className="cursor-pointer text-xs font-medium">{t("s32ws.ws.lifecycle")}</summary>
               <pre className="mt-2 overflow-auto rounded bg-muted p-3 text-xs text-muted-foreground">{JSON.stringify({ provenance: placement.provenance, metadata: placement.metadata, supersedesPlacementId: placement.supersedesPlacementId, supersededByPlacementId: placement.supersededByPlacementId }, null, 2)}</pre>
               <Reference value={placement.id} />
             </details>
@@ -562,7 +572,7 @@ export default function AdminStudentWorkspace() {
         })}
       </CardContent>
     </Card>}
-     <Card><CardHeader><CardTitle className="font-serif text-xl font-normal tracking-tight">Report provenance</CardTitle></CardHeader><CardContent className="grid gap-4 text-sm md:grid-cols-3"><div><p className="text-muted-foreground">Report status</p><p className="mt-1 font-medium">{workspaceProgressStatusLabel(vm.provenance.reportStatus)}</p></div><div><p className="text-muted-foreground">Reasons</p><p className="mt-1 font-medium">{vm.provenance.reasons.length || "None reported"}</p></div><div><p className="text-muted-foreground">Diagnostics</p><p className="mt-1 font-medium">{vm.provenance.integrationDiagnostics.length + vm.provenance.diagnostics.length || "None reported"}</p></div></CardContent></Card>
+     <Card><CardHeader><CardTitle className="font-serif text-xl font-normal tracking-tight">{t("s32ws.ws.provenance")}</CardTitle></CardHeader><CardContent className="grid gap-4 text-sm md:grid-cols-3"><div><p className="text-muted-foreground">{t("s32ws.ws.reportStatus")}</p><p className="mt-1 font-medium">{workspaceProgressStatusLabel(vm.provenance.reportStatus, t)}</p></div><div><p className="text-muted-foreground">{t("s32ws.ws.reasons")}</p><p className="mt-1 font-medium">{vm.provenance.reasons.length || t("s32ws.ws.noneReported")}</p></div><div><p className="text-muted-foreground">{t("s32ws.ws.diagnostics")}</p><p className="mt-1 font-medium">{vm.provenance.integrationDiagnostics.length + vm.provenance.diagnostics.length || t("s32ws.ws.noneReported")}</p></div></CardContent></Card>
      </div>
     </StaffTabPanel>
 
@@ -576,7 +586,7 @@ export default function AdminStudentWorkspace() {
 
     <StaffTabPanel idPrefix="ws" tabKey="documents" active={activeTab === "documents"}>
      <section id="workspace-documents" aria-labelledby="workspace-documents-heading" className="space-y-4">
-       <StaffSectionHeader id="workspace-documents-heading" icon={<FileText className="h-5 w-5" />} title="Documents" description="Verify, reject or request a new upload. The reason you write for the student is shown to them; the internal note never is." />
+       <StaffSectionHeader id="workspace-documents-heading" icon={<FileText className="h-5 w-5" />} title={t("s32ws.sh.docs.title")} description={t("s32ws.sh.docs.desc")} />
        <WorkspaceResourceState loading={documentsQuery.isLoading} error={documentsQuery.isError} empty={false} onRetry={() => void documentsQuery.refetch()}>
          {canonicalStudentId ? <StudentDocumentsReview studentId={canonicalStudentId} documents={documentsQuery.data ?? []} /> : null}
        </WorkspaceResourceState>
@@ -585,9 +595,9 @@ export default function AdminStudentWorkspace() {
 
     <StaffTabPanel idPrefix="ws" tabKey="support" active={activeTab === "support"}>
      <section id="workspace-support" aria-labelledby="workspace-support-heading" className="space-y-4">
-       <StaffSectionHeader id="workspace-support-heading" icon={<LifeBuoy className="h-5 w-5" />} title="Support" description="Support tickets associated with this student. This workspace is read-only; replies happen in the Support desk." actions={canonicalStudentId ? <Link href={`/support?studentId=${encodeURIComponent(canonicalStudentId)}`} className={`${staffBtn.outline} inline-flex items-center justify-center border`}>Open Support desk</Link> : undefined} />
+       <StaffSectionHeader id="workspace-support-heading" icon={<LifeBuoy className="h-5 w-5" />} title={t("s32ws.sh.support.title")} description={t("s32ws.ws.support.desc")} actions={canonicalStudentId ? <Link href={`/support?studentId=${encodeURIComponent(canonicalStudentId)}`} className={`${staffBtn.outline} inline-flex items-center justify-center border`}>{t("s32ws.sh.support.open")}</Link> : undefined} />
        <WorkspaceResourceState loading={ticketsQuery.isLoading} error={ticketsQuery.isError} empty={!ticketsQuery.data?.tickets.length} onRetry={() => void ticketsQuery.refetch()}>
-         <ul className="space-y-3">{ticketsQuery.data?.tickets.map((ticket: Ticket) => <li key={ticket.id}><StaffCard as="div" className="space-y-2"><div className="flex flex-wrap items-center justify-between gap-3"><p className="font-medium text-student-ink">{ticket.subject}</p><div className="flex flex-wrap gap-2"><StatusPill status={ticketStatusKey(ticket.status)} label={staffStatusLabel(ticket.status)} /><StaffPill tone={ticket.priority === "urgent" ? "urgent-solid" : ticket.priority === "high" ? "attention" : "neutral"}>{workspaceToken(ticket.priority) ?? ticket.priority}</StaffPill></div></div><p className="text-sm text-student-muted">{ticket.ticket_number} · {SUPPORT_TOPIC_INFO[ticket.topic ?? topicForTicket(null, ticket.category)].label}</p>{formatWorkspaceDateTime(ticket.created_at) ? <p className="text-xs text-student-muted">Opened {formatWorkspaceDateTime(ticket.created_at)}</p> : null}<Link href={`/support?studentId=${encodeURIComponent(canonicalStudentId ?? "")}&ticket=${encodeURIComponent(ticket.id)}`} className="inline-flex min-h-10 items-center text-sm font-semibold text-student-gold-ink underline-offset-4 hover:underline" data-testid="link-workspace-ticket">Open conversation</Link></StaffCard></li>)}</ul>
+         <ul className="space-y-3">{ticketsQuery.data?.tickets.map((ticket: Ticket) => <li key={ticket.id}><StaffCard as="div" className="space-y-2"><div className="flex flex-wrap items-center justify-between gap-3"><p className="font-medium text-student-ink">{ticket.subject}</p><div className="flex flex-wrap gap-2"><StatusPill status={ticketStatusKey(ticket.status)} label={ticketStatusText(ticket.status, language, t)} /><StaffPill tone={ticket.priority === "urgent" ? "urgent-solid" : ticket.priority === "high" ? "attention" : "neutral"}>{tokenLabel(ticket.priority, t) ?? workspaceToken(ticket.priority) ?? ticket.priority}</StaffPill></div></div><p className="text-sm text-student-muted">{ticket.ticket_number} · {ticketTopicText(ticket, language)}</p>{formatWorkspaceDateTime(ticket.created_at, undefined, language) ? <p className="text-xs text-student-muted">{t("s32ws.sh.support.opened", { date: formatWorkspaceDateTime(ticket.created_at, undefined, language) ?? "" })}</p> : null}<Link href={`/support?studentId=${encodeURIComponent(canonicalStudentId ?? "")}&ticket=${encodeURIComponent(ticket.id)}`} className="inline-flex min-h-10 items-center text-sm font-semibold text-student-gold-ink underline-offset-4 hover:underline" data-testid="link-workspace-ticket">{t("s32ws.sh.support.conversation")}</Link></StaffCard></li>)}</ul>
        </WorkspaceResourceState>
      </section>
     </StaffTabPanel>
