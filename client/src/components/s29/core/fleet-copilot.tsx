@@ -14,7 +14,7 @@ import "@/styles/student-s27.css";
 import "@/styles/owner-cockpit.css";
 import "@/components/s29/core/core.css";
 
-const CHIPS: TranslationKey[] = ["s29.core.fleet.chip.today", "s29.core.fleet.chip.progress", "s29.core.fleet.chip.documents", "s29.core.fleet.chip.week", "s29.core.fleet.chip.support", "s29.core.fleet.chip.drafts"];
+const CHIPS: TranslationKey[] = ["s29.core.fleet.chip.today", "s29.core.fleet.chip.progress", "s29.core.fleet.chip.deadlines", "s29.core.fleet.chip.pace", "s29.core.fleet.chip.documents", "s29.core.fleet.chip.week", "s29.core.fleet.chip.support", "s29.core.fleet.chip.drafts"];
 
 function CopyButton({ text }: { text: string }) {
   const { t } = useT();

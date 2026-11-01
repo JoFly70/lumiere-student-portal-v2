@@ -16,16 +16,23 @@ import { callMuseSpark, ProviderError, type FetchLike } from "../academic-assist
 import { currentMonth, usdToMicro, type BudgetStore } from "../academic-assistant/budget";
 import { logger } from "../../lib/logger";
 import { formatDate } from "./templates";
+import type { FleetCalendarContext } from "../s30/fleet-context";
 
 type Lang = "en" | "fr";
 
+// Word starts are Unicode-aware: JavaScript's \b does not treat accented letters (é, è, ê) as word characters, so
+// "échéance" or "élève" would never match a \b-anchored rule. Order matters: the first matching rule wins.
+const W = "(?<![\\p{L}\\p{N}])";
 const INTENT_RULES: Array<{ intent: FleetIntent; re: RegExp }> = [
-  { intent: "draft_followups", re: /\b(draft|prepare|write|rédige|prépar|écri|message|relance|follow[- ]?up)/i },
-  { intent: "documents_blocking", re: /\b(document|pièce|papier|enrol|inscri|holding|bloqu)/i },
-  { intent: "support_waiting", re: /\b(support|ticket|assistance|demande|waiting longest|attend.*longtemps|longest)/i },
-  { intent: "no_recent_progress", re: /\b(progress|progrès|progression|inactive|inactif|not reported|pas.*(déclaré|signalé)|recently|récemment)/i },
-  { intent: "week_priorities", re: /\b(this week|cette semaine|week|semaine|priorit|most important|plus important)/i },
-  { intent: "attention_today", re: /\b(today|aujourd|attention|need|besoin|urgent)/i },
+  { intent: "draft_followups", re: new RegExp(`${W}(draft|prepare|write|rédige|prépar|écri|message|relance|follow[- ]?up)`, "iu") },
+  { intent: "documents_blocking", re: new RegExp(`${W}(document|pièce|papier|enrol|inscri|holding|bloqu|unresolved|non résolu)`, "iu") },
+  { intent: "support_waiting", re: new RegExp(`${W}(support|ticket|assistance|demande|waiting longest|attend.*longtemps|longest|waiting for repl)`, "iu") },
+  // S30 Phase C (calendar + pace context):
+  { intent: "behind_pace", re: new RegExp(`${W}(behind|pace|falling|rythme|cadence|en retard sur|retard par rapport)`, "iu") },
+  { intent: "deadlines_soon", re: new RegExp(`${W}(deadline|échéance|echeance|date limite|approaching|due soon|bientôt dû)`, "iu") },
+  { intent: "no_recent_progress", re: new RegExp(`${W}(progress|progrès|progression|inactive|inactif|not reported|pas.*(déclaré|signalé)|recently|récemment)`, "iu") },
+  { intent: "week_priorities", re: new RegExp(`${W}(this week|cette semaine|week|semaine|priorit|most important|plus important)`, "iu") },
+  { intent: "attention_today", re: new RegExp(`${W}(today|aujourd|attention|need|besoin|urgent)`, "iu") },
 ];
 
 export function classifyIntent(question: string): FleetIntent {
@@ -98,7 +105,51 @@ const INTRO: Record<FleetIntent, { en: (n: number) => string; fr: (n: number) =>
   support_waiting: { en: (n) => (n ? `${n} support ticket(s) are waiting on staff, longest wait first.` : "No support ticket is waiting on staff."), fr: (n) => (n ? `${n} demande(s) d’assistance attendent l’équipe, la plus ancienne d’abord.` : "Aucune demande d’assistance n’attend l’équipe.") },
   draft_followups: { en: (n) => (n ? `${n} follow-up draft(s) prepared from recorded facts. Review, edit and send them yourself; nothing was sent.` : "No student currently has an approaching deadline or follow-up to draft."), fr: (n) => (n ? `${n} brouillon(s) de relance préparés à partir des faits enregistrés. Relisez, modifiez et envoyez-les vous-même ; rien n’a été envoyé.` : "Aucun élève n’a actuellement d’échéance proche ni de relance à rédiger.") },
   overview: { en: (n) => `${n} open item(s) across the portfolio, highest priority first.`, fr: (n) => `${n} élément(s) ouverts dans l’ensemble des dossiers, par priorité.` },
+  deadlines_soon: { en: (n) => (n ? `${n} academic deadline(s) or milestone(s) within 14 days (overdue ones from the last 14 days included), earliest first.` : "No academic deadline or milestone falls within the next 14 days."), fr: (n) => (n ? `${n} échéance(s) ou jalon(s) académiques dans les 14 jours (y compris ceux dépassés depuis moins de 14 jours), le plus proche d’abord.` : "Aucune échéance ni aucun jalon académique dans les 14 prochains jours.") },
+  behind_pace: { en: (n) => (n ? `${n} student(s) may be falling behind their planned pace (estimated finish after the target date, no pace toward a set target, or several planned milestones past).` : "No student appears to be behind their planned pace."), fr: (n) => (n ? `${n} élève(s) risquent de prendre du retard sur leur rythme prévu (fin estimée après la date visée, aucun rythme vers une date fixée, ou plusieurs jalons dépassés).` : "Aucun élève ne semble en retard sur son rythme prévu.") },
 };
+
+const CAL_ITEM: Record<string, { en: string; fr: string }> = {
+  academic_deadline: { en: "academic deadline", fr: "échéance académique" },
+  document_deadline: { en: "document deadline", fr: "échéance de document" },
+  course_milestone: { en: "course milestone", fr: "jalon de cours" },
+  program_checkpoint: { en: "program checkpoint", fr: "point d’étape du programme" },
+};
+const CAL_TITLE: Record<string, { en: string; fr: string }> = {
+  "s30.cal.title.language_test": { en: "Language test", fr: "Test de langue" },
+  "s30.cal.title.prior_schooling_proof": { en: "Proof of prior schooling", fr: "Preuve de scolarité antérieure" },
+  "s30.cal.title.targetCompletion": { en: "Target completion", fr: "Date de fin visée" },
+};
+
+/** S30 Phase C: deadline and pace answers from the calendar context (deterministic; values stay on the server). */
+function calendarAnswer(intent: "deadlines_soon" | "behind_pace", ctx: FleetCalendarContext | undefined, lang: Lang, includeDemo: boolean) {
+  const references: FleetReference[] = [];
+  const lines: { text: string; refs: string[] }[] = [];
+  if (intent === "deadlines_soon") {
+    for (const d of (ctx?.deadlines ?? []).filter((x) => includeDemo || !x.isDemo).slice(0, 25)) {
+      const ref = `A${references.length + 1}`;
+      const what = d.titleKey ? (CAL_TITLE[d.titleKey]?.[lang] ?? d.title) : d.title;
+      const kind = CAL_ITEM[d.itemKind]?.[lang] ?? d.itemKind;
+      const when = d.daysLeft < 0 ? (lang === "fr" ? `dépassé depuis ${-d.daysLeft} j` : `${-d.daysLeft} d overdue`) : d.daysLeft === 0 ? (lang === "fr" ? "aujourd’hui" : "today") : (lang === "fr" ? `dans ${d.daysLeft} j` : `in ${d.daysLeft} d`);
+      const planned = d.source === "high_school_plan" || d.source === "roadmap";
+      references.push({ ref, key: d.key, studentId: d.studentId, studentName: d.studentName, isDemo: d.isDemo, label: `${d.studentName ?? "—"}${d.isDemo ? " (demo)" : ""} — ${kind}`, href: d.href, provenance: "fact" });
+      lines.push({ text: `${d.studentName ?? "—"}${d.isDemo ? " (demo)" : ""}: ${what} · ${kind} · ${formatDate(d.date, lang)} (${when})${planned ? (lang === "fr" ? " · date planifiée, pas une exigence de l’école" : " · planned date, not a school requirement") : ""}`, refs: [ref] });
+    }
+  } else {
+    for (const p of (ctx?.pace ?? []).filter((x) => includeDemo || !x.isDemo).slice(0, 25)) {
+      const ref = `A${references.length + 1}`;
+      const why = p.reason === "finish_after_target"
+        ? (lang === "fr" ? `fin estimée ${formatDate(p.estimatedOn, lang)} après la date visée ${formatDate(p.targetOn, lang)}` : `estimated finish ${formatDate(p.estimatedOn, lang)} is after the target ${formatDate(p.targetOn, lang)}`)
+        : p.reason === "no_pace_with_target"
+          ? (lang === "fr" ? `aucun rythme récent vers la date visée ${formatDate(p.targetOn, lang)}` : `no recent pace toward the target ${formatDate(p.targetOn, lang)}`)
+          : (lang === "fr" ? `${p.missedMilestones} jalons planifiés dépassés` : `${p.missedMilestones} planned milestones past`);
+      const extra = p.reason !== "missed_milestones" && p.missedMilestones > 0 ? (lang === "fr" ? ` · ${p.missedMilestones} jalon(s) dépassé(s)` : ` · ${p.missedMilestones} milestone(s) past`) : "";
+      references.push({ ref, key: p.key, studentId: p.studentId, studentName: p.studentName, isDemo: p.isDemo, label: `${p.studentName}${p.isDemo ? " (demo)" : ""} — ${lang === "fr" ? "rythme" : "pace"}`, href: p.href, provenance: "student_reported" });
+      lines.push({ text: `${p.studentName}${p.isDemo ? " (demo)" : ""}: ${why}${extra} · ${lang === "fr" ? "estimation fondée sur les progrès déclarés par l’élève" : "estimate from student-reported progress"}`, refs: [ref] });
+    }
+  }
+  return { references, lines };
+}
 
 export function draftFor(i: AttentionItemView, lang: Lang): FleetDraft | null {
   if (!i.studentId || !i.studentName) return null;
@@ -151,6 +202,8 @@ export interface FleetDeps {
   readonly now?: () => Date;
   /** Opt-in AI narrative (aggregate-only). */
   readonly useAi?: boolean;
+  /** S30 Phase C: calendar + pace context for the deadlines_soon / behind_pace intents. */
+  readonly calendar?: FleetCalendarContext;
 }
 
 export async function answerFleet(input: { question: string; language: Lang; includeDemo: boolean }, items: readonly AttentionItemView[], deps: FleetDeps): Promise<FleetAnswer> {
@@ -158,18 +211,20 @@ export async function answerFleet(input: { question: string; language: Lang; inc
   const lang = input.language;
   const intent = classifyIntent(input.question);
   const pool = items.filter((i) => input.includeDemo || !i.isDemo);
-  const chosen = selectItems(intent, pool, now).slice(0, 25);
-  const references: FleetReference[] = chosen.map((i, n) => ({
+  const fromCalendar = intent === "deadlines_soon" || intent === "behind_pace";
+  const chosen = fromCalendar ? [] : selectItems(intent, pool, now).slice(0, 25);
+  const cal = fromCalendar ? calendarAnswer(intent, deps.calendar, lang, input.includeDemo) : null;
+  const references: FleetReference[] = cal ? cal.references : chosen.map((i, n) => ({
     ref: `A${n + 1}`, key: i.key, studentId: i.studentId, studentName: i.studentName, isDemo: i.isDemo,
     label: `${i.studentName ?? (lang === "fr" ? "Opérations" : "Operations")}${i.isDemo ? " (demo)" : ""} — ${KIND_LABEL[i.kind]?.[lang] ?? i.kind}`,
     href: i.href, provenance: provenanceOf(i),
   }));
-  const lines = chosen.map((i, n) => {
+  const lines = cal ? cal.lines : chosen.map((i, n) => {
     const prov = provenanceOf(i) === "student_reported" ? (lang === "fr" ? " · déclaré, non officiel" : " · student-reported, not official") : "";
     return { text: `${i.studentName ?? "—"}${i.isDemo ? " (demo)" : ""}: ${KIND_LABEL[i.kind]?.[lang] ?? i.kind} · ${lang === "fr" ? "priorité" : "priority"} ${PRIORITY_LABEL[i.priority][lang]} · ${ageText(i, now, lang)}${prov}`, refs: [`A${n + 1}`] };
   });
   const drafts = intent === "draft_followups" ? chosen.map((i) => draftFor(i, lang)).filter((d): d is FleetDraft => !!d).slice(0, 10) : [];
-  const count = intent === "draft_followups" ? drafts.length : chosen.length;
+  const count = intent === "draft_followups" ? drafts.length : cal ? cal.lines.length : chosen.length;
   const privacy = lang === "fr"
     ? "Réponse calculée à partir des dossiers sur le serveur. L’IA, si elle est utilisée, ne reçoit que des totaux anonymes par catégorie : aucun nom, code, identifiant, document ni message."
     : "Answer computed from the records on the server. The AI, when used, receives only anonymous totals per category: no names, codes, ids, documents or messages.";

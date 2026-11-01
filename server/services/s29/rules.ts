@@ -16,7 +16,7 @@ import type { ControlQueueItem } from "@shared/s27-contract";
 import type { AttentionKind, AttentionPriority, AttentionWorkflow, ConciergeSettings } from "@shared/s29-contract";
 import { buildControlCenter, loadControlCenterFacts, type ControlCenterFacts } from "../program-journey/control-center";
 import { daysBetween } from "../program-journey/math";
-import { rows, iso, isoReq, str, type SqlExecutor } from "./db";
+import { errorCode, rows, iso, isoReq, str, type SqlExecutor } from "./db";
 
 export interface AttentionCandidate {
   readonly key: string;
@@ -155,8 +155,8 @@ export function buildAttention(facts: ControlCenterFacts, extra: AttentionExtraF
   for (const p of extra.pendingVerification) {
     if (!studentBy.has(p.studentId)) continue;
     push({ key: `import_verification:${p.studentId}`, kind: "import_verification", priority: daysBetween(p.oldest.slice(0, 10), today) > 7 ? "high" : "normal", studentId: p.studentId,
-      title: `${p.count} imported school result${p.count === 1 ? "" : "s"} to verify`, detail: "Imported from a file; not official until confirmed through the review workflow.",
-      reason: { rule: "import.school_result_pending", facts: { count: p.count, oldest: p.oldest.slice(0, 10) } }, arisenAt: p.oldest, href: `/admin/imports?student=${encodeURIComponent(p.studentId)}` });
+      title: `${p.count} imported result${p.count === 1 ? "" : "s"} to verify`, detail: "Provider- or school-reported (imported); not official until the school's result is recorded through the review workflow.",
+      reason: { rule: "import.school_result_pending", facts: { count: p.count, oldest: p.oldest.slice(0, 10) } }, arisenAt: p.oldest, href: fileHref(p.studentId, "roadmap") });
   }
 
   // 5. Notifications whose email delivery failed after bounded retries.
@@ -179,9 +179,20 @@ export async function loadAttentionExtra(db: SqlExecutor, now: Date, s29Present:
     db.execute(sql`SELECT student_id, key, planned_on::text AS planned_on FROM student_checkpoints WHERE done_on IS NULL AND planned_on IS NOT NULL ORDER BY planned_on, student_id LIMIT 1000`),
     db.execute(sql`SELECT id, student_id, slot_at FROM orientation_sessions WHERE status = 'confirmed' AND slot_at >= ${now.toISOString()}::timestamptz AND slot_at <= ${horizon}::timestamptz ORDER BY slot_at LIMIT 200`),
   ]);
-  // Imported results / imported activity come from the S30 import store once it exists (extend here); none in S29.
-  const pending: unknown = [];
-  const imported: unknown = [];
+  // S30 Phase B import store (academic_reported_records): records awaiting staff review, and the latest imported
+  // (provider-/school-reported) activity per student. Optional: before the S30 migration the table is absent -> none.
+  let pending: unknown = [];
+  let imported: unknown = [];
+  try {
+    [pending, imported] = await Promise.all([
+      db.execute(sql`SELECT student_id, count(*)::int AS n, min(created_at) AS oldest FROM academic_reported_records
+        WHERE status = 'active' AND review_state = 'needs_review' GROUP BY student_id ORDER BY student_id LIMIT 1000`),
+      db.execute(sql`SELECT student_id, max(COALESCE(reported_on, created_at::date))::text AS last_on FROM academic_reported_records
+        WHERE status = 'active' GROUP BY student_id ORDER BY student_id LIMIT 1000`),
+    ]);
+  } catch (error) {
+    if (errorCode(error) !== "42P01") throw error;
+  }
   let failed: unknown = [];
   if (s29Present) {
     failed = await db.execute(sql`SELECT id, student_id, template, updated_at FROM s29_notifications WHERE email_state = 'failed' AND updated_at >= ${new Date(now.getTime() - 14 * 86_400_000).toISOString()}::timestamptz ORDER BY updated_at DESC LIMIT 50`);

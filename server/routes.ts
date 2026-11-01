@@ -1443,6 +1443,14 @@ window.ENV = {
     app.use('/api/student/s29', s29.createS29StudentRouter());
     app.use('/api/ops', s29.createS29OpsRouter());
   }
+  // S29 <-> S30 wiring: calendar events/reminders and import notifications go through S29's outbox and scheduler.
+  {
+    const [{ wireS30Calendar }, { setCalendarOperationsPort }, { dispatchCalendarReminders }, { wireS30Imports }] = await Promise.all([
+      import('./services/s29/calendar-bridge'), import('./services/s30/calendar-port'), import('./services/s30/calendar-reminders'), import('./services/s30/imports-bridge'),
+    ]);
+    wireS30Calendar({ setCalendarOperationsPort, dispatchCalendarReminders });
+    wireS30Imports();
+  }
   // S30 Phase A: Academic Calendar (admin/staff all students, students their own; CSRF on writes; coach none).
   // Timeline events and reminders go to the S29 operational layer through server/services/s30/calendar-port.ts.
   const s30Calendar = await import('./routes/s30-calendar');
