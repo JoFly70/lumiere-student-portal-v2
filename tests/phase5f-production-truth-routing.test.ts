@@ -45,7 +45,8 @@ describe("Phase 5F production truth and routing", () => {
       expect(admin).not.toContain(sample);
     }
 
-    expect(admin).toContain("Activity feed not connected");
+    // S32-B: the "Activity feed not connected" placeholder was removed rather than kept as a dead card.
+    expect(admin).not.toContain("Activity feed not connected");
   });
 
   it("does not present hard-coded demo billing history as real billing data", () => {

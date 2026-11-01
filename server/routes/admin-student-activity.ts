@@ -1,6 +1,7 @@
 /**
  * Admin student activity feed (mounted under /api/admin): the last 50 audit_logs rows about one student.
- * Admin only, read-only, no-store. Matches the audit target (target_resource_id = student id) or the
+ * Admin only, read-only, no-store. Matches the audit target (target_resource_id = student id), metadata.studentId (documents, identity and
+ * guardian decisions, placements, account link/unlink, status changes) or the
  * student's linked portal account (target_user_id = students.user_id). Metadata is NOT returned.
  */
 import { Router, type Request, type RequestHandler, type Response } from "express";
@@ -50,6 +51,7 @@ async function listActivity(studentId: string): Promise<StudentActivityItem[]> {
            a.action_description, a.actor_role::text AS actor_role, a.created_at
       FROM audit_logs a
      WHERE a.target_resource_id::text = ${studentId}
+        OR a.metadata->>'studentId' = ${studentId}
         OR a.target_user_id::text = (SELECT s.user_id::text FROM students s WHERE s.id::text = ${studentId})
      ORDER BY a.created_at DESC
      LIMIT 50`);

@@ -442,6 +442,11 @@ export async function auditAdmin(
     actorUserId,
     actorRole: 'admin',
     targetUserId,
+    // Student-scoped admin actions (link/unlink, status change) carry metadata.studentId; expose it as the
+    // resource too so the student Activity feed finds them even when no portal account is linked.
+    ...(typeof metadata?.studentId === 'string'
+      ? { targetResourceType: 'student', targetResourceId: metadata.studentId }
+      : {}),
     actionDescription: description,
     metadata,
   });
@@ -523,17 +528,25 @@ export async function writeAuditLog(entry: {
   oldValue?: unknown;
   newValue?: unknown;
   metadata?: Record<string, unknown>;
+  /** Only when the caller holds a real users.id (e.g. the linked portal account). */
+  targetUserId?: string;
 }): Promise<void> {
+  // students.id is NOT a users.id: audit_logs.target_user_id is a foreign key to users(id), so putting
+  // the student id there made Postgres reject the row (and the failure was swallowed). The student is
+  // identified through metadata.studentId instead, which GET /api/admin/students/:id/activity matches.
+  // assistant_memory rows are keyed by the owner's users.id and keep it as the (valid) FK target.
+  const isUserKeyed = entry.entityType === 'assistant_memory';
   await createAuditLog({
     eventType: 'admin.bulk_operation',
     severity: 'info',
     actorUserId: entry.actorId,
-    targetUserId: entry.studentId,
+    targetUserId: entry.targetUserId ?? (isUserKeyed ? entry.studentId : undefined),
     targetResourceType: entry.entityType,
     targetResourceId: entry.entityId,
     actionDescription: `${entry.action} ${entry.entityType} ${entry.entityId}`,
     metadata: {
       ...redactAuditPayload(entry.metadata),
+      ...(isUserKeyed ? {} : { studentId: entry.studentId }),
       action: entry.action,
       oldValue: redactAuditPayload(entry.oldValue),
       newValue: redactAuditPayload(entry.newValue),

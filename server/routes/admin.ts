@@ -31,6 +31,35 @@ router.use(requireRole(['admin']));
 // Every state-changing admin request carries the CSRF token (requireCsrf passes GET/HEAD through).
 router.use(requireCsrf);
 
+const archiveReasonSchema = z.object({ reason: z.string().trim().min(5).max(500) });
+
+function clampLimit(value: unknown, fallback: number, max: number): number {
+  const n = Math.floor(Number(value));
+  return Number.isFinite(n) && n > 0 ? Math.min(n, max) : fallback;
+}
+function clampOffset(value: unknown): number {
+  const n = Math.floor(Number(value));
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
+/** Free-text search goes into a PostgREST or() filter: drop the characters that structure that grammar. */
+function cleanSearch(value: unknown): string {
+  return typeof value === 'string' ? value.replace(/[,()*%\\]/g, ' ').trim().slice(0, 100) : '';
+}
+
+/** True when at least one OTHER administrator has an active account (profile status 'active'). */
+async function hasOtherActiveAdmin(excludeUserId: string): Promise<boolean> {
+  const { data, error } = await supabaseAdmin
+    .from('users')
+    .select('id, profiles(status)')
+    .eq('role', 'admin')
+    .neq('id', excludeUserId);
+  if (error) throw new Error(`Could not verify remaining administrators: ${error.message}`);
+  return ((data ?? []) as Array<{ id: string; profiles?: { status?: string } | Array<{ status?: string }> | null }>).some((u) => {
+    const p = Array.isArray(u.profiles) ? u.profiles[0] : u.profiles;
+    return p?.status === 'active';
+  });
+}
+
 // ==================== USER MANAGEMENT ====================
 
 /**
@@ -42,9 +71,11 @@ router.get('/users', asyncHandler(async (req: any, res) => {
     role,
     status,
     search,
-    limit = 50,
-    offset = 0,
+    limit: rawLimit = 50,
+    offset: rawOffset = 0,
   } = req.query;
+  const limit = clampLimit(rawLimit, 50, 200);
+  const offset = clampOffset(rawOffset);
 
   try {
     let query = supabaseAdmin
@@ -60,8 +91,9 @@ router.get('/users', asyncHandler(async (req: any, res) => {
       query = query.eq('role', role);
     }
 
-    if (search) {
-      query = query.or(`email.ilike.%${search}%,name.ilike.%${search}%`);
+    const term = cleanSearch(search);
+    if (term) {
+      query = query.or(`email.ilike.%${term}%,name.ilike.%${term}%`);
     }
 
     const { data: users, error, count } = await query;
@@ -99,6 +131,29 @@ router.patch('/users/:id/role', asyncHandler(async (req: any, res) => {
   }
 
   try {
+    // Read the current role BEFORE updating so the audit trail records the real previous role.
+    const { data: current, error: readError } = await supabaseAdmin
+      .from('users')
+      .select('id, role')
+      .eq('id', id)
+      .maybeSingle();
+    if (readError) {
+      logger.error('Failed to read user before role change', { error: readError.message });
+      return res.status(500).json({ error: 'Failed to update user role' });
+    }
+    if (!current) return res.status(404).json({ error: 'User not found' });
+    const oldRole = current.role as string;
+    if (oldRole === role) return res.json({ user: current, unchanged: true });
+
+    if (oldRole === 'admin' && role !== 'admin') {
+      if (id === admin.id) {
+        return res.status(409).json({ error: 'You cannot remove your own administrator role', code: 'SELF_DEMOTION' });
+      }
+      if (!(await hasOtherActiveAdmin(id))) {
+        return res.status(409).json({ error: 'This is the last active administrator and cannot be demoted', code: 'LAST_ADMIN' });
+      }
+    }
+
     const { data: user, error } = await supabaseAdmin
       .from('users')
       .update({ role })
@@ -116,11 +171,11 @@ router.patch('/users/:id/role', asyncHandler(async (req: any, res) => {
       'admin.role_changed',
       admin.id,
       id,
-      `Changed user role to ${role}`,
-      { oldRole: user.role, newRole: role }
+      `Changed user role from ${oldRole} to ${role}`,
+      { oldRole, newRole: role }
     );
 
-    logger.info('User role updated', { userId: id, newRole: role, adminId: admin.id });
+    logger.info('User role updated', { userId: id, oldRole, newRole: role, adminId: admin.id });
 
     res.json({ user });
   } catch (error: any) {
@@ -139,10 +194,29 @@ router.delete('/users/:id', asyncHandler(async (req: any, res) => {
 
   // Prevent self-deletion
   if (id === admin.id) {
-    return res.status(400).json({ error: 'Cannot delete your own account' });
+    return res.status(400).json({ error: 'Cannot delete your own account', code: 'SELF_ARCHIVE' });
   }
+  const parsedReason = archiveReasonSchema.safeParse(req.body ?? {});
+  if (!parsedReason.success) {
+    return res.status(400).json({ error: 'A reason of at least 5 characters is required', code: 'REASON_REQUIRED' });
+  }
+  const reason = parsedReason.data.reason;
 
   try {
+    const { data: target, error: targetError } = await supabaseAdmin
+      .from('users')
+      .select('id, role')
+      .eq('id', id)
+      .maybeSingle();
+    if (targetError) {
+      logger.error('Failed to read user before archiving', { error: targetError.message });
+      return res.status(500).json({ error: 'Failed to archive user' });
+    }
+    if (!target) return res.status(404).json({ error: 'User not found' });
+    if (target.role === 'admin' && !(await hasOtherActiveAdmin(id))) {
+      return res.status(409).json({ error: 'This is the last active administrator and cannot be archived', code: 'LAST_ADMIN' });
+    }
+
     // Soft delete: update status instead of actual deletion
     const { error } = await supabaseAdmin
       .from('profiles')
@@ -184,7 +258,7 @@ router.delete('/users/:id', asyncHandler(async (req: any, res) => {
       admin.id,
       id,
       'Archived user account',
-      { action: 'soft_delete', sessionsRevoked }
+      { action: 'soft_delete', sessionsRevoked, reason, role: target.role }
     );
 
     logger.info('User archived', { userId: id, adminId: admin.id, sessionsRevoked });
@@ -629,18 +703,28 @@ router.get('/audit-logs', asyncHandler(async (req: any, res) => {
     targetId,
     startDate,
     endDate,
-    limit = 100,
-    offset = 0,
+    limit: rawLimit = 100,
+    offset: rawOffset = 0,
   } = req.query;
+  const limit = clampLimit(rawLimit, 100, 200);
+  const offset = clampOffset(rawOffset);
+  const isUuid = (v: unknown): v is string => typeof v === 'string' && z.string().uuid().safeParse(v).success;
+  const isDate = (v: unknown): v is string => typeof v === 'string' && !Number.isNaN(Date.parse(v));
+  if ((startDate && !isDate(startDate)) || (endDate && !isDate(endDate))) {
+    return res.status(400).json({ error: 'Invalid date filter' });
+  }
+  if ((actorId && !isUuid(actorId)) || (targetId && !isUuid(targetId))) {
+    return res.status(400).json({ error: 'Invalid actor or target filter' });
+  }
 
   try {
     let query = supabaseAdmin
       .from('audit_logs')
       .select('*', { count: 'exact' })
       .order('created_at', { ascending: false })
-      .range(Number(offset), Number(offset) + Number(limit) - 1);
+      .range(offset, offset + limit - 1);
 
-    if (eventType) {
+    if (typeof eventType === 'string' && eventType) {
       query = query.eq('event_type', eventType);
     }
 
@@ -648,8 +732,10 @@ router.get('/audit-logs', asyncHandler(async (req: any, res) => {
       query = query.eq('actor_user_id', actorId);
     }
 
+    // "Target" is a user (target_user_id) OR a student/resource (target_resource_id, or metadata.studentId
+    // for decisions recorded against a student record).
     if (targetId) {
-      query = query.eq('target_user_id', targetId);
+      query = query.or(`target_user_id.eq.${targetId},target_resource_id.eq.${targetId},metadata->>studentId.eq.${targetId}`);
     }
 
     if (startDate) {
@@ -657,7 +743,8 @@ router.get('/audit-logs', asyncHandler(async (req: any, res) => {
     }
 
     if (endDate) {
-      query = query.lte('created_at', endDate);
+      // A bare date (YYYY-MM-DD) means "through the end of that day".
+      query = query.lte('created_at', /^\d{4}-\d{2}-\d{2}$/.test(endDate) ? `${endDate}T23:59:59.999Z` : endDate);
     }
 
     const { data: logs, error, count } = await query;
@@ -667,12 +754,51 @@ router.get('/audit-logs', asyncHandler(async (req: any, res) => {
       return res.status(500).json({ error: 'Failed to fetch audit logs' });
     }
 
+    // Additive: human-readable actor and target labels (no new data is exposed: names/emails of staff and
+    // the student's name/code, all already visible to an administrator).
+    const rows = (logs ?? []) as Array<Record<string, any>>;
+    const userIds = new Set<string>();
+    const studentIds = new Set<string>();
+    for (const r of rows) {
+      if (r.actor_user_id) userIds.add(r.actor_user_id);
+      if (r.target_user_id) userIds.add(r.target_user_id);
+      const sid = r.metadata?.studentId ?? (r.target_resource_type === 'student' ? r.target_resource_id : null);
+      if (isUuid(sid)) studentIds.add(sid);
+    }
+    const userLabels = new Map<string, { name: string | null; email: string | null }>();
+    const studentLabels = new Map<string, string>();
+    try {
+      if (userIds.size) {
+        const { data: us } = await supabaseAdmin.from('users').select('id, name, email').in('id', [...userIds]);
+        for (const u of (us ?? []) as any[]) userLabels.set(u.id, { name: u.name ?? null, email: u.email ?? null });
+      }
+      if (studentIds.size) {
+        const { data: ss } = await supabaseAdmin.from('students').select('id, first_name, last_name, student_code').in('id', [...studentIds]);
+        for (const st of (ss ?? []) as any[]) {
+          studentLabels.set(st.id, [[st.first_name, st.last_name].filter(Boolean).join(' '), st.student_code].filter(Boolean).join(' · '));
+        }
+      }
+    } catch (labelError: any) {
+      logger.warn('Audit log label lookup failed', { error: labelError?.message });
+    }
+    const enriched = rows.map((r) => {
+      const actor = r.actor_user_id ? userLabels.get(r.actor_user_id) : undefined;
+      const sid = r.metadata?.studentId ?? (r.target_resource_type === 'student' ? r.target_resource_id : null);
+      const targetUser = r.target_user_id ? userLabels.get(r.target_user_id) : undefined;
+      return {
+        ...r,
+        actor_name: actor?.name || actor?.email || null,
+        target_label: (isUuid(sid) ? studentLabels.get(sid) : undefined) || targetUser?.name || targetUser?.email || null,
+        target_student_id: isUuid(sid) ? sid : null,
+      };
+    });
+
     res.json({
-      logs,
+      logs: enriched,
       pagination: {
         total: count || 0,
-        limit: Number(limit),
-        offset: Number(offset),
+        limit,
+        offset,
       },
     });
   } catch (error: any) {
