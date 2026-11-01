@@ -6,6 +6,11 @@
  *   GET  /api/admin/students/:studentId/account
  *   POST /api/admin/students/:studentId/account/link    { userId }
  *   POST /api/admin/students/:studentId/account/unlink  { reason }
+ *   POST /api/admin/students/:studentId/email           { email, reason }   (S32-B: correct the record email)
+ *
+ * S32-B: the account view also carries the enrollment status (latest invitation for the record email, ready to
+ * link, linked) so the Student File can show where the student is and the one next action. The link itself still
+ * requires an administrator's explicit confirmation; nothing is linked or activated automatically.
  *
  * Linking is refused unless the account is a student-role user whose email
  * equals the student record's email (case-insensitive) and is not already
@@ -20,6 +25,7 @@ import { logger } from "../lib/logger";
 import { auditAdmin } from "../lib/audit";
 import { requireAuth } from "../middleware/auth";
 import { requireRole } from "../middleware/rbac";
+import { deriveEnrollmentStatus, invitationState, isPlausibleEmail, type EnrollmentStatus, type InvitationFacts } from "@shared/enrollment-status";
 
 export interface AccountView {
   studentId: string;
@@ -27,6 +33,10 @@ export interface AccountView {
   linked: boolean;
   account: { userId: string; email: string; role: string } | null;
   candidates: Array<{ userId: string; email: string; name: string; createdAt: string }>;
+  /** S32-B: latest invitation sent to the record email (no code, no hash). */
+  invitation?: InvitationFacts;
+  /** S32-B: derived enrollment stage and next action. */
+  enrollment?: EnrollmentStatus;
 }
 
 export class AccountLinkError extends Error {
@@ -41,6 +51,7 @@ const rowsOf = (r: unknown): any[] => (Array.isArray(r) ? r : ((r as { rows?: an
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const linkSchema = z.object({ userId: z.string().trim().regex(UUID, "userId must be a UUID") }).strict();
 const unlinkSchema = z.object({ reason: z.string().trim().min(5).max(500) }).strict();
+const emailSchema = z.object({ email: z.string().trim().min(3).max(254), reason: z.string().trim().min(5).max(500) }).strict();
 
 async function loadView(tx: Exec, studentId: string): Promise<AccountView> {
   const [student] = rowsOf(await tx.execute(sql`select id, email, user_id from students where id = ${studentId}`));
@@ -67,7 +78,48 @@ async function loadView(tx: Exec, studentId: string): Promise<AccountView> {
       createdAt: new Date(u.created_at).toISOString(),
     }));
   }
-  return { studentId: String(student.id), studentEmail, linked: !!student.user_id, account, candidates };
+  let invitation: InvitationFacts | null = null;
+  if (studentEmail) {
+    try {
+      const [inv] = rowsOf(await tx.execute(sql`
+        select created_at, expires_at, consumed_at, revoked_at from account_invitations
+        where email = lower(${studentEmail}) order by created_at desc limit 1`));
+      invitation = invitationState(inv ? {
+        createdAt: new Date(inv.created_at).toISOString(), expiresAt: new Date(inv.expires_at).toISOString(),
+        consumedAt: inv.consumed_at ? new Date(inv.consumed_at).toISOString() : null, revokedAt: inv.revoked_at ? new Date(inv.revoked_at).toISOString() : null,
+      } : null, new Date());
+    } catch (error) {
+      // Before the S14 account gate the table is absent: the status simply has no invitation facts.
+      if ((error as { code?: string })?.code !== "42P01") throw error;
+    }
+  }
+  const linked = !!student.user_id;
+  const enrollment = deriveEnrollmentStatus({ studentEmail, linked, candidateCount: candidates.length, invitation });
+  return { studentId: String(student.id), studentEmail, linked, account, candidates, invitation: enrollment.invitation, enrollment };
+}
+
+/**
+ * S32-B: correct a mistyped record email. Admin only; allowed only while no portal account is linked (so a linked
+ * identity is never re-pointed); refused when another student record already uses the address or when the address
+ * belongs to a non-student account. The old and new addresses are written to the audit log by the route.
+ */
+export async function correctStudentEmail(studentId: string, rawEmail: string): Promise<{ view: AccountView; previousEmail: string; email: string }> {
+  const email = rawEmail.trim().toLowerCase();
+  if (!isPlausibleEmail(email)) throw new AccountLinkError(400, "EMAIL_INVALID", "Enter a valid email address");
+  return db.transaction(async (tx) => {
+    const [student] = rowsOf(await tx.execute(sql`select id, email, user_id from students where id = ${studentId} for update`));
+    if (!student) throw new AccountLinkError(404, "STUDENT_NOT_FOUND", "Student not found");
+    if (student.user_id) throw new AccountLinkError(409, "STUDENT_ALREADY_LINKED", "Unlink the portal account before correcting the record email");
+    const previousEmail = String(student.email ?? "");
+    if (previousEmail.trim().toLowerCase() === email) throw new AccountLinkError(409, "EMAIL_UNCHANGED", "The record already uses this email");
+    const [taken] = rowsOf(await tx.execute(sql`select id from students where lower(email) = ${email} and id <> ${studentId} limit 1`));
+    if (taken) throw new AccountLinkError(409, "STUDENT_EMAIL_TAKEN", "Another student record already uses this email");
+    const [staffUser] = rowsOf(await tx.execute(sql`select id from users where lower(email) = ${email} and role::text <> 'student' limit 1`));
+    if (staffUser) throw new AccountLinkError(409, "EMAIL_BELONGS_TO_STAFF", "This email belongs to a staff account");
+    const updated = rowsOf(await tx.execute(sql`update students set email = ${email}, email_verified_at = null, updated_at = now() where id = ${studentId} and user_id is null returning id`));
+    if (updated.length !== 1) throw new AccountLinkError(409, "STUDENT_ALREADY_LINKED", "Unlink the portal account before correcting the record email");
+    return { view: await loadView(tx as unknown as Exec, studentId), previousEmail, email };
+  });
 }
 
 export async function linkStudentAccount(studentId: string, userId: string): Promise<AccountView> {
@@ -102,6 +154,7 @@ export async function unlinkStudentAccount(studentId: string): Promise<{ view: A
 
 export interface AdminStudentAccountDeps {
   readonly getView?: (studentId: string) => Promise<AccountView>;
+  readonly correctEmail?: typeof correctStudentEmail;
   readonly audit?: (actorId: string, description: string, metadata: Record<string, unknown>, targetUserId?: string, revoked?: boolean) => Promise<void>;
 }
 
@@ -180,6 +233,26 @@ export function createAdminStudentAccountRouter(deps: AdminStudentAccountDeps = 
       res.json(view);
     } catch (error) {
       sendError(res, error, "unlink");
+    }
+  });
+
+  router.post("/students/:studentId/email", ...guards, async (req, res) => {
+    const studentId = validId(req, res);
+    if (!studentId) return;
+    const parsed = emailSchema.safeParse(req.body ?? {});
+    if (!parsed.success) return res.status(400).json({ error: { code: "VALIDATION_FAILED", message: "An email and a reason of at least 5 characters are required" } });
+    try {
+      const out = await (deps.correctEmail ?? correctStudentEmail)(studentId, parsed.data.email);
+      await safeAudit(
+        req.user!.id,
+        "Corrected the student record email",
+        { action: "student_email_corrected", studentId, previousEmail: out.previousEmail, email: out.email, reason: parsed.data.reason },
+        undefined,
+        false,
+      );
+      res.json(out.view);
+    } catch (error) {
+      sendError(res, error, "email correction");
     }
   });
 

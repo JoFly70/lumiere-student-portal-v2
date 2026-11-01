@@ -25,6 +25,8 @@ export const ATTENTION_KINDS = [
   "checkpoint_missed", "checkpoint_soon", "orientation_upcoming", "import_verification", "notification_failed",
   // S32-B: a validated (or approved) import batch waiting for the owner to commit it
   "import_awaiting_approval",
+  // S32-B: a student account with the record email exists and is not linked yet (an admin confirms the link)
+  "account_ready_to_link",
 ] as const;
 export type AttentionKind = (typeof ATTENTION_KINDS)[number];
 

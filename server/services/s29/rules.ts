@@ -47,11 +47,13 @@ export interface AttentionExtraFacts {
   readonly importedActivity: ReadonlyArray<{ studentId: string; lastOn: string }>;
   /** Import batches validated (or approved) and waiting for the owner to commit or discard them: one per batch. */
   readonly pendingImports: ReadonlyArray<{ id: string; sourceKind: string; rows: number; students: number; validatedAt: string }>;
+  /** S32-B: unlinked student records whose email matches an unlinked student-role account (admin confirms the link). */
+  readonly readyToLink?: ReadonlyArray<{ studentId: string; accountCreatedAt: string }>;
   /** Notifications whose email delivery failed (bounded). */
   readonly failedNotifications: ReadonlyArray<{ id: string; studentId: string | null; template: string; at: string }>;
 }
 
-export const EMPTY_EXTRA: AttentionExtraFacts = { checkpoints: [], upcomingSessions: [], pendingVerification: [], importedActivity: [], pendingImports: [], failedNotifications: [] };
+export const EMPTY_EXTRA: AttentionExtraFacts = { checkpoints: [], upcomingSessions: [], pendingVerification: [], importedActivity: [], pendingImports: [], readyToLink: [], failedNotifications: [] };
 
 const WORKFLOW: Record<AttentionKind, AttentionWorkflow> = {
   document_review: "documents", payment_evidence: "billing", payment_overdue: "billing", payment_missing: "billing",
@@ -59,6 +61,7 @@ const WORKFLOW: Record<AttentionKind, AttentionWorkflow> = {
   elective_approval: "academic", session_request: "appointments", support_reply: "support",
   checkpoint_missed: "academic", checkpoint_soon: "academic", orientation_upcoming: "appointments",
   import_verification: "academic", notification_failed: "operations", import_awaiting_approval: "operations",
+  account_ready_to_link: "operations",
 };
 const ACTION: Record<AttentionKind, string> = {
   document_review: "review_documents", payment_evidence: "review_payment", payment_overdue: "follow_up_payment",
@@ -66,6 +69,7 @@ const ACTION: Record<AttentionKind, string> = {
   school_result_needed: "record_school_result", elective_approval: "decide_elective", session_request: "confirm_session",
   support_reply: "reply_support", checkpoint_missed: "complete_checkpoint", checkpoint_soon: "prepare_checkpoint",
   orientation_upcoming: "prepare_session", import_verification: "verify_results", notification_failed: "check_delivery", import_awaiting_approval: "approve_import",
+  account_ready_to_link: "link_account",
 };
 
 /** Facts that change every day (counters) are left out of the fingerprint, so a dismissal survives until the facts change. */
@@ -170,7 +174,17 @@ export function buildAttention(facts: ControlCenterFacts, extra: AttentionExtraF
       reason: { rule: "import.batch_pending_approval", facts: { batchId: b.id, source: b.sourceKind, rows: b.rows, students: b.students } }, arisenAt: b.validatedAt, href: `/admin/imports?batch=${encodeURIComponent(b.id)}` });
   }
 
-  // 6. Notifications whose email delivery failed after bounded retries.
+  // 6. S32-B: the student created their portal account (same email as the record) but it is not linked yet. The item
+  //    opens the Student File, whose enrollment line offers the admin-only "Link account" with a confirmation. It
+  //    clears on its own once the account is linked (the student leaves the set).
+  for (const r of extra.readyToLink ?? []) {
+    if (!studentBy.has(r.studentId)) continue;
+    push({ key: `account_ready_to_link:${r.studentId}`, kind: "account_ready_to_link", priority: daysBetween(r.accountCreatedAt.slice(0, 10), today) > 2 ? "high" : "normal", studentId: r.studentId,
+      title: "Portal account ready to link", detail: "The student created a portal account with the record email. Confirm and link it so their portal shows their file.",
+      reason: { rule: "enrollment.account_ready_to_link", facts: { accountCreatedOn: r.accountCreatedAt.slice(0, 10) } }, arisenAt: r.accountCreatedAt, href: fileHref(r.studentId, "overview") });
+  }
+
+  // 7. Notifications whose email delivery failed after bounded retries.
   for (const f of extra.failedNotifications) {
     push({ key: `notification_failed:${f.id}`, kind: "notification_failed", priority: "normal", studentId: f.studentId && studentBy.has(f.studentId) ? f.studentId : null,
       title: "Email delivery failed", detail: `Notification "${f.template}" could not be delivered by email after retries.`,
@@ -211,6 +225,12 @@ export async function loadAttentionExtra(db: SqlExecutor, now: Date, s29Present:
   } catch (error) {
     if (errorCode(error) !== "42P01") throw error;
   }
+  // S32-B: unlinked records with a matching, unlinked student account (bounded).
+  const ready = await db.execute(sql`SELECT s.id AS student_id, min(u.created_at) AS created_at FROM students s
+    JOIN users u ON lower(u.email) = lower(s.email) AND u.role::text = 'student'
+    WHERE s.user_id IS NULL AND s.email IS NOT NULL AND s.email <> ''
+      AND NOT EXISTS (SELECT 1 FROM students s2 WHERE s2.user_id = u.id)
+    GROUP BY s.id ORDER BY s.id LIMIT 200`);
   let failed: unknown = [];
   if (s29Present) {
     failed = await db.execute(sql`SELECT id, student_id, template, updated_at FROM s29_notifications WHERE email_state = 'failed' AND updated_at >= ${new Date(now.getTime() - 14 * 86_400_000).toISOString()}::timestamptz ORDER BY updated_at DESC LIMIT 50`);
@@ -224,6 +244,7 @@ export async function loadAttentionExtra(db: SqlExecutor, now: Date, s29Present:
       const c = (r.counts ?? {}) as { total?: number; students?: number };
       return { id: String(r.id), sourceKind: String(r.source_kind), rows: Number(c.total ?? 0), students: Number(c.students ?? 0), validatedAt: isoReq(r.validated_at) };
     }),
+    readyToLink: rows(ready).map((r) => ({ studentId: String(r.student_id), accountCreatedAt: isoReq(r.created_at) })),
     failedNotifications: rows(failed).map((r) => ({ id: String(r.id), studentId: str(r.student_id), template: String(r.template), at: iso(r.updated_at) ?? now.toISOString() })),
   };
 }

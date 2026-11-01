@@ -80,6 +80,7 @@ const KIND_LABEL: Record<string, { en: string; fr: string }> = {
   import_verification: { en: "imported results to verify", fr: "résultats importés à vérifier" },
   notification_failed: { en: "failed email deliveries", fr: "envois de courriel échoués" },
   import_awaiting_approval: { en: "imports awaiting approval", fr: "importations en attente d’approbation" },
+  account_ready_to_link: { en: "portal accounts ready to link", fr: "comptes du portail prêts à être liés" },
 };
 const PRIORITY_LABEL = { urgent: { en: "urgent", fr: "urgente" }, high: { en: "high", fr: "élevée" }, normal: { en: "normal", fr: "normale" }, low: { en: "low", fr: "faible" } } as const;
 
