@@ -124,6 +124,23 @@ while [ "$(date +%s)" -lt "$DEADLINE" ]; do
     else
       status schema_s29 SKIPPED "release does not contain the S29 schema step"
     fi
+    # S30: academic calendar tables (additive), after S29. Same guarded pattern; skipped for releases without the script.
+    if [ -f scripts/release/s30/apply-s30.sh ]; then
+      if need_pg; then bash scripts/release/s30/apply-s30.sh --check > "$EVID/schema-s30-check.log" 2>&1 && S30_OK=1 || S30_OK=0
+      else nix-shell -p postgresql_16 --run "bash scripts/release/s30/apply-s30.sh --check" > "$EVID/schema-s30-check.log" 2>&1 && S30_OK=1 || S30_OK=0; fi
+      if [ "$S30_OK" = "1" ]; then
+        status schema_s30 SKIPPED "S30 calendar schema already applied"
+      elif ! grep -q "S30 check: NOT FULLY APPLIED" "$EVID/schema-s30-check.log"; then
+        status schema_s30 FAIL "check did not complete: $(grep -E 'REFUSED|ERROR|FATAL|could not' "$EVID/schema-s30-check.log" | head -3 | tr '\n' ' ' | cut -c1-300)"; DONE_SHA=$SHA; continue
+      else
+        if need_pg; then bash scripts/release/s30/apply-s30.sh --apply --i-understand-this-writes-to-production > "$EVID/schema-s30.log" 2>&1
+        else nix-shell -p postgresql_16 --run "bash scripts/release/s30/apply-s30.sh --apply --i-understand-this-writes-to-production" > "$EVID/schema-s30.log" 2>&1; fi
+        if grep -q "S30 production schema release: DONE" "$EVID/schema-s30.log"; then status schema_s30 PASS "backup + S30 calendar migration + post-verify"
+        else status schema_s30 FAIL "$( { grep -iE 'refused|error|fail|fatal' "$EVID/schema-s30.log" | head -5; tail -3 "$EVID/schema-s30.log"; } | tr '\n' ' ' | cut -c1-500)"; DONE_SHA=$SHA; continue; fi
+      fi
+    else
+      status schema_s30 SKIPPED "release does not contain the S30 calendar schema step"
+    fi
     if npx tsx scripts/s26/provision-demo-student.ts --ref "$REF" --real-code LCA-2026-0001 > "$EVID/provision.json" 2> "$EVID/provision.err" \
        && grep -q '"verdict": "PASS"' "$EVID/provision.json"; then
       status provision PASS

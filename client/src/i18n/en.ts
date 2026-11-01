@@ -19,6 +19,7 @@ import { s27OwnerEn } from "./modules/s27-owner";
 import { s27En } from "./modules/s27";
 import { s29CoreEn } from "./modules/s29-core";
 import { s29OpsEn } from "./modules/s29-ops";
+import { s30CalendarEn } from "./modules/s30-calendar";
 
 export const en = {
   ...authEn,
@@ -34,6 +35,7 @@ export const en = {
   ...s27En,
   ...s29CoreEn,
   ...s29OpsEn,
+  ...s30CalendarEn,
   // Language
   "language.label": "Language",
   "language.en": "English",

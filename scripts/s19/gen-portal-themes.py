@@ -41,41 +41,37 @@ T = {
         text='#ebe6de', text2='#bdb7ae', muted='#99948b', faint='#8a857d', heading='#f1ece4', figure='#ebe6de',
         acc='#c9aa6c', acc2='#e2cb98', acct='#e2cb98', ink='#17130b', brand='#efe9df', brandsub='#b3ada3',
         red='#d98b7f', amber='#d7b56d', green='#9ec4a7'),
-    'midnight': dict(label='Midnight Slate', note='', dark=1,
-        bg='#0b0e14', side='#0e121a', panel='#121722', p2='#161c29', p3='#1c2331',
-        text='#e7eaf0', text2='#c2c8d2', muted='#9ca4b2', faint='#8a92a0', heading='#f2f4f8', figure='#eef1f5',
-        acc='#8b9fbb', acc2='#a3b4cc', acct='#b3c2d8', ink='#0b0e14', brand='#eef1f5', brandsub='#a9b1bf',
-        red='#d49a91', amber='#cdb17c', green='#9dbca7'),
     'monaco': dict(label='Monaco Navy', note='', dark=1,
         bg='#0b1120', side='#0d1425', panel='#111a2e', p2='#151f36', p3='#1b2640',
         text='#f2ede3', text2='#d2ccc0', muted='#aaa599', faint='#989388', heading='#f7f2e8', figure='#f4efe5',
         acc='#c8ae76', acc2='#d9c393', acct='#ddca9e', ink='#0a1020', brand='#f4efe5', brandsub='#b9b2a4',
         red='#d99a90', amber='#d4b57a', green='#a3c2ab'),
-    'forest': dict(label='Forest Ledger', note='', dark=1,
-        bg='#0b100d', side='#0e1411', panel='#111915', p2='#16201a', p3='#1c2821',
-        text='#ece8dc', text2='#cbc7b9', muted='#a1a496', faint='#909487', heading='#f3efe3', figure='#efebdf',
-        acc='#b09a64', acc2='#c4b07e', acct='#cdbd90', ink='#0b100d', brand='#efebdf', brandsub='#aab09f',
-        red='#d49b8e', amber='#cdb178', green='#a4bd9c'),
-    'bordeaux': dict(label='Bordeaux Reserve', note='', dark=1,
-        bg='#120a0c', side='#160d10', panel='#1b1013', p2='#211419', p3='#29191f',
-        text='#f0e8e2', text2='#d1c3bc', muted='#ab9993', faint='#9b8984', heading='#f6eee8', figure='#f3ebe5',
-        acc='#c09a85', acc2='#d2af9c', acct='#d9bcab', ink='#150c0e', brand='#f3ebe5', brandsub='#b8a69f',
-        red='#dca195', amber='#d1b47d', green='#a9bea3'),
-    'graphite': dict(label='Graphite Executive', note='', dark=1,
-        bg='#131416', side='#161719', panel='#1a1b1e', p2='#1f2124', p3='#26282c',
-        text='#f1efeb', text2='#cfcdc8', muted='#a7a6a2', faint='#949390', heading='#f7f5f1', figure='#f3f1ed',
-        acc='#b7bdc5', acc2='#ccd1d7', acct='#d4d9de', ink='#131416', brand='#f3f1ed', brandsub='#afaeaa',
-        red='#d69c93', amber='#cfb47f', green='#a3bfaa'),
     'sandstone': dict(label='Sandstone Light', note='Light', dark=0,
         bg='#f3efe7', side='#ece6da', panel='#faf7f1', p2='#efe9de', p3='#e6dfd1',
         text='#23201b', text2='#45403a', muted='#58514a', faint='#625b52', heading='#1b1915', figure='#1f1c18',
         acc='#8a6d3c', acc2='#765c30', acct='#634c24', ink='#fffcf6', brand='#23201b', brandsub='#5d564d',
         red='#9e4035', amber='#7f5a12', green='#3b6a49'),
-    'teal': dict(label='Teal Reserve', note='', dark=1,
-        bg='#091214', side='#0c1719', panel='#0f1c1e', p2='#142325', p3='#192b2e',
-        text='#edefe9', text2='#c8d0cc', muted='#9daba8', faint='#8a9895', heading='#f3f5f0', figure='#f0f2ed',
-        acc='#86aba7', acc2='#9fbfbb', acct='#b0cfcb', ink='#091214', brand='#f0f2ed', brandsub='#a4b1ae',
-        red='#d69b91', amber='#cfb27b', green='#a1c3a6'),
+    # S29: four premium packs added by the owner; the retired Midnight/Forest/Bordeaux/Graphite/Teal map to the nearest kept pack.
+    'ivory': dict(label='Lumière Ivory', note='New', dark=0, lines='21,27,41',
+        bg='#f6f3ec', side='#101827', panel='#fffdf8', p2='#fbf8f2', p3='#efe9de',
+        text='#151b29', text2='#353c4a', muted='#565c68', faint='#5c6270', heading='#0e1320', figure='#121827',
+        acc='#c3a066', acc2='#d0ae74', acct='#74561d', ink='#1a1407', brand='#151b29', brandsub='#565c68',
+        rail=dict(bg='#101827', bg2='#131c2d', text='#c9cdd6', muted='#9aa2b2', head='#f4efe4', sub='#cdb583',
+                  act='#e6c98f', actbg='rgba(195,160,102,0.15)', line='rgba(255,255,255,0.08)', hover='rgba(255,255,255,0.05)', alert='#e3c78f', alertbg='rgba(195,160,102,0.18)')),
+    'nuit': dict(label='Lumière Nuit', note='New', dark=1,
+        bg='#0b0b0d', side='#070708', panel='#121215', p2='#151518', p3='#1b1b1f',
+        text='#ede7dc', text2='#c2bcb1', muted='#9d978c', faint='#8e887e', heading='#f3ede2', figure='#ede7dc',
+        acc='#d2b57a', acc2='#e3cb98', acct='#e3cb98', ink='#15110a', brand='#f1ebe0', brandsub='#b4ada2'),
+    'monaco-midnight': dict(label='Monaco Midnight', note='New', dark=1,
+        bg='#0a1221', side='#070d19', panel='#111c31', p2='#142038', p3='#1a2742',
+        text='#f2ecdf', text2='#d3cdbf', muted='#a9aebb', faint='#979dab', heading='#f7f1e5', figure='#f4eee2',
+        acc='#d6ba82', acc2='#e4cd9c', acct='#e4cd9c', ink='#0a1221', brand='#f4eee2', brandsub='#b9b3a6'),
+    'pearl': dict(label='Pearl & Brass', note='New', dark=0, lines='29,32,39',
+        bg='#f2f1ef', side='#24272d', panel='#ffffff', p2='#f9f8f6', p3='#eae8e4',
+        text='#1d2027', text2='#3b3f47', muted='#5a5d64', faint='#5e6167', heading='#14161b', figure='#181a20',
+        acc='#b8975c', acc2='#c6a76f', acct='#6b5225', ink='#1a1407', brand='#1d2027', brandsub='#5a5d64',
+        rail=dict(bg='#24272d', bg2='#2a2e35', text='#c6c8cd', muted='#a0a3aa', head='#f3f1ec', sub='#cdb381',
+                  act='#dcc08a', actbg='rgba(184,151,92,0.16)', line='rgba(255,255,255,0.08)', hover='rgba(255,255,255,0.05)', alert='#e3c78f', alertbg='rgba(184,151,92,0.18)')),
 }
 
 
@@ -337,7 +333,7 @@ def bridge(t, k):
         '--sidebar-primary': r['act'], '--sidebar-primary-foreground': r['bg'],
         '--sidebar-accent': over(r['actbg'], r['bg']), '--sidebar-accent-foreground': r['act'], '--sidebar-ring': r['act'],
     }
-    return g, s, sb, EXTRAS[k]
+    return g, s, sb, EXTRAS.get(k, {})
 
 
 def hv(v):
@@ -376,7 +372,7 @@ def block(k, t):
 HEAD = """/*
  * Lumière Portal themes (S19). GENERATED by scripts/s19/gen-portal-themes.py - do not edit by hand.
  * Palette values from the Lumière ClientDesk design system (approved for Portal use by the owner).
- * All nine packs, including the default Lumière Desk, are built from the ClientDesk palette; the generator
+ * All packs, including the default Lumière Desk, are built from the ClientDesk palette; the generator
  * holds the ClientDesk-role -> Portal-token table (ROLE_MAP). tests/s19-themes-parity.test.ts pins the values.
  *
  *  - --t-*            raw roles (canvas, panel tiers, card, rail-*, text, accent, status, lines, focus, ...).

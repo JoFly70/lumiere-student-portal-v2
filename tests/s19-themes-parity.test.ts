@@ -1,5 +1,5 @@
 /**
- * S19: the Portal's nine packs equal the Lumière ClientDesk palette, role for role.
+ * S19: the Portal's packs equal the Lumière ClientDesk palette, role for role.
  * Expected values are hard-coded fixtures taken from ClientDesk's generator (palette approved for Portal use).
  */
 import fs from "node:fs";
@@ -13,13 +13,12 @@ const css = fs.readFileSync("client/src/styles/themes.css", "utf8");
 const CD: Record<string, string[]> = {
   lumiere: ["Lumière Desk", "#f4f3ef", "#ffffff", "#fbfaf8", "#efede7", "#0f1522", "#f4efe4", "#e8cc8e", "#1b1f27", "#10141c", "#535a66", "#c29a4e", "#1a1407", "#74561b", "#7b4430", "#7f5a1f", "#44684f", "#4a4f5c"],
   "lumiere-dark": ["Lumière Dark", "#09090a", "#0f0f11", "#141417", "#1a1a1e", "#0c0c0e", "#efe9df", "#e2cb98", "#ebe6de", "#f1ece4", "#99948b", "#c9aa6c", "#17130b", "#e2cb98", "#c9a48a", "#d7b56d", "#a9c2ac", "#b9bfcc"],
-  midnight: ["Midnight Slate", "#0b0e14", "#121722", "#161c29", "#1c2331", "#0e121a", "#eef1f5", "#b3c2d8", "#e7eaf0", "#f2f4f8", "#9ca4b2", "#8b9fbb", "#0b0e14", "#b3c2d8", "#c9a48a", "#d7b56d", "#a9c2ac", "#b9bfcc"],
   monaco: ["Monaco Navy", "#0b1120", "#111a2e", "#151f36", "#1b2640", "#0d1425", "#f4efe5", "#ddca9e", "#f2ede3", "#f7f2e8", "#aaa599", "#c8ae76", "#0a1020", "#ddca9e", "#c9a48a", "#d7b56d", "#a9c2ac", "#b9bfcc"],
-  forest: ["Forest Ledger", "#0b100d", "#111915", "#16201a", "#1c2821", "#0e1411", "#efebdf", "#cdbd90", "#ece8dc", "#f3efe3", "#a1a496", "#b09a64", "#0b100d", "#cdbd90", "#c9a48a", "#d7b56d", "#a9c2ac", "#b9bfcc"],
-  bordeaux: ["Bordeaux Reserve", "#120a0c", "#1b1013", "#211419", "#29191f", "#160d10", "#f3ebe5", "#d9bcab", "#f0e8e2", "#f6eee8", "#ab9993", "#c09a85", "#150c0e", "#d9bcab", "#c9a48a", "#d7b56d", "#a9c2ac", "#b9bfcc"],
-  graphite: ["Graphite Executive", "#131416", "#1a1b1e", "#1f2124", "#26282c", "#161719", "#f3f1ed", "#d4d9de", "#f1efeb", "#f7f5f1", "#a7a6a2", "#b7bdc5", "#131416", "#d4d9de", "#c9a48a", "#d7b56d", "#a9c2ac", "#b9bfcc"],
   sandstone: ["Sandstone Light", "#f3efe7", "#faf7f1", "#efe9de", "#e6dfd1", "#ece6da", "#23201b", "#634c24", "#23201b", "#1b1915", "#58514a", "#8a6d3c", "#fffcf6", "#634c24", "#7b4430", "#7f5a1f", "#44684f", "#4a4f5c"],
-  teal: ["Teal Reserve", "#091214", "#0f1c1e", "#142325", "#192b2e", "#0c1719", "#f0f2ed", "#b0cfcb", "#edefe9", "#f3f5f0", "#9daba8", "#86aba7", "#091214", "#b0cfcb", "#c9a48a", "#d7b56d", "#a9c2ac", "#b9bfcc"],
+  ivory: ["Lumière Ivory", "#f6f3ec", "#fffdf8", "#fbf8f2", "#efe9de", "#101827", "#f4efe4", "#e6c98f", "#151b29", "#0e1320", "#565c68", "#c3a066", "#1a1407", "#74561d", "#7b4430", "#7f5a1f", "#44684f", "#4a4f5c"],
+  nuit: ["Lumière Nuit", "#0b0b0d", "#121215", "#151518", "#1b1b1f", "#070708", "#f1ebe0", "#e3cb98", "#ede7dc", "#f3ede2", "#9d978c", "#d2b57a", "#15110a", "#e3cb98", "#c9a48a", "#d7b56d", "#a9c2ac", "#b9bfcc"],
+  "monaco-midnight": ["Monaco Midnight", "#0a1221", "#111c31", "#142038", "#1a2742", "#070d19", "#f4eee2", "#e4cd9c", "#f2ecdf", "#f7f1e5", "#a9aebb", "#d6ba82", "#0a1221", "#e4cd9c", "#c9a48a", "#d7b56d", "#a9c2ac", "#b9bfcc"],
+  pearl: ["Pearl & Brass", "#f2f1ef", "#ffffff", "#f9f8f6", "#eae8e4", "#24272d", "#f3f1ec", "#dcc08a", "#1d2027", "#14161b", "#5a5d64", "#b8975c", "#1a1407", "#6b5225", "#7b4430", "#7f5a1f", "#44684f", "#4a4f5c"],
 };
 const ROLES = ["bg", "panel", "panel-2", "panel-3", "rail-bg", "rail-head", "rail-act", "text", "heading", "muted", "accent", "accent-ink", "accent-text", "red", "amber", "green", "blue"];
 
@@ -32,7 +31,7 @@ function block(id: string): Record<string, string> {
 }
 
 describe("S19 ClientDesk palette parity", () => {
-  it("registers exactly the nine packs with ClientDesk labels", () => {
+  it("registers exactly the kept and S29 packs with their labels", () => {
     expect(THEMES.map((t) => t.id)).toEqual(Object.keys(CD));
     expect(THEMES.map((t) => t.label)).toEqual(Object.values(CD).map((v) => v[0]));
   });
@@ -47,7 +46,7 @@ describe("S19 ClientDesk palette parity", () => {
       expect(sw[0]).toBe(f[1]);
       expect(sw[2]).toBe(f[11]);
       expect(sw[3]).toBe(f[8]);
-      expect(sw[1]).toBe(id === "lumiere" ? f[5] : f[3]);
+      expect(sw[1]).toBe(["lumiere", "ivory", "pearl"].includes(id) ? f[5] : f[3]);
     });
     it("declares the full role set (card, lines, rail, focus, status variants)", () => {
       for (const k of ["card", "card-shadow", "line", "line-2", "line-3", "faint", "figure", "accent-2", "accent-dim", "accent-line", "red-dim", "red-line", "amber-dim", "green-dim", "blue-dim",

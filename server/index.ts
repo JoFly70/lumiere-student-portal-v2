@@ -282,6 +282,14 @@ app.use((req, res, next) => {
 
   // Register application routes
   const server = await registerRoutes(app);
+  // S29 x S30 seam (integration): calendar timeline events and reminders go through the S29 outbox and scheduler.
+  // Wired here, not inside registerRoutes, so tests can install their own port before registering routes.
+  {
+    const [{ setCalendarOperationsPort }, { dispatchCalendarReminders }, { wireS30Calendar }] = await Promise.all([
+      import('./services/s30/calendar-port'), import('./services/s30/calendar-reminders'), import('./services/s29/calendar-bridge'),
+    ]);
+    wireS30Calendar({ setCalendarOperationsPort, dispatchCalendarReminders });
+  }
 
   // Sentry error handler (must be after routes, before other error handlers)
   if (isSentryConfigured) {

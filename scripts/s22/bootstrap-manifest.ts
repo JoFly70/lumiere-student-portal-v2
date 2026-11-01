@@ -118,9 +118,14 @@ export const STEPS: ManifestStep[] = [
     note: 'Additive and idempotent. Applied in production by scripts/release/s27/apply-s27.sh.',
   },
   {
-    id: '10e', label: 'S29 forward migration: student intelligence & operations tables (attention, notifications outbox/inbox, jobs, incidents, calendar, imports; RLS on, no client privileges) and s29.* audit event types', kind: 'apply',
+    id: '10e', label: 'S29 forward migration: student intelligence & operations tables (attention, notifications outbox/inbox, jobs, incidents; RLS on, no client privileges) and s29.* audit event types', kind: 'apply',
     files: [`${M}20261106100000_s29_student_intelligence.sql`],
     note: 'Additive and idempotent. Applied in production by scripts/release/s29/apply-s29.sh (release runner step schema_s29).',
+  },
+  {
+    id: '10f', label: 'S30 forward migration: academic calendar tables (calendar_events, calendar_subscriptions; RLS on, no client privileges) and calendar.* audit event types', kind: 'apply',
+    files: [`${M}20261107100000_s30_academic_calendar.sql`],
+    note: 'Additive and idempotent. Applied in production by scripts/release/s30/apply-s30.sh (wired into the runner by the S26 integration lead). Sorts after the S29 migration.',
   },
   {
     id: '11', label: 'verify (read-only)', kind: 'verify',

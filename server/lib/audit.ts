@@ -130,7 +130,11 @@ export type AuditEventType =
   | 's29.diagnostic_run'
   | 's29.incident_updated'
   | 's29.notification_retried'
-  | 's29.access_denied';
+  | 's29.access_denied'
+  // S30 academic calendar (supabase/migrations/20261107100000_s30_academic_calendar.sql).
+  | 'calendar.event_changed'
+  | 'calendar.subscription_changed'
+  | 'calendar.access_denied';
 
 export type AuditSeverity = 'info' | 'warning' | 'error' | 'critical';
 

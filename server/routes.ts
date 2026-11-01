@@ -1443,6 +1443,14 @@ window.ENV = {
     app.use('/api/student/s29', s29.createS29StudentRouter());
     app.use('/api/ops', s29.createS29OpsRouter());
   }
+  // S30 Phase A: Academic Calendar (admin/staff all students, students their own; CSRF on writes; coach none).
+  // Timeline events and reminders go to the S29 operational layer through server/services/s30/calendar-port.ts.
+  const s30Calendar = await import('./routes/s30-calendar');
+  const s30CalendarDeps = await s30Calendar.createDefaultCalendarDeps();
+  app.use('/api/admin', s30Calendar.createStaffCalendarRouter(s30CalendarDeps));
+  app.use('/api/student', s30Calendar.createStudentCalendarRouter(s30CalendarDeps));
+  // Public, token-addressed iCalendar feeds (revocable; only the token hash is stored; owner role re-checked).
+  app.use('/calendar/feed', s30Calendar.createCalendarFeedRouter(s30CalendarDeps));
   // S18 billing ledger: staff/admin entry and review (per-route role checks)
   app.use('/api/admin', (await import('./routes/admin-billing')).default);
   // S13 staff-only student <-> portal account linkage (per-route auth, admin only).
