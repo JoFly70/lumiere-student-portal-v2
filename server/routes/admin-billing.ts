@@ -3,6 +3,7 @@
  * role check on every route; a refused request is audited as billing.access_denied).
  *
  *   GET  /api/admin/students/:studentId/billing
+ *   GET  /api/admin/billing/awaiting-evidence                       (S32-B: students with proof waiting for review)
  *   POST /api/admin/students/:studentId/billing/obligation
  *   POST /api/admin/students/:studentId/billing/discounts
  *   POST /api/admin/students/:studentId/billing/installments      (replaces the schedule)
@@ -38,7 +39,7 @@ import { guardRoles } from "./high-school-http";
 export interface AdminBillingRouterDeps {
   readonly service: Pick<
     BillingService,
-    "getStaffView" | "setObligation" | "addDiscount" | "setInstallments" | "recordReceipt" | "registerEvidence" | "confirmEvidence" | "rejectEvidence" | "voidReceipt" | "voidDiscount" | "updateInstallment"
+    "getStaffView" | "listAwaitingEvidence" | "setObligation" | "addDiscount" | "setInstallments" | "recordReceipt" | "registerEvidence" | "confirmEvidence" | "rejectEvidence" | "voidReceipt" | "voidDiscount" | "updateInstallment"
   >;
   readonly audit?: BillingAuditSink;
   readonly onAccessDenied?: (req: Request) => void;
@@ -64,6 +65,16 @@ export function createAdminBillingRouter(deps: AdminBillingRouterDeps) {
       return res.json(await deps.service.getStaffView(sid.data));
     } catch (error) {
       return sendBillingError(res, toBillingUnavailable(error), "staff view");
+    }
+  }) as RequestHandler);
+
+  // S32-B: the staff billing start list needs to know who has proof waiting. Static path, so it never matches a studentId route.
+  router.get("/billing/awaiting-evidence", ...staffOrAdmin, (async (_req: Request, res: Response) => {
+    res.setHeader("Cache-Control", "no-store");
+    try {
+      return res.json(await deps.service.listAwaitingEvidence());
+    } catch (error) {
+      return sendBillingError(res, toBillingUnavailable(error), "awaiting evidence");
     }
   }) as RequestHandler);
 
@@ -111,7 +122,7 @@ export function createDefaultAdminBillingRouter() {
     <K extends keyof AdminBillingRouterDeps["service"]>(name: K) =>
     async (...args: Parameters<AdminBillingRouterDeps["service"][K]>) =>
       ((await load())[name] as (...a: unknown[]) => unknown)(...args);
-  const names = ["getStaffView", "setObligation", "addDiscount", "setInstallments", "recordReceipt", "registerEvidence", "confirmEvidence", "rejectEvidence", "voidReceipt", "voidDiscount", "updateInstallment"] as const;
+  const names = ["getStaffView", "listAwaitingEvidence", "setObligation", "addDiscount", "setInstallments", "recordReceipt", "registerEvidence", "confirmEvidence", "rejectEvidence", "voidReceipt", "voidDiscount", "updateInstallment"] as const;
   const service = Object.fromEntries(names.map((n) => [n, lazy(n)])) as unknown as AdminBillingRouterDeps["service"];
   return createAdminBillingRouter({ service });
 }

@@ -16,18 +16,14 @@ import { fetchDocumentWithDownloadUrl } from "@/hooks/use-documents";
 import { useToast } from "@/hooks/use-toast";
 import { ErrorLine, ReasonDialog, todayIso } from "@/components/admin/billing/billing-dialogs";
 import { EvidencePanel, ObligationPanel, type PanelProps } from "@/components/admin/billing/billing-panels";
-import { billingHistory, summarizeBilling, type BillingHistoryKind } from "@/components/admin/billing/billing-summary";
+import { summarizeBilling } from "@/components/admin/billing/billing-summary";
+import { BillingHistoryList } from "@/components/admin/billing/history-list";
 import { centsToInput, parseMoneyToCents } from "@/components/admin/billing/money";
 import { formatDay, formatMoneyCompact, installmentStatusMeta, instalmentProgress, localeOf, todayIsoLocal } from "@/lib/owner-presentation";
 import { TonePill, ownerBtn } from "@/components/admin/control/owner-ui";
 import { cn } from "@/lib/utils";
 import { KeyValue, Panel } from "./file-parts";
 import { EditPlanDialog } from "./edit-plan-dialog";
-
-const HISTORY_KEY: Record<BillingHistoryKind, TranslationKey> = {
-  payment: "owner.bill.h.payment", payment_voided: "owner.bill.h.paymentVoided", adjustment: "owner.bill.h.adjustment", adjustment_voided: "owner.bill.h.adjustmentVoided",
-  evidence_submitted: "owner.bill.h.evidence", evidence_confirmed: "owner.bill.h.evidenceOk", evidence_rejected: "owner.bill.h.evidenceNo",
-};
 
 // ── dialogs ─────────────────────────────────────────────────────────────────
 
@@ -175,7 +171,6 @@ export function BillingTab({ studentId, personName, documents }: { studentId: st
   const today = todayIsoLocal();
   const prog = instalmentProgress(s.installments);
   const awaiting = view.evidence.filter((e) => e.status === "awaiting_review");
-  const history = billingHistory(view);
   const err = action.error;
   const nextDue = s.nextDue;
 
@@ -263,16 +258,7 @@ export function BillingTab({ studentId, personName, documents }: { studentId: st
           </Panel>
 
           <Panel id="bill-history" title={t("owner.bill.hist.title")} testId="bill-history">
-            {history.length === 0 ? <p className="text-sm text-student-muted">{t("owner.bill.hist.empty")}</p> : (
-              <ul>
-                {history.slice(0, 12).map((h) => (
-                  <li key={h.id} className="grid grid-cols-[5rem_minmax(0,1fr)] gap-3 border-t border-student-line py-2.5 text-sm first:border-t-0 first:pt-0" data-testid="history-item">
-                    <time className="text-xs text-student-muted" dateTime={h.at}>{formatDay(h.at.slice(0, 10), locale)}</time>
-                    <p className="min-w-0 break-words text-student-ink">{t(HISTORY_KEY[h.kind])}{h.amountCents !== null ? ` · ${money(h.amountCents)}` : ""}<span className="block text-xs text-student-muted">{h.detail}</span></p>
-                  </li>
-                ))}
-              </ul>
-            )}
+            <BillingHistoryList view={view} />
           </Panel>
         </div>
 

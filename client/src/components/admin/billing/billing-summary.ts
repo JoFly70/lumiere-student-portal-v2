@@ -74,6 +74,12 @@ export interface BillingHistoryEntry {
   readonly detail: string;
   /** Minor units, when the entry concerns money. */
   readonly amountCents: number | null;
+  /** S32-B: id of the staff member behind the entry (null when the ledger does not record one). Resolve with StaffBillingView.actorNames. */
+  readonly actorId: string | null;
+  /** S32-B: how `detail` should be rendered. "free" is staff-written text shown as is; the others are localized by the screen. */
+  readonly detailKind: "free" | "payment" | "evidenceSupporting" | "evidenceCounted" | "evidenceNoReason";
+  /** For detailKind "payment": the pieces of the English `detail`. */
+  readonly payment?: { readonly methodLabel: string; readonly reference: string | null; readonly receivedDate: string };
 }
 
 /** One chronological audit list (newest first) of everything staff did on the ledger. Voided entries stay visible. */
@@ -81,29 +87,50 @@ export function billingHistory(view: StaffBillingView): BillingHistoryEntry[] {
   const out: BillingHistoryEntry[] = [];
   const pay = (r: { methodLabel: string; reference: string | null; receivedDate: string }) =>
     `${r.methodLabel}${r.reference ? ` · ref. ${r.reference}` : ""} · received ${r.receivedDate}`;
-  for (const r of view.receipts) out.push({ id: `r-${r.id}`, at: r.confirmedAt, kind: "payment", title: "Payment confirmed", detail: pay(r), amountCents: r.amountCents });
+  const payment = (r: { id: string; methodLabel: string; reference: string | null; receivedDate: string; confirmedAt: string; confirmedBy: string; amountCents: number }): BillingHistoryEntry => ({
+    id: `r-${r.id}`, at: r.confirmedAt, kind: "payment", title: "Payment confirmed", detail: pay(r), amountCents: r.amountCents, actorId: r.confirmedBy || null, detailKind: "payment",
+    payment: { methodLabel: r.methodLabel, reference: r.reference, receivedDate: r.receivedDate },
+  });
+  const adjustment = (d: { id: string; approvedAt: string; approvedBy: string; reason: string; amountCents: number }): BillingHistoryEntry =>
+    ({ id: `d-${d.id}`, at: d.approvedAt, kind: "adjustment", title: "Adjustment approved", detail: d.reason, amountCents: d.amountCents, actorId: d.approvedBy || null, detailKind: "free" });
+  for (const r of view.receipts) out.push(payment(r));
   for (const r of view.voidedReceipts) {
-    out.push({ id: `r-${r.id}`, at: r.confirmedAt, kind: "payment", title: "Payment confirmed", detail: pay(r), amountCents: r.amountCents });
-    out.push({ id: `rv-${r.id}`, at: r.voidedAt, kind: "payment_voided", title: "Payment voided", detail: r.voidReason, amountCents: r.amountCents });
+    out.push(payment(r));
+    out.push({ id: `rv-${r.id}`, at: r.voidedAt, kind: "payment_voided", title: "Payment voided", detail: r.voidReason, amountCents: r.amountCents, actorId: r.voidedBy || null, detailKind: "free" });
   }
-  for (const d of view.discounts) out.push({ id: `d-${d.id}`, at: d.approvedAt, kind: "adjustment", title: "Adjustment approved", detail: d.reason, amountCents: d.amountCents });
+  for (const d of view.discounts) out.push(adjustment(d));
   for (const d of view.voidedDiscounts) {
-    out.push({ id: `d-${d.id}`, at: d.approvedAt, kind: "adjustment", title: "Adjustment approved", detail: d.reason, amountCents: d.amountCents });
-    out.push({ id: `dv-${d.id}`, at: d.voidedAt, kind: "adjustment_voided", title: "Adjustment voided", detail: d.voidReason, amountCents: d.amountCents });
+    out.push(adjustment(d));
+    out.push({ id: `dv-${d.id}`, at: d.voidedAt, kind: "adjustment_voided", title: "Adjustment voided", detail: d.voidReason, amountCents: d.amountCents, actorId: d.voidedBy || null, detailKind: "free" });
   }
   for (const e of view.evidence) {
-    out.push({ id: `e-${e.id}`, at: e.submittedAt, kind: "evidence_submitted", title: "Evidence registered", detail: e.note ?? "Supporting file attached for review", amountCents: null });
-    if (e.status === "confirmed" && e.reviewedAt) out.push({ id: `ec-${e.id}`, at: e.reviewedAt, kind: "evidence_confirmed", title: "Evidence confirmed as a payment", detail: "Counted as paid", amountCents: null });
-    if (e.status === "rejected" && e.reviewedAt) out.push({ id: `ex-${e.id}`, at: e.reviewedAt, kind: "evidence_rejected", title: "Evidence rejected", detail: e.rejectReason ?? "No reason recorded", amountCents: null });
+    out.push({ id: `e-${e.id}`, at: e.submittedAt, kind: "evidence_submitted", title: "Evidence registered", detail: e.note ?? "Supporting file attached for review", amountCents: null, actorId: null, detailKind: e.note ? "free" : "evidenceSupporting" });
+    if (e.status === "confirmed" && e.reviewedAt) out.push({ id: `ec-${e.id}`, at: e.reviewedAt, kind: "evidence_confirmed", title: "Evidence confirmed as a payment", detail: "Counted as paid", amountCents: null, actorId: e.reviewedBy, detailKind: "evidenceCounted" });
+    if (e.status === "rejected" && e.reviewedAt) out.push({ id: `ex-${e.id}`, at: e.reviewedAt, kind: "evidence_rejected", title: "Evidence rejected", detail: e.rejectReason ?? "No reason recorded", amountCents: null, actorId: e.reviewedBy, detailKind: e.rejectReason ? "free" : "evidenceNoReason" });
   }
   return out.sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : a.id < b.id ? 1 : -1));
 }
 
-/** Field-level checks for the agreed-price form. Returns a message, or null when valid. `cents` is the parsed amount (null when unparseable). */
-export function obligationFormProblem(f: { amountText: string; currency: string; cents: number | null; discountCents: number }): string | null {
-  if (!/^[A-Za-z]{3}$/.test(f.currency.trim())) return "Currency must be a 3-letter code such as USD or EUR.";
-  if (f.amountText.trim() === "") return "Enter the agreed program price.";
-  if (f.cents === null) return "Enter a positive amount, for example 12000.00.";
-  if (f.cents < f.discountCents) return "The agreed price cannot be lower than the discounts already approved.";
+export type ObligationProblemKind = "currency" | "amountEmpty" | "amountInvalid" | "belowDiscounts";
+
+/** Field-level check for the agreed-price form, as a code the screen can localize. Null when valid. */
+export function obligationFormProblemKind(f: { amountText: string; currency: string; cents: number | null; discountCents: number }): ObligationProblemKind | null {
+  if (!/^[A-Za-z]{3}$/.test(f.currency.trim())) return "currency";
+  if (f.amountText.trim() === "") return "amountEmpty";
+  if (f.cents === null) return "amountInvalid";
+  if (f.cents < f.discountCents) return "belowDiscounts";
   return null;
+}
+
+const OBLIGATION_PROBLEM_TEXT: Record<ObligationProblemKind, string> = {
+  currency: "Currency must be a 3-letter code such as USD or EUR.",
+  amountEmpty: "Enter the agreed program price.",
+  amountInvalid: "Enter a positive amount, for example 12000.00.",
+  belowDiscounts: "The agreed price cannot be lower than the discounts already approved.",
+};
+
+/** Field-level checks for the agreed-price form (English text). Returns a message, or null when valid. `cents` is the parsed amount (null when unparseable). */
+export function obligationFormProblem(f: { amountText: string; currency: string; cents: number | null; discountCents: number }): string | null {
+  const kind = obligationFormProblemKind(f);
+  return kind ? OBLIGATION_PROBLEM_TEXT[kind] : null;
 }

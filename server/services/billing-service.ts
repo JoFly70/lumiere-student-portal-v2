@@ -80,6 +80,10 @@ export interface BillingRepository<Tx = unknown> {
   reopenEvidenceForReceipt(tx: Tx, studentId: string, receiptId: string): Promise<string | null>;
   voidDiscount(tx: Tx, studentId: string, discountId: string, actorId: string, reason: string, at: Date): Promise<"voided" | "not_found" | "already_voided">;
   updateInstallment(tx: Tx, studentId: string, installmentId: string, patch: UpdateInstallmentInput): Promise<boolean>;
+  /** S32-B: students that have at least one proof of payment awaiting review, with the count. */
+  listAwaitingEvidence?(tx: Tx): Promise<Array<{ studentId: string; count: number }>>;
+  /** S32-B: display names for staff user ids (best effort; unknown ids are simply absent). */
+  loadActorNames?(tx: Tx, userIds: readonly string[]): Promise<Record<string, string>>;
   insertEvidence(tx: Tx, studentId: string, actorId: string, input: RegisterEvidenceInput, at: Date): Promise<BillingEvidenceRow>;
   findEvidence(tx: Tx, studentId: string, evidenceId: string): Promise<BillingEvidenceRow | null>;
   reviewEvidence(
@@ -109,8 +113,19 @@ export function createBillingService<Tx>(deps: BillingServiceDeps<Tx>) {
     if (!ledger.obligation) throw new BillingError(E.NOT_CONFIGURED, 409, "Set the agreed program price before recording anything else");
     return ledger;
   }
-  const staffView = async (tx: Tx, studentId: string): Promise<StaffBillingView> =>
-    computeStaffBilling(await repo.loadLedger(tx, studentId), todayOf(deps.now()));
+  const staffView = async (tx: Tx, studentId: string): Promise<StaffBillingView> => {
+    const view = computeStaffBilling(await repo.loadLedger(tx, studentId), todayOf(deps.now()));
+    if (!repo.loadActorNames) return view;
+    const ids = new Set<string>();
+    for (const r of view.receipts) ids.add(r.confirmedBy);
+    for (const r of view.voidedReceipts) { ids.add(r.confirmedBy); ids.add(r.voidedBy); }
+    for (const d of view.discounts) ids.add(d.approvedBy);
+    for (const d of view.voidedDiscounts) { ids.add(d.approvedBy); ids.add(d.voidedBy); }
+    for (const e of view.evidence) if (e.reviewedBy) ids.add(e.reviewedBy);
+    if (ids.size === 0) return view;
+    const actorNames = await repo.loadActorNames(tx, [...ids]);
+    return { ...view, actorNames };
+  };
 
   /** Run a mutation in one transaction, then return the refreshed staff view. */
   async function mutate(
@@ -128,6 +143,11 @@ export function createBillingService<Tx>(deps: BillingServiceDeps<Tx>) {
     /** The ONLY student read. Derived from the ledger; carries no staff fields. */
     async getStudentView(studentId: string): Promise<StudentBillingView> {
       return computeStudentBilling(await repo.loadLedger(deps.readTx, studentId), todayOf(deps.now()));
+    },
+
+    /** Staff start list: who has proof of payment waiting for review (identifiers and counts only). */
+    async listAwaitingEvidence(): Promise<{ students: Array<{ studentId: string; count: number }> }> {
+      return { students: repo.listAwaitingEvidence ? await repo.listAwaitingEvidence(deps.readTx) : [] };
     },
 
     async getStaffView(studentId: string): Promise<StaffBillingView> {

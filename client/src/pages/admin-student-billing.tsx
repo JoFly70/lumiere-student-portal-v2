@@ -10,9 +10,11 @@ import { ArrowLeft } from "lucide-react";
 import { StaffPage, StaffPageHeader } from "@/components/staff/staff-ui";
 import { useAuth } from "@/lib/auth";
 import { useDocuments } from "@/hooks/use-documents";
+import { useT } from "@/i18n";
 import { BillingTab } from "@/components/admin/file/billing-tab";
 
 export default function AdminStudentBilling() {
+  const { t } = useT();
   const { studentId = "" } = useParams<{ studentId: string }>();
   const documents = useDocuments(studentId || null);
   const student = useQuery<{ first_name?: string | null; last_name?: string | null; preferred_name?: string | null; student_code?: string | null }>({
@@ -26,14 +28,14 @@ export default function AdminStudentBilling() {
   const who = student.data ? [first, student.data.last_name].filter(Boolean).join(" ") : "";
   const back = (
     <Link href={isAdmin ? `/admin/students/${encodeURIComponent(studentId)}` : "/staff/billing"} className="inline-flex min-h-10 items-center gap-1.5 text-sm font-medium text-student-gold-ink underline-offset-4 hover:underline" data-testid="link-back-workspace">
-      <ArrowLeft className="h-4 w-4" aria-hidden="true" />{isAdmin ? "Student file" : "Student billing"}
+      <ArrowLeft className="h-4 w-4" aria-hidden="true" />{isAdmin ? t("s32.billing.page.backFile") : t("s32.billing.page.backLookup")}
     </Link>
   );
   return (
     <StaffPage testId="admin-student-billing" width="wide">
-      <StaffPageHeader back={back} eyebrow="Billing" title={who ? `Billing · ${who}` : "Student billing"}
-        description="The agreed price, adjustments, payment plan and confirmed payments. Only payments you confirm count as paid." testId="billing-header" />
-      <BillingTab studentId={studentId} personName={first || who || "the student"} documents={documents.data ?? []} />
+      <StaffPageHeader back={back} eyebrow={t("s32.billing.page.eyebrow")} title={who ? t("s32.billing.page.titleWho", { name: who }) : t("s32.billing.page.title")}
+        description={t("s32.billing.page.desc")} testId="billing-header" />
+      <BillingTab studentId={studentId} personName={first || who || t("s32.billing.page.theStudent")} documents={documents.data ?? []} />
     </StaffPage>
   );
 }
