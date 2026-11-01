@@ -26,6 +26,8 @@ import { s32StaffSupportEn } from "./modules/s32-staff-support";
 import { s32StaffBillingEn } from "./modules/s32-staff-billing";
 import { s32StaffAdminEn } from "./modules/s32-staff-admin";
 import { s32StaffOpsEn } from "./modules/s32-staff-ops";
+import { s32StaffWsEn } from "./modules/s32-staff-ws";
+import { s32StaffDirEn } from "./modules/s32-staff-dir";
 
 export const en = {
   ...authEn,
@@ -48,6 +50,8 @@ export const en = {
   ...s32StaffBillingEn,
   ...s32StaffAdminEn,
   ...s32StaffOpsEn,
+  ...s32StaffWsEn,
+  ...s32StaffDirEn,
   // Language
   "language.label": "Language",
   "language.en": "English",

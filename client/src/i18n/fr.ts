@@ -19,6 +19,8 @@ import { s32StaffSupportFr } from "./modules/s32-staff-support";
 import { s32StaffBillingFr } from "./modules/s32-staff-billing";
 import { s32StaffAdminFr } from "./modules/s32-staff-admin";
 import { s32StaffOpsFr } from "./modules/s32-staff-ops";
+import { s32StaffWsFr } from "./modules/s32-staff-ws";
+import { s32StaffDirFr } from "./modules/s32-staff-dir";
 
 /**
  * Dictionnaire français (vouvoiement). Typé contre `en.ts` : toute clé anglaise doit exister ici.
@@ -46,6 +48,8 @@ export const fr: Record<TranslationKey, string> = {
   ...s32StaffBillingFr,
   ...s32StaffAdminFr,
   ...s32StaffOpsFr,
+  ...s32StaffWsFr,
+  ...s32StaffDirFr,
   "language.label": "Langue",
   "language.en": "English",
   "language.fr": "Français",
