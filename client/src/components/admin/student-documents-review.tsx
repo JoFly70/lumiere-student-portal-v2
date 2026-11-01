@@ -3,6 +3,7 @@
  * Reject and resubmit open DocumentReviewDialog, which keeps the student-facing reason and the
  * internal staff note in two separate fields (student_message / admin_notes).
  */
+import { useToast } from "@/hooks/use-toast";
 import { useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, ExternalLink, FileText, RotateCcw, Upload, XCircle } from "lucide-react";
@@ -144,6 +145,8 @@ export function StaffDocumentUpload({ studentId }: { studentId: string }) {
 export function StudentDocumentsReview({ studentId, documents }: { studentId: string; documents: readonly StudentDocument[] }) {
   const qc = useQueryClient();
   const { t } = useT();
+  // S32-B (SA-30): Verify stays one click (recovery: reject or request a new copy afterwards) and now confirms it worked.
+  const { toast } = useToast();
   const [dialog, setDialog] = useState<{ doc: StudentDocument; action: DocumentReviewAction } | null>(null);
   const [viewError, setViewError] = useState<string | null>(null);
   const review = useMutation<unknown, Error, ReviewCall>({
@@ -190,7 +193,7 @@ export function StudentDocumentsReview({ studentId, documents }: { studentId: st
                   {d.admin_notes && <div className="rounded-lg border border-dashed border-student-line-strong px-3 py-2 text-sm leading-relaxed text-student-muted"><p className="text-[11px] font-semibold uppercase tracking-[0.1em]">{t("s32ws.doc.internalNote")}</p><p>{d.admin_notes}</p></div>}
                   <div className="mt-auto flex flex-wrap items-center gap-1.5 border-t border-student-line pt-3">
                     {d.status !== "verified" && (
-                      <Button type="button" className={cn(staffBtn.seal, small)} disabled={review.isPending} onClick={() => review.mutate({ id: d.id, action: "verify", body: {} })} data-testid={`button-verify-${d.id}`}><CheckCircle2 className="h-4 w-4" />{t("s32ws.doc.verify")}</Button>
+                      <Button type="button" className={cn(staffBtn.seal, small)} disabled={review.isPending} onClick={() => review.mutate({ id: d.id, action: "verify", body: {} }, { onSuccess: () => toast({ title: t("s32.doc.verified.toast"), description: t("s32.doc.verified.undo") }) })} data-testid={`button-verify-${d.id}`}><CheckCircle2 className="h-4 w-4" />{t("s32ws.doc.verify")}</Button>
                     )}
                     <Button type="button" className={cn(staffBtn.outline, small)} variant="outline" onClick={() => view(d.id)}><ExternalLink className="h-4 w-4" />{t("s32ws.doc.viewFile")}</Button>
                     {d.status !== "resubmit_requested" && (

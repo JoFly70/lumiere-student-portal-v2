@@ -122,6 +122,8 @@ export const s32StaffShellEn = {
   "s32.ws.backToFile": "Student file",
   "s32.ws.backToStudents": "All students",
   "s32.ws.refreshFailed": "Student activated, but this page could not refresh. Reload it to see the new status.",
+  "s32.doc.verified.toast": "Document verified",
+  "s32.doc.verified.undo": "If this was a mistake, reject it or request a new copy; the student sees your reason.",
 } as const satisfies Record<string, string>;
 
 export const s32StaffShellFr: Record<keyof typeof s32StaffShellEn, string> = {
@@ -240,4 +242,6 @@ export const s32StaffShellFr: Record<keyof typeof s32StaffShellEn, string> = {
   "s32.ws.backToFile": "Dossier étudiant",
   "s32.ws.backToStudents": "Tous les étudiants",
   "s32.ws.refreshFailed": "Étudiant activé, mais cette page n’a pas pu s’actualiser. Rechargez-la pour voir le nouveau statut.",
+  "s32.doc.verified.toast": "Document vérifié",
+  "s32.doc.verified.undo": "En cas d’erreur, rejetez-le ou demandez une nouvelle copie ; l’étudiant verra votre motif.",
 };
