@@ -38,7 +38,10 @@ export interface SyncResult { readonly opened: number; readonly reopened: number
 export async function syncAttention(db: Tx, candidates: readonly AttentionCandidate[], now: Date): Promise<SyncResult> {
   const nowIso = now.toISOString();
   return db.transaction(async (tx) => {
-    const existing = new Map(rows(await tx.execute(sql`SELECT key, status, fingerprint, snoozed_until, resolved_by FROM s29_attention_items WHERE status = 'open' OR updated_at >= now() - interval '90 days'`))
+    // One sync at a time across instances; a concurrent caller skips instead of deadlocking.
+    const locked = rows(await tx.execute(sql`SELECT pg_try_advisory_xact_lock(hashtext('s29_attention_sync')) AS ok`))[0]?.ok === true;
+    if (!locked) return { opened: 0, reopened: 0, cleared: 0, seen: 0 };
+    const existing = new Map(rows(await tx.execute(sql`SELECT key, status, fingerprint, snoozed_until, resolved_by FROM s29_attention_items WHERE status <> 'resolved' OR updated_at >= now() - interval '90 days' ORDER BY key`))
       .map((r) => [String(r.key), r] as const));
     let opened = 0;
     let reopened = 0;
@@ -95,14 +98,19 @@ async function studentNames(db: SqlExecutor, ids: readonly string[]): Promise<Ma
     .map((r) => [String(r.id), { name: `${r.first_name ?? ""} ${r.last_name ?? ""}`.trim(), code: str(r.student_code) }] as const));
 }
 
-export async function readAttentionQueue(db: SqlExecutor, now: Date, lastSyncAt: string | null, truncated = false): Promise<AttentionQueueView> {
-  const [open, closed] = await Promise.all([
-    db.execute(sql`SELECT * FROM s29_attention_items WHERE status = 'open' OR (status = 'dismissed') ORDER BY CASE priority WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 WHEN 'normal' THEN 2 ELSE 3 END, arisen_at NULLS LAST, key LIMIT 500`),
+export async function readAttentionQueue(db: SqlExecutor, now: Date, lastSyncAt: string | null, truncatedIn = false): Promise<AttentionQueueView> {
+  let truncated = truncatedIn;
+  const [openOnly, dismissedOnly, closed] = await Promise.all([
+    db.execute(sql`SELECT * FROM s29_attention_items WHERE status = 'open' ORDER BY CASE priority WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 WHEN 'normal' THEN 2 ELSE 3 END, arisen_at NULLS LAST, key LIMIT 501`),
+    db.execute(sql`SELECT * FROM s29_attention_items WHERE status = 'dismissed' ORDER BY updated_at DESC LIMIT 100`),
     db.execute(sql`SELECT * FROM s29_attention_items WHERE status = 'resolved' AND resolved_at >= ${new Date(now.getTime() - 14 * 86_400_000).toISOString()}::timestamptz ORDER BY resolved_at DESC LIMIT 40`),
   ]);
-  const all = [...rows(open), ...rows(closed)];
+  const openRows = rows(openOnly);
+  if (openRows.length > 500) { truncated = true; openRows.length = 500; }
+  const open = [...openRows, ...rows(dismissedOnly)];
+  const all = [...open, ...rows(closed)];
   const names = await studentNames(db, [...new Set(all.map((r) => str(r.student_id)).filter((x): x is string => !!x))]);
-  const items = rows(open).map((r) => toView(r, names));
+  const items = open.map((r) => toView(r, names));
   const recentlyClosed = rows(closed).map((r) => toView(r, names));
   // Dismissed items appear in the list (labelled) so they can be reopened; the counts only include open real items.
   const real = items.filter((i) => !i.isDemo && i.status === "open");

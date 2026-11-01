@@ -6,10 +6,16 @@
  */
 import { errorCode } from "./db";
 
-const FEED = /^\/api\/calendar\/feed\/[^/]+$/;
+const FEED = /^\/api\/calendar\/feed\//i;
+/** Any path under the calendar feed carries a subscription token: it is never logged or reported. */
 export function safeLogPath(path: string): string {
   return FEED.test(path) ? "/api/calendar/feed/[token].ics" : path;
 }
+/** Same redaction for a full URL (Sentry request.url / transaction names). */
+export function safeLogUrl(url: string): string {
+  return url.replace(/\/api\/calendar\/feed\/[^?#\s"']*/gi, "/api/calendar/feed/[token].ics");
+}
+const lastIncidentAt = new Map<string, number>();
 
 export function subsystemOfPath(path: string): string {
   const p = safeLogPath(path).split("?")[0] ?? "";
@@ -25,6 +31,12 @@ export function onResponseFinished(path: string, statusCode: number, requestId: 
   if (!path.startsWith("/api")) return;
   void import("./scheduler").then(({ kickFromRequest }) => kickFromRequest()).catch(() => undefined);
   if (statusCode < 500 || !process.env.DATABASE_URL) return;
+  // Throttle BEFORE any database access: during an outage, at most one write attempt per subsystem per 30 s.
+  const fp = `${subsystemOfPath(path)}:${statusCode === 503 ? "503" : "5xx"}`;
+  const nowMs = Date.now();
+  if (nowMs - (lastIncidentAt.get(fp) ?? 0) < 30_000) return;
+  lastIncidentAt.set(fp, nowMs);
+  if (lastIncidentAt.size > 200) lastIncidentAt.clear();
   void (async () => {
     try {
       const [{ db }, { recordIncident }, { s29Schema }] = await Promise.all([import("../../lib/db"), import("./incidents"), import("./db")]);

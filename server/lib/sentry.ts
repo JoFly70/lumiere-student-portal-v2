@@ -60,6 +60,10 @@ if (SentrySDK && dsn) {
     beforeSend(event: Record<string, any>) {
       return scrubSentryEvent(event);
     },
+    // S29: sampled transactions carry the request URL / name too (calendar feed tokens live in the path).
+    beforeSendTransaction(event: Record<string, any>) {
+      return scrubSentryEvent(event);
+    },
   });
 
   logger.info('✓ Sentry error tracking initialized', {

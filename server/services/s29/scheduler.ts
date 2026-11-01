@@ -26,7 +26,7 @@ import { autoResolveQuiet, incidentsToAlert, markAlerted, recordIncident } from 
 export interface JobDef { readonly name: string; readonly intervalSeconds: number; readonly run: (db: Tx, now: Date) => Promise<Record<string, unknown>> }
 
 const OWNER = `${process.pid}-${randomUUID().slice(0, 8)}`;
-const LEASE_SECONDS = 240;
+const LEASE_SECONDS = 900;
 
 export function defaultJobs(deliver?: Deliver): JobDef[] {
   return [
@@ -90,7 +90,7 @@ export async function tick(db: Tx, now: Date = new Date(), jobs: JobDef[] = defa
     if (!schema.present) { lastTickOutcome = "schema_missing"; return { skipped: "schema_missing", missing: schema.missing }; }
     for (const job of jobs) {
       await db.execute(sql`INSERT INTO s29_jobs (name, interval_seconds) VALUES (${job.name}, ${job.intervalSeconds}) ON CONFLICT (name) DO UPDATE SET interval_seconds = EXCLUDED.interval_seconds WHERE s29_jobs.interval_seconds <> EXCLUDED.interval_seconds`);
-      const leased = rows(await db.execute(sql`UPDATE s29_jobs SET lease_owner = ${OWNER}, lease_until = ${new Date(now.getTime() + LEASE_SECONDS * 1000).toISOString()}::timestamptz, last_started_at = ${now.toISOString()}::timestamptz, runs = runs + 1, updated_at = now()
+      const leased = rows(await db.execute(sql`UPDATE s29_jobs SET lease_owner = ${OWNER}, lease_until = ${new Date(Math.max(Date.now(), now.getTime()) + LEASE_SECONDS * 1000).toISOString()}::timestamptz, last_started_at = ${now.toISOString()}::timestamptz, runs = runs + 1, updated_at = now()
           WHERE name = ${job.name} AND (lease_until IS NULL OR lease_until < ${now.toISOString()}::timestamptz)
             AND (last_started_at IS NULL OR last_started_at <= ${now.toISOString()}::timestamptz - (interval_seconds * interval '1 second') + interval '5 seconds')
           RETURNING name`));

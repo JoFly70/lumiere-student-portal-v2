@@ -167,7 +167,7 @@ export async function collectSubsystems(db: Tx, now: Date): Promise<SubsystemVie
       if (!s29) return { state: "not_configured", evidence: ["S29 schema not applied"] };
       const st = schedulerState();
       const worst: HealthState = jobs.some((j) => j.state === "failed") ? "failed" : jobs.some((j) => j.state === "degraded") ? "degraded" : jobs.every((j) => j.state === "unknown") ? "unknown" : "live";
-      return { state: worst, evidence: [...jobs.map((j) => `${j.name}: last success ${j.lastSuccessAt ?? "never"}`), `this instance last tick ${st.lastTickAt ?? "never"} (${st.lastTickOutcome})`, process.env.S29_CRON_SECRET ? "external tick endpoint enabled" : "external tick endpoint disabled (S29_CRON_SECRET not set)"] };
+      return { state: worst, evidence: [...jobs.map((j) => `${j.name}: last success ${j.lastSuccessAt ?? "never"}`), `this instance last tick ${st.lastTickAt ?? "never"} (${st.lastTickOutcome})`, (process.env.S29_CRON_SECRET ?? "").length >= 24 ? "external tick endpoint enabled" : process.env.S29_CRON_SECRET ? "external tick endpoint disabled (S29_CRON_SECRET shorter than 24 characters)" : "external tick endpoint disabled (S29_CRON_SECRET not set)"] };
     }),
     probe("ai", async () => {
       const cfg = loadAssistantConfig();
@@ -310,7 +310,8 @@ export async function runCheck(db: Tx, key: DiagnosticCheckKey, actor: { id: str
       }
       const st = schedulerState();
       steps.push({ label: "This instance", ok: st.lastTickAt ? true : null, detail: `last tick ${st.lastTickAt ?? "never"} (${st.lastTickOutcome})` });
-      steps.push({ label: "External tick endpoint", ok: process.env.S29_CRON_SECRET ? true : null, detail: process.env.S29_CRON_SECRET ? "enabled" : "S29_CRON_SECRET not set: jobs run only when the site receives traffic" });
+      const cronOk = (process.env.S29_CRON_SECRET ?? "").length >= 24;
+      steps.push({ label: "External tick endpoint", ok: cronOk ? true : null, detail: cronOk ? "enabled" : process.env.S29_CRON_SECRET ? "S29_CRON_SECRET is shorter than 24 characters: endpoint disabled" : "S29_CRON_SECRET not set: jobs run only when the site receives traffic" });
       conclusion = steps.some((x) => x.ok === false) ? "The scheduler is not processing every job on time." : steps.every((x) => x.ok) ? "The scheduler is processing jobs." : "The scheduler runs, but part of it is unverified (see steps).";
       nextAction = steps.some((x) => x.ok === false) ? "Run the scheduler now and look at the job's last error; check the external pinger." : null;
       break;

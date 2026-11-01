@@ -109,13 +109,13 @@ export function createS29AdminRouter(deps: S29RouterDeps = {}): Router {
       }
       const { readJobs } = await import("../services/s29/scheduler");
       const job = (await readJobs(db, at)).find((j) => j.name === "rules.sync");
-      // First use (or stale store): compute and persist synchronously so the queue is never empty by accident.
+      // First use or stale store: run the rules job through the scheduler's DB lease, so concurrent page loads and
+      // instances never sync in parallel and a failing job is not retried more than once per interval.
       if (!job?.lastSuccessAt || at.getTime() - Date.parse(job.lastSuccessAt) > 30 * 60_000) {
-        const { computeAttention } = await import("../services/s29/rules");
-        const { syncAttention } = await import("../services/s29/attention-store");
-        const out = await computeAttention(db, at, await loadSettings(db), true);
-        await syncAttention(db, out.items, at);
-        return res.json(await readAttentionQueue(db, at, at.toISOString(), out.truncated));
+        const { tick, defaultJobs } = await import("../services/s29/scheduler");
+        await tick(db, at, defaultJobs().filter((j) => j.name === "rules.sync"));
+        const fresh = (await readJobs(db, at)).find((j) => j.name === "rules.sync");
+        return res.json(await readAttentionQueue(db, at, fresh?.lastSuccessAt ?? null));
       }
       return res.json(await readAttentionQueue(db, at, job.lastSuccessAt));
     } catch (error) {
@@ -297,10 +297,12 @@ export function createS29AdminRouter(deps: S29RouterDeps = {}): Router {
       return sendS29Error(res, error, "incident update");
     }
   }) as RequestHandler);
-  router.post("/diagnostics/scheduler/run", ...admin, csrf, (async (_req: Request, res: Response) => {
+  router.post("/diagnostics/scheduler/run", ...admin, csrf, (async (req: Request, res: Response) => {
     try {
       const { tick } = await import("../services/s29/scheduler");
-      return res.json({ result: await tick(await getDb(), now()) });
+      const result = await tick(await getDb(), now());
+      emitS29Audit(req, "s29.diagnostic_run", "Scheduler run on demand", { check: "scheduler_run", ran: Object.keys(result) });
+      return res.json({ result });
     } catch (error) {
       return sendS29Error(res, error, "scheduler run");
     }
@@ -369,8 +371,10 @@ export function createS29StudentRouter(deps: S29RouterDeps & { getStudentByUserI
 }
 
 /** Constant-time comparison of the cron secret; false when unset or lengths differ. */
+/** A secret shorter than 24 characters is treated as not configured (endpoint disabled), never as active. */
+export const cronSecretConfigured = (s: string | undefined): s is string => typeof s === "string" && s.length >= 24;
 export function cronSecretMatches(provided: unknown, expected: string | undefined): boolean {
-  if (!expected || expected.length < 24 || typeof provided !== "string") return false;
+  if (!cronSecretConfigured(expected) || typeof provided !== "string") return false;
   const a = Buffer.from(provided);
   const b = Buffer.from(expected);
   return a.length === b.length && timingSafeEqual(a, b);
@@ -382,7 +386,7 @@ export function createS29OpsRouter(deps: S29RouterDeps & { secret?: () => string
   const secret = deps.secret ?? (() => process.env.S29_CRON_SECRET);
   router.post("/scheduler/tick", (async (req: Request, res: Response) => {
     res.setHeader("Cache-Control", "no-store");
-    if (!secret()) return res.status(404).json({ error: "Not found", code: "NOT_FOUND" });
+    if (!cronSecretConfigured(secret())) return res.status(404).json({ error: "Not found", code: "NOT_FOUND" });
     if (!cronSecretMatches(req.get("x-s29-cron-secret"), secret())) return res.status(401).json({ error: { code: "UNAUTHORIZED", message: "Invalid scheduler credential" } });
     try {
       const { tick } = await import("../services/s29/scheduler");

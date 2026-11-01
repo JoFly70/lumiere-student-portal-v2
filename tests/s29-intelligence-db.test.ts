@@ -168,6 +168,36 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("S29 intelligence & operations on real P
     expect((await readInbox(db, real.userId)).unread).toBe(inbox.items.length - 1);
   });
 
+  it("review fixes: a re-claimed row cannot be finalised by the stale sender; stuck final attempts become failed", async () => {
+    const { enqueue, deliverDue, loadStudentRecipient, MAX_ATTEMPTS } = await import("../server/services/s29/outbox");
+    const rec = (await loadStudentRecipient(db, real.studentId))!;
+    const n = await enqueue(db, { dedupeKey: "test:lease", audience: "student", template: "support.status", source: "event", params: { ticket: "LUM-00002", status: "open" }, student: rec, now: NOW });
+    let inner: Promise<unknown> | null = null;
+    // While the first sender is "slow", force its lease to look expired and let a second sender claim the row.
+    await deliverDue(db, NOW, async () => {
+      await pg.sql(`update s29_notifications set lease_until = now() - interval '1 minute' where id='${n.id}'`);
+      inner = deliverDue(db, NOW, async () => "sent");
+      await inner;
+      return "failed"; // the stale sender's late outcome must be ignored
+    });
+    const [row] = await pg.sql(`select email_state, attempts from s29_notifications where id='${n.id}'`);
+    expect(row).toMatchObject({ email_state: "accepted", attempts: 2 });
+    await pg.sql(`update s29_notifications set email_state='attempted', attempts=${MAX_ATTEMPTS}, lease_until=now() - interval '1 minute', next_attempt_at=now() where id='${n.id}'`);
+    await deliverDue(db, new Date(Date.now() + 1000), async () => "sent");
+    expect((await pg.sql(`select email_state from s29_notifications where id='${n.id}'`))[0]!.email_state).toBe("failed");
+  });
+
+  it("review fixes: calendar feed tokens are redacted from log paths, URLs and Sentry transactions", async () => {
+    const { safeLogPath } = await import("../server/services/s29/runtime");
+    const { scrubSentryEvent, safeRequestContext } = await import("../server/lib/log-redaction");
+    const tok = "A".repeat(43);
+    expect(safeLogPath(`/api/calendar/feed/${tok}.ics`)).not.toContain(tok);
+    expect(safeLogPath(`/api/calendar/feed/${tok}.ics/`)).not.toContain(tok);
+    expect(safeRequestContext({ path: `/api/calendar/feed/${tok}.ics`, method: "GET" }).path).not.toContain(tok);
+    const ev = scrubSentryEvent({ request: { url: `https://x.test/api/calendar/feed/${tok}.ics?a=1` }, transaction: `GET /api/calendar/feed/${tok}.ics` })!;
+    expect(JSON.stringify(ev)).not.toContain(tok);
+  });
+
   it("quiet hours defer a reminder email to the end of the window in the student's zone", async () => {
     const { afterQuietHours } = await import("../server/services/s29/outbox");
     const at = new Date("2026-11-11T21:30:00Z"); // 22:30 in Paris (UTC+1)
@@ -255,6 +285,8 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("S29 intelligence & operations on real P
     expect((await request(app).get("/api/student/s29/notifications/preferences").set(authHeader(real.token))).body).toMatchObject({ timeZone: "America/Toronto", email: { billing: false } });
 
     expect((await request(app).post("/api/ops/scheduler/tick")).status).toBe(401);
+    const { cronSecretConfigured } = await import("../server/routes/s29");
+    expect(cronSecretConfigured("short")).toBe(false);
     expect((await request(app).post("/api/ops/scheduler/tick").set("x-s29-cron-secret", "wrong")).status).toBe(401);
     const ok = await request(app).post("/api/ops/scheduler/tick").set("x-s29-cron-secret", SECRET);
     expect(ok.status).toBe(200);

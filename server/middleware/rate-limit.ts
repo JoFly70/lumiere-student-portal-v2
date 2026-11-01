@@ -6,6 +6,7 @@
 import rateLimit from 'express-rate-limit';
 import { logger } from '../lib/logger';
 import { createRateLimitStore } from '../lib/rate-limit-store';
+import { redactFeedPath } from '../lib/log-redaction';
 
 /**
  * Aggressive rate limiting for authentication endpoints
@@ -22,7 +23,7 @@ export const authRateLimit = rateLimit({
   handler: (req, res) => {
     logger.warn('Auth rate limit exceeded', {
       ip: req.ip,
-      path: req.path,
+      path: redactFeedPath(req.path),
       method: req.method,
     });
     res.status(429).json({
@@ -95,7 +96,7 @@ export const apiRateLimit = rateLimit({
   handler: (req, res) => {
     logger.warn('API rate limit exceeded', {
       ip: req.ip,
-      path: req.path,
+      path: redactFeedPath(req.path),
       method: req.method,
     });
     res.status(429).json({

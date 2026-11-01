@@ -22,8 +22,9 @@ import { emailHtml, renderTemplate, type Lang } from "./templates";
 import { errorCode, iso, isoReq, rows, str, type SqlExecutor } from "./db";
 
 export const MAX_ATTEMPTS = 5;
-const LEASE_SECONDS = 120;
-const DELIVERY_BATCH = 20;
+/** Each send may take up to 15 s (deliverEmail timeout): the row lease covers the whole batch with margin. */
+const DELIVERY_BATCH = 10;
+const LEASE_SECONDS = DELIVERY_BATCH * 15 + 120;
 
 export function appBaseUrl(env: NodeJS.ProcessEnv = process.env): string {
   return (env.APP_URL || env.PUBLIC_APP_URL || "https://lumiere-student-portal-v-2.replit.app").replace(/\/+$/, "");
@@ -166,7 +167,11 @@ export interface DeliveryResult { readonly claimed: number; readonly accepted: n
 
 export async function deliverDue(db: SqlExecutor & { transaction<T>(fn: (tx: SqlExecutor) => Promise<T>): Promise<T> }, now: Date, deliver: Deliver = (o) => deliverEmail(o)): Promise<DeliveryResult> {
   const nowIso = now.toISOString();
-  const leaseIso = new Date(now.getTime() + LEASE_SECONDS * 1000).toISOString();
+  // Leases use the real clock at claim time (a long job earlier in the tick must not shorten them).
+  const leaseIso = new Date(Math.max(Date.now(), now.getTime()) + LEASE_SECONDS * 1000).toISOString();
+  // A row whose last attempt was claimed but never finalised (crash) and has no attempts left becomes failed.
+  await db.execute(sql`UPDATE s29_notifications SET email_state = 'failed', lease_until = NULL, next_attempt_at = NULL, last_error = 'delivery interrupted; retries exhausted', updated_at = now()
+     WHERE email_state = 'attempted' AND attempts >= ${MAX_ATTEMPTS} AND (lease_until IS NULL OR lease_until < ${nowIso}::timestamptz)`);
   const claimed = await db.transaction(async (tx) => rows(await tx.execute(sql`
     UPDATE s29_notifications n SET lease_until = ${leaseIso}::timestamptz, attempts = n.attempts + 1, email_state = 'attempted', updated_at = now()
      WHERE n.id IN (SELECT id FROM s29_notifications WHERE email_state IN ('queued', 'attempted') AND next_attempt_at <= ${nowIso}::timestamptz
@@ -194,7 +199,7 @@ export async function deliverDue(db: SqlExecutor & { transaction<T>(fn: (tx: Sql
     }
     // Re-check at send time: never email a synthetic fixture, an empty address or a reserved domain.
     if (synthetic || !to || isSyntheticAccount({ email: to })) {
-      await db.execute(sql`UPDATE s29_notifications SET email_state = 'suppressed', suppressed_reason = ${synthetic ? "synthetic_account" : "no_address"}, lease_until = NULL, next_attempt_at = NULL, updated_at = now() WHERE id = ${id}`);
+      await db.execute(sql`UPDATE s29_notifications SET email_state = 'suppressed', suppressed_reason = ${synthetic ? "synthetic_account" : "no_address"}, lease_until = NULL, next_attempt_at = NULL, updated_at = now() WHERE id = ${id} AND lease_until = ${leaseIso}::timestamptz`);
       res.suppressed += 1;
       continue;
     }
@@ -209,17 +214,17 @@ export async function deliverDue(db: SqlExecutor & { transaction<T>(fn: (tx: Sql
     }
     const attempts = Number(r.attempts);
     if (outcome === "sent") {
-      await db.execute(sql`UPDATE s29_notifications SET email_state = 'accepted', sent_at = now(), lease_until = NULL, next_attempt_at = NULL, last_error = NULL, updated_at = now() WHERE id = ${id}`);
+      await db.execute(sql`UPDATE s29_notifications SET email_state = 'accepted', sent_at = now(), lease_until = NULL, next_attempt_at = NULL, last_error = NULL, updated_at = now() WHERE id = ${id} AND lease_until = ${leaseIso}::timestamptz`);
       res.accepted += 1;
     } else if (outcome === "not_configured") {
-      await db.execute(sql`UPDATE s29_notifications SET email_state = 'not_configured', lease_until = NULL, next_attempt_at = NULL, last_error = 'email transport not configured', updated_at = now() WHERE id = ${id}`);
+      await db.execute(sql`UPDATE s29_notifications SET email_state = 'not_configured', lease_until = NULL, next_attempt_at = NULL, last_error = 'email transport not configured', updated_at = now() WHERE id = ${id} AND lease_until = ${leaseIso}::timestamptz`);
       res.notConfigured += 1;
     } else if (attempts >= MAX_ATTEMPTS) {
-      await db.execute(sql`UPDATE s29_notifications SET email_state = 'failed', lease_until = NULL, next_attempt_at = NULL, last_error = 'provider rejected or unreachable (retries exhausted)', updated_at = now() WHERE id = ${id}`);
+      await db.execute(sql`UPDATE s29_notifications SET email_state = 'failed', lease_until = NULL, next_attempt_at = NULL, last_error = 'provider rejected or unreachable (retries exhausted)', updated_at = now() WHERE id = ${id} AND lease_until = ${leaseIso}::timestamptz`);
       res.failed += 1;
     } else {
       const next = new Date(now.getTime() + backoffMs(attempts)).toISOString();
-      await db.execute(sql`UPDATE s29_notifications SET email_state = 'attempted', lease_until = NULL, next_attempt_at = ${next}::timestamptz, last_error = 'provider rejected or unreachable; will retry', updated_at = now() WHERE id = ${id}`);
+      await db.execute(sql`UPDATE s29_notifications SET email_state = 'attempted', lease_until = NULL, next_attempt_at = ${next}::timestamptz, last_error = 'provider rejected or unreachable; will retry', updated_at = now() WHERE id = ${id} AND lease_until = ${leaseIso}::timestamptz`);
       res.retried += 1;
     }
   }
