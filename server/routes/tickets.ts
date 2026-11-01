@@ -22,6 +22,7 @@ import { createAuditLog, type AuditLogEntry } from "../lib/audit";
 import { resolveStudentUserId as defaultResolveStudentUserId } from "../lib/resource-ownership";
 import { getAccountStatus as defaultGetAccountStatus, type AccountStatus } from "../lib/account-status";
 import { createSupportNotifier, type SupportNotifier } from "../lib/support-notifications";
+import { createOutboxSupportNotifier } from "../services/s29/support-bridge";
 import { listContextOptions, verifyRoadmapContext } from "../lib/support-context";
 import {
   presentAttachment,
@@ -100,7 +101,8 @@ export function defaultTicketsRouterDeps(): TicketsRouterDeps {
       return mod.defaultStudentRoadmapService.getStudentView(studentId);
     },
     audit: (entry) => createAuditLog(entry),
-    notify: createSupportNotifier(),
+    // S29: student-facing notifications go through the Notification Center (falls back to direct email).
+    notify: createOutboxSupportNotifier(createSupportNotifier()),
     now: () => new Date(),
   };
 }

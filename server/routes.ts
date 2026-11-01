@@ -1436,6 +1436,13 @@ window.ENV = {
   // S27 program journey: agreement, checkpoints, orientation sessions, staff notes and the owner Control Center
   // (per-route auth/role/CSRF: admin writes; staff reads and adds notes; coach none; every write audited).
   app.use('/api/admin', (await import('./routes/program-journey')).default);
+  // S29: student intelligence & operations (Needs Attention, Concierge, Notification Center, Fleet AI, Diagnostics).
+  {
+    const s29 = await import('./routes/s29');
+    app.use('/api/admin/s29', s29.createS29AdminRouter());
+    app.use('/api/student/s29', s29.createS29StudentRouter());
+    app.use('/api/ops', s29.createS29OpsRouter());
+  }
   // S30 Phase A: Academic Calendar (admin/staff all students, students their own; CSRF on writes; coach none).
   // Timeline events and reminders go to the S29 operational layer through server/services/s30/calendar-port.ts.
   const s30Calendar = await import('./routes/s30-calendar');

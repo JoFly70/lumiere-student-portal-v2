@@ -72,7 +72,13 @@ const groupBy = <T,>(xs: readonly T[], key: (x: T) => string) => {
 };
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
-export function buildControlCenter(facts: ControlCenterFacts, now: Date): ControlCenterView {
+/** S29: configurable thresholds (Proactive Concierge settings). Defaults keep the S27 behaviour. */
+export interface ControlCenterOptions { readonly inactiveDays?: number; readonly deadlineWindowDays?: number; readonly paymentSoonDays?: number }
+
+export function buildControlCenter(facts: ControlCenterFacts, now: Date, opts: ControlCenterOptions = {}): ControlCenterView {
+  const inactiveDays = opts.inactiveDays ?? INACTIVE_DAYS;
+  const deadlineWindowDays = opts.deadlineWindowDays ?? DEADLINE_WINDOW_DAYS;
+  const paymentSoonDays = opts.paymentSoonDays ?? PAYMENT_SOON_DAYS;
   const today = now.toISOString().slice(0, 10);
   const nowMs = now.getTime();
   const queue: ControlQueueItem[] = [];
@@ -104,8 +110,8 @@ export function buildControlCenter(facts: ControlCenterFacts, now: Date): Contro
     const demo = isDemo(s);
     const items: ControlQueueItem[] = [];
     const href = (tab: string) => `/admin/students/${encodeURIComponent(s.id)}?tab=${tab}`;
-    const add = (kind: QueueKind, severity: ControlQueueItem["severity"], title: string, detail: string, to: string, at: string | null = null, idSuffix = "") =>
-      items.push({ id: `${kind}:${s.id}${idSuffix}`, kind, severity, studentId: s.id, studentName: s.name, title, detail, href: to, at });
+    const add = (kind: QueueKind, severity: ControlQueueItem["severity"], title: string, detail: string, to: string, at: string | null = null, idSuffix = "", itemFacts?: ControlQueueItem["facts"]) =>
+      items.push({ id: `${kind}:${s.id}${idSuffix}`, kind, severity, studentId: s.id, studentName: s.name, title, detail, href: to, at, ...(itemFacts ? { facts: itemFacts } : {}) });
 
     const open = (enrollmentsBy.get(s.id) ?? []).sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0] ?? null;
     const agreement = agreementBy.get(s.id) ?? null;
@@ -114,9 +120,9 @@ export function buildControlCenter(facts: ControlCenterFacts, now: Date): Contro
 
     // ── documents and payment evidence awaiting staff review
     const docs = docsBy.get(s.id) ?? 0;
-    if (docs > 0) add("document_review", "warning", `${plural(docs, "document")} to review`, "Uploaded by the student and waiting for verification.", href("documents"));
+    if (docs > 0) add("document_review", "warning", `${plural(docs, "document")} to review`, "Uploaded by the student and waiting for verification.", href("documents"), null, "", { count: docs });
     const evidence = evidenceBy.get(s.id) ?? 0;
-    if (evidence > 0) add("payment_evidence", "warning", `${plural(evidence, "payment proof", "payment proofs")} to review`, "Payment evidence submitted by the student, awaiting confirmation.", href("billing"));
+    if (evidence > 0) add("payment_evidence", "warning", `${plural(evidence, "payment proof", "payment proofs")} to review`, "Payment evidence submitted by the student, awaiting confirmation.", href("billing"), null, "", { count: evidence });
 
     // ── billing: overdue / soon-due installments, signed but unpaid
     const bill = billingBy.get(s.id) ?? null;
@@ -125,21 +131,21 @@ export function buildControlCenter(facts: ControlCenterFacts, now: Date): Contro
       const alloc = allocateReceipts(bill.installments.map((i) => ({ id: i.id, dueDate: i.dueDate, amountCents: i.amountCents, label: i.label, sortOrder: i.sortOrder })), bill.paidCents, today);
       const unpaid = alloc.filter((i) => i.status !== "paid");
       const overdue = unpaid.filter((i) => i.status === "overdue");
-      const soon = unpaid.filter((i) => i.status !== "overdue" && daysBetween(today, i.dueDate) <= PAYMENT_SOON_DAYS);
+      const soon = unpaid.filter((i) => i.status !== "overdue" && daysBetween(today, i.dueDate) <= paymentSoonDays);
       if (!demo) overdueInstallments += overdue.length;
       if (overdue.length) {
         const first = overdue[0]!;
-        add("payment_overdue", "critical", `${plural(overdue.length, "installment")} overdue`, `Oldest was due ${first.dueDate} (${daysBetween(first.dueDate, today)} days ago).`, href("billing"), first.dueDate);
+        add("payment_overdue", "critical", `${plural(overdue.length, "installment")} overdue`, `Oldest was due ${first.dueDate} (${daysBetween(first.dueDate, today)} days ago).`, href("billing"), first.dueDate, "", { count: overdue.length, dueOn: first.dueDate, daysLeft: -daysBetween(first.dueDate, today), overdue: true });
       } else if (soon.length) {
         const first = soon[0]!;
         const d = daysBetween(today, first.dueDate);
-        add("payment_overdue", "warning", d === 0 ? "Installment due today" : `Installment due in ${plural(d, "day")}`, `Due ${first.dueDate}.`, href("billing"), first.dueDate);
+        add("payment_overdue", "warning", d === 0 ? "Installment due today" : `Installment due in ${plural(d, "day")}`, `Due ${first.dueDate}.`, href("billing"), first.dueDate, "", { count: 1, dueOn: first.dueDate, daysLeft: d, overdue: false });
       }
       if (unpaid[0]) nextInstallment = { label: "Installment due", dueOn: unpaid[0].dueDate, daysLeft: daysBetween(today, unpaid[0].dueDate) };
     }
     if (agreement?.signedOn && (bill?.paidCents ?? 0) === 0) {
       if (!demo) signedNotPaid += 1;
-      add("payment_missing", "warning", "Signed, no payment recorded", `Agreement signed ${agreement.signedOn}; no payment has been confirmed yet.`, href("billing"), agreement.signedOn);
+      add("payment_missing", "warning", "Signed, no payment recorded", `Agreement signed ${agreement.signedOn}; no payment has been confirmed yet.`, href("billing"), agreement.signedOn, "", { signedOn: agreement.signedOn });
     }
 
     // ── agreement deadlines within 14 days (overdue included)
@@ -149,10 +155,10 @@ export function buildControlCenter(facts: ControlCenterFacts, now: Date): Contro
       const terms = { ...agreement, languageTestScore: null, languageTestTarget: null };
       const open14 = computeDeadlines(terms, today).filter((d) => d.dueOn && d.status === "open" && d.daysLeft !== null);
       for (const d of open14) {
-        if (d.daysLeft! <= DEADLINE_WINDOW_DAYS) {
+        if (d.daysLeft! <= deadlineWindowDays) {
           if (!demo) deadlines.push({ studentId: s.id, studentName: s.name, label: d.label, dueOn: d.dueOn!, daysLeft: d.daysLeft! });
           add("deadline_soon", d.daysLeft! < 0 ? "critical" : d.daysLeft! <= 7 ? "warning" : "info",
-            d.daysLeft! < 0 ? `${d.label} overdue` : `${d.label} due in ${plural(d.daysLeft!, "day")}`, `${d.rule}; due ${d.dueOn}.`, href("overview"), d.dueOn, `:${d.key}`);
+            d.daysLeft! < 0 ? `${d.label} overdue` : `${d.label} due in ${plural(d.daysLeft!, "day")}`, `${d.rule}; due ${d.dueOn}.`, href("overview"), d.dueOn, `:${d.key}`, { deadline: d.key, dueOn: d.dueOn!, daysLeft: d.daysLeft! });
         }
       }
       const cands = [...open14.map((d) => ({ label: d.label, dueOn: d.dueOn!, daysLeft: d.daysLeft! })), ...(nextInstallment ? [nextInstallment] : [])].sort((a, b) => a.dueOn.localeCompare(b.dueOn));
@@ -177,13 +183,13 @@ export function buildControlCenter(facts: ControlCenterFacts, now: Date): Contro
 
       if (open.status === "active") {
         const ref = lastActivityOn ?? open.startedOn ?? open.createdAt.slice(0, 10);
-        if (daysBetween(ref, today) >= INACTIVE_DAYS) add("inactive", "warning", "No activity logged", `Nothing logged since ${ref} (${plural(daysBetween(ref, today), "day")}).`, href("roadmap"), ref);
+        if (daysBetween(ref, today) >= inactiveDays) add("inactive", "warning", "No activity logged", `Nothing logged since ${ref} (${plural(daysBetween(ref, today), "day")}).`, href("roadmap"), ref, "", { since: ref, days: daysBetween(ref, today), threshold: inactiveDays });
       }
       const cutoff = nowMs - LOW_SCORE_WINDOW_DAYS * 86_400_000;
       const low = progress.filter((p) => p.reportedScorePercent !== null && p.reportedScorePercent < LOW_SCORE_PERCENT && Date.parse(p.updatedAt) >= cutoff);
       if (low.length) {
         const lowest = Math.min(...low.map((p) => p.reportedScorePercent!));
-        add("low_grade", "warning", `${plural(low.length, "low reported score")}`, `Lowest reported ${lowest}% (below ${LOW_SCORE_PERCENT}%) in the last ${LOW_SCORE_WINDOW_DAYS} days. Student-reported, not official.`, href("roadmap"), low.map((p) => p.updatedAt).sort().pop() ?? null);
+        add("low_grade", "warning", `${plural(low.length, "low reported score")}`, `Lowest reported ${lowest}% (below ${LOW_SCORE_PERCENT}%) in the last ${LOW_SCORE_WINDOW_DAYS} days. Student-reported, not official.`, href("roadmap"), low.map((p) => p.updatedAt).sort().pop() ?? null, "", { count: low.length, lowest, studentReported: true });
       }
       const results = resultsBy.get(open.id) ?? [];
       const officialCourse = new Set(results.filter((r) => r.taskKey === null).map((r) => r.courseKey));
@@ -193,20 +199,20 @@ export function buildControlCenter(facts: ControlCenterFacts, now: Date): Contro
         && c.tasks!.every((t) => reported.has(`${c.key}\u0000${t.key}`) || taskPassed.has(`${c.key}\u0000${t.key}`)));
       if (needing.length) {
         add("school_result_needed", "warning", `${plural(needing.length, "course")} need${needing.length === 1 ? "s" : ""} the school's result`,
-          `All work reported for ${needing.slice(0, 3).map((c) => (c.title ?? c.key).split(" — ")[0]).join(", ")}${needing.length > 3 ? ", …" : ""}; no official course result recorded yet.`, href("roadmap"));
+          `All work reported for ${needing.slice(0, 3).map((c) => (c.title ?? c.key).split(" — ")[0]).join(", ")}${needing.length > 3 ? ", …" : ""}; no official course result recorded yet.`, href("roadmap"), null, "", { count: needing.length });
       }
     }
 
     // ── tickets, elective requests, session requests
     for (const t of ticketsBy.get(s.id) ?? []) {
       if (t.subject.startsWith(ELECTIVE_SUBJECT_PREFIX)) {
-        add("elective_approval", "info", "Elective change request", `${t.subject.slice(ELECTIVE_SUBJECT_PREFIX.length).trim().slice(0, 100)}`, `/admin/elective-requests?ticket=${encodeURIComponent(t.id)}`, t.createdAt, `:${t.id}`);
+        add("elective_approval", "info", "Elective change request", `${t.subject.slice(ELECTIVE_SUBJECT_PREFIX.length).trim().slice(0, 100)}`, `/admin/elective-requests?ticket=${encodeURIComponent(t.id)}`, t.createdAt, `:${t.id}`, { ticketId: t.id });
       } else if (t.status === "open") {
-        add("support_reply", "warning", "Support ticket waiting on staff", t.subject.slice(0, 100), `/admin/support-center?ticket=${encodeURIComponent(t.id)}`, t.createdAt, `:${t.id}`);
+        add("support_reply", "warning", "Support ticket waiting on staff", t.subject.slice(0, 100), `/admin/support-center?ticket=${encodeURIComponent(t.id)}`, t.createdAt, `:${t.id}`, { ticketId: t.id, openedAt: t.createdAt, hoursWaiting: Math.max(0, Math.floor((nowMs - Date.parse(t.createdAt)) / 3_600_000)) });
       }
     }
     for (const r of sessionsBy.get(s.id) ?? []) {
-      add("session_request", "info", "Orientation session requested", `Requested slot ${r.slotAt.slice(0, 16).replace("T", " ")} UTC.`, href("sessions"), r.slotAt, `:${r.id}`);
+      add("session_request", "info", "Orientation session requested", `Requested slot ${r.slotAt.slice(0, 16).replace("T", " ")} UTC.`, href("sessions"), r.slotAt, `:${r.id}`, { sessionId: r.id, slotAt: r.slotAt });
     }
 
     // ── row
@@ -338,7 +344,7 @@ export async function loadControlCenterFacts(db: SqlExecutor, now: Date, limits:
   };
 }
 
-export async function computeControlCenter(db: SqlExecutor, now: Date): Promise<ControlCenterView> {
-  return buildControlCenter(await loadControlCenterFacts(db, now), now);
+export async function computeControlCenter(db: SqlExecutor, now: Date, opts: ControlCenterOptions = {}): Promise<ControlCenterView> {
+  return buildControlCenter(await loadControlCenterFacts(db, now), now, opts);
 }
 

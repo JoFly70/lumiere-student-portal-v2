@@ -321,6 +321,8 @@ export async function createDocumentRecord(
       }).catch(err => logger.warn('Audit log failed', { err }));
     }
 
+    notifyDocumentEvent(data, 'document.received');
+
     return data as StudentDocument;
   } catch (error) {
     logger.error('Error creating document record', { studentId, error });
@@ -422,6 +424,21 @@ function normalizeReview(review: DocumentReviewInput | string): { studentMessage
   return { studentMessage, internalNote: internalNote || null };
 }
 
+
+/** S29: tell the student through the Notification Center (fire-and-forget; never fails the document action). */
+function notifyDocumentEvent(doc: { id?: unknown; student_id?: unknown; doc_type?: unknown; updated_at?: unknown; verified_at?: unknown }, template: string): void {
+  if (!doc?.id || !doc.student_id || doc.doc_type === 'chat_attachment') return;
+  const stamp = String(doc.verified_at ?? doc.updated_at ?? '');
+  void import('./s29/events')
+    .then(({ emitStudentEventSoon }) => emitStudentEventSoon({
+      studentId: String(doc.student_id),
+      template,
+      dedupeKey: `${template}:${String(doc.id)}:${stamp}`,
+      params: { docType: String(doc.doc_type ?? '') },
+    }))
+    .catch(() => undefined);
+}
+
 /**
  * Verify document (admin action)
  */
@@ -454,6 +471,8 @@ export async function verifyDocument(
       newValue: data,
       metadata: { doc_type: data.doc_type, admin_notes: adminNotes, from_status: before.status },
     }).catch(err => logger.warn('Audit log failed', { err }));
+
+    notifyDocumentEvent(data, 'document.verified');
 
     // If this is an English cert, update student_english_proof
     if (data.doc_type === 'english_cert' && data.score) {
@@ -500,6 +519,8 @@ export async function rejectDocument(
       metadata: { doc_type: data.doc_type, student_message: studentMessage, from_status: before.status },
     }).catch(err => logger.warn('Audit log failed', { err }));
 
+    notifyDocumentEvent(data, 'document.rejected');
+
     return data as StudentDocument;
   } catch (error) {
     logger.error('Error rejecting document', { documentId, error });
@@ -540,8 +561,7 @@ export async function requestResubmit(
       metadata: { doc_type: data.doc_type, student_message: studentMessage, from_status: before.status },
     }).catch(err => logger.warn('Audit log failed', { err }));
 
-    // TODO: Send notification to student
-    // This would trigger email/WhatsApp notification
+    notifyDocumentEvent(data, 'document.resubmit');
 
     return data as StudentDocument;
   } catch (error) {

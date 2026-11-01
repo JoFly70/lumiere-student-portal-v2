@@ -55,6 +55,9 @@ import AdminViewAsStudent from "@/pages/admin-view-as-student";
 import ExperiencePage from "@/pages/experience";
 import { ExperienceBanner } from "@/components/experience-banner";
 import { PROTOTYPES_ENABLED, PREVIEW_FLIGHT_DECK_PATH } from "@/components/os/prototype-gate";
+import AdminDiagnostics from "@/pages/admin-diagnostics";
+import AdminNotifications from "@/pages/admin-notifications";
+import NotificationsPage from "@/pages/notifications";
 
 // Prototype-only route (S17). Compiled out of normal production builds; see components/os/prototype-gate.
 const FlightDeckPreview = PROTOTYPES_ENABLED ? lazy(() => import("@/pages/flight-deck-preview")) : null;
@@ -112,6 +115,21 @@ function Router() {
         {() => (
           <ProtectedRoute requireRole={["admin", "staff"]}>
             <AdminSupportCenter />
+          </ProtectedRoute>
+        )}
+      </Route>
+      {/* S29: student intelligence & operations */}
+      <Route path="/admin/diagnostics">
+        {() => (
+          <ProtectedRoute requireRole="admin">
+            <AdminDiagnostics />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/admin/notifications">
+        {() => (
+          <ProtectedRoute requireRole={["admin", "staff"]}>
+            <AdminNotifications />
           </ProtectedRoute>
         )}
       </Route>
@@ -288,6 +306,14 @@ function Router() {
         {() => (
           <ProtectedRoute requireRole="student">
             <Library />
+          </ProtectedRoute>
+        )}
+      </Route>
+
+      <Route path="/notifications">
+        {() => (
+          <ProtectedRoute requireRole="student">
+            <NotificationsPage />
           </ProtectedRoute>
         )}
       </Route>

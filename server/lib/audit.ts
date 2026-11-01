@@ -120,6 +120,17 @@ export type AuditEventType =
   | 'program.session_updated'
   | 'program.note_added'
   | 'program.access_denied'
+  // Student intelligence & operations (S29). Must also exist in the Postgres audit_event_type enum
+  // (supabase/migrations/20261106100000_s29_student_intelligence.sql).
+  | 's29.attention_updated'
+  | 's29.settings_updated'
+  | 's29.preferences_updated'
+  | 's29.calendar_updated'
+  | 's29.fleet_query'
+  | 's29.diagnostic_run'
+  | 's29.incident_updated'
+  | 's29.notification_retried'
+  | 's29.access_denied'
   // S30 academic calendar (supabase/migrations/20261107100000_s30_academic_calendar.sql).
   | 'calendar.event_changed'
   | 'calendar.subscription_changed'

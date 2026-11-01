@@ -16,6 +16,7 @@ import { GlobalSearch } from "@/components/os/global-search";
 import { AccountMenu, type AccountIdentity } from "@/components/os/account-menu";
 import { useAuth } from "@/lib/auth";
 import { useMyStudent, usePhotoChanged } from "@/hooks/use-my-student";
+import { NotificationBell } from "@/components/s29/core/notification-bell";
 
 // `title` stays English (test ids); `labelKey` is the visible, translated label.
 const BAR_ITEMS: readonly { title: string; labelKey: TranslationKey; url: string; icon: typeof Gauge }[] = [
@@ -49,6 +50,7 @@ export function StudentHeader() {
         <GlobalSearch audience="student" />
       </div>
       <div className="flex shrink-0 items-center gap-1">
+        <NotificationBell />
         <div className="hidden items-center gap-1 sm:flex" data-testid="header-prefs">
           <LanguageToggle />
           <ThemeToggle className="h-11 w-11" />

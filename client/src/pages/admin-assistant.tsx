@@ -5,6 +5,9 @@ import { ArrowRight, Search } from "lucide-react";
 import { api } from "@/lib/api";
 import { StaffEmpty, StaffPage, StaffPageHeader, staffBtn, staffField } from "@/components/staff/staff-ui";
 import { OwnerAssistantPanel } from "@/components/owner-assistant/owner-assistant-panel";
+import { FleetCopilot } from "@/components/s29/core/fleet-copilot";
+
+const FLEET_COPILOT_ENABLED = import.meta.env.VITE_S29_FLEET_COPILOT === "on";
 
 interface StudentRow { id: string; first_name: string; last_name: string; preferred_name?: string | null; student_code?: string | null; status: string }
 
@@ -63,9 +66,12 @@ export default function AdminAssistant() {
               </Link>
             </>
           ) : (
-            <StaffEmpty title="Choose a student" testId="assistant-no-student">
-              Owner AI works on one student file at a time, so its answers can only use that student's records.
-            </StaffEmpty>
+            // S29: the portfolio-wide Fleet copilot is a Phase C feature behind VITE_S29_FLEET_COPILOT=on.
+            FLEET_COPILOT_ENABLED ? <FleetCopilot /> : (
+              <StaffEmpty title="Choose a student" testId="assistant-no-student">
+                Owner AI works on one student file at a time, so its answers can only use that student's records.
+              </StaffEmpty>
+            )
           )}
         </div>
       </div>

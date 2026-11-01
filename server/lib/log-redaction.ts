@@ -43,8 +43,15 @@ export function redactValue(value: unknown, depth = 0): unknown {
 }
 
 /** Request facts that are safe to attach to an error report (no headers, no query string, no body). */
+/** S29: calendar subscription tokens live in the feed URL path; replace any of them. */
+export function redactFeedPath(text: string): string {
+  return text.replace(/(\/api)?\/calendar\/feed\/[^?#\s"']*/gi, '/calendar/feed/[token].ics');
+}
+
 export function safeRequestContext(req: { method?: string; path?: string; ip?: string }) {
-  return { method: req.method, path: req.path, ip: req.ip };
+  // S29: calendar subscription tokens live in the feed path; never forward them.
+  const path = typeof req.path === 'string' ? redactFeedPath(req.path) : req.path;
+  return { method: req.method, path, ip: req.ip };
 }
 
 /** Sentry `beforeSend`: drop health probes, scrub credentials and request payloads. */
@@ -57,7 +64,8 @@ export function scrubSentryEvent<T extends Record<string, any>>(event: T): T | n
     delete clean.request.headers;
     delete clean.request.data;
     delete clean.request.query_string;
-    if (typeof clean.request.url === 'string') clean.request.url = clean.request.url.split('?')[0];
+    if (typeof clean.request.url === 'string') clean.request.url = redactFeedPath(clean.request.url.split('?')[0]);
   }
+  if (typeof clean.transaction === 'string') clean.transaction = redactFeedPath(clean.transaction);
   return clean as T;
 }
