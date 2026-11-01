@@ -38,15 +38,18 @@ export function OriginalCreateDialog({
   onClose,
   onCreated,
   defaultItemKey,
+  defaultTopic,
 }: {
   open: boolean;
   onClose: () => void;
   onCreated: (t: CreatedTicket) => void;
   /** `?item=` deep link from the roadmap. */
   defaultItemKey?: string | null;
+  /** `?topic=` deep link (e.g. billing). */
+  defaultTopic?: SupportTopic | null;
 }) {
   const { T, language } = useSupportText();
-  const [topic, setTopic] = useState<SupportTopic | null>(defaultItemKey ? "roadmap_question" : null);
+  const [topic, setTopic] = useState<SupportTopic | null>(defaultItemKey ? "roadmap_question" : defaultTopic ?? null);
   const [subject, setSubject] = useState("");
   const [description, setDescription] = useState("");
   const [itemKey, setItemKey] = useState<string>("");

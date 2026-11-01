@@ -193,6 +193,25 @@ export function isCourseDone(item: StudentRoadmapItemView): boolean {
   return item.stage === "provider_complete" || item.stage === "officially_accepted";
 }
 
+/**
+ * Header summary for the Completed section: only officially accepted courses count as earned credit.
+ * Courses the student reported as finished at the provider (provider_complete) are counted separately, as waiting.
+ */
+export function completedSummary(items: readonly StudentRoadmapItemView[]): { accepted: number; waiting: number; acceptedCents: number } {
+  let accepted = 0;
+  let waiting = 0;
+  let acceptedCents = 0;
+  for (const i of items) {
+    if (i.stage === "officially_accepted") {
+      accepted += 1;
+      acceptedCents += toCents(i.credits) ?? 0;
+    } else {
+      waiting += 1;
+    }
+  }
+  return { accepted, waiting, acceptedCents };
+}
+
 /** In plan order (phase sequence, then item sequence). Dropped and alternative items are not shown to the student. */
 export function orderedItems(roadmap: StudentRoadmapView): StudentRoadmapItemView[] {
   return [...roadmap.phases]

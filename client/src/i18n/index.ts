@@ -24,14 +24,28 @@ export function isLanguage(value: unknown): value is Language {
   return value === "en" || value === "fr";
 }
 
-/** Reads the saved language. Never throws (private mode / blocked storage). */
+/**
+ * S32 (F23): the language to use when nothing is stored and no ?lang= is given: French when the browser's first
+ * preferred language is French (fr, fr-CA, fr-FR...), otherwise the default. Never persisted as an explicit choice.
+ */
+export function detectBrowserLanguage(nav?: { language?: string; languages?: readonly string[] }): Language {
+  try {
+    const n = nav ?? (typeof navigator !== "undefined" ? navigator : undefined);
+    const first = (n?.languages && n.languages.length > 0 ? n.languages[0] : n?.language) ?? "";
+    return /^fr(?:[-_]|$)/i.test(String(first).trim()) ? "fr" : DEFAULT_LANGUAGE;
+  } catch {
+    return DEFAULT_LANGUAGE;
+  }
+}
+
+/** Reads the saved language (explicit choice first, then the browser's language). Never throws (private mode / blocked storage). */
 export function readStoredLanguage(storage?: Pick<Storage, "getItem">): Language {
   try {
     const s = storage ?? (typeof localStorage !== "undefined" ? localStorage : undefined);
     const v = s?.getItem(LANGUAGE_STORAGE_KEY);
-    return isLanguage(v) ? v : DEFAULT_LANGUAGE;
+    return isLanguage(v) ? v : detectBrowserLanguage();
   } catch {
-    return DEFAULT_LANGUAGE;
+    return detectBrowserLanguage();
   }
 }
 
@@ -59,11 +73,11 @@ export function frTypo(s: string): string {
 export function currentLanguage(): Language {
   try {
     const v = typeof localStorage !== "undefined" ? localStorage.getItem(LANGUAGE_STORAGE_KEY) : null; // written synchronously by setLanguage
-    return isLanguage(v) ? v : DEFAULT_LANGUAGE;
+    return isLanguage(v) ? v : detectBrowserLanguage();
   } catch {
     // Storage blocked: the provider mirrors the language on <html lang>.
     if (typeof document !== "undefined" && isLanguage(document.documentElement.lang)) return document.documentElement.lang;
-    return DEFAULT_LANGUAGE;
+    return detectBrowserLanguage();
   }
 }
 

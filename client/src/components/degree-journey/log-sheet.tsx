@@ -5,6 +5,7 @@
  */
 import React from "react";
 import { Loader2 } from "lucide-react";
+import { Link } from "wouter";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import type { StudentRoadmapItemView, StudentTaskStatus } from "@shared/student-roadmap-contract";
@@ -145,6 +146,12 @@ export function LogSheet({
                     <button type="button" className={cn(buttonClass.outline, "w-full")} onClick={() => setItem(item, "in_progress")} disabled={actions.isPending(rowKey(item.key, null))} data-testid="log-start">
                       {t("dj.sheet.st.in_progress")}
                     </button>
+                  )}
+                  {item.itemStatus === "provider_complete" && (
+                    <p className="rounded-lg border border-student-line bg-student-gold-soft p-3 text-xs text-student-ink" data-testid="log-proof-hint">
+                      {t("dj.sheet.proofHelp")}{" "}
+                      <Link href="/documents" className="font-semibold text-student-gold-ink underline underline-offset-2" data-testid="link-upload-certificate">{t("dj.sheet.proofLink")}</Link>
+                    </p>
                   )}
                   {item.itemStatus === "provider_complete" ? (
                     <button type="button" className={cn(buttonClass.outline, "w-full")} onClick={() => setItem(item, "in_progress")} disabled={actions.isPending(rowKey(item.key, null))} data-testid="log-undo-finished">

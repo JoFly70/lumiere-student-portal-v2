@@ -18,6 +18,8 @@ import { creditFigures, toCredits } from "@/lib/s27/cockpit-model";
 import { formatDay } from "@/lib/s27/dates";
 import { useS27T } from "@/lib/s27/i18n-util";
 import type { TranslationKey } from "@/i18n";
+import { ElectiveChange, canRequestElectiveChange } from "@/components/high-school/subjects-tab";
+import { GraduatedPanel } from "@/components/high-school/graduated-panel";
 import { S27Page, Eyebrow, S27Sheet } from "./ui";
 
 export interface LogSubmit {
@@ -74,6 +76,8 @@ export function RoadmapLog({ view, journey, today, initialLog = null, onLog, alt
         </button>
       </section>
 
+      <GraduatedPanel view={view} />
+
       <section className="rm2-sum" aria-label={t("s27.rm.summary")} data-testid="rm-summary">
         <div>
           <span className="k">{t("s27.rm.tile.credits")}</span>
@@ -114,7 +118,7 @@ export function RoadmapLog({ view, journey, today, initialLog = null, onLog, alt
               return (
                 <li key={course.key}>
                   <span className="no">{no}</span>
-                  <span><b>{courseName(course.title)}</b><small>{subjectLabel(course.subject, lang)}{n > 0 ? ` · ${pl("s27.rm.assessments", n)}` : ""}</small></span>
+                  <span><b>{courseName(course.title)}</b><small>{subjectLabel(course.subject, lang)}{n > 0 ? ` · ${pl("s27.rm.assessments", n)}` : ""}</small>{canRequestElectiveChange(course) && <ElectiveChange course={course} compact />}</span>
                   <span className="r">{creditLabel(course)}{course.plannedStart && <><br />{t("s27.rm.startsAbout", { date: formatDay(course.plannedStart, lang) })}</>}</span>
                 </li>
               );
@@ -130,7 +134,7 @@ export function RoadmapLog({ view, journey, today, initialLog = null, onLog, alt
             {groups.electives.map(({ course, no }) => (
               <li key={course.key}>
                 <span className="no">{no}</span>
-                <span><b>{courseName(course.title)}</b><small>{courseDescription(course.key, lang) ?? subjectLabel(course.subject, lang)}</small></span>
+                <span><b>{courseName(course.title)}</b><small>{courseDescription(course.key, lang) ?? subjectLabel(course.subject, lang)}</small>{canRequestElectiveChange(course) && <ElectiveChange course={course} compact />}</span>
                 <span className="r"><span className="pill warn"><i />{t("s27.rm.awaiting")}</span></span>
               </li>
             ))}
@@ -190,6 +194,7 @@ function NowCard({ course, onLog, canLog, lang }: { course: HsCourseView; onLog:
     <article className={`nc${waiting ? " wait" : ""}`} data-testid={`now-${course.key}`} data-status={course.status}>
       <span className="sj">{subjectLabel(course.subject, lang)} · {pl("s27.rm.credit", toCredits(course.halfUnits), { n: num(toCredits(course.halfUnits)) })}</span>
       <h3>{name}</h3>
+      {canRequestElectiveChange(course) && <ElectiveChange course={course} compact />}
       <div className="dots" aria-hidden="true">{dots.map((d) => <DotView key={d.key} dot={d} />)}</div>
       {waiting ? (
         <p className="nx"><b>{t("s27.rm.allPassed").split(". ")[0]}.</b> {t("s27.rm.allPassed").split(". ").slice(1).join(". ")}</p>

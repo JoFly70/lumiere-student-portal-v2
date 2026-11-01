@@ -55,6 +55,17 @@ function itemFromUrl(): string | null {
   }
 }
 
+/** `?topic=billing` deep link (e.g. from Billing): opens the create dialog with that topic preselected. */
+function topicFromUrl(): SupportTopic | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const v = new URLSearchParams(window.location.search).get("topic");
+    return v && (SUPPORT_TOPICS as readonly string[]).includes(v) ? (v as SupportTopic) : null;
+  } catch {
+    return null;
+  }
+}
+
 function TicketCard({
   ticket, isExpanded, onToggle, onViewDetails,
 }: { ticket: OriginalCardModel; isExpanded: boolean; onToggle: () => void; onViewDetails: () => void }) {
@@ -155,10 +166,11 @@ function PostCreateUploads({ created, onDone }: { created: CreatedTicket; onDone
 export function OriginalStudentSupport() {
   const { T } = useSupportText();
   const itemParam = useMemo(itemFromUrl, []);
+  const topicParam = useMemo(topicFromUrl, []);
   const tickets = useTickets({ limit: 100 });
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [createOpen, setCreateOpen] = useState<boolean>(!!itemParam);
+  const [createOpen, setCreateOpen] = useState<boolean>(!!itemParam || !!topicParam);
   const [filters, setFilters] = useState<OriginalFilters>(NO_FILTERS);
   const [created, setCreated] = useState<CreatedTicket | null>(null);
 
@@ -295,6 +307,7 @@ export function OriginalStudentSupport() {
         open={createOpen}
         onClose={() => setCreateOpen(false)}
         defaultItemKey={itemParam}
+        defaultTopic={topicParam}
         onCreated={(c) => { setCreateOpen(false); setCreated(c); }}
       />
       <OriginalTicketDetailModal ticketId={selectedId} onClose={() => setSelectedId(null)} />

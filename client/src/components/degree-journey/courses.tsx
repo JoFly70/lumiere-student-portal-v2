@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import type { StudentRoadmapItemView } from "@shared/student-roadmap-contract";
 import { formatShortDate } from "@/pages/student-roadmap-presentation";
 import { buttonClass } from "@/components/student-progress/student-ui";
-import { formatCents, nextTask, progressPercent, safeProviderUrl, taskDots, toCents, type DotState } from "./model";
+import { completedSummary, formatCents, nextTask, progressPercent, safeProviderUrl, taskDots, toCents, type DotState } from "./model";
 import { useDj } from "./i18n";
 
 function useCreditsText() {
@@ -206,14 +206,19 @@ export function CompletedSection({ items }: { items: readonly StudentRoadmapItem
   const { t, language } = useDj();
   const id = useId();
   const [open, setOpen] = useState(false);
-  const total = items.reduce((a, i) => a + (toCents(i.credits) ?? 0), 0);
-  const credits = formatCents(total, language);
+  const { accepted, waiting, acceptedCents } = completedSummary(items);
+  const credits = formatCents(acceptedCents, language);
   return (
     <section aria-labelledby={`${id}-h`} className="space-y-2" data-testid="section-completed">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3">
         <h2 id={`${id}-h`} className="font-serif text-2xl tracking-tight text-student-ink sm:text-3xl">
           {t("dj.done.title")}
-          {items.length > 0 && <span className="text-student-muted"> · {items.length === 1 ? t("dj.done.summary1", { credits }) : t("dj.done.summary", { courses: items.length, credits })}</span>}
+          {items.length > 0 && (
+            <span className="text-student-muted" data-testid="completed-summary">
+              {" "}· {accepted === 1 ? t("dj.done.summary1", { credits }) : t("dj.done.summary", { courses: accepted, credits })}
+              {waiting > 0 && <span className="text-sm" data-testid="completed-waiting"> · {t("dj.done.waitingCount", { n: waiting })}</span>}
+            </span>
+          )}
         </h2>
         {items.length > 0 && (
           <button type="button" aria-expanded={open} aria-controls={`${id}-list`} onClick={() => setOpen((o) => !o)} className="inline-flex min-h-[44px] items-center gap-1 text-sm font-semibold text-student-gold-ink" data-testid="button-completed-toggle">
