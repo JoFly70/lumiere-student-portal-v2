@@ -18,7 +18,7 @@ describe('S22 bootstrap manifest', () => {
     const ids = STEPS.map((s) => s.id);
     expect(ids.filter((i) => /^\d+$/.test(i))).toEqual(['01','02','03','04','05','06','07','08','09','10','11']);
     // S22 additions sit after step 10 and before verification
-    expect(ids.slice(-7)).toEqual(['10', '10b', '10c', '10d', '10e', '10f', '11']);
+    expect(ids.slice(-8)).toEqual(['10', '10b', '10c', '10d', '10e', '10f', '10g', '11']);
     const flat = applySteps().flatMap((s) => s.files);
     const at = (needle: string) => flat.findIndex((f) => f.includes(needle));
     expect(at('011_degree_programs_courses')).toBe(0);

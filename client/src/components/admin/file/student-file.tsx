@@ -35,6 +35,7 @@ import { BillingTab } from "./billing-tab";
 import { NotesTab } from "./notes-tab";
 import { SessionsTab } from "./sessions-tab";
 import { Panel } from "./file-parts";
+import { ReportedRecordsPanel } from "@/components/s30/imports/reported-records-panel";
 import type { StudentFileRecord } from "@/components/admin/student-file-hs";
 
 const TAB_LABEL: Record<FileTab, TranslationKey> = {
@@ -156,9 +157,12 @@ export function StudentFile({ studentId }: { studentId: string }) {
           </StaffTabPanel>
           <StaffTabPanel idPrefix="sf" tabKey="roadmap" active={tab === "roadmap"}>
             {tab === "roadmap" && hs ? <RoadmapTab studentId={studentId} state={hs} docs={documents.data ?? []} isAdmin={isAdmin} recordKey={params.get("record")} go={go} /> : null}
+            {/* S30: provider-/school-REPORTED imported records (never credit until the school's result is recorded). */}
+            {tab === "roadmap" ? <div className="s27 occ mt-6"><ReportedRecordsPanel studentId={studentId} /></div> : null}
           </StaffTabPanel>
           <StaffTabPanel idPrefix="sf" tabKey="plan" active={tab === "plan"}>
             {tab === "plan" ? <DegreePlanTab studentId={studentId} vm={vm} /> : null}
+            {tab === "plan" ? <div className="s27 occ mt-6"><ReportedRecordsPanel studentId={studentId} /></div> : null}
           </StaffTabPanel>
           <StaffTabPanel idPrefix="sf" tabKey="documents" active={tab === "documents"}>
             {tab === "documents" ? (

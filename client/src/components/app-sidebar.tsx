@@ -1,4 +1,4 @@
-import { BookOpen, FileText, CreditCard, GraduationCap, HelpCircle, LogOut, User, Gauge, ShieldCheck, School, Sparkles, Shuffle, Library, Globe, Bell, Activity, CalendarDays } from "lucide-react";
+import { BookOpen, FileText, CreditCard, GraduationCap, HelpCircle, LogOut, User, Gauge, ShieldCheck, School, Sparkles, Shuffle, Library, Globe, Bell, Activity, CalendarDays, FileUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -83,6 +83,7 @@ const studentFileItems = studentMenuItems.filter((i) => !JOURNEY_URLS.includes(i
 const adminMenuItems = [
   { title: "Control Center", url: "/admin/support-center", icon: Gauge },
   { title: "Calendar", url: "/admin/calendar", icon: CalendarDays },
+  { title: "Import center", url: "/admin/imports", icon: FileUp },
   { title: "Students", url: ADMIN_STUDENTS_PATH, icon: GraduationCap },
   { title: "Support desk", url: "/support", icon: HelpCircle },
   { title: "Elective requests", url: "/admin/elective-requests", icon: Shuffle },
@@ -111,6 +112,8 @@ const staffS29Items = [
 ];
 // S30: the academic calendar (admin and staff; coaches have no access).
 const staffCalendarItem = { title: "Calendar", url: "/admin/calendar", icon: CalendarDays };
+// S30 Phase B: academic imports (staff upload and validate; admins approve and commit).
+const staffImportsItem = { title: "Import center", url: "/admin/imports", icon: FileUp };
 
 export function AppSidebar() {
   const [location] = useLocation();
@@ -135,7 +138,7 @@ export function AppSidebar() {
       : isStudent
         ? studentMenuItems
         : user?.role === "staff"
-          ? [staffControlItem, staffCalendarItem, ...staffMenuItems, staffBillingItem, ...staffS29Items, staffWebItem]
+          ? [staffControlItem, staffCalendarItem, staffImportsItem, ...staffMenuItems, staffBillingItem, ...staffS29Items, staffWebItem]
           : staffMenuItems;
 
   const displayName = isStudent && profile

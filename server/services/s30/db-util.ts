@@ -14,6 +14,8 @@ export function isMissingTable(error: unknown): boolean {
   return false;
 }
 
-export class CalendarError extends Error {
-  constructor(readonly code: string, readonly status: number, message: string) { super(message); this.name = "CalendarError"; }
+/** A request-level error with an HTTP status and a stable code (calendar and import routes). */
+export class S30Error extends Error {
+  constructor(readonly code: string, readonly status: number, message: string) { super(message); this.name = "S30Error"; }
 }
+export { S30Error as CalendarError };

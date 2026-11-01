@@ -34,6 +34,7 @@ import AdminSupportCenter from "@/pages/admin-support-center";
 import AdminAssistant from "@/pages/admin-assistant";
 import AdminWebResearch from "@/pages/admin-web-research";
 import AdminCalendar from "@/pages/admin-calendar";
+import AdminImports from "@/pages/admin-imports";
 import StudentCalendar from "@/pages/student-calendar";
 import AdminElectiveRequests from "@/pages/admin-elective-requests";
 import AdminStudentWorkspace from "@/pages/admin-student-workspace";
@@ -137,6 +138,14 @@ function Router() {
         {() => (
           <ProtectedRoute requireRole={["admin", "staff"]}>
             <AdminCalendar />
+          </ProtectedRoute>
+        )}
+      </Route>
+      {/* S30 Phase B: Academic Data Import Center — admin and staff (approve/commit/rollback are admin-only server-side). */}
+      <Route path="/admin/imports">
+        {() => (
+          <ProtectedRoute requireRole={["admin", "staff"]}>
+            <AdminImports />
           </ProtectedRoute>
         )}
       </Route>

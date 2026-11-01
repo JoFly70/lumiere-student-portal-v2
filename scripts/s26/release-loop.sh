@@ -141,6 +141,23 @@ while [ "$(date +%s)" -lt "$DEADLINE" ]; do
     else
       status schema_s30 SKIPPED "release does not contain the S30 calendar schema step"
     fi
+    # S30 Phase B: academic import tables (additive), after the calendar step.
+    if [ -f scripts/release/s30/apply-s30-imports.sh ]; then
+      if need_pg; then bash scripts/release/s30/apply-s30-imports.sh --check > "$EVID/schema-s30-imports-check.log" 2>&1 && S30I_OK=1 || S30I_OK=0
+      else nix-shell -p postgresql_16 --run "bash scripts/release/s30/apply-s30-imports.sh --check" > "$EVID/schema-s30-imports-check.log" 2>&1 && S30I_OK=1 || S30I_OK=0; fi
+      if [ "$S30I_OK" = "1" ]; then
+        status schema_s30_imports SKIPPED "S30 import schema already applied"
+      elif ! grep -q "S30 imports check: NOT FULLY APPLIED" "$EVID/schema-s30-imports-check.log"; then
+        status schema_s30_imports FAIL "check did not complete: $(grep -E 'REFUSED|ERROR|FATAL|could not' "$EVID/schema-s30-imports-check.log" | head -3 | tr '\n' ' ' | cut -c1-300)"; DONE_SHA=$SHA; continue
+      else
+        if need_pg; then bash scripts/release/s30/apply-s30-imports.sh --apply --i-understand-this-writes-to-production > "$EVID/schema-s30-imports.log" 2>&1
+        else nix-shell -p postgresql_16 --run "bash scripts/release/s30/apply-s30-imports.sh --apply --i-understand-this-writes-to-production" > "$EVID/schema-s30-imports.log" 2>&1; fi
+        if grep -q "S30 imports production schema release: DONE" "$EVID/schema-s30-imports.log"; then status schema_s30_imports PASS "backup + S30 import migration + post-verify"
+        else status schema_s30_imports FAIL "$( { grep -iE 'refused|error|fail|fatal' "$EVID/schema-s30-imports.log" | head -5; tail -3 "$EVID/schema-s30-imports.log"; } | tr '\n' ' ' | cut -c1-500)"; DONE_SHA=$SHA; continue; fi
+      fi
+    else
+      status schema_s30_imports SKIPPED "release does not contain the S30 import schema step"
+    fi
     if npx tsx scripts/s26/provision-demo-student.ts --ref "$REF" --real-code LCA-2026-0001 > "$EVID/provision.json" 2> "$EVID/provision.err" \
        && grep -q '"verdict": "PASS"' "$EVID/provision.json"; then
       status provision PASS

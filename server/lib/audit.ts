@@ -134,7 +134,17 @@ export type AuditEventType =
   // S30 academic calendar (supabase/migrations/20261107100000_s30_academic_calendar.sql).
   | 'calendar.event_changed'
   | 'calendar.subscription_changed'
-  | 'calendar.access_denied';
+  | 'calendar.access_denied'
+  // S30 academic data imports (supabase/migrations/20261107110000_s30_academic_imports.sql).
+  | 'import.batch_uploaded'
+  | 'import.batch_validated'
+  | 'import.batch_approved'
+  | 'import.batch_committed'
+  | 'import.batch_rolled_back'
+  | 'import.batch_discarded'
+  | 'import.mapping_saved'
+  | 'import.record_reviewed'
+  | 'import.access_denied';
 
 export type AuditSeverity = 'info' | 'warning' | 'error' | 'critical';
 

@@ -128,6 +128,11 @@ export const STEPS: ManifestStep[] = [
     note: 'Additive and idempotent. Applied in production by scripts/release/s30/apply-s30.sh (wired into the runner by the S26 integration lead). Sorts after the S29 migration.',
   },
   {
+    id: '10g', label: 'S30 forward migration: academic import tables (mappings, batches, rows, reported records; RLS on, no client privileges) and import.* audit event types', kind: 'apply',
+    files: [`${M}20261107110000_s30_academic_imports.sql`],
+    note: 'Additive and idempotent. Applied in production by scripts/release/s30/apply-s30-imports.sh (wired into the runner by the S26 integration lead).',
+  },
+  {
     id: '11', label: 'verify (read-only)', kind: 'verify',
     files: [`${S14}00-baseline-probe.sql`, `${S14}01-account-readiness.sql`, `${S14}90-verify.sql`, 'scripts/s22/hosted-verify.sql'],
   },
