@@ -122,9 +122,13 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("S29 intelligence & operations on real P
     const { runConcierge } = await import("../server/services/s29/concierge");
     const { DEFAULT_CONCIERGE_SETTINGS } = await import("../shared/s29-contract");
     const out = await computeAttention(db, NOW, DEFAULT_CONCIERGE_SETTINGS, true);
-    const r1 = await runConcierge(db, out.items, out.facts, DEFAULT_CONCIERGE_SETTINGS, NOW);
+    // The Concierge ships switched off: nothing is created until the owner enables it.
+    expect(DEFAULT_CONCIERGE_SETTINGS.enabled).toBe(false);
+    expect((await runConcierge(db, out.items, out.facts, DEFAULT_CONCIERGE_SETTINGS, NOW)).created).toBe(0);
+    const ON = { ...DEFAULT_CONCIERGE_SETTINGS, enabled: true };
+    const r1 = await runConcierge(db, out.items, out.facts, ON, NOW);
     expect(r1.created).toBeGreaterThan(0);
-    const r2 = await runConcierge(db, out.items, out.facts, DEFAULT_CONCIERGE_SETTINGS, new Date(NOW.getTime() + 3_600_000));
+    const r2 = await runConcierge(db, out.items, out.facts, ON, new Date(NOW.getTime() + 3_600_000));
     expect(r2.created).toBe(0);
     const rows = await pg.sql(`select student_id, template, language, email_state, suppressed_reason, is_demo, title, body, next_attempt_at from s29_notifications where source='concierge' order by created_at`);
     const realRows = rows.filter((r) => r.student_id === real.studentId);

@@ -109,7 +109,8 @@ export function createCalendarOpsAdapter(getDb: () => Promise<SqlExecutor> = def
     },
     async enqueueNotification(n) {
       try {
-        if (!CALENDAR_TEMPLATES[n.kind] || !n.href.startsWith("/")) return "failed";
+        // Same-site paths only: "//host" and backslashes would leave the portal.
+        if (!CALENDAR_TEMPLATES[n.kind] || !n.href.startsWith("/") || n.href.startsWith("//") || n.href.includes("\\")) return "failed";
         const db = await getDb();
         if (!(await s29Schema(db)).present) return "not_wired";
         const at = now();

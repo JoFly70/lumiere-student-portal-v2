@@ -827,6 +827,7 @@ export function createTicketsRouter(deps: TicketsRouterDeps): Router {
         fire("statusChanged", () =>
           deps.notify.statusChanged({
             ticketNumber: row.ticket_number,
+            reporterUserId: ticket.reporter_id ? String(ticket.reporter_id) : null,
             subject: row.subject,
             studentEmail: ticket.reporter_email,
             studentName: ticket.reporter_name,
@@ -1015,6 +1016,7 @@ export function createTicketsRouter(deps: TicketsRouterDeps): Router {
         fire("staffReplied", () =>
           deps.notify.staffReplied({
             ticketNumber: current.ticket_number,
+            reporterUserId: ticket.reporter_id ? String(ticket.reporter_id) : null,
             subject: current.subject,
             studentEmail: ticket.reporter_email,
             studentName: ticket.reporter_name,

@@ -10,7 +10,7 @@
  */
 import { createHash } from "node:crypto";
 import type { SupportNotifier } from "../../lib/support-notifications";
-import { emitStudentEvent, studentIdForEmail, type EmitOutcome } from "./events";
+import { emitStudentEvent, studentIdForEmail, studentIdForUser, type EmitOutcome } from "./events";
 
 const STATUS: Record<string, { en: string; fr: string }> = {
   open: { en: "open", fr: "ouverte" },
@@ -23,9 +23,10 @@ const STATUS: Record<string, { en: string; fr: string }> = {
 const h = (s: string) => createHash("sha256").update(s).digest("hex").slice(0, 24);
 const minute = () => Math.floor(Date.now() / 60_000);
 
-export function createOutboxSupportNotifier(base: SupportNotifier, emit: typeof emitStudentEvent = emitStudentEvent, lookup: typeof studentIdForEmail = studentIdForEmail): SupportNotifier {
-  const viaOutbox = async (email: string, build: (studentId: string) => Parameters<typeof emitStudentEvent>[0]): Promise<EmitOutcome> => {
-    const studentId = await lookup(email);
+export function createOutboxSupportNotifier(base: SupportNotifier, emit: typeof emitStudentEvent = emitStudentEvent, lookup: typeof studentIdForEmail = studentIdForEmail, lookupUser: typeof studentIdForUser = studentIdForUser): SupportNotifier {
+  // The ticket's reporter account decides the student; the email match is only a fallback (shared family addresses).
+  const viaOutbox = async (i: { studentEmail: string; reporterUserId?: string | null }, build: (studentId: string) => Parameters<typeof emitStudentEvent>[0]): Promise<EmitOutcome> => {
+    const studentId = i.reporterUserId ? await lookupUser(i.reporterUserId) : await lookup(i.studentEmail);
     if (!studentId) return "no_account";
     return emit(build(studentId));
   };
@@ -34,7 +35,7 @@ export function createOutboxSupportNotifier(base: SupportNotifier, emit: typeof 
     ticketCreated: (i) => base.ticketCreated(i),
     studentReplied: (i) => base.studentReplied(i),
     staffReplied: async (i) => {
-      const o = await viaOutbox(i.studentEmail, (studentId) => ({
+      const o = await viaOutbox(i, (studentId) => ({
         studentId, template: "support.reply", dedupeKey: `support.reply:${i.ticketNumber}:${h(`${i.excerpt}|${minute()}`)}`, params: { ticket: i.ticketNumber },
       }));
       if (handled(o)) return true;
@@ -42,7 +43,7 @@ export function createOutboxSupportNotifier(base: SupportNotifier, emit: typeof 
     },
     statusChanged: async (i) => {
       const label = STATUS[i.status] ?? { en: i.status, fr: i.status };
-      const o = await viaOutbox(i.studentEmail, (studentId) => ({
+      const o = await viaOutbox(i, (studentId) => ({
         studentId, template: "support.status", dedupeKey: `support.status:${i.ticketNumber}:${i.status}:${minute()}`, params: { ticket: i.ticketNumber, status: i.status, statusEn: label.en, statusFr: label.fr },
       }));
       if (handled(o)) return true;

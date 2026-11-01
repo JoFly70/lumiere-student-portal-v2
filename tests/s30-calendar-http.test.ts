@@ -171,9 +171,13 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("S30 Phase A: academic calendar (real Po
     // Ben cannot revoke Ada's link
     expect((await api().delete(`/api/student/calendar/subscriptions/${created.body.id}`).set(ben.user.auth)).status).toBe(404);
     // staff detailed feed identifies students; a student token never becomes a staff feed
-    const staffSub = await api().post("/api/admin/calendar/subscriptions").set(staff.auth).send({ privacy: "detailed" });
-    const staffFeed = await api().get(staffSub.body.feedPath);
-    expect(staffFeed.text).toContain("Ada Synthetic");
+    // detailed staff feeds are admin-only: a staff request is downgraded to minimal
+    const staffMinimal = await api().post("/api/admin/calendar/subscriptions").set(staff.auth).send({ privacy: "detailed" });
+    expect(staffMinimal.body.privacy).toBe("minimal");
+    expect((await api().get(staffMinimal.body.feedPath)).text).not.toContain("Ada Synthetic");
+    const adminSub = await api().post("/api/admin/calendar/subscriptions").set(admin.auth).send({ privacy: "detailed" });
+    expect((await api().get(adminSub.body.feedPath)).text).toContain("Ada Synthetic");
+    const staffSub = staffMinimal;
     expect((await api().delete(`/api/student/calendar/subscriptions/${created.body.id}`).set(ada.user.auth)).status).toBe(204);
     expect((await api().get(created.body.feedPath)).status).toBe(404);
     expect((await api().get("/calendar/feed/not-a-token.ics")).status).toBe(404);
@@ -181,6 +185,10 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("S30 Phase A: academic calendar (real Po
     await pg.sql(`update users set role = 'coach' where id = '${staff.id}'`);
     expect((await api().get(staffSub.body.feedPath)).status).toBe(404);
     await pg.sql(`update users set role = 'staff' where id = '${staff.id}'`);
+    // an archived account's links stop working on the next fetch
+    await pg.sql(`insert into profiles (user_id, status) values ('${admin.id}', 'archived')`);
+    expect((await api().get(adminSub.body.feedPath)).status).toBe(404);
+    await pg.sql(`delete from profiles where user_id = '${admin.id}'`);
   });
 
   it("due reminders are handed to the S29 outbox once per recipient (stable dedupe keys)", async () => {

@@ -347,19 +347,25 @@ export async function createSubscription(db: SqlExecutor, userId: string, scope:
   return { id: String(r!.id), scope, privacy, label, createdAt: iso(r!.created_at), lastUsedAt: null, feedPath: `/calendar/feed/${token}.ics` };
 }
 
+/** Revokes every live feed link of one user (account archived). Returns how many were revoked. */
+export async function revokeAllSubscriptions(db: SqlExecutor, userId: string): Promise<number> {
+  return rows(await db.execute(sql`UPDATE calendar_subscriptions SET revoked_at = now() WHERE user_id = ${userId} AND revoked_at IS NULL RETURNING id`)).length;
+}
+
 export async function revokeSubscription(db: SqlExecutor, userId: string, id: string): Promise<boolean> {
   return rows(await db.execute(sql`UPDATE calendar_subscriptions SET revoked_at = now() WHERE id = ${id}::uuid AND user_id = ${userId} AND revoked_at IS NULL RETURNING id`)).length > 0;
 }
 
 /**
- * Resolves a feed token to its owner, re-checking the owner's CURRENT role on every fetch (a demoted staff member's
- * staff link stops working; a student link only ever shows that student's own items).
+ * Resolves a feed token to its owner, re-checking the owner's CURRENT role and account status on every fetch (a demoted
+ * or archived member's link stops working; a student link only ever shows that student's own items).
  */
 export async function resolveFeedToken(db: SqlExecutor, token: string): Promise<{ id: string; userId: string; scope: "student" | "staff"; privacy: "minimal" | "detailed"; role: string; studentId: string | null } | null> {
   if (!TOKEN_PATTERN.test(token)) return null;
   const [r] = rows(await db.execute(sql`SELECT c.id, c.user_id, c.scope, c.privacy, u.role, s.id AS student_id
       FROM calendar_subscriptions c JOIN users u ON u.id = c.user_id LEFT JOIN students s ON s.user_id = c.user_id
-     WHERE c.token_hash = ${hashToken(token)} AND c.revoked_at IS NULL LIMIT 1`));
+     WHERE c.token_hash = ${hashToken(token)} AND c.revoked_at IS NULL
+       AND NOT EXISTS (SELECT 1 FROM profiles p WHERE p.user_id = c.user_id AND p.status <> 'active') LIMIT 1`));
   if (!r) return null;
   const scope = r.scope as "student" | "staff";
   const role = String(r.role);

@@ -154,6 +154,14 @@ router.delete('/users/:id', asyncHandler(async (req: any, res) => {
       return res.status(500).json({ error: 'Failed to archive user' });
     }
 
+    // S30: the user's calendar feed links stop too (the feed also re-checks the account status on every fetch).
+    try {
+      const [{ db }, { revokeAllSubscriptions }] = await Promise.all([import('../lib/db'), import('../services/s30/calendar')]);
+      await revokeAllSubscriptions(db as any, id);
+    } catch (feedError: any) {
+      logger.warn('Archived user but failed to revoke calendar feed links', { userId: id, error: feedError?.message });
+    }
+
     // The status change above is authoritative (every auth path checks it);
     // the Supabase ban additionally invalidates existing refresh tokens.
     let sessionsRevoked = true;

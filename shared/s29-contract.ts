@@ -112,7 +112,8 @@ export const conciergeSettingsSchema = z.object({
 export type ConciergeSettings = z.infer<typeof conciergeSettingsSchema>;
 
 export const DEFAULT_CONCIERGE_SETTINGS: ConciergeSettings = {
-  enabled: true,
+  // Off until the owner reviews the Needs Attention queue and switches the Concierge on (no student emails before that).
+  enabled: false,
   inactiveDays: 7,
   deadlineWindowDays: 14,
   paymentReminderDays: 7,

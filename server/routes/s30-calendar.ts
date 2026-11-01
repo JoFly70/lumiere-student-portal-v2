@@ -195,7 +195,9 @@ function subscriptionRoutes(router: Router, deps: CalendarRouteDeps, readers: Re
     if (!(await ok(req, res))) return;
     const body = createSubscriptionSchema.safeParse(req.body ?? {});
     if (!body.success) return validation(res, body.error);
-    const sub = await createSubscription(deps.db, req.user!.id, scope, body.data.privacy, body.data.label ?? null);
+    // Detailed staff feeds name every student to a third-party calendar: admins only; staff links are minimal.
+    const privacy = scope === "staff" && req.user!.role !== "admin" ? "minimal" : body.data.privacy;
+    const sub = await createSubscription(deps.db, req.user!.id, scope, privacy, body.data.label ?? null);
     audit(req, S30_AUDIT_EVENTS.calendarSubscriptionChanged, "Calendar subscription link created", { subscriptionId: sub.id, scope, privacy: sub.privacy });
     return res.status(201).json(sub);
   }));

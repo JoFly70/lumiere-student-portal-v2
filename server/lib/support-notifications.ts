@@ -8,6 +8,8 @@ import { sendEmail as defaultSendEmail } from "./email";
 export interface SupportNotifyTicket {
   readonly ticketNumber: string;
   readonly subject: string;
+  /** The ticket reporter's user id; the in-portal inbox resolves the student from it (email is only a fallback). */
+  readonly reporterUserId?: string | null;
 }
 
 export interface SupportNotifier {

@@ -53,6 +53,18 @@ export function emitStudentEventSoon(ev: StudentEvent): void {
   void emitStudentEvent(ev).catch(() => undefined);
 }
 
+/** The student record owned by a portal user (support tickets carry the reporter's user id). */
+export async function studentIdForUser(userId: string, deps: { db?: SqlExecutor } = {}): Promise<string | null> {
+  try {
+    const db = deps.db ?? (await defaultDb());
+    const { sql } = await import("drizzle-orm");
+    const r = Array.from((await db.execute(sql`SELECT s.id FROM students s WHERE s.user_id = ${userId} ORDER BY s.created_at LIMIT 1`)) as Array<{ id: string }>)[0];
+    return r ? String(r.id) : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Look up the student behind a support-ticket email (support notifier only knows the address). */
 export async function studentIdForEmail(email: string, deps: { db?: SqlExecutor } = {}): Promise<string | null> {
   try {
