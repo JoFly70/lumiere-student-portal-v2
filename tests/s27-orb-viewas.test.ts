@@ -13,6 +13,6 @@ describe("S27 owner requests: orb + persistent View as student", () => {
   it("has EN and FR labels", () => {
     expect((en as Record<string, string>)["orb.ask"]).toBe("Ask Lumière");
     expect((fr as Record<string, string>)["orb.ask"]).toBe("Demander à Lumière");
-    expect((fr as Record<string, string>)["staff.viewAs"]).toBe("Voir comme l’élève");
+    expect((fr as Record<string, string>)["staff.viewAs"]).toBe("Voir comme l’étudiant");
   });
 });

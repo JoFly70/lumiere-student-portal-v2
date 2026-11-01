@@ -53,7 +53,7 @@ const TAB_LABEL: Record<FileTab, TranslationKey> = {
 };
 
 export function StudentFile({ studentId }: { studentId: string }) {
-  const { t } = useT();
+  const { t, language } = useT();
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
   const search = useSearch();
@@ -137,7 +137,7 @@ export function StudentFile({ studentId }: { studentId: string }) {
               <h1 className="font-serif text-3xl leading-tight tracking-tight text-student-ink [overflow-wrap:anywhere] sm:text-4xl" data-testid="text-page-title">{name}</h1>
               <p className="break-words text-sm text-student-muted"><span className="font-mono">{s.student_code ?? t("owner.file.noCode")}</span>{programName ? ` · ${programName}` : ` · ${t("owner.file.noProgram")}`}{credits ? ` · ${credits}` : ""}{guardians ? ` · ${t("owner.file.guardian")}` : ""}</p>
               <div className="flex flex-wrap items-center gap-2 pt-1">
-                <StaffPill tone="seal">{studentStatusLabel((s.status ?? "").toLowerCase())}</StaffPill>
+                <StaffPill tone="seal">{studentStatusLabel((s.status ?? "").toLowerCase(), language)}</StaffPill>
                 {demo ? <DemoPill /> : null}
                 {kind !== "none" ? <StaffPill tone="neutral">{t(kind === "diploma" ? "owner.program.diploma" : "owner.program.bachelor")}</StaffPill> : null}
                 {supportLeft !== null ? <StaffPill tone="neutral">{t(supportLeft === 1 ? "owner.file.supportLeft.one" : "owner.file.supportLeft.other", { n: supportLeft })}</StaffPill> : null}

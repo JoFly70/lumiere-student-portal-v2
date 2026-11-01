@@ -26,7 +26,7 @@ export const staffEn = {
 export const staffFr: Record<keyof typeof staffEn, string> = {
   "app.skipToContent": "Aller au contenu",
   "orb.ask": "Demander à Lumière",
-  "staff.viewAs": "Voir comme l’élève",
+  "staff.viewAs": "Voir comme l’étudiant",
   "staff.access.restricted": "Cette page est réservée aux administrateurs. Voici votre bureau d’assistance.",
   "staff.access.dismiss": "Fermer",
   "staff.docs.upload.title": "Téléverser au nom de l'étudiant",

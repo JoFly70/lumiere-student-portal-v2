@@ -139,7 +139,7 @@ export const s32StaffShellFr: Record<keyof typeof s32StaffShellEn, string> = {
   "s32.nav.emailDelivery": "Envoi des courriels",
   "s32.nav.webResearch": "Recherche Web",
   "s32.nav.diagnostics": "Diagnostic",
-  "s32.nav.administration": "Administration du portail",
+  "s32.nav.administration": "Gestion du portail",
   "s32.nav.billing": "Facturation des étudiants",
   "s32.nav.account": "Votre compte",
   "s32.nav.userProfile": "Profil de l’utilisateur",
