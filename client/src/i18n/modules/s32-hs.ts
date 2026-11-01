@@ -113,7 +113,7 @@ export const s32HsEn = {
   "s32.fnd.requires": "Your degree requires {c}",
   "s32.fnd.surplus": "Surplus: {c}",
   "s32.fnd.surplus.tail": " (the hatched end of the Verified bar). {text}",
-  "s32.fnd.expl.surplus": "Verified credits beyond what any requirement needs; they’re on your record but don’t move you closer to graduation.",
+  "s32.fnd.expl.surplus": "Verified credits beyond what any requirement needs; they're on your record but don't move you closer to graduation.",
   "s32.fnd.expl.planned": "Credits from roadmap courses that the university has not accepted yet. This is planning only, not credit.",
   "s32.fnd.expl.earned": "Verified means Lumière checked and accepted the credit. Earned means that credit is counted toward a degree requirement.",
   "s32.fnd.note.review": "Lumière staff is reviewing your record, so earned and surplus credits are not shown yet.",
