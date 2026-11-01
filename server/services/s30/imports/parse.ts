@@ -4,7 +4,9 @@
  *
  * Safety:
  *  - Size: IMPORT_MAX_BYTES; rows: IMPORT_MAX_ROWS; columns and cell text bounded by the S05 limits.
- *  - Format by content (magic bytes), not by name: .xlsx (zip, zip-bomb checked by the S05 reader) or UTF-8 text CSV.
+ *  - Format by content (magic bytes), not by name: .xlsx or UTF-8 text CSV. .xlsx parts are actually inflated with a
+ *    hard cap before parsing and the workbook is STREAMED with a row cap (xlsx-stream.ts); a CSV is refused (not
+ *    truncated) when it has more non-empty rows than the cap.
  *    Legacy .xls, PDF, images and binary files are refused.
  *  - Formulas: .xlsx formulas are replaced by their cached result (never the formula text); any cell whose text
  *    starts like a formula (= + - @ tab CR) is flagged "formula_text" and never used as a value.
@@ -20,7 +22,8 @@ import {
   type ImportIssue,
   type ImportNormalizedRow,
 } from "@shared/s30-contract";
-import { readWorkbook } from "../../roadmap-import/reader";
+import { logger } from "../../../lib/logger";
+import { readXlsxRows, XlsxBudgetError } from "./xlsx-stream";
 import { MAX_CELL_TEXT, MAX_COLUMNS, norm } from "../../roadmap-import/util";
 
 export class ImportFileError extends Error {
@@ -61,6 +64,7 @@ export function parseCsv(text: string): string[][] {
   let row: string[] = [];
   let cell = "";
   let quoted = false;
+  let nonEmpty = 0;
   for (let i = 0; i < src.length; i++) {
     const ch = src[i]!;
     if (quoted) {
@@ -74,7 +78,10 @@ export function parseCsv(text: string): string[][] {
     if (ch === "\n" || ch === "\r") {
       if (ch === "\r" && src[i + 1] === "\n") i++;
       row.push(cell); out.push(row); row = []; cell = "";
-      if (out.length > IMPORT_MAX_ROWS + 1) break;
+      // Only non-empty rows count; blank lines can never cut the file short. Header search allows 10 leading rows.
+      if (out[out.length - 1]!.some((c) => c.trim() !== "") && ++nonEmpty > IMPORT_MAX_ROWS + 10) {
+        throw new ImportFileError("too_many_rows", `At most ${IMPORT_MAX_ROWS} data rows per file.`);
+      }
       continue;
     }
     cell += ch;
@@ -105,7 +112,8 @@ function tableFromGrid(grid: readonly (readonly unknown[])[], format: "csv" | "x
     const r = grid[i]!;
     if (!r.some((c) => cellText(c) !== "")) continue;
     if (dataRows.length >= IMPORT_MAX_ROWS) throw new ImportFileError("too_many_rows", `At most ${IMPORT_MAX_ROWS} data rows per file.`);
-    const cells: Record<string, string> = {};
+    // Null prototype: a header named "__proto__" (or "constructor") is just a column name.
+    const cells: Record<string, string> = Object.create(null) as Record<string, string>;
     headers.forEach((h, j) => { cells[h] = cellText(r[j]); });
     dataRows.push({ rowNumber: i + 1, cells });
   }
@@ -118,16 +126,18 @@ export async function readTable(buffer: Buffer): Promise<ImportTable> {
   const sha256 = createHash("sha256").update(buffer).digest("hex");
   const format = detectFormat(buffer);
   if (format === "csv") return tableFromGrid(parseCsv(buffer.toString("utf8")), "csv", null, sha256, buffer.length);
-  let wb;
+  let sheet;
   try {
-    wb = await readWorkbook(buffer);
+    // Header (within the first 10 rows) + the data cap: one more non-empty row than that means "too many".
+    sheet = await readXlsxRows(buffer, IMPORT_MAX_ROWS + 10);
   } catch (error) {
-    throw new ImportFileError("unreadable", error instanceof Error ? error.message : "The workbook could not be read.");
+    // Fixed client message; the parser's own text (which may echo file content) is only logged, without content.
+    logger.warn("Import workbook rejected", { kind: error instanceof XlsxBudgetError ? "budget" : "parse", name: error instanceof Error ? error.name : typeof error });
+    throw new ImportFileError("unreadable", error instanceof XlsxBudgetError ? "The workbook is too large when expanded or is not a valid .xlsx file." : "The workbook could not be read. Save it again as .xlsx (or export CSV) and retry.");
   }
-  const sheet = wb.sheets.find((s) => s.rows.slice(0, 10).some((r) => r.filter((c) => cellText(c) !== "").length >= 2));
-  if (!sheet) throw new ImportFileError("no_header", "No sheet with a header row was found.");
-  if (sheet.truncatedRows) throw new ImportFileError("too_many_rows", `At most ${IMPORT_MAX_ROWS} data rows per file.`);
-  return tableFromGrid(sheet.rows, "xlsx", sheet.name, sha256, buffer.length);
+  if (!sheet.rows.length) throw new ImportFileError("no_header", "No sheet with a header row was found.");
+  if (sheet.truncated) throw new ImportFileError("too_many_rows", `At most ${IMPORT_MAX_ROWS} data rows per file.`);
+  return tableFromGrid(sheet.rows, "xlsx", sheet.sheetName, sha256, buffer.length);
 }
 
 // ── mapping ──────────────────────────────────────────────────────────────────
