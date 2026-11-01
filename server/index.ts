@@ -18,6 +18,7 @@ import { safeRequestContext } from "./lib/log-redaction";
 import { logger, logStartup, generateRequestId } from "./lib/logger";
 import { assertProductionAuthPolicy } from "./lib/production-auth-guard";
 import { checkRedisHealth, configureRateLimitBackend, createRateLimitStore, getRateLimitBackend, trackRedisHealth, withCommandTimeout } from "./lib/rate-limit-store";
+import { onResponseFinished, safeLogPath, startS29Runtime } from './services/s29/runtime';
 
 const app = express();
 const isProduction = process.env.NODE_ENV === 'production';
@@ -246,7 +247,8 @@ configureRequestBody(app);
 app.use((req, res, next) => {
   const start = Date.now();
   const requestId = generateRequestId();
-  const path = req.path;
+  // S29: calendar subscription tokens never reach the logs.
+  const path = safeLogPath(req.path);
 
   // Add request ID to headers for tracing
   res.setHeader('X-Request-ID', requestId);
@@ -267,6 +269,8 @@ app.use((req, res, next) => {
         userAgent: req.get('user-agent'),
       });
     }
+    // S29: bounded incident capture for 5xx + throttled scheduler catch-up (Autoscale has no idle timer).
+    onResponseFinished(path, res.statusCode, requestId);
   });
 
   next();
@@ -298,7 +302,7 @@ app.use((req, res, next) => {
       },
       request: {
         method: req.method,
-        path: req.path,
+        path: safeLogPath(req.path),
         ip: req.ip,
       },
       statusCode: status,
@@ -354,6 +358,8 @@ app.use((req, res, next) => {
   }, () => {
     logStartup(port);
     log(`serving on port ${port}`);
+    // S29: durable scheduler (DB-leased jobs: rules, concierge, notification delivery, operations watch).
+    startS29Runtime();
     
     if (isProduction) {
       logger.info('Production mode enabled', {

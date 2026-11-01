@@ -17,6 +17,10 @@ import { highSchoolEn } from "./modules/high-school";
 import { studentUxEn } from "./modules/student-ux";
 import { s27OwnerEn } from "./modules/s27-owner";
 import { s27En } from "./modules/s27";
+import { s29CoreEn } from "./modules/s29-core";
+import { s29CalendarEn } from "./modules/s29-calendar";
+import { s29ImportsEn } from "./modules/s29-imports";
+import { s29OpsEn } from "./modules/s29-ops";
 
 export const en = {
   ...authEn,
@@ -30,6 +34,10 @@ export const en = {
   ...studentUxEn,
   ...s27OwnerEn,
   ...s27En,
+  ...s29CoreEn,
+  ...s29CalendarEn,
+  ...s29ImportsEn,
+  ...s29OpsEn,
   // Language
   "language.label": "Language",
   "language.en": "English",

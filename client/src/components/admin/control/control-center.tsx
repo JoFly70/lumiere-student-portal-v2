@@ -25,6 +25,7 @@ import {
   programLabelKey, queueActionHref, queueItemMeta, queueSeverityCounts, sortQueue, supportWindowTone, todayIsoLocal, type StudentFilter, type Tone,
 } from "@/lib/owner-presentation";
 import { cn } from "@/lib/utils";
+import { NeedsAttention } from "@/components/s29/core/needs-attention";
 import "@/styles/student-s27.css";
 import "@/styles/student-s27-extra.css";
 import "@/styles/owner-cockpit.css";
@@ -570,7 +571,8 @@ export function ControlCenter() {
       <div className={cn("occ-grid", isAdmin && "has-ai")}>
         <div className="colst">
           <FleetInstrument rows={d.students} hrefOf={(r) => studentOpenHref(r, role)} />
-          <QueueCard queue={queue} role={role} demoIds={demoIds} />
+          {/* S29: the persisted "Needs attention" queue (same rules + S29 rules); the S27 card is the fallback. */}
+          <NeedsAttention fallback={<QueueCard queue={queue} role={role} demoIds={demoIds} />} />
         </div>
         <div className="colst">
           <DeadlinesCard d={d} locale={locale} demoIds={demoIds} />

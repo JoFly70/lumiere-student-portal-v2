@@ -223,6 +223,8 @@ export interface ControlQueueItem {
   /** Client route to act on it, e.g. /admin/students/:id?tab=billing */
   readonly href: string;
   readonly at: string | null;
+  /** S29: the recorded facts behind the item (dates, counts, ids; never message bodies or contact data). */
+  readonly facts?: Readonly<Record<string, string | number | boolean | null>>;
 }
 export interface ControlStudentRow {
   readonly studentId: string;

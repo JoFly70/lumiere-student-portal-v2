@@ -11,7 +11,9 @@ const SAME_ALLOWED = new Set<string>([
   // S27 Beyond page: placeholder-only strings and proper nouns / loanwords used in both languages
   "s27.bd.h1.where", "s27.bd.tl.degreeSubField", "s27.bd.ck.chip.on", "s27.bd.pw.quebec.cegep", "s27.bd.svc.eyebrow",
 ]);
-const SAME_VALUE_ALLOWED = new Set<string>(["Documents", "Type", "Actions", "Description", "Documents", "Support", "Total", "Date", "Format", "Portail", "Contact", "Message", "Notes", "Section", "Original", "Image", "Photo", "Maintenance", "Standard", "Information", "Parent", "Passeport", "Transfer", "Admin", "Email", "Lumière", "English", "Français", "Dr", "Mme", "M."]);
+const SAME_VALUE_ALLOWED = new Set<string>(["Documents", "Type", "Actions", "Description", "Documents", "Support", "Total", "Date", "Format", "Portail", "Contact", "Message", "Notes", "Section", "Original", "Image", "Photo", "Maintenance", "Standard", "Information", "Parent", "Passeport", "Transfer", "Admin", "Email", "Lumière", "English", "Français", "Dr", "Mme", "M.",
+  // S29: identical French cognates / technical terms
+  "Notifications", "Diagnostics", "Incidents", "Agenda", "Source", "Statut", "Priorité", "Aperçu", "CSV", "XLSX", "iCalendar", "Score", "Code", "Total", "Options", "Questions", "Points"]);
 
 describe("S19 EN/FR parity (core + modules)", () => {
   it("every EN key exists in FR and FR has no extras", () => {

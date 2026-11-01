@@ -14,6 +14,13 @@ export type HsAuditSink = (req: Request, records: readonly HsAuditRecord[]) => v
 
 export const emitHighSchoolAudit: HsAuditSink = (req, records) => {
   for (const r of records) {
+    // S29: a newly published roadmap is announced to the student through the Notification Center.
+    if (r.event === "high_school.roadmap_published" && r.studentId) {
+      const versionId = String((r.metadata as Record<string, unknown> | undefined)?.versionId ?? "");
+      void import("../services/s29/events")
+        .then(({ emitStudentEventSoon }) => emitStudentEventSoon({ studentId: r.studentId!, template: "roadmap.published", dedupeKey: `roadmap.published:${versionId || r.studentId}` }))
+        .catch(() => undefined);
+    }
     try {
       void Promise.resolve(
         createAuditLog({

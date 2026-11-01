@@ -1,4 +1,4 @@
-import { BookOpen, FileText, CreditCard, GraduationCap, HelpCircle, LogOut, User, Gauge, ShieldCheck, School, Sparkles, Shuffle, Library, Globe } from "lucide-react";
+import { BookOpen, FileText, CreditCard, GraduationCap, HelpCircle, LogOut, User, Gauge, ShieldCheck, School, Sparkles, Shuffle, Library, Globe, Bell, Activity } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -66,6 +66,7 @@ const studentMenuItems: { title: string; labelKey?: TranslationKey; url: string;
   { title: "Library", labelKey: "ux.nav.library", url: "/library", icon: Library },
   { title: "Student Profile", labelKey: "nav.profile", url: "/profile", icon: User },
   { title: "Your Roadmap", labelKey: "nav.roadmap", url: "/roadmap", icon: BookOpen },
+  { title: "Notifications", labelKey: "s29.core.nav.notifications", url: "/notifications", icon: Bell },
   { title: "Documents", labelKey: "nav.documents", url: "/documents", icon: FileText },
   { title: "Billing", labelKey: "nav.billing", url: "/billing", icon: CreditCard },
   { title: "Support", labelKey: "nav.support", url: "/support", icon: HelpCircle },
@@ -84,7 +85,9 @@ const adminMenuItems = [
   { title: "Support desk", url: "/support", icon: HelpCircle },
   { title: "Elective requests", url: "/admin/elective-requests", icon: Shuffle },
   { title: "Lumière AI", url: "/admin/assistant", icon: Sparkles },
+  { title: "Notifications", url: "/admin/notifications", icon: Bell },
   { title: "Web research", url: "/admin/web-research", icon: Globe },
+  { title: "Diagnostics", url: "/admin/diagnostics", icon: Activity },
   { title: "Administration", url: "/admin", icon: ShieldCheck },
 ];
 
@@ -100,6 +103,10 @@ const staffControlItem = { title: "Control Center", url: "/staff/control-center"
 const staffBillingItem = { title: "Student billing", url: STAFF_BILLING_PATH, icon: CreditCard };
 // S27: web research is for staff and admins (never coaches or students).
 const staffWebItem = { title: "Web research", url: "/admin/web-research", icon: Globe };
+// S29: staff also work the calendar, the notification history and academic imports (diagnostics stay admin-only).
+const staffS29Items = [
+  { title: "Notifications", url: "/admin/notifications", icon: Bell },
+];
 
 export function AppSidebar() {
   const [location] = useLocation();
@@ -124,7 +131,7 @@ export function AppSidebar() {
       : isStudent
         ? studentMenuItems
         : user?.role === "staff"
-          ? [staffControlItem, ...staffMenuItems, staffBillingItem, staffWebItem]
+          ? [staffControlItem, ...staffMenuItems, staffBillingItem, ...staffS29Items, staffWebItem]
           : staffMenuItems;
 
   const displayName = isStudent && profile

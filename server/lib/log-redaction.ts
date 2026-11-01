@@ -44,7 +44,9 @@ export function redactValue(value: unknown, depth = 0): unknown {
 
 /** Request facts that are safe to attach to an error report (no headers, no query string, no body). */
 export function safeRequestContext(req: { method?: string; path?: string; ip?: string }) {
-  return { method: req.method, path: req.path, ip: req.ip };
+  // S29: calendar subscription tokens live in the feed path; never forward them.
+  const path = typeof req.path === 'string' && /^\/api\/calendar\/feed\//.test(req.path) ? '/api/calendar/feed/[token].ics' : req.path;
+  return { method: req.method, path, ip: req.ip };
 }
 
 /** Sentry `beforeSend`: drop health probes, scrub credentials and request payloads. */

@@ -3,8 +3,9 @@ import { Link, useLocation, useSearch } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, Search } from "lucide-react";
 import { api } from "@/lib/api";
-import { StaffEmpty, StaffPage, StaffPageHeader, staffBtn, staffField } from "@/components/staff/staff-ui";
+import { StaffPage, StaffPageHeader, staffBtn, staffField } from "@/components/staff/staff-ui";
 import { OwnerAssistantPanel } from "@/components/owner-assistant/owner-assistant-panel";
+import { FleetCopilot } from "@/components/s29/core/fleet-copilot";
 
 interface StudentRow { id: string; first_name: string; last_name: string; preferred_name?: string | null; student_code?: string | null; status: string }
 
@@ -63,9 +64,8 @@ export default function AdminAssistant() {
               </Link>
             </>
           ) : (
-            <StaffEmpty title="Choose a student" testId="assistant-no-student">
-              Owner AI works on one student file at a time, so its answers can only use that student's records.
-            </StaffEmpty>
+            // S29: with no student chosen, the Fleet copilot answers portfolio-wide questions.
+            <FleetCopilot />
           )}
         </div>
       </div>

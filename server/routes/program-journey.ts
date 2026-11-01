@@ -104,6 +104,15 @@ const validation = (res: Response, error: z.ZodError) =>
   res.status(400).json({ error: { code: E.VALIDATION, message: "Invalid request", details: { issues: error.issues.map((i) => ({ path: i.path.join("."), message: i.message })) } } });
 
 const idSchema = z.string().trim().min(1).max(128);
+
+/** S29: confirmed / cancelled orientation sessions reach the student through the Notification Center. */
+function notifySession(studentId: string, session: { id: string; status: string; slotAt: string }): void {
+  if (session.status !== "confirmed" && session.status !== "cancelled") return;
+  const template = session.status === "confirmed" ? "orientation.confirmed" : "orientation.cancelled";
+  void import("../services/s29/events")
+    .then(({ emitStudentEventSoon }) => emitStudentEventSoon({ studentId, template, dedupeKey: `${template}:${session.id}:${session.slotAt}`, when: session.slotAt }))
+    .catch(() => undefined);
+}
 const checkpointKeySchema = z.enum(CHECKPOINT_KEYS);
 
 // ── student ──────────────────────────────────────────────────────────────────
@@ -254,6 +263,7 @@ export function createAdminJourneyRouter(deps: AdminJourneyRouterDeps) {
     if (!body.success) return validation(res, body.error);
     const out = await deps.service.createSessionForStudent(id, req.user!.id, body.data);
     audit(req, out.audits);
+    notifySession(id, out.result);
     return res.status(201).json(out.result);
   }));
   router.patch(`${base}/orientation-sessions/:sessionId`, ...adminWrite, handle("session update", async (req, res, id) => {
@@ -262,6 +272,7 @@ export function createAdminJourneyRouter(deps: AdminJourneyRouterDeps) {
     if (!sid.success || !body.success) return body.success ? res.status(400).json({ error: { code: E.VALIDATION, message: "Invalid session id" } }) : validation(res, body.error);
     const out = await deps.service.updateSession(id, sid.data, req.user!.id, body.data);
     audit(req, out.audits);
+    if (body.data.status || body.data.slotAt) notifySession(id, out.result);
     return res.json(out.result);
   }));
 
