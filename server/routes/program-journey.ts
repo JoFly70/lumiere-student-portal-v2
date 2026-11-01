@@ -46,27 +46,7 @@ import { guardRoles, mentionsStudentId } from "./high-school-http";
 
 export type ProgramAuditSink = (req: Request, records: readonly ProgramAuditRecord[]) => void;
 
-/** S30: program journey changes feed the operational event store (the calendar re-reads them on the next fetch). */
-const OPS_KIND: Partial<Record<string, "program.session_changed" | "program.checkpoint_changed">> = {
-  "program.session_requested": "program.session_changed",
-  "program.session_updated": "program.session_changed",
-  "program.checkpoint_updated": "program.checkpoint_changed",
-};
-function emitOpsEvents(req: Request, records: readonly ProgramAuditRecord[]): void {
-  const relevant = records.filter((r) => OPS_KIND[r.event]);
-  if (!relevant.length) return;
-  void (async () => {
-    const [{ s30Db }, { emitEvent }] = await Promise.all([import("../services/s30/default"), import("../services/s30/ops")]);
-    for (const r of relevant) {
-      const data: Record<string, string | number | boolean | null> = {};
-      for (const [k, v] of Object.entries(r.metadata)) if (v === null || ["string", "number", "boolean"].includes(typeof v)) data[k] = v as string | number | boolean | null;
-      emitEvent(s30Db, { kind: OPS_KIND[r.event]!, studentId: r.studentId, subjectType: r.event === "program.checkpoint_updated" ? "checkpoint" : "orientation_session", data, actorId: req.user?.id ?? null });
-    }
-  })().catch((error: unknown) => logger.warn("Program ops event emit failed", { error: error instanceof Error ? error.name : String(error) }));
-}
-
 export const emitProgramAudit: ProgramAuditSink = (req, records) => {
-  emitOpsEvents(req, records);
   for (const r of records) {
     try {
       void Promise.resolve(createAuditLog({

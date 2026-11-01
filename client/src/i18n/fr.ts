@@ -10,7 +10,7 @@ import { highSchoolFr } from "./modules/high-school";
 import { studentUxFr } from "./modules/student-ux";
 import { s27OwnerFr } from "./modules/s27-owner";
 import { s27Fr } from "./modules/s27";
-import { s30OpsFr } from "./modules/s30-ops";
+import { s30CalendarFr } from "./modules/s30-calendar";
 
 /**
  * Dictionnaire français (vouvoiement). Typé contre `en.ts` : toute clé anglaise doit exister ici.
@@ -29,7 +29,7 @@ export const fr: Record<TranslationKey, string> = {
   ...studentUxFr,
   ...s27OwnerFr,
   ...s27Fr,
-  ...s30OpsFr,
+  ...s30CalendarFr,
   "language.label": "Langue",
   "language.en": "English",
   "language.fr": "Français",

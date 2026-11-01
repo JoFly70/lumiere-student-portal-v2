@@ -9,7 +9,6 @@ import { BookOpen, FileText, Gauge, HelpCircle, Menu, School } from "lucide-reac
 import { cn } from "@/lib/utils";
 import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { NotificationsBell } from "@/components/s30/notifications-bell";
 import { LanguageToggle } from "@/components/language-toggle";
 import { useT, type TranslationKey } from "@/i18n";
 import { filterStudentNav, useStudentPrograms } from "@/lib/student-programs";
@@ -54,7 +53,6 @@ export function StudentHeader() {
           <LanguageToggle />
           <ThemeToggle className="h-11 w-11" />
         </div>
-        <NotificationsBell />
         <AccountMenu identity={identity} onSignOut={() => void logout()} onPhotoChanged={photoChanged} />
       </div>
     </header>

@@ -33,6 +33,8 @@ import Admin from "@/pages/admin";
 import AdminSupportCenter from "@/pages/admin-support-center";
 import AdminAssistant from "@/pages/admin-assistant";
 import AdminWebResearch from "@/pages/admin-web-research";
+import AdminCalendar from "@/pages/admin-calendar";
+import StudentCalendar from "@/pages/student-calendar";
 import AdminElectiveRequests from "@/pages/admin-elective-requests";
 import AdminStudentWorkspace from "@/pages/admin-student-workspace";
 import AdminStudentFile from "@/pages/admin-student-file";
@@ -109,6 +111,14 @@ function Router() {
         {() => (
           <ProtectedRoute requireRole={["admin", "staff"]}>
             <AdminSupportCenter />
+          </ProtectedRoute>
+        )}
+      </Route>
+      {/* S30: academic calendar — admin and staff see every student (the server scopes the data). */}
+      <Route path="/admin/calendar">
+        {() => (
+          <ProtectedRoute requireRole={["admin", "staff"]}>
+            <AdminCalendar />
           </ProtectedRoute>
         )}
       </Route>
@@ -228,6 +238,15 @@ function Router() {
         {() => (
           <ProtectedRoute requireRole="student">
             <StudentProfile />
+          </ProtectedRoute>
+        )}
+      </Route>
+
+      {/* S30: the student's own academic calendar (deadlines, milestones, appointments). */}
+      <Route path="/calendar">
+        {() => (
+          <ProtectedRoute requireRole="student">
+            <StudentCalendar />
           </ProtectedRoute>
         )}
       </Route>

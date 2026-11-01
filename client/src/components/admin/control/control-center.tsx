@@ -8,7 +8,7 @@
  */
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "wouter";
-import { ArrowRight, CalendarDays, Eye, Gauge, Loader2, RefreshCw, Sparkles } from "lucide-react";
+import { ArrowRight, CalendarDays, Eye, Loader2, RefreshCw, Sparkles } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { useT, type TranslationKey } from "@/i18n";
 import type { ControlCenterView, ControlQueueItem, ControlStudentRow } from "@shared/s27-contract";
@@ -562,9 +562,8 @@ export function ControlCenter() {
   return (
     <div className="s27 occ" data-testid="control-center">
       <Headline count={d.counts.needsYou} demoCount={demoCount} total={d.students.length} locale={locale} />
-      <nav className="status occ-links" aria-label={t("ops.links.label")} data-testid="cc-s30-links" style={{ display: "flex", flexWrap: "wrap", gap: 8, margin: "4px 0 14px" }}>
-        <Link href="/admin/operations" className="pill" data-testid="cc-link-operations"><Gauge size={13} aria-hidden="true" /> {t("ops.links.operations")}</Link>
-        <Link href="/admin/calendar" className="pill" data-testid="cc-link-calendar"><CalendarDays size={13} aria-hidden="true" /> {t("ops.links.calendar")}</Link>
+      <nav aria-label={t("cal.link.controlCenter")} data-testid="cc-s30-links" style={{ display: "flex", flexWrap: "wrap", gap: 8, margin: "4px 0 14px" }}>
+        <Link href="/admin/calendar" className="pill" data-testid="cc-link-calendar"><CalendarDays size={13} aria-hidden="true" /> {t("cal.link.controlCenter")}</Link>
       </nav>
       {d.truncated ? <p className="notice warn" role="status" data-testid="cc-truncated">{t("owner.cc.truncated")}</p> : null}
       <Widgets d={d} today={today} locale={locale} demoIds={demoIds} />

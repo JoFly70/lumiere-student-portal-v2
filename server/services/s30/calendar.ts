@@ -26,7 +26,7 @@ import {
   type UpdateCalendarEventInput,
 } from "@shared/s30-contract";
 import { computeDeadlines } from "../program-journey/math";
-import { OpsError, isMissingTable, iso, recordEvent, rows, str, type SqlExecutor, type TxDb } from "./ops";
+import { CalendarError, isMissingTable, iso, rows, str, type SqlExecutor, type TxDb } from "./db-util";
 
 const STUDENT_CAP = 500;
 const EVENT_CAP = 5000;
@@ -273,23 +273,24 @@ export interface CalendarMutationResult {
   readonly change: "scheduled" | "rescheduled" | "cancelled" | "updated";
   readonly kind: CalendarEventKind;
   readonly startsAt: string;
+  /** Row version after this change (the iCalendar SEQUENCE); also makes the change's dedupe key unique. */
+  readonly sequence: number;
 }
 
 const isUniqueViolation = (error: unknown) => { for (let e: any = error, i = 0; e && i < 4; e = e.cause, i++) if (e.code === "23505") return true; return false; };
 
 export async function createCalendarEvent(db: TxDb, input: CreateCalendarEventInput, actorId: string): Promise<CalendarMutationResult> {
   const [s] = rows(await db.execute(sql`SELECT id, user_id FROM students WHERE id = ${input.studentId} LIMIT 1`));
-  if (!s) throw new OpsError(E.NOT_FOUND, 404, "Student not found");
+  if (!s) throw new CalendarError(E.NOT_FOUND, 404, "Student not found");
   const startsAt = input.allDay ? `${input.startsAt.slice(0, 10)}T00:00:00.000Z` : new Date(input.startsAt).toISOString();
   try {
     const [r] = rows(await db.execute(sql`INSERT INTO calendar_events (student_id, kind, title, starts_at, ends_at, all_day, time_zone, location, visible_to_student, created_by, updated_by)
       VALUES (${input.studentId}, ${input.kind}, ${input.title}, ${startsAt}::timestamptz, ${input.endsAt ?? null}::timestamptz, ${input.allDay}, ${input.timeZone},
               ${input.location ?? null}, ${input.visibleToStudent}, ${actorId}, ${actorId}) RETURNING id`));
     const id = String(r!.id);
-    await recordEvent(db, { kind: "calendar.event_scheduled", studentId: input.studentId, subjectType: "calendar_event", subjectId: id, data: { eventKind: input.kind, startsAt }, actorId });
-    return { id, studentId: input.studentId, studentUserId: str(s.user_id), visibleToStudent: input.visibleToStudent, change: "scheduled", kind: input.kind, startsAt };
+    return { id, studentId: input.studentId, studentUserId: str(s.user_id), visibleToStudent: input.visibleToStudent, change: "scheduled", kind: input.kind, startsAt, sequence: 0 };
   } catch (error) {
-    if (isUniqueViolation(error)) throw new OpsError(E.DUPLICATE_SCHEDULE, 409, "An event of this kind is already scheduled for this student at that time");
+    if (isUniqueViolation(error)) throw new CalendarError(E.DUPLICATE_SCHEDULE, 409, "An event of this kind is already scheduled for this student at that time");
     throw error;
   }
 }
@@ -297,12 +298,12 @@ export async function createCalendarEvent(db: TxDb, input: CreateCalendarEventIn
 export async function updateCalendarEvent(db: TxDb, id: string, input: UpdateCalendarEventInput, actorId: string): Promise<CalendarMutationResult> {
   return db.transaction(async (tx) => {
     const [cur] = rows(await tx.execute(sql`SELECT e.*, s.user_id FROM calendar_events e JOIN students s ON s.id = e.student_id WHERE e.id = ${id}::uuid FOR UPDATE OF e`));
-    if (!cur) throw new OpsError(E.NOT_FOUND, 404, "Calendar event not found");
-    if (cur.status === "cancelled") throw new OpsError(E.INVALID_TRANSITION, 409, "A cancelled event cannot be changed; schedule a new one");
+    if (!cur) throw new CalendarError(E.NOT_FOUND, 404, "Calendar event not found");
+    if (cur.status === "cancelled") throw new CalendarError(E.INVALID_TRANSITION, 409, "A cancelled event cannot be changed; schedule a new one");
     const allDay = input.allDay ?? Boolean(cur.all_day);
     const startsAt = input.startsAt ? (allDay ? `${input.startsAt.slice(0, 10)}T00:00:00.000Z` : new Date(input.startsAt).toISOString()) : iso(cur.starts_at);
     const endsAt = input.endsAt === undefined ? (cur.ends_at ? iso(cur.ends_at) : null) : input.endsAt;
-    if (endsAt && Date.parse(endsAt) <= Date.parse(startsAt)) throw new OpsError(E.VALIDATION, 400, "endsAt must be after startsAt");
+    if (endsAt && Date.parse(endsAt) <= Date.parse(startsAt)) throw new CalendarError(E.VALIDATION, 400, "endsAt must be after startsAt");
     const moved = startsAt !== iso(cur.starts_at) || (endsAt ?? null) !== (cur.ends_at ? iso(cur.ends_at) : null);
     const cancel = input.status === "cancelled";
     try {
@@ -313,16 +314,11 @@ export async function updateCalendarEvent(db: TxDb, id: string, input: UpdateCal
           sequence = sequence + 1, updated_by = ${actorId}, updated_at = now()
         WHERE id = ${id}::uuid`);
     } catch (error) {
-      if (isUniqueViolation(error)) throw new OpsError(E.DUPLICATE_SCHEDULE, 409, "An event of this kind is already scheduled for this student at that time");
+      if (isUniqueViolation(error)) throw new CalendarError(E.DUPLICATE_SCHEDULE, 409, "An event of this kind is already scheduled for this student at that time");
       throw error;
     }
     const change = cancel ? "cancelled" : moved ? "rescheduled" : "updated";
-    await recordEvent(tx, {
-      kind: cancel ? "calendar.event_cancelled" : moved ? "calendar.event_rescheduled" : "calendar.event_scheduled",
-      studentId: String(cur.student_id), subjectType: "calendar_event", subjectId: id, data: { eventKind: String(cur.kind), startsAt, change }, actorId,
-      dedupeKey: change === "updated" ? null : `calendar:${id}:${Number(cur.sequence) + 1}`,
-    });
-    return { id, studentId: String(cur.student_id), studentUserId: str(cur.user_id), visibleToStudent: input.visibleToStudent ?? Boolean(cur.visible_to_student), change, kind: cur.kind as CalendarEventKind, startsAt };
+    return { id, studentId: String(cur.student_id), studentUserId: str(cur.user_id), visibleToStudent: input.visibleToStudent ?? Boolean(cur.visible_to_student), change, kind: cur.kind as CalendarEventKind, startsAt, sequence: Number(cur.sequence) + 1 };
   });
 }
 
@@ -344,7 +340,7 @@ export async function listSubscriptions(db: SqlExecutor, userId: string): Promis
 
 export async function createSubscription(db: SqlExecutor, userId: string, scope: "student" | "staff", privacy: "minimal" | "detailed", label: string | null): Promise<CalendarSubscriptionView> {
   const [n] = rows(await db.execute(sql`SELECT count(*)::int AS n FROM calendar_subscriptions WHERE user_id = ${userId} AND revoked_at IS NULL`));
-  if (Number(n?.n ?? 0) >= MAX_SUBSCRIPTIONS_PER_USER) throw new OpsError(E.VALIDATION, 409, `At most ${MAX_SUBSCRIPTIONS_PER_USER} active calendar links; revoke one first`);
+  if (Number(n?.n ?? 0) >= MAX_SUBSCRIPTIONS_PER_USER) throw new CalendarError(E.VALIDATION, 409, `At most ${MAX_SUBSCRIPTIONS_PER_USER} active calendar links; revoke one first`);
   const token = randomBytes(32).toString("base64url");
   const [r] = rows(await db.execute(sql`INSERT INTO calendar_subscriptions (user_id, scope, token_hash, privacy, label) VALUES (${userId}, ${scope}, ${hashToken(token)}, ${privacy}, ${label})
     RETURNING id, created_at`));
@@ -371,4 +367,19 @@ export async function resolveFeedToken(db: SqlExecutor, token: string): Promise<
   if (scope === "student" && (role !== "student" || !r.student_id)) return null;
   void Promise.resolve(db.execute(sql`UPDATE calendar_subscriptions SET last_used_at = now() WHERE id = ${String(r.id)}::uuid`)).catch(() => undefined);
   return { id: String(r.id), userId: String(r.user_id), scope, privacy: r.privacy as "minimal" | "detailed", role, studentId: str(r.student_id) };
+}
+
+// ── health (for S29 diagnostics to include) ──────────────────────────────────
+
+export interface CalendarHealth { readonly schema: boolean; readonly scheduledUpcoming: number; readonly scheduledTotal: number; readonly activeFeeds: number; readonly feedsUsed7d: number }
+/** Read-only counts for the operational diagnostics owned by S29. `schema: false` when the S30 calendar migration is missing. */
+export async function calendarHealth(db: SqlExecutor): Promise<CalendarHealth> {
+  try {
+    const [c] = rows(await db.execute(sql`SELECT count(*) FILTER (WHERE status = 'scheduled' AND starts_at > now())::int AS upcoming, count(*)::int AS total FROM calendar_events`));
+    const [s] = rows(await db.execute(sql`SELECT count(*) FILTER (WHERE revoked_at IS NULL)::int AS active, count(*) FILTER (WHERE revoked_at IS NULL AND last_used_at > now() - interval '7 days')::int AS used FROM calendar_subscriptions`));
+    return { schema: true, scheduledUpcoming: Number(c?.upcoming ?? 0), scheduledTotal: Number(c?.total ?? 0), activeFeeds: Number(s?.active ?? 0), feedsUsed7d: Number(s?.used ?? 0) };
+  } catch (error) {
+    if (isMissingTable(error)) return { schema: false, scheduledUpcoming: 0, scheduledTotal: 0, activeFeeds: 0, feedsUsed7d: 0 };
+    throw error;
+  }
 }

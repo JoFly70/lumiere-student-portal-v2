@@ -12,7 +12,6 @@ import { useEffect, useState } from "react";
 import { LumiereWordmark } from "@/components/brand/lumiere-brand";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { NotificationsBell } from "@/components/s30/notifications-bell";
 import { StaffAvatar } from "@/components/staff/staff-ui";
 import { GlobalSearch } from "@/components/os/global-search";
 import { HeaderViewAs } from "@/components/staff/header-view-as";
@@ -69,7 +68,6 @@ export function StaffHeader({ name, role }: { name?: string; role?: string }) {
             </p>
           </div>
         )}
-        <NotificationsBell />
         <ThemeToggle />
       </div>
     </header>

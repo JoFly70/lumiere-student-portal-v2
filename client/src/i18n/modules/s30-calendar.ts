@@ -34,6 +34,8 @@ export const s30CalendarEn = {
 
   // page
   "cal.eyebrow": "Academic calendar",
+  "cal.nav": "Calendar",
+  "cal.link.controlCenter": "Academic calendar",
   "cal.admin.title": "Academic calendar",
   "cal.admin.subtitle": "Every deadline, checkpoint, session and meeting in one place. Schedule or move a session and the student is told.",
   "cal.student.title": "My calendar",
@@ -182,6 +184,8 @@ export const s30CalendarFr: Record<keyof typeof s30CalendarEn, string> = {
   "cal.status.overdue": "Échéance passée",
 
   "cal.eyebrow": "Calendrier scolaire",
+  "cal.nav": "Calendrier",
+  "cal.link.controlCenter": "Calendrier scolaire",
   "cal.admin.title": "Calendrier scolaire",
   "cal.admin.subtitle": "Toutes les échéances, étapes, séances et rencontres au même endroit. Planifiez ou déplacez une séance et l’étudiant en est informé.",
   "cal.student.title": "Mon calendrier",

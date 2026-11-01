@@ -1,15 +1,13 @@
 /**
- * S30 Phase A — pure units: iCalendar writer, calendar read model (role scoping, statuses, ranges), the Proactive
- * Concierge reminder plan, exception-state merge and the notification email (no record content). Synthetic data only.
+ * S30 Phase A — pure units: iCalendar writer, calendar read model (role scoping, statuses, ranges) and the calendar
+ * reminder plan handed to the S29 notification outbox through the calendar port. Synthetic data only.
  */
 import { describe, expect, it } from "vitest";
 import { buildIcs, escapeText, foldLine, itemSummary } from "../server/services/s30/ics";
 import { buildCalendarItems, type CalendarFacts } from "../server/services/s30/calendar";
-import { planReminders } from "../server/services/s30/concierge";
-import { mergeExceptions } from "../server/services/s30/ops";
-import { buildNotificationEmail } from "../server/lib/s30-notification-email";
+import { planReminders, toNotifications } from "../server/services/s30/calendar-reminders";
+import { calendarOperationsPort, calendarPortWired, setCalendarOperationsPort } from "../server/services/s30/calendar-port";
 import type { CalendarItem } from "../shared/s30-contract";
-import type { ControlCenterView } from "../shared/s27-contract";
 
 const NOW = new Date("2026-11-10T15:00:00.000Z");
 
@@ -106,7 +104,7 @@ describe("iCalendar writer", () => {
   });
 });
 
-describe("Proactive Concierge plan", () => {
+describe("calendar reminder plan", () => {
   const mk = (over: Partial<CalendarItem>): CalendarItem => ({
     id: "x", kind: "academic_deadline", source: "agreement", studentId: "s-a", studentName: null, studentCode: null, isDemo: false, title: "t", titleKey: null,
     start: "2026-11-12", end: null, allDay: true, timeZone: "UTC", status: "scheduled", location: null, href: "/", editable: false, recordId: "r", ...over,
@@ -125,42 +123,39 @@ describe("Proactive Concierge plan", () => {
     ], NOW);
     const by = new Map(plan.map((p) => [p.item.id, p] as const));
     expect([...by.keys()].sort()).toEqual(["a1", "a3", "d0", "d3", "m1"]);
-    expect(by.get("d3")).toMatchObject({ window: "3d", kind: "reminder.deadline", toAdmins: true, emailStudent: true });
+    expect(by.get("d3")).toMatchObject({ window: "3d", kind: "calendar.reminder.deadline", toAdmins: true, allowEmail: true });
     expect(by.get("d0")?.window).toBe("0d");
-    expect(by.get("a1")).toMatchObject({ window: "24h", kind: "reminder.appointment", toStudent: true });
+    expect(by.get("a1")).toMatchObject({ window: "24h", kind: "calendar.reminder.appointment", toStudent: true });
     expect(by.get("a3")?.toStudent).toBe(false); // a request not yet confirmed: owner only
-    expect(by.get("m1")).toMatchObject({ toAdmins: false, emailStudent: false });
+    expect(by.get("m1")).toMatchObject({ toAdmins: false, allowEmail: false });
   });
 });
 
-describe("exceptions merge", () => {
-  const cc = { generatedAt: "", truncated: false, queue: [
-    { id: "inactive:s-a", kind: "inactive", severity: "warning", studentId: "s-a", studentName: "A", title: "t", detail: "d", href: "/", at: null },
-    { id: "low_grade:s-b", kind: "low_grade", severity: "warning", studentId: "s-b", studentName: "B", title: "t", detail: "d", href: "/", at: null },
-    { id: "support_reply:s-b:t1", kind: "support_reply", severity: "warning", studentId: "s-b", studentName: "B", title: "t", detail: "d", href: "/", at: null },
-  ], students: [], deadlines: [], payments: { receivedThisMonthCents: 0, currency: null, signedNotPaid: 0, overdueInstallments: 0 }, supportWindows: [], counts: { needsYou: 0, flying: 0, deadlines14d: 0, preEnrollment: 0 } } as ControlCenterView;
-  it("applies acknowledgement, active snooze, and reopens an expired snooze", () => {
-    const view = mergeExceptions(cc, new Map([
-      ["inactive:s-a", { state: "acknowledged" as const, snoozedUntil: null }],
-      ["low_grade:s-b", { state: "snoozed" as const, snoozedUntil: "2026-11-12T00:00:00.000Z" }],
-      ["support_reply:s-b:t1", { state: "snoozed" as const, snoozedUntil: "2026-11-09T00:00:00.000Z" }],
-      ["gone:s-z", { state: "acknowledged" as const, snoozedUntil: null }],
-    ]), NOW);
-    expect(view.exceptions.map((e) => e.state)).toEqual(["acknowledged", "snoozed", "open"]);
-    expect(view.counts).toEqual({ open: 1, acknowledged: 1, snoozed: 1 });
-  });
-});
 
-describe("notification email", () => {
-  it("is EN/FR, generic (no record content) and links into the portal", () => {
-    const fr = buildNotificationEmail({ kind: "reminder.deadline", lang: "fr", params: { date: "2026-11-12", title: "Secret course title" }, appUrl: "https://portal.synthetic.example", href: "/calendar" });
-    expect(fr.subject).toBe("Rappel : une échéance approche");
-    expect(fr.html).toContain("12 novembre 2026");
-    expect(fr.html).not.toContain("Secret course title");
-    expect(fr.html).toContain('href="https://portal.synthetic.example/calendar"');
-    const en = buildNotificationEmail({ kind: "calendar.event_changed", lang: "en", params: { date: "2026-11-12T14:00:00.000Z", change: "rescheduled" }, appUrl: "https://x.example", href: "javascript:alert(1)" });
-    expect(en.text).toContain("rescheduled");
-    expect(en.html).toContain('href="https://x.example/calendar"');
-    expect(en.html).not.toMatch(/#[a-z]*red|#ff0000|#f00\b/i);
+describe("reminders -> S29 outbox notifications (through the calendar port)", () => {
+  const items = buildCalendarItems(facts(), { role: "admin" }, RANGE, NOW, { includeDemo: true });
+  const plan = planReminders(items, NOW);
+  it("addresses the student's user and the administrators with stable dedupe keys; demo students never reach administrators", () => {
+    const out = toNotifications(plan, new Map([["s-a", "u-a"], ["s-b", "u-b"], ["s-d", "u-d"]]), ["admin-1"]);
+    const deadline = out.filter((n) => n.dedupeKey.startsWith("calendar-reminder:agreement:s-a:language_test:"));
+    expect(deadline.map((n) => n.recipientUserId).sort()).toEqual(["admin-1", "u-a"]);
+    expect(deadline.find((n) => n.audience === "student")).toMatchObject({ href: "/calendar", allowEmail: true, params: { date: "2026-11-12", itemKind: "academic_deadline" } });
+    expect(deadline.find((n) => n.audience === "staff")).toMatchObject({ allowEmail: false, href: "/admin/students/s-a?tab=overview" });
+    expect(out.some((n) => n.recipientUserId === "admin-1" && n.params.studentId === "s-d")).toBe(false);
+    const again = toNotifications(planReminders(items, NOW), new Map([["s-a", "u-a"]]), ["admin-1"]);
+    expect(again.map((n) => n.dedupeKey)).toEqual(expect.arrayContaining(deadline.map((n) => n.dedupeKey)));
+    // no record free text in params
+    expect(out.every((n) => Object.keys(n.params).every((k) => ["date", "itemKind", "titleKey", "change", "studentId"].includes(k)))).toBe(true);
+  });
+  it("the default port is an explicit no-op until S26 wires S29", async () => {
+    setCalendarOperationsPort(null);
+    expect(calendarPortWired()).toBe(false);
+    expect(await calendarOperationsPort().enqueueNotification(toNotifications(plan, new Map([["s-a", "u-a"]]), [])[0]!)).toBe("not_wired");
+    const seen: string[] = [];
+    setCalendarOperationsPort({ recordEvent: async () => "accepted", enqueueNotification: async (n) => { seen.push(n.dedupeKey); return "accepted"; } });
+    expect(calendarPortWired()).toBe(true);
+    await calendarOperationsPort().enqueueNotification(toNotifications(plan, new Map([["s-a", "u-a"]]), [])[0]!);
+    expect(seen).toHaveLength(1);
+    setCalendarOperationsPort(null);
   });
 });

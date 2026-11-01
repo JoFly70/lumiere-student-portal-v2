@@ -30,8 +30,6 @@ function readReleaseMarker(): string | null {
   }
 }
 const RELEASE_SHA = readReleaseMarker();
-/** S30: the deployed release SHA (from release.json), for diagnostics. */
-export const getReleaseSha = (): string | null => RELEASE_SHA;
 
 export function registerHealthRoutes(app: Express) {
   // Health check endpoint for monitoring/load balancers

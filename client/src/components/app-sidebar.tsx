@@ -1,4 +1,4 @@
-import { BookOpen, FileText, CreditCard, GraduationCap, HelpCircle, LogOut, User, Gauge, ShieldCheck, School, Sparkles, Shuffle, Library, Globe } from "lucide-react";
+import { BookOpen, FileText, CreditCard, GraduationCap, HelpCircle, LogOut, User, Gauge, ShieldCheck, School, Sparkles, Shuffle, Library, Globe, CalendarDays } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -63,6 +63,7 @@ const studentMenuItems: { title: string; labelKey?: TranslationKey; url: string;
   { title: "Flight Deck", labelKey: "nav.flightDeck", url: "/flight-deck", icon: Gauge },
   { title: "High School Flight Deck", labelKey: "nav.highSchoolFlightDeck", url: "/high-school/flight-deck", icon: Gauge },
   { title: "Beyond the Diploma", labelKey: "s27.nav.beyondDiploma", url: "/beyond", icon: GraduationCap },
+  { title: "Calendar", labelKey: "cal.nav", url: "/calendar", icon: CalendarDays },
   { title: "Library", labelKey: "ux.nav.library", url: "/library", icon: Library },
   { title: "Student Profile", labelKey: "nav.profile", url: "/profile", icon: User },
   { title: "Your Roadmap", labelKey: "nav.roadmap", url: "/roadmap", icon: BookOpen },
@@ -72,7 +73,7 @@ const studentMenuItems: { title: string; labelKey?: TranslationKey; url: string;
 ];
 
 // Student navigation is grouped: the journey first, then the student's file.
-const JOURNEY_URLS = ["/high-school", "/flight-deck", "/high-school/flight-deck", "/roadmap", "/beyond", "/library"];
+const JOURNEY_URLS = ["/high-school", "/flight-deck", "/high-school/flight-deck", "/roadmap", "/calendar", "/beyond", "/library"];
 const studentJourneyItems = studentMenuItems.filter((i) => JOURNEY_URLS.includes(i.url));
 const studentFileItems = studentMenuItems.filter((i) => !JOURNEY_URLS.includes(i.url));
 
@@ -80,6 +81,7 @@ const studentFileItems = studentMenuItems.filter((i) => !JOURNEY_URLS.includes(i
 // list route is admin-gated). Staff and coaches work from the support desk.
 const adminMenuItems = [
   { title: "Control Center", url: "/admin/support-center", icon: Gauge },
+  { title: "Calendar", url: "/admin/calendar", icon: CalendarDays },
   { title: "Students", url: ADMIN_STUDENTS_PATH, icon: GraduationCap },
   { title: "Support desk", url: "/support", icon: HelpCircle },
   { title: "Elective requests", url: "/admin/elective-requests", icon: Shuffle },
@@ -100,6 +102,8 @@ const staffControlItem = { title: "Control Center", url: "/staff/control-center"
 const staffBillingItem = { title: "Student billing", url: STAFF_BILLING_PATH, icon: CreditCard };
 // S27: web research is for staff and admins (never coaches or students).
 const staffWebItem = { title: "Web research", url: "/admin/web-research", icon: Globe };
+// S30: the academic calendar (admin and staff; coaches have no access).
+const staffCalendarItem = { title: "Calendar", url: "/admin/calendar", icon: CalendarDays };
 
 export function AppSidebar() {
   const [location] = useLocation();
@@ -124,7 +128,7 @@ export function AppSidebar() {
       : isStudent
         ? studentMenuItems
         : user?.role === "staff"
-          ? [staffControlItem, ...staffMenuItems, staffBillingItem, staffWebItem]
+          ? [staffControlItem, staffCalendarItem, ...staffMenuItems, staffBillingItem, staffWebItem]
           : staffMenuItems;
 
   const displayName = isStudent && profile

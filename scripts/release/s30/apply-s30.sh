@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# S30 PRODUCTION schema release for Supabase project rheronevecsffaejteoj (operations, imports, calendar tables).
+# S30 Phase A PRODUCTION schema release for Supabase project rheronevecsffaejteoj (academic calendar tables).
+# Not wired into the release runner on this branch: the S26 integration lead adds the runner step.
 # Mirrors scripts/release/s26/apply-production.sh safety:
 #
 #   bash scripts/release/s30/apply-s30.sh --check                                   # identity + state, read-only
@@ -7,15 +8,15 @@
 #
 # Uses DATABASE_URL (never printed). Refuses unless the connection identifies project rheronevecsffaejteoj and the
 # database looks like production (60+ public tables). --apply takes a pg_dump backup first, records row counts,
-# applies ONLY supabase/migrations/20261106100000_s30_operations_academic.sql (additive, idempotent), checks that no
-# existing table lost rows, then post-verifies the 10 new tables (present, RLS on, no client privileges) and the 11 audit event types.
+# applies ONLY supabase/migrations/20261107100000_s30_academic_calendar.sql (additive, idempotent), checks that no
+# existing table lost rows, then post-verifies the 2 new tables (present, RLS on, no client privileges) and the 3 audit event types.
 set -euo pipefail
 cd "$(dirname "$0")/../../.."
 
 REF=rheronevecsffaejteoj
 MODE="${1:-}"
 CONFIRM="${2:-}"
-FILE=supabase/migrations/20261106100000_s30_operations_academic.sql
+FILE=supabase/migrations/20261107100000_s30_academic_calendar.sql
 OUT=.s26-private-backup
 mkdir -p "$OUT"
 STAMP=$(date -u +%Y%m%dT%H%M%SZ)
@@ -35,15 +36,15 @@ echo "identity: project $REF; public base tables: $TABLES" | tee -a "$LOG"
 [ "$TABLES" -ge 60 ] || die "only $TABLES public tables; this does not look like the production database"
 "${PSQL[@]}" -At -c "SELECT to_regclass('public.student_agreements') IS NOT NULL AND to_regclass('public.students') IS NOT NULL" | grep -q t || die "prerequisite tables (students, student_agreements) are missing; apply the S27 release first"
 
-ENUMS="SELECT 'audit_event_types (11) | ' || ((SELECT count(*) FROM pg_enum e JOIN pg_type t ON t.oid = e.enumtypid WHERE t.typname = 'audit_event_type' AND e.enumlabel IN ('ops.exception_updated','ops.access_denied','ops.fleet_ai_queried','import.batch_uploaded','import.batch_approved','import.batch_committed','import.batch_rolled_back','import.batch_discarded','import.mapping_saved','calendar.event_changed','calendar.subscription_changed')) = 11)::text"
+ENUMS="SELECT 'audit_event_types (3) | ' || ((SELECT count(*) FROM pg_enum e JOIN pg_type t ON t.oid = e.enumtypid WHERE t.typname = 'audit_event_type' AND e.enumlabel IN ('calendar.event_changed','calendar.subscription_changed','calendar.access_denied')) = 3)::text"
 POSTVERIFY="SELECT t.name || ' | ' || (c.oid IS NOT NULL AND c.relrowsecurity AND NOT has_table_privilege('anon', c.oid, 'SELECT,INSERT,UPDATE,DELETE') AND NOT has_table_privilege('authenticated', c.oid, 'SELECT,INSERT,UPDATE,DELETE'))::text
-  FROM (VALUES ('ops_events'),('ops_exception_states'),('ops_notifications'),('ops_runs'),('academic_import_mappings'),('academic_import_batches'),('academic_import_rows'),('academic_reported_records'),('calendar_events'),('calendar_subscriptions')) AS t(name)
+  FROM (VALUES ('calendar_events'),('calendar_subscriptions')) AS t(name)
   LEFT JOIN pg_class c ON c.relname = t.name AND c.relnamespace = 'public'::regnamespace"
 
 if [ "$MODE" = "--check" ]; then
   CHECK=$( { "${PSQL[@]}" -At -c "$POSTVERIFY"; "${PSQL[@]}" -At -c "$ENUMS"; } | tee -a "$LOG")
-  # Exit 0 only when everything is applied: 10 tables (RLS on, no client privileges) and all 11 enum values.
-  [ "$(echo "$CHECK" | grep -c '| true$')" = "11" ] && { echo "S30 check: APPLIED"; exit 0; }
+  # Exit 0 only when everything is applied: 2 tables (RLS on, no client privileges) and all 3 enum values.
+  [ "$(echo "$CHECK" | grep -c '| true$')" = "3" ] && { echo "S30 check: APPLIED"; exit 0; }
   echo "S30 check: NOT FULLY APPLIED"; exit 1
 fi
 [ "$MODE" = "--apply" ] && [ "$CONFIRM" = "--i-understand-this-writes-to-production" ] || die "usage: --check | --apply --i-understand-this-writes-to-production"
@@ -81,6 +82,6 @@ echo "row preservation: PASS" | tee -a "$LOG"
 
 { "${PSQL[@]}" -At -c "$POSTVERIFY"; "${PSQL[@]}" -At -c "$ENUMS"; } > "$OUT/postverify-s30-$STAMP.txt"
 cat "$OUT/postverify-s30-$STAMP.txt" | tee -a "$LOG"
-[ "$(grep -c '| true$' "$OUT/postverify-s30-$STAMP.txt")" = "11" ] || die "post-verify: the 10 S30 tables are not all present with RLS on and no client privileges, or the 11 audit event types are missing"
-echo "post-verify: PASS (10 tables present, RLS on, no client privileges, 11 audit event types)" | tee -a "$LOG"
+[ "$(grep -c '| true$' "$OUT/postverify-s30-$STAMP.txt")" = "3" ] || die "post-verify: the 2 S30 calendar tables are not both present with RLS on and no client privileges, or the 3 audit event types are missing"
+echo "post-verify: PASS (2 tables present, RLS on, no client privileges, 3 audit event types)" | tee -a "$LOG"
 echo "S30 production schema release: DONE" | tee -a "$LOG"
