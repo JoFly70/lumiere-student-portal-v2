@@ -3,7 +3,7 @@
  * (deadlines_soon, behind_pace) built from the S30 calendar context, provenance labels, demo exclusion, and the
  * guarantee that these answers are deterministic (no AI call, requiresHumanApproval). Synthetic data only.
  */
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { answerFleet, classifyIntent } from "../server/services/s29/fleet";
 import { buildFleetCalendarContext } from "../server/services/s30/fleet-context";
 import { MemoryBudgetStore } from "../server/services/academic-assistant/budget";
@@ -93,6 +93,15 @@ describe("answers on S29's copilot", () => {
     expect(a.lines[0]!.text).toContain("3 jalon(s) dépassé(s)");
     expect(a.lines[0]!.text).toContain("estimation fondée sur les progrès déclarés par l’élève");
     expect(a.summary).toContain("2 élève(s)");
+  });
+  it("calendar and pace answers never call the AI provider, even when AI is requested", async () => {
+    const fetchImpl = vi.fn(async () => { throw new Error("no outbound call expected"); });
+    const config = () => ({ liveEnabled: true, hasApiKey: true, liveRoles: new Set(["admin"]), model: "m", apiBase: "https://example.invalid", timeoutMs: 1000, monthlyBudgetUsd: 10 }) as any;
+    for (const question of ["Who is approaching an important academic deadline?", "Quels élèves risquent de prendre du retard sur leur rythme prévu ?"]) {
+      const a = await answerFleet({ question, language: "en", includeDemo: false, useAi: true } as any, [], { ...deps, useAi: true, fetchImpl, config } as any);
+      expect(a.ai.mode).toBe("unavailable");
+    }
+    expect(fetchImpl).not.toHaveBeenCalled();
   });
   it("without calendar context the answer is empty but honest", async () => {
     const a = await answerFleet({ question: "deadline", language: "en", includeDemo: false }, [], { budget: new MemoryBudgetStore(), now: () => NOW });

@@ -393,8 +393,8 @@ export default function AdminStudentRoadmap() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      {/* S30: provider/school-reported records for staff (admins see them in the student file). */}
-      {!isAdmin ? <div className="s27 occ"><ReportedRecordsPanel studentId={studentId} /></div> : null}
+      {/* S30: provider/school-reported records (Needs Attention import items link here, for staff and admins). */}
+      <div className="s27 occ"><ReportedRecordsPanel studentId={studentId} /></div>
     </div>
   );
 }

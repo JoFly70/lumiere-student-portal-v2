@@ -120,7 +120,7 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("S30 Phase C on S29's Fleet copilot (rea
     const { DEFAULT_CONCIERGE_SETTINGS } = await import("../shared/s29-contract");
     const out = await computeAttention((await import("../server/lib/db")).db as any, new Date(), DEFAULT_CONCIERGE_SETTINGS, true);
     const item = out.items.find((i: any) => i.kind === "import_verification" && i.studentId === ben.student.id);
-    expect(item).toMatchObject({ href: `/admin/students/${ben.student.id}?tab=roadmap`, reason: { facts: { count: 1 } } });
+    expect(item).toMatchObject({ href: `/admin/students/${ben.student.id}/roadmap`, reason: { facts: { count: 1 } } });
     expect(item!.detail).toContain("not official");
     expect(out.extra.importedActivity.find((a: any) => a.studentId === ben.student.id)?.lastOn).toBe(day(-3));
     expect(outbound).toEqual([]);

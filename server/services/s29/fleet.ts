@@ -233,6 +233,8 @@ export async function answerFleet(input: { question: string; language: Lang; inc
     ai: { mode: "not_requested", text: null }, privacy, requiresHumanApproval: true, generatedAt: now.toISOString(),
   };
   if (!deps.useAi) return base;
+  // Calendar and pace answers (S30 Phase C) are deterministic only: no provider call on these paths.
+  if (fromCalendar) return { ...base, ai: { mode: "unavailable", reason: "disabled", text: null } };
 
   const cfg = (deps.config ?? loadAssistantConfig)();
   if (!cfg.liveEnabled || !cfg.hasApiKey || !cfg.liveRoles.has("admin")) return { ...base, ai: { mode: "unavailable", reason: !cfg.hasApiKey ? "not_configured" : "disabled", text: null } };

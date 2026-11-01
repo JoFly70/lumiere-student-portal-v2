@@ -316,7 +316,7 @@ async function publish(db: SqlExecutor, events: readonly ImportOpsEvent[], notes
   const port = importOperationsPort();
   for (const e of events) await port.recordEvent(e).catch(() => "failed");
   if (!notes.length) return;
-  const admins = rows(await db.execute(sql`SELECT id FROM users WHERE role = 'admin' ORDER BY id LIMIT 20`)).map((r) => String(r.id));
+  const admins = rows(await db.execute(sql`SELECT u.id FROM users u WHERE u.role = 'admin' AND NOT EXISTS (SELECT 1 FROM profiles p WHERE p.user_id = u.id AND p.status <> 'active') ORDER BY u.id LIMIT 20`)).map((r) => String(r.id));
   for (const n of notes) for (const a of admins) {
     await port.enqueueNotification({ recipientUserId: a, kind: n.kind, params: { date: now.toISOString(), records: n.records, students: n.students }, href: `/admin/imports?batch=${encodeURIComponent(batchId)}`, dedupeKey: n.key }).catch(() => "failed");
   }

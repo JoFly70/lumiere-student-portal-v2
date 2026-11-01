@@ -47,7 +47,8 @@ export function createImportsOpsAdapter(getDb: () => Promise<SqlExecutor> = defa
         if (!TEMPLATES.has(n.kind) || !n.href.startsWith("/")) return "failed";
         const db = await getDb();
         if (!(await s29Schema(db)).present) return "not_wired";
-        const u = rows(await db.execute(sql`SELECT u.id, u.email, u.role, l.language FROM users u LEFT JOIN user_language_preference l ON l.user_id = u.id WHERE u.id = ${n.recipientUserId}`))[0];
+        const u = rows(await db.execute(sql`SELECT u.id, u.email, u.role, l.language FROM users u LEFT JOIN user_language_preference l ON l.user_id = u.id WHERE u.id = ${n.recipientUserId}
+          AND NOT EXISTS (SELECT 1 FROM profiles p WHERE p.user_id = u.id AND p.status <> 'active')`))[0];
         if (!u || u.role !== "admin") return "failed";
         const lang: Lang = u.language === "fr" ? "fr" : "en";
         const res = await enqueue(db, {

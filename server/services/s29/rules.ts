@@ -156,7 +156,7 @@ export function buildAttention(facts: ControlCenterFacts, extra: AttentionExtraF
     if (!studentBy.has(p.studentId)) continue;
     push({ key: `import_verification:${p.studentId}`, kind: "import_verification", priority: daysBetween(p.oldest.slice(0, 10), today) > 7 ? "high" : "normal", studentId: p.studentId,
       title: `${p.count} imported result${p.count === 1 ? "" : "s"} to verify`, detail: "Provider- or school-reported (imported); not official until the school's result is recorded through the review workflow.",
-      reason: { rule: "import.school_result_pending", facts: { count: p.count, oldest: p.oldest.slice(0, 10) } }, arisenAt: p.oldest, href: fileHref(p.studentId, "roadmap") });
+      reason: { rule: "import.school_result_pending", facts: { count: p.count, oldest: p.oldest.slice(0, 10) } }, arisenAt: p.oldest, href: `/admin/students/${encodeURIComponent(p.studentId)}/roadmap` });
   }
 
   // 5. Notifications whose email delivery failed after bounded retries.
