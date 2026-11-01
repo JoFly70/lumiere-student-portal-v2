@@ -26,6 +26,8 @@ import {
 } from "@/lib/owner-presentation";
 import { cn } from "@/lib/utils";
 import { NeedsAttention } from "@/components/s29/core/needs-attention";
+import { useAttention } from "@/lib/s29-core-queries";
+import { roleSafeHref, studentFilePath } from "@shared/staff-links";
 import "@/styles/student-s27.css";
 import "@/styles/student-s27-extra.css";
 import "@/styles/owner-cockpit.css";
@@ -133,13 +135,30 @@ function Widget({ testId, sev, ring, big, unit, title, text, action }: { testId:
   );
 }
 
-function Widgets({ d, today, locale, demoIds }: { d: ControlCenterView; today: string; locale: string; demoIds: ReadonlySet<string> }) {
+/**
+ * S32-B (SA-15): ONE "needs you" number. With the S29 queue (the persisted Needs Attention list, which resolve,
+ * snooze and dismiss update) the headline, the ring and the queue all count its open items; without it (fallback)
+ * they all count the S27 queue items. The ring links to whichever queue is on the page.
+ */
+export interface NeedsModel { readonly total: number; readonly critical: number; readonly warning: number; readonly info: number; readonly anchor: "#cc-attention" | "#cc-queue" }
+
+export function needsModel(d: Pick<ControlCenterView, "queue">, demoIds: ReadonlySet<string>, attention: { open: number; urgent: number; high: number } | null): NeedsModel {
+  if (attention) {
+    const critical = attention.urgent;
+    const warning = Math.max(0, attention.high);
+    return { total: attention.open, critical, warning, info: Math.max(0, attention.open - critical - warning), anchor: "#cc-attention" };
+  }
+  const sev = queueSeverityCounts(d.queue, demoIds);
+  return { total: sev.critical + sev.warning + sev.info, ...sev, anchor: "#cc-queue" };
+}
+
+function Widgets({ d, today, locale, needs }: { d: ControlCenterView; today: string; locale: string; demoIds: ReadonlySet<string>; needs: NeedsModel }) {
   const { t } = useT();
   const daysText = useDaysText();
-  const sev = queueSeverityCounts(d.queue, demoIds);
-  const worst: Tone = sev.critical > 0 ? "urgent" : sev.warning > 0 ? "attention" : d.counts.needsYou > 0 ? "gold" : "ok";
+  const sev = needs;
+  const worst: Tone = sev.critical > 0 ? "urgent" : sev.warning > 0 ? "attention" : needs.total > 0 ? "gold" : "ok";
 
-  const realDeadlines = d.deadlines.filter((x) => !demoIds.has(x.studentId));
+  const realDeadlines = d.deadlines.filter((x) => !demoIdsOf(d).has(x.studentId));
   const soonest = [...realDeadlines].sort((a, b) => a.daysLeft - b.daysLeft)[0] ?? null;
   const dlTone: Tone = soonest ? daysLeftTone(soonest.daysLeft) : "ok";
 
@@ -155,10 +174,10 @@ function Widgets({ d, today, locale, demoIds }: { d: ControlCenterView; today: s
     <section aria-label={t("owner.kpi.label")} className="alerts occ-alerts">
       <Widget testId="kpi-needs" sev={COLOR[worst]}
         ring={<SegRing parts={[{ n: sev.critical, color: "var(--occ-umber)" }, { n: sev.warning, color: "var(--occ-umber-soft)" }, { n: sev.info, color: "var(--t-accent)" }]} />}
-        big={d.counts.needsYou} unit={t(d.counts.needsYou === 1 ? "owner.unit.action" : "owner.unit.actions")}
+        big={needs.total} unit={t(needs.total === 1 ? "owner.unit.action" : "owner.unit.actions")}
         title={t("owner.kpi.needs")}
-        text={d.counts.needsYou === 0 ? t("owner.ring.needs.none") : t("owner.ring.needs.d", { c: sev.critical, w: sev.warning, i: sev.info })}
-        action={{ href: "#cc-queue", label: t("owner.ring.needs.act") }} />
+        text={needs.total === 0 ? t("owner.ring.needs.none") : t("owner.ring.needs.d", { c: sev.critical, w: sev.warning, i: sev.info })}
+        action={{ href: needs.anchor, label: t("owner.ring.needs.act") }} />
       <Widget testId="kpi-deadlines" sev={COLOR[dlTone]}
         ring={<Ring fraction={soonest ? Math.min(1, Math.max(0.04, (14 - Math.max(0, soonest.daysLeft)) / 14)) : 0} color={COLOR[dlTone]} />}
         big={d.counts.deadlines14d} unit={t("owner.unit.due")}
@@ -180,6 +199,8 @@ function Widgets({ d, today, locale, demoIds }: { d: ControlCenterView; today: s
     </section>
   );
 }
+
+const demoIdsOf = (d: Pick<ControlCenterView, "students">): ReadonlySet<string> => new Set(d.students.filter((s) => s.isDemo).map((s) => s.studentId));
 
 function Radar({ d }: { d: ControlCenterView }) {
   const { t } = useT();
@@ -316,6 +337,7 @@ function PaymentsCard({ data, locale, today }: { data: ControlCenterView; locale
 // ── Ask Lumière ─────────────────────────────────────────────────────────────
 
 const ASSISTANT_CHIPS: TranslationKey[] = ["owner.ai.chip.risk", "owner.ai.chip.review", "owner.ai.chip.finish"];
+const FLEET_COPILOT_ENABLED = import.meta.env.VITE_S29_FLEET_COPILOT === "on";
 
 function AssistantCard() {
   const { t } = useT();
@@ -328,12 +350,16 @@ function AssistantCard() {
           <span>{t("owner.ai.sub")}</span>
         </div>
       </div>
-      <p className="occ-ai-body">{t("owner.ai.body")}</p>
-      <ul className="qs" aria-label={t("owner.ai.chips")}>
-        {ASSISTANT_CHIPS.map((k) => (
-          <li key={k}><Link href={`/admin/assistant?q=${encodeURIComponent(t(k))}`} className="q">{t(k)}</Link></li>
-        ))}
-      </ul>
+      <p className="occ-ai-body">{t(FLEET_COPILOT_ENABLED ? "owner.ai.body" : "s32.cc.ai.perStudent")}</p>
+      {/* S32-B (SA-28): portfolio questions are answered only by the Fleet copilot; while it is off the chips would
+          promise answers the Owner AI page cannot give, so they are shown only when the copilot is on. */}
+      {FLEET_COPILOT_ENABLED ? (
+        <ul className="qs" aria-label={t("owner.ai.chips")}>
+          {ASSISTANT_CHIPS.map((k) => (
+            <li key={k}><Link href="/admin/assistant" className="q">{t(k)}</Link></li>
+          ))}
+        </ul>
+      ) : null}
       <div className="btns"><Link href="/admin/assistant" className="b2 occ-btn" data-testid="cc-assistant-open"><Sparkles className="h-4 w-4" aria-hidden="true" />{t("owner.ai.open")}</Link></div>
     </section>
   );
@@ -354,10 +380,9 @@ function ViewAsButton({ studentId, name }: { studentId: string; name: string }) 
   );
 }
 
+/** S32-B: admin and staff both open the primary Student File; coaches never see the Control Center. */
 export function studentOpenHref(row: Pick<ControlStudentRow, "studentId" | "program">, role: string | undefined): string {
-  const id = encodeURIComponent(row.studentId);
-  if (role === "admin") return `/admin/students/${id}`;
-  return row.program === "high_school" ? `/admin/students/${id}/high-school` : `/admin/students/${id}/billing`;
+  return roleSafeHref(studentFilePath(row.studentId), role);
 }
 
 function StudentsTable({ rows, role, today, locale }: { rows: readonly ControlStudentRow[]; role: string | undefined; today: string; locale: string }) {
@@ -528,6 +553,7 @@ export function ControlCenter() {
   const today = todayIsoLocal();
   const role = user?.role;
   const isAdmin = role === "admin";
+  const attention = useAttention();
 
   if (query.isLoading) {
     return (
@@ -545,10 +571,11 @@ export function ControlCenter() {
       <div className="space-y-6">
         <StaffEmpty testId={unavailable ? "cc-unavailable" : "cc-error"} title={unavailable ? t("owner.cc.unavailable.title") : t("owner.cc.error.title")}
           action={<button type="button" className={cn(ownerBtn.outline, "border")} onClick={() => void query.refetch()}><RefreshCw className="h-4 w-4" aria-hidden="true" />{t("owner.retry")}</button>}>
-          {unavailable ? t("owner.cc.unavailable.body") : errorText(query.error, t("owner.cc.error.body"))}
+          {unavailable ? t("owner.cc.unavailable.body") : t("owner.cc.error.body")}
         </StaffEmpty>
-        <div className="flex flex-wrap gap-2">
-          <Link href="/admin/students" className={cn(ownerBtn.outline, "border")}>{t("owner.cc.goStudents")}</Link>
+        {/* S32-B (SA-34): both links open for admin and staff (the directory is staff-reachable since S32-B). */}
+        <div className="flex flex-wrap gap-2" data-testid="cc-fallback-links">
+          <Link href={roleSafeHref("/admin/students", role)} className={cn(ownerBtn.outline, "border")}>{t("owner.cc.goStudents")}</Link>
           <Link href="/support" className={cn(ownerBtn.outline, "border")}>{t("owner.cc.goSupport")}</Link>
         </div>
       </div>
@@ -559,16 +586,17 @@ export function ControlCenter() {
   const queue = sortQueue(d.queue);
   const demoIds = new Set(d.students.filter((s) => s.isDemo).map((s) => s.studentId));
   const demoCount = demoIds.size;
+  const needs = needsModel(d, demoIds, attention.data ? attention.data.counts : null);
 
   return (
     <div className="s27 occ" data-testid="control-center">
-      <Headline count={d.counts.needsYou} demoCount={demoCount} total={d.students.length} locale={locale} />
+      <Headline count={needs.total} demoCount={demoCount} total={d.students.length} locale={locale} />
       <nav aria-label={t("cal.link.controlCenter")} data-testid="cc-s30-links" style={{ display: "flex", flexWrap: "wrap", gap: 8, margin: "4px 0 14px" }}>
         <Link href="/admin/calendar" className="pill" data-testid="cc-link-calendar"><CalendarDays size={13} aria-hidden="true" /> {t("cal.link.controlCenter")}</Link>
         <Link href="/admin/imports" className="pill" data-testid="cc-link-imports"><FileUp size={13} aria-hidden="true" /> {t("imp.nav")}</Link>
       </nav>
       {d.truncated ? <p className="notice warn" role="status" data-testid="cc-truncated">{t("owner.cc.truncated")}</p> : null}
-      <Widgets d={d} today={today} locale={locale} demoIds={demoIds} />
+      <Widgets d={d} today={today} locale={locale} demoIds={demoIds} needs={needs} />
       <Radar d={d} />
 
       {/* Admin: the assistant closes the right column. Staff have no assistant, so the support windows take its place. */}

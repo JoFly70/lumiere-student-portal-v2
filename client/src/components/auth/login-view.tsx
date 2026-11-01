@@ -1,7 +1,8 @@
 import { useId, useState } from "react";
 import { useT } from "@/i18n";
 import { AuthLayout } from "./auth-layout";
-import { signInErrorMessage } from "@/lib/auth-errors";
+import { AuthRequestError, signInErrorMessage, signUpErrorMessage } from "@/lib/auth-errors";
+import { MIN_PASSWORD_LENGTH } from "@shared/password-policy";
 import { AuthAlert, AuthField, AuthHeading, AuthNote, AuthSubmit } from "./auth-parts";
 
 export type LoginMode = "signin" | "invite";
@@ -65,14 +66,14 @@ export function LoginView({ login, signup, onNavigate, initialInvite = "", initi
     try {
       await signup(signupEmail, signupPassword, signupName, signupInvitation.trim());
     } catch (error) {
-      const message = error instanceof Error ? error.message : "";
+      const message = error instanceof Error && !(error instanceof AuthRequestError) ? error.message : "";
       if (message.includes("check your email")) {
         // Email verification is required: confirm inline and send the person to sign in.
         setSignupNotice(t("auth.invite.created"));
         setLoginEmail(signupEmail);
         setMode("signin");
       } else {
-        setSignupError(message || t("auth.invite.failed"));
+        setSignupError(signUpErrorMessage(error, t));
       }
     } finally {
       setSignupLoading(false);
@@ -165,7 +166,7 @@ export function LoginView({ login, signup, onNavigate, initialInvite = "", initi
             />
             <AuthField
               id="signup-password" name="new-password" password label={t("auth.field.newPassword")} hint={t("auth.field.passwordHint")}
-              value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} required minLength={6} autoComplete="new-password" testId="input-signup-password"
+              value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} required minLength={MIN_PASSWORD_LENGTH} autoComplete="new-password" testId="input-signup-password"
             />
             {signupError && <AuthError message={signupError} />}
             <AuthSubmit loading={signupLoading} label={t("auth.invite.submit")} loadingLabel={t("auth.invite.loading")} testId="button-signup" />

@@ -8,6 +8,7 @@ import { Info, X } from "lucide-react";
 import { useLocation } from "wouter";
 import { useT } from "@/i18n";
 import { StaffNotice } from "@/components/staff/staff-ui";
+import { useAuth } from "@/lib/auth";
 
 export const ACCESS_NOTICE_KEY = "lumiere_access_notice";
 
@@ -17,6 +18,7 @@ export function flagAccessNotice(): void {
 
 export function AccessNotice() {
   const { t } = useT();
+  const { user } = useAuth();
   const [location] = useLocation();
   const [show, setShow] = useState(false);
   useEffect(() => {
@@ -28,7 +30,7 @@ export function AccessNotice() {
   return (
     <div className="mb-4" data-testid="access-notice">
       <StaffNotice tone="gold" role="status" icon={<Info className="h-4 w-4" />} action={<button type="button" onClick={() => setShow(false)} className="inline-flex min-h-9 items-center gap-1 text-sm font-medium text-student-gold-ink" aria-label={t("staff.access.dismiss")}><X className="h-4 w-4" aria-hidden="true" /></button>}>
-        {t("staff.access.restricted")}
+        {t(user?.role === "coach" ? "s32.access.coach" : "s32.access.staff")}
       </StaffNotice>
     </div>
   );

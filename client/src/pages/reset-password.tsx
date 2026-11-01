@@ -1,4 +1,5 @@
 import { useLayoutEffect, useState } from 'react';
+import { MIN_PASSWORD_LENGTH, passwordTooShort } from '@shared/password-policy';
 import { useLocation } from 'wouter';
 import { CheckCircle2, MailCheck } from 'lucide-react';
 import { useT } from '@/i18n';
@@ -62,7 +63,7 @@ export default function ResetPassword() {
     e.preventDefault();
     setError('');
 
-    if (newPassword.length < 6) {
+    if (passwordTooShort(newPassword)) {
       setError(t('auth.newPassword.tooShort'));
       return;
     }
@@ -132,7 +133,7 @@ export default function ResetPassword() {
           <AuthField
             id="new-password" name="new-password" password label={t('auth.newPassword.label')} placeholder={t('auth.newPassword.placeholder')}
             hint={t('auth.field.passwordHint')} value={newPassword} onChange={(e) => setNewPassword(e.target.value)}
-            required minLength={6} autoComplete="new-password" testId="input-new-password"
+            required minLength={MIN_PASSWORD_LENGTH} autoComplete="new-password" testId="input-new-password"
           />
           {error && <AuthAlert testId="text-reset-error">{error}</AuthAlert>}
           <AuthSubmit loading={loading} label={t('auth.newPassword.submit')} loadingLabel={t('auth.newPassword.loading')} testId="button-update-password" />

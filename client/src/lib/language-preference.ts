@@ -10,6 +10,8 @@ import { api } from "@/lib/api";
 import { isLanguage, LANGUAGE_STORAGE_KEY, useLanguage, type Language } from "@/i18n";
 
 export const LANGUAGE_PREFERENCE_PATH = "/api/student/preferences";
+/** S32-B: the staff portal keeps the same per-user preference (admin, staff, coach). */
+export const STAFF_LANGUAGE_PREFERENCE_PATH = "/api/staff/preferences";
 
 function hasExplicitBrowserChoice(): boolean {
   try {
@@ -25,9 +27,9 @@ export function initialSync(server: Language | null, local: Language, localExpli
   return { apply: null, upload: localExplicit ? local : null };
 }
 
-const save = (language: Language) => api.put(`${LANGUAGE_PREFERENCE_PATH}/language`, { language }).catch(() => undefined);
+const save = (path: string, language: Language) => api.put(`${path}/language`, { language }).catch(() => undefined);
 
-export function LanguagePreferenceSync() {
+export function LanguagePreferenceSync({ path = LANGUAGE_PREFERENCE_PATH }: { path?: string } = {}) {
   const { language, setLanguage } = useLanguage();
   const synced = useRef(false);
   const last = useRef<Language>(language);
@@ -36,7 +38,7 @@ export function LanguagePreferenceSync() {
     let cancelled = false;
     const explicit = hasExplicitBrowserChoice();
     api
-      .get<{ language: unknown }>(LANGUAGE_PREFERENCE_PATH)
+      .get<{ language: unknown }>(path)
       .then((r) => {
         if (cancelled) return;
         const server = isLanguage(r?.language) ? r.language : null;
@@ -45,7 +47,7 @@ export function LanguagePreferenceSync() {
           last.current = apply;
           setLanguage(apply);
         }
-        if (upload) void save(upload);
+        if (upload) void save(path, upload);
       })
       .catch(() => undefined)
       .finally(() => {
@@ -60,8 +62,8 @@ export function LanguagePreferenceSync() {
   useEffect(() => {
     if (language === last.current) return;
     last.current = language;
-    if (synced.current) void save(language);
-  }, [language]);
+    if (synced.current) void save(path, language);
+  }, [language, path]);
 
   return null;
 }

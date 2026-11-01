@@ -3,6 +3,8 @@ import { useLocation } from 'wouter';
 import { useAuth } from '@/lib/auth';
 import { isLanguage, useLanguage, useT } from '@/i18n';
 import { LoginView, parseInviteCode } from '@/components/auth/login-view';
+import { takeReturnPath } from '@/lib/return-to';
+import { roleHomePath } from '@shared/staff-links';
 
 export default function Login() {
   const [, setLocation] = useLocation();
@@ -20,10 +22,11 @@ export default function Login() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Redirect if already authenticated (role-based)
+  // Redirect if already authenticated: the page the person opened before signing in (S32-B, when their role may open
+  // it), otherwise the role home (admin: Control Center; staff: staff Control Center; coach: support desk).
   useEffect(() => {
     if (isAuthenticated) {
-      setLocation(user?.role === 'admin' ? '/admin/support-center' : user?.role === 'coach' || user?.role === 'staff' ? '/support' : '/');
+      setLocation(takeReturnPath(user?.role) ?? roleHomePath(user?.role));
     }
   }, [isAuthenticated, user, setLocation]);
 

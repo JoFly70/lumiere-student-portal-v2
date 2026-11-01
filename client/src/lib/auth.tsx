@@ -3,6 +3,7 @@ import { useLocation } from 'wouter';
 import { isRestorableAuthState, publishAuthLifecycle } from './auth-lifecycle';
 import { AuthRequestError, authErrorFromResponse } from './auth-errors';
 import { SESSION_EXPIRED_EVENT } from './session-expiry';
+import { forgetReturnPath, rememberReturnPath } from './return-to';
 import { EXPERIENCE_RETURN_KEY, TAB_AUTH_STORAGE_KEY, chooseAuthStorage, readTabAuth, sanitizeReturnPath, type StorageLike } from './experience-session';
 
 interface User {
@@ -168,8 +169,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Sign-up failed');
+      // S32-B (SA-18): keep the status and machine code so the form shows a translated, actionable message.
+      throw await authErrorFromResponse(response, 'Sign-up failed');
     }
 
     const data = await response.json();
@@ -213,6 +214,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       publishAuthState(null, null);
       if (tabAuthRef.current) { leaveExperienceTab(); return; }
       try { localStorage.removeItem(AUTH_STORAGE_KEY); } catch { /* ignore */ }
+      // S32-B: come back to this page after signing in again.
+      if (typeof window !== 'undefined') rememberReturnPath(`${window.location.pathname}${window.location.search}${window.location.hash}`);
       setLocation('/login?expired=1');
     };
     const refresh = (): Promise<boolean> => {
@@ -284,6 +287,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         leaveExperienceTab();
       } else {
         localStorage.removeItem(AUTH_STORAGE_KEY);
+        forgetReturnPath(); // an explicit sign-out never sends the next person to the previous page
         setLocation('/login');
       }
     }

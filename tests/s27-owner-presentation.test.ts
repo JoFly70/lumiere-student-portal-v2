@@ -41,10 +41,12 @@ describe("queue mapping", () => {
     const out = sortQueue([{ severity: "info", id: 1 }, { severity: "critical", id: 2 }, { severity: "warning", id: 3 }, { severity: "critical", id: 4 }]);
     expect(out.map((x) => x.id)).toEqual([2, 4, 3, 1]);
   });
-  it("sends admin links as-is and rewrites file links for staff", () => {
+  it("sends admin links as-is; staff open the Student File (S32-B) and never bounce to the support desk", () => {
     expect(queueActionHref("/admin/students/s1?tab=billing", "admin")).toBe("/admin/students/s1?tab=billing");
-    expect(queueActionHref("/admin/students/s1?tab=billing", "staff")).toBe("/admin/students/s1/billing");
-    expect(queueActionHref("/admin/students/s1?tab=documents", "staff")).toBe("/support");
+    expect(queueActionHref("/admin/students/s1?tab=billing", "staff")).toBe("/admin/students/s1?tab=billing");
+    expect(queueActionHref("/admin/students/s1?tab=documents", "staff")).toBe("/admin/students/s1?tab=documents");
+    expect(queueActionHref("/admin/students/s1/workspace#profile", "staff")).toBe("/admin/students/s1");
+    expect(queueActionHref("/admin/elective-requests?ticket=t9", "staff")).toBe("/support?ticket=t9");
     expect(queueActionHref("/support?x=1", "staff")).toBe("/support?x=1");
   });
   it("greets by hour", () => {

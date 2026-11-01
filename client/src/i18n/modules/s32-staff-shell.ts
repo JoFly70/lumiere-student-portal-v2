@@ -1,9 +1,65 @@
 /**
- * S32-B staff experience repairs — shell strings. Spread into en.ts / fr.ts.
- * English is the source of truth; French must define every key (vouvoiement, idiomatic Québec/France-neutral).
+ * S32-B staff experience repairs — shell strings (navigation, header, access notices, Student File additions,
+ * enrollment status, workspace orientation). Spread into en.ts / fr.ts.
+ * English is the source of truth; French must define every key (vouvoiement).
  */
 export const s32StaffShellEn = {
+  // navigation
+  "s32.nav.workspace": "Workspace",
+  "s32.nav.main": "Main",
+  "s32.nav.controlCenter": "Control Center",
+  "s32.nav.calendar": "Calendar",
+  "s32.nav.imports": "Import center",
+  "s32.nav.students": "Students",
+  "s32.nav.support": "Support desk",
+  "s32.nav.electives": "Elective requests",
+  "s32.nav.ai": "Lumière AI",
+  "s32.nav.emailDelivery": "Email delivery",
+  "s32.nav.webResearch": "Web research",
+  "s32.nav.diagnostics": "Diagnostics",
+  "s32.nav.administration": "Administration",
+  "s32.nav.billing": "Student billing",
+  "s32.nav.account": "Your account",
+  "s32.nav.userProfile": "User profile",
+  "s32.nav.logOut": "Log out",
+  "s32.portal.staff": "Staff Portal",
+  // header
+  "s32.shell.skip": "Skip to main content",
+  "s32.shell.toggleNav": "Toggle navigation",
+  "s32.role.admin": "Administrator",
+  "s32.role.staff": "Staff",
+  "s32.role.coach": "Coach",
+  // access notices
+  "s32.access.staff": "That page is for administrators. Here is your Control Center.",
+  "s32.access.coach": "That page is not available to coaches. Here is your support desk.",
+  "s32.cc.ai.perStudent": "Lumière answers from one student's saved records at a time and never changes anything. Open the assistant, then choose the student.",
 } as const satisfies Record<string, string>;
 
 export const s32StaffShellFr: Record<keyof typeof s32StaffShellEn, string> = {
+  "s32.nav.workspace": "Espace de travail",
+  "s32.nav.main": "Navigation principale",
+  "s32.nav.controlCenter": "Centre de contrôle",
+  "s32.nav.calendar": "Calendrier",
+  "s32.nav.imports": "Centre d’importation",
+  "s32.nav.students": "Étudiants",
+  "s32.nav.support": "Bureau d’assistance",
+  "s32.nav.electives": "Demandes d’options",
+  "s32.nav.ai": "IA Lumière",
+  "s32.nav.emailDelivery": "Envoi des courriels",
+  "s32.nav.webResearch": "Recherche Web",
+  "s32.nav.diagnostics": "Diagnostic",
+  "s32.nav.administration": "Administration du portail",
+  "s32.nav.billing": "Facturation des étudiants",
+  "s32.nav.account": "Votre compte",
+  "s32.nav.userProfile": "Profil de l’utilisateur",
+  "s32.nav.logOut": "Se déconnecter",
+  "s32.portal.staff": "Portail du personnel",
+  "s32.shell.skip": "Aller au contenu principal",
+  "s32.shell.toggleNav": "Afficher ou masquer la navigation",
+  "s32.role.admin": "Administrateur",
+  "s32.role.staff": "Personnel",
+  "s32.role.coach": "Accompagnateur",
+  "s32.access.staff": "Cette page est réservée aux administrateurs. Voici votre centre de contrôle.",
+  "s32.access.coach": "Cette page n’est pas accessible aux accompagnateurs. Voici votre bureau d’assistance.",
+  "s32.cc.ai.perStudent": "Lumière répond à partir des dossiers enregistrés d’un seul étudiant à la fois et ne modifie jamais rien. Ouvrez l’assistant, puis choisissez l’étudiant.",
 };

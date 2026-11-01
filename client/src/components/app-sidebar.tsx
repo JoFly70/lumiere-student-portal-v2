@@ -19,7 +19,7 @@ import { useAuth, useAuthToken } from "@/lib/auth";
 import { filterStudentNav, useStudentPrograms } from "@/lib/student-programs";
 import { useT, type TranslationKey } from "@/i18n";
 import { StaffAvatar } from "@/components/staff/staff-ui";
-import { staffRoleLabel } from "@/components/staff/staff-shell";
+import { staffRoleKey } from "@/components/staff/staff-shell";
 import { ADMIN_STUDENTS_PATH } from "@/pages/admin-student-workspace-presentation";
 import { LumiereCrest, BRAND } from "@/components/brand/lumiere-brand";
 import { SiWhatsapp } from "react-icons/si";
@@ -78,42 +78,49 @@ const JOURNEY_URLS = ["/high-school", "/flight-deck", "/high-school/flight-deck"
 const studentJourneyItems = studentMenuItems.filter((i) => JOURNEY_URLS.includes(i.url));
 const studentFileItems = studentMenuItems.filter((i) => !JOURNEY_URLS.includes(i.url));
 
-// Staff navigation. "Students" opens the existing admin Students list (admin only: the
-// list route is admin-gated). Staff and coaches work from the support desk.
-const adminMenuItems = [
-  { title: "Control Center", url: "/admin/support-center", icon: Gauge },
-  { title: "Calendar", url: "/admin/calendar", icon: CalendarDays },
-  { title: "Import center", url: "/admin/imports", icon: FileUp },
-  { title: "Students", url: ADMIN_STUDENTS_PATH, icon: GraduationCap },
-  { title: "Support desk", url: "/support", icon: HelpCircle },
-  { title: "Elective requests", url: "/admin/elective-requests", icon: Shuffle },
-  { title: "Lumière AI", url: "/admin/assistant", icon: Sparkles },
-  { title: "Notifications", url: "/admin/notifications", icon: Bell },
-  { title: "Web research", url: "/admin/web-research", icon: Globe },
-  { title: "Diagnostics", url: "/admin/diagnostics", icon: Activity },
-  { title: "Administration", url: "/admin", icon: ShieldCheck },
+// Staff navigation. `title` stays English (it derives the data-testid); `labelKey` is the visible, translated label.
+type StaffNavItem = { title: string; labelKey: TranslationKey; url: string; icon: typeof Gauge };
+const adminMenuItems: StaffNavItem[] = [
+  { title: "Control Center", labelKey: "s32.nav.controlCenter", url: "/admin/support-center", icon: Gauge },
+  { title: "Calendar", labelKey: "s32.nav.calendar", url: "/admin/calendar", icon: CalendarDays },
+  { title: "Import center", labelKey: "s32.nav.imports", url: "/admin/imports", icon: FileUp },
+  { title: "Students", labelKey: "s32.nav.students", url: ADMIN_STUDENTS_PATH, icon: GraduationCap },
+  { title: "Support desk", labelKey: "s32.nav.support", url: "/support", icon: HelpCircle },
+  { title: "Elective requests", labelKey: "s32.nav.electives", url: "/admin/elective-requests", icon: Shuffle },
+  { title: "Lumière AI", labelKey: "s32.nav.ai", url: "/admin/assistant", icon: Sparkles },
+  // S32-B (SA-13): this page is the email delivery log, not an inbox; the test id keeps its historical name.
+  { title: "Notifications", labelKey: "s32.nav.emailDelivery", url: "/admin/notifications", icon: Bell },
+  { title: "Web research", labelKey: "s32.nav.webResearch", url: "/admin/web-research", icon: Globe },
+  { title: "Diagnostics", labelKey: "s32.nav.diagnostics", url: "/admin/diagnostics", icon: Activity },
+  { title: "Administration", labelKey: "s32.nav.administration", url: "/admin", icon: ShieldCheck },
 ];
 
-// Staff (not admin) cannot open the admin student workspace; this is their way into student billing.
+// Staff billing start page (overdue and awaiting-evidence students first).
 export const STAFF_BILLING_PATH = "/staff/billing";
 
-const staffMenuItems = [
-  { title: "Support desk", url: "/support", icon: HelpCircle },
+const supportItem: StaffNavItem = { title: "Support desk", labelKey: "s32.nav.support", url: "/support", icon: HelpCircle };
+/**
+ * S32-B: staff work the Control Center, the students directory and the primary Student File (server permissions
+ * decide each action), plus calendar, imports, support, billing, email delivery and web research. Coaches keep the
+ * support desk only. Admin-only pages (Advanced Workspace, Owner AI, electives, diagnostics, Administration) are
+ * not listed for staff.
+ */
+const staffMenuItems: StaffNavItem[] = [
+  { title: "Control Center", labelKey: "s32.nav.controlCenter", url: "/staff/control-center", icon: Gauge },
+  { title: "Students", labelKey: "s32.nav.students", url: ADMIN_STUDENTS_PATH, icon: GraduationCap },
+  { title: "Calendar", labelKey: "s32.nav.calendar", url: "/admin/calendar", icon: CalendarDays },
+  { title: "Import center", labelKey: "s32.nav.imports", url: "/admin/imports", icon: FileUp },
+  supportItem,
+  { title: "Student billing", labelKey: "s32.nav.billing", url: STAFF_BILLING_PATH, icon: CreditCard },
+  { title: "Notifications", labelKey: "s32.nav.emailDelivery", url: "/admin/notifications", icon: Bell },
+  { title: "Web research", labelKey: "s32.nav.webResearch", url: "/admin/web-research", icon: Globe },
 ];
-// S27: staff also get the Control Center (their allowed scope); coaches keep the support desk only.
-const staffControlItem = { title: "Control Center", url: "/staff/control-center", icon: Gauge };
-// Billing routes allow staff + admin only (not coach), so the entry is role-specific.
-const staffBillingItem = { title: "Student billing", url: STAFF_BILLING_PATH, icon: CreditCard };
-// S27: web research is for staff and admins (never coaches or students).
-const staffWebItem = { title: "Web research", url: "/admin/web-research", icon: Globe };
-// S29: staff also work the notification history (diagnostics stay admin-only).
-const staffS29Items = [
-  { title: "Notifications", url: "/admin/notifications", icon: Bell },
-];
-// S30: the academic calendar (admin and staff; coaches have no access).
-const staffCalendarItem = { title: "Calendar", url: "/admin/calendar", icon: CalendarDays };
-// S30 Phase B: academic imports (staff upload and validate; admins approve and commit).
-const staffImportsItem = { title: "Import center", url: "/admin/imports", icon: FileUp };
+const coachMenuItems: StaffNavItem[] = [supportItem];
+
+/** The staff menu for a role (exported for tests). */
+export function staffMenuFor(role: string | undefined): StaffNavItem[] {
+  return role === "admin" ? adminMenuItems : role === "staff" ? staffMenuItems : coachMenuItems;
+}
 
 export function AppSidebar() {
   const [location] = useLocation();
@@ -132,14 +139,7 @@ export function AppSidebar() {
   // Program awareness: High School only with a high school program; Flight Deck and Roadmap are university-only.
   const programs = useStudentPrograms(isStudent);
 
-  const menuItems =
-    user?.role === "admin"
-      ? adminMenuItems
-      : isStudent
-        ? studentMenuItems
-        : user?.role === "staff"
-          ? [staffControlItem, staffCalendarItem, staffImportsItem, ...staffMenuItems, staffBillingItem, ...staffS29Items, staffWebItem]
-          : staffMenuItems;
+  const menuItems = staffMenuFor(user?.role);
 
   const displayName = isStudent && profile
     ? `${profile.first_name || ""} ${profile.last_name || ""}`.trim() || user?.name || "User"
@@ -150,7 +150,7 @@ export function AppSidebar() {
     : user?.email || "";
 
   // Admin, staff and coach all work in the Staff Portal; the role is shown on the account card.
-  const portalLabel = isStudent ? "Student Portal" : "Staff Portal";
+  const portalLabel = isStudent ? "Student Portal" : t("s32.portal.staff");
 
   if (isStudent) {
     const renderItems = (items: typeof studentMenuItems) => (
@@ -283,28 +283,29 @@ export function AppSidebar() {
         <div className="mt-4 h-px bg-gradient-to-r from-sidebar-primary/60 via-sidebar-primary/20 to-transparent" aria-hidden="true" />
       </SidebarHeader>
       <SidebarContent className="px-2">
-        <nav aria-label="Main">
+        <nav aria-label={t("s32.nav.main")}>
           <SidebarGroup>
-            <SidebarGroupLabel className="text-[11px] font-semibold uppercase tracking-[0.16em]">Workspace</SidebarGroupLabel>
+            <SidebarGroupLabel className="text-[11px] font-semibold uppercase tracking-[0.16em]">{t("s32.nav.workspace")}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {menuItems.map((item) => {
                   const active = isActive(item.url);
+                  const label = t(item.labelKey);
                   return (
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton
                         asChild
                         isActive={active}
-                        tooltip={item.title}
+                        tooltip={label}
                         className={cn(
                           "h-11 gap-3 rounded-lg px-3 text-[15px] font-medium group-data-[collapsible=icon]:!h-10 group-data-[collapsible=icon]:!w-10 group-data-[collapsible=icon]:!justify-center group-data-[collapsible=icon]:!p-0",
                           active && "relative bg-sidebar-accent text-sidebar-accent-foreground before:absolute before:inset-y-2 before:left-0 before:w-[3px] before:rounded-full before:bg-sidebar-primary",
                         )}
                         data-testid={`link-${item.title.toLowerCase().replace(/\s+/g, "-")}`}
                       >
-                        <Link href={item.url} aria-label={item.title} aria-current={active ? "page" : undefined}>
+                        <Link href={item.url} aria-label={label} aria-current={active ? "page" : undefined}>
                           <item.icon className="h-[18px] w-[18px] shrink-0" aria-hidden="true" />
-                          <span className="group-data-[collapsible=icon]:hidden">{item.title}</span>
+                          <span className="group-data-[collapsible=icon]:hidden">{label}</span>
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -318,14 +319,14 @@ export function AppSidebar() {
       <SidebarFooter className="gap-3 px-3 pb-4 pt-2 group-data-[collapsible=icon]:px-1.5" role="contentinfo">
         <div
           role="region"
-          aria-label="Your account"
+          aria-label={t("s32.nav.account")}
           className="space-y-2 rounded-xl border border-sidebar-border bg-sidebar-accent/40 p-3 group-data-[collapsible=icon]:border-0 group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:p-0"
         >
-          <div className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center" role="group" aria-label="User profile" data-testid="profile-user">
+          <div className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center" role="group" aria-label={t("s32.nav.userProfile")} data-testid="profile-user">
             <StaffAvatar name={displayName} size="lg" />
             <div className="min-w-0 flex-1 group-data-[collapsible=icon]:hidden">
               <div className="truncate text-sm font-semibold" data-testid="text-username">{displayName}</div>
-              <div className="truncate text-xs text-sidebar-foreground/80" data-testid="text-role">{staffRoleLabel(user?.role)}</div>
+              <div className="truncate text-xs text-sidebar-foreground/80" data-testid="text-role">{t(staffRoleKey(user?.role))}</div>
               <div className="truncate text-xs text-sidebar-foreground/70" data-testid="text-email">{displayEmail}</div>
             </div>
           </div>
@@ -333,10 +334,10 @@ export function AppSidebar() {
             onClick={() => void logout()}
             className="flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-sidebar-border bg-sidebar text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:w-10"
             data-testid="button-logout"
-            aria-label="Log out"
+            aria-label={t("s32.nav.logOut")}
           >
             <LogOut className="h-4 w-4" aria-hidden="true" />
-            <span className="group-data-[collapsible=icon]:hidden">Log out</span>
+            <span className="group-data-[collapsible=icon]:hidden">{t("s32.nav.logOut")}</span>
           </button>
         </div>
         <p className="text-center text-[11px] text-sidebar-foreground group-data-[collapsible=icon]:hidden">© 2026 Lumière Student Portal</p>

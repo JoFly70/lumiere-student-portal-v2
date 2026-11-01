@@ -50,6 +50,8 @@ export interface StudentPreferencesOptions {
   csrf?: RequestHandler;
   store?: LanguagePreferenceStore;
   now?: () => Date;
+  /** Roles allowed on this router (default: students). S32-B mounts a staff copy for admin, staff and coach. */
+  roles?: readonly string[];
 }
 
 export function createStudentPreferencesRouter(opts: StudentPreferencesOptions = {}): Router {
@@ -59,8 +61,9 @@ export function createStudentPreferencesRouter(opts: StudentPreferencesOptions =
   const now = opts.now ?? (() => new Date());
 
   router.use(opts.auth ?? requireAuth);
+  const roles = opts.roles ?? ['student'];
   router.use((req: Request, res, next) => {
-    if (req.user?.role !== 'student') return res.status(403).json({ error: 'Students only', code: 'forbidden' });
+    if (!roles.includes(req.user?.role ?? '')) return res.status(403).json({ error: roles.length === 1 && roles[0] === 'student' ? 'Students only' : 'Not allowed for this role', code: 'forbidden' });
     next();
   });
 

@@ -46,11 +46,12 @@ import Library from "@/pages/library";
 import { UniversityOnly } from "@/components/university-only";
 import { HighSchoolOnly } from "@/components/high-school-only";
 import { studentLandingPath, useStudentPrograms } from "@/lib/student-programs";
+import { roleHomePath } from "@shared/staff-links";
 import AdminStudentHighSchool from "@/pages/admin-student-high-school";
 import AdminStudentBilling from "@/pages/admin-student-billing";
 import StaffBillingLookup from "@/pages/staff-billing-lookup";
 import { AcademicAssistant } from "@/components/academic-assistant";
-import { LanguagePreferenceSync } from "@/lib/language-preference";
+import { LanguagePreferenceSync, STAFF_LANGUAGE_PREFERENCE_PATH } from "@/lib/language-preference";
 import AdminViewAsStudent from "@/pages/admin-view-as-student";
 import ExperiencePage from "@/pages/experience";
 import { ExperienceBanner } from "@/components/experience-banner";
@@ -76,12 +77,9 @@ function RoleLanding() {
     return <Redirect to="/login" />;
   }
 
-  if (user?.role === "admin") {
-    return <Redirect to="/admin/support-center" />;
-  }
-
-  if (user?.role === "coach" || user?.role === "staff") {
-    return <Redirect to="/support" />;
+  // S32-B: admin -> owner Control Center, staff -> staff Control Center (Needs Attention first), coach -> support desk.
+  if (user?.role === "admin" || user?.role === "staff" || user?.role === "coach") {
+    return <Redirect to={roleHomePath(user.role)} />;
   }
 
   if (programs.isLoading) {
@@ -110,7 +108,7 @@ function Router() {
           </ProtectedRoute>
         )}
       </Route>
-      {/* S27: staff get the same Control Center (server scopes the data); the student file stays admin-only. */}
+      {/* S27: staff get the same Control Center (server scopes the data). */}
       <Route path="/staff/control-center">
         {() => (
           <ProtectedRoute requireRole={["admin", "staff"]}>
@@ -170,9 +168,11 @@ function Router() {
           </ProtectedRoute>
         )}
       </Route>
+      {/* S32-B: staff locate students in the directory and open the primary Student File (server permissions decide
+          every action inside it). The Advanced Academic Workspace and view-as-student stay admin-only. */}
       <Route path="/admin/students">
         {() => (
-          <ProtectedRoute requireRole="admin">
+          <ProtectedRoute requireRole={["admin", "staff"]}>
             <AdminStudents />
           </ProtectedRoute>
         )}
@@ -228,7 +228,7 @@ function Router() {
       </Route>
       <Route path="/admin/students/:studentId">
         {() => (
-          <ProtectedRoute requireRole="admin">
+          <ProtectedRoute requireRole={["admin", "staff"]}>
             <AdminStudentFile />
           </ProtectedRoute>
         )}
@@ -415,6 +415,8 @@ function AuthenticatedLayout() {
           {isStaffShell && <StaffOrb />}
           {/* S25: server copy of the student's EN/FR choice (cross-device; visible to staff in View as Student). */}
           {isStudent && <LanguagePreferenceSync />}
+          {/* S32-B: staff, coach and admin keep their EN/FR choice on the server too. */}
+          {isStaffShell && <LanguagePreferenceSync path={STAFF_LANGUAGE_PREFERENCE_PATH} />}
         </div>
       </div>
     </SidebarProvider>

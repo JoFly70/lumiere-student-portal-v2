@@ -7,6 +7,7 @@
  * Synthetic demo accounts (preferred_name starting with DEMO) appear as student rows with isDemo = true but never
  * produce queue items, deadlines, payment figures, support windows or counts. Dates are UTC calendar days.
  */
+import { supportTicketPath } from "@shared/staff-links";
 import { sql } from "drizzle-orm";
 import { isDemoPreferredName } from "@shared/synthetic-accounts";
 import { allocateReceipts } from "@shared/billing-ledger";
@@ -109,7 +110,9 @@ export function buildControlCenter(facts: ControlCenterFacts, now: Date, opts: C
   for (const s of facts.students) {
     const demo = isDemo(s);
     const items: ControlQueueItem[] = [];
-    const href = (tab: string) => `/admin/students/${encodeURIComponent(s.id)}?tab=${tab}`;
+    // S32-B (SA-29): degree students have a Degree plan tab, not the high-school Roadmap tab.
+    const isDegreeOnly = !(enrollmentsBy.get(s.id) ?? []).length && degreeIds.has(s.id);
+    const href = (tab: string) => `/admin/students/${encodeURIComponent(s.id)}?tab=${tab === "roadmap" && isDegreeOnly ? "plan" : tab}`;
     const add = (kind: QueueKind, severity: ControlQueueItem["severity"], title: string, detail: string, to: string, at: string | null = null, idSuffix = "", itemFacts?: ControlQueueItem["facts"]) =>
       items.push({ id: `${kind}:${s.id}${idSuffix}`, kind, severity, studentId: s.id, studentName: s.name, title, detail, href: to, at, ...(itemFacts ? { facts: itemFacts } : {}) });
 
@@ -208,7 +211,7 @@ export function buildControlCenter(facts: ControlCenterFacts, now: Date, opts: C
       if (t.subject.startsWith(ELECTIVE_SUBJECT_PREFIX)) {
         add("elective_approval", "info", "Elective change request", `${t.subject.slice(ELECTIVE_SUBJECT_PREFIX.length).trim().slice(0, 100)}`, `/admin/elective-requests?ticket=${encodeURIComponent(t.id)}`, t.createdAt, `:${t.id}`, { ticketId: t.id });
       } else if (t.status === "open") {
-        add("support_reply", "warning", "Support ticket waiting on staff", t.subject.slice(0, 100), `/admin/support-center?ticket=${encodeURIComponent(t.id)}`, t.createdAt, `:${t.id}`, { ticketId: t.id, openedAt: t.createdAt, hoursWaiting: Math.max(0, Math.floor((nowMs - Date.parse(t.createdAt)) / 3_600_000)) });
+        add("support_reply", "warning", "Support ticket waiting on staff", t.subject.slice(0, 100), supportTicketPath(t.id), t.createdAt, `:${t.id}`, { ticketId: t.id, openedAt: t.createdAt, hoursWaiting: Math.max(0, Math.floor((nowMs - Date.parse(t.createdAt)) / 3_600_000)) });
       }
     }
     for (const r of sessionsBy.get(s.id) ?? []) {

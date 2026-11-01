@@ -1,3 +1,4 @@
+import { MIN_PASSWORD_LENGTH, passwordTooShort } from "@shared/password-policy";
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import path from "path";
@@ -160,6 +161,11 @@ window.ENV = {
         return res.status(400).json({ error: "Invalid input format" });
       }
 
+      // S32-B: the same minimum as password reset, checked before the invitation is claimed.
+      if (passwordTooShort(password)) {
+        return res.status(400).json({ error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters`, code: "PASSWORD_TOO_SHORT" });
+      }
+
       // Account creation is invitation-only. The invitation is checked and
       // claimed server-side before any auth user is created.
       if (!invitationToken || typeof invitationToken !== 'string') {
@@ -202,7 +208,7 @@ window.ENV = {
           return res.status(409).json({ error: "Email already registered", code: "EMAIL_ALREADY_REGISTERED" });
         }
         if (authError.message.includes('Password should be')) {
-          return res.status(400).json({ error: "Password must be at least 6 characters" });
+          return res.status(400).json({ error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters`, code: "PASSWORD_TOO_SHORT" });
         }
         // Don't expose detailed Supabase errors - return generic message
         return res.status(400).json({ error: "Account creation failed. Please check your information and try again." });
@@ -387,8 +393,8 @@ window.ENV = {
       if (!password || typeof password !== 'string') {
         return res.status(400).json({ error: "Password is required" });
       }
-      if (password.length < 6) {
-        return res.status(400).json({ error: "Password must be at least 6 characters" });
+      if (passwordTooShort(password)) {
+        return res.status(400).json({ error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters`, code: "PASSWORD_TOO_SHORT" });
       }
 
       const tokenHash = req.body.token_hash;
@@ -1482,6 +1488,8 @@ window.ENV = {
   app.use('/api/student/welcome', (await import('./routes/student-welcome')).default);
   // S25: the student's portal language (server copy of the EN/FR choice; student only, own row only).
   app.use('/api/student/preferences', (await import('./routes/student-preferences')).default);
+  // S32-B: the same per-user EN/FR preference for the staff portal (admin, staff, coach), so the choice follows them.
+  app.use('/api/staff/preferences', (await import('./routes/student-preferences')).createStudentPreferencesRouter({ roles: ['admin', 'staff', 'coach'] }));
 
   // S20: Lumière Academic Assistant. Local guidance always; live Spark inference only when
   // SPARK_ASSISTANT_ENABLED=true, a server key exists and the role is eligible (never students).

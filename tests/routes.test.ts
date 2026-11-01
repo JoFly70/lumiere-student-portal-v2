@@ -851,7 +851,8 @@ describe('PASSWORD RESET — POST /api/auth/update-password', () => {
         recovery_type: 'recovery',
       });
     expect(res.status).toBe(400);
-    expect(res.body.error).toContain('at least 6 characters');
+    expect(res.body.error).toContain('at least 10 characters');
+    expect(res.body.code).toBe('PASSWORD_TOO_SHORT');
   });
 
   it('returns 401 when recovery token is invalid', async () => {

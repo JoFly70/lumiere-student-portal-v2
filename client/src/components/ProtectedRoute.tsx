@@ -2,6 +2,8 @@ import { ReactNode } from 'react';
 import { useAuth } from '@/lib/auth';
 import { Redirect } from 'wouter';
 import { flagAccessNotice } from '@/components/staff/access-notice';
+import { rememberReturnPath } from '@/lib/return-to';
+import { roleHomePath } from '@shared/staff-links';
 
 type Role = 'admin' | 'coach' | 'staff' | 'student';
 
@@ -22,8 +24,9 @@ export function ProtectedRoute({ children, requireRole }: ProtectedRouteProps) {
     );
   }
 
-  // Redirect to login if not authenticated
+  // Not signed in: remember where the person was going (same-origin path only) and restore it after sign-in (S32-B).
   if (!isAuthenticated) {
+    if (typeof window !== 'undefined') rememberReturnPath(`${window.location.pathname}${window.location.search}${window.location.hash}`);
     return <Redirect to="/login" />;
   }
 
@@ -32,18 +35,14 @@ export function ProtectedRoute({ children, requireRole }: ProtectedRouteProps) {
     ? (typeof requireRole === 'string' ? [requireRole] : requireRole)
     : null;
   if (allowedRoles && !allowedRoles.includes(user?.role ?? '')) {
-    // If role doesn't match, redirect to appropriate page
+    // If role doesn't match, redirect to the role's home page
     if (user?.role === 'student') {
       return <Redirect to="/flight-deck" />;
     }
-    if (user?.role === 'coach') {
-      // No dedicated coach UI yet — route to support as a safe interim view (with a one-time explanation)
+    if (user?.role === 'coach' || user?.role === 'staff') {
+      // One-time explanation, then the role home (staff: Control Center; coach: support desk).
       flagAccessNotice();
-      return <Redirect to="/support" />;
-    }
-    if (user?.role === 'staff') {
-      flagAccessNotice();
-      return <Redirect to="/support" />;
+      return <Redirect to={roleHomePath(user.role)} />;
     }
     if (user?.role === 'admin') {
       return <Redirect to="/admin" />;

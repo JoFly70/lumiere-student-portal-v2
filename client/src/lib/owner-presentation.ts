@@ -5,6 +5,7 @@
  */
 import type { ControlQueueItem, ControlStudentRow, QueueKind, StaffNoteView } from "@shared/s27-contract";
 import { centsToInput, parseMoneyToCents } from "@/components/admin/billing/money";
+import { roleSafeHref } from "@shared/staff-links";
 
 // ── Control Center: queue ─────────────────────────────────────────────────────
 
@@ -64,20 +65,13 @@ export function sortQueue<T extends Pick<ControlQueueItem, "severity">>(items: r
 }
 
 /**
- * Where the primary action goes. Admin: the href as given by the server. Staff cannot open the admin-only
- * student file, so a file link is rewritten to the staff-allowed page for that tab (billing / high school),
- * or to the support desk when there is none.
+ * Where the primary action goes (S32-B): the shared role-aware rule. Admin: the href as given by the server. Staff:
+ * the same href when staff may open it (the Student File is staff-reachable since S32-B); the admin-only Advanced
+ * Workspace becomes the Student File, an elective request becomes its support conversation, and the owner Control
+ * Center becomes the staff one. Coach: the support desk.
  */
 export function queueActionHref(href: string, role: string | undefined): string {
-  if (role === "admin") return href;
-  const m = /^\/admin\/students\/([^/?#]+)(?:\/([^?#]*))?(?:\?([^#]*))?/.exec(href);
-  if (!m) return href;
-  const [, id, sub, query] = m;
-  if (sub === "billing" || sub === "high-school" || sub === "roadmap") return `/admin/students/${id}/${sub}`;
-  const tab = new URLSearchParams(query ?? "").get("tab");
-  if (tab === "billing") return `/admin/students/${id}/billing`;
-  if (tab === "roadmap") return `/admin/students/${id}/high-school?tab=results`;
-  return "/support";
+  return roleSafeHref(href, role);
 }
 
 export function greetingKey(hour: number): "owner.cc.hello.morning" | "owner.cc.hello.afternoon" | "owner.cc.hello.evening" {
