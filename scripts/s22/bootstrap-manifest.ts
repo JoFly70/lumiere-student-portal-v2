@@ -118,6 +118,11 @@ export const STEPS: ManifestStep[] = [
     note: 'Additive and idempotent. Applied in production by scripts/release/s27/apply-s27.sh.',
   },
   {
+    id: '10e', label: 'S30 forward migration: academic calendar tables (calendar_events, calendar_subscriptions; RLS on, no client privileges) and calendar.* audit event types', kind: 'apply',
+    files: [`${M}20261107100000_s30_academic_calendar.sql`],
+    note: 'Additive and idempotent. Applied in production by scripts/release/s30/apply-s30.sh (wired into the runner by the S26 integration lead). Sorts after the S29 migration.',
+  },
+  {
     id: '11', label: 'verify (read-only)', kind: 'verify',
     files: [`${S14}00-baseline-probe.sql`, `${S14}01-account-readiness.sql`, `${S14}90-verify.sql`, 'scripts/s22/hosted-verify.sql'],
   },
