@@ -42,7 +42,7 @@ export function ReportedRecordsPanel({ studentId }: { studentId: string }) {
                       <td className="px-3 py-2 tabular-nums">{m.credits ? <>{m.credits}<span className="small block">{tt("imp.rr.creditsInfo")}</span></> : ""}</td>
                       <td className="px-3 py-2">{day(r.reportedOn)}</td>
                       <td className="px-3 py-2">
-                        <span className={`pill ${r.reviewState === "needs_review" ? "warn" : r.reviewState === "reviewed" ? "ok" : "plan"}`}><i aria-hidden="true" />{tt(`imp.review.${r.reviewState}`)}</span>
+                        <span style={{ whiteSpace: "nowrap" }} className={`pill ${r.reviewState === "needs_review" ? "warn" : r.reviewState === "reviewed" ? "ok" : "plan"}`}><i aria-hidden="true" />{tt(`imp.review.${r.reviewState}`)}</span>
                         {canToggle && (
                           <button type="button" className={BTN_SECONDARY + " mt-1 !min-h-8 !px-2 !py-1 text-xs"} disabled={review.isPending} data-testid="imp-rr-toggle"
                             onClick={() => review.mutate({ id: r.id, reviewState: r.reviewState === "needs_review" ? "reviewed" : "needs_review" })}>

@@ -87,7 +87,7 @@ export function IntegrityBanner({ compact = false }: { compact?: boolean }) {
   const { tt } = useImpT();
   return (
     <div role="note" data-testid="imp-integrity" className="flex items-start gap-3 rounded-xl border px-4 py-3"
-      style={{ background: "var(--occ-umber-soft, var(--occ-umber-dim))", borderColor: "var(--occ-umber-line, var(--t-line-2))", color: "var(--t-text)" }}>
+      style={{ background: "var(--occ-umber-dim)", borderColor: "var(--occ-umber-line, var(--t-line-2))", color: "var(--t-text)" }}>
       <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0" style={{ color: "var(--occ-umber)" }} aria-hidden="true" />
       {compact ? <p className="text-sm">{tt("imp.integrity.short")}</p> : (
         <div>

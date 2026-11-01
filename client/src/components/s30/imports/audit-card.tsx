@@ -37,7 +37,7 @@ export function AuditCard({ batch }: { batch: ImportBatchView }) {
   return (
     <section className="card" aria-labelledby="imp-audit-h" data-testid="imp-audit">
       <div className="ch"><h2 id="imp-audit-h">{tt("imp.audit.title")}</h2></div>
-      <dl className="grid gap-x-4 gap-y-2 text-sm sm:grid-cols-[minmax(8rem,12rem)_minmax(0,1fr)]">
+      <dl className="grid grid-cols-1 gap-y-1 text-sm [&>dd]:mb-1 [&>dd]:break-words">
         {rows.map(([k, v], i) => (
           <React.Fragment key={i}>
             <dt className="small">{k}</dt>

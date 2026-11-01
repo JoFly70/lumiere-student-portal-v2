@@ -21,7 +21,7 @@ export function MapCard({ batch, canValidate, pending, onValidate }: {
         <span className="meta">{tt("imp.map.fileColumns", { n: batch.headers.length })}</span>
       </div>
       <p className="small">{tt("imp.map.desc")}</p>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid items-end gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {IMPORT_FIELDS.map((f) => {
           const required = IMPORT_REQUIRED_FIELDS.includes(f);
           return (

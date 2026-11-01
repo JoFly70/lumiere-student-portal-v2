@@ -47,8 +47,8 @@ export const s30ImportsEn = {
   "imp.source.school_results.desc": "Results listed by a school or institution for the student’s courses.",
   "imp.tier.provider_reported": "Provider-reported",
   "imp.tier.institution_reported": "School-reported",
-  "imp.tier.provider_reported.note": "Recorded as provider-reported.",
-  "imp.tier.institution_reported.note": "Recorded as school-reported — still needs official verification.",
+  "imp.tier.provider_reported.note": "Never treated as an official result.",
+  "imp.tier.institution_reported.note": "Still needs official verification.",
   "imp.tier.produces": "Records from this source are",
 
   // upload
@@ -145,6 +145,7 @@ export const s30ImportsEn = {
   "imp.outcome.warning": "Warning",
   "imp.outcome.invalid": "Not importable",
   "imp.prev.was": "was",
+  "imp.val.status": "Status",
   "imp.val.percent": "Complete",
   "imp.val.score": "Result",
   "imp.val.credits": "Credits (informational)",
@@ -302,8 +303,8 @@ export const s30ImportsFr: Record<keyof typeof s30ImportsEn, string> = {
   "imp.source.school_results.desc": "Résultats communiqués par une école ou un établissement pour les cours de l’élève.",
   "imp.tier.provider_reported": "Déclaré par le fournisseur",
   "imp.tier.institution_reported": "Déclaré par l’école",
-  "imp.tier.provider_reported.note": "Enregistré comme déclaré par le fournisseur.",
-  "imp.tier.institution_reported.note": "Enregistré comme déclaré par l’école — nécessite encore une vérification officielle.",
+  "imp.tier.provider_reported.note": "Jamais traité comme un résultat officiel.",
+  "imp.tier.institution_reported.note": "Nécessite encore une vérification officielle.",
   "imp.tier.produces": "Les enregistrements issus de cette source sont",
 
   "imp.up.title": "Téléverser un fichier",
@@ -397,6 +398,7 @@ export const s30ImportsFr: Record<keyof typeof s30ImportsEn, string> = {
   "imp.outcome.warning": "Avertissement",
   "imp.outcome.invalid": "Non importable",
   "imp.prev.was": "auparavant",
+  "imp.val.status": "Statut",
   "imp.val.percent": "Achevé",
   "imp.val.score": "Résultat",
   "imp.val.credits": "Crédits (à titre informatif)",

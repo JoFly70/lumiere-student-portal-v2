@@ -28,7 +28,7 @@ function Values({ row, tt }: { row: ImportRowView; tt: Tt }) {
   const n = row.normalized;
   const m = measureText(n);
   const parts: [string, string][] = [];
-  if (m.status) parts.push([tt("imp.col.values"), tt(`imp.progress.${m.status}`)]);
+  if (m.status) parts.push([tt("imp.val.status"), tt(`imp.progress.${m.status}`)]);
   if (m.percent) parts.push([tt("imp.val.percent"), m.percent]);
   if (m.score) parts.push([tt("imp.val.score"), m.score]);
   if (m.credits) parts.push([tt("imp.val.credits"), m.credits]);
@@ -37,7 +37,7 @@ function Values({ row, tt }: { row: ImportRowView; tt: Tt }) {
   const p = row.diff === "changed" ? measureText(row.previous) : null;
   const prevOf = (label: string) => {
     if (!p) return null;
-    const v = label === tt("imp.val.percent") ? p.percent : label === tt("imp.val.score") ? p.score : label === tt("imp.val.credits") ? p.credits : label === tt("imp.val.date") ? p.date : label === tt("imp.col.values") ? (p.status ? tt(`imp.progress.${p.status}`) : null) : null;
+    const v = label === tt("imp.val.percent") ? p.percent : label === tt("imp.val.score") ? p.score : label === tt("imp.val.credits") ? p.credits : label === tt("imp.val.date") ? p.date : label === tt("imp.val.status") ? (p.status ? tt(`imp.progress.${p.status}`) : null) : null;
     return v;
   };
   return (
@@ -48,8 +48,8 @@ function Values({ row, tt }: { row: ImportRowView; tt: Tt }) {
           <li key={label}>
             <span style={{ color: "var(--t-muted)" }}>{label}: </span>
             {before && before !== value ? (
-              <span data-testid="imp-prev"><span style={{ color: "var(--t-muted)", textDecoration: "line-through" }}><span className="sr-only">{tt("imp.prev.was")} </span>{before}</span> <ArrowRight className="inline h-3 w-3" aria-hidden="true" /> <strong>{value}</strong></span>
-            ) : <strong>{value}</strong>}
+              <span data-testid="imp-prev"><span style={{ color: "var(--t-muted)", textDecoration: "line-through" }}><span className="sr-only">{tt("imp.prev.was")} </span>{before}</span> <ArrowRight className="inline h-3 w-3" aria-hidden="true" /> <strong className="whitespace-nowrap">{value}</strong></span>
+            ) : <strong className="whitespace-nowrap">{value}</strong>}
           </li>
         );
       })}
@@ -112,8 +112,8 @@ export function ReviewCard({ batch }: { batch: ImportBatchDetail }) {
                         <td className="px-3 py-2">{r.normalized?.task ?? ""}</td>
                         <td className="px-3 py-2"><Values row={r} tt={tt} /></td>
                         <td className="px-3 py-2">
-                          {r.diff ? <span className={`pill ${r.diff === "new" ? "ok" : r.diff === "changed" ? "wait" : r.diff === "duplicate_in_file" ? "warn" : "plan"}`}><i aria-hidden="true" />{tt(`imp.diff.${r.diff}`)}</span> : <span className="small">{tt(`imp.outcome.${r.outcome}`)}</span>}
-                          <span className="small mt-1 block">{tt(`imp.outcome.${r.outcome}`)}</span>
+                          {r.diff ? <span style={{ whiteSpace: "nowrap" }} className={`pill ${r.diff === "new" ? "ok" : r.diff === "changed" ? "wait" : r.diff === "duplicate_in_file" ? "warn" : "plan"}`}><i aria-hidden="true" />{tt(`imp.diff.${r.diff}`)}</span> : <span className="small">{tt(`imp.outcome.${r.outcome}`)}</span>}
+                          {r.diff ? <span className="small mt-1 block">{tt(`imp.outcome.${r.outcome}`)}</span> : null}
                         </td>
                         <td className="px-3 py-2"><ul className="grid gap-1" style={{ listStyle: "none", padding: 0, margin: 0 }}>{sortIssues(r.issues).map((i, k) => <IssueLine key={`${i.code}-${k}`} issue={i} />)}</ul></td>
                       </tr>
