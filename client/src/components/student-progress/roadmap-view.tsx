@@ -1,4 +1,9 @@
 /**
+ * @deprecated S32-A (F33): NOT ROUTED — no page or component imports this file; only legacy regression tests do.
+ * Live student views are client/src/pages/flight-deck.tsx (components/s27/*) and pages/roadmap.tsx
+ * (components/degree-journey/*). Do not fix student UI here.
+ */
+/**
  * Academic progress & degree roadmap. Canonical sections are read-only; the
  * student's self-reported enrollments are clearly separated and marked preliminary.
  */

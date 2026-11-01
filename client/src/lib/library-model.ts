@@ -20,6 +20,15 @@ export const UPLOAD_DOC_TYPE: Readonly<Record<Exclude<LibCategory, "contracts" |
 };
 export const UPLOAD_CATEGORIES = Object.keys(UPLOAD_DOC_TYPE) as (keyof typeof UPLOAD_DOC_TYPE)[];
 
+/**
+ * S32-A (F10 follow-up): the "academic" category is a high-school transcript only for high-school students.
+ * A bachelor's (or unknown-program) upload is filed as "other" so staff classify it; it never satisfies an HS requirement.
+ */
+export function uploadDocTypeFor(category: keyof typeof UPLOAD_DOC_TYPE, hasHighSchool: boolean): string {
+  if (category === "academic" && !hasHighSchool) return "other";
+  return UPLOAD_DOC_TYPE[category];
+}
+
 const COURSE_MARKER = /\[course:([a-z0-9][a-z0-9_-]*)\]/i;
 
 export function linkedCourseKey(doc: Pick<StudentDocument, "notes">): string | null {

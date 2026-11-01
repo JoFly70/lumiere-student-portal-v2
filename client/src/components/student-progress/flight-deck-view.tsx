@@ -1,4 +1,9 @@
 /**
+ * @deprecated S32-A (F33): NOT ROUTED — no page or component imports this file; only legacy regression tests do.
+ * Live student views are client/src/pages/flight-deck.tsx (components/s27/*) and pages/roadmap.tsx
+ * (components/degree-journey/*). Do not fix student UI here.
+ */
+/**
  * Flight Deck: the student's cockpit, rendered purely from the canonical
  * degree-progress view. Pure and prop-driven so it can be rendered from fixtures.
  */

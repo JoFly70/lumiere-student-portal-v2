@@ -150,7 +150,7 @@ export function LogSheet({
                   {item.itemStatus === "provider_complete" && (
                     <p className="rounded-lg border border-student-line bg-student-gold-soft p-3 text-xs text-student-ink" data-testid="log-proof-hint">
                       {t("dj.sheet.proofHelp")}{" "}
-                      <Link href="/documents" className="font-semibold text-student-gold-ink underline underline-offset-2" data-testid="link-upload-certificate">{t("dj.sheet.proofLink")}</Link>
+                      <Link href="/documents?tab=academic" className="font-semibold text-student-gold-ink underline underline-offset-2" data-testid="link-upload-certificate">{t("dj.sheet.proofLink")}</Link>
                     </p>
                   )}
                   {item.itemStatus === "provider_complete" ? (

@@ -7,13 +7,13 @@ import { buttonClass } from "@/components/student-progress/student-ui";
 import { useCreateDocument, useGenerateUploadUrl } from "@/hooks/use-documents";
 import { useToast } from "@/hooks/use-toast";
 import { DOCUMENT_ACCEPT_ATTR, checkDocumentFile, resolveDocumentMime } from "@/lib/document-upload-policy";
-import { UPLOAD_CATEGORIES, UPLOAD_DOC_TYPE, buildDocumentNotes } from "@/lib/library-model";
+import { UPLOAD_CATEGORIES, uploadDocTypeFor, buildDocumentNotes } from "@/lib/library-model";
 import { useT, type TranslationKey } from "@/i18n";
 
 const field = "min-h-[44px] w-full rounded-lg border border-student-line-strong bg-student-card px-3 text-sm text-student-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-student-gold-ink";
 
 export function UploadEvidence({
-  open, onOpenChange, profile, courses, defaultCategory = "coursework", defaultCourse = "",
+  open, onOpenChange, profile, courses, defaultCategory = "coursework", defaultCourse = "", hasHighSchool = false,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
@@ -21,6 +21,8 @@ export function UploadEvidence({
   courses: readonly { key: string; title: string }[];
   defaultCategory?: (typeof UPLOAD_CATEGORIES)[number];
   defaultCourse?: string;
+  /** S32-A: decides whether an "academic" upload is a high-school transcript or "other". */
+  hasHighSchool?: boolean;
 }) {
   const { t } = useT();
   const { toast } = useToast();
@@ -45,7 +47,7 @@ export function UploadEvidence({
     setBusy(true);
     setError(null);
     try {
-      const docType = UPLOAD_DOC_TYPE[category];
+      const docType = uploadDocTypeFor(category, hasHighSchool);
       const mime = resolveDocumentMime(file);
       const up = await generateUploadUrl.mutateAsync({ doc_type: docType, file_name: file.name, file_size: file.size, mime_type: mime, student_code: profile.student_code });
       const put = await fetch(up.upload_url, { method: "PUT", body: file, headers: { "Content-Type": mime } });

@@ -3,7 +3,7 @@
  * come from view.foundation.ladder (the canonical record). The Flight Deck owns
  * this section in full; the Roadmap links to it.
  *
- * Colour language (same everywhere): Verified = official charcoal, Applied =
+ * Colour language (same everywhere): Verified = official charcoal, Earned (applied) =
  * green, Waiting for verification = teal hatched, Planned = blue dashed. The
  * Verified bar is ALWAYS charcoal; surplus is the hatched end of it, never a
  * colour change.
@@ -13,26 +13,82 @@ import { GraduationCap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { StudentFoundationView } from "@shared/student-roadmap-contract";
 import {
-  APPLIED_VS_VERIFIED,
-  PLANNED_EXPLANATION,
-  SURPLUS_EXPLANATION,
   barFraction,
-  creditsText,
-  foundationHeadline,
-  foundationStateNote,
   hasPositive,
-  ladderAriaLabel,
-  ladderRungs,
   ladderScale,
-  ladderTotalsSentence,
-  credentialStandingLabel,
   stillToPlan,
-  otherCreditNote,
 } from "@/pages/student-roadmap-presentation";
-import { formatAsOf, formatDecimal } from "@/pages/student-progress-presentation";
+import { formatDecimal } from "@/pages/student-progress-presentation";
+import { useS27T } from "@/lib/s27/i18n-util";
+import type { TranslationKey } from "@/i18n";
 import { Disclosure, SectionHeading, StatusPill, cardClass } from "./student-ui";
 
+
 type Ladder = StudentFoundationView["ladder"];
+
+/** Translated text helpers (the English presentation helpers stay for tests; the screen renders from keys). */
+function useFoundationText() {
+  const { t, lang, pl } = useS27T();
+  const k = (key: string, vars?: Record<string, string | number>) => t(`s32.fnd.${key}` as TranslationKey, vars);
+  const dec = (v: string | null | undefined): string | null => {
+    const d = formatDecimal(v);
+    return d === null ? null : lang === "fr" ? d.replace(".", ",") : d;
+  };
+  const num = (v: string | null | undefined) => Number.parseFloat(String(v));
+  const credits = (v: string | null | undefined): string | null => {
+    const d = dec(v);
+    return d === null ? null : pl("s32.fnd.credit", num(v), { n: d });
+  };
+  const date = (iso: string | null | undefined): string | null => {
+    if (!iso) return null;
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return null;
+    return new Intl.DateTimeFormat(lang === "fr" ? "fr-CA" : "en-US", { year: "numeric", month: "long", day: "numeric", timeZone: "UTC" }).format(d);
+  };
+  const hund = (v: string | null): number | null => (v === null || !/^\d+(\.\d+)?$/.test(v) ? null : Math.round(Number(v) * 100));
+  const fromH = (n: number) => dec(String(n / 100)) ?? String(n / 100);
+  return { t, k, lang, pl, dec, credits, date, hund, fromH };
+}
+type FText = ReturnType<typeof useFoundationText>;
+
+function ladderRows(f: FText, ladder: Ladder) {
+  const { k } = f;
+  const base = [
+    { key: "reported" as const, label: k("rung.reported"), value: ladder.reported, help: k("rung.reported.help") },
+    { key: "provisional" as const, label: k("rung.provisional"), value: ladder.provisional, help: k("rung.provisional.help") },
+    { key: "verified" as const, label: k("rung.verified"), value: ladder.verified, help: k("rung.verified.help") },
+    { key: "applied" as const, label: k("rung.applied"), value: ladder.applied, help: ladder.applied === null ? k("rung.applied.none") : k("rung.applied.help") },
+  ];
+  const still = stillToPlan(ladder);
+  return [
+    ...base,
+    { key: "planned" as const, label: k("rung.planned"), value: ladder.planned, help: k("rung.planned.help") },
+    ...(still ? [{ key: "still" as const, label: k("rung.still"), value: still, help: k("rung.still.help") }] : []),
+  ];
+}
+
+function totalsSentence(f: FText, ladder: Ladder): string {
+  return f.k("totals", { rep: f.credits(ladder.reported) ?? f.credits("0")!, ver: f.dec(ladder.verified) ?? "0", wait: f.dec(ladder.provisional) ?? "0" });
+}
+
+function otherCreditNote(f: FText, fnd: StudentFoundationView): string | null {
+  const { hund, fromH, pl, k } = f;
+  const sum = (xs: (string | null)[]) => xs.reduce<number>((n, v) => n + (hund(v) ?? 0), 0);
+  const verifiedListed = sum(fnd.credentials.filter((c) => c.standing === "VERIFIED_APPLIED" || c.standing === "VERIFIED_NOT_APPLIED").map((c) => c.awardedCredits));
+  const waitingListed = sum(fnd.credentials.filter((c) => c.standing === "PENDING_VERIFICATION" || c.standing === "NEEDS_REVIEW").map((c) => c.reportedCredits));
+  const verifiedOther = (hund(fnd.ladder.verified) ?? 0) - verifiedListed;
+  const waitingOther = (hund(fnd.ladder.provisional) ?? 0) - waitingListed;
+  const parts: string[] = [];
+  if (verifiedOther > 0) parts.push(pl("s32.fnd.other.verified", verifiedOther / 100, { n: fromH(verifiedOther) }));
+  if (waitingOther > 0) parts.push(pl("s32.fnd.other.waiting", waitingOther / 100, { n: fromH(waitingOther) }));
+  return parts.length ? k("other.note", { parts: parts.join(k("other.and")) }) : null;
+}
+
+function stateNote(f: FText, fnd: StudentFoundationView): string | null {
+  if (fnd.degreeState === "UNDER_REVIEW") return f.k("note.review");
+  if (fnd.degreeState === "NO_ACTIVE_PROGRAM") return f.k("note.noProgram");
+  return null;
+}
 
 const HATCH = (c: string) => `repeating-linear-gradient(135deg, transparent 0 4px, hsl(var(${c}) / 0.8) 4px 6px)`;
 const SEG: Record<string, React.CSSProperties> = {
@@ -99,19 +155,18 @@ const SWATCH_FOR: Record<string, string> = {
 
 /** Credit ladder: cumulative. Bars share one scale; a tick marks what the degree requires. */
 export function CreditLadder({ ladder }: { ladder: Ladder }) {
+  const f = useFoundationText();
+  const { k, dec, credits } = f;
   const scale = ladderScale(ladder);
-  const rungs = ladderRungs(ladder);
   const requiredAt = barFraction(ladder.required, scale);
-  const rows = [
-    ...rungs.map((r) => ({ ...r })),
-    { key: "planned" as const, label: "Planned (not credit yet)", value: ladder.planned, help: "On your roadmap, not yet accepted. It starts where Applied ends and is not part of the total above." },
-    ...(stillToPlan(ladder)
-      ? [{ key: "still" as const, label: "Still to plan", value: stillToPlan(ladder), help: "What your degree still needs that no roadmap item covers yet. Lumière may add items." }]
-      : []),
-  ];
+  const rows = ladderRows(f, ladder);
+  const ariaText = [
+    ...rows.filter((r) => r.key !== "planned" && r.key !== "still" && r.value !== null).map((r) => `${r.label} ${credits(r.value)}`),
+    ...(ladder.required ? [k("ladder.requires", { c: credits(ladder.required) ?? "" })] : []),
+  ].join(", ");
   return (
-    <div data-testid="credit-ladder" role="group" aria-label={`Credit ladder: ${ladderAriaLabel(ladder)}`}>
-      <p className="mb-3 text-sm font-medium text-student-ink" data-testid="ladder-totals">{ladderTotalsSentence(ladder)}</p>
+    <div data-testid="credit-ladder" role="group" aria-label={k("ladder.aria", { text: ariaText })}>
+      <p className="mb-3 text-sm font-medium text-student-ink" data-testid="ladder-totals">{totalsSentence(f, ladder)}</p>
       <ol className="space-y-3">
         {rows.map((r) => (
           <li key={r.key} data-rung={r.key}>
@@ -121,7 +176,7 @@ export function CreditLadder({ ladder }: { ladder: Ladder }) {
                 {r.label}
               </span>
               <span className="font-serif text-lg text-student-ink" data-testid={`rung-${r.key}`}>
-                {r.value === null ? <span className="font-sans text-sm text-student-muted">Under review</span> : (formatDecimal(r.value) ?? r.value)}
+                {r.value === null ? <span className="font-sans text-sm text-student-muted">{k("underReview")}</span> : (dec(r.value) ?? r.value)}
               </span>
             </div>
             <div className="relative mt-1 h-3 w-full rounded-full bg-student-line/60" aria-hidden="true">
@@ -149,7 +204,7 @@ export function CreditLadder({ ladder }: { ladder: Ladder }) {
             <p className="mt-1 text-xs text-student-muted">{r.help}</p>
             {r.key === "verified" && hasPositive(ladder.surplus) && hasPositive(ladder.applied) && (
               <p className="mt-0.5 text-xs font-medium text-student-ink" data-testid="verified-split">
-                {creditsText(ladder.applied)} applied (solid) + {creditsText(ladder.surplus)} surplus (hatched)
+                {k("split", { a: credits(ladder.applied) ?? "", s: credits(ladder.surplus) ?? "" })}
               </p>
             )}
           </li>
@@ -158,12 +213,12 @@ export function CreditLadder({ ladder }: { ladder: Ladder }) {
       {ladder.required && (
         <p className="mt-2 flex items-center gap-2 text-xs text-student-muted">
           <span className="inline-block h-3 w-0.5 bg-student-ink" aria-hidden="true" />
-          Your degree requires {creditsText(ladder.required)}
+          {k("requires", { c: credits(ladder.required) ?? "" })}
         </p>
       )}
       {hasPositive(ladder.surplus) && (
         <p className="mt-3 rounded-lg bg-st-official-soft px-3 py-2.5 text-sm text-student-ink" data-testid="surplus-note">
-          <strong className="font-semibold">Surplus: {creditsText(ladder.surplus)}</strong> (the hatched end of the Verified bar). {SURPLUS_EXPLANATION}
+          <strong className="font-semibold">{k("surplus", { c: credits(ladder.surplus) ?? "" })}</strong>{k("surplus.tail", { text: k("expl.surplus") })}
         </p>
       )}
     </div>
@@ -172,18 +227,20 @@ export function CreditLadder({ ladder }: { ladder: Ladder }) {
 
 /** One sentence and two numbers: applied of required, and what is still pending. The full ladder sits behind a disclosure. */
 function LadderLead({ ladder }: { ladder: Ladder }) {
-  const applied = formatDecimal(ladder.applied);
-  const required = formatDecimal(ladder.required);
+  const f = useFoundationText();
+  const { k, dec, credits } = f;
+  const applied = dec(ladder.applied);
+  const required = dec(ladder.required);
   const pending: string[] = [];
-  if (hasPositive(ladder.provisional)) pending.push(`${creditsText(ladder.provisional)} waiting for verification`);
-  if (hasPositive(ladder.planned)) pending.push(`${creditsText(ladder.planned)} planned on your roadmap (not credit yet)`);
-  const lead = applied !== null && required !== null ? `${applied} of ${required} credits applied to your degree` : ladderTotalsSentence(ladder);
+  if (hasPositive(ladder.provisional)) pending.push(k("lead.waiting", { credits: credits(ladder.provisional) ?? "" }));
+  if (hasPositive(ladder.planned)) pending.push(k("lead.planned", { credits: credits(ladder.planned) ?? "" }));
+  const lead = applied !== null && required !== null ? k("lead", { a: applied, r: required }) : totalsSentence(f, ladder);
   return (
     <div data-testid="ladder-lead">
       <p className="font-serif text-xl text-student-ink" data-testid="ladder-lead-sentence">{lead}</p>
       {applied !== null && required !== null && (
         <div className="relative mt-2 h-2.5 w-full rounded-full bg-student-line/60" aria-hidden="true">
-          <span className="absolute inset-y-0 left-0 rounded-full" style={{ ...SEG.applied, width: `${Math.round(barFraction(ladder.applied, Math.max(Number(required), 1)) * 1000) / 10}%` }} />
+          <span className="absolute inset-y-0 left-0 rounded-full" style={{ ...SEG.applied, width: `${Math.round(barFraction(ladder.applied, Math.max(Number(formatDecimal(ladder.required)), 1)) * 1000) / 10}%` }} />
         </div>
       )}
       {pending.length > 0 && <p className="mt-2 text-sm text-student-muted" data-testid="ladder-pending">{pending.join(" · ")}</p>}
@@ -192,13 +249,17 @@ function LadderLead({ ladder }: { ladder: Ladder }) {
 }
 
 export function CredentialsList({ foundation }: { foundation: StudentFoundationView }) {
+  const f = useFoundationText();
+  const { k, credits, date } = f;
   if (foundation.credentials.length === 0) return null;
   return (
-    <ul className="divide-y divide-student-line" aria-label="Prior degrees and credentials" data-testid="credentials-list">
+    <ul className="divide-y divide-student-line" aria-label={k("cred.aria")} data-testid="credentials-list">
       {foundation.credentials.map((c) => {
-        const standing = credentialStandingLabel(c.standing);
+        const standing = c.standing === "VERIFIED_APPLIED" || c.standing === "VERIFIED_NOT_APPLIED"
+          ? { label: k("st.verified"), status: "official" as const }
+          : c.standing === "NOT_ACCEPTED" ? { label: k("st.notAccepted"), status: "attention" as const } : { label: k("st.waiting"), status: "submitted" as const };
         const amount = c.awardedCredits ?? c.reportedCredits;
-        const done = formatAsOf(c.completedOn);
+        const done = date(c.completedOn);
         return (
           <li key={c.creditRecordId} className="flex flex-wrap items-start justify-between gap-2 py-3" data-testid="credential">
             <div className="flex min-w-0 items-start gap-3">
@@ -206,12 +267,12 @@ export function CredentialsList({ foundation }: { foundation: StudentFoundationV
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-student-ink">{c.title}</p>
                 <p className="text-sm text-student-muted">
-                  {[done ? `Completed ${done}` : null, c.sourceTitle].filter(Boolean).join(" · ")}
+                  {[done ? k("cred.completed", { date: done }) : null, c.sourceTitle].filter(Boolean).join(" · ")}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              {amount && <span className="text-sm text-student-muted">{creditsText(amount)} {c.awardedCredits ? "awarded" : "reported"}</span>}
+              {amount && <span className="text-sm text-student-muted">{k(c.awardedCredits ? "cred.awarded" : "cred.reported", { credits: credits(amount) ?? "" })}</span>}
               <StatusPill status={standing.status} label={standing.label} />
             </div>
           </li>
@@ -228,47 +289,52 @@ export function FoundationSection({
   foundation: StudentFoundationView;
   requirementDetails?: React.ReactNode;
 }) {
-  const note = foundationStateNote(foundation);
+  const f = useFoundationText();
+  const { k, pl } = f;
+  const note = stateNote(f, foundation);
+  const other = otherCreditNote(f, foundation);
+  const n = foundation.credentials.length;
+  const headline = n === 0 ? k("head.none") : pl("s32.fnd.head", n);
   return (
     <section aria-labelledby="foundation-title" id="section-foundation" className="scroll-mt-20 space-y-4" data-testid="foundation-section">
       <SectionHeading
         id="foundation-title"
-        eyebrow="Your foundation"
-        title={foundationHeadline(foundation)}
-        description="Where you begin: the degrees and credit you already hold. Only Lumière staff can verify credit and apply it to your degree."
+        eyebrow={k("eyebrow")}
+        title={headline}
+        description={k("desc")}
       />
       <div className="grid items-start gap-4 lg:grid-cols-5">
         {foundation.credentials.length > 0 && (
           <div className={cn(cardClass, "lg:col-span-3")}>
-            <h3 className="mb-1 text-sm font-semibold text-student-ink">Prior degrees and credentials</h3>
+            <h3 className="mb-1 text-sm font-semibold text-student-ink">{k("cred.title")}</h3>
             <CredentialsList foundation={foundation} />
-            {otherCreditNote(foundation) && (
+            {other && (
               <p className="mt-2 border-t border-student-line pt-3 text-sm text-student-muted" data-testid="other-credit-note">
-                {otherCreditNote(foundation)}
+                {other}
               </p>
             )}
           </div>
         )}
         <div className={cn(cardClass, foundation.credentials.length > 0 ? "lg:col-span-2" : "lg:col-span-5")}>
-          <h3 className="mb-2 text-sm font-semibold text-student-ink">Your credits</h3>
+          <h3 className="mb-2 text-sm font-semibold text-student-ink">{k("credits.title")}</h3>
           <LadderLead ladder={foundation.ladder} />
-          <Disclosure label="See the full credit ladder" className="mt-1 border-t border-student-line" testId="ladder-full">
+          <Disclosure label={k("ladder.show")} className="mt-1 border-t border-student-line" testId="ladder-full">
             <div className="pt-2">
               <CreditLadder ladder={foundation.ladder} />
             </div>
           </Disclosure>
           {note && <p className="mt-3 text-sm text-student-muted" data-testid="foundation-note">{note}</p>}
-          <Disclosure label="What these words mean" className="mt-2 border-t border-student-line" testId="ladder-help">
+          <Disclosure label={k("help.show")} className="mt-2 border-t border-student-line" testId="ladder-help">
             <div className="space-y-2 pb-2 text-sm text-student-muted">
-              <p>{APPLIED_VS_VERIFIED}</p>
-              <p><strong className="font-medium text-student-ink">Planned.</strong> {PLANNED_EXPLANATION}</p>
+              <p>{k("expl.earned")}</p>
+              <p><strong className="font-medium text-student-ink">{k("help.planned")}</strong> {k("expl.planned")}</p>
             </div>
           </Disclosure>
         </div>
       </div>
       {requirementDetails && (
         <div className={cardClass}>
-          <Disclosure label="How your credit applies to each requirement" lazy testId="requirement-details">
+          <Disclosure label={k("req.show")} lazy testId="requirement-details">
             {requirementDetails}
           </Disclosure>
         </div>

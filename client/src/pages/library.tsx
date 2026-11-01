@@ -284,7 +284,7 @@ export default function Library() {
         )}
       </div>
       <DocumentViewer doc={view} onClose={() => setView(null)} />
-      <UploadEvidence open={uploadOpen} onOpenChange={setUploadOpen} profile={profile} courses={courses.map((c) => ({ key: c.key, title: displayTitle(c.title) }))} defaultCourse={uploadCourse} defaultCategory={uploadCourse ? "coursework" : "academic"} />
+      <UploadEvidence open={uploadOpen} onOpenChange={setUploadOpen} profile={profile} courses={courses.map((c) => ({ key: c.key, title: displayTitle(c.title) }))} defaultCourse={uploadCourse} defaultCategory={uploadCourse ? "coursework" : "academic"} hasHighSchool={programs.hasHighSchool} />
     </StudentSurface>
   );
 }
