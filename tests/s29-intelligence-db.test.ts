@@ -210,6 +210,10 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("S29 intelligence & operations on real P
   it("S30 calendar bridge: port notifications reach the outbox idempotently (student email / staff in-app); reminder job runs on the scheduler", async () => {
     const { createCalendarOpsAdapter, wireS30Calendar, calendarBridgeState } = await import("../server/services/s29/calendar-bridge");
     const port = createCalendarOpsAdapter(async () => db, () => NOW);
+    // S32-B: calendar reminders follow the Concierge switch (off by default), so turn it on for this delivery check.
+    const { saveSettings } = await import("../server/services/s29/attention-store");
+    const { DEFAULT_CONCIERGE_SETTINGS } = await import("../shared/s29-contract");
+    await saveSettings(db, { ...DEFAULT_CONCIERGE_SETTINGS, enabled: true }, "test");
     const n = { recipientUserId: real.userId, audience: "student" as const, kind: "calendar.reminder.deadline", params: { date: "2026-11-13", itemKind: "document_deadline", titleKey: null }, href: "/calendar", allowEmail: true, dedupeKey: "calendar-reminder:x:2026-11-13:3d" };
     expect(await port.enqueueNotification(n)).toBe("accepted");
     expect(await port.enqueueNotification(n)).toBe("duplicate");
@@ -225,7 +229,7 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("S29 intelligence & operations on real P
     // Wiring with a stand-in for S30's modules: the port is installed and the reminder job runs on the scheduler.
     let installed: unknown = null;
     let dispatched = 0;
-    wireS30Calendar({ setCalendarOperationsPort: (p) => { installed = p; }, dispatchCalendarReminders: async () => { dispatched += 1; return { due: 1, results: { accepted: 1, duplicate: 0, not_wired: 0, failed: 0 } }; } }, { getDb: async () => db });
+    wireS30Calendar({ setCalendarOperationsPort: (p) => { installed = p; }, dispatchCalendarReminders: async () => { dispatched += 1; return { due: 1, results: { accepted: 1, duplicate: 0, suppressed: 0, not_wired: 0, failed: 0 } }; } }, { getDb: async () => db });
     expect(installed).not.toBeNull();
     const { tick, readJobs } = await import("../server/services/s29/scheduler");
     const later = new Date(NOW.getTime() + 3_600_000);

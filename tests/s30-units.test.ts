@@ -5,7 +5,7 @@
 import { describe, expect, it } from "vitest";
 import { buildIcs, escapeText, foldLine, itemSummary } from "../server/services/s30/ics";
 import { buildCalendarItems, type CalendarFacts } from "../server/services/s30/calendar";
-import { planReminders, toNotifications } from "../server/services/s30/calendar-reminders";
+import { planFromFacts, planReminders, toNotifications } from "../server/services/s30/calendar-reminders";
 import { calendarOperationsPort, calendarPortWired, setCalendarOperationsPort } from "../server/services/s30/calendar-port";
 import type { CalendarItem } from "../shared/s30-contract";
 
@@ -106,7 +106,7 @@ describe("iCalendar writer", () => {
 
 describe("calendar reminder plan", () => {
   const mk = (over: Partial<CalendarItem>): CalendarItem => ({
-    id: "x", kind: "academic_deadline", source: "agreement", studentId: "s-a", studentName: null, studentCode: null, isDemo: false, title: "t", titleKey: null,
+    id: "x", kind: "academic_deadline", source: "high_school_plan", studentId: "s-a", studentName: null, studentCode: null, isDemo: false, title: "t", titleKey: null,
     start: "2026-11-12", end: null, allDay: true, timeZone: "UTC", status: "scheduled", location: null, href: "/", editable: false, recordId: "r", ...over,
   });
   it("deadlines at 3 days and on the day; appointments within 24h; milestones at 2 days (student only); nothing for done/overdue", () => {
@@ -114,47 +114,49 @@ describe("calendar reminder plan", () => {
       mk({ id: "d3", start: "2026-11-12" }),
       mk({ id: "d0", start: "2026-11-10", kind: "document_deadline" }),
       mk({ id: "d5", start: "2026-11-15" }),
-      mk({ id: "a1", kind: "advisor_meeting", allDay: false, start: "2026-11-11T09:00:00.000Z" }),
-      mk({ id: "a2", kind: "orientation", allDay: false, start: "2026-11-12T16:00:00.000Z" }),
-      mk({ id: "a3", kind: "orientation", allDay: false, start: "2026-11-11T08:00:00.000Z", status: "requested" }),
+      mk({ id: "a1", kind: "advisor_meeting", source: "calendar_event", recordId: "ev-1", allDay: false, start: "2026-11-11T09:00:00.000Z" }),
+      mk({ id: "a2", kind: "advisor_meeting", source: "calendar_event", recordId: "ev-2", allDay: false, start: "2026-11-12T16:00:00.000Z" }),
+      mk({ id: "a3", kind: "support_session", source: "calendar_event", recordId: "ev-3", allDay: false, start: "2026-11-11T08:00:00.000Z", status: "requested" }),
+      mk({ id: "owned-d", source: "agreement", start: "2026-11-12" }), // Concierge owns agreement deadlines
+      mk({ id: "owned-o", kind: "orientation", source: "orientation", allDay: false, start: "2026-11-11T09:00:00.000Z" }), // ... and orientation sessions
       mk({ id: "m1", kind: "course_milestone", start: "2026-11-11" }),
       mk({ id: "done", status: "done", start: "2026-11-11" }),
       mk({ id: "late", status: "overdue", start: "2026-11-09" }),
-    ], NOW);
+    ], NOW, { studentVisibleEventIds: new Set(["ev-1", "ev-2", "ev-3"]) });
     const by = new Map(plan.map((p) => [p.item.id, p] as const));
     expect([...by.keys()].sort()).toEqual(["a1", "a3", "d0", "d3", "m1"]);
-    expect(by.get("d3")).toMatchObject({ window: "3d", kind: "calendar.reminder.deadline", toAdmins: true, allowEmail: true });
+    expect(by.get("d3")).toMatchObject({ window: "3d", kind: "calendar.reminder.deadline", allowEmail: true });
     expect(by.get("d0")?.window).toBe("0d");
     expect(by.get("a1")).toMatchObject({ window: "24h", kind: "calendar.reminder.appointment", toStudent: true });
     expect(by.get("a3")?.toStudent).toBe(false); // a request not yet confirmed: owner only
-    expect(by.get("m1")).toMatchObject({ toAdmins: false, allowEmail: false });
+    expect(by.get("m1")).toMatchObject({ allowEmail: false });
   });
 });
 
 
 describe("reminders -> S29 outbox notifications (through the calendar port)", () => {
   const items = buildCalendarItems(facts(), { role: "admin" }, RANGE, NOW, { includeDemo: true });
-  const plan = planReminders(items, NOW);
-  it("addresses the student's user and the administrators with stable dedupe keys; demo students never reach administrators", () => {
-    const out = toNotifications(plan, new Map([["s-a", "u-a"], ["s-b", "u-b"], ["s-d", "u-d"]]), ["admin-1"]);
-    const deadline = out.filter((n) => n.dedupeKey.startsWith("calendar-reminder:agreement:s-a:language_test:"));
-    expect(deadline.map((n) => n.recipientUserId).sort()).toEqual(["admin-1", "u-a"]);
-    expect(deadline.find((n) => n.audience === "student")).toMatchObject({ href: "/calendar", allowEmail: true, params: { date: "2026-11-12", itemKind: "academic_deadline" } });
-    expect(deadline.find((n) => n.audience === "staff")).toMatchObject({ allowEmail: false, href: "/admin/students/s-a?tab=overview" });
-    expect(out.some((n) => n.recipientUserId === "admin-1" && n.params.studentId === "s-d")).toBe(false);
-    const again = toNotifications(planReminders(items, NOW), new Map([["s-a", "u-a"]]), ["admin-1"]);
-    expect(again.map((n) => n.dedupeKey)).toEqual(expect.arrayContaining(deadline.map((n) => n.dedupeKey)));
+  const plan = planFromFacts(facts(), NOW, RANGE);
+  const PLAN_ONE = planReminders([{ id: "hsplan:s-a:target", kind: "academic_deadline", source: "high_school_plan", studentId: "s-a", studentName: null, studentCode: null, isDemo: false, title: "t", titleKey: null,
+    start: "2026-11-12", end: null, allDay: true, timeZone: "UTC", status: "scheduled", location: null, href: "/", editable: false, recordId: "r" }], NOW);
+  it("addresses only the student's user, with stable dedupe keys; Concierge-owned items and hidden events are skipped", () => {
+    const out = toNotifications(plan, new Map([["s-a", "u-a"], ["s-b", "u-b"], ["s-d", "u-d"]]));
+    expect(out.every((n) => n.audience === "student")).toBe(true);
+    expect(out.some((n) => n.dedupeKey.startsWith("calendar-reminder:agreement:") || n.dedupeKey.startsWith("calendar-reminder:orientation:"))).toBe(false);
+    const target = out.filter((n) => n.dedupeKey.startsWith("calendar-reminder:hsplan:s-b:target:"));
+    const again = toNotifications(planFromFacts(facts(), NOW, RANGE), new Map([["s-a", "u-a"], ["s-b", "u-b"]]));
+    expect(again.map((n) => n.dedupeKey)).toEqual(expect.arrayContaining(target.map((n) => n.dedupeKey)));
     // no record free text in params
     expect(out.every((n) => Object.keys(n.params).every((k) => ["date", "itemKind", "titleKey", "change", "studentId"].includes(k)))).toBe(true);
   });
   it("the default port is an explicit no-op until S26 wires S29", async () => {
     setCalendarOperationsPort(null);
     expect(calendarPortWired()).toBe(false);
-    expect(await calendarOperationsPort().enqueueNotification(toNotifications(plan, new Map([["s-a", "u-a"]]), [])[0]!)).toBe("not_wired");
+    expect(await calendarOperationsPort().enqueueNotification(toNotifications(PLAN_ONE, new Map([["s-a", "u-a"]]))[0]!)).toBe("not_wired");
     const seen: string[] = [];
     setCalendarOperationsPort({ recordEvent: async () => "accepted", enqueueNotification: async (n) => { seen.push(n.dedupeKey); return "accepted"; } });
     expect(calendarPortWired()).toBe(true);
-    await calendarOperationsPort().enqueueNotification(toNotifications(plan, new Map([["s-a", "u-a"]]), [])[0]!);
+    await calendarOperationsPort().enqueueNotification(toNotifications(PLAN_ONE, new Map([["s-a", "u-a"]]))[0]!);
     expect(seen).toHaveLength(1);
     setCalendarOperationsPort(null);
   });

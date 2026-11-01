@@ -45,25 +45,27 @@ export interface AttentionExtraFacts {
   readonly pendingVerification: ReadonlyArray<{ studentId: string; count: number; oldest: string }>;
   /** Most recent imported academic activity per student (counts as progress for the inactivity rule). */
   readonly importedActivity: ReadonlyArray<{ studentId: string; lastOn: string }>;
+  /** Import batches validated (or approved) and waiting for the owner to commit or discard them: one per batch. */
+  readonly pendingImports: ReadonlyArray<{ id: string; sourceKind: string; rows: number; students: number; validatedAt: string }>;
   /** Notifications whose email delivery failed (bounded). */
   readonly failedNotifications: ReadonlyArray<{ id: string; studentId: string | null; template: string; at: string }>;
 }
 
-export const EMPTY_EXTRA: AttentionExtraFacts = { checkpoints: [], upcomingSessions: [], pendingVerification: [], importedActivity: [], failedNotifications: [] };
+export const EMPTY_EXTRA: AttentionExtraFacts = { checkpoints: [], upcomingSessions: [], pendingVerification: [], importedActivity: [], pendingImports: [], failedNotifications: [] };
 
 const WORKFLOW: Record<AttentionKind, AttentionWorkflow> = {
   document_review: "documents", payment_evidence: "billing", payment_overdue: "billing", payment_missing: "billing",
   deadline_soon: "documents", inactive: "academic", low_grade: "academic", school_result_needed: "academic",
   elective_approval: "academic", session_request: "appointments", support_reply: "support",
   checkpoint_missed: "academic", checkpoint_soon: "academic", orientation_upcoming: "appointments",
-  import_verification: "academic", notification_failed: "operations",
+  import_verification: "academic", notification_failed: "operations", import_awaiting_approval: "operations",
 };
 const ACTION: Record<AttentionKind, string> = {
   document_review: "review_documents", payment_evidence: "review_payment", payment_overdue: "follow_up_payment",
   payment_missing: "record_payment", deadline_soon: "check_deadline", inactive: "contact_student", low_grade: "review_scores",
   school_result_needed: "record_school_result", elective_approval: "decide_elective", session_request: "confirm_session",
   support_reply: "reply_support", checkpoint_missed: "complete_checkpoint", checkpoint_soon: "prepare_checkpoint",
-  orientation_upcoming: "prepare_session", import_verification: "verify_results", notification_failed: "check_delivery",
+  orientation_upcoming: "prepare_session", import_verification: "verify_results", notification_failed: "check_delivery", import_awaiting_approval: "approve_import",
 };
 
 /** Facts that change every day (counters) are left out of the fingerprint, so a dismissal survives until the facts change. */
@@ -159,7 +161,16 @@ export function buildAttention(facts: ControlCenterFacts, extra: AttentionExtraF
       reason: { rule: "import.school_result_pending", facts: { count: p.count, oldest: p.oldest.slice(0, 10) } }, arisenAt: p.oldest, href: `/admin/students/${encodeURIComponent(p.studentId)}/roadmap` });
   }
 
-  // 5. Notifications whose email delivery failed after bounded retries.
+  // 5. Import batches validated and waiting for the owner (approve + commit are admin-only). One item per batch; it clears
+  //    on its own when the batch is committed or discarded (it leaves the pending set).
+  for (const b of extra.pendingImports) {
+    const waitingDays = daysBetween(b.validatedAt.slice(0, 10), today);
+    push({ key: `import_awaiting_approval:${b.id}`, kind: "import_awaiting_approval", priority: waitingDays > 3 ? "high" : "normal", studentId: null,
+      title: "Import awaiting approval", detail: `A validated import (${b.rows} row${b.rows === 1 ? "" : "s"}, ${b.students} student${b.students === 1 ? "" : "s"}) is waiting for the owner to approve and commit it, or discard it. Nothing is applied until then.`,
+      reason: { rule: "import.batch_pending_approval", facts: { batchId: b.id, source: b.sourceKind, rows: b.rows, students: b.students } }, arisenAt: b.validatedAt, href: `/admin/imports?batch=${encodeURIComponent(b.id)}` });
+  }
+
+  // 6. Notifications whose email delivery failed after bounded retries.
   for (const f of extra.failedNotifications) {
     push({ key: `notification_failed:${f.id}`, kind: "notification_failed", priority: "normal", studentId: f.studentId && studentBy.has(f.studentId) ? f.studentId : null,
       title: "Email delivery failed", detail: `Notification "${f.template}" could not be delivered by email after retries.`,
@@ -193,6 +204,13 @@ export async function loadAttentionExtra(db: SqlExecutor, now: Date, s29Present:
   } catch (error) {
     if (errorCode(error) !== "42P01") throw error;
   }
+  let pendingImports: unknown = [];
+  try {
+    pendingImports = await db.execute(sql`SELECT id, source_kind, counts, validated_at FROM academic_import_batches
+      WHERE status IN ('validated', 'approved') AND validated_at IS NOT NULL ORDER BY validated_at, id LIMIT 50`);
+  } catch (error) {
+    if (errorCode(error) !== "42P01") throw error;
+  }
   let failed: unknown = [];
   if (s29Present) {
     failed = await db.execute(sql`SELECT id, student_id, template, updated_at FROM s29_notifications WHERE email_state = 'failed' AND updated_at >= ${new Date(now.getTime() - 14 * 86_400_000).toISOString()}::timestamptz ORDER BY updated_at DESC LIMIT 50`);
@@ -202,6 +220,10 @@ export async function loadAttentionExtra(db: SqlExecutor, now: Date, s29Present:
     upcomingSessions: rows(sessions).map((r) => ({ id: String(r.id), studentId: String(r.student_id), slotAt: isoReq(r.slot_at) })),
     pendingVerification: rows(pending).map((r) => ({ studentId: String(r.student_id), count: Number(r.n), oldest: isoReq(r.oldest) })),
     importedActivity: rows(imported).map((r) => ({ studentId: String(r.student_id), lastOn: String(r.last_on) })),
+    pendingImports: rows(pendingImports).map((r) => {
+      const c = (r.counts ?? {}) as { total?: number; students?: number };
+      return { id: String(r.id), sourceKind: String(r.source_kind), rows: Number(c.total ?? 0), students: Number(c.students ?? 0), validatedAt: isoReq(r.validated_at) };
+    }),
     failedNotifications: rows(failed).map((r) => ({ id: String(r.id), studentId: str(r.student_id), template: String(r.template), at: iso(r.updated_at) ?? now.toISOString() })),
   };
 }

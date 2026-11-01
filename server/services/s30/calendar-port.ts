@@ -42,7 +42,8 @@ export interface CalendarNotification {
   readonly dedupeKey: string;
 }
 
-export type PortResult = "accepted" | "duplicate" | "not_wired" | "failed";
+/** "suppressed": the operational layer deliberately did not send it (e.g. Concierge reminders switched off). */
+export type PortResult = "accepted" | "duplicate" | "suppressed" | "not_wired" | "failed";
 export interface CalendarOperationsPort {
   recordEvent(event: CalendarOpsEvent): Promise<PortResult>;
   enqueueNotification(notification: CalendarNotification): Promise<PortResult>;

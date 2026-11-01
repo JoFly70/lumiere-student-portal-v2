@@ -23,6 +23,8 @@ export const ATTENTION_KINDS = [
   "inactive", "low_grade", "school_result_needed", "elective_approval", "session_request", "support_reply",
   // S29 additions
   "checkpoint_missed", "checkpoint_soon", "orientation_upcoming", "import_verification", "notification_failed",
+  // S32-B: a validated (or approved) import batch waiting for the owner to commit it
+  "import_awaiting_approval",
 ] as const;
 export type AttentionKind = (typeof ATTENTION_KINDS)[number];
 

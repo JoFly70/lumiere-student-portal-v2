@@ -7,16 +7,19 @@
  * S29's job runner should call dispatchCalendarReminders on its schedule (e.g. every 15 minutes); duplicates are
  * harmless because every notification carries a stable dedupe key.
  *
- * Windows: deadlines (academic/document) 3 days before and on the day -> student + administrators (email allowed);
- *          appointments within 24 hours -> student (once confirmed) + administrators;
- *          course milestones 2 days before -> student only, in-app.
- * Overdue items are not reminded here: the Control Center queue owns them. Demo students never reach administrators.
+ * Student reminders only (staff have no inbox; Needs Attention already surfaces deadlines and orientation sessions):
+ *   appointments (advisor meeting, support session) within 24 hours -> student, once confirmed, email allowed;
+ *   course milestones 2 days before -> student, in-app only;
+ *   deadlines NOT owned by the Concierge (high-school target completion date) 3 days before and on the day -> student.
+ * Single-owner rule: agreement deadlines and orientation sessions are reminded by the S29 Concierge (configured windows,
+ * caps, overdue follow-ups), so they are never reminded from here as well. Calendar events a staff member hid from the
+ * student (visibleToStudent = false) never produce a student reminder.
+ * The S29 bridge drops every student reminder while the Concierge is switched off. Overdue items are not reminded here.
  */
-import { sql } from "drizzle-orm";
 import type { CalendarItem } from "@shared/s30-contract";
 import { buildCalendarItems, loadCalendarFacts, type CalendarFacts } from "./calendar";
 import { calendarOperationsPort, type CalendarNotification, type CalendarNotificationKind, type PortResult } from "./calendar-port";
-import { rows, type SqlExecutor } from "./db-util";
+import type { SqlExecutor } from "./db-util";
 
 const DAY = 86_400_000;
 
@@ -25,47 +28,58 @@ export interface PlannedReminder {
   readonly kind: CalendarNotificationKind;
   readonly window: "3d" | "0d" | "24h" | "2d";
   readonly toStudent: boolean;
-  readonly toAdmins: boolean;
   readonly allowEmail: boolean;
 }
 
+export interface PlanOptions {
+  /** Ids (calendar_events.id) of staff-scheduled events the student can see. Fail-closed: when omitted, no calendar_event item reaches the student. */
+  readonly studentVisibleEventIds?: ReadonlySet<string>;
+}
+
+/** Sources whose student reminders belong to the S29 Concierge (one owner: never reminded from the calendar too). */
+const CONCIERGE_OWNED_SOURCES: ReadonlySet<string> = new Set(["agreement", "orientation"]);
+
 const daysUntil = (today: string, date: string) => Math.round((Date.parse(`${date.slice(0, 10)}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / DAY);
 
-/** Pure: which reminders are due at `now` for these items. */
-export function planReminders(items: readonly CalendarItem[], now: Date): PlannedReminder[] {
+/** Pure: which student reminders are due at `now` for these items. */
+export function planReminders(items: readonly CalendarItem[], now: Date, opts: PlanOptions = {}): PlannedReminder[] {
   const today = now.toISOString().slice(0, 10);
   const out: PlannedReminder[] = [];
   for (const item of items) {
     if (item.status === "done" || item.status === "cancelled" || item.status === "overdue") continue;
+    if (CONCIERGE_OWNED_SOURCES.has(item.source)) continue;
+    if (item.source === "calendar_event" && !opts.studentVisibleEventIds?.has(item.recordId)) continue;
     if (item.kind === "academic_deadline" || item.kind === "document_deadline") {
       const d = daysUntil(today, item.start);
-      if (d === 0) out.push({ item, kind: "calendar.reminder.deadline", window: "0d", toStudent: true, toAdmins: true, allowEmail: true });
-      else if (d > 0 && d <= 3) out.push({ item, kind: "calendar.reminder.deadline", window: "3d", toStudent: true, toAdmins: true, allowEmail: true });
+      if (d === 0) out.push({ item, kind: "calendar.reminder.deadline", window: "0d", toStudent: true, allowEmail: true });
+      else if (d > 0 && d <= 3) out.push({ item, kind: "calendar.reminder.deadline", window: "3d", toStudent: true, allowEmail: true });
     } else if (item.kind === "orientation" || item.kind === "advisor_meeting" || item.kind === "support_session") {
       if (item.allDay) continue;
       const ms = Date.parse(item.start) - now.getTime();
-      if (ms > 0 && ms <= DAY) out.push({ item, kind: "calendar.reminder.appointment", window: "24h", toStudent: item.status !== "requested", toAdmins: true, allowEmail: true });
+      if (ms > 0 && ms <= DAY) out.push({ item, kind: "calendar.reminder.appointment", window: "24h", toStudent: item.status !== "requested", allowEmail: true });
     } else if (item.kind === "course_milestone") {
       const d = daysUntil(today, item.start);
-      if (d >= 0 && d <= 2) out.push({ item, kind: "calendar.reminder.milestone", window: "2d", toStudent: true, toAdmins: false, allowEmail: false });
+      if (d >= 0 && d <= 2) out.push({ item, kind: "calendar.reminder.milestone", window: "2d", toStudent: true, allowEmail: false });
     }
   }
   return out;
 }
 
-/** Pure: planned reminders -> outbox notifications for the student's user and the administrators. */
-export function toNotifications(plan: readonly PlannedReminder[], userOf: ReadonlyMap<string, string | null>, adminIds: readonly string[]): CalendarNotification[] {
+/** Pure: calendar facts -> planned student reminders (staff-hidden events excluded). */
+export function planFromFacts(f: CalendarFacts, now: Date, range: { from: string; to: string }): PlannedReminder[] {
+  const items = buildCalendarItems(f, { role: "admin" }, range, now, { includeDemo: true });
+  const studentVisibleEventIds = new Set(f.events.filter((e) => e.visibleToStudent).map((e) => e.id));
+  return planReminders(items, now, { studentVisibleEventIds });
+}
+
+/** Pure: planned reminders -> outbox notifications for the student's user. Staff get none (no inbox; Needs Attention covers them). */
+export function toNotifications(plan: readonly PlannedReminder[], userOf: ReadonlyMap<string, string | null>): CalendarNotification[] {
   const out: CalendarNotification[] = [];
   for (const p of plan) {
     const key = `calendar-reminder:${p.item.id}:${p.item.start}:${p.window}`.slice(0, 200);
     const params = { date: p.item.start, itemKind: p.item.kind, titleKey: p.item.titleKey };
     const studentUser = userOf.get(p.item.studentId) ?? null;
     if (p.toStudent && studentUser) out.push({ recipientUserId: studentUser, audience: "student", kind: p.kind, params, href: "/calendar", allowEmail: p.allowEmail && !p.item.isDemo, dedupeKey: key });
-    if (p.toAdmins && !p.item.isDemo) {
-      for (const admin of adminIds) {
-        out.push({ recipientUserId: admin, audience: "staff", kind: p.kind, params: { ...params, studentId: p.item.studentId }, href: `/admin/students/${encodeURIComponent(p.item.studentId)}?tab=overview`, allowEmail: false, dedupeKey: key });
-      }
-    }
   }
   return out;
 }
@@ -74,14 +88,12 @@ export async function collectDueCalendarReminders(db: SqlExecutor, now: Date, fa
   const from = new Date(now.getTime() - DAY).toISOString().slice(0, 10);
   const to = new Date(now.getTime() + 4 * DAY).toISOString().slice(0, 10);
   const f = facts ?? (await loadCalendarFacts(db, { studentIds: null }));
-  const plan = planReminders(buildCalendarItems(f, { role: "admin" }, { from, to }, now, { includeDemo: true }), now);
-  const admins = plan.some((p) => p.toAdmins) ? rows(await db.execute(sql`SELECT id FROM users WHERE role = 'admin' ORDER BY id LIMIT 20`)).map((r) => String(r.id)) : [];
-  return toNotifications(plan, new Map(f.students.map((s) => [s.id, s.userId] as const)), admins);
+  return toNotifications(planFromFacts(f, now, { from, to }), new Map(f.students.map((s) => [s.id, s.userId] as const)));
 }
 
 export async function dispatchCalendarReminders(db: SqlExecutor, now: Date): Promise<{ readonly due: number; readonly results: Readonly<Record<PortResult, number>> }> {
   const due = await collectDueCalendarReminders(db, now);
-  const results: Record<PortResult, number> = { accepted: 0, duplicate: 0, not_wired: 0, failed: 0 };
+  const results: Record<PortResult, number> = { accepted: 0, duplicate: 0, suppressed: 0, not_wired: 0, failed: 0 };
   const port = calendarOperationsPort();
   for (const n of due) {
     const r = await port.enqueueNotification(n).catch(() => "failed" as const);

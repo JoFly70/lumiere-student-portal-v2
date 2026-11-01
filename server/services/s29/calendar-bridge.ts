@@ -12,7 +12,9 @@
  *   recordEvent          -> audit log entry 's29.calendar_updated' (identifiers, kinds, dates only)
  *   enqueueNotification  -> s29_notifications (outbox + inbox), idempotent on the port's dedupe key; students get the
  *                           inbox entry and, when allowEmail, the email (preferences, quiet hours, synthetic-account and
- *                           .invalid suppression still apply); staff entries are visible in the Notifications page.
+ *                           .invalid suppression still apply). Student calendar REMINDERS are dropped ("suppressed") while the
+ *                           Concierge is switched off; change notices are always sent. Staff get no calendar reminder rows
+ *                           (no staff inbox; Needs Attention is their queue).
  *   calendar.reminders   -> scheduler job (every 15 min) calling S30's dispatchCalendarReminders.
  */
 import { sql } from "drizzle-orm";
@@ -25,7 +27,7 @@ import { formatDate, type Lang } from "./templates";
 import { loadSettings } from "./attention-store";
 
 // ── structural mirror of S30's port types (shared/s30-contract.ts + calendar-port.ts) ──
-export type PortResult = "accepted" | "duplicate" | "not_wired" | "failed";
+export type PortResult = "accepted" | "duplicate" | "suppressed" | "not_wired" | "failed";
 export interface CalendarOpsEventLike {
   readonly kind: string; readonly studentId: string; readonly calendarEventId: string; readonly eventKind: string;
   readonly startsAt: string; readonly actorId: string | null; readonly dedupeKey: string;
@@ -65,6 +67,9 @@ const CHANGE_LABEL: Record<string, { en: string; fr: string }> = {
   rescheduled: { en: "rescheduled", fr: "report" },
   cancelled: { en: "cancelled", fr: "annulation" },
 };
+
+/** Calendar reminders are discretionary (gated by the Concierge switch); "calendar.event_changed" notices are not. */
+export const isDiscretionaryReminder = (kind: string) => kind.startsWith("calendar.reminder.");
 
 const bridgeState = { wired: false, lastDispatchAt: null as string | null, lastDispatch: null as Record<string, unknown> | null, accepted: 0, duplicates: 0, failed: 0 };
 export function calendarBridgeState() { return { ...bridgeState }; }
@@ -116,6 +121,9 @@ export function createCalendarOpsAdapter(getDb: () => Promise<SqlExecutor> = def
         const at = now();
         const settings = await loadSettings(db);
         if (n.audience === "student") {
+          // Owner decision: Concierge OFF stops every discretionary student reminder, calendar reminders included.
+          // Event-change notices (scheduled / rescheduled / cancelled) keep their own rule and are never held back.
+          if (isDiscretionaryReminder(n.kind) && !settings.enabled) return "suppressed";
           const rec = await studentForUser(db, n.recipientUserId);
           if (!rec) return "failed";
           const res = await enqueue(db, {
