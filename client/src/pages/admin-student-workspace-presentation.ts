@@ -1,4 +1,16 @@
 import type { StatusKey } from "./student-roadmap-presentation";
+import { translate, type Language, type TranslationKey } from "@/i18n";
+
+/** S32-B: translator for the pure helpers below. Omitted = English (existing behaviour and tests). */
+export type WsTr = (key: TranslationKey, vars?: Record<string, string | number>) => string;
+export const enTr: WsTr = (key, vars) => translate("en", key, vars);
+/** Raw enum-ish token ("needs_review", "MANUAL_REVIEW") in the UI language; unknown tokens fall back to sentence case. */
+export function tokenLabel(raw: unknown, tr: WsTr = enTr): string | undefined {
+  if (typeof raw !== "string" || !raw.trim()) return undefined;
+  const key = `s32ws.tok.${raw.trim().toLowerCase().replace(/[\s-]+/g, "_")}` as TranslationKey;
+  const found = tr(key);
+  return found !== key ? found : workspaceToken(raw);
+}
 export const ADMIN_STUDENT_WORKSPACE_QUERY_KEY = (studentId: string) =>
   [`/api/admin/students/${encodeURIComponent(studentId)}/workspace`] as const;
 export const ADMIN_STUDENT_WORKSPACE_QUERY_OPTIONS = {
@@ -124,12 +136,12 @@ export function diagnosticItemStatus(item: DiagnosticAttentionItem): string | un
   return isRecord(item.diagnostic) ? asString(item.diagnostic.status) : undefined;
 }
 
-export function attentionItemLabel(labels: WorkspaceLabels, item: WorkspaceAttentionItem): string {
+export function attentionItemLabel(labels: WorkspaceLabels, item: WorkspaceAttentionItem, tr: WsTr = enTr): string {
   const requirementId = asString(item.requirementId);
   if (requirementId) return labels.requirements[requirementId]?.label ?? requirementId;
   const academicRuleId = asString(item.academicRuleId);
   if (academicRuleId) return labels.academicRules[academicRuleId]?.label ?? academicRuleId;
-  return "Report review";
+  return tr("s32ws.pres.reportReview");
 }
 
 export function toWorkspaceViewModel(workspace: WorkspaceRecord): WorkspaceViewModel {
@@ -295,12 +307,12 @@ const identityString = (record: WorkspaceRecord, ...keys: string[]): string | un
  * workspace. The only input is the student record returned by the workspace
  * endpoint; route params, list caches and the auth user are never consulted.
  */
-export function resolveWorkspaceStudentIdentity(student: unknown): WorkspaceStudentIdentity {
+export function resolveWorkspaceStudentIdentity(student: unknown, tr: WsTr = enTr): WorkspaceStudentIdentity {
   const record = isRecord(student) ? student : {};
   const first = identityString(record, "first_name", "firstName");
   const last = identityString(record, "last_name", "lastName");
   const name = identityString(record, "preferred_name", "preferredName")
-    ?? ([first, last].filter(Boolean).join(" ") || "Name not provided");
+    ?? ([first, last].filter(Boolean).join(" ") || tr("s32ws.pres.nameNotProvided"));
   return {
     id: identityString(record, "id", "studentId", "student_id"),
     name,
@@ -319,9 +331,10 @@ export function workspaceStudentIdFromData(data: unknown): string | undefined {
 // ---------------------------------------------------------------------------
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const MONTHS_FR = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
 
 /** "2026-10-25T09:00:00.000Z" to "Oct 25, 2026 \u00b7 9:00". Undefined when absent or unparseable. */
-export function formatWorkspaceDateTime(value: unknown, timeZone?: string): string | undefined {
+export function formatWorkspaceDateTime(value: unknown, timeZone?: string, lang: Language = "en"): string | undefined {
   const date = value instanceof Date ? value : typeof value === "string" && value.trim() ? new Date(value) : undefined;
   if (!date || Number.isNaN(date.getTime())) return undefined;
   const parts = new Intl.DateTimeFormat("en-US", {
@@ -329,6 +342,7 @@ export function formatWorkspaceDateTime(value: unknown, timeZone?: string): stri
   }).formatToParts(date);
   const get = (type: string) => parts.find((part) => part.type === type)?.value ?? "";
   const hour = String(Number(get("hour")) % 24);
+  if (lang === "fr") return `${Number(get("day"))} ${MONTHS_FR[Number(get("month")) - 1]} ${get("year")} \u00b7 ${hour} h ${get("minute")}`;
   return `${MONTHS[Number(get("month")) - 1]} ${Number(get("day"))}, ${get("year")} \u00b7 ${hour}:${get("minute")}`;
 }
 
@@ -340,8 +354,8 @@ export function workspaceToken(raw: unknown): string | undefined {
 }
 
 /** Overall progress status tile text. */
-export function workspaceProgressStatusLabel(status: unknown): string {
-  return workspaceToken(status) ?? "Not yet reported";
+export function workspaceProgressStatusLabel(status: unknown, tr: WsTr = enTr): string {
+  return tokenLabel(status, tr) ?? tr("s32ws.pres.notYetReported");
 }
 
 // ---------------------------------------------------------------------------
@@ -360,11 +374,11 @@ export interface WorkspaceStanding {
  * "Verified" (the charcoal official seal); anything else the student reported is
  * "Waiting for verification", never presented as official.
  */
-export function creditRecordStanding(raw: unknown): WorkspaceStanding {
+export function creditRecordStanding(raw: unknown, tr: WsTr = enTr): WorkspaceStanding {
   const token = typeof raw === "string" ? raw.trim().toLowerCase() : "";
-  if (["verified", "verified_applied", "verified_not_applied", "accepted"].includes(token)) return { key: "verified", status: "official", label: "Verified" };
-  if (["not_accepted", "rejected", "declined"].includes(token)) return { key: "not_accepted", status: "attention", label: "Not accepted" };
-  return { key: "waiting", status: "submitted", label: "Waiting for verification" };
+  if (["verified", "verified_applied", "verified_not_applied", "accepted"].includes(token)) return { key: "verified", status: "official", label: tr("s32ws.standing.verified") };
+  if (["not_accepted", "rejected", "declined"].includes(token)) return { key: "not_accepted", status: "attention", label: tr("s32ws.standing.notAccepted") };
+  return { key: "waiting", status: "submitted", label: tr("s32ws.standing.waiting") };
 }
 
 /** Counts of credit records by standing (records, not credit amounts: nothing is recomputed). */

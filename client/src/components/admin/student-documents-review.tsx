@@ -16,7 +16,7 @@ import { apiRequest } from "@/lib/api";
 import { docStatusLabel, docTypeLabel } from "@/lib/document-type-labels";
 import { fetchDocumentWithDownloadUrl, useCreateDocument, useGenerateUploadUrl } from "@/hooks/use-documents";
 import { useAuth } from "@/lib/auth";
-import { useT } from "@/i18n";
+import { useT, type TranslationKey } from "@/i18n";
 import { DocumentReviewDialog, type DocumentReviewAction, type DocumentReviewPayload } from "./document-review-dialog";
 import { canUploadDocumentOnBehalfForRole, STAFF_UPLOAD_ACCEPT, staffUploadMime, validateStaffUploadFile } from "./student-documents-upload-logic";
 
@@ -26,17 +26,28 @@ type ReviewCall = { id: string; action: "verify" | DocumentReviewAction; body: R
 const statusTone = (s: string): Tone => (s === "verified" ? "ok" : s === "pending" ? "gold" : s === "rejected" || s === "resubmit_requested" ? "attention" : "neutral");
 
 const STAFF_UPLOAD_TYPES = [
-  ["hs_transcript", "High-school transcript"],
-  ["hs_diploma", "High-school diploma"],
-  ["college_transcript", "College transcript"],
-  ["degree_certificate", "Degree certificate"],
-  ["id_gov", "Government-issued ID"],
-  ["foreign_eval", "Foreign credential evaluation"],
-  ["english_cert", "English proficiency proof"],
-  ["residency_doc", "Proof of residency"],
-  ["consent_form", "Consent form"],
-  ["other", "Other document"],
+  "hs_transcript", "hs_diploma", "college_transcript", "degree_certificate", "id_gov",
+  "foreign_eval", "english_cert", "residency_doc", "consent_form", "other",
 ] as const;
+
+type Tr = (key: TranslationKey, vars?: Record<string, string | number>) => string;
+/** S32-B: translated document type / status words (the shared English maps stay the fallback for unknown codes). */
+const docTypeText = (t: Tr, code: string): string => {
+  const key = `s32ws.doc.type.${code}` as TranslationKey;
+  const found = t(key);
+  return found !== key ? found : docTypeLabel(code);
+};
+const docStatusText = (t: Tr, status: string): string => {
+  const key = `s32ws.doc.status.${status}` as TranslationKey;
+  const found = t(key);
+  return found !== key ? found : docStatusLabel(status);
+};
+/** validateStaffUploadFile returns English; map its three known messages. */
+const UPLOAD_VALIDATION_KEYS: Readonly<Record<string, TranslationKey>> = {
+  "Choose a non-empty file.": "s32ws.doc.err.empty",
+  "Files must be 10 MB or smaller.": "s32ws.doc.err.size",
+  "Choose a PDF, PNG, JPG, or WebP file.": "s32ws.doc.err.type",
+};
 
 export function StaffDocumentUpload({ studentId }: { studentId: string }) {
   const qc = useQueryClient();
@@ -56,7 +67,7 @@ export function StaffDocumentUpload({ studentId }: { studentId: string }) {
     setUploadMessage(null);
     const validation = validateStaffUploadFile(file);
     if (!validation.valid) {
-      setUploadMessage({ kind: "error", text: validation.message });
+      setUploadMessage({ kind: "error", text: UPLOAD_VALIDATION_KEYS[validation.message] ? t(UPLOAD_VALIDATION_KEYS[validation.message]) : validation.message });
       return;
     }
     setUploading(true);
@@ -72,7 +83,7 @@ export function StaffDocumentUpload({ studentId }: { studentId: string }) {
         body: file,
         headers: { "Content-Type": staffUploadMime(file) ?? file.type },
       });
-      if (!uploaded.ok) throw new Error("The file could not be stored. Please try again.");
+      if (!uploaded.ok) throw new Error(t("s32ws.doc.err.store"));
       await createDocument.mutateAsync({
         doc_type: uploadType,
         file_name: file.name,
@@ -81,9 +92,9 @@ export function StaffDocumentUpload({ studentId }: { studentId: string }) {
       });
       setUploadNote("");
       await qc.invalidateQueries({ queryKey: ["documents", studentId] });
-      setUploadMessage({ kind: "success", text: "File uploaded. It is pending review and has not been verified." });
+      setUploadMessage({ kind: "success", text: t("s32ws.doc.uploaded") });
     } catch (error) {
-      setUploadMessage({ kind: "error", text: error instanceof Error ? error.message : "Upload failed. Please try again." });
+      setUploadMessage({ kind: "error", text: error instanceof Error ? error.message : t("s32ws.doc.uploadFailed") });
     } finally {
       setUploading(false);
       if (fileInput.current) fileInput.current.value = "";
@@ -101,7 +112,7 @@ export function StaffDocumentUpload({ studentId }: { studentId: string }) {
           <div className="min-w-0 space-y-1.5">
             <label className={cn(staffLabel, "block")} htmlFor="staff-upload-document-type">{t("staff.docs.upload.type")}</label>
             <select id="staff-upload-document-type" className={staffField} value={uploadType} disabled={uploadPending} onChange={(event) => setUploadType(event.target.value)}>
-              {STAFF_UPLOAD_TYPES.map(([value, label]) => <option value={value} key={value}>{label}</option>)}
+              {STAFF_UPLOAD_TYPES.map((value) => <option value={value} key={value}>{docTypeText(t, value)}</option>)}
             </select>
           </div>
           <div className="min-w-0 space-y-1.5">
@@ -145,9 +156,9 @@ export function StudentDocumentsReview({ studentId, documents }: { studentId: st
   };
   const view = (id: string) => {
     setViewError(null);
-    fetchDocumentWithDownloadUrl(id).then((d) => window.open(d.download_url, "_blank", "noopener,noreferrer")).catch(() => setViewError("The file could not be opened."));
+    fetchDocumentWithDownloadUrl(id).then((d) => window.open(d.download_url, "_blank", "noopener,noreferrer")).catch(() => setViewError(t("s32ws.doc.viewFailed")));
   };
-  const reviewError = review.error && !dialog ? (typeof review.error.message === "string" ? review.error.message : "Review failed") : null;
+  const reviewError = review.error && !dialog ? (typeof review.error.message === "string" ? review.error.message : t("s32ws.doc.reviewFailed")) : null;
   const small = "min-h-9 px-3";
   const quiet = "min-h-9 px-2.5 text-student-muted hover:text-student-ink";
 
@@ -155,11 +166,11 @@ export function StudentDocumentsReview({ studentId, documents }: { studentId: st
     <div className="space-y-5" data-testid="documents-review">
       {reviewError && <StaffNotice tone="urgent" role="alert">{reviewError}</StaffNotice>}
       {viewError && <StaffNotice tone="urgent" role="alert">{viewError}</StaffNotice>}
-      {documents.length === 0 ? <StaffNotice tone="info" role="status">No documents have been uploaded for this student yet.</StaffNotice> : null}
+      {documents.length === 0 ? <StaffNotice tone="info" role="status">{t("s32ws.doc.empty")}</StaffNotice> : null}
       {documents.length > 0 ? (
         <ul className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3" data-testid="documents-grid">
           {documents.map((d) => {
-            const meta = `${docTypeLabel(d.doc_type)}${d.issuer ? ` · ${d.issuer}` : ""}`;
+            const meta = `${docTypeText(t, d.doc_type)}${d.issuer ? ` · ${d.issuer}` : ""}`;
             return (
               <li key={d.id} className="min-w-0">
                 <StaffCard as="div" padded={false} className="flex h-full flex-col gap-3 p-4 shadow-none sm:p-5" data-testid={`document-${d.id}`}>
@@ -170,23 +181,23 @@ export function StudentDocumentsReview({ studentId, documents }: { studentId: st
                         <p className="truncate font-medium text-student-ink" title={d.file_name}>{d.file_name}</p>
                         <p className="truncate text-sm text-student-muted" title={meta}>{meta}</p>
                       </div>
-                      <TonePill tone={statusTone(d.status)} className="shrink-0" testId={`document-status-${d.id}`}>{docStatusLabel(d.status)}</TonePill>
+                      <TonePill tone={statusTone(d.status)} className="shrink-0" testId={`document-status-${d.id}`}>{docStatusText(t, d.status)}</TonePill>
                     </div>
                   </div>
                   {d.student_message && (d.status === "rejected" || d.status === "resubmit_requested") && (
-                    <div className="rounded-lg border border-student-line bg-student-gold-soft/40 px-3 py-2 text-sm leading-relaxed text-student-ink"><p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-student-muted">Shown to student</p><p>{d.student_message}</p></div>
+                    <div className="rounded-lg border border-student-line bg-student-gold-soft/40 px-3 py-2 text-sm leading-relaxed text-student-ink"><p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-student-muted">{t("s32ws.doc.shownToStudent")}</p><p>{d.student_message}</p></div>
                   )}
-                  {d.admin_notes && <div className="rounded-lg border border-dashed border-student-line-strong px-3 py-2 text-sm leading-relaxed text-student-muted"><p className="text-[11px] font-semibold uppercase tracking-[0.1em]">Internal note · staff only</p><p>{d.admin_notes}</p></div>}
+                  {d.admin_notes && <div className="rounded-lg border border-dashed border-student-line-strong px-3 py-2 text-sm leading-relaxed text-student-muted"><p className="text-[11px] font-semibold uppercase tracking-[0.1em]">{t("s32ws.doc.internalNote")}</p><p>{d.admin_notes}</p></div>}
                   <div className="mt-auto flex flex-wrap items-center gap-1.5 border-t border-student-line pt-3">
                     {d.status !== "verified" && (
-                      <Button type="button" className={cn(staffBtn.seal, small)} disabled={review.isPending} onClick={() => review.mutate({ id: d.id, action: "verify", body: {} })} data-testid={`button-verify-${d.id}`}><CheckCircle2 className="h-4 w-4" />Verify</Button>
+                      <Button type="button" className={cn(staffBtn.seal, small)} disabled={review.isPending} onClick={() => review.mutate({ id: d.id, action: "verify", body: {} })} data-testid={`button-verify-${d.id}`}><CheckCircle2 className="h-4 w-4" />{t("s32ws.doc.verify")}</Button>
                     )}
-                    <Button type="button" className={cn(staffBtn.outline, small)} variant="outline" onClick={() => view(d.id)}><ExternalLink className="h-4 w-4" />View file</Button>
+                    <Button type="button" className={cn(staffBtn.outline, small)} variant="outline" onClick={() => view(d.id)}><ExternalLink className="h-4 w-4" />{t("s32ws.doc.viewFile")}</Button>
                     {d.status !== "resubmit_requested" && (
                       <Button type="button" className={cn(staffBtn.ghost, quiet)} variant="ghost" disabled={review.isPending} onClick={() => { review.reset(); setDialog({ doc: d, action: "request-resubmit" }); }} data-testid={`button-resubmit-${d.id}`}><RotateCcw className="h-4 w-4" />{t("staff.docs.requestNewCopy")}</Button>
                     )}
                     {d.status !== "rejected" && (
-                      <Button type="button" className={cn(staffBtn.ghost, quiet)} variant="ghost" disabled={review.isPending} onClick={() => { review.reset(); setDialog({ doc: d, action: "reject" }); }} data-testid={`button-reject-${d.id}`}><XCircle className="h-4 w-4" />Reject</Button>
+                      <Button type="button" className={cn(staffBtn.ghost, quiet)} variant="ghost" disabled={review.isPending} onClick={() => { review.reset(); setDialog({ doc: d, action: "reject" }); }} data-testid={`button-reject-${d.id}`}><XCircle className="h-4 w-4" />{t("s32ws.doc.reject")}</Button>
                     )}
                   </div>
                 </StaffCard>
@@ -198,7 +209,7 @@ export function StudentDocumentsReview({ studentId, documents }: { studentId: st
       <StaffDocumentUpload studentId={studentId} />
       {dialog && (
         <DocumentReviewDialog key={`${dialog.doc.id}-${dialog.action}`} open onOpenChange={(o) => !o && setDialog(null)} action={dialog.action}
-          documentLabel={`${docTypeLabel(dialog.doc.doc_type)} · ${dialog.doc.file_name}`} pending={review.isPending} errorMessage={review.error?.message} onSubmit={submit} />
+          documentLabel={`${docTypeText(t, dialog.doc.doc_type)} · ${dialog.doc.file_name}`} pending={review.isPending} errorMessage={review.error?.message} onSubmit={submit} />
       )}
     </div>
   );
