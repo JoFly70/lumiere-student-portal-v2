@@ -593,7 +593,9 @@ describe("S11 staff UI — rendering", () => {
     expect(out).not.toContain("sm:grid-cols-[1fr_auto]"); // note input is full width, label above
     expect(out).toContain("Portal access: none");
     expect(out).toContain("Staff-only notes (never shown to the student)");
-    expect(out).toContain("/admin/students/11111111-1111-4111-8111-111111111111#workspace-profile");
+    // S32-B (SA-06): the decision lives in the Advanced Workspace (admin); rendered without an admin session this
+    // reads as the admin-only note. The admin link target is covered in tests/s32b-links.test.ts.
+    expect(out).toContain("An administrator verifies who is a legal guardian");
     expect(out).toContain("Contacts never receive portal access");
     expect(out).not.toMatch(/Verify authority|Revoke…/);
   });

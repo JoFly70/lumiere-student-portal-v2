@@ -99,7 +99,7 @@ describe("S09 staff profile review — pending correction", () => {
     expect(out).toContain("Passport spelling differs");
     expect(out).toContain("Approve…");
     expect(out).toContain("Reject…");
-    expect(out).toContain("/admin/students/stu-1#workspace-documents");
+    expect(out).toContain("/admin/students/stu-1?tab=documents"); // S32-B (SA-06): the Student File Documents tab
     expect(out).toContain("Approving does not change document verification");
   });
   it("omits the pending card when there is no pending request", () => {

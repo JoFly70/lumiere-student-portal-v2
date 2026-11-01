@@ -19,7 +19,7 @@ import { FlightArc, IconBadge, ownerBtn } from "@/components/admin/control/owner
 import { FleetInstrument } from "@/components/admin/control/fleet-instrument";
 import { Ring } from "@/components/s27/ui";
 import { LumiereOrb } from "@/components/s27/lumiere-orb";
-import { errorText, isUnavailable, useControlCenter } from "@/lib/s27-queries";
+import { isUnavailable, useControlCenter } from "@/lib/s27-queries";
 import {
   creditsFraction, daysLeftTone, formatMoneyCompact, filterStudentRows, formatArrival, formatDay, greetingKey, isoParts, localeOf, monthProgress, plausibleArrival,
   programLabelKey, queueActionHref, queueItemMeta, queueSeverityCounts, sortQueue, supportWindowTone, todayIsoLocal, type StudentFilter, type Tone,

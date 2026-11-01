@@ -11,12 +11,13 @@ describe("Phase 5F production truth and routing", () => {
     const login = read("client/src/pages/login.tsx");
 
     expect(app).toContain('user?.role === "admin"');
-    expect(app).toContain('<Redirect to="/admin/support-center" />');
+    // S32-B: every staff role lands on its home from the shared rule (admin: /admin/support-center).
+    expect(app).toContain('<Redirect to={roleHomePath(user.role)} />');
     expect(app).toContain('location === "/login"');
     expect(app).toContain('location === "/reset-password"');
     expect(app).toContain('location === "/auth/verify"');
     expect(app).toContain('requireRole="student"');
-    expect(login).toContain("user?.role === 'admin' ? '/admin/support-center'");
+    expect(login).toContain("roleHomePath(user?.role)"); // S32-B: shared role home after sign-in
   });
 
   it("uses role-aware sidebar navigation without querying a student profile for admins", () => {
@@ -26,7 +27,7 @@ describe("Phase 5F production truth and routing", () => {
     expect(sidebar).toContain('url: "/admin"');
     expect(sidebar).toContain('enabled: isStudent');
     // S10 staff pass: admin, staff and coach all work in the "Staff Portal"; students never see that label.
-    expect(sidebar).toContain('isStudent ? "Student Portal" : "Staff Portal"');
+    expect(sidebar).toContain('isStudent ? "Student Portal" : t("s32.portal.staff")'); // S32-B: translated
     expect(sidebar).not.toContain('"Admin Portal"');
   });
 

@@ -83,10 +83,10 @@ describe("structure", () => {
     expect(profile).not.toContain("profile-end");
     expect(ws).toContain('"workspace-documents": "documents"'); // old anchors still deep-link
   });
-  it("admins get a Students entry that opens the existing list route; staff keep Support only", () => {
+  it("admins and (since S32-B) staff get a Students entry that opens the list route; coaches keep Support only", () => {
     const sidebar = read("client/src/components/app-sidebar.tsx");
-    expect(sidebar).toContain('title: "Students", url: ADMIN_STUDENTS_PATH');
-    expect(sidebar).toMatch(/const staffMenuItems = \[\s*\{ title: "Support desk"/);
+    expect(sidebar).toContain('title: "Students", labelKey: "s32.nav.students", url: ADMIN_STUDENTS_PATH');
+    expect(sidebar).toMatch(/const coachMenuItems: StaffNavItem\[\] = \[supportItem\]/);
   });
   it("gold is never used for a verified status in the staff panel", () => {
     expect(read("client/src/components/admin/student-profile-review.tsx")).toContain('verified: "border-st-official bg-st-official');

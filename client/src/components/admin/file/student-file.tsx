@@ -9,9 +9,9 @@
  */
 import React, { useMemo } from "react";
 import { Link, useLocation, useSearch } from "wouter";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, MessageSquare, Wrench } from "lucide-react";
-import { StaffEmpty, StaffNotice, StaffPage, StaffPill, StaffTabList, StaffTabPanel, staffBtn, type StaffTab } from "@/components/staff/staff-ui";
+import { StaffEmpty, StaffNotice, StaffPage, StaffPill, StaffTabList, StaffTabPanel, type StaffTab } from "@/components/staff/staff-ui";
 import { AccountAvatar } from "@/components/os/account-menu";
 import { apiRequest } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -58,7 +58,6 @@ export function StudentFile({ studentId }: { studentId: string }) {
   const isAdmin = user?.role === "admin";
   const search = useSearch();
   const [location, navigate] = useLocation();
-  const qc = useQueryClient();
 
   const student = useQuery<StudentFileRecord & { photo_url?: string | null }>({
     queryKey: [`/api/students/${encodeURIComponent(studentId)}`],
@@ -119,7 +118,6 @@ export function StudentFile({ studentId }: { studentId: string }) {
   const guardians = profileQuery.data?.contacts.some((c) => c.type === "guardian" || c.type === "parent") || (hs?.guardians.length ?? 0) > 0;
   const credits = hs?.current && !/credits/i.test(programName ?? "") ? `${hs.current.credits.requiredHalfUnits / 2} ${t("owner.file.credits")}` : null;
   const canActivate = canActivateLeadForRole(user?.role, (s.status ?? "").toLowerCase());
-  const base = `/admin/students/${encodeURIComponent(studentId)}`;
 
   const tabs: StaffTab[] = fileTabsFor(kind).map((k) => ({
     key: k, label: t(TAB_LABEL[k]),

@@ -132,7 +132,7 @@ describe("staff workspace: no raw system values", () => {
 describe("shell label", () => {
   it("staff and coach get 'Staff Portal', not 'Student Portal'", () => {
     const sidebar = readFileSync("client/src/components/app-sidebar.tsx", "utf8");
-    expect(sidebar).toContain('isStudent ? "Student Portal" : "Staff Portal"');
+    expect(sidebar).toContain('isStudent ? "Student Portal" : t("s32.portal.staff")'); // S32-B: translated "Staff Portal"
     expect(sidebar).not.toContain('"Admin Portal"');
   });
 });

@@ -47,10 +47,12 @@ describe("truthful create-failure wording and idempotency keys", () => {
 describe("support entry points", () => {
   it("every role has a Support link in the sidebar; students also in the bottom bar", () => {
     const sidebar = read("client/src/components/app-sidebar.tsx");
-    for (const list of ["studentMenuItems", "adminMenuItems", "staffMenuItems"]) {
+    for (const list of ["studentMenuItems", "adminMenuItems", "staffMenuItems", "coachMenuItems"]) {
       const block = sidebar.slice(sidebar.indexOf(`const ${list}`), sidebar.indexOf("];", sidebar.indexOf(`const ${list}`)));
-      expect(block, list).toContain('url: "/support"');
+      // S32-B: staff and coach menus share one `supportItem` entry (url "/support").
+      expect(block, list).toMatch(/url: "\/support"|supportItem/);
     }
+    expect(sidebar).toContain('const supportItem: StaffNavItem = { title: "Support desk", labelKey: "s32.nav.support", url: "/support"');
     expect(read("client/src/components/student-shell.tsx")).toContain('url: "/support"');
   });
 

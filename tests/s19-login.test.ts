@@ -69,7 +69,8 @@ describe("S19 login", () => {
   });
 
   it("keeps the role-based redirect and request bodies unchanged", () => {
-    expect(read("client/src/pages/login.tsx")).toContain("user?.role === 'admin' ? '/admin/support-center'");
+    // S32-B: the remembered page first (role-checked), otherwise the shared role home.
+    expect(read("client/src/pages/login.tsx")).toContain("setLocation(takeReturnPath(user?.role) ?? roleHomePath(user?.role));");
     const reset = read("client/src/pages/reset-password.tsx");
     expect(reset).toContain("'/api/auth/update-password'");
     expect(reset).toContain("recovery_type: 'recovery'");

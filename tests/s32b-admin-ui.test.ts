@@ -52,7 +52,7 @@ describe("SA-24 audit viewer", () => {
   it("is fully French in FR (labels, severity, paging, link)", () => {
     const html = render("fr");
     expect(html).toContain("Journal d’audit");
-    expect(html).toContain("Ouvrir le dossier de l’élève");
+    expect(html).toContain("Ouvrir le dossier de l’étudiant");
     expect(html).toContain("Auteur");
     expect(html).toContain("Cible");
     expect(html).toContain("Avertissement");
@@ -107,7 +107,7 @@ describe("SA-16 admin module EN/FR", () => {
 describe("SA-32 / SA-09 add student", () => {
   it("the done-state button is labelled for what it opens: the Student File", () => {
     expect(translate("en", "sa.add.openFile")).toBe("Open student file");
-    expect(translate("fr", "sa.add.openFile")).toBe("Ouvrir le dossier de l’élève");
+    expect(translate("fr", "sa.add.openFile")).toBe("Ouvrir le dossier de l’étudiant");
     const src = read("client/src/components/admin/add-student-dialog.tsx");
     expect(src).toMatch(/data-testid="button-open-new-student">\{t\("sa\.add\.openFile"\)\}/);
     expect(src).not.toContain("Open student workspace");
