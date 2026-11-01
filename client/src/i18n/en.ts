@@ -18,6 +18,7 @@ import { studentUxEn } from "./modules/student-ux";
 import { s27OwnerEn } from "./modules/s27-owner";
 import { s27En } from "./modules/s27";
 import { s30CalendarEn } from "./modules/s30-calendar";
+import { s30ImportsEn } from "./modules/s30-imports";
 
 export const en = {
   ...authEn,
@@ -32,6 +33,7 @@ export const en = {
   ...s27OwnerEn,
   ...s27En,
   ...s30CalendarEn,
+  ...s30ImportsEn,
   // Language
   "language.label": "Language",
   "language.en": "English",
