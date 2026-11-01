@@ -11,7 +11,9 @@
                               through the existing evidence-review flow. One ACTIVE record per (student, identity); an
                               identical re-import is a no-op; a rollback restores the record a batch replaced.
 
-  The original file is never stored (only its hash). Events, notifications and the review exception go to the S29
+  The original file is not stored (its SHA-256 identifies it). academic_import_rows.raw keeps only the MAPPED cells of
+  each row while the import is open, and is cleared when the import is committed, rolled back or discarded (server-side
+  in imports/service.ts). Events, notifications and the review exception go to the S29
   operational layer through server/services/s30/imports-port.ts.
 
   Access: the Express server only (service role / owner connection). RLS on, no client policy, every client privilege

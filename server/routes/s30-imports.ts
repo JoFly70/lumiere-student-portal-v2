@@ -15,7 +15,8 @@
  *   GET    /students/:studentId/reported-records  admin, staff
  *   PATCH  /students/:studentId/reported-records/:recordId   admin (CSRF)  { reviewState }
  * Coaches and students have no access. Every write is audited (ids, statuses and counts; never row contents).
- * The uploaded file is parsed in memory and never stored; only its SHA-256 is kept.
+ * The uploaded file itself is parsed in memory and not stored (its SHA-256 identifies it). The MAPPED cells of each row
+ * are kept while the import is open (preview, re-validation) and cleared on commit, rollback and discard.
  */
 import { Router, type Request, type RequestHandler, type Response } from "express";
 import multer from "multer";
@@ -184,7 +185,7 @@ export function createImportsRouter(deps: ImportRouteDeps): Router {
     const body = importRollbackSchema.safeParse(req.body ?? {});
     if (!body.success) return validation(res, body.error);
     const out = await rollbackBatch(deps.db, id, body.data.reason, req.user!.id, now());
-    audit(req, S30_AUDIT_EVENTS.importRolledBack, "Academic import rolled back", { batchId: id, withdrawn: out.withdrawn, restored: out.restored }, null, "warning");
+    audit(req, S30_AUDIT_EVENTS.importRolledBack, "Academic import rolled back", { batchId: id, withdrawn: out.withdrawn, restored: out.restored, reason: body.data.reason }, null, "warning");
     return res.json({ result: out, batch: await getBatch(deps.db, id) });
   }));
 

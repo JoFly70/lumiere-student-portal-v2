@@ -62,6 +62,11 @@ async function duplicateOf(db: SqlExecutor, r: Row): Promise<string | null> {
   const [d] = rows(await db.execute(sql`SELECT id FROM academic_import_batches WHERE file_sha256 = ${String(r.file_sha256)} AND status = 'committed' AND id <> ${String(r.id)}::uuid ORDER BY committed_at DESC LIMIT 1`));
   return d ? String(d.id) : null;
 }
+/** Serialises commits and rollbacks (one at a time across all instances) so supersede chains stay consistent. */
+const lockImports = (tx: SqlExecutor) => tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext('s30.academic_imports'))`);
+/** Raw cells are only needed until the import is finished (preview, re-validation); afterwards they are cleared. */
+const clearRaw = (tx: SqlExecutor, batchId: string) => tx.execute(sql`UPDATE academic_import_rows SET raw = '{}'::jsonb WHERE batch_id = ${batchId}::uuid AND raw <> '{}'::jsonb`);
+
 function requireStatus(r: Row, allowed: readonly ImportStatus[], action: string) {
   if (!allowed.includes(r.status as ImportStatus)) throw new S30Error(E.INVALID_TRANSITION, 409, `Cannot ${action} an import that is ${String(r.status)}`);
 }
@@ -186,6 +191,12 @@ export async function validateBatch(db: TxDb, id: string, columns: ImportColumnM
     requireStatus(batch, ["uploaded", "validated", "approved"], "map");
     const errors = validateMapping(columns, (batch.headers as string[]) ?? []);
     if (errors.length) throw new S30Error(E.VALIDATION, 400, `Mapping is not usable: ${errors.join("; ")}`);
+    // After a validation only the mapped columns are kept, so a different column can only be mapped from a new upload.
+    const previous = batch.mapping ? new Set(Object.values(batch.mapping as ImportColumnMapping).filter(Boolean) as string[]) : null;
+    const wanted = Object.values(columns).filter(Boolean) as string[];
+    if (previous && batch.status !== "uploaded" && wanted.some((h) => !previous.has(h))) {
+      throw new S30Error(E.INVALID_TRANSITION, 409, "Only the columns mapped at validation were kept; upload the file again to map a different column");
+    }
     let mappingId: string | null = str(batch.mapping_id);
     if (saveAs) {
       const [m] = rows(await tx.execute(sql`INSERT INTO academic_import_mappings (name, source_kind, columns, created_by) VALUES (${saveAs}, ${String(batch.source_kind)}, ${JSON.stringify(columns)}::jsonb, ${actorId})
@@ -194,6 +205,9 @@ export async function validateBatch(db: TxDb, id: string, columns: ImportColumnM
     }
     const v = await computeValidation(tx, batch, columns, now);
     await persistValidation(tx, id, v);
+    // Data minimisation: keep only the mapped columns of each row (unmapped cells are never needed again).
+    await tx.execute(sql`UPDATE academic_import_rows SET raw = COALESCE((SELECT jsonb_object_agg(e.key, e.value) FROM jsonb_each(raw) AS e(key, value) WHERE e.key = ANY(ARRAY[${sql.join(wanted.map((h) => sql`${h}`), sql`, `)}]::text[])), '{}'::jsonb)
+      WHERE batch_id = ${id}::uuid`);
     await tx.execute(sql`UPDATE academic_import_batches SET status = 'validated', mapping = ${JSON.stringify(columns)}::jsonb, mapping_id = ${mappingId}::uuid, counts = ${JSON.stringify(v.counts)}::jsonb,
       validated_at = now(), approved_by = NULL, approved_at = NULL, updated_at = now() WHERE id = ${id}::uuid`);
     return { mappingSaved: !!saveAs };
@@ -216,6 +230,7 @@ export interface CommitResult { readonly inserted: number; readonly superseded: 
 
 export async function commitBatch(db: TxDb, id: string, actorId: string, now: Date): Promise<CommitResult> {
   const result = await db.transaction(async (tx) => {
+    await lockImports(tx);
     const b = await loadBatch(tx, id, true);
     requireStatus(b, ["approved"], "commit");
     const mapping = b.mapping as ImportColumnMapping;
@@ -230,8 +245,7 @@ export async function commitBatch(db: TxDb, id: string, actorId: string, now: Da
       if (x.outcome === "invalid" || !x.normalized || !x.studentId || !x.identity || !x.fingerprint) continue;
       if (x.diff !== "new" && x.diff !== "changed") continue;
       if (x.diff === "changed" && x.previousId) {
-        await tx.execute(sql`UPDATE academic_reported_records SET status = 'superseded', updated_at = now() WHERE id = ${x.previousId}::uuid AND status = 'active'`);
-        superseded += 1;
+        superseded += rows(await tx.execute(sql`UPDATE academic_reported_records SET status = 'superseded', updated_at = now() WHERE id = ${x.previousId}::uuid AND status = 'active' RETURNING id`)).length;
       }
       const n = x.normalized;
       const out = rows(await tx.execute(sql`INSERT INTO academic_reported_records (student_id, batch_id, row_id, tier, provider_label, course_key, course_label, task_label, progress_status,
@@ -248,6 +262,7 @@ export async function commitBatch(db: TxDb, id: string, actorId: string, now: Da
       perStudent.set(x.studentId, s);
     }
     const counts = { ...v.counts, committed: inserted, needsReview };
+    await clearRaw(tx, id);
     await tx.execute(sql`UPDATE academic_import_batches SET status = 'committed', counts = ${JSON.stringify(counts)}::jsonb, committed_by = ${actorId}, committed_at = now(), updated_at = now() WHERE id = ${id}::uuid`);
     const events: ImportOpsEvent[] = [];
     for (const [studentId, s] of perStudent) {
@@ -268,8 +283,14 @@ export async function commitBatch(db: TxDb, id: string, actorId: string, now: Da
 
 export async function rollbackBatch(db: TxDb, id: string, reason: string, actorId: string, now: Date = new Date()): Promise<{ withdrawn: number; restored: number }> {
   const out = await db.transaction(async (tx) => {
+    await lockImports(tx);
     const b = await loadBatch(tx, id, true);
     requireStatus(b, ["committed"], "roll back");
+    // Rollbacks must go newest-first: if a later import replaced some of this import's records, rolling this one
+    // back now would leave the later import's restore pointing at withdrawn data (and could resurrect it later).
+    const newer = rows(await tx.execute(sql`SELECT DISTINCT n.batch_id FROM academic_reported_records r JOIN academic_reported_records n ON n.supersedes_id = r.id
+      WHERE r.batch_id = ${id}::uuid AND r.status = 'superseded' AND n.status IN ('active', 'superseded') ORDER BY n.batch_id LIMIT 5`)).map((r) => String(r.batch_id));
+    if (newer.length) throw new S30Error(E.INVALID_TRANSITION, 409, `A newer import replaced some of these records; roll back the newer import first (${newer.join(", ")})`);
     const mine = rows(await tx.execute(sql`UPDATE academic_reported_records SET status = 'rolled_back', updated_at = now() WHERE batch_id = ${id}::uuid AND status = 'active' RETURNING id, supersedes_id`));
     let restored = 0;
     for (const r of mine) {
@@ -279,6 +300,7 @@ export async function rollbackBatch(db: TxDb, id: string, reason: string, actorI
           AND NOT EXISTS (SELECT 1 FROM academic_reported_records q WHERE q.student_id = p.student_id AND q.identity_key = p.identity_key AND q.status = 'active') RETURNING p.id`));
       restored += out.length;
     }
+    await clearRaw(tx, id);
     const counts = { ...((b.counts as object) ?? {}), rolledBack: mine.length };
     await tx.execute(sql`UPDATE academic_import_batches SET status = 'rolled_back', counts = ${JSON.stringify(counts)}::jsonb, rolled_back_by = ${actorId}, rolled_back_at = now(), rollback_reason = ${reason}, updated_at = now() WHERE id = ${id}::uuid`);
     const [st] = rows(await tx.execute(sql`SELECT count(DISTINCT student_id)::int AS n FROM academic_reported_records WHERE batch_id = ${id}::uuid`));
@@ -315,6 +337,7 @@ export async function discardBatch(db: TxDb, id: string, actorId: string): Promi
   await db.transaction(async (tx) => {
     const b = await loadBatch(tx, id, true);
     requireStatus(b, ["uploaded", "validated", "approved"], "discard");
+    await clearRaw(tx, id);
     await tx.execute(sql`UPDATE academic_import_batches SET status = 'discarded', updated_at = now() WHERE id = ${id}::uuid`);
     void actorId;
   });
