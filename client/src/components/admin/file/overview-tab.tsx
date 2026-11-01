@@ -14,7 +14,8 @@ import { StaffNotice, staffBtn, staffField } from "@/components/staff/staff-ui";
 import { OwnerAnswerView, type OwnerAnswer } from "@/components/owner-assistant/owner-assistant-panel";
 import { useT } from "@/i18n";
 import { creditsFraction, formatMoneyCompact, daysLeftTone, formatArrival, formatDay, localeOf, todayIsoLocal, type FileTab, type ProgramKind } from "@/lib/owner-presentation";
-import { buildDecisions, type Decision } from "@/lib/file-decisions";
+import { buildDecisions, fileNextStep, type Decision } from "@/lib/file-decisions";
+import { EnrollmentPanel } from "./enrollment-panel";
 import { summarizeBilling } from "@/components/admin/billing/billing-summary";
 import { errorText, useCheckpointAction } from "@/lib/s27-queries";
 import { useToast } from "@/hooks/use-toast";
@@ -29,6 +30,11 @@ export interface OverviewProps {
   studentLabel: string;
   kind: ProgramKind;
   isAdmin: boolean;
+  /** S32-B: record status, waiting decisions and enrollment stage feed the one next step (SA-08). */
+  status?: string;
+  profileDecisions?: number;
+  supportAwaiting?: number;
+  enrollmentStage?: string;
   hs?: StaffHighSchoolState | null;
   degreeCreditsConfirmed?: number | null;
   documentsPending: number;
@@ -84,9 +90,20 @@ function JourneyCard({ p, journey }: { p: OverviewProps; journey?: StudentJourne
 
 function DecisionsCard({ p, decisions }: { p: OverviewProps; decisions: Decision[] }) {
   const { t } = useT();
+  const next = fileNextStep({
+    status: p.status ?? "", isAdmin: p.isAdmin, programKind: p.kind, profileDecisions: p.profileDecisions ?? 0, supportAwaiting: p.supportAwaiting ?? 0,
+    billingConfigured: p.billing ? p.billing.student.state === "configured" : undefined, enrollmentStage: p.enrollmentStage, studentId: p.studentId,
+  });
   return (
     <Panel id="ov-decisions" title={t("owner.dec.title")} testId="ov-decisions">
-      {decisions.length === 0 ? <p className="rounded-xl border border-student-line bg-student-gold-soft/40 px-4 py-3 text-sm text-student-muted" data-testid="decisions-empty">{t("owner.dec.none")}</p> : (
+      {decisions.length === 0 && next ? (
+        <div className="flex flex-col gap-3 rounded-xl border border-student-gold bg-student-gold-soft/60 px-4 py-3 sm:flex-row sm:items-center sm:justify-between" data-testid="decision-next" data-key={next.key}>
+          <p className="min-w-0 text-sm leading-snug text-student-ink"><span className="mr-1 font-semibold">{t("s32.next.label")} ·</span>{t(next.key, next.vars)}</p>
+          {next.href
+            ? <Link href={next.href} className={cn(ownerBtn.outline, "inline-flex shrink-0 items-center border")} data-testid="decision-next-open">{t("s32.next.open")}<ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>
+            : next.tab && next.tab !== "overview" ? <button type="button" className={cn(ownerBtn.outline, "shrink-0 border")} onClick={() => p.go(next.tab!)} data-testid="decision-next-open">{t("s32.next.open")}<ArrowRight className="h-4 w-4" aria-hidden="true" /></button> : null}
+        </div>
+      ) : decisions.length === 0 ? <p className="rounded-xl border border-student-line bg-student-gold-soft/40 px-4 py-3 text-sm text-student-muted" data-testid="decisions-empty">{t("owner.dec.none")}</p> : (
         <ul className="space-y-3">
           {decisions.map((d) => (
             <li key={d.id} className={cn("flex flex-col gap-3 rounded-xl border px-4 py-3 sm:flex-row sm:items-center sm:justify-between", d.tone === "urgent" ? "border-st-urgent/50 bg-st-urgent-soft" : "border-student-gold bg-student-gold-soft/60")} data-testid="decision-item" data-kind={d.kind}>
@@ -237,6 +254,7 @@ export function OverviewTab(p: OverviewProps) {
       <div className="min-w-0 space-y-6">
         <JourneyCard p={p} journey={p.journey.data} />
         <DecisionsCard p={p} decisions={decisions} />
+        {p.isAdmin ? <EnrollmentPanel studentId={p.studentId} /> : null}
         <SummaryCard studentId={p.studentId} studentLabel={p.studentLabel} isAdmin={p.isAdmin} />
       </div>
       <div className="min-w-0 space-y-6">

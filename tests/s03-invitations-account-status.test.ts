@@ -9,6 +9,8 @@ function chain(): any {
     {
       get(_t, prop: string) {
         if (prop === 'then') return undefined;
+        // An awaited builder without .single() (e.g. the S32-B supersede UPDATE) resolves to the proxy itself.
+        if (prop === 'error' || prop === 'data') return null;
         if (prop === 'maybeSingle' || prop === 'single') {
           return () => Promise.resolve(result.value);
         }
@@ -53,6 +55,12 @@ describe('invitations', () => {
     expect(insert.role).toBe('student');
     expect(insert.token_hash).toBe(hashInvitationToken(inv.token));
     expect(JSON.stringify(insert)).not.toContain(inv.token);
+    // S32-B (SA-33): older pending codes for the same address are revoked before the new one is inserted.
+    const updateAt = calls.findIndex(([m]) => m === 'update');
+    expect(updateAt).toBeGreaterThan(-1);
+    expect(updateAt).toBeLessThan(calls.findIndex(([m]) => m === 'insert'));
+    expect(Object.keys(calls[updateAt]![1][0] as object)).toEqual(['revoked_at']);
+    expect(calls.slice(updateAt).some(([m, a]) => m === 'eq' && a[0] === 'email' && a[1] === 'a@b.co')).toBe(true);
   });
 
   it('claims only unconsumed, unrevoked, unexpired invitations for the same email', async () => {

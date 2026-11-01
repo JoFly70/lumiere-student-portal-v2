@@ -6,6 +6,7 @@
  * Server responses are authoritative: callers replace their state with the
  * refreshed StaffHighSchoolState every mutation returns.
  */
+import { studentFilePath, studentWorkspacePath } from "@shared/staff-links";
 import {
   HS_API,
   HS_EVIDENCE_DOC_TYPES,
@@ -803,6 +804,9 @@ export const isCompleted = (state: StaffHighSchoolState): boolean => {
   return !!c && (c.enrollment.status === "completed" || c.graduation.status === "diploma_conferred");
 };
 
-/** Where the S09 authority verification lives (not duplicated here). */
-export const profileIdentityHref = (studentId: string): string => `/admin/students/${encodeURIComponent(studentId)}#workspace-profile`;
-export const documentsHref = (studentId: string): string => `/admin/students/${encodeURIComponent(studentId)}#workspace-documents`;
+/**
+ * Where the S09 authority verification lives (not duplicated here). S32-B (SA-06): guardian & identity decisions are
+ * in the Advanced Workspace (#profile tab); documents are reviewed on the Student File's Documents tab.
+ */
+export const profileIdentityHref = (studentId: string): string => studentWorkspacePath(studentId, "profile");
+export const documentsHref = (studentId: string): string => studentFilePath(studentId, "documents");

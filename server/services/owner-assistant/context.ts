@@ -8,6 +8,7 @@
  */
 import { formatHalfUnits, type StudentHighSchoolView, type HsReviewQueueItem } from "@shared/high-school-contract";
 import type { StudentJourneyView } from "@shared/s27-contract";
+import { studentWorkspacePath, supportStudentPath, supportTicketPath } from "@shared/staff-links";
 
 export interface OwnerContextStudent {
   readonly id: string;
@@ -144,7 +145,8 @@ export function composeOwnerContext(input: OwnerContextInput): OwnerSourceRecord
   push({
     kind: "guardians",
     label: "Guardians and contacts",
-    path: `${base}?tab=profile`,
+    // S32-B (SA-21): guardian & identity decisions live in the Advanced Workspace's Guardian & identity tab.
+    path: studentWorkspacePath(input.student.id, "profile"),
     text: hs.guardians.length === 0
       ? "No guardian or authorized contact is recorded."
       : hs.guardians.map((x, i) => `Contact ${i + 1} (${clip(x.relationship, 30)}): standing ${x.standing}; may discuss academics ${x.mayDiscussAcademics ? "yes" : "no"}; may discuss finances ${x.mayDiscussFinances ? "yes" : "no"}`).join("; ") + ".",
@@ -231,13 +233,13 @@ function appendDocsTickets(
     }
   }
   if (input.tickets.length === 0) {
-    push({ kind: "tickets", label: "Support tickets", path: `/admin/support?studentId=${encodeURIComponent(input.student.id)}`, text: "No support tickets." });
+    push({ kind: "tickets", label: "Support tickets", path: supportStudentPath(input.student.id), text: "No support tickets." });
   } else {
     for (const t of input.tickets.slice(0, 10)) {
       push({
         kind: "ticket",
         label: `Ticket: ${scrubFreeText(t.subject, 60) || t.id}`,
-        path: `/admin/support?ticket=${encodeURIComponent(t.id)}`,
+        path: supportTicketPath(t.id),
         text: `Support ticket "${scrubFreeText(t.subject, 100)}"; status ${t.status}; category ${t.category ?? "?"}; priority ${t.priority ?? "?"}; last update ${t.updated_at?.slice(0, 10) ?? "?"}.`,
       });
     }

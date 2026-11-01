@@ -34,6 +34,20 @@ export async function createInvitation(params: {
   const email = normalizeInvitationEmail(params.email);
   const expiresAt = new Date(Date.now() + ttl * 3600 * 1000).toISOString();
 
+  // S32-B (SA-33): one live code per address. Older pending codes for this email stop working when a new one is
+  // issued (from Administration, the Student File or the Workspace). A code already claimed by an in-flight
+  // sign-up is left alone; consumed codes are history and untouched.
+  const { error: revokeError } = await supabaseAdmin
+    .from("account_invitations")
+    .update({ revoked_at: new Date().toISOString() })
+    .eq("email", email)
+    .is("consumed_at", null)
+    .is("revoked_at", null)
+    .is("claimed_at", null);
+  if (revokeError) {
+    throw new Error(`Failed to supersede older invitations: ${revokeError.message}`);
+  }
+
   const { data, error } = await supabaseAdmin
     .from("account_invitations")
     .insert({

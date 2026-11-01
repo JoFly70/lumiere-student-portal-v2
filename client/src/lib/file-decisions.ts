@@ -113,3 +113,47 @@ export const COURSE_STATUS: Record<HsCourseView["status"], { tone: "ok" | "atten
 export function courseTasksPassed(c: Pick<HsCourseView, "tasks">): number {
   return c.tasks.filter((t) => t.status === "official_passed").length;
 }
+
+// ── S32-B (SA-08): the one next step when nothing is waiting for a decision ─────────────────────────────────────────
+
+export type FileNextStepKey =
+  | "s32.next.identity" | "s32.next.support" | "s32.next.program" | "s32.next.billing" | "s32.next.enroll" | "s32.next.activate" | "s32.next.activateStaff";
+
+export interface FileNextStep {
+  readonly key: FileNextStepKey;
+  readonly vars: Readonly<Record<string, string | number>>;
+  /** Either a Student File tab or a page link (already role-safe for the caller). */
+  readonly tab?: FileTab;
+  readonly href?: string;
+}
+
+export interface FileNextStepInput {
+  readonly status: string;
+  readonly isAdmin: boolean;
+  readonly programKind: "diploma" | "degree" | "none";
+  /** Identity or guardian decisions waiting (Advanced Workspace, admin). */
+  readonly profileDecisions: number;
+  readonly supportAwaiting: number;
+  /** undefined while unknown: nothing is claimed until billing is loaded. */
+  readonly billingConfigured?: boolean;
+  /** Enrollment stage from the account view (admin only); undefined when unknown. */
+  readonly enrollmentStage?: string;
+  readonly studentId: string;
+}
+
+/**
+ * The same order as the Advanced Workspace's Next-step banner (what blocks the student most first), so the File no
+ * longer says "Nothing is waiting" for a brand-new lead. Returns null only when everything is genuinely in place.
+ */
+export function fileNextStep(i: FileNextStepInput): FileNextStep | null {
+  const id = encodeURIComponent(i.studentId);
+  if (i.isAdmin && i.profileDecisions > 0) return { key: "s32.next.identity", vars: { n: i.profileDecisions }, href: `/admin/students/${id}/workspace#profile` };
+  if (i.supportAwaiting > 0) return { key: "s32.next.support", vars: { n: i.supportAwaiting }, href: `/support?studentId=${id}` };
+  if (i.programKind === "none") return { key: "s32.next.program", vars: {}, href: `/admin/students/${id}/high-school` };
+  if (i.billingConfigured === false) return { key: "s32.next.billing", vars: {}, tab: "billing" };
+  if (i.status === "lead") {
+    if (i.isAdmin && i.enrollmentStage && i.enrollmentStage !== "linked") return { key: "s32.next.enroll", vars: {}, tab: "overview" };
+    return { key: i.isAdmin ? "s32.next.activate" : "s32.next.activateStaff", vars: {}, tab: "overview" };
+  }
+  return null;
+}

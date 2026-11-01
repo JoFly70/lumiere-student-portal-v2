@@ -1,6 +1,7 @@
 /** Guardians tab: standing, what staff may discuss, staff-only notes. Authority is verified in the S09 Profile panel. */
 import { useState } from "react";
 import { Link } from "wouter";
+import { useAuth } from "@/lib/auth";
 import { Input } from "@/components/ui/input";
 import { adminHighSchoolApi } from "@/lib/admin-high-school-api";
 import { GUARDIAN_NO_ACCESS, actorLabel, formatDate, guardianGuidance, guardianNoteBody, noteGate, profileIdentityHref } from "@/lib/admin-high-school-logic";
@@ -40,6 +41,7 @@ function GuardianCard({ g, studentId, eid, form }: { g: Guardian; studentId: str
 }
 
 export function GuardiansSection({ state, studentId, initialOpenForm }: SectionProps) {
+  const isAdmin = useAuth().user?.role === "admin";
   const eid = state.current?.enrollment.id ?? "";
   const form = useOpenForm(initialOpenForm ?? null);
   return (
@@ -48,7 +50,10 @@ export function GuardiansSection({ state, studentId, initialOpenForm }: SectionP
         Who staff may talk to about this student, and about what. Listing a contact does not give them authority or an account.
       </SectionHeading>
       <Notice tone="official" testId="guardian-no-access">{GUARDIAN_NO_ACCESS}</Notice>
-      <p className="text-sm">Verifying who is a legal guardian happens in <Link href={profileIdentityHref(studentId)} className="font-medium underline">Profile &amp; identity</Link>; this page only reflects the result.</p>
+      {/* S32-B (SA-06): the decision lives in the Advanced Workspace's Guardian & identity tab (admin). */}
+      {isAdmin
+        ? <p className="text-sm">Verifying who is a legal guardian happens in <Link href={profileIdentityHref(studentId)} className="font-medium underline" data-testid="link-guardian-identity">Guardian &amp; identity</Link>; this page only reflects the result.</p>
+        : <p className="text-sm" data-testid="guardian-admin-only">An administrator verifies who is a legal guardian (Advanced academic workspace); this page only reflects the result.</p>}
       {state.guardians.length === 0 ? <SectionCard title="No guardians listed" description="No parents or guardians are listed for this student." /> : null}
       {!eid && state.guardians.length > 0 ? <Notice>Notes can be added once a high school program exists.</Notice> : null}
       <div className="grid gap-5 xl:grid-cols-2 xl:items-start">{state.guardians.map((g) => <GuardianCard key={g.contactId} g={g} studentId={studentId} eid={eid} form={form} />)}</div>

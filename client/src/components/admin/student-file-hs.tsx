@@ -16,6 +16,10 @@ import {
 import StudentProfileReview, { useStaffProfileData } from "@/components/admin/student-profile-review";
 import { StudentDocumentsReview } from "@/components/admin/student-documents-review";
 import { STAFF_PROFILE_QUERY_KEY, profileDecisionCount } from "@/components/admin/student-profile-review-logic";
+import { useAgreement } from "@/lib/s27-queries";
+import type { ProgramAgreementView } from "@shared/s27-contract";
+import { ActivateStudentButton } from "@/components/admin/activate-student";
+import { studentFilePath } from "@shared/staff-links";
 import { canActivateLeadForRole } from "@/components/admin/student-documents-upload-logic";
 import { OwnerAssistantPanel } from "@/components/owner-assistant/owner-assistant-panel";
 import { AccountAvatar, PhotoDialog } from "@/components/os/account-menu";
@@ -80,38 +84,51 @@ export interface GateInput {
   state: StaffHighSchoolState;
   documents?: readonly StudentDocument[];
   billing?: StaffBillingView;
+  /** S32-B: the S27 agreement (authoritative terms); null/undefined -> the older document-based fallback. */
+  agreement?: ProgramAgreementView | null;
 }
 export interface Gate { key: string; label: string; status: "done" | "pending" | "not_set"; detail: string }
 const addDays = (iso: string, days: number) => { const d = new Date(`${iso.slice(0, 10)}T00:00:00Z`); d.setUTCDate(d.getUTCDate() + days); return d.toISOString().slice(0, 10); };
 const addMonths = (iso: string, months: number) => { const d = new Date(`${iso.slice(0, 10)}T00:00:00Z`); d.setUTCMonth(d.getUTCMonth() + months); return d.toISOString().slice(0, 10); };
 /**
- * Contract / pre-enrollment gates, derived ONLY from stored records. Relative deadlines (English test
- * 30 days after two-party signature, school records 90 days after enrollment, 9 months of support from
- * activation) show "date not yet set" until their anchor is actually recorded.
+ * Contract / pre-enrollment gates, derived ONLY from stored records. Relative deadlines show "date not yet set"
+ * until their anchor is actually recorded.
+ *
+ * S32-B (SA-26): when the S27 agreement is known it is the single source: "signed" is the agreement's signing date
+ * (the same fact the Student File Overview shows), and the English-test, prior-records and support-window values
+ * are the agreement's editable terms instead of hard-coded 30 days / 90 days / 9 months. The consent-document
+ * fallback is used only when no agreement record exists.
  */
-export function contractGates({ state, documents = [], billing }: GateInput): Gate[] {
+export function contractGates({ state, documents = [], billing, agreement: terms }: GateInput): Gate[] {
   const cur = state.current;
   const agreement = documents.find((d) => d.doc_type === "consent_form");
-  const signedOn = agreement?.status === "verified" ? String((agreement as { verified_at?: string | null }).verified_at ?? "").slice(0, 10) || null : null;
+  const docSignedOn = agreement?.status === "verified" ? String((agreement as { verified_at?: string | null }).verified_at ?? "").slice(0, 10) || null : null;
+  const signedOn = terms ? terms.signedOn : docSignedOn;
+  const langDays = terms?.languageTestDays ?? 30;
+  const recordDays = terms?.priorSchoolingDays ?? 90;
+  const supportMonths = terms?.supportMonths ?? 9;
   const english = documents.find((d) => d.doc_type === "english_cert");
   const b = billing?.student;
   const paid = b?.state === "configured" && b.netObligationCents > 0 && b.paidCents >= b.netObligationCents;
-  const activated = cur?.enrollment.startedOn ?? null;
+  const activated = terms?.activatedOn ?? cur?.enrollment.startedOn ?? null;
+  const englishDue = terms?.deadlines.find((d) => d.key === "language_test")?.dueOn ?? (signedOn ? addDays(signedOn, langDays) : null);
+  const recordsDue = terms?.deadlines.find((d) => d.key === "prior_schooling_proof")?.dueOn ?? (activated ? addDays(activated, recordDays) : null);
+  const supportEnds = terms?.supportEndsOn ?? (activated ? addMonths(activated, supportMonths) : null);
   return [
     { key: "agreement", label: "Agreement signed by both parties", status: signedOn ? "done" : "pending",
-      detail: signedOn ? `Signed agreement verified (${signedOn}).` : agreement ? "Proposed agreement on file; signature not verified." : "No agreement on file." },
+      detail: signedOn ? (terms ? `Signed ${signedOn}.` : `Signed agreement verified (${signedOn}).`) : agreement ? "Proposed agreement on file; signature not verified." : "No agreement on file." },
     { key: "payment", label: "Contract amount received in full", status: paid ? "done" : b?.state === "configured" ? "pending" : "not_set",
       detail: b?.state === "configured" ? `${(b.paidCents / 100).toLocaleString("en-US")} of ${(b.netObligationCents / 100).toLocaleString("en-US")} ${b.currency} received.` : "No contract amount recorded in Billing." },
     { key: "disclosure", label: "School identity disclosed to the family", status: cur?.enrollment.institutionDisclosed ? "done" : "pending",
       detail: cur?.enrollment.institutionDisclosed ? "Disclosed." : "Only after two-party signature and full cleared payment." },
-    { key: "english", label: "English test result (due 30 days after signature)", status: english?.status === "verified" ? "done" : signedOn ? "pending" : "not_set",
-      detail: english?.status === "verified" ? "Official result verified." : signedOn ? `Due by ${addDays(signedOn, 30)}.` : "Date not yet set (starts at two-party signature)." },
+    { key: "english", label: `English test result (due ${langDays} days after signature)`, status: english?.status === "verified" ? "done" : signedOn ? "pending" : "not_set",
+      detail: english?.status === "verified" ? "Official result verified." : englishDue ? `Due by ${englishDue}.` : "Date not yet set (starts at two-party signature)." },
     { key: "activation", label: "Academic program activated", status: activated ? "done" : "not_set",
       detail: activated ? `Activated ${activated}.` : "Date not yet set (after signature and payment)." },
-    { key: "records", label: "Prior school records (due 90 days after school enrollment)", status: (cur?.priorEducation ?? []).some((p) => p.evidenceDocumentId) ? "done" : activated ? "pending" : "not_set",
-      detail: activated ? `Due by ${addDays(activated, 90)}.` : "Date not yet set (starts at school enrollment)." },
-    { key: "support", label: "Lumière support window (9 months from activation)", status: activated ? "done" : "not_set",
-      detail: activated ? `Runs to ${addMonths(activated, 9)}.` : "Date not yet set (starts at activation)." },
+    { key: "records", label: `Prior school records (due ${recordDays} days after school enrollment)`, status: (cur?.priorEducation ?? []).some((p) => p.evidenceDocumentId) ? "done" : activated ? "pending" : "not_set",
+      detail: recordsDue ? `Due by ${recordsDue}.` : "Date not yet set (starts at school enrollment)." },
+    { key: "support", label: `Lumière support window (${supportMonths} months from activation)`, status: activated ? "done" : "not_set",
+      detail: supportEnds ? `Runs to ${supportEnds}.` : "Date not yet set (starts at activation)." },
   ];
 }
 export function plannedHalfUnits(state: StaffHighSchoolState): number {
@@ -156,10 +173,11 @@ export interface HsOverviewProps {
   billing?: StaffBillingView;
   billingLoading?: boolean;
   billingError?: boolean;
+  agreement?: ProgramAgreementView | null;
 }
 
 /** High-school overview: pure, server-renderable. Needs attention first, then where the student stands. */
-export function StudentFileHsOverview({ studentId, student, state, profile, attention, onTab, documents, billing }: HsOverviewProps) {
+export function StudentFileHsOverview({ studentId, student, state, profile, attention, onTab, documents, billing, agreement }: HsOverviewProps) {
   const cur = state.current;
   const href = `/admin/students/${encodeURIComponent(studentId)}/high-school`;
   if (!cur) {
@@ -216,7 +234,7 @@ export function StudentFileHsOverview({ studentId, student, state, profile, atte
       <section aria-label="Contract gates" className="space-y-3" data-testid="hs-contract-gates">
         <StaffSectionHeader level={3} icon={<ShieldCheck className="h-5 w-5" />} title="Contract and pre-enrollment gates" description="From stored documents, billing and enrollment records only. Nothing here is marked done without a record." className="mb-0" />
         <StaffCard as="div" padded={false}><ul className="divide-y divide-student-line">
-          {contractGates({ state, documents, billing }).map((g) => <li key={g.key} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3" data-testid={`gate-${g.key}`}>
+          {contractGates({ state, documents, billing, agreement }).map((g) => <li key={g.key} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3" data-testid={`gate-${g.key}`}>
             <div className="min-w-0"><p className="font-medium text-student-ink">{g.label}</p><p className="text-sm text-student-muted">{g.detail}</p></div>
             <StaffPill tone={g.status === "done" ? "seal" : g.status === "pending" ? "attention" : "dashed"}>{g.status === "done" ? "Done" : g.status === "pending" ? "Pending" : "Date not set"}</StaffPill>
           </li>)}
@@ -309,26 +327,15 @@ export default function StudentFileHs({ studentId, student }: { studentId: strin
   const isAdmin = user?.role === "admin";
   const [tab, setTab] = useHashTab(STUDENT_FILE_TABS, "overview", TAB_ALIASES);
   const [photoOpen, setPhotoOpen] = useState(false);
-  const [activation, setActivation] = useState<{ kind: "success" | "error"; message: string } | null>(null);
   const hs = useHsState(studentId);
   const documentsQuery = useDocuments(studentId);
   const billingQuery = useStaffBilling(studentId);
+  const agreementQuery = useAgreement(studentId);
   const ticketsQuery = useTickets({ studentId });
   const { profileQuery } = useStaffProfileData(studentId);
   const record = useQuery<StudentFileRecord>({ queryKey: [`/api/students/${encodeURIComponent(studentId)}`], initialData: student });
   const experience = useExperienceAction(studentId);
   const current = record.data ?? student;
-  const activate = useMutation({
-    mutationFn: () => apiRequest(`/api/admin/students/${encodeURIComponent(studentId)}/status`, { method: "PATCH", body: JSON.stringify({ status: "active" }) }),
-    onMutate: () => setActivation(null),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["/api/admin/students"] });
-      await record.refetch();
-      setActivation({ kind: "success", message: "Lead activated." });
-    },
-    onError: (e) => setActivation({ kind: "error", message: e instanceof Error ? e.message : "Could not activate this lead." }),
-  });
-
   const name = studentDisplayName(current);
   const profile = profileQuery.data;
   const profileCount = profile ? profileDecisionCount(profile) : 0;
@@ -364,8 +371,12 @@ export default function StudentFileHs({ studentId, student }: { studentId: strin
   return <StaffPage testId="admin-student-workspace">
     <StaffFileHeader
       testId="student-file-header"
-      back={<Link href="/admin/students" className="inline-flex min-h-10 items-center gap-2 text-sm font-medium text-student-gold-ink underline-offset-4 hover:underline"><ArrowLeft className="h-4 w-4" aria-hidden="true" />Back to Students</Link>}
-      eyebrow="Staff Portal · Student file"
+      back={<span className="flex flex-wrap items-center gap-x-5 gap-y-1">
+        {/* S32-B (SA-09): this older layout lives inside the Advanced Workspace; the way back is the Student File. */}
+        <Link href={studentFilePath(studentId)} className="inline-flex min-h-10 items-center gap-2 text-sm font-medium text-student-gold-ink underline-offset-4 hover:underline" data-testid="link-back-to-file"><ArrowLeft className="h-4 w-4" aria-hidden="true" />{t("s32.ws.backToFile")}</Link>
+        <Link href="/admin/students" className="inline-flex min-h-10 items-center text-sm font-medium text-student-muted underline-offset-4 hover:underline">{t("s32.ws.backToStudents")}</Link>
+      </span>}
+      eyebrow={t("s32.ws.eyebrow")}
       portrait={<AccountAvatar identity={identity} className="h-16 w-16 shrink-0 text-xl ring-2 ring-student-gold/50 sm:h-20 sm:w-20 sm:text-2xl" />}
       title={name}
       description={<>{current.email ?? profile?.contact.email ?? "Email not provided"} · <span className="font-mono">{current.student_code ?? profile?.identity.studentCode ?? "No student code"}</span></>}
@@ -376,14 +387,13 @@ export default function StudentFileHs({ studentId, student }: { studentId: strin
       </div>}
       actions={<>
         <ViewAsStudentLink studentId={studentId} />
-        {canActivateLeadForRole(user?.role, current.status) ? <Button type="button" size="sm" className={staffBtn.seal} disabled={activate.isPending} onClick={() => activate.mutate()} data-testid="button-activate-lead">{activate.isPending ? "Activating…" : <><UserCheck className="h-4 w-4" aria-hidden="true" />Activate lead</>}</Button> : null}
+        {canActivateLeadForRole(user?.role, current.status) ? <ActivateStudentButton studentId={studentId} studentName={name} className={staffBtn.seal} onActivated={() => record.refetch()} /> : null}
         <Button type="button" variant="outline" size="sm" className={staffBtn.outline} onClick={() => setPhotoOpen(true)} data-testid="button-student-photo">{t("staff.photo.button")}</Button>
         {isAdmin ? <Link href={`/admin/assistant?studentId=${encodeURIComponent(studentId)}`} className={LINK} data-testid="link-student-ai"><BrainCircuit className="h-4 w-4" aria-hidden="true" />Ask Lumière AI</Link> : null}
       </>}
     />
     <ExperienceError action={experience} />
     {demo ? <StaffNotice tone="attention" role="status">This is a synthetic demo student. Nothing here is a real person, payment or school record, and it is never counted in real totals.</StaffNotice> : null}
-    {activation ? <StaffNotice tone={activation.kind === "error" ? "urgent" : "gold"} role={activation.kind === "error" ? "alert" : "status"}>{activation.message}</StaffNotice> : null}
     <NextStepBanner step={step} onTab={(k) => setTab(k as FileTab)} experience={experience} />
     <PhotoDialog
       open={photoOpen}
@@ -399,7 +409,7 @@ export default function StudentFileHs({ studentId, student }: { studentId: strin
       <div id="workspace-overview" aria-label="Overview">
         {hs.isLoading ? <div role="status" className="rounded-md border p-6 text-center text-sm text-student-muted">Loading high school record…</div>
           : hs.isError || !hs.data ? <div role="alert" className="rounded-md border border-destructive/40 bg-destructive/5 p-6 text-center text-sm"><p>The high school record could not be loaded.</p><Button className="mt-3" type="button" size="sm" variant="outline" onClick={() => void hs.refetch()}>Retry</Button></div>
-          : <StudentFileHsOverview studentId={studentId} student={current} state={hs.data} profile={profile} attention={attention} onTab={setTab} documents={documentsQuery.data} billing={billingQuery.data} billingLoading={billingQuery.isLoading} billingError={billingQuery.isError} />}
+          : <StudentFileHsOverview studentId={studentId} student={current} state={hs.data} profile={profile} attention={attention} onTab={setTab} documents={documentsQuery.data} billing={billingQuery.data} billingLoading={billingQuery.isLoading} billingError={billingQuery.isError} agreement={agreementQuery.isSuccess ? agreementQuery.data : undefined} />}
       </div>
     </StaffTabPanel>
     <StaffTabPanel idPrefix="ws" tabKey="academics" active={activeTab === "academics"}>

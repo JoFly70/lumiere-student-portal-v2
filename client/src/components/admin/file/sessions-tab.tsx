@@ -20,14 +20,15 @@ const STATUS: Record<SessionStatus, { tone: Tone; key: TranslationKey }> = {
   cancelled: { tone: "neutral", key: "owner.sess.st.cancelled" },
 };
 
-function SessionCard({ s, studentId, locale }: { s: OrientationSessionView; studentId: string; locale: string }) {
+function SessionCard({ s, studentId, locale, canEdit }: { s: OrientationSessionView; studentId: string; locale: string; canEdit: boolean }) {
   const { t } = useT();
   const { toast } = useToast();
   const update = useUpdateSession(studentId);
   const [mode, setMode] = useState<null | "reschedule" | "complete" | "editNotes">(null);
   const [slot, setSlot] = useState(offsetIsoToLocal(s.slotAt));
   const [notes, setNotes] = useState(s.notes ?? "");
-  const actions = sessionActions(s.status);
+  // S32-B: confirm / reschedule / complete are admin-only on the server, so staff see the sessions without the buttons.
+  const actions = canEdit ? sessionActions(s.status) : [];
   const run = (patch: { status?: SessionStatus; slotAt?: string; notes?: string | null }, msg: string) =>
     update.mutate({ id: s.id, ...patch }, { onSuccess: () => { toast({ title: msg }); setMode(null); } });
   const slotDate = new Date(s.slotAt);
@@ -75,7 +76,7 @@ function SessionCard({ s, studentId, locale }: { s: OrientationSessionView; stud
   );
 }
 
-export function SessionsTab({ studentId }: { studentId: string }) {
+export function SessionsTab({ studentId, canEdit = true }: { studentId: string; canEdit?: boolean }) {
   const { t, language } = useT();
   const q = useStaffSessions(studentId);
   const list = [...(q.data ?? [])].sort((a, b) => (a.slotAt < b.slotAt ? 1 : -1));
@@ -84,7 +85,8 @@ export function SessionsTab({ studentId }: { studentId: string }) {
       {q.isLoading ? <p role="status" className="text-sm text-student-muted">{t("owner.loading")}</p>
         : q.isError ? <Unavailable error={q.error} what={t("owner.sess.what")} onRetry={() => void q.refetch()} testId="sessions-unavailable" />
         : list.length === 0 ? <StaffEmpty title={t("owner.sess.empty.title")} testId="sessions-empty">{t("owner.sess.empty.body")}</StaffEmpty>
-        : <ul>{list.map((s) => <SessionCard key={s.id} s={s} studentId={studentId} locale={localeOf(language)} />)}</ul>}
+        : <ul>{list.map((s) => <SessionCard key={s.id} s={s} studentId={studentId} locale={localeOf(language)} canEdit={canEdit} />)}</ul>}
+      {!canEdit && list.length > 0 ? <p className="mt-3 text-xs text-student-muted" data-testid="sessions-admin-only">{t("s32.file.sessions.adminOnly")}</p> : null}
     </Panel>
   );
 }

@@ -3,11 +3,14 @@
  * tabs driven by `?tab=`: Overview, Roadmap (diploma) or Degree plan (degree), Documents, Billing, Notes & timeline,
  * Sessions. The earlier all-in-one academic workspace (placements, guardian & identity, support, activity, AI) stays
  * available at /admin/students/:studentId/workspace.
+ *
+ * S32-B: staff open this file too. Server permissions decide every action; admin-only reads (Advanced Workspace,
+ * activity, Owner AI, account) are not requested for staff, and admin-only controls are not rendered for them.
  */
 import React, { useMemo } from "react";
 import { Link, useLocation, useSearch } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Eye, Loader2, MessageSquare, UserCheck, Wrench } from "lucide-react";
+import { ArrowLeft, MessageSquare, Wrench } from "lucide-react";
 import { StaffEmpty, StaffNotice, StaffPage, StaffPill, StaffTabList, StaffTabPanel, staffBtn, type StaffTab } from "@/components/staff/staff-ui";
 import { AccountAvatar } from "@/components/os/account-menu";
 import { apiRequest } from "@/lib/api";
@@ -37,6 +40,13 @@ import { SessionsTab } from "./sessions-tab";
 import { Panel } from "./file-parts";
 import { ReportedRecordsPanel } from "@/components/s30/imports/reported-records-panel";
 import type { StudentFileRecord } from "@/components/admin/student-file-hs";
+import { ActivateStudentButton } from "@/components/admin/activate-student";
+import { useEnrollmentAccount } from "./enrollment-panel";
+import { summarizeBilling } from "@/components/admin/billing/billing-summary";
+import { useTickets } from "@/hooks/use-tickets";
+import { awaitingFor } from "@shared/support-contract";
+import { profileDecisionCount } from "@/components/admin/student-profile-review-logic";
+import { studentWorkspacePath, supportStudentPath } from "@shared/staff-links";
 
 const TAB_LABEL: Record<FileTab, TranslationKey> = {
   overview: "owner.tab.overview", roadmap: "owner.tab.roadmap", plan: "owner.tab.plan", documents: "owner.tab.documents", billing: "owner.tab.billing", notes: "owner.tab.notes", sessions: "owner.tab.sessions",
@@ -60,7 +70,8 @@ export function StudentFile({ studentId }: { studentId: string }) {
   const workspaceQuery = useQuery({
     queryKey: ADMIN_STUDENT_WORKSPACE_QUERY_KEY(studentId),
     queryFn: () => apiRequest(`/api/admin/students/${encodeURIComponent(studentId)}/workspace`),
-    enabled: !!studentId,
+    // The Advanced Workspace API is admin-only: staff never request it (no 403 noise).
+    enabled: !!studentId && isAdmin,
     retry: false,
     staleTime: 30_000,
   });
@@ -77,14 +88,12 @@ export function StudentFile({ studentId }: { studentId: string }) {
   // Staff cannot open the workspace: the directory facts (one cached list) still know the degree program.
   const dirProgram = factsById(useDirectoryFacts().data?.facts).get(studentId)?.program ?? null;
   const kind: ProgramKind = hs?.current ? "diploma" : vm || dirProgram?.kind === "degree" ? "degree" : "none";
-  const settled = !hsQuery.isLoading && !workspaceQuery.isLoading;
+  const settled = !hsQuery.isLoading && !(isAdmin && workspaceQuery.isLoading);
   const tab = fileTabFromSearch(search, kind);
   const params = new URLSearchParams(search);
 
-  const activate = useMutation({
-    mutationFn: () => apiRequest(`/api/admin/students/${encodeURIComponent(studentId)}/status`, { method: "PATCH", body: JSON.stringify({ status: "active" }) }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: [`/api/students/${encodeURIComponent(studentId)}`] }),
-  });
+  const account = useEnrollmentAccount(studentId, isAdmin);
+  const tickets = useTickets({ studentId, limit: 50 });
 
   const go = (next: FileTab, extra?: Record<string, string>) => {
     const q = new URLSearchParams({ tab: next, ...(extra ?? {}) });
@@ -138,14 +147,18 @@ export function StudentFile({ studentId }: { studentId: string }) {
             </div>
           </div>
           <div role="toolbar" aria-label={t("owner.file.actions")} className="flex flex-wrap items-center gap-2" data-testid="file-actions">
-            <Link href={`/support?search=${encodeURIComponent(s.student_code ?? name)}`} className={cn(ownerBtn.outline, "inline-flex items-center border")} data-testid="button-message"><MessageSquare className="h-4 w-4" aria-hidden="true" />{t("owner.file.message")}</Link>
-            {canActivate ? <button type="button" className={ownerBtn.outline} disabled={activate.isPending} onClick={() => activate.mutate()} data-testid="button-activate-lead"><UserCheck className="h-4 w-4" aria-hidden="true" />{activate.isPending ? t("owner.saving") : t("owner.file.activate")}</button> : null}
-            {isAdmin ? <Link href={`${base}/workspace`} className={cn(ownerBtn.ghost, "inline-flex items-center")} data-testid="link-workspace"><Wrench className="h-4 w-4" aria-hidden="true" />{t("owner.file.workspace")}</Link> : null}
+            {/* S32-B (SA-12): every conversation of this student, not a subject search. */}
+            <Link href={supportStudentPath(studentId)} className={cn(ownerBtn.outline, "inline-flex items-center border")} data-testid="button-message"><MessageSquare className="h-4 w-4" aria-hidden="true" />{t("owner.file.message")}</Link>
+            {canActivate ? <ActivateStudentButton studentId={studentId} studentName={name} facts={{
+              agreementSigned: agreement.data ? !!agreement.data.signedOn : null,
+              paidInFull: billing.data?.student.state === "configured" ? summarizeBilling(billing.data).status === "paid" : null,
+              accountLinked: account.data ? account.data.linked : null,
+            }} /> : null}
+            {isAdmin ? <Link href={studentWorkspacePath(studentId)} className={cn(ownerBtn.ghost, "inline-flex items-center")} data-testid="link-workspace"><Wrench className="h-4 w-4" aria-hidden="true" />{t("s32.file.workspace")}</Link> : null}
           </div>
         </div>
       </header>
       <ExperienceError action={experience} />
-      {activate.isError ? <StaffNotice tone="urgent" role="alert">{activate.error instanceof Error ? activate.error.message : t("owner.file.activateError")}</StaffNotice> : null}
       {demo ? <StaffNotice tone="attention" role="status">{t("owner.file.demoNote")}</StaffNotice> : null}
 
       <StaffTabList tabs={tabs} active={tab} onChange={(k) => go(k as FileTab)} label={t("owner.file.tabs")} idPrefix="sf" />
@@ -153,7 +166,10 @@ export function StudentFile({ studentId }: { studentId: string }) {
       {!settled ? <div role="status" className="h-48 animate-pulse rounded-2xl bg-student-line"><span className="sr-only">{t("owner.loading")}</span></div> : (
         <>
           <StaffTabPanel idPrefix="sf" tabKey="overview" active={tab === "overview"}>
-            {tab === "overview" ? <OverviewTab studentId={studentId} studentLabel={firstName} kind={kind} isAdmin={isAdmin} hs={hs} degreeCreditsConfirmed={degreeCredits} documentsPending={docsPending} billing={billing.data} journey={journey} agreement={agreement} go={go} /> : null}
+            {tab === "overview" ? <OverviewTab studentId={studentId} studentLabel={firstName} kind={kind} isAdmin={isAdmin} status={(s.status ?? "").toLowerCase()}
+              profileDecisions={profileQuery.data ? profileDecisionCount(profileQuery.data) : 0}
+              supportAwaiting={(tickets.data?.tickets ?? []).filter((x) => awaitingFor(x.status) === "staff").length}
+              enrollmentStage={account.data?.enrollment?.stage} hs={hs} degreeCreditsConfirmed={degreeCredits} documentsPending={docsPending} billing={billing.data} journey={journey} agreement={agreement} go={go} /> : null}
           </StaffTabPanel>
           <StaffTabPanel idPrefix="sf" tabKey="roadmap" active={tab === "roadmap"}>
             {tab === "roadmap" && hs ? <RoadmapTab studentId={studentId} state={hs} docs={documents.data ?? []} isAdmin={isAdmin} recordKey={params.get("record")} go={go} /> : null}
@@ -161,7 +177,7 @@ export function StudentFile({ studentId }: { studentId: string }) {
             {tab === "roadmap" ? <div className="s27 occ mt-6"><ReportedRecordsPanel studentId={studentId} /></div> : null}
           </StaffTabPanel>
           <StaffTabPanel idPrefix="sf" tabKey="plan" active={tab === "plan"}>
-            {tab === "plan" ? <DegreePlanTab studentId={studentId} vm={vm} /> : null}
+            {tab === "plan" ? <DegreePlanTab studentId={studentId} vm={vm} isAdmin={isAdmin} /> : null}
             {tab === "plan" ? <div className="s27 occ mt-6"><ReportedRecordsPanel studentId={studentId} /></div> : null}
           </StaffTabPanel>
           <StaffTabPanel idPrefix="sf" tabKey="documents" active={tab === "documents"}>
@@ -180,7 +196,7 @@ export function StudentFile({ studentId }: { studentId: string }) {
             {tab === "notes" ? <NotesTab studentId={studentId} hs={hs} isAdmin={isAdmin} /> : null}
           </StaffTabPanel>
           <StaffTabPanel idPrefix="sf" tabKey="sessions" active={tab === "sessions"}>
-            {tab === "sessions" ? <SessionsTab studentId={studentId} /> : null}
+            {tab === "sessions" ? <SessionsTab studentId={studentId} canEdit={isAdmin} /> : null}
           </StaffTabPanel>
         </>
       )}

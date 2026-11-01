@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
 import { useParams, Link } from "wouter";
-import { Activity, AlertCircle, ArrowLeft, BrainCircuit, ArrowRight, ChevronDown, CreditCard, Database, FileCheck2, FileText, Fingerprint, GraduationCap, LayoutDashboard, LifeBuoy, RefreshCw, Route, UserCheck } from "lucide-react";
+import { Activity, AlertCircle, ArrowLeft, BrainCircuit, ArrowRight, ChevronDown, CreditCard, Database, FileCheck2, FileText, Fingerprint, GraduationCap, LayoutDashboard, LifeBuoy, RefreshCw, Route } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -73,6 +73,8 @@ import { useAuth } from "@/lib/auth";
 import { useTickets, type Ticket } from "@/hooks/use-tickets";
 import { SUPPORT_TOPIC_INFO, awaitingFor, staffStatusLabel, topicForTicket } from "@shared/support-contract";
 import { canActivateLeadForRole } from "@/components/admin/student-documents-upload-logic";
+import { ActivateStudentButton } from "@/components/admin/activate-student";
+import { studentFilePath } from "@shared/staff-links";
 
 const WORKSPACE_TABS = ["overview", "academics", "documents", "billing", "support", "profile", "activity", "ai"] as const;
 type WorkspaceTab = typeof WORKSPACE_TABS[number];
@@ -179,24 +181,6 @@ export default function AdminStudentWorkspace() {
   const queryClient = useQueryClient();
   const { t } = useT();
   const { user } = useAuth();
-  const activateLead = useMutation({
-    mutationFn: async (id: string) => apiRequest(`/api/admin/students/${encodeURIComponent(id)}/status`, {
-      method: "PATCH",
-      body: JSON.stringify({ status: "active" }),
-    }),
-    onMutate: () => setActivationFeedback(null),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["/api/admin/students"] });
-      const refreshed = unassignedStudent.data?.id === studentId
-        ? await unassignedStudent.refetch() : await query.refetch();
-      if (refreshed.isError) {
-        setActivationFeedback({ kind: "error", message: "Lead activated, but the workspace could not refresh. Retry the workspace refresh." });
-      } else {
-        setActivationFeedback({ kind: "success", message: "Lead activated." });
-      }
-    },
-    onError: (error) => setActivationFeedback({ kind: "error", message: errorMessage(error, "Could not activate this lead.") }),
-  });
   const [photoOpen, setPhotoOpen] = useState(false);
   const experience = useExperienceAction(canonicalStudentId ?? studentId);
   const [tab, setTab] = useHashTab(WORKSPACE_TABS, "overview", WORKSPACE_TAB_ALIASES);
@@ -297,8 +281,12 @@ export default function AdminStudentWorkspace() {
   return <StaffPage testId="admin-student-workspace">
     <StaffFileHeader
       testId="student-file-header"
-      back={<Link href={ADMIN_STUDENTS_PATH} className="inline-flex min-h-10 items-center gap-2 text-sm font-medium text-student-gold-ink underline-offset-4 hover:underline"><ArrowLeft className="h-4 w-4" aria-hidden="true" />Back to Students</Link>}
-      eyebrow="Staff Portal · Student file"
+      back={<span className="flex flex-wrap items-center gap-x-5 gap-y-1">
+        {/* S32-B (SA-09): the way back to the primary Student File, then the directory. */}
+        <Link href={studentFilePath(studentId)} className="inline-flex min-h-10 items-center gap-2 text-sm font-medium text-student-gold-ink underline-offset-4 hover:underline" data-testid="link-back-to-file"><ArrowLeft className="h-4 w-4" aria-hidden="true" />{t("s32.ws.backToFile")}</Link>
+        <Link href={ADMIN_STUDENTS_PATH} className="inline-flex min-h-10 items-center text-sm font-medium text-student-muted underline-offset-4 hover:underline">{t("s32.ws.backToStudents")}</Link>
+      </span>}
+      eyebrow={t("s32.ws.eyebrow")}
       portrait={<AccountAvatar identity={{ studentId: identity.id, firstName: profileQuery.data?.identity.firstName, lastName: profileQuery.data?.identity.lastName, name, email: identity.email, photoUrl: profileQuery.data?.identity.photoUrl }} className="h-16 w-16 shrink-0 text-xl ring-2 ring-student-gold/50 sm:h-20 sm:w-20 sm:text-2xl" />}
       title={name}
       description={<>{identity.email ?? "Email not provided"} · <span className="font-mono">{identity.studentCode ?? "No student code"}</span></>}
@@ -309,7 +297,10 @@ export default function AdminStudentWorkspace() {
       </div>}
       actions={<>
         <ViewAsStudentLink studentId={studentId} />
-        {canActivateLead ? <Button type="button" size="sm" className={staffBtn.seal} disabled={activateLead.isPending || !canonicalStudentId} onClick={() => canonicalStudentId && activateLead.mutate(canonicalStudentId)} data-testid="button-activate-lead">{activateLead.isPending ? "Activating…" : <><UserCheck className="h-4 w-4" aria-hidden="true" />Activate lead</>}</Button> : null}
+        {canActivateLead && canonicalStudentId ? <ActivateStudentButton studentId={canonicalStudentId} studentName={name} className={staffBtn.seal} onActivated={async () => {
+          const refreshed = unassignedStudent.data?.id === studentId ? await unassignedStudent.refetch() : await query.refetch();
+          setActivationFeedback(refreshed.isError ? { kind: "error", message: t("s32.ws.refreshFailed") } : null);
+        }} /> : null}
         <Button type="button" variant="outline" size="sm" className={staffBtn.outline} onClick={() => setPhotoOpen(true)} data-testid="button-student-photo">{t("staff.photo.button")}</Button>
         <Link href={`/admin/students/${encodeURIComponent(studentId)}/roadmap`} className={`${staffBtn.outline} inline-flex items-center justify-center border`} data-testid="link-student-roadmap"><Route className="h-4 w-4" aria-hidden="true" />View roadmap</Link>
         {user?.role === "admin" && canonicalStudentId ? <Link href={`/admin/assistant?studentId=${encodeURIComponent(canonicalStudentId)}`} className={`${staffBtn.outline} inline-flex items-center justify-center border`} data-testid="link-student-ai"><BrainCircuit className="h-4 w-4" aria-hidden="true" />Ask Lumière AI</Link> : null}

@@ -27,7 +27,7 @@ export function studentFilePath(studentId: string, tab?: StudentFileTab, extra?:
 }
 
 /** Sections of the Advanced Academic Workspace that accept a hash (see admin-student-workspace.tsx). */
-export type WorkspaceSection = "profile" | "documents" | "placements" | "account" | "support" | "activity" | "assistant";
+export type WorkspaceSection = "overview" | "academics" | "documents" | "billing" | "support" | "profile" | "activity" | "ai";
 
 /** The Advanced Academic Workspace (admin only). */
 export function studentWorkspacePath(studentId: string, section?: WorkspaceSection): string {

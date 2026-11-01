@@ -24,9 +24,17 @@ const CHECK: Record<string, { tone: Tone; key: TranslationKey }> = {
 };
 const fmtN = (n: number) => String(Math.round(n * 100) / 100);
 
-export function DegreePlanTab({ studentId, vm }: { studentId: string; vm?: WorkspaceViewModel | null }) {
+export function DegreePlanTab({ studentId, vm, isAdmin = true }: { studentId: string; vm?: WorkspaceViewModel | null; isAdmin?: boolean }) {
   const { t } = useT();
   const base = `/admin/students/${encodeURIComponent(studentId)}`;
+  // S32-B: the credit-source breakdown comes from the admin-only workspace API; staff get the degree roadmap instead.
+  if (!isAdmin) {
+    return (
+      <StaffEmpty title={t("s32.file.plan.staffTitle")} testId="degree-staff" action={<Link href={`${base}/roadmap`} className={cn(ownerBtn.primary, "inline-flex items-center border")}>{t("owner.plan.open")}<ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>}>
+        {t("s32.file.plan.staffBody")}
+      </StaffEmpty>
+    );
+  }
   if (!vm) {
     return (
       <StaffEmpty title={t("owner.plan.none.title")} testId="degree-empty" action={<Link href={`${base}/roadmap`} className={cn(ownerBtn.primary, "inline-flex items-center border")}>{t("owner.plan.open")}<ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>}>

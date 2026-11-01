@@ -5,6 +5,7 @@
  * Trust language is derived from evidence/authority STATUS only. A populated
  * field is never treated as verified.
  */
+import { studentFilePath, studentWorkspacePath } from "@shared/staff-links";
 import type {
   ContactAuthorityStatus,
   CorrectionStatus,
@@ -21,7 +22,8 @@ export const STAFF_PROFILE_PATHS = {
   resolve: (requestId: string) => `/api/students/identity-corrections/${encodeURIComponent(requestId)}/resolve`,
   authority: (contactId: string) => `/api/students/contacts/${encodeURIComponent(contactId)}/authority`,
   queue: "/api/students/identity-corrections?status=pending",
-  documents: (studentId: string) => `/admin/students/${encodeURIComponent(studentId)}#workspace-documents`,
+  // S32-B (SA-06): the Student File's Documents tab (it reads ?tab=, not hashes).
+  documents: (studentId: string) => studentFilePath(studentId, "documents"),
 } as const;
 
 export const STAFF_PROFILE_QUERY_KEY = (studentId: string) => ["admin-student-profile", studentId] as const;
