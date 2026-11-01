@@ -63,7 +63,7 @@ function DocCard({ group, courseTitle, onView }: { group: DocGroup; courseTitle:
             <span className="mt-1 block text-xs text-st-attention" data-testid="doc-review-reason">
               <span className="font-semibold">{t("documents.reviewReason")} </span>
               {reviewMessageOf(d as StudentDocument & { review_message?: string | null }) ?? t("documents.reviewNoReason")}
-              {isLatest && <> <Link href="/documents" className="font-medium underline underline-offset-4" data-testid="doc-replace-link">{t("s32.lib.replaceInDocuments")}</Link></>}
+              {isLatest && <> <Link href="/documents" className="inline-flex min-h-[44px] items-center font-medium underline underline-offset-4" data-testid="doc-replace-link">{t("s32.lib.replaceInDocuments")}</Link></>}
             </span>
           )}
         </span>

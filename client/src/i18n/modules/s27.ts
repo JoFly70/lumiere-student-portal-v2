@@ -237,7 +237,7 @@ export const s27En = {
   "s27.dg.notes": "Good to know",
 
   // ── roadmap (log-first)
-  "s27.rm.eyebrow": "Your Roadmap",
+  "s27.rm.eyebrow": "High School",
   "s27.rm.title": "Your courses",
   "s27.rm.intro": "Log each exam and project as you finish it. Lumière keeps your plan and your pace up to date.",
   "s27.rm.log": "Log progress",
@@ -824,7 +824,7 @@ export const s27Fr: Record<keyof typeof s27En, string> = {
   "s27.dg.unavailable": "Le total de votre diplôme apparaîtra ici dès que Lumière aura configuré votre programme.",
   "s27.dg.notes": "Bon à savoir",
 
-  "s27.rm.eyebrow": "Votre feuille de route",
+  "s27.rm.eyebrow": "Études secondaires",
   "s27.rm.title": "Vos cours",
   "s27.rm.intro": "Notez chaque examen et chaque projet dès qu’il est terminé. Lumière garde votre plan et votre rythme à jour.",
   "s27.rm.log": "Noter une progression",

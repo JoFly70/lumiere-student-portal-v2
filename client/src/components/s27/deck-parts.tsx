@@ -10,7 +10,7 @@ import type { CheckpointKey, StudentJourneyView } from "@shared/s27-contract";
 import type { StudentBillingView } from "@shared/billing-contract";
 import { formatMoney } from "@shared/billing-contract";
 import { askAssistant } from "@/components/academic-assistant/logic";
-import { docTypeLabel } from "@/lib/document-type-labels";
+import { studentDocTypeLabel } from "@/lib/student-doc-type-label";
 import { checkpointProgress, deadlineDetail, deadlineRule, deadlineTitle, weekAgenda, type AgendaTask, type AlertCard, type RadarChip } from "@/lib/s27/cockpit-model";
 import { dayPart, daysBetween, formatDay, formatDayInSentence } from "@/lib/s27/dates";
 import { useS27T, type TFn } from "@/lib/s27/i18n-util";
@@ -259,7 +259,7 @@ export function DocumentsCard({ documents: docsIn, agreement, today }: { documen
           <div className="stat"><b>{approved}</b><span>{total > 0 ? t("s27.dc.of", { n: total }) : t("s27.dc.none")}</span></div>
           <div className="meter" aria-hidden="true"><i style={{ width: `${total ? (approved / total) * 100 : 0}%` }} /></div>
           <div className="lines">
-            {needs.slice(0, 2).map((d) => <div key={d.id}><span>{docTypeLabel(d.doc_type)}</span><span style={{ color: "var(--t-amber)" }}>{t("s27.dc.needs")}</span></div>)}
+            {needs.slice(0, 2).map((d) => <div key={d.id}><span>{studentDocTypeLabel(d.doc_type, t)}</span><span style={{ color: "var(--t-amber)" }}>{t("s27.dc.needs")}</span></div>)}
             {open.slice(0, 2).map((d) => <div key={d.key}><span>{deadlineTitle(d.key, d.label, t)}</span><span style={{ color: "var(--t-amber)" }}>{t("s27.dc.due", { date: formatDay(d.dueOn, lang) })}</span></div>)}
             {review > 0 && <div><span>{t("s27.dc.review")}</span><span>{review}</span></div>}
             {approved > 0 && <div><span>{t("s27.dc.approved")}</span><span style={{ color: "var(--t-green)" }}>{approved}</span></div>}

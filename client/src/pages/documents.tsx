@@ -43,6 +43,7 @@ import { Eyebrow, Pill, StudentSurface, buttonClass } from "@/components/student
 import { cn } from "@/lib/utils";
 import { useT, type Language, type TranslationKey } from "@/i18n";
 import { docTypeLabel } from "@/lib/document-type-labels";
+import { studentDocTypeLabel } from "@/lib/student-doc-type-label";
 import { DocumentsLead, type LeadDoc } from "@/components/s27/documents-lead";
 import { useStudentJourney } from "@/lib/s27/journey-queries";
 import { useStudentPrograms } from "@/lib/student-programs";
@@ -236,8 +237,8 @@ function getFileSizeFromName(fileName: string): number {
 /** Type label; chat attachments also show their file kind (Word, Excel, CSV...). */
 function docTypeDisplay(doc: { doc_type: string; file_name: string }, t: (key: TranslationKey) => string): string {
   return doc.doc_type === "chat_attachment"
-    ? `${docTypeLabel(doc.doc_type)} · ${t(fileKindKey(docMime(doc.file_name)))}`
-    : docTypeLabel(doc.doc_type);
+    ? `${studentDocTypeLabel(doc.doc_type, t)} · ${t(fileKindKey(docMime(doc.file_name)))}`
+    : studentDocTypeLabel(doc.doc_type, t);
 }
 
 export default function Documents() {

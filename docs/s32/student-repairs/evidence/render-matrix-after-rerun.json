@@ -1,0 +1,1502 @@
+[
+ {
+  "name": "hs-flight-deck-fr-1440-light.png",
+  "persona": "hs",
+  "screen": "flight-deck",
+  "width": 1440,
+  "lang": "fr",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [
+   "Votre question"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Bonsoir, Amy."
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Au-delà du diplôme",
+   "Calendrier",
+   "Bibliothèque",
+   "Profil de l’élève",
+   "Notifications",
+   "Documents",
+   "Facturation",
+   "Assistance",
+   "Lumière sur WhatsApp"
+  ],
+  "scrollScreens": 2.1,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-flight-deck-fr-1440-dark.png",
+  "persona": "hs",
+  "screen": "flight-deck",
+  "width": 1440,
+  "lang": "fr",
+  "theme": "lumiere-dark",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [
+   "Votre question"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Bonsoir, Amy."
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Au-delà du diplôme",
+   "Calendrier",
+   "Bibliothèque",
+   "Profil de l’élève",
+   "Notifications",
+   "Documents",
+   "Facturation",
+   "Assistance",
+   "Lumière sur WhatsApp"
+  ],
+  "scrollScreens": 2.1,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-flight-deck-en-1440-light.png",
+  "persona": "hs",
+  "screen": "flight-deck",
+  "width": 1440,
+  "lang": "en",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Skip to content 1x1"
+  ],
+  "clipped": [
+   "Your question"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Good evening, Amy."
+  ],
+  "nav": [
+   "Flight Deck",
+   "High School",
+   "Beyond the Diploma",
+   "Calendar",
+   "Library",
+   "Student Profile",
+   "Notifications",
+   "Documents",
+   "Billing",
+   "Support",
+   "WhatsApp Lumière"
+  ],
+  "scrollScreens": 2,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-flight-deck-fr-768-light.png",
+  "persona": "hs",
+  "screen": "flight-deck",
+  "width": 768,
+  "lang": "fr",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [
+   "Votre question"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Bonsoir, Amy."
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 3.1,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-flight-deck-fr-768-dark.png",
+  "persona": "hs",
+  "screen": "flight-deck",
+  "width": 768,
+  "lang": "fr",
+  "theme": "lumiere-dark",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [
+   "Votre question"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Bonsoir, Amy."
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 3.1,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-flight-deck-en-768-light.png",
+  "persona": "hs",
+  "screen": "flight-deck",
+  "width": 768,
+  "lang": "en",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Skip to content 1x1"
+  ],
+  "clipped": [
+   "Your question"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Good evening, Amy."
+  ],
+  "nav": [
+   "Flight Deck",
+   "High School",
+   "Documents",
+   "Support"
+  ],
+  "scrollScreens": 3.1,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-flight-deck-fr-390-light.png",
+  "persona": "hs",
+  "screen": "flight-deck",
+  "width": 390,
+  "lang": "fr",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [
+   "Votre question"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Bonsoir, Amy."
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 6,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-flight-deck-fr-390-dark.png",
+  "persona": "hs",
+  "screen": "flight-deck",
+  "width": 390,
+  "lang": "fr",
+  "theme": "lumiere-dark",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [
+   "Votre question"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Bonsoir, Amy."
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 6,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-flight-deck-en-390-light.png",
+  "persona": "hs",
+  "screen": "flight-deck",
+  "width": 390,
+  "lang": "en",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Skip to content 1x1"
+  ],
+  "clipped": [
+   "Your question"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Good evening, Amy."
+  ],
+  "nav": [
+   "Flight Deck",
+   "High School",
+   "Documents",
+   "Support"
+  ],
+  "scrollScreens": 5.7,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "ba-flight-deck-fr-1440-light.png",
+  "persona": "ba",
+  "screen": "flight-deck",
+  "width": 1440,
+  "lang": "fr",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [
+   "Votre question"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Bonsoir, Amy."
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Au-delà du baccalauréat",
+   "Calendrier",
+   "Bibliothèque",
+   "Votre feuille de route",
+   "Profil de l’élève",
+   "Notifications",
+   "Documents",
+   "Facturation",
+   "Assistance",
+   "Lumière sur WhatsApp"
+  ],
+  "scrollScreens": 2.4,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "ba-flight-deck-fr-1440-dark.png",
+  "persona": "ba",
+  "screen": "flight-deck",
+  "width": 1440,
+  "lang": "fr",
+  "theme": "lumiere-dark",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [
+   "Votre question"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Bonsoir, Amy."
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Au-delà du baccalauréat",
+   "Calendrier",
+   "Bibliothèque",
+   "Votre feuille de route",
+   "Profil de l’élève",
+   "Notifications",
+   "Documents",
+   "Facturation",
+   "Assistance",
+   "Lumière sur WhatsApp"
+  ],
+  "scrollScreens": 2.4,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "ba-flight-deck-en-1440-light.png",
+  "persona": "ba",
+  "screen": "flight-deck",
+  "width": 1440,
+  "lang": "en",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Skip to content 1x1"
+  ],
+  "clipped": [
+   "Your question"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Good evening, Amy."
+  ],
+  "nav": [
+   "Flight Deck",
+   "Beyond the Bachelor's",
+   "Calendar",
+   "Library",
+   "Your Roadmap",
+   "Student Profile",
+   "Notifications",
+   "Documents",
+   "Billing",
+   "Support",
+   "WhatsApp Lumière"
+  ],
+  "scrollScreens": 2.3,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "ba-flight-deck-fr-768-light.png",
+  "persona": "ba",
+  "screen": "flight-deck",
+  "width": 768,
+  "lang": "fr",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [
+   "Votre question"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Bonsoir, Amy."
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Votre feuille de route",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 3.6,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "ba-flight-deck-fr-768-dark.png",
+  "persona": "ba",
+  "screen": "flight-deck",
+  "width": 768,
+  "lang": "fr",
+  "theme": "lumiere-dark",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [
+   "Votre question"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Bonsoir, Amy."
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Votre feuille de route",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 3.6,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "ba-flight-deck-en-768-light.png",
+  "persona": "ba",
+  "screen": "flight-deck",
+  "width": 768,
+  "lang": "en",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Skip to content 1x1"
+  ],
+  "clipped": [
+   "Your question"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Good evening, Amy."
+  ],
+  "nav": [
+   "Flight Deck",
+   "Your Roadmap",
+   "Documents",
+   "Support"
+  ],
+  "scrollScreens": 3.5,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "ba-flight-deck-fr-390-light.png",
+  "persona": "ba",
+  "screen": "flight-deck",
+  "width": 390,
+  "lang": "fr",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [
+   "Votre question"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Bonsoir, Amy."
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Votre feuille de route",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 6.4,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "ba-flight-deck-fr-390-dark.png",
+  "persona": "ba",
+  "screen": "flight-deck",
+  "width": 390,
+  "lang": "fr",
+  "theme": "lumiere-dark",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [
+   "Votre question"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Bonsoir, Amy."
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Votre feuille de route",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 6.4,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "ba-flight-deck-en-390-light.png",
+  "persona": "ba",
+  "screen": "flight-deck",
+  "width": 390,
+  "lang": "en",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 1,
+  "small": [
+   "Skip to content 1x1"
+  ],
+  "clipped": [
+   "Your question"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Good evening, Amy."
+  ],
+  "nav": [
+   "Flight Deck",
+   "Your Roadmap",
+   "Documents",
+   "Support"
+  ],
+  "scrollScreens": 6.3,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-library-fr-1440-light.png",
+  "persona": "hs",
+  "screen": "library",
+  "width": 1440,
+  "lang": "fr",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 2,
+  "small": [
+   "Aller au contenu 1x1",
+   "Documents 65x15"
+  ],
+  "clipped": [
+   "Étagères de la bibliothèque"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Bibliothèque académique"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Au-delà du diplôme",
+   "Calendrier",
+   "Bibliothèque",
+   "Profil de l’élève",
+   "Notifications",
+   "Documents",
+   "Facturation",
+   "Assistance",
+   "Lumière sur WhatsApp"
+  ],
+  "scrollScreens": 1.3,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-library-fr-1440-dark.png",
+  "persona": "hs",
+  "screen": "library",
+  "width": 1440,
+  "lang": "fr",
+  "theme": "lumiere-dark",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 2,
+  "small": [
+   "Aller au contenu 1x1",
+   "Documents 65x15"
+  ],
+  "clipped": [
+   "Étagères de la bibliothèque"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Bibliothèque académique"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Au-delà du diplôme",
+   "Calendrier",
+   "Bibliothèque",
+   "Profil de l’élève",
+   "Notifications",
+   "Documents",
+   "Facturation",
+   "Assistance",
+   "Lumière sur WhatsApp"
+  ],
+  "scrollScreens": 1.3,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-library-en-1440-light.png",
+  "persona": "hs",
+  "screen": "library",
+  "width": 1440,
+  "lang": "en",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 2,
+  "small": [
+   "Skip to content 1x1",
+   "Documents 65x15"
+  ],
+  "clipped": [
+   "Library shelves"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Academic library"
+  ],
+  "nav": [
+   "Flight Deck",
+   "High School",
+   "Beyond the Diploma",
+   "Calendar",
+   "Library",
+   "Student Profile",
+   "Notifications",
+   "Documents",
+   "Billing",
+   "Support",
+   "WhatsApp Lumière"
+  ],
+  "scrollScreens": 1.3,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-library-fr-768-light.png",
+  "persona": "hs",
+  "screen": "library",
+  "width": 768,
+  "lang": "fr",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 2,
+  "small": [
+   "Aller au contenu 1x1",
+   "Documents 65x15"
+  ],
+  "clipped": [
+   "Étagères de la bibliothèque"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Bibliothèque académique"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 1.2,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-library-fr-768-dark.png",
+  "persona": "hs",
+  "screen": "library",
+  "width": 768,
+  "lang": "fr",
+  "theme": "lumiere-dark",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 2,
+  "small": [
+   "Aller au contenu 1x1",
+   "Documents 65x15"
+  ],
+  "clipped": [
+   "Étagères de la bibliothèque"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Bibliothèque académique"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 1.2,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-library-en-768-light.png",
+  "persona": "hs",
+  "screen": "library",
+  "width": 768,
+  "lang": "en",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 2,
+  "small": [
+   "Skip to content 1x1",
+   "Documents 65x15"
+  ],
+  "clipped": [
+   "Library shelves"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Academic library"
+  ],
+  "nav": [
+   "Flight Deck",
+   "High School",
+   "Documents",
+   "Support"
+  ],
+  "scrollScreens": 1.1,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-library-fr-390-light.png",
+  "persona": "hs",
+  "screen": "library",
+  "width": 390,
+  "lang": "fr",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 2,
+  "small": [
+   "Aller au contenu 1x1",
+   "Documents 65x15"
+  ],
+  "clipped": [
+   "Étagères de la bibliothèque",
+   "Télécharger",
+   "Télécharger",
+   "Télécharger",
+   "Télécharger"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Bibliothèque académique"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 2.2,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-library-fr-390-dark.png",
+  "persona": "hs",
+  "screen": "library",
+  "width": 390,
+  "lang": "fr",
+  "theme": "lumiere-dark",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 2,
+  "small": [
+   "Aller au contenu 1x1",
+   "Documents 65x15"
+  ],
+  "clipped": [
+   "Étagères de la bibliothèque",
+   "Télécharger",
+   "Télécharger",
+   "Télécharger",
+   "Télécharger"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Bibliothèque académique"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 2.2,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-library-en-390-light.png",
+  "persona": "hs",
+  "screen": "library",
+  "width": 390,
+  "lang": "en",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 2,
+  "small": [
+   "Skip to content 1x1",
+   "Documents 65x15"
+  ],
+  "clipped": [
+   "Library shelves",
+   "Download",
+   "Download",
+   "Download",
+   "Download"
+  ],
+  "iconNoName": 0,
+  "h1": [
+   "Academic library"
+  ],
+  "nav": [
+   "Flight Deck",
+   "High School",
+   "Documents",
+   "Support"
+  ],
+  "scrollScreens": 2.2,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-documents-fr-1440-light.png",
+  "persona": "hs",
+  "screen": "documents",
+  "width": 1440,
+  "lang": "fr",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [
+   "BUTTON.inline-flex items-center justify-center ",
+   "DIV.whitespace-nowrap inline-flex items-cent",
+   "BUTTON.inline-flex items-center justify-center ",
+   "SPAN.hidden sm:inline"
+  ],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Vos documents"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Au-delà du diplôme",
+   "Calendrier",
+   "Bibliothèque",
+   "Profil de l’élève",
+   "Notifications",
+   "Documents",
+   "Facturation",
+   "Assistance",
+   "Lumière sur WhatsApp"
+  ],
+  "scrollScreens": 2.2,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-documents-fr-1440-dark.png",
+  "persona": "hs",
+  "screen": "documents",
+  "width": 1440,
+  "lang": "fr",
+  "theme": "lumiere-dark",
+  "overflowX": 0,
+  "offenders": [
+   "BUTTON.inline-flex items-center justify-center ",
+   "DIV.whitespace-nowrap inline-flex items-cent",
+   "BUTTON.inline-flex items-center justify-center ",
+   "SPAN.hidden sm:inline"
+  ],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Vos documents"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Au-delà du diplôme",
+   "Calendrier",
+   "Bibliothèque",
+   "Profil de l’élève",
+   "Notifications",
+   "Documents",
+   "Facturation",
+   "Assistance",
+   "Lumière sur WhatsApp"
+  ],
+  "scrollScreens": 2.2,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-documents-en-1440-light.png",
+  "persona": "hs",
+  "screen": "documents",
+  "width": 1440,
+  "lang": "en",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [
+   "BUTTON.inline-flex items-center justify-center ",
+   "SPAN.hidden sm:inline",
+   "DIV.whitespace-nowrap inline-flex items-cent"
+  ],
+  "smallCount": 1,
+  "small": [
+   "Skip to content 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Your documents"
+  ],
+  "nav": [
+   "Flight Deck",
+   "High School",
+   "Beyond the Diploma",
+   "Calendar",
+   "Library",
+   "Student Profile",
+   "Notifications",
+   "Documents",
+   "Billing",
+   "Support",
+   "WhatsApp Lumière"
+  ],
+  "scrollScreens": 2.1,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-documents-fr-768-light.png",
+  "persona": "hs",
+  "screen": "documents",
+  "width": 768,
+  "lang": "fr",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [
+   "BUTTON.inline-flex items-center justify-center ",
+   "BUTTON.inline-flex items-center justify-center ",
+   "SPAN.hidden sm:inline",
+   "DIV.whitespace-nowrap inline-flex items-cent"
+  ],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Vos documents"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 2.3,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-documents-fr-768-dark.png",
+  "persona": "hs",
+  "screen": "documents",
+  "width": 768,
+  "lang": "fr",
+  "theme": "lumiere-dark",
+  "overflowX": 0,
+  "offenders": [
+   "BUTTON.inline-flex items-center justify-center ",
+   "BUTTON.inline-flex items-center justify-center ",
+   "SPAN.hidden sm:inline",
+   "DIV.whitespace-nowrap inline-flex items-cent"
+  ],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Vos documents"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 2.3,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-documents-en-768-light.png",
+  "persona": "hs",
+  "screen": "documents",
+  "width": 768,
+  "lang": "en",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [
+   "BUTTON.inline-flex items-center justify-center ",
+   "SPAN.hidden sm:inline",
+   "DIV.whitespace-nowrap inline-flex items-cent",
+   "BUTTON.inline-flex items-center justify-center "
+  ],
+  "smallCount": 1,
+  "small": [
+   "Skip to content 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Your documents"
+  ],
+  "nav": [
+   "Flight Deck",
+   "High School",
+   "Documents",
+   "Support"
+  ],
+  "scrollScreens": 2.3,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-documents-fr-390-light.png",
+  "persona": "hs",
+  "screen": "documents",
+  "width": 390,
+  "lang": "fr",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [
+   "BUTTON.inline-flex items-center justify-center ",
+   "SPAN.sm:hidden",
+   "DIV.whitespace-nowrap inline-flex items-cent",
+   "BUTTON.inline-flex items-center justify-center "
+  ],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Vos documents"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 4.5,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-documents-fr-390-dark.png",
+  "persona": "hs",
+  "screen": "documents",
+  "width": 390,
+  "lang": "fr",
+  "theme": "lumiere-dark",
+  "overflowX": 0,
+  "offenders": [
+   "BUTTON.inline-flex items-center justify-center ",
+   "SPAN.sm:hidden",
+   "DIV.whitespace-nowrap inline-flex items-cent",
+   "BUTTON.inline-flex items-center justify-center "
+  ],
+  "smallCount": 1,
+  "small": [
+   "Aller au contenu 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Vos documents"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 4.5,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-documents-en-390-light.png",
+  "persona": "hs",
+  "screen": "documents",
+  "width": 390,
+  "lang": "en",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [
+   "BUTTON.inline-flex items-center justify-center ",
+   "SPAN.sm:hidden",
+   "DIV.whitespace-nowrap inline-flex items-cent",
+   "BUTTON.inline-flex items-center justify-center "
+  ],
+  "smallCount": 1,
+  "small": [
+   "Skip to content 1x1"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Your documents"
+  ],
+  "nav": [
+   "Flight Deck",
+   "High School",
+   "Documents",
+   "Support"
+  ],
+  "scrollScreens": 4,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-billing-fr-1440-light.png",
+  "persona": "hs",
+  "screen": "billing",
+  "width": 1440,
+  "lang": "fr",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 3,
+  "small": [
+   "Aller au contenu 1x1",
+   "Téléverser une preuve de paiem 341x15",
+   "Demander à l’Assistance → 167x15"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Facturation"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Au-delà du diplôme",
+   "Calendrier",
+   "Bibliothèque",
+   "Profil de l’élève",
+   "Notifications",
+   "Documents",
+   "Facturation",
+   "Assistance",
+   "Lumière sur WhatsApp"
+  ],
+  "scrollScreens": 1.7,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-billing-fr-1440-dark.png",
+  "persona": "hs",
+  "screen": "billing",
+  "width": 1440,
+  "lang": "fr",
+  "theme": "lumiere-dark",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 3,
+  "small": [
+   "Aller au contenu 1x1",
+   "Téléverser une preuve de paiem 341x15",
+   "Demander à l’Assistance → 167x15"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Facturation"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Au-delà du diplôme",
+   "Calendrier",
+   "Bibliothèque",
+   "Profil de l’élève",
+   "Notifications",
+   "Documents",
+   "Facturation",
+   "Assistance",
+   "Lumière sur WhatsApp"
+  ],
+  "scrollScreens": 1.7,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-billing-en-1440-light.png",
+  "persona": "hs",
+  "screen": "billing",
+  "width": 1440,
+  "lang": "en",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 3,
+  "small": [
+   "Skip to content 1x1",
+   "Upload proof of payment in Doc 258x15",
+   "Ask in Support → 106x15"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Billing"
+  ],
+  "nav": [
+   "Flight Deck",
+   "High School",
+   "Beyond the Diploma",
+   "Calendar",
+   "Library",
+   "Student Profile",
+   "Notifications",
+   "Documents",
+   "Billing",
+   "Support",
+   "WhatsApp Lumière"
+  ],
+  "scrollScreens": 1.6,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-billing-fr-768-light.png",
+  "persona": "hs",
+  "screen": "billing",
+  "width": 768,
+  "lang": "fr",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 3,
+  "small": [
+   "Aller au contenu 1x1",
+   "Téléverser une preuve de paiem 341x15",
+   "Demander à l’Assistance → 167x15"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Facturation"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 1.7,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-billing-fr-768-dark.png",
+  "persona": "hs",
+  "screen": "billing",
+  "width": 768,
+  "lang": "fr",
+  "theme": "lumiere-dark",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 3,
+  "small": [
+   "Aller au contenu 1x1",
+   "Téléverser une preuve de paiem 341x15",
+   "Demander à l’Assistance → 167x15"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Facturation"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 1.7,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-billing-en-768-light.png",
+  "persona": "hs",
+  "screen": "billing",
+  "width": 768,
+  "lang": "en",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 3,
+  "small": [
+   "Skip to content 1x1",
+   "Upload proof of payment in Doc 258x15",
+   "Ask in Support → 106x15"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Billing"
+  ],
+  "nav": [
+   "Flight Deck",
+   "High School",
+   "Documents",
+   "Support"
+  ],
+  "scrollScreens": 1.6,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-billing-fr-390-light.png",
+  "persona": "hs",
+  "screen": "billing",
+  "width": 390,
+  "lang": "fr",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 2,
+  "small": [
+   "Aller au contenu 1x1",
+   "Demander à l’Assistance → 167x15"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Facturation"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 3.2,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-billing-fr-390-dark.png",
+  "persona": "hs",
+  "screen": "billing",
+  "width": 390,
+  "lang": "fr",
+  "theme": "lumiere-dark",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 2,
+  "small": [
+   "Aller au contenu 1x1",
+   "Demander à l’Assistance → 167x15"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Facturation"
+  ],
+  "nav": [
+   "Tableau de bord",
+   "Études secondaires",
+   "Documents",
+   "Assistance"
+  ],
+  "scrollScreens": 3.2,
+  "enLeaks": [],
+  "errors": []
+ },
+ {
+  "name": "hs-billing-en-390-light.png",
+  "persona": "hs",
+  "screen": "billing",
+  "width": 390,
+  "lang": "en",
+  "theme": "lumiere",
+  "overflowX": 0,
+  "offenders": [],
+  "smallCount": 3,
+  "small": [
+   "Skip to content 1x1",
+   "Upload proof of payment in Doc 258x15",
+   "Ask in Support → 106x15"
+  ],
+  "clipped": [],
+  "iconNoName": 0,
+  "h1": [
+   "Billing"
+  ],
+  "nav": [
+   "Flight Deck",
+   "High School",
+   "Documents",
+   "Support"
+  ],
+  "scrollScreens": 3,
+  "enLeaks": [],
+  "errors": []
+ }
+]

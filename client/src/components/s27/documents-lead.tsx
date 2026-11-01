@@ -6,7 +6,7 @@ import React from "react";
 import { FileText, Upload } from "lucide-react";
 import type { StudentJourneyView } from "@shared/s27-contract";
 import type { HsGraduationView } from "@shared/high-school-contract";
-import { docTypeLabel } from "@/lib/document-type-labels";
+import { studentDocTypeLabel } from "@/lib/student-doc-type-label";
 import { formatDay } from "@/lib/s27/dates";
 import { useS27T } from "@/lib/s27/i18n-util";
 import type { TranslationKey } from "@/i18n";
@@ -75,7 +75,7 @@ export function DocumentsLead({ docs, journey, graduation, onReplace, onUploadFo
               return (
                 <div key={n.doc.id} className="needc" data-testid={`needed-${n.doc.id}`}>
                   <div>
-                    <b>{docTypeLabel(n.doc.doc_type)}</b>
+                    <b>{studentDocTypeLabel(n.doc.doc_type, t)}</b>
                     <p>{n.doc.review_message ? n.doc.review_message : t("documents.reviewNoReason")}</p>
                   </div>
                   <div className="btns">

@@ -55,7 +55,7 @@ function NotConfigured({ awaiting }: { awaiting: number }) {
       <section className="state" data-testid="billing-not-configured">
         <h2>{t("s27.bill.notSetTitle")}</h2>
         <p>{t("s27.bill.notSetText")}</p>
-        <Link className="link" href={BILLING_SUPPORT_HREF}>{t("s27.bill.question")} {t("s27.bill.contact")} →</Link>
+        <Link className="link tap" href={BILLING_SUPPORT_HREF}>{t("s27.bill.question")} {t("s27.bill.contact")} →</Link>
       </section>
       <Awaiting n={awaiting} />
       <PayHelp showHow={false} />
@@ -81,14 +81,14 @@ function PayHelp({ showHow }: { showHow: boolean }) {
         <div data-testid="billing-how-to-pay">
           <p className="small">{t("s27.bill.howText")}</p>
           <p className="small">
-            <Link className="link" href={BILLING_SUPPORT_HREF} data-testid="link-billing-support">{t("s27.bill.howSupport")} →</Link>
+            <Link className="link tap" href={BILLING_SUPPORT_HREF} data-testid="link-billing-support">{t("s27.bill.howSupport")} →</Link>
             {" · "}
-            <a className="link" {...whatsappLinkProps} data-testid="link-billing-whatsapp">{t("s27.bill.howWhatsApp")} ({LUMIERE_WHATSAPP_DISPLAY})</a>
+            <a className="link tap" {...whatsappLinkProps} data-testid="link-billing-whatsapp">{t("s27.bill.howWhatsApp")} ({LUMIERE_WHATSAPP_DISPLAY})</a>
           </p>
         </div>
       )}
       <p className="small">{t("s27.bill.proofHint")}</p>
-      <p className="small"><Link className="link" href={BILLING_PROOF_HREF} data-testid="link-send-proof">{t("s27.bill.proofLink")} →</Link></p>
+      <p className="small"><Link className="link tap" href={BILLING_PROOF_HREF} data-testid="link-send-proof">{t("s27.bill.proofLink")} →</Link></p>
     </section>
   );
 }

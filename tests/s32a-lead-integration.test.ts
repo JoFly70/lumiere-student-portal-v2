@@ -48,3 +48,21 @@ describe("S32-A F13 follow-up: billing questions without a Billing record get a 
     expect(answerFromRecord("How much do I owe?", "en", [])).toBeNull();
   });
 });
+
+import { studentDocTypeLabel } from "../client/src/lib/student-doc-type-label";
+import { translate } from "../client/src/i18n";
+describe("S32-A visual-review fix: student document type names follow the student's language", () => {
+  const tFr = (k: any) => translate("fr", k);
+  const tEn = (k: any) => translate("en", k);
+  it("translates known types and aliases, falls back for unknown ones", () => {
+    expect(studentDocTypeLabel("hs_transcript", tFr)).toBe("Relevé de notes du secondaire");
+    expect(studentDocTypeLabel("hs_transcript", tEn)).toBe("High-school transcript");
+    expect(studentDocTypeLabel("english_proof", tFr)).toBe("Preuve de compétence en anglais");
+    expect(studentDocTypeLabel("mystery_type", tFr)).toBe("Mystery type");
+  });
+  it("is used by the deck Documents card, the Documents page and the documents-needed list", () => {
+    for (const f of ["client/src/components/s27/deck-parts.tsx", "client/src/pages/documents.tsx", "client/src/components/s27/documents-lead.tsx"]) {
+      expect(fs.readFileSync(f, "utf8")).toContain("studentDocTypeLabel(");
+    }
+  });
+});
