@@ -184,6 +184,9 @@ export const s30OpsEn = {
   "notif.import.committed": "An import was added to the file: {records} records for {students} students.",
   "notif.import.review_required": "{records} imported records need your review ({students} students).",
   "notif.calendar.event_changed": "Your calendar was updated: {title} was {change}, {date}.",
+  "ops.links.label": "Operations shortcuts",
+  "ops.links.operations": "Operations Center",
+  "ops.links.calendar": "Academic calendar",
 };
 
 export const s30OpsFr: Record<keyof typeof s30OpsEn, string> = {
@@ -361,4 +364,7 @@ export const s30OpsFr: Record<keyof typeof s30OpsEn, string> = {
   "notif.import.committed": "Une importation a été ajoutée au dossier : {records} données pour {students} étudiants.",
   "notif.import.review_required": "{records} données importées attendent votre examen ({students} étudiants).",
   "notif.calendar.event_changed": "Votre calendrier a été mis à jour : {title} a été {change}, {date}.",
+  "ops.links.label": "Raccourcis des opérations",
+  "ops.links.operations": "Centre des opérations",
+  "ops.links.calendar": "Calendrier académique",
 };
