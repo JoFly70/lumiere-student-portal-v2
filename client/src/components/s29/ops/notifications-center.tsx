@@ -1,9 +1,10 @@
 /**
- * S29 Staff Notification Center (/admin/notifications; admin + staff). Delivery overview, outbox history with retry
- * (admin), and the Proactive Concierge settings (admin). "Accepted" means the email provider accepted the message,
+ * S29 email delivery log (/admin/notifications; admin + staff). Delivery overview, outbox history with retry
+ * (admin), and the Proactive Concierge settings (admin). It is a log of what happened to each email, not an inbox:
+ * staff have no in-portal notifications. "Accepted" means the email provider accepted the message,
  * never "delivered". When email is not configured the page says so; it never shows fake success.
  */
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useSearch } from "wouter";
 import { Loader2, Mail, RotateCw, X } from "lucide-react";
 import { useT } from "@/i18n";
@@ -72,7 +73,10 @@ export function NotificationsCenter() {
   const search = useSearch();
   const [location, setLocation] = useLocation();
   const studentId = useMemo(() => new URLSearchParams(search).get("student")?.trim() || null, [search]);
-  const [state, setState] = useState<EmailState | "all">("all");
+  // `?state=failed` (Needs Attention links) pre-selects the matching email state; unknown values are ignored.
+  const urlState = useMemo((): EmailState | "all" => { const v = new URLSearchParams(search).get("state"); return isEmailState(v) ? v : "all"; }, [search]);
+  const [state, setState] = useState<EmailState | "all">(urlState);
+  useEffect(() => { setState(urlState); }, [urlState]);
   const q = useOutbox(state, studentId);
   const retry = useOutboxRetry();
   const [fb, setFb] = useState<Record<string, "ok" | "no" | "err">>({});
@@ -159,9 +163,11 @@ export function NotificationsCenter() {
                       </div></td>
                       <td className="full" data-label={t("s29.ops.n.col.error")}>{err ? <span title={r.lastError ?? undefined}>{err}</span> : <span className="ops-note">—</span>}</td>
                       <td data-label={t("s29.ops.n.col.read")}>
-                        <span className="ops-note" style={{ display: "inline-flex", gap: 5, alignItems: "center", whiteSpace: "nowrap" }}>
-                          <OpsGlyph icon={r.readAt ? "check" : "clock"} />{r.readAt ? t("s29.ops.n.read") : t("s29.ops.n.unread")}
-                        </span>
+                        {r.audience === "staff" ? <span className="ops-note" title={t("s32.ops.n.noStaffInbox")}>—</span> : (
+                          <span className="ops-note" style={{ display: "inline-flex", gap: 5, alignItems: "center", whiteSpace: "nowrap" }}>
+                            <OpsGlyph icon={r.readAt ? "check" : "clock"} />{r.readAt ? t("s29.ops.n.read") : t("s29.ops.n.unread")}
+                          </span>
+                        )}
                       </td>
                       {isAdmin ? (
                         <td className="acts" data-label={t("s29.ops.n.col.actions")}>

@@ -192,14 +192,16 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)("S30 Phase A: academic calendar (real Po
     await pg.sql(`delete from profiles where user_id = '${admin.id}'`);
   });
 
-  it("due reminders are handed to the S29 outbox once per recipient (stable dedupe keys)", async () => {
+  it("calendar reminders are student-only, never duplicate Concierge-owned agreement deadlines, and are idempotent (stable dedupe keys)", async () => {
+    const before = port.notes.length;
     const first = await dispatchCalendarReminders((await import("../server/lib/db")).db as any, new Date());
-    expect(first.due).toBeGreaterThanOrEqual(2);
-    expect(first.results.accepted).toBeGreaterThanOrEqual(2);
-    expect(port.notes.some((n) => n.recipientUserId === ada.user.id && n.kind === "calendar.reminder.deadline")).toBe(true);
-    expect(port.notes.some((n) => n.recipientUserId === admin.id && n.kind === "calendar.reminder.deadline" && n.params.studentId === ada.student.id)).toBe(true);
+    const sent = port.notes.slice(before).filter((n) => n.kind.startsWith("calendar.reminder."));
+    expect(first.due).toBe(sent.length + first.results.duplicate);
+    expect(sent.every((n) => n.audience === "student")).toBe(true); // no staff/admin rows (staff have no inbox)
+    // Ada's language-test deadline is reminded by the S29 Concierge, not from the calendar
+    expect(sent.some((n) => n.kind === "calendar.reminder.deadline" && n.params.itemKind === "academic_deadline" && n.recipientUserId === ada.user.id)).toBe(false);
     const second = await dispatchCalendarReminders((await import("../server/lib/db")).db as any, new Date());
     expect(second.results.accepted).toBe(0);
-    expect(second.results.duplicate).toBe(first.results.accepted);
+    expect(second.results.duplicate).toBe(first.results.accepted + first.results.duplicate);
   });
 });

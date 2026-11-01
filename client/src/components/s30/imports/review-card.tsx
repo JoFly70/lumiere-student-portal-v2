@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { ArrowRight, CopyCheck } from "lucide-react";
+import { Link } from "wouter";
 import type { ImportBatchDetail, ImportCounts, ImportRowView } from "@shared/s30-contract";
 import { ROW_FILTERS, filterRows, measureText, paginate, sortIssues, type RowFilter } from "./import-helpers";
 import { BTN_SECONDARY, FIELD_CLASS, FIELD_STYLE, IssueLine, LABEL_CLASS, LABEL_STYLE, useImpT, type Tt } from "./imports-parts";
@@ -107,7 +108,7 @@ export function ReviewCard({ batch }: { batch: ImportBatchDetail }) {
                     {pg.items.map((r) => (
                       <tr key={r.rowNumber} className="align-top" style={{ borderTop: "1px solid var(--t-line)" }} data-testid="imp-row" data-outcome={r.outcome} data-diff={r.diff ?? ""}>
                         <td className="px-3 py-2 tabular-nums">{r.rowNumber}</td>
-                        <td className="px-3 py-2">{r.studentName ? <span>{r.studentName}{r.normalized?.studentCode && <span className="small block">{r.normalized.studentCode}</span>}</span> : <span className="small">{tt("imp.notMatched")}{r.normalized?.studentCode ? ` (${r.normalized.studentCode})` : ""}</span>}</td>
+                        <td className="px-3 py-2">{r.studentName ? <span>{r.studentId ? <Link href={`/admin/students/${encodeURIComponent(r.studentId)}`} className="link font-semibold" data-testid="imp-row-student-link">{r.studentName}</Link> : r.studentName}{r.normalized?.studentCode && <span className="small block">{r.normalized.studentCode}</span>}</span> : <span className="small">{tt("imp.notMatched")}{r.normalized?.studentCode ? ` (${r.normalized.studentCode})` : ""}</span>}</td>
                         <td className="px-3 py-2">{r.normalized?.course ?? ""}</td>
                         <td className="px-3 py-2">{r.normalized?.task ?? ""}</td>
                         <td className="px-3 py-2"><Values row={r} tt={tt} /></td>
