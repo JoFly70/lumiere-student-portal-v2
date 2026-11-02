@@ -72,3 +72,12 @@ Run the same read-only queries on production (or the step 2 dump) and on the rec
 ## 8. Drill (not done yet)
 
 Once: restore the latest backup into a scratch project, run section 6, delete the scratch project, and record the date and time taken. Until done, restore time is unknown.
+
+## Owner verification result (2026-11-02)
+
+The owner checked Supabase → project "Lumiere Student Portal V2" (`rheronevecsffaejteoj`, branch `main`, PRODUCTION) → Database → Backups.
+
+- **Plan: FREE.** The page states: "Free Plan does not include project backups. Upgrade to the Pro Plan for up to 7 days of scheduled backups."
+- **Daily backups: NONE. PITR: NOT AVAILABLE** (PITR requires Pro plus the paid add-on).
+- The only existing copies are the runner's pre-release `pg_dump`s in `.s26-private-backup/`. These cover the public schema only (no Auth users, no Storage files) and are taken only when a schema step applies.
+- **Recommendation (owner decision, involves cost):** upgrade the project to Pro, for daily backups with 7-day retention, and so that the production project is not paused for inactivity. Until then, take a manual full `pg_dump` (section 2, "Manual full dump") before any risky operation, and periodically.
