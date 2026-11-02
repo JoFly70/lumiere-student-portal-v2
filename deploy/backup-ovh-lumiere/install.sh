@@ -51,9 +51,19 @@ if [ ! -s "$STORE/lumiere-backup.dburl" ] || [ "${1:-}" = "--set-db-url" ]; then
   else
     IFS= read -r URL
   fi
-  URL=$(printf '%s' "$URL" | tr -d '\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+  # Remove terminal paste markers (ESC[200~ / ESC[201~), quotes and any invisible characters around the address.
+  URL=$(printf '%s' "$URL" | sed 's/\x1b\[20[01]~//g' | LC_ALL=C tr -cd '[:print:]' | sed "s/^[[:space:]\"']*//;s/[[:space:]\"']*$//")
   case "$URL" in postgres://*|postgresql://*) ;; *) echo "   That does not look like a database address (it should start with postgresql://). Nothing was saved." >&2; exit 1;; esac
   case "$URL" in *"$REF"*) ;; *) echo "   That address is not for the Lumière production project ($REF). Nothing was saved." >&2; exit 1;; esac
+  # Safe summary (never the password) so a wrong paste is visible.
+  URL="$URL" python3 - <<'PY' || { echo "   The address could not be read (check it was copied completely). Nothing was saved." >&2; exit 1; }
+import os, urllib.parse as u
+p = u.urlsplit(os.environ["URL"])
+if not (p.hostname and p.username):
+    raise SystemExit(1)
+pw = u.unquote(p.password or "")
+print(f"   read: user {p.username}, host {p.hostname}, port {p.port or 5432}, database {p.path.lstrip('/') or 'postgres'}, password {len(pw)} characters")
+PY
   printf '%s' "$URL" | systemd-creds encrypt --with-key=host --name=dburl - "$STORE/lumiere-backup.dburl"
   unset URL
   echo "   saved (encrypted)"
