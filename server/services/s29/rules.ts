@@ -51,6 +51,8 @@ export interface AttentionExtraFacts {
   readonly readyToLink?: ReadonlyArray<{ studentId: string; accountCreatedAt: string }>;
   /** Notifications whose email delivery failed (bounded). */
   readonly failedNotifications: ReadonlyArray<{ id: string; studentId: string | null; template: string; at: string }>;
+  /** S34 (S33-05): students whose high-school transcript status is still 'requested' (one row per student). */
+  readonly transcriptRequests?: ReadonlyArray<{ studentId: string; requestedAt: string }>;
 }
 
 export const EMPTY_EXTRA: AttentionExtraFacts = { checkpoints: [], upcomingSessions: [], pendingVerification: [], importedActivity: [], pendingImports: [], readyToLink: [], failedNotifications: [] };
@@ -61,7 +63,7 @@ const WORKFLOW: Record<AttentionKind, AttentionWorkflow> = {
   elective_approval: "academic", session_request: "appointments", support_reply: "support",
   checkpoint_missed: "academic", checkpoint_soon: "academic", orientation_upcoming: "appointments",
   import_verification: "academic", notification_failed: "operations", import_awaiting_approval: "operations",
-  account_ready_to_link: "operations",
+  account_ready_to_link: "operations", transcript_requested: "academic",
 };
 const ACTION: Record<AttentionKind, string> = {
   document_review: "review_documents", payment_evidence: "review_payment", payment_overdue: "follow_up_payment",
@@ -69,7 +71,7 @@ const ACTION: Record<AttentionKind, string> = {
   school_result_needed: "record_school_result", elective_approval: "decide_elective", session_request: "confirm_session",
   support_reply: "reply_support", checkpoint_missed: "complete_checkpoint", checkpoint_soon: "prepare_checkpoint",
   orientation_upcoming: "prepare_session", import_verification: "verify_results", notification_failed: "check_delivery", import_awaiting_approval: "approve_import",
-  account_ready_to_link: "link_account",
+  account_ready_to_link: "link_account", transcript_requested: "prepare_transcript",
 };
 
 /** Facts that change every day (counters) are left out of the fingerprint, so a dismissal survives until the facts change. */
@@ -184,6 +186,16 @@ export function buildAttention(facts: ControlCenterFacts, extra: AttentionExtraF
       reason: { rule: "enrollment.account_ready_to_link", facts: { accountCreatedOn: r.accountCreatedAt.slice(0, 10) } }, arisenAt: r.accountCreatedAt, href: fileHref(r.studentId, "overview") });
   }
 
+  // 6b. S34 (S33-05): a graduate asked for their transcript (hs_graduation_records.transcript_status = 'requested').
+  //     One item per student (stable key); it clears on its own once staff move the status to issued / delivered.
+  //     Opens the Graduation tab of the staff High School page, where the status is updated.
+  for (const t of extra.transcriptRequests ?? []) {
+    if (!studentBy.has(t.studentId)) continue;
+    push({ key: `transcript_requested:${t.studentId}`, kind: "transcript_requested", priority: daysBetween(t.requestedAt.slice(0, 10), today) > 7 ? "high" : "normal", studentId: t.studentId,
+      title: "Transcript requested", detail: "The student requested their high school transcript. Prepare it and update the transcript status in the Graduation tab.",
+      reason: { rule: "hs.transcript_requested", facts: { requestedOn: t.requestedAt.slice(0, 10) } }, arisenAt: t.requestedAt, href: `/admin/students/${encodeURIComponent(t.studentId)}/high-school?tab=graduation` });
+  }
+
   // 7. Notifications whose email delivery failed after bounded retries.
   for (const f of extra.failedNotifications) {
     push({ key: `notification_failed:${f.id}`, kind: "notification_failed", priority: "normal", studentId: f.studentId && studentBy.has(f.studentId) ? f.studentId : null,
@@ -231,6 +243,14 @@ export async function loadAttentionExtra(db: SqlExecutor, now: Date, s29Present:
     WHERE s.user_id IS NULL AND s.email IS NOT NULL AND s.email <> ''
       AND NOT EXISTS (SELECT 1 FROM students s2 WHERE s2.user_id = u.id)
     GROUP BY s.id ORDER BY s.id LIMIT 200`);
+  // S34 (S33-05): outstanding transcript requests; DISTINCT per student. Optional: absent before the high-school migration.
+  let transcripts: unknown = [];
+  try {
+    transcripts = await db.execute(sql`SELECT student_id, max(updated_at) AS requested_at FROM hs_graduation_records
+      WHERE transcript_status = 'requested' GROUP BY student_id ORDER BY student_id LIMIT 200`);
+  } catch (error) {
+    if (errorCode(error) !== "42P01") throw error;
+  }
   let failed: unknown = [];
   if (s29Present) {
     failed = await db.execute(sql`SELECT id, student_id, template, updated_at FROM s29_notifications WHERE email_state = 'failed' AND updated_at >= ${new Date(now.getTime() - 14 * 86_400_000).toISOString()}::timestamptz ORDER BY updated_at DESC LIMIT 50`);
@@ -245,6 +265,7 @@ export async function loadAttentionExtra(db: SqlExecutor, now: Date, s29Present:
       return { id: String(r.id), sourceKind: String(r.source_kind), rows: Number(c.total ?? 0), students: Number(c.students ?? 0), validatedAt: isoReq(r.validated_at) };
     }),
     readyToLink: rows(ready).map((r) => ({ studentId: String(r.student_id), accountCreatedAt: isoReq(r.created_at) })),
+    transcriptRequests: rows(transcripts).map((r) => ({ studentId: String(r.student_id), requestedAt: isoReq(r.requested_at) })),
     failedNotifications: rows(failed).map((r) => ({ id: String(r.id), studentId: str(r.student_id), template: String(r.template), at: iso(r.updated_at) ?? now.toISOString() })),
   };
 }

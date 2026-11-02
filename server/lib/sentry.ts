@@ -1,4 +1,4 @@
-import { logger } from './logger';
+import { logger, setErrorReporter } from './logger';
 import { scrubSentryEvent } from './log-redaction';
 
 /**
@@ -17,7 +17,7 @@ interface SentrySDKLike {
     tracingHandler: () => (req: unknown, res: unknown, next: () => void) => void;
     errorHandler: () => (err: unknown, req: unknown, res: unknown, next: (err?: unknown) => void) => void;
   };
-  captureException: (err: unknown) => void;
+  captureException: (err: unknown, hint?: unknown) => void;
 }
 
 let SentrySDK: SentrySDKLike | null = null;
@@ -64,6 +64,12 @@ if (SentrySDK && dsn) {
     beforeSendTransaction(event: Record<string, any>) {
       return scrubSentryEvent(event);
     },
+  });
+
+  // S34 (S33-07): errors logged inside route handlers reach Sentry too (context is allowlisted by the logger;
+  // beforeSend above still scrubs the event).
+  setErrorReporter((error, context) => {
+    (SentrySDK as SentrySDKLike).captureException(error, { extra: context });
   });
 
   logger.info('✓ Sentry error tracking initialized', {

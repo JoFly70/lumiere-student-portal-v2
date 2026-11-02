@@ -27,6 +27,8 @@ export const ATTENTION_KINDS = [
   "import_awaiting_approval",
   // S32-B: a student account with the record email exists and is not linked yet (an admin confirms the link)
   "account_ready_to_link",
+  // S34 (S33-05): a high-school graduate requested their transcript and staff have not yet moved the status on
+  "transcript_requested",
 ] as const;
 export type AttentionKind = (typeof ATTENTION_KINDS)[number];
 
