@@ -306,10 +306,12 @@ app.use((req, res, next) => {
         ip: req.ip,
       },
       statusCode: status,
+      // S34: Sentry reporting for this error happens here (Sentry middleware / captureException below), not via the logger.
+      errorReport: 'skip',
     });
 
-    // Send error to Sentry (if not already sent by Sentry middleware)
-    if (isSentryConfigured && status >= 500 && !wasErrorReported(err)) { // S34: logger.error already reported it
+    // Send error to Sentry (if not already sent by Sentry middleware, which sets res.sentry, or by logger.error)
+    if (isSentryConfigured && status >= 500 && !(res as any).sentry && !wasErrorReported(err)) {
       Sentry.captureException(err, {
         contexts: {
           // Never forward headers (Authorization, cookies) or the query string (?token_hash).

@@ -251,11 +251,22 @@ export const postAuthRateLimit = createPostAuthRateLimit(userLimiter, adminUserL
 
 /**
  * Promise form for requireAuth: resolves true when the request may continue, false when a response
- * (the 429) was already sent. Errors are passed on as a rejection.
+ * (the 429, or a 503 below) was already sent. Never rejects: a rate-limit store failure (e.g. a Redis timeout)
+ * still fails closed, but as 503 "temporarily unavailable" — never as a 401 that the client would read as an
+ * expired session (and answer with a refresh). S34 review fix.
  */
-export function enforceUserRateLimit(req: Request, res: Response): Promise<boolean> {
-  return new Promise<boolean>((resolve, reject) => {
+export function enforceUserRateLimit(req: Request, res: Response, limiter: RequestHandler = postAuthRateLimit): Promise<boolean> {
+  return new Promise<boolean>((resolve) => {
     if (typeof res.once === 'function') res.once('close', () => resolve(false));
-    postAuthRateLimit(req, res, (err?: unknown) => (err ? reject(err) : resolve(true)));
+    const onError = (err: unknown) => {
+      logger.warn('Per-user rate limit unavailable; failing closed', { error: (err as Error)?.message, path: redactFeedPath(req.path ?? '') });
+      if (!res.headersSent) res.status(503).json({ error: 'The service is temporarily unavailable. Please try again in a moment.', code: 'rate_limit_unavailable' });
+      resolve(false);
+    };
+    try {
+      limiter(req, res, (err?: unknown) => (err ? onError(err) : resolve(true)));
+    } catch (err) {
+      onError(err);
+    }
   });
 }

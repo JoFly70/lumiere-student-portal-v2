@@ -93,6 +93,10 @@ function forwardToReporter(args: unknown[]): void {
   try {
     const message = typeof args[0] === 'string' ? args[0] : undefined;
     const meta = args.find((a, i) => i > 0 && typeof a === 'object' && a !== null && !(a instanceof Error)) as Record<string, unknown> | undefined;
+    // S34 review: the caller already reports this error itself (e.g. the global handler next to Sentry's middleware),
+    // and client errors (4xx) are not operational failures, so neither is forwarded.
+    if (meta?.errorReport === 'skip') return;
+    if (typeof meta?.statusCode === 'number' && meta.statusCode < 500) return;
     const candidate = args.find((a) => a instanceof Error)
       ?? (meta && (meta.error instanceof Error ? meta.error : meta.err instanceof Error ? meta.err : undefined));
     let error: Error;

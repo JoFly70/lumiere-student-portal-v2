@@ -54,11 +54,22 @@ export function safeRequestContext(req: { method?: string; path?: string; ip?: s
   return { method: req.method, path, ip: req.ip };
 }
 
-/** Sentry `beforeSend`: drop health probes, scrub credentials and request payloads. */
+const EMAIL = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
+/** S34 (S33-07): error reports leave the platform, so e-mail addresses are masked there (logs keep them). */
+function maskEmails(value: unknown, depth = 0): unknown {
+  if (typeof value === 'string') return value.replace(EMAIL, '[email]');
+  if (value === null || typeof value !== 'object' || depth > 8) return value;
+  if (Array.isArray(value)) return value.map((v) => maskEmails(v, depth + 1));
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(value as Record<string, unknown>)) out[k] = maskEmails(v, depth + 1);
+  return out;
+}
+
+/** Sentry `beforeSend`: drop health probes, scrub credentials, request payloads and e-mail addresses. */
 export function scrubSentryEvent<T extends Record<string, any>>(event: T): T | null {
   const url: string | undefined = event.request?.url;
   if (url && (url.includes('/health') || url.includes('/live') || url.includes('/ready'))) return null;
-  const clean: Record<string, any> = redactValue(event) as Record<string, any>;
+  const clean: Record<string, any> = maskEmails(redactValue(event)) as Record<string, any>;
   if (clean.request) {
     delete clean.request.cookies;
     delete clean.request.headers;

@@ -246,8 +246,14 @@ export async function loadAttentionExtra(db: SqlExecutor, now: Date, s29Present:
   // S34 (S33-05): outstanding transcript requests; DISTINCT per student. Optional: absent before the high-school migration.
   let transcripts: unknown = [];
   try {
-    transcripts = await db.execute(sql`SELECT student_id, max(updated_at) AS requested_at FROM hs_graduation_records
-      WHERE transcript_status = 'requested' GROUP BY student_id ORDER BY student_id LIMIT 200`);
+    // Age = the latest transition to 'requested' (the hs_events row written by requestTranscript with changed=true),
+    // so later graduation edits (diploma, clearance) do not reset the item's age; falls back to the record's update time.
+    transcripts = await db.execute(sql`SELECT g.student_id, coalesce(
+        (SELECT max(e.created_at) FROM hs_events e WHERE e.student_id = g.student_id AND e.event_type = 'transcript_requested'
+            AND e.summary = 'Student requested their transcript'),
+        max(g.updated_at)) AS requested_at
+      FROM hs_graduation_records g
+      WHERE g.transcript_status = 'requested' GROUP BY g.student_id ORDER BY g.student_id LIMIT 200`);
   } catch (error) {
     if (errorCode(error) !== "42P01") throw error;
   }
