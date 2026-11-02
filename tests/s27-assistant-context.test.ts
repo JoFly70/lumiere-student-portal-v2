@@ -26,7 +26,7 @@ describe("S27 assistant context", () => {
     const labels = withJ.slice(base.length).map((r) => r.label);
     expect(labels).toEqual(["Program agreement", "Goal", "Checkpoints", "Pace", "Orientation sessions"]);
     const text = withJ.map((r) => r.text).join("\n");
-    expect(text).toMatch(/due 2026-12-02, 21 day\(s\) left/);
+    expect(text).toMatch(/due December 2, 2026, 21 days left/);
     expect(text).toMatch(/estimate/);
     expect(text).not.toMatch(/internal|staff note/i);
     const ans = answerFromRecord("When is my language test deadline?", "en", withJ);

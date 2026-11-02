@@ -13,6 +13,23 @@
 import type { StudentRoadmapItemView, StudentRoadmapView } from "@shared/student-roadmap-contract";
 import type { StudentDegreeProgressView } from "@shared/student-degree-progress-view";
 
+/** S34 (S33-08): readable, correctly pluralised French/English figures for record answers (numbers are never changed). */
+const plural = (n: number, one: string, many: string, zeroIsSingular: boolean): string => `${n} ${(zeroIsSingular ? Math.abs(n) <= 1 : Math.abs(n) === 1) ? one : many}`;
+export function fmtDays(n: number, lang: "en" | "fr"): string { return lang === "fr" ? plural(n, "jour", "jours", true) : plural(n, "day", "days", false); }
+export function fmtItems(n: number, lang: "en" | "fr"): string { return lang === "fr" ? plural(n, "élément", "éléments", true) : plural(n, "item", "items", false); }
+export function fmtMonths(n: number, lang: "en" | "fr"): string { return lang === "fr" ? plural(n, "mois", "mois", true) : plural(n, "month", "months", false); }
+const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
+/** "2026-11-02" -> "2 novembre 2026" / "November 2, 2026" (UTC so date-only values never shift). Non-ISO input is returned as-is. */
+export function fmtDate(iso: string | null, lang: "en" | "fr"): string {
+  if (!iso) return "";
+  if (!DATE_ONLY.test(iso)) return iso;
+  const d = new Date(`${iso}T00:00:00Z`);
+  if (Number.isNaN(d.getTime())) return iso;
+  const out = new Intl.DateTimeFormat(lang === "fr" ? "fr-CA" : "en-US", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }).format(d);
+  return lang === "fr" ? out.replace(/^1 /, "1er ") : out;
+}
+
+
 type Lang = "en" | "fr";
 export interface DegreeRecordDraft { readonly label: string; readonly title: string; readonly path: string; readonly text: string }
 
@@ -104,7 +121,7 @@ export function composeDegreeRecords(roadmap: StudentRoadmapView | null, progres
     const text = rows.length === 0
       ? t("No degree requirements are listed for you yet.", "Aucune exigence de diplôme n’est encore affichée pour vous.")
       : open.length === 0
-        ? t(`All ${rows.length} degree requirement(s) are met according to the university’s evaluation.`, `Les ${rows.length} exigences du diplôme sont remplies selon l’évaluation de l’université.`)
+        ? t(`${rows.length === 1 ? "The 1 degree requirement is" : `All ${rows.length} degree requirements are`} met according to the university’s evaluation.`, `${rows.length === 1 ? "L’unique exigence du diplôme est remplie" : `Les ${rows.length} exigences du diplôme sont remplies`} selon l’évaluation de l’université.`)
         : t(`Requirements still to meet (${open.length} of ${rows.length}): ${shown.map(line).join("; ")}${open.length > shown.length ? `; and ${open.length - shown.length} more` : ""}. The university decides which credits satisfy each requirement; the figures come from your own roadmap and degree progress.`,
             `Exigences encore à remplir (${open.length} sur ${rows.length}) : ${shown.map(line).join(" ; ")}${open.length > shown.length ? ` ; et ${open.length - shown.length} de plus` : ""}. L’université décide quels crédits satisfont chaque exigence; les chiffres proviennent de votre propre feuille de route et de votre progression.`);
     out.push({ label: "Degree requirements", title: t("Degree requirements", "Exigences du diplôme"), path: "/roadmap", text });
@@ -124,8 +141,8 @@ export function composeDegreeRecords(roadmap: StudentRoadmapView | null, progres
     const next = (dated.length ? dated : open).slice(0, 4);
     if (next.length) {
       out.push({ label: "Next tasks", title: t("Next tasks", "Prochaines tâches"), path: "/roadmap", text: t(
-        `Your next open tasks: ${next.map((o) => `${o.title}${o.title === o.course ? "" : ` — ${o.course}`}${o.due ? `, planned by ${o.due}` : ""}${o.overdue ? " (overdue)" : ""}`).join("; ")}.`,
-        `Vos prochaines tâches ouvertes : ${next.map((o) => `${o.title}${o.title === o.course ? "" : ` — ${o.course}`}${o.due ? `, prévue d’ici le ${o.due}` : ""}${o.overdue ? " (en retard)" : ""}`).join(" ; ")}.`) });
+        `Your next open tasks: ${next.map((o) => `${o.title}${o.title === o.course ? "" : ` — ${o.course}`}${o.due ? `, planned by ${fmtDate(o.due, "en")}` : ""}${o.overdue ? " (overdue)" : ""}`).join("; ")}.`,
+        `Vos prochaines tâches ouvertes : ${next.map((o) => `${o.title}${o.title === o.course ? "" : ` — ${o.course}`}${o.due ? `, prévue d’ici le ${fmtDate(o.due, "fr")}` : ""}${o.overdue ? " (en retard)" : ""}`).join(" ; ")}.`) });
     }
   }
   return out;

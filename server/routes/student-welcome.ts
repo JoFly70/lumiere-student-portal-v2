@@ -25,7 +25,7 @@ export interface WelcomeStateStore {
 }
 
 export interface AttentionCounts { documents: number; billing: number; tickets: number }
-export interface WelcomeStudent { id: string; first_name?: string | null; photo_url?: string | null }
+export interface WelcomeStudent { id: string; first_name?: string | null; preferred_name?: string | null; photo_url?: string | null }
 
 export interface StudentWelcomeOptions {
   auth?: RequestHandler;
@@ -148,7 +148,10 @@ export function createStudentWelcomeRouter(opts: StudentWelcomeOptions = {}): Ro
           try { counts[k] = await sources[k](ctx); } catch (e) { logger.warn('Welcome: attention source unavailable', { source: k, error: (e as Error).message }); }
         }));
       }
-      const first = typeof student?.first_name === 'string' ? student.first_name.trim() : '';
+      // S34 (S33-10): same rule as the Flight Deck greeting: preferred name when present, else legal first name.
+      const preferred = typeof student?.preferred_name === 'string' ? student.preferred_name.trim() : '';
+      const legal = typeof student?.first_name === 'string' ? student.first_name.trim() : '';
+      const first = preferred || legal;
       const body: WelcomeResponse = {
         firstName: first ? first.slice(0, 80) : null,
         kind: decideKind(state, at),

@@ -26,12 +26,16 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)('S21 assistant conversations (real Postg
   let aliceStaffOnlyDoc = '';
   let aliceDeletedDoc = '';
   let failReply = false;
-  const replyCalls: Array<{ turns: number; message: string }> = [];
+  // S34 (S33-01): only live, provider-safe turns are handed to reply generation; tests that check the history window
+  // switch the stub to live replies carrying a private appendix (the real stored shape).
+  let replyMode: 'local' | 'live' = 'local';
+  const replyCalls: Array<{ turns: number; message: string; contents?: string[] }> = [];
   const logs: any[] = [];
 
   const generateReply: GenerateReplyFn = async (a) => {
-    replyCalls.push({ turns: a.recentTurns.length, message: a.message });
+    replyCalls.push({ turns: a.recentTurns.length, message: a.message, contents: a.recentTurns.map((t) => t.content) });
     if (failReply) throw new Error('provider down');
+    if (replyMode === 'live') return { content: `echo: ${a.message}\n\nFrom your records (private, not sent to any AI model):\n- PRIVATE-DOC-${a.message}`, mode: 'live', sources: [], links: [], notice: null, privateRefs: [{ kind: 'document', title: `PRIVATE-DOC-${a.message}`, path: '/documents' }] };
     return { content: `echo: ${a.message}`, mode: 'local', sources: [{ title: 'S', url: 'https://x.test', verifiedAt: null }], links: [{ label: 'Roadmap', path: '/roadmap' }], notice: null, privateRefs: [] };
   };
 
@@ -206,8 +210,22 @@ describe.skipIf(!PG_BINARIES_AVAILABLE)('S21 assistant conversations (real Postg
   it('passes at most 6 recent turns, from the database', async () => {
     const app = makeApp();
     const id = await newConv(app, alice);
-    for (let i = 0; i < 6; i++) await send(app, alice, id, `turn ${i}`);
-    expect(replyCalls[replyCalls.length - 1]).toMatchObject({ turns: 6, message: 'turn 5' });
+    replyMode = 'live';
+    try {
+      for (let i = 0; i < 6; i++) await send(app, alice, id, `turn ${i}`);
+    } finally { replyMode = 'local'; }
+    const last = replyCalls[replyCalls.length - 1]!;
+    expect(last).toMatchObject({ turns: 6, message: 'turn 5' });
+    // S34: the real recentTurns SQL returns mode + private_refs, so the stored appendix is cut before generation.
+    expect(last.contents!.join('\n')).not.toMatch(/PRIVATE-DOC|From your records/);
+    expect(last.contents).toContain('echo: turn 4');
+  });
+
+  it('S34: local (knowledge-base / record) replies never enter reply-generation history', async () => {
+    const app = makeApp();
+    const id = await newConv(app, alice);
+    for (let i = 0; i < 3; i++) await send(app, alice, id, `local ${i}`);
+    expect(replyCalls[replyCalls.length - 1]).toMatchObject({ turns: 0, message: 'local 2' });
   });
 
   it('afterStudentMessage hook runs once per new message and its failure does not break the post', async () => {

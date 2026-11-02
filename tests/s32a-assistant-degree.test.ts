@@ -108,7 +108,7 @@ describe("S32-A F03 - Degree credits record", () => {
   });
   it("Next tasks come from the degree roadmap (dated first, never held or accepted courses)", () => {
     const r = degreeRecords("en").find((x) => x.label === "Next tasks")!;
-    expect(r.text).toMatch(/^Your next open tasks: Task c2 — English Composition I, planned by 2026-11-02; Task c3/);
+    expect(r.text).toMatch(/^Your next open tasks: Task c2 — English Composition I, planned by November 2, 2026; Task c3/);
   });
 });
 

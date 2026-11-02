@@ -15,7 +15,7 @@ import type { StudentBillingView } from "@shared/billing-contract";
 import type { StudentJourneyView } from "@shared/s27-contract";
 import type { StudentRoadmapView } from "@shared/student-roadmap-contract";
 import type { StudentDegreeProgressView } from "@shared/student-degree-progress-view";
-import { composeDegreeRecords } from "./degree-record";
+import { composeDegreeRecords, fmtDate, fmtDays, fmtItems, fmtMonths } from "./degree-record";
 
 export type Lang = "en" | "fr";
 export interface StudentRecordInput {
@@ -83,8 +83,8 @@ export function composeStudentRecords(input: StudentRecordInput, lang: Lang = "e
     const dated = open.filter((k) => k.dueDate).sort((a, b) => String(a.dueDate).localeCompare(String(b.dueDate)));
     const next = (dated.length ? dated : open).slice(0, 4);
     if (next.length) push({ label: "Next tasks", path: "/high-school", text: t(
-      `Your next open tasks: ${next.map((k) => `${clip(k.title, 90)} — ${k.course}${k.dueDate ? `, planned by ${k.dueDate}` : ""}${k.overdue ? " (overdue)" : ""}`).join("; ")}.`,
-      `Vos prochaines tâches ouvertes : ${next.map((k) => `${clip(k.title, 90)} — ${k.course}${k.dueDate ? `, prévue d’ici le ${k.dueDate}` : ""}${k.overdue ? " (en retard)" : ""}`).join(" ; ")}.`) });
+      `Your next open tasks: ${next.map((k) => `${clip(k.title, 90)} — ${k.course}${k.dueDate ? `, planned by ${fmtDate(k.dueDate, "en")}` : ""}${k.overdue ? " (overdue)" : ""}`).join("; ")}.`,
+      `Vos prochaines tâches ouvertes : ${next.map((k) => `${clip(k.title, 90)} — ${k.course}${k.dueDate ? `, prévue d’ici le ${fmtDate(k.dueDate, "fr")}` : ""}${k.overdue ? " (en retard)" : ""}`).join(" ; ")}.`) });
     const current = courses.filter((x) => x.status === "in_progress" || x.status === "awaiting_school").map((x) => `${courseName(x.title)} (${x.status === "in_progress" ? t("in progress", "en cours") : t("waiting for the school's result", "en attente du résultat de l’école")})`);
     if (current.length) push({ label: "Current courses", path: "/high-school", text: t(`Courses underway: ${current.join("; ")}.`, `Cours en cours : ${current.join(" ; ")}.`) });
     const p = hs.pace;
@@ -93,8 +93,8 @@ export function composeStudentRecords(input: StudentRecordInput, lang: Lang = "e
     push({ label: "Timeline", path: "/high-school", text: phase
       ? t("Your plan follows a 16-week accelerated reference counted from the actual start of your program (3 credits planned by week 4, 8 by week 8, 16 by week 13, 21 by week 16; 4 to 6 months is the broader indicative range). These are planning targets, not school deadlines or guarantees.",
           "Votre plan suit une référence accélérée de 16 semaines comptées à partir du début réel de votre programme (3 crédits prévus d’ici la semaine 4, 8 d’ici la semaine 8, 16 d’ici la semaine 13, 21 d’ici la semaine 16; de 4 à 6 mois est la fourchette indicative plus large). Ce sont des cibles de planification, pas des échéances de l’école ni des garanties.")
-      : t(`Your plan started ${hs.enrollment.startedOn ?? "(start not set)"} with a target of ${hs.enrollment.targetCompletionDate ?? "(not set)"} (a target, not a guarantee). Pace: ${p.status.replace("_", " ")}. ${p.nextMilestone ? `Next milestone: ${formatHalfUnits(p.nextMilestone.cumulativeHalfUnits)} cumulative credit(s) planned by ${p.nextMilestone.month}.` : ""}${milestones.length ? ` ${milestones.length} monthly milestones are planned.` : ""}`,
-          `Votre plan a commencé le ${hs.enrollment.startedOn ?? "(début non précisé)"} avec une cible au ${hs.enrollment.targetCompletionDate ?? "(non précisée)"} (une cible, pas une garantie). Rythme : ${PACE_FR[p.status] ?? p.status.replace("_", " ")}. ${p.nextMilestone ? `Prochaine étape : ${H(p.nextMilestone.cumulativeHalfUnits)} crédit(s) cumulatif(s) prévu(s) d’ici ${p.nextMilestone.month}.` : ""}${milestones.length ? ` ${milestones.length} jalons mensuels sont prévus.` : ""}`) });
+      : t(`Your plan started ${hs.enrollment.startedOn ? fmtDate(hs.enrollment.startedOn, "en") : "(start not set)"} with a target of ${hs.enrollment.targetCompletionDate ? fmtDate(hs.enrollment.targetCompletionDate, "en") : "(not set)"} (a target, not a guarantee). Pace: ${p.status.replace("_", " ")}. ${p.nextMilestone ? `Next milestone: ${formatHalfUnits(p.nextMilestone.cumulativeHalfUnits)} cumulative credit(s) planned by ${p.nextMilestone.month}.` : ""}${milestones.length ? ` ${milestones.length} monthly milestones are planned.` : ""}`,
+          `Votre plan a commencé le ${hs.enrollment.startedOn ? fmtDate(hs.enrollment.startedOn, "fr") : "(début non précisé)"} avec une cible au ${hs.enrollment.targetCompletionDate ? fmtDate(hs.enrollment.targetCompletionDate, "fr") : "(non précisée)"} (une cible, pas une garantie). Rythme : ${PACE_FR[p.status] ?? p.status.replace("_", " ")}. ${p.nextMilestone ? `Prochaine étape : ${H(p.nextMilestone.cumulativeHalfUnits)} crédit(s) cumulatif(s) prévu(s) d’ici ${p.nextMilestone.month}.` : ""}${milestones.length ? ` ${milestones.length} jalons mensuels sont prévus.` : ""}`) });
     const g = hs.graduation;
     push({ label: "Graduation", path: "/high-school", text: t(
       `Graduation status: ${g.status.replace(/_/g, " ")}. Credits requirement met: ${g.creditsSatisfied ? "yes" : "no"}. Only the school confirms eligibility and issues the diploma.`,
@@ -116,7 +116,7 @@ export function composeStudentRecords(input: StudentRecordInput, lang: Lang = "e
   if (b && b.state === "configured") {
     push({ label: "Billing", path: "/billing", text: t(
       `Agreed amount ${money(b.agreedCents, b.currency)}${b.discountCents ? `, adjustment −${money(b.discountCents, b.currency)}` : ""}. Paid (confirmed by Lumière): ${money(b.paidCents, b.currency)}. Remaining: ${money(b.remainingCents, b.currency)}.${b.nextDue ? ` Next payment: ${money(b.nextDue.amountCents, b.currency)} due ${b.nextDue.dueDate}.` : ""}`,
-      `Montant convenu : ${money(b.agreedCents, b.currency)}${b.discountCents ? `, ajustement −${money(b.discountCents, b.currency)}` : ""}. Payé (confirmé par Lumière) : ${money(b.paidCents, b.currency)}. Solde restant : ${money(b.remainingCents, b.currency)}.${b.nextDue ? ` Prochain paiement : ${money(b.nextDue.amountCents, b.currency)}, dû le ${b.nextDue.dueDate}.` : ""}`) });
+      `Montant convenu : ${money(b.agreedCents, b.currency)}${b.discountCents ? `, ajustement −${money(b.discountCents, b.currency)}` : ""}. Payé (confirmé par Lumière) : ${money(b.paidCents, b.currency)}. Solde restant : ${money(b.remainingCents, b.currency)}.${b.nextDue ? ` Prochain paiement : ${money(b.nextDue.amountCents, b.currency)}, dû le ${fmtDate(b.nextDue.dueDate, "fr")}.` : ""}`) });
   } else if (b) {
     push({ label: "Billing", path: "/billing", text: t("Billing has not been set up on your account yet.", "La facturation n’est pas encore configurée sur votre compte.") });
   }
@@ -144,21 +144,22 @@ function composeJourneyRecords(j: StudentJourneyView | null, push: (r: Omit<Stud
   if (!j) return;
   const fr = lang === "fr";
   const t = (en: string, frText: string) => (fr ? frText : en);
+  const D = (x: string | null) => fmtDate(x, lang);
   const a = j.agreement;
   if (a) {
     const dl = a.deadlines.map((d) => {
       const label = fr ? DEADLINE_FR[d.key] ?? d.label : d.label;
       const rule = fr ? ruleFr(d.rule) : d.rule;
-      const state = d.status === "done" ? t(`done${d.doneOn ? ` on ${d.doneOn}` : ""}`, `fait${d.doneOn ? ` le ${d.doneOn}` : ""}`)
+      const state = d.status === "done" ? t(`done${d.doneOn ? ` on ${D(d.doneOn)}` : ""}`, `fait${d.doneOn ? ` le ${D(d.doneOn)}` : ""}`)
         : d.status === "waived" ? t("waived", "dispensé")
-        : d.dueOn ? t(`due ${d.dueOn}${d.daysLeft !== null ? (d.daysLeft < 0 ? `, ${-d.daysLeft} day(s) overdue` : `, ${d.daysLeft} day(s) left`) : ""}`,
-                      `à remettre le ${d.dueOn}${d.daysLeft !== null ? (d.daysLeft < 0 ? `, en retard de ${-d.daysLeft} jour(s)` : `, ${d.daysLeft} jour(s) restant(s)`) : ""}`)
+        : d.dueOn ? t(`due ${D(d.dueOn)}${d.daysLeft !== null ? (d.daysLeft < 0 ? `, ${fmtDays(-d.daysLeft, "en")} overdue` : `, ${fmtDays(d.daysLeft, "en")} left`) : ""}`,
+                      `à remettre le ${D(d.dueOn)}${d.daysLeft !== null ? (d.daysLeft < 0 ? `, en retard de ${fmtDays(-d.daysLeft, "fr")}` : `, ${fmtDays(d.daysLeft, "fr")} restant${d.daysLeft > 1 ? "s" : ""}`) : ""}`)
         : t("date not set yet", "date non fixée pour l’instant");
       return `${label} (${rule}): ${state}${d.detail ? `; ${d.detail}` : ""}`;
     });
     push({ label: "Program agreement", path: "/journey", text: t(
-      `Your program agreement${a.signedOn ? ` was signed on ${a.signedOn}` : " is not signed yet"}${a.activatedOn ? ` and activated on ${a.activatedOn}` : ""}. Lumière support ${a.supportEndsOn ? `runs until ${a.supportEndsOn} (${a.supportMonthsLeft} month(s) left)` : `lasts ${a.supportMonths} months from activation`}; school platform access lasts up to ${a.accessMonths} months from activation${a.accessEndsOn ? ` (until ${a.accessEndsOn})` : ""}. Deadlines: ${dl.join("; ")}.`,
-      `Votre entente de programme${a.signedOn ? ` a été signée le ${a.signedOn}` : " n’est pas encore signée"}${a.activatedOn ? ` et activée le ${a.activatedOn}` : ""}. L’accompagnement Lumière ${a.supportEndsOn ? `se poursuit jusqu’au ${a.supportEndsOn} (${a.supportMonthsLeft} mois restant(s))` : `dure ${a.supportMonths} mois à partir de l’activation`}; l’accès à la plateforme de l’école dure jusqu’à ${a.accessMonths} mois à partir de l’activation${a.accessEndsOn ? ` (jusqu’au ${a.accessEndsOn})` : ""}. Échéances : ${dl.join(" ; ")}.`) });
+      `Your program agreement${a.signedOn ? ` was signed on ${D(a.signedOn)}` : " is not signed yet"}${a.activatedOn ? ` and activated on ${D(a.activatedOn)}` : ""}. Lumière support ${a.supportEndsOn ? `runs until ${D(a.supportEndsOn)} (${fmtMonths(a.supportMonthsLeft ?? 0, "en")} left)` : `lasts ${a.supportMonths} months from activation`}; school platform access lasts up to ${a.accessMonths} months from activation${a.accessEndsOn ? ` (until ${D(a.accessEndsOn)})` : ""}. Deadlines: ${dl.join("; ")}.`,
+      `Votre entente de programme${a.signedOn ? ` a été signée le ${D(a.signedOn)}` : " n’est pas encore signée"}${a.activatedOn ? ` et activée le ${D(a.activatedOn)}` : ""}. L’accompagnement Lumière ${a.supportEndsOn ? `se poursuit jusqu’au ${D(a.supportEndsOn)} (${fmtMonths(a.supportMonthsLeft ?? 0, "fr")} restant${(a.supportMonthsLeft ?? 0) > 1 ? "s" : ""})` : `dure ${a.supportMonths} mois à partir de l’activation`}; l’accès à la plateforme de l’école dure jusqu’à ${a.accessMonths} mois à partir de l’activation${a.accessEndsOn ? ` (jusqu’au ${D(a.accessEndsOn)})` : ""}. Échéances : ${dl.join(" ; ")}.`) });
     if (a.goal) push({ label: "Goal", path: "/journey", text: t(
       `Your post-secondary goal: ${clip(a.goal.field, 80)} in ${clip(a.goal.region, 60)}${a.goal.targets.length ? `. Target programs: ${a.goal.targets.slice(0, 4).map((x) => `${clip(x.name, 80)} (${clip(x.city, 40)}, ${clip(x.track, 40)})`).join("; ")}` : ""}.`,
       `Votre objectif postsecondaire : ${clip(a.goal.field, 80)} — ${clip(a.goal.region, 60)}${a.goal.targets.length ? `. Programmes visés : ${a.goal.targets.slice(0, 4).map((x) => `${clip(x.name, 80)} (${clip(x.city, 40)}, ${clip(x.track, 40)})`).join(" ; ")}` : ""}.`) });
@@ -169,22 +170,22 @@ function composeJourneyRecords(j: StudentJourneyView | null, push: (r: Omit<Stud
   const upcoming = j.checkpoints.filter((c) => c.status === "upcoming").map(label);
   const none = t("none", "aucun");
   push({ label: "Checkpoints", path: "/journey", text: t(
-    `Your Lumière checkpoints. Done: ${listOf(done, none)}. Next: ${next ? `${label(next)}${next.plannedOn ? `, planned ${next.plannedOn}` : ""}` : "none"}. Coming up: ${listOf(upcoming, none)}.`,
-    `Vos jalons Lumière. Terminés : ${listOf(done, none)}. Prochain : ${next ? `${label(next)}${next.plannedOn ? `, prévu le ${next.plannedOn}` : ""}` : "aucun"}. À venir : ${listOf(upcoming, none)}.`) });
+    `Your Lumière checkpoints. Done: ${listOf(done, none)}. Next: ${next ? `${label(next)}${next.plannedOn ? `, planned ${D(next.plannedOn)}` : ""}` : "none"}. Coming up: ${listOf(upcoming, none)}.`,
+    `Vos jalons Lumière. Terminés : ${listOf(done, none)}. Prochain : ${next ? `${label(next)}${next.plannedOn ? `, prévu le ${D(next.plannedOn)}` : ""}` : "aucun"}. À venir : ${listOf(upcoming, none)}.`) });
   const p = j.pace;
   if (p) {
     const exams = t(`Exams logged this week: ${p.examsThisWeek}${p.weeklyExamLimit ? ` of ${p.weeklyExamLimit}` : ""}.`, `Examens consignés cette semaine : ${p.examsThisWeek}${p.weeklyExamLimit ? ` sur ${p.weeklyExamLimit}` : ""}.`);
     push({ label: "Pace", path: "/journey", text: p.itemsLogged28d === 0
-      ? t(`You have not logged any work in the last 28 days${p.lastLoggedOn ? ` (last logged ${p.lastLoggedOn})` : ""}. ${exams}`, `Vous n’avez consigné aucun travail au cours des 28 derniers jours${p.lastLoggedOn ? ` (dernière consignation le ${p.lastLoggedOn})` : ""}. ${exams}`)
-      : t(`From the work you logged in the last 28 days (${p.itemsLogged28d} item(s), last on ${p.lastLoggedOn}): about ${p.creditsPerWeek} credit(s) per week${p.estimatedFinishOn ? `, which would reach the remaining credits around ${p.estimatedFinishOn}` : ""}. This is an estimate from your own reports; credits count only once the school confirms them. ${p.stale ? "Nothing was logged in the last 7 days. " : ""}${exams}`,
-          `D’après le travail consigné au cours des 28 derniers jours (${p.itemsLogged28d} élément(s), dernier le ${p.lastLoggedOn}) : environ ${n2(p.creditsPerWeek ?? 0)} crédit(s) par semaine${p.estimatedFinishOn ? `, ce qui atteindrait les crédits restants vers le ${p.estimatedFinishOn}` : ""}. C’est une estimation fondée sur vos propres déclarations; les crédits ne comptent qu’une fois confirmés par l’école. ${p.stale ? "Rien n’a été consigné au cours des 7 derniers jours. " : ""}${exams}`) });
+      ? t(`You have not logged any work in the last 28 days${p.lastLoggedOn ? ` (last logged ${D(p.lastLoggedOn)})` : ""}. ${exams}`, `Vous n’avez consigné aucun travail au cours des 28 derniers jours${p.lastLoggedOn ? ` (dernière consignation le ${D(p.lastLoggedOn)})` : ""}. ${exams}`)
+      : t(`From the work you logged in the last 28 days (${fmtItems(p.itemsLogged28d, "en")}, last on ${D(p.lastLoggedOn)}): about ${p.creditsPerWeek} ${p.creditsPerWeek === 1 ? "credit" : "credits"} per week${p.estimatedFinishOn ? `, which would reach the remaining credits around ${D(p.estimatedFinishOn)}` : ""}. This is an estimate from your own reports; credits count only once the school confirms them. ${p.stale ? "Nothing was logged in the last 7 days. " : ""}${exams}`,
+          `D’après le travail consigné au cours des 28 derniers jours (${fmtItems(p.itemsLogged28d, "fr")}, dernier le ${D(p.lastLoggedOn)}) : environ ${n2(p.creditsPerWeek ?? 0)} ${(p.creditsPerWeek ?? 0) >= 2 ? "crédits" : "crédit"} par semaine${p.estimatedFinishOn ? `, ce qui atteindrait les crédits restants vers le ${D(p.estimatedFinishOn)}` : ""}. C’est une estimation fondée sur vos propres déclarations; les crédits ne comptent qu’une fois confirmés par l’école. ${p.stale ? "Rien n’a été consigné au cours des 7 derniers jours. " : ""}${exams}`) });
   }
   if (a) {
     const upcomingSessions = j.sessions.filter((s) => s.status === "requested" || s.status === "confirmed");
     const stFr: Record<string, string> = { requested: "demandée", confirmed: "confirmée" };
     push({ label: "Orientation sessions", path: "/journey", text: t(
       `Orientation sessions: ${a.orientationSessionsUsed} of ${a.orientationSessionsIncluded} used.${upcomingSessions.length ? ` Upcoming: ${upcomingSessions.slice(0, 3).map((s) => `${s.slotAt.slice(0, 16).replace("T", " ")} (${s.status})`).join("; ")}.` : ""}${a.orientationSessionsUsed >= a.orientationSessionsIncluded ? " No sessions left." : ""}`,
-      `Séances d’orientation : ${a.orientationSessionsUsed} sur ${a.orientationSessionsIncluded} utilisée(s).${upcomingSessions.length ? ` À venir : ${upcomingSessions.slice(0, 3).map((s) => `${s.slotAt.slice(0, 16).replace("T", " ")} (${stFr[s.status] ?? s.status})`).join(" ; ")}.` : ""}${a.orientationSessionsUsed >= a.orientationSessionsIncluded ? " Il ne reste aucune séance." : ""}`) });
+      `Séances d’orientation : ${a.orientationSessionsUsed} sur ${a.orientationSessionsIncluded} utilisée${a.orientationSessionsUsed > 1 ? "s" : ""}.${upcomingSessions.length ? ` À venir : ${upcomingSessions.slice(0, 3).map((s) => `${s.slotAt.slice(0, 16).replace("T", " ")} (${stFr[s.status] ?? s.status})`).join(" ; ")}.` : ""}${a.orientationSessionsUsed >= a.orientationSessionsIncluded ? " Il ne reste aucune séance." : ""}`) });
   }
 }
 
@@ -235,7 +236,7 @@ export function isRecordAnswerText(content: string): boolean {
  * does (or for the dashboard's inherently personal prompts: "most urgent", "on track", "my roadmap"), so a general
  * question such as "What is a credit hour?" still gets a general answer instead of a dump of the student's record.
  */
-const PERSONAL = /\b(my|me|mine|i|i'm|im|i've|am i|do i|have i|should i)\b|\b(mes|mon|ma|moi|je|j'|me|m'|suis-je|ai-je|dois-je|il me reste)\b|\b(urgent|on track|dans les temps|en retard|feuille de route|roadmap)\b/;
+const PERSONAL = /\b(my|me|mine|i|i'm|im|i've|am i|do i|have i|should i)\b|\b(mes|mon|ma|moi|je|j'|me|m'|suis-je|ai-je|dois-je|il me reste)\b|\b(urgent|on track|dans les temps|en retard)\b|\b(behind|ahead|en avance|ou en suis|ou j'en suis|balance|solde|owe|still need|what should|quoi (?:etudier|faire)|deadlines?|echeances?|tasks?|taches?|to do|a faire|prochaines? (echeance|tache|etape|seance)s?|next (exam|task|deadline|checkpoint))\b/;
 export function isPersonalQuestion(message: string): boolean {
   return PERSONAL.test(fold(message));
 }
