@@ -81,3 +81,4 @@ The owner checked Supabase → project "Lumiere Student Portal V2" (`rheronevecs
 - **Daily backups: NONE. PITR: NOT AVAILABLE** (PITR requires Pro plus the paid add-on).
 - The only existing copies are the runner's pre-release `pg_dump`s in `.s26-private-backup/`. These cover the public schema only (no Auth users, no Storage files) and are taken only when a schema step applies.
 - **Recommendation (owner decision, involves cost):** upgrade the project to Pro, for daily backups with 7-day retention, and so that the production project is not paused for inactivity. Until then, take a manual full `pg_dump` (section 2, "Manual full dump") before any risky operation, and periodically.
+- **Owner decision (2026-11-02): option B.** A nightly encrypted backup on the existing OVH VPS (the same host and offline recovery key as ClientDesk), instead of the Supabase Pro upgrade. Files and install steps: `deploy/backup-ovh-lumiere/README.md`.

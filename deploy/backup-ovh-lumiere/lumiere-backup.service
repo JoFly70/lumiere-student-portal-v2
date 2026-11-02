@@ -1,0 +1,35 @@
+[Unit]
+Description=Lumiere Student Portal PRODUCTION database backup (dump, encrypt, decrypt-verify, retain 14 days)
+Wants=network-online.target
+After=network-online.target
+StartLimitIntervalSec=6h
+StartLimitBurst=3
+
+[Service]
+Type=oneshot
+User=lpbackup
+Group=lpbackup
+LoadCredentialEncrypted=dburl:/etc/credstore.encrypted/lumiere-backup.dburl
+LoadCredentialEncrypted=agekey:/etc/credstore.encrypted/lumiere-backup.agekey
+ExecStart=/opt/lumiere-backup/lumiere-backup.sh
+Restart=on-failure
+RestartSec=20min
+TimeoutStartSec=1h
+# Never compete with ClientDesk's backup or the Documenso containers.
+Nice=10
+IOSchedulingClass=idle
+MemoryMax=512M
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ReadWritePaths=/var/backups/lumiere-portal
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictNamespaces=yes
+LockPersonality=yes
+CapabilityBoundingSet=
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+UMask=0077

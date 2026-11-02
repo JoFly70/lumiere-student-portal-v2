@@ -1,0 +1,11 @@
+[Unit]
+Description=Lumiere Student Portal PRODUCTION database backup, nightly
+
+[Timer]
+# 03:40 UTC: clear of ClientDesk's 02:20 run and its Sunday 05:10 drill.
+OnCalendar=*-*-* 03:40:00 UTC
+RandomizedDelaySec=5m
+Persistent=true
+
+[Install]
+WantedBy=timers.target
