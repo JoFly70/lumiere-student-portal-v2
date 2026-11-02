@@ -64,3 +64,29 @@ curl -fsSL https://raw.githubusercontent.com/JoFly70/lumiere-student-portal-v2/c
 | Hosted acceptance | Run by the runner after publishing; not performed from this session. |
 
 **S34 is not live.** It is ready to release.
+
+## Live release log (2026-11-02)
+
+**Before the release:**
+- The owner set `SPARK_ASSISTANT_STUDENT_POLICY` to empty, so student live AI was off.
+- The owner resolved the Meta developer billing. The same synthetic provider probe then returned HTTP 200.
+
+**Release:**
+- Release branch `claude/s26-owner-and-first-student-finish` fast-forwarded `81256aa..2188ee3` with the owner's approval.
+- S26 runner (release marker) at `6fb9634`:
+  - sync, build and provision: PASS;
+  - schema steps: SKIPPED (already applied);
+  - ready to publish at 19:51 UTC.
+- The owner republished. Replit reported the publish as `success`, and `/health` returned `release: 6fb963409548a8df2e80d506454906dd96808708`, `status: ok`, `database: ok`.
+- The first runner session was stopped with Ctrl+C before acceptance ran. A second run (sync 20:18 UTC) passed intake, then ran acceptance.
+
+**Hosted acceptance (20:39 UTC): PASS.**
+- Required: **61/61 PASS**, 0 FAIL.
+- Optional: 33 PASS, 1 FAIL, 1 SKIPPED.
+  - The FAIL is `browser.student.subjects-tab`, the known outdated check (also failing at S32).
+  - The SKIPPED check is `s29.fleet-admin` (Fleet copilot disabled by flag).
+- `AI: functional PASS; requested model PASS; provider-served model PASS`.
+- Owner AI EN/FR answers pass; they failed at S32/S32.1 because of the billing issue.
+- The admin browser pages after the support desk now pass (they failed at S32).
+
+**S34 is LIVE.** Remaining: re-enable the student policy, then verify (owner); check backups and PITR (owner).
