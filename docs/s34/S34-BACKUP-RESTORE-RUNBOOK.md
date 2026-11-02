@@ -82,3 +82,10 @@ The owner checked Supabase → project "Lumiere Student Portal V2" (`rheronevecs
 - The only existing copies are the runner's pre-release `pg_dump`s in `.s26-private-backup/`. These cover the public schema only (no Auth users, no Storage files) and are taken only when a schema step applies.
 - **Recommendation (owner decision, involves cost):** upgrade the project to Pro, for daily backups with 7-day retention, and so that the production project is not paused for inactivity. Until then, take a manual full `pg_dump` (section 2, "Manual full dump") before any risky operation, and periodically.
 - **Owner decision (2026-11-02): option B.** A nightly encrypted backup on the existing OVH VPS (the same host and offline recovery key as ClientDesk), instead of the Supabase Pro upgrade. Files and install steps: `deploy/backup-ovh-lumiere/README.md`.
+- **Installed and verified (2026-11-02 22:41 UTC).** Owner ran `deploy/backup-ovh-lumiere/install.sh` on the OVH VPS (`ssh ovh-sign`, host `vps-f5d4907f`).
+  - First backup: `status: PASS`. The dump was checked for core tables, encrypted to the offline and operational keys, and decrypt-verified.
+  - Timer `lumiere-backup.timer`: nightly around 03:40 UTC (next run 2026-11-03 03:43 UTC); 14-day retention.
+  - Operational recipient (public): `age1d8wy20vfs8uuvwtntleuha0qtgx89fp9h8q2ut8lrqmlhyshe34qlyeeqr`.
+  - Connection: Supabase Session pooler (`aws-0-us-west-2.pooler.supabase.com:5432`), stored only as an encrypted systemd credential.
+  - **Restore from this backup: not yet rehearsed.** A restore with the offline key into a fresh database is proven only in the test suite (`tests/s34-ovh-backup-script.test.ts`).
+  - Not covered: Supabase Storage files (scans and photos).
