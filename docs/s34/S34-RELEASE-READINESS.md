@@ -90,3 +90,15 @@ curl -fsSL https://raw.githubusercontent.com/JoFly70/lumiere-student-portal-v2/c
 - The admin browser pages after the support desk now pass (they failed at S32).
 
 **S34 is LIVE.** Remaining: re-enable the student policy, then verify (owner); check backups and PITR (owner).
+
+**Student live AI re-enabled (21:5x UTC).**
+- The owner set `SPARK_ASSISTANT_STUDENT_POLICY=minor_safe_v1` and republished (publish status `success`).
+- Verification run (`production-acceptance.ts --skip-browser --out s26-evidence/s34-student-ai`, 21:51–21:54 UTC): **PASS, 61/61 required**.
+  - `assistant.student-status`: `mode: live`.
+  - `assistant.student-message-fr`: `mode: live`, with the AI notice.
+  - Owner AI EN/FR: live, model requested = served = `muse-spark-1.3-contributor`.
+  - Diagnostics: running SHA = marker SHA `6fb9634`.
+- **REDIS_URL is not configured** (`distributedRateLimit: false`, diagnostics `rate_limit: degraded`). Rate-limit counters are kept in memory per instance. Adding Redis is optional; it is only needed for exact limits across multiple autoscaled instances.
+- Custom domain `lumiereportal.app` is still attached elsewhere (a separate Replit Support case; not touched).
+
+Remaining owner item: Supabase backup and PITR verification (runbook §2).
