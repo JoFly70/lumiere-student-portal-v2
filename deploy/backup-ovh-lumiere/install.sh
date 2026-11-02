@@ -53,6 +53,8 @@ if [ ! -s "$STORE/lumiere-backup.dburl" ] || [ "${1:-}" = "--set-db-url" ]; then
   fi
   # Remove terminal paste markers (ESC[200~ / ESC[201~), quotes and any invisible characters around the address.
   URL=$(printf '%s' "$URL" | sed 's/\x1b\[20[01]~//g' | LC_ALL=C tr -cd '[:print:]' | sed "s/^[[:space:]\"']*//;s/[[:space:]\"']*$//")
+  # A double paste glues two copies together ("...5432/postgrespostgresql://..."): keep only the first address.
+  URL=$(URL="$URL" python3 -c 'import os,re;m=re.findall(r"postgres(?:ql)?://.*?(?=postgres(?:ql)?://|$)",os.environ["URL"]);print(m[0] if m else os.environ["URL"],end="")')
   case "$URL" in postgres://*|postgresql://*) ;; *) echo "   That does not look like a database address (it should start with postgresql://). Nothing was saved." >&2; exit 1;; esac
   case "$URL" in *"$REF"*) ;; *) echo "   That address is not for the Lumière production project ($REF). Nothing was saved." >&2; exit 1;; esac
   # Safe summary (never the password) so a wrong paste is visible.
