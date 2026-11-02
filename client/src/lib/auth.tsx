@@ -218,10 +218,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (typeof window !== 'undefined') rememberReturnPath(`${window.location.pathname}${window.location.search}${window.location.hash}`);
       setLocation('/login?expired=1');
     };
+    // 'rejected' = the server refused the session (sign out); 'transient' = 429 / 5xx / offline (keep the session).
+    let lastOutcome: 'ok' | 'rejected' | 'transient' = 'transient';
+    let retryAfterMs = 30_000;
     const refresh = (): Promise<boolean> => {
       if (refreshing) return refreshing;
       refreshing = (async () => {
-        if (!session.refresh_token) return false;
+        if (!session.refresh_token) { lastOutcome = 'rejected'; return false; }
         try {
           const res = await fetch('/api/auth/refresh', {
             method: 'POST',
@@ -232,13 +235,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const body = await res.json();
             if (!cancelled && body?.session?.access_token) {
               publishAuthState(user, { ...session, ...body.session });
+              lastOutcome = 'ok';
               return true;
             }
+            lastOutcome = 'transient';
             return false;
           }
-          if (res.status === 401 || res.status === 403) { expire(); return false; }
-          return false; // 503 / rate limited: keep the session, try again later
+          if (res.status === 401 || res.status === 403) { lastOutcome = 'rejected'; expire(); return false; }
+          // S34: 429 (rate limited), 503 and other failures are transient: keep the session and retry later.
+          lastOutcome = 'transient';
+          const retryAfter = res.status === 429 ? Number(res.headers?.get?.('Retry-After')) : NaN;
+          retryAfterMs = Number.isFinite(retryAfter) && retryAfter > 0 ? Math.min(Math.max(retryAfter * 1000, 30_000), 5 * 60_000) : 30_000;
+          return false;
         } catch {
+          lastOutcome = 'transient';
           return false; // offline: keep the session
         } finally {
           refreshing = null;
@@ -248,7 +258,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
     const onUnauthorized = async () => {
       const ok = await refresh();
-      if (!ok && !cancelled && session.expires_at * 1000 <= Date.now()) expire();
+      // Only a refusal (or no way to renew) signs the person out; a transient failure never does.
+      if (!ok && !cancelled && lastOutcome === 'rejected' && session.expires_at * 1000 <= Date.now()) expire();
     };
     window.addEventListener(SESSION_EXPIRED_EVENT, onUnauthorized);
     const msLeft = session.expires_at * 1000 - Date.now();
@@ -258,7 +269,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const ok = await refresh();
         if (!ok && !cancelled) {
           if (session.expires_at * 1000 <= Date.now() && !session.refresh_token) expire();
-          else schedule(30_000); // retry; expiry is handled by the refresh outcome
+          else schedule(retryAfterMs); // retry; expiry is handled by the refresh outcome
         }
       }, Math.min(Math.max(ms, 0), 2_000_000_000));
     };

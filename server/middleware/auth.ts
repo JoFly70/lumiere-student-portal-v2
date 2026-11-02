@@ -10,6 +10,7 @@ import { db } from '../lib/db';
 import { users } from '@shared/schema';
 import { eq } from 'drizzle-orm';
 import { ACCOUNT_INACTIVE_RESPONSE, isAccountActive } from '../lib/account-status';
+import { enforceUserRateLimit } from './rate-limit';
 import { emailVerificationRequired, hasRequiredEmailConfirmation, EMAIL_VERIFICATION_REQUIRED_RESPONSE } from '../lib/auth-policy';
 
 // Local JWT secret (must match routes.ts)
@@ -148,6 +149,8 @@ export async function requireAuth(
           role: userData[0].role,
         };
         req.audit = { actorId: userData[0].id };
+        // S34: per-user rate limit, keyed by the identity just verified above.
+        if (!(await enforceUserRateLimit(req, res))) return;
         return next();
       }
 
@@ -221,6 +224,8 @@ export async function requireAuth(
         actorId: userData[0].id,
       };
 
+      // S34: per-user rate limit, keyed by the identity just verified above.
+      if (!(await enforceUserRateLimit(req, res))) return;
       next();
     } catch (supabaseError) {
       logger.warn('Supabase auth failed', { error: supabaseError });

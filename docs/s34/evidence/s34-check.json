@@ -1,0 +1,24 @@
+[
+ {
+  "lang": "fr",
+  "shownAfterMs": 799,
+  "errorText": "Nous n’avons pas pu charger vos programmes\n\nC’est généralement temporaire. Votre tableau de bord s’affichera dès que la connexion sera rétablie.\n\nRéessayer",
+  "path": "/flight-deck",
+  "signedIn": true,
+  "universityDeckShown": false,
+  "recoveredHasHsDeck": true,
+  "recoveredSnippet": "TABLEAU DE BORD\nBonsoir, Amy.\nEn avance sur le plan\nSemaine 8 sur 16\n48\nJOURS\nEnglish 3 · Written project: research pape",
+  "errors": []
+ },
+ {
+  "lang": "en",
+  "shownAfterMs": 800,
+  "errorText": "We could not load your programs\n\nThis is usually temporary. Your Flight Deck will appear as soon as the connection is back.\n\nTry again",
+  "path": "/flight-deck",
+  "signedIn": true,
+  "universityDeckShown": false,
+  "recoveredHasHsDeck": true,
+  "recoveredSnippet": "FLIGHT DECK\nGood evening, Amy.\nAhead of plan\nWeek 8 of 16\n48\nDAYS\nEnglish 3 · Written project: research paper\nPlanned in",
+  "errors": []
+ }
+]

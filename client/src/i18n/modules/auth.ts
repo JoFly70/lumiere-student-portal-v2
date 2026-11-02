@@ -101,6 +101,11 @@ export const authEn = {
   "auth.resendVerification.tooMany": "Too many requests. Please try again in an hour.",
   "auth.resendVerification.sentTitle": "Check your email",
   "auth.resendVerification.sentBody": "If that address has a pending verification, a new email is on its way.",
+  "auth.requests.rateLimited": "You have made a lot of requests in a short time. Please wait a minute, then try again.",
+  "auth.requests.rateLimitedWait": "You have made a lot of requests in a short time. Please wait about {minutes} min, then try again.",
+  "auth.programs.loadError.title": "We could not load your programs",
+  "auth.programs.loadError.body": "This is usually temporary. Your Flight Deck will appear as soon as the connection is back.",
+  "auth.programs.loadError.retry": "Try again",
 } as const satisfies Record<string, string>;
 
 export const authFr: Record<keyof typeof authEn, string> = {
@@ -198,4 +203,9 @@ export const authFr: Record<keyof typeof authEn, string> = {
   "auth.resendVerification.tooMany": "Trop de demandes. Veuillez réessayer dans une heure.",
   "auth.resendVerification.sentTitle": "Consultez votre messagerie",
   "auth.resendVerification.sentBody": "Si une vérification est en attente pour cette adresse, un nouveau courriel est en route.",
+  "auth.requests.rateLimited": "Vous avez effectué beaucoup de demandes en peu de temps. Veuillez patienter une minute, puis réessayer.",
+  "auth.requests.rateLimitedWait": "Vous avez effectué beaucoup de demandes en peu de temps. Veuillez patienter environ {minutes} min, puis réessayer.",
+  "auth.programs.loadError.title": "Nous n’avons pas pu charger vos programmes",
+  "auth.programs.loadError.body": "C’est généralement temporaire. Votre tableau de bord s’affichera dès que la connexion sera rétablie.",
+  "auth.programs.loadError.retry": "Réessayer",
 };

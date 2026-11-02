@@ -50,7 +50,7 @@ export function useStudentPrograms(enabled = true) {
     queryKey: [...STUDENT_PROGRAMS_QUERY_KEY],
     queryFn: fetchStudentPrograms,
     enabled,
-    retry: 1,
+    retry: 2,
     staleTime: 60_000,
   });
   const access = programAccess(query.data);
@@ -61,9 +61,13 @@ export function useStudentPrograms(enabled = true) {
     hasUniversity: kinds.hasUniversity,
     /** A degree program and no high school program: high-school pages do not apply to this student. */
     degreeOnly: kinds.hasUniversity && !kinds.hasHighSchool,
-    /** True until the first answer (or failure) arrives. On failure the access is "no high school", i.e. the university default. */
+    /** True until the first answer (or failure) arrives. On failure `lookupFailed` is true; do not treat that as "university" for routing. */
     isLoading: enabled && query.isLoading,
     isError: query.isError,
+    /** S34: true when the lookup failed and there is no earlier answer to fall back on. Callers must not guess a deck then. */
+    lookupFailed: query.isError && query.data === undefined,
+    /** Retries the lookup (used by the "try again" state). */
+    retry: () => { void query.refetch(); },
   };
 }
 

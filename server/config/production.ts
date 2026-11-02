@@ -116,28 +116,52 @@ export const corsConfig: CorsOptions = {
   maxAge: 86400, // 24 hours
 };
 
-// Rate limiting configuration
+// Rate limiting configuration (S34 / S33-02).
+//
+// Middleware order for /api (see server/index.ts and server/middleware/auth.ts):
+//   1. webhooks (no limiter)
+//   2. ipCeiling      - ONE general limiter, keyed by client IP, runs before identity is known. It is a flood
+//                       ceiling sized for an office/school behind one NAT, not a fairness limit.
+//   3. route-level auth limiters: login (strict, failures only), refresh (own bucket), signup, resets
+//   4. requireAuth verifies the bearer token, sets req.user, then runs the per-user limiters
+//      (user: every authenticated request; adminUser: additionally /api/admin/*), keyed by the verified user id.
+// Identity for (4) comes only from requireAuth (verified Supabase token / dev-test local JWT), never from a header.
+//
+// Sizing evidence (S33): the acceptance runner spends ~14 /api requests per page view; Admin Diagnostics polls
+// every 60 s (15 per 15 min per open tab); the support desk polls too. A busy staff member stays well under 600.
 export const rateLimitConfig = {
-  // General API rate limit
-  api: {
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // 100 requests per window per IP
-    message: 'Too many requests from this IP, please try again later',
-    standardHeaders: true,
-    legacyHeaders: false,
-  },
-  // Stricter limit for admin routes
-  admin: {
+  // Pre-auth per-IP flood ceiling: ~3 staff + students behind one NAT, plus unauthenticated traffic.
+  ipCeiling: {
     windowMs: 15 * 60 * 1000,
-    max: 30, // 30 requests per window
-    message: 'Too many admin requests, please try again later',
+    max: 1500,
+    message: 'Too many requests from this network, please try again later',
     standardHeaders: true,
     legacyHeaders: false,
   },
-  // Auth endpoints (login, signup)
+  // Per authenticated user, all /api traffic.
+  user: {
+    windowMs: 15 * 60 * 1000,
+    max: 600,
+  },
+  // Per authenticated user, /api/admin/* only (counted in addition to `user`).
+  adminUser: {
+    windowMs: 15 * 60 * 1000,
+    max: 300,
+  },
+  // Login brute-force protection: per IP, failed attempts only (successful sign-ins are not counted).
+  login: {
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+  },
+  // Session renewal: its own bucket so renewals never consume the login budget. Per IP.
+  refresh: {
+    windowMs: 15 * 60 * 1000,
+    max: 60,
+  },
+  // Legacy strict bucket (5 / 15 min); no longer mounted on login or refresh.
   auth: {
     windowMs: 15 * 60 * 1000,
-    max: 5, // 5 attempts per 15 minutes
+    max: 5,
     message: 'Too many authentication attempts, please try again later',
     standardHeaders: true,
     legacyHeaders: false,

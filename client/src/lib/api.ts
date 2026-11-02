@@ -1,5 +1,6 @@
 // Authenticated API client utility
 import { isSessionExpiredResponse, notifySessionExpired } from './session-expiry';
+import { parseRetryAfterSeconds, rateLimitedMessage, RATE_LIMITED_CODE } from './rate-limit-message';
 
 let authToken: string | null = null;
 let csrfToken: string | null = null;
@@ -111,6 +112,10 @@ export async function apiRequest<T = any>(
   });
 
   if (!response.ok) {
+    if (response.status === 429) {
+      const retryAfter = parseRetryAfterSeconds(response.headers?.get?.('Retry-After'));
+      throw new ApiError(rateLimitedMessage(retryAfter), 429, RATE_LIMITED_CODE, { retryAfterSeconds: retryAfter });
+    }
     let error = await response.json().catch(() => ({ error: 'Request failed' }));
     // A rejected CSRF token (expired or rotated): renew it once and repeat the request.
     if (stateChanging && token && isCsrfRejection(response.status, error)) {

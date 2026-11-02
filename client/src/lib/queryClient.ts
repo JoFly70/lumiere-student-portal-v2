@@ -1,9 +1,22 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 import { freshCsrfToken, getAuthToken } from "./api";
 import { isSessionExpiredResponse, notifySessionExpired } from "./session-expiry";
+import { parseRetryAfterSeconds, rateLimitedMessage } from "./rate-limit-message";
+
+/** Error for HTTP 429: carries the status, but its message is the friendly localized text (no raw JSON). */
+export class RateLimitedError extends Error {
+  readonly status = 429;
+  readonly retryAfterSeconds: number | null;
+  constructor(retryAfterSeconds: number | null) {
+    super(rateLimitedMessage(retryAfterSeconds));
+    this.name = "RateLimitedError";
+    this.retryAfterSeconds = retryAfterSeconds;
+  }
+}
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
+    if (res.status === 429) throw new RateLimitedError(parseRetryAfterSeconds(res.headers?.get?.("Retry-After")));
     const text = (await res.text()) || res.statusText;
     if (getAuthToken() && isSessionExpiredResponse(res.status, text)) notifySessionExpired();
     throw new Error(`${res.status}: ${text}`);

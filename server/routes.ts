@@ -12,11 +12,11 @@ import { db } from "./lib/db";
 import { users } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import {
-  authRateLimit,
+  loginRateLimit,
+  refreshRateLimit,
   passwordResetRateLimit,
   passwordUpdateRateLimit,
   signupRateLimit,
-  apiRateLimit,
 } from "./middleware/rate-limit";
 import { generateCsrfToken, requireCsrf, deleteCsrfToken } from "./middleware/csrf";
 import twoFactorRoutes from "./routes/two-factor";
@@ -142,8 +142,7 @@ window.ENV = {
     res.send(envJs);
   });
 
-  // Apply general rate limiting to all API routes (100 req/15min)
-  app.use("/api", apiRateLimit);
+  // S34: no general limiter here. The single /api IP ceiling is mounted in server/index.ts; per-user limits run in requireAuth.
 
   // Sign-up endpoint - creates new user account
   // Apply strict rate limiting: 3 signups per hour per IP
@@ -534,11 +533,11 @@ window.ENV = {
   });
 
   // Authentication endpoint
-  // Apply aggressive rate limiting: 5 attempts per 15 minutes per IP
+  // Login: failed attempts only, 10 / 15 min per IP (loginRateLimit). Refresh has its own bucket (refreshRateLimit).
   // S26: renew a session before its access token expires (sessions otherwise end after ~1 hour).
   // Takes only the refresh token; returns a new access/refresh pair. The account must still be
   // active and email-confirmed, exactly as at login. Invalid/revoked refresh tokens get 401.
-  app.post("/api/auth/refresh", authRateLimit, async (req, res) => {
+  app.post("/api/auth/refresh", refreshRateLimit, async (req, res) => {
     const refreshToken = req.body?.refresh_token;
     if (typeof refreshToken !== "string" || refreshToken.length < 10 || refreshToken.length > 4096) {
       return res.status(400).json({ error: "refresh_token required" });
@@ -565,7 +564,7 @@ window.ENV = {
     }
   });
 
-  app.post("/api/auth/login", authRateLimit, async (req, res) => {
+  app.post("/api/auth/login", loginRateLimit, async (req, res) => {
     try {
       const { email, password } = req.body;
 
@@ -1043,16 +1042,21 @@ window.ENV = {
     try {
       const { assignCoursesToStudent } = await import('./services/assignment-service.js');
       const { courses } = req.body;
-      
-      if (!courses || !Array.isArray(courses)) {
-        return res.status(400).json({ error: "courses array required" });
-      }
-      
+
       // Authenticate user
       const user = await getUserFromToken(req.headers.authorization);
 
       if (!user) {
         return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      // S34 (S33-06): the assigned plan is staff-managed; students may not assign courses (mirrors /api/enrollments).
+      if ((await getUserRole(user.id)) === 'student') {
+        return roadmapStaffManaged(res);
+      }
+
+      if (!courses || !Array.isArray(courses)) {
+        return res.status(400).json({ error: "courses array required" });
       }
 
       // Self-assignment: user assigns courses to themselves
@@ -1208,6 +1212,15 @@ window.ENV = {
   // System status check - verify simplified schema is ready
   app.get("/api/system/check", async (req, res) => {
     try {
+      // S34 (S33-06): internal status is admin-only; unauthenticated callers learn nothing.
+      const checkUser = await getUserFromToken(req.headers.authorization);
+      if (!checkUser) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+      if ((await getUserRole(checkUser.id)) !== 'admin') {
+        return res.status(403).json({ error: "Forbidden" });
+      }
+
       if (!isSupabaseConfigured) {
         return res.json({
           schema_ready: false,
@@ -1259,6 +1272,12 @@ window.ENV = {
         .maybeSingle();
 
       const userRole = dbUser?.role || 'student';
+
+      // S34 (S33-06): the assigned plan is staff-managed; students may not generate plans (mirrors /api/enrollments).
+      if (userRole === 'student') {
+        return roadmapStaffManaged(res);
+      }
+
       const { template_id, pace_hours_per_week, pace_months } = req.body;
 
       if (!template_id) {
@@ -1303,10 +1322,7 @@ window.ENV = {
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined
       });
-      return res.status(500).json({ 
-        error: "Failed to generate plan",
-        details: error instanceof Error ? error.message : String(error)
-      });
+      return res.status(500).json({ error: "Failed to generate plan" });
     }
   });
 

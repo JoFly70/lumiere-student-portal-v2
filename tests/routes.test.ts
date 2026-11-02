@@ -331,8 +331,8 @@ describe('PLAN ISOLATION — POST /api/generate-plan', () => {
     expect(res.body.error).toBeDefined();
   });
 
-  it('returns 200 when student generates own plan', async () => {
-    setupAuthUser({ id: 'student-1', email: 'a@test.com', role: 'student' });
+  it('returns 200 when staff generates own plan (S34: students are refused with 403)', async () => {
+    setupAuthUser({ id: 'student-1', email: 'a@test.com', role: 'staff' });
     mockGenerateRoadmap.mockResolvedValue({
       planId: 'plan-1',
       summary: { totalCredits: 120 },
@@ -597,7 +597,7 @@ describe('PLAN ISOLATION — GET /api/plans/:plan_id', () => {
 
 describe('ROADMAP — own-plan generation exercises the API contract', () => {
   it('returns 200 with plan_id, summary, steps, and financials for own plan', async () => {
-    setupAuthUser({ id: 'student-1', email: 'a@test.com', role: 'student' });
+    setupAuthUser({ id: 'student-1', email: 'a@test.com', role: 'staff' });
     mockGenerateRoadmap.mockResolvedValue({
       planId: 'plan-roadmap-1',
       summary: { totalCredits: 120, totalSteps: 10 },
@@ -627,7 +627,7 @@ describe('ROADMAP — own-plan generation exercises the API contract', () => {
   });
 
   it('does not change academic output — roadmap generator called with correct params', async () => {
-    setupAuthUser({ id: 'student-1', email: 'a@test.com', role: 'student' });
+    setupAuthUser({ id: 'student-1', email: 'a@test.com', role: 'staff' });
     mockGenerateRoadmap.mockResolvedValue({
       planId: 'plan-academic',
       summary: {},

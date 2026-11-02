@@ -807,6 +807,10 @@ describe('Phase 2C — Student Academic Record API Routes', () => {
         passwordUpdateRateLimit: (req: unknown, res: unknown, next: () => void) => next(),
         signupRateLimit: (req: unknown, res: unknown, next: () => void) => next(),
         apiRateLimit: (req: unknown, res: unknown, next: () => void) => next(),
+        // S34: login/refresh have separate limiters
+        loginRateLimit: (req: unknown, res: unknown, next: () => void) => next(),
+        refreshRateLimit: (req: unknown, res: unknown, next: () => void) => next(),
+        enforceUserRateLimit: async () => true,
       }));
       vi.doMock('../server/middleware/csrf', () => ({
         generateCsrfToken: vi.fn(() => 'mock-csrf'),

@@ -2,7 +2,6 @@ import express, { type Request, Response, NextFunction } from "express";
 import helmet from "helmet";
 import compression from "compression";
 import cors from "cors";
-import rateLimit from "express-rate-limit";
 import { registerRoutes } from "./routes";
 import { configureRequestBody } from "./lib/request-body";
 import { registerHealthRoutes } from "./routes/health";
@@ -15,8 +14,9 @@ import {
   compressionConfig,
 } from "./config/production";
 import { safeRequestContext } from "./lib/log-redaction";
-import { logger, logStartup, generateRequestId } from "./lib/logger";
+import { logger, logStartup, generateRequestId, wasErrorReported } from "./lib/logger";
 import { assertProductionAuthPolicy } from "./lib/production-auth-guard";
+import { ipCeilingRateLimit } from "./middleware/rate-limit";
 import { checkRedisHealth, configureRateLimitBackend, createRateLimitStore, getRateLimitBackend, trackRedisHealth, withCommandTimeout } from "./lib/rate-limit-store";
 import { onResponseFinished, safeLogPath, startS29Runtime } from './services/s29/runtime';
 
@@ -215,17 +215,6 @@ if (redisUrl && isProduction) {
   }
 }
 
-// Rate limiting configuration; the store uses Redis once it is configured above
-const createLimiter = (config: typeof rateLimitConfig.api, prefix: string) => {
-  return rateLimit({
-    ...config,
-    store: createRateLimitStore(prefix),
-  });
-};
-
-const apiLimiter = createLimiter(rateLimitConfig.api, 'rl:api:');
-const adminLimiter = createLimiter(rateLimitConfig.admin, 'rl:admin:');
-
 // Webhook routes MUST come before body parsing AND rate limiting
 declare module 'http' {
   interface IncomingMessage {
@@ -237,9 +226,10 @@ declare module 'http' {
 registerWebhookRoutes(app);
 
 // Apply rate limits AFTER webhooks (webhooks excluded - Stripe handles their own rate limiting)
-app.use('/api/admin', adminLimiter);
-// API limiter must be last (after more specific routes)
-app.use('/api', apiLimiter);
+// S34 (S33-02): exactly ONE general limiter for /api, keyed by IP (pre-auth flood ceiling; trust proxy = 1 hop).
+// Per-user budgets (all /api, plus /api/admin) run inside requireAuth once the token is verified, see
+// server/middleware/rate-limit.ts. Login and refresh have their own route-level limiters in routes.ts.
+app.use('/api', ipCeilingRateLimit);
 
 configureRequestBody(app);
 
@@ -319,7 +309,7 @@ app.use((req, res, next) => {
     });
 
     // Send error to Sentry (if not already sent by Sentry middleware)
-    if (isSentryConfigured && status >= 500) {
+    if (isSentryConfigured && status >= 500 && !wasErrorReported(err)) { // S34: logger.error already reported it
       Sentry.captureException(err, {
         contexts: {
           // Never forward headers (Authorization, cookies) or the query string (?token_hash).

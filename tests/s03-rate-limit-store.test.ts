@@ -61,9 +61,16 @@ describe("shared rate-limit backend", () => {
     const source = fs.readFileSync(path.resolve(process.cwd(), "server/middleware/rate-limit.ts"), "utf8");
     const limiters = source.match(/export const \w+ = rateLimit\(\{/g) ?? [];
     const stores = source.match(/store: createRateLimitStore\('rl:[a-z-]+:'\)/g) ?? [];
-    expect(limiters.length).toBeGreaterThanOrEqual(6);
+    // S34: the duplicate apiRateLimit was removed (6 -> 5 top-level limiters); the ip-ceiling, per-user, login and
+    // refresh limiters are factories whose default stores are checked below.
+    expect(limiters.length).toBeGreaterThanOrEqual(5);
+    const factoryStores = source.match(/\?\? createRateLimitStore\('rl:[a-z-]+:'\)/g) ?? [];
+    const factoryPrefixes = source.match(/createUserLimiter\('rl:[a-z-]+:'/g) ?? [];
+    expect(factoryStores.length).toBeGreaterThanOrEqual(3);
+    expect(factoryPrefixes.length).toBeGreaterThanOrEqual(2);
+    const all = [...stores, ...factoryStores.map((m) => m.replace(/^\?\? /, "")), ...factoryPrefixes.map((m) => m.replace("createUserLimiter(", ""))];
     expect(stores).toHaveLength(limiters.length);
-    expect(new Set(stores).size).toBe(stores.length);
+    expect(new Set(all).size).toBe(all.length);
   });
 
   it("configures Redis stores with sendCommand rather than a shared client store", () => {

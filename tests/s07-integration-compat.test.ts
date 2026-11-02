@@ -56,8 +56,9 @@ describe("S07 integration: roadmap routes alongside the S06 server changes", () 
       expect(i, needle).toBeGreaterThan(-1);
       return i;
     };
-    const adminLimiter = at("app.use('/api/admin', adminLimiter)");
-    const apiLimiter = at("app.use('/api', apiLimiter)");
+    // S34 (S33-02): one pre-auth /api IP ceiling replaces the per-IP admin + api pair (per-user limits run in requireAuth).
+    const apiLimiter = at("app.use('/api', ipCeilingRateLimit)");
+    expect(src).not.toContain("app.use('/api/admin', adminLimiter)");
     // S16 moved body parsing into configureRequestBody: one parser per request,
     // the 2 MB limit only on the staff roadmap paths.
     const bodyParsing = at("configureRequestBody(app)");
@@ -65,8 +66,7 @@ describe("S07 integration: roadmap routes alongside the S06 server changes", () 
     expect(requestBody).toContain('parser("2mb")');
     expect(requestBody).toContain('parser("100kb")');
     expect(requestBody).toContain("roadmap(\\/|$)/.test(req.path) ? roadmapJson : ordinaryJson");
-    expect(at("registerWebhookRoutes(app)")).toBeLessThan(adminLimiter);
-    expect(adminLimiter).toBeLessThan(apiLimiter);
+    expect(at("registerWebhookRoutes(app)")).toBeLessThan(apiLimiter);
     expect(apiLimiter).toBeLessThan(bodyParsing);
     expect(at("registerHealthRoutes(app)")).toBeLessThan(at("await registerRoutes(app)"));
     expect(src).toContain("configureRateLimitBackend(");
