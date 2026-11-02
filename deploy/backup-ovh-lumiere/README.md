@@ -15,7 +15,11 @@ nightly 03:40 UTC (a missed run, for example with the host down, runs at the nex
 
 **Not included:** the uploaded files themselves (document scans, photos) in Supabase Storage. Only their list is in the backup. Backing up the files is a possible next step.
 
-**Not yet included:** an off-site copy, and the email alert that ClientDesk has. For now, check `last-run.json` (see "Check").
+**Off-site:**
+- If OVH's automated VPS backup is enabled on this server (the ClientDesk technical manual, §15.1.7, reports it for this host), `/var/backups/lumiere-portal` is included in it automatically.
+- The R2 off-site copy and the email alert that ClientDesk has are not included yet. For now, check `last-run.json` (see "Check").
+
+**Keys:** the offline recovery key is the same `AGE_BACKUP_IDENTITY` that opens the ClientDesk and Documenso backups (ClientDesk technical manual §14.3), so the owner keeps one key for all three.
 
 ## Install (once): owner, about 5 minutes
 
