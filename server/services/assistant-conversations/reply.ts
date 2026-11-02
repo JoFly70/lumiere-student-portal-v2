@@ -5,6 +5,7 @@
  */
 import { answerMessage, type AssistantDeps, type HistoryTurn } from '../academic-assistant/service';
 import { PgBudgetStore } from '../academic-assistant/budget';
+import { PRIVATE_APPENDIX_HEADS } from '../academic-assistant/private-boundary';
 
 export const MAX_RECENT_TURNS = 6;
 
@@ -47,7 +48,9 @@ export async function generateReply(args: GenerateReplyArgs, deps?: AssistantDep
 // ---- S21 integration: private (local-only) context ------------------------------------------------------------
 // The public answer above never sees private data. Private items (the student's own memory, earlier messages,
 // indexed documents, academic records) are retrieved under the owner boundary and appended as a separate,
-// clearly labelled "From your records" section with deep links. Nothing here is sent to any provider.
+// clearly labelled "From your records" section with deep links. Nothing here is sent to any provider: the composed
+// content is stored for the student, and later turns reach the provider only through providerSafeTurns (S34, S33-01),
+// which keys on the stored mode + privateRefs rather than on this heading.
 
 export interface PrivateItemLike {
   kind: string; title: string; snippet: string; path: string; label?: string;
@@ -57,8 +60,8 @@ export type RetrievePrivateFn = (args: { ownerUserId: string; query: string; lan
 export const MAX_PRIVATE_ITEMS = 3;
 
 const PRIVATE_T = {
-  en: { head: 'From your records (private, not sent to any AI model):', support: 'If this does not answer your question, your Lumière team can help: open a Support request.', supportLabel: 'Contact Support' },
-  fr: { head: 'Dans votre dossier (privé, jamais envoyé à un modèle d’IA) :', support: 'Si cela ne répond pas à votre question, votre équipe Lumière peut vous aider : ouvrez une demande d’assistance.', supportLabel: 'Contacter l’assistance' },
+  en: { head: PRIVATE_APPENDIX_HEADS.en, support: 'If this does not answer your question, your Lumière team can help: open a Support request.', supportLabel: 'Contact Support' },
+  fr: { head: PRIVATE_APPENDIX_HEADS.fr, support: 'Si cela ne répond pas à votre question, votre équipe Lumière peut vous aider : ouvrez une demande d’assistance.', supportLabel: 'Contacter l’assistance' },
 } as const;
 
 export function composeWithPrivateContext(base: GeneratedReply, items: PrivateItemLike[], language: 'en' | 'fr', conversationId: string): GeneratedReply {

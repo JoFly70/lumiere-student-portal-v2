@@ -3,6 +3,8 @@ import { generateReply as defaultGenerateReply, type GenerateReplyFn } from './r
 import * as store from './store';
 import { ConversationError, type Database, type MessageRow, type ConversationRow, type Checkpoint } from './store';
 import { verifyConversation, type VerifyReport } from './integrity';
+import { providerSafeTurns } from '../academic-assistant/private-boundary';
+import { isRecordAnswerText } from '../academic-assistant/student-record';
 
 export { ConversationError } from './store';
 
@@ -90,7 +92,9 @@ export function createConversationService(opts: ConversationServiceOptions = {})
       //    a retry with the same clientRequestId reaches this point again and generates only the missing reply.
       let reply;
       try {
-        const turns = await store.recentTurns(db, owner, conversationId, student.seq, 6);
+        // S34 (S33-01): stored turns are what the student saw (record answers, "From your records" appendix). Only
+        // their provider-safe projection is handed to reply generation, for new AND previously stored messages.
+        const turns = providerSafeTurns(await store.recentTurns(db, owner, conversationId, student.seq, 6), isRecordAnswerText);
         reply = await generateReply({ user, conversationId, message: student.content, language: student.language, recentTurns: turns });
       } catch (err) {
         log.error('assistant reply generation failed', { error: (err as Error).message, conversationId });

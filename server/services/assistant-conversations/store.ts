@@ -4,6 +4,7 @@
  */
 import { sql, type SQL } from 'drizzle-orm';
 import { computeMessageHash, GENESIS_HASH, type VerifyInput, type VerifyMessageRow } from './integrity';
+import type { StoredTurn } from '../academic-assistant/private-boundary';
 
 /** Minimal surface shared by drizzle `db` and a transaction handle. */
 export interface Queryable { execute(query: SQL): Promise<any> }
@@ -302,14 +303,21 @@ export async function appendAssistantReply(db: Database, owner: string, conversa
   });
 }
 
-/** Last `n` turns before `beforeSeq`, oldest first (student/assistant only). */
-export async function recentTurns(q: Queryable, owner: string, conversationId: string, beforeSeq: number, n = 6): Promise<Array<{ role: 'user' | 'assistant'; content: string }>> {
+/**
+ * Last `n` turns before `beforeSeq`, oldest first (student/assistant only). S34 (S33-01): also returns the structural
+ * privacy signals (`mode`, `privateRefs`) so the caller can project the turns onto provider-safe history.
+ * The raw content returned here is what the student saw; it is NOT provider-safe on its own.
+ */
+export async function recentTurns(q: Queryable, owner: string, conversationId: string, beforeSeq: number, n = 6): Promise<StoredTurn[]> {
   const rows = rowsOf(await q.execute(sql`
-    SELECT role, content FROM (
-      SELECT role, content, seq FROM assistant_messages
+    SELECT role, content, mode, private_refs FROM (
+      SELECT role, content, mode, private_refs, seq FROM assistant_messages
        WHERE conversation_id = ${conversationId} AND owner_user_id = ${owner} AND seq < ${beforeSeq} AND role IN ('student','assistant')
        ORDER BY seq DESC LIMIT ${n}) t ORDER BY seq ASC`));
-  return rows.map((r) => ({ role: r.role === 'student' ? 'user' : 'assistant', content: r.content }));
+  return rows.map((r) => ({
+    role: r.role === 'student' ? 'user' : 'assistant', content: r.content,
+    mode: r.mode ?? null, privateRefs: Array.isArray(r.private_refs) ? r.private_refs : [],
+  }));
 }
 
 // ---------------------------------------------------------------------------------------------

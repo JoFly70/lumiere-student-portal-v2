@@ -1,0 +1,9 @@
+A stored reply:
+A syllabus is the course outline.
+
+From your records (private, not sent to any AI model):
+- Passport scan - Synthetic Student — uploaded 2026-10-01
+A provider body contains private appendix: true
+B local [Qu'est-ce qu'un crédit ?] grounded=record -> D’après votre dossier (faits du système, pas une IA) : | • Earned 3.0 of 24 credits [R1]
+B local [What is a credit hour?] grounded=record -> From your record (system facts, not AI): | • Earned 3.0 of 24 credits [R1]
+B local [Explain what a document is] grounded=- -> Support procedures: what to include in a request | Say which page or step your question is about, what you expected and what you see. Attach a document only if the team asked for it or it helps explain the question. Never write a password or full card number in a request. Urgent deadlines should be stated in the first lines so your team can prioritise.

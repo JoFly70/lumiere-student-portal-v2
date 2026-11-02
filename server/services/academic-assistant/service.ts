@@ -3,6 +3,7 @@ import { SUGGESTIONS, KNOWLEDGE, type KbEntry, type KbSource } from '../../data/
 import { loadAssistantConfig, estimateCostUsd, estimateTokens, type AssistantConfig } from './config';
 import { callMuseSpark, ProviderError, type FetchLike, type ProviderMessage } from './meta-adapter';
 import { detectPii } from './pii';
+import { stripPrivateAppendix } from './private-boundary';
 import { searchKnowledge, type KbAudience } from './retrieval';
 import { currentMonth, usdToMicro, type BudgetStore } from './budget';
 import { answerFromRecord, hasDegreeRecords, hasHighSchoolRecords, isPersonalQuestion, isRecordAnswerText, type StudentRecord } from './student-record';
@@ -168,8 +169,15 @@ export function providerSafeRecords(records: readonly StudentRecord[]): StudentR
 export function providerSafeHistory(history: readonly HistoryTurn[]): HistoryTurn[] {
   const out: HistoryTurn[] = [];
   for (const turn of history) {
-    if (turn.role === 'assistant' && isRecordAnswerText(turn.content)) {
-      if (out.length && out[out.length - 1]!.role === 'user') out.pop();
+    if (turn.role === 'assistant') {
+      // S34 (S33-01) defence in depth: whatever the caller passed (conversation store projection or client-supplied
+      // history on /api/assistant/message), never forward a "From your records" appendix or a record answer.
+      const content = stripPrivateAppendix(turn.content).trim();
+      if (!content || isRecordAnswerText(content)) {
+        if (out.length && out[out.length - 1]!.role === 'user') out.pop();
+        continue;
+      }
+      out.push({ role: 'assistant', content });
       continue;
     }
     out.push(turn);
@@ -248,10 +256,11 @@ export async function answerMessage(
 
   // 2. Eligibility / config.
   const decision = decideLive(user, cfg);
-  // Personal record facts never need the model: answer deterministically. Without a live model the record answer wins
-  // (as before S32); with one, only questions about the student themself are preempted (general questions go live).
+  // Personal record facts never need the model: answer deterministically. S34 (S33-04): the personal-vs-general
+  // distinction now applies in BOTH modes, so "What is a credit hour?" / « Qu'est-ce qu'un crédit ? » gets the curated
+  // explanation (local) or a general live answer, while "How many credits have I earned?" stays a record answer.
   const recordAnswer = facts();
-  if (recordAnswer && (!decision.live || isPersonalQuestion(message))) return recordAnswer;
+  if (recordAnswer && isPersonalQuestion(message)) return recordAnswer;
   if (!decision.live) return localAnswer(message, lang, undefined, audience);
 
   // 3. Budget reservation (fail closed).
