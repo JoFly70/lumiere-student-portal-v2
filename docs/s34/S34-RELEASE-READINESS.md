@@ -102,3 +102,9 @@ curl -fsSL https://raw.githubusercontent.com/JoFly70/lumiere-student-portal-v2/c
 - Custom domain `lumiereportal.app` is still attached elsewhere (a separate Replit Support case; not touched).
 
 Remaining owner item: Supabase backup and PITR verification (runbook §2).
+
+**App email delivery verified (2026-11-03).**
+- The owner issued a test student invitation from Administration → Invitations to a Gmail plus-address, with "Send email" on.
+- The email was received. The sender shown was **`no-reply@auth.lumierepathways.com`** (Resend; same domain as the Supabase Auth emails).
+- This closes the "no delivery observed yet" gap reported by `s29.check-email`.
+- The test invitation is to be revoked by the owner.
