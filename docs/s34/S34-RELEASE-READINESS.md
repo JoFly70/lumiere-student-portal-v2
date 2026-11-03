@@ -108,3 +108,11 @@ Remaining owner item: Supabase backup and PITR verification (runbook §2).
 - The email was received. The sender shown was **`no-reply@auth.lumierepathways.com`** (Resend; same domain as the Supabase Auth emails).
 - This closes the "no delivery observed yet" gap reported by `s29.check-email`.
 - The test invitation is to be revoked by the owner.
+
+**Custom domain `lumiereportal.app` live (2026-11-03).**
+- Replit Support detached the domain from MockPortalNode.
+- The owner attached it to the production app (Replit-registered domain: DNS records and routing done automatically) and republished. The SSL certificate was issued.
+- Supabase Auth Site URL changed to `https://lumiereportal.app`. The redirect allow-list already held `/auth/verify`, `/verify-email` and `/reset-password` for both origins; the `replit.app` entries were kept as a fallback.
+- Replit configurations `APP_URL` and `PUBLIC_APP_URL` set to `https://lumiereportal.app`, then republished.
+- Verified by the owner: `https://lumiereportal.app/health` returned `status: ok`, `release: 6fb963409548a8df2e80d506454906dd96808708`, `database: ok` (18:52 UTC), and sign-in and sign-out worked on the new domain.
+- `lumiere-student-portal-v-2.replit.app` remains reachable. The S26 runner and acceptance still target it (`LIVE=` in `release-loop.sh`); no change is needed.
